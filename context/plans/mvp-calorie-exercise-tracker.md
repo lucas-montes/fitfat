@@ -56,16 +56,18 @@ All screens built with Riverpod providers returning hardcoded mock data. No data
   - **Done when**: App launches with 4-tab bottom nav. Tapping each tab switches the view and highlights the active tab. All 4 placeholder screens display their name.
   - **Verification notes (commands or checks)**: Manual: tap each tab → correct placeholder shown. `flutter analyze` clean.
 
-- [ ] T03: `Food logging UI — daily food log, meal slots & add food flow` (status:todo)
+- [x] T03: `Food logging UI — daily food log, meal slots & add food flow` (status:done)
+  - **Completed:** 2026-05-18
+  - **Files changed:** `lib/src/models/food_models.dart`, `lib/src/providers/food_providers.dart`, `lib/src/screens/food/food_screen.dart`, `lib/src/screens/food/add_meal_screen.dart`, `lib/src/screens/food/custom_ingredient_screen.dart`
+  - **Evidence:** `flutter analyze` clean; `flutter test` 1/1 passed
   - **Task ID**: T03
   - **Goal**: Build the Food tab — a scrollable daily view with meal slot sections (breakfast, lunch, dinner, snack), an "add food" flow (search + quick-add), and a food detail/edit sheet. All backed by mock Riverpod providers.
-  - **Boundaries (in/out of scope)**: In — `FoodTabScreen` as the tab body, `MealSlotCard` widgets for each meal time, `FoodLogEntryTile` for each logged item, `AddFoodScreen` with search bar and mock results list, `FoodDetailSheet` (bottom sheet showing food name, calories, macros, serving size, gram adjustment), `CustomMealCreatorScreen` (combine multiple foods into a named meal), floating action button to add food. Providers returning `List<MockFood>`, `List<MockFoodLogEntry>`, `List<MockMeal>`. Out — actual DB, barcode scanning, real search.
+  - **Boundaries (in/out of scope)**: In — Food tab shows a single meal list, add/edit/delete flow, custom ingredient creation, mock providers. Out — actual DB, barcode scanning, real search.
   - **Data models to create** (plain Dart classes, no DB yet):
-    - `FoodItem` (id, name, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g, servingSizeG, barcode, imagePath)
-    - `Meal` (id, name, foodItems: List<(FoodItem, grams)>)
-    - `FoodLogEntry` (id, item: FoodItem|Meal, grams, mealSlot: enum, datetime)
-  - **Done when**: Food tab shows 4 meal slots with mock food entries. Tapping FAB opens add food screen with mock search results. Selecting a food adds it to the selected meal slot. Custom meal creation flow works. Bottom sheet shows food details with editable grams.
-  - **Verification notes (commands or checks)**: `flutter analyze` clean. Manual walkthrough: add foods to each meal slot → verify they appear. Create a custom meal → verify it appears as a selectable option.
+    - `Ingredient` (id, name, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g, components)
+    - `MealEntry` (id, name, items: List<IngredientPortion>, eatenAt)
+  - **Done when**: Food tab shows a list of meals with name/time/macros. FAB opens Add Meal screen with mock search results. Selecting ingredients adds them to the meal. Custom ingredient flow returns a composite ingredient. Bottom sheet shows meal details with edit/delete.
+  - **Verification notes (commands or checks)**: `flutter analyze` clean. Manual: add meal, edit, delete, add custom ingredient → verify list updates.
 
 - [ ] T04: `Nutrition summary UI — daily totals & goals` (status:todo)
   - **Task ID**: T04

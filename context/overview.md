@@ -26,4 +26,4 @@
 - `lib/src/app.dart` — `FitFatApp` with `MaterialApp.router`
 - `lib/src/app_theme.dart` — Material 3 light/dark themes (Indigo seed)
 - `lib/src/router/` — GoRouter with 4 routes (food, exercise, dashboard, settings)
-- `lib/src/screens/` — Placeholder screens for all 4 tabs
+- `lib/src/screens/` — Food tab has meal list + add/edit/delete flow; other tabs placeholder
