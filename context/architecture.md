@@ -36,7 +36,7 @@ lib/
 ## Routing
 
 GoRouter with 3 top-level routes:
-- `/diet` — DietScreen (Meals/Ingredients tabs)
+- `/diet` — `DietScreen` (Meals/Ingredients tabs; contextual add action in the `AppBar` switches between add meal and add ingredient)
 - `/exercise` — ExerciseScreen (Exercises/Seances tabs)
 - `/dashboard` — DashboardScreen
 

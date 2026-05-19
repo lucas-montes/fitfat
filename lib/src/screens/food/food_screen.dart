@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/food_models.dart';
 import '../../providers/food_providers.dart';
 import 'add_meal_screen.dart';
+import 'widgets/food_entry_card.dart';
 
 class MealsTab extends ConsumerWidget {
   const MealsTab({super.key});
@@ -18,10 +19,18 @@ class MealsTab extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
             itemBuilder: (context, index) {
               final meal = meals[index];
-              return _MealCard(
-                meal: meal,
+              return FoodEntryCard(
+                title: meal.name?.trim().isEmpty ?? true ? 'Meal' : meal.name!,
                 onTap: () => _openEditMeal(context, meal),
                 onDelete: () => _deleteMeal(ref, meal.id),
+                body: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(DateFormat('MMM d, h:mm a').format(meal.eatenAt)),
+                    const SizedBox(height: 8),
+                    _MacroRow(macros: meal.totalMacros),
+                  ],
+                ),
               );
             },
             separatorBuilder: (context, index) => const SizedBox(height: 12),
@@ -53,46 +62,6 @@ class MealsTab extends ConsumerWidget {
     );
     if (confirm != true) return;
     ref.read(mealLogProvider.notifier).removeMeal(id);
-  }
-}
-
-class _MealCard extends StatelessWidget {
-  const _MealCard({
-    required this.meal,
-    required this.onTap,
-    required this.onDelete,
-  });
-
-  final MealEntry meal;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final macros = meal.totalMacros;
-    final formattedTime = DateFormat('MMM d, h:mm a').format(meal.eatenAt);
-
-    return Card(
-      child: ListTile(
-        onTap: onTap,
-        title: Text(meal.name?.trim().isEmpty ?? true ? 'Meal' : meal.name!),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(formattedTime),
-              const SizedBox(height: 6),
-              _MacroRow(macros: macros),
-            ],
-          ),
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline),
-          onPressed: onDelete,
-        ),
-      ),
-    );
   }
 }
 

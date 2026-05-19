@@ -17,6 +17,7 @@ class CustomIngredientScreen extends ConsumerStatefulWidget {
 class _CustomIngredientScreenState
     extends ConsumerState<CustomIngredientScreen> {
   final _nameController = TextEditingController();
+  final _searchController = TextEditingController();
   final _caloriesController = TextEditingController();
   final _proteinController = TextEditingController();
   final _carbsController = TextEditingController();
@@ -46,6 +47,7 @@ class _CustomIngredientScreenState
   @override
   void dispose() {
     _nameController.dispose();
+    _searchController.dispose();
     _caloriesController.dispose();
     _proteinController.dispose();
     _carbsController.dispose();
@@ -56,19 +58,51 @@ class _CustomIngredientScreenState
   @override
   Widget build(BuildContext context) {
     final ingredients = ref.watch(ingredientListProvider);
+    final query = _searchController.text.trim().toLowerCase();
     final per100g = _buildFromIngredients
         ? _computePer100g(_components)
         : _parseManualMacros();
+    final filteredIngredients = query.isEmpty
+        ? <Ingredient>[]
+        : ingredients
+            .where((ingredient) =>
+                ingredient.name.toLowerCase().contains(query))
+            .toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.initialIngredient == null
-            ? 'Custom Ingredient'
-            : 'Edit Ingredient'),
+        actions: [
+          if (_canSave(per100g))
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: FilledButton.icon(
+                onPressed: () => _save(per100g),
+                icon: const Icon(Icons.check),
+                label: const Text('Save'),
+              ),
+            ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Macro preview at top
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Per 100g: '
+              '${per100g.calories.toStringAsFixed(0)} kcal · '
+              'P ${per100g.protein.toStringAsFixed(1)}g · '
+              'C ${per100g.carbs.toStringAsFixed(1)}g · '
+              'F ${per100g.fat.toStringAsFixed(1)}g',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          const SizedBox(height: 20),
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(labelText: 'Ingredient name'),
@@ -110,24 +144,35 @@ class _CustomIngredientScreenState
               ),
             const SizedBox(height: 16),
             Text(
-              'Add ingredient',
+              'Add ingredients',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            for (final ingredient in ingredients)
-              Card(
-                child: ListTile(
-                  title: Text(ingredient.name),
-                  subtitle: Text(
-                    '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
-                    'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
-                    'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
-                    'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _addComponent(ingredient),
-                  ),
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                labelText: 'Search ingredients',
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () =>
+                            setState(() => _searchController.clear()),
+                      )
+                    : null,
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            if (query.isNotEmpty)
+              ..._buildComponentResults(filteredIngredients)
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Type to search ingredients',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
                 ),
               ),
           ] else ...[
@@ -136,22 +181,31 @@ class _CustomIngredientScreenState
             _buildManualField(_carbsController, 'Carbs per 100g (g)'),
             _buildManualField(_fatController, 'Fat per 100g (g)'),
           ],
-          const SizedBox(height: 16),
-          Text(
-            'Per 100g preview: '
-            '${per100g.calories.toStringAsFixed(0)} kcal · '
-            'P ${per100g.protein.toStringAsFixed(1)}g · '
-            'C ${per100g.carbs.toStringAsFixed(1)}g · '
-            'F ${per100g.fat.toStringAsFixed(1)}g',
-          ),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: _canSave(per100g) ? () => _save(per100g) : null,
-            child: const Text('Save ingredient'),
-          ),
         ],
       ),
+      floatingActionButton: null,
     );
+  }
+
+  List<Widget> _buildComponentResults(List<Ingredient> ingredients) {
+    return [
+      for (final ingredient in ingredients)
+        Card(
+          child: ListTile(
+            title: Text(ingredient.name),
+            subtitle: Text(
+              '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
+              'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
+              'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
+              'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _addComponent(ingredient),
+            ),
+          ),
+        ),
+    ];
   }
 
   Widget _buildManualField(TextEditingController controller, String label) {

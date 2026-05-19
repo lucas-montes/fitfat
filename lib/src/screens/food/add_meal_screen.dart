@@ -44,15 +44,28 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
   @override
   Widget build(BuildContext context) {
     final ingredients = ref.watch(ingredientListProvider);
-    final filteredIngredients = ingredients.where((ingredient) {
-      final query = _searchController.text.trim().toLowerCase();
-      if (query.isEmpty) return true;
-      return ingredient.name.toLowerCase().contains(query);
-    }).toList();
+    final query = _searchController.text.trim().toLowerCase();
+    final filteredIngredients = query.isEmpty
+        ? <Ingredient>[]
+        : ingredients
+            .where((ingredient) =>
+                ingredient.name.toLowerCase().contains(query))
+            .toList();
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.initialMeal == null ? 'Add Meal' : 'Edit Meal'),
+        actions: [
+          if (_items.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: FilledButton.icon(
+                onPressed: _saveMeal,
+                icon: const Icon(Icons.check),
+                label: Text(widget.initialMeal == null ? 'Save' : 'Update'),
+              ),
+            ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -94,52 +107,41 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
               ),
             ),
           const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Ingredients',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              TextButton.icon(
-                onPressed: _addCustomIngredient,
-                icon: const Icon(Icons.add_circle_outline),
-                label: const Text('Custom ingredient'),
-              ),
-            ],
+          Text(
+            'Add ingredients',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
+          const SizedBox(height: 8),
           TextField(
             controller: _searchController,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
               labelText: 'Search ingredients',
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () =>
+                          setState(() => _searchController.clear()),
+                    )
+                  : null,
             ),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 12),
-          for (final ingredient in filteredIngredients)
-            Card(
-              child: ListTile(
-                title: Text(ingredient.name),
-                subtitle: Text(
-                  '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
-                  'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
-                  'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
-                  'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => _promptAndAddIngredient(ingredient),
-                ),
+          if (query.isNotEmpty)
+            ..._buildResultsOrCustom(filteredIngredients)
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'Type to search ingredients',
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
               ),
             ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _items.isEmpty ? null : _saveMeal,
-            child: Text(widget.initialMeal == null ? 'Save meal' : 'Update meal'),
-          ),
         ],
       ),
+      floatingActionButton: null,
     );
   }
 
@@ -170,6 +172,59 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
         ),
       ],
     );
+  }
+
+  List<Widget> _buildResultsOrCustom(List<Ingredient> filtered) {
+    final widgets = <Widget>[];
+    if (filtered.isEmpty) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
+              const Text('No ingredients found'),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: _addCustomIngredient,
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text('Create new ingredient'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      for (final ingredient in filtered) {
+        widgets.add(
+          Card(
+            child: ListTile(
+              title: Text(ingredient.name),
+              subtitle: Text(
+                '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
+                'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
+                'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
+                'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () => _promptAndAddIngredient(ingredient),
+              ),
+            ),
+          ),
+        );
+      }
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: TextButton.icon(
+            onPressed: _addCustomIngredient,
+            icon: const Icon(Icons.add_circle_outline),
+            label: const Text('Create new ingredient'),
+          ),
+        ),
+      );
+    }
+    return widgets;
   }
 
   Future<void> _promptAndAddIngredient(Ingredient ingredient) async {

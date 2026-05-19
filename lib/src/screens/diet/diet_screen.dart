@@ -4,56 +4,94 @@ import '../../models/food_models.dart';
 import '../../providers/food_providers.dart';
 import '../food/add_meal_screen.dart';
 import '../food/custom_ingredient_screen.dart';
-import '../food/food_screen.dart';
+import '../food/widgets/food_entry_card.dart';
 
-class DietScreen extends ConsumerWidget {
+class DietScreen extends ConsumerStatefulWidget {
   const DietScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return DefaultTabController(
-      length: 2,
-      child: Builder(
-        builder: (context) {
-          final controller = DefaultTabController.of(context);
+  ConsumerState<DietScreen> createState() => _DietScreenState();
+}
 
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('Diet'),
-              bottom: const TabBar(
-                tabs: [
-                  Tab(text: 'Meals'),
-                  Tab(text: 'Ingredients'),
-                ],
-              ),
-            ),
-            body: const TabBarView(
-              children: [
-                MealsTab(),
-                _IngredientsTab(),
-              ],
-            ),
-            floatingActionButton: AnimatedBuilder(
-              animation: controller,
-              builder: (context, child) {
-                if (controller.index == 0) {
-                  return FloatingActionButton(
-                    onPressed: () => _openAddMeal(context),
-                    child: const Icon(Icons.add),
-                  );
-                }
-                if (controller.index == 1) {
-                  return FloatingActionButton(
-                    onPressed: () => _openAddIngredient(context, ref),
-                    child: const Icon(Icons.add),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
+class _DietScreenState extends ConsumerState<DietScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Diet'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Meals'),
+            Tab(text: 'Ingredients'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          MealsTab(),
+          _IngredientsTab(),
+        ],
+      ),
+    );
+  }
+}
+
+class MealsTab extends ConsumerWidget {
+  const MealsTab({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final meals = ref.watch(mealLogProvider);
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      itemBuilder: (context, index) {
+        // Add button at the top
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Add Meal'),
+              onPressed: () => _openAddMeal(context),
             ),
           );
-        },
-      ),
+        }
+
+        final mealIndex = index - 1;
+        if (mealIndex >= meals.length) return null;
+
+        final meal = meals[mealIndex];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: FoodEntryCard(
+            title: meal.name?.trim().isEmpty ?? true ? 'Meal' : meal.name!,
+            onTap: () {},  // TODO: Implement edit meal
+            onDelete: () {},  // TODO: Implement delete meal
+            body: Text(
+              '${meal.totalMacros.calories.toStringAsFixed(0)} kcal · ${meal.items.length} item${meal.items.length == 1 ? '' : 's'}',
+            ),
+          ),
+        );
+      },
+      itemCount: meals.length + 1,
     );
   }
 
@@ -61,17 +99,6 @@ class DietScreen extends ConsumerWidget {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const AddMealScreen()),
     );
-  }
-
-  Future<void> _openAddIngredient(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final ingredient = await Navigator.of(context).push<Ingredient>(
-      MaterialPageRoute(builder: (_) => const CustomIngredientScreen()),
-    );
-    if (ingredient == null) return;
-    ref.read(ingredientListProvider.notifier).addIngredient(ingredient);
   }
 }
 
@@ -82,34 +109,50 @@ class _IngredientsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ingredients = ref.watch(ingredientListProvider);
 
-    if (ingredients.isEmpty) {
-      return const Center(child: Text('No ingredients yet'));
-    }
-
-    return ListView.separated(
+    return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       itemBuilder: (context, index) {
-        final ingredient = ingredients[index];
-        return Card(
-          child: ListTile(
+        // Add button at the top
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Add Ingredient'),
+              onPressed: () => _openAddIngredient(context, ref),
+            ),
+          );
+        }
+
+        final ingredientIndex = index - 1;
+        if (ingredientIndex >= ingredients.length) return null;
+
+        final ingredient = ingredients[ingredientIndex];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: FoodEntryCard(
+            title: ingredient.name,
             onTap: () => _editIngredient(context, ref, ingredient),
-            title: Text(ingredient.name),
-            subtitle: Text(
+            onDelete: () => _deleteIngredient(ref, ingredient.id),
+            body: Text(
               '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
               'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
               'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
               'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
             ),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _deleteIngredient(ref, ingredient.id),
-            ),
           ),
         );
       },
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemCount: ingredients.length,
+      itemCount: ingredients.length + 1,
     );
+  }
+
+  void _openAddIngredient(BuildContext context, WidgetRef ref) async {
+    final ingredient = await Navigator.of(context).push<Ingredient>(
+      MaterialPageRoute(builder: (_) => const CustomIngredientScreen()),
+    );
+    if (ingredient == null) return;
+    ref.read(ingredientListProvider.notifier).addIngredient(ingredient);
   }
 
   Future<void> _editIngredient(

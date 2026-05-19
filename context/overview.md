@@ -26,4 +26,5 @@
 - `lib/src/app.dart` — `FitFatApp` with `MaterialApp.router`
 - `lib/src/app_theme.dart` — Material 3 light/dark themes (Indigo seed)
 - `lib/src/router/` — GoRouter with 3 routes (diet, exercise, dashboard)
+- `lib/src/screens/diet/diet_screen.dart` — Meals/Ingredients tabs use a contextual `AppBar` add action that stays in sync with the active tab
 - `lib/src/screens/` — Diet tab has Meals/Ingredients tabs; Exercise tab has Exercises/Seances tabs
