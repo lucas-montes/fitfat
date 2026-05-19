@@ -87,8 +87,8 @@ class MealsTab extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: 12),
           child: FoodEntryCard(
             title: meal.name?.trim().isEmpty ?? true ? 'Meal' : meal.name!,
-            onTap: () {},  // TODO: Implement edit meal
-            onDelete: () {},  // TODO: Implement delete meal
+            onTap: () => _editMeal(context, meal),
+            onDelete: () => _deleteMeal(ref, meal.id),
             body: Text(
               '${meal.totalMacros.calories.toStringAsFixed(0)} kcal · ${meal.items.length} item${meal.items.length == 1 ? '' : 's'}',
             ),
@@ -103,6 +103,32 @@ class MealsTab extends ConsumerWidget {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const AddMealScreen()),
     );
+  }
+
+  void _editMeal(BuildContext context, MealEntry meal) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => AddMealScreen(initialMeal: meal)),
+    );
+  }
+
+  void _deleteMeal(WidgetRef ref, String id) {
+    _confirmAndDeleteMeal(ref, id);
+  }
+
+  Future<void> _confirmAndDeleteMeal(WidgetRef ref, String id) async {
+    final confirmed = await showDialog<bool>(
+      context: ref.context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete meal?'),
+        content: const Text('This will remove the meal from your log.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    ref.read(mealLogProvider.notifier).removeMeal(id);
   }
 }
 
