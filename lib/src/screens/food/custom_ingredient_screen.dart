@@ -5,7 +5,9 @@ import '../../models/food_models.dart';
 import '../../providers/food_providers.dart';
 
 class CustomIngredientScreen extends ConsumerStatefulWidget {
-  const CustomIngredientScreen({super.key});
+  const CustomIngredientScreen({super.key, this.initialIngredient});
+
+  final Ingredient? initialIngredient;
 
   @override
   ConsumerState<CustomIngredientScreen> createState() =>
@@ -25,6 +27,23 @@ class _CustomIngredientScreenState
   List<IngredientPortion> _components = [];
 
   @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialIngredient;
+    if (initial == null) return;
+    _nameController.text = initial.name;
+    _buildFromIngredients = initial.isComposite;
+    if (_buildFromIngredients) {
+      _components = List.from(initial.components);
+    } else {
+      _caloriesController.text = initial.caloriesPer100g.toString();
+      _proteinController.text = initial.proteinPer100g.toString();
+      _carbsController.text = initial.carbsPer100g.toString();
+      _fatController.text = initial.fatPer100g.toString();
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _caloriesController.dispose();
@@ -42,7 +61,11 @@ class _CustomIngredientScreenState
         : _parseManualMacros();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Custom Ingredient')),
+      appBar: AppBar(
+        title: Text(widget.initialIngredient == null
+            ? 'Custom Ingredient'
+            : 'Edit Ingredient'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -241,7 +264,9 @@ class _CustomIngredientScreenState
       ),
     );
 
-    controller.dispose();
+    // Dispose after the dialog is fully torn down to avoid disposing the
+    // controller while the dialog's TextField is still attached.
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
     return result;
   }
 
@@ -251,13 +276,13 @@ class _CustomIngredientScreenState
     Ingredient ingredient;
     if (_buildFromIngredients) {
       ingredient = Ingredient.fromComponents(
-        id: _uuid.v4(),
+        id: widget.initialIngredient?.id ?? _uuid.v4(),
         name: name,
         components: _components,
       );
     } else {
       ingredient = Ingredient(
-        id: _uuid.v4(),
+        id: widget.initialIngredient?.id ?? _uuid.v4(),
         name: name,
         caloriesPer100g: per100g.calories,
         proteinPer100g: per100g.protein,

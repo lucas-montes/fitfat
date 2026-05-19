@@ -6,16 +6,14 @@ Build a **UI-first** mobile calorie and exercise tracking app (`fitfat`). Phase 
 
 ## Success Criteria
 
-1. User can scan a barcode to look up food or add a new food with macros.
-2. User can manually create custom foods and meals (composite dishes).
-3. Daily food log shows total calories, protein, carbs, and fat.
-4. User can set a daily calorie goal and see progress toward it.
-5. User can start/stop a timer for cardio activities (walking, skateboarding), auto-counts steps via pedometer, and saves the session.
-6. User can log weightlifting sessions with sets, reps, weight, and rest timer between sets.
-7. User can log bodyweight and view a trend chart.
-8. A dashboard shows trends for calories, macros, weight, and exercise over time (daily/weekly/monthly).
-9. All data works fully offline with no network requirement.
-10. The app builds cleanly with zero analysis warnings and passes existing tests.
+1. Bottom navigation has three tabs: Diet, Exercise, Dashboard.
+2. Each main tab uses a top TabBar for subsections (Diet: Meals/Ingredients; Exercise: Exercises/Seances).
+3. Meals and Ingredients have CRUD flows.
+4. Exercises list is available (selection only; no edit), and Seance supports exercises with reps + weight, timer, and rest tracking.
+5. Dashboard shows calories/macros summary plus basic charts for strength and bodyweight.
+6. Dashboard includes daily + monthly calorie/macro goals with simple editing.
+7. All data works fully offline with no network requirement.
+8. The app builds cleanly with zero analysis warnings and passes existing tests.
 
 ## Constraints and Non-goals
 
@@ -69,29 +67,39 @@ All screens built with Riverpod providers returning hardcoded mock data. No data
   - **Done when**: Food tab shows a list of meals with name/time/macros. FAB opens Add Meal screen with mock search results. Selecting ingredients adds them to the meal. Custom ingredient flow returns a composite ingredient. Bottom sheet shows meal details with edit/delete.
   - **Verification notes (commands or checks)**: `flutter analyze` clean. Manual: add meal, edit, delete, add custom ingredient → verify list updates.
 
-- [ ] T04: `Nutrition summary UI — daily totals & goals` (status:todo)
+- [x] T04: `Navigation update — Diet tab, remove Settings, add top TabBars` (status:done)
+  - **Completed:** 2026-05-18
+  - **Files changed:** `lib/src/router/app_router.dart`, `lib/src/screens/diet/diet_screen.dart`, `lib/src/screens/food/food_screen.dart`, `lib/src/screens/exercise/exercise_screen.dart`, `lib/src/screens/dashboard/dashboard_screen.dart`, `test/widget_test.dart`
+  - **Evidence:** `flutter analyze` clean; `flutter test` 1/1 passed
   - **Task ID**: T04
-  - **Goal**: Add a daily nutrition summary headline to the Food tab, and a Goals screen under Settings tab. Mock provider computes totals from food log entries.
-  - **Boundaries (in/out of scope)**: In — `DailyNutritionSummary` widget (cards showing total calories + macros eaten today, with a progress ring/bar toward daily goal), `MacroBreakdownRow` (protein/carbs/fat in grams and %), `GoalsScreen` (calorie goal, protein/carbs/fat goals, step goal). Out — charts (T06), DB persistence for goals (uses in-memory mock).
-  - **Mock providers**: `dailyNutritionProvider` returns total calories + macros computed from mock food log. `userGoalsProvider` returns mock goals.
-  - **Done when**: Food tab header shows accurate totals from mock data. Changing mock goals in Settings updates the progress display. Progress ring animates.
-  - **Verification notes (commands or checks)**: `flutter analyze`. Manual: verify totals match expected values from mock entries.
+  - **Goal**: Update bottom navigation to 3 tabs (Diet, Exercise, Dashboard) and add top TabBar subsections for Diet (Meals, Ingredients) and Exercise (Exercises, Seances).
+  - **Boundaries (in/out of scope)**: In — rename Food tab to Diet, remove Settings tab, introduce TabBar + TabBarView for Diet and Exercise. Out — any new data behaviors (handled in T05+).
+  - **Done when**: Bottom nav shows Diet/Exercise/Dashboard. Diet tab shows Meals/Ingredients tabs. Exercise tab shows Exercises/Seances tabs.
+  - **Verification notes (commands or checks)**: `flutter analyze`. Manual: switch bottom tabs and top tabs → correct views shown.
 
-- [ ] T05: `Exercise UI — cardio timer & weightlifting logger` (status:todo)
+- [ ] T05: `Diet CRUD — meals & ingredients` (status:todo)
   - **Task ID**: T05
-  - **Goal**: Build the Exercise tab with two sub-sections: Cardio (timer + pedometer display) and Weightlifting (exercise picker, set logger, rest timer). All backed by mock providers.
-  - **Boundaries (in/out of scope)**: In — `ExerciseTabScreen` with toggle/segmented control between Cardio and Weightlifting modes. **Cardio mode**: `CardioTimerScreen` with activity picker (walking, skateboarding, running, cycling, custom), elapsed time display, start/pause/stop buttons, mock step counter display, session summary on stop. **Weightlifting mode**: `WeightliftingSessionScreen` with exercise name picker (mock list), set logger (weight, reps, auto-incrementing set number), rest timer countdown (start/stop/reset), session summary on finish, exercise history list. Out — real pedometer, real step data, DB persistence.
-  - **Mock providers**: `exerciseSessionProvider` (current active session state), `exerciseHistoryProvider` (list of past mock sessions), `restTimerProvider` (countdown state).
-  - **Done when**: User can switch between Cardio and Weightlifting mode. Cardio timer starts/pauses/stops with elapsed time. Weightlifting: user picks an exercise, logs sets with weight+reps, rest timer counts down between sets. Session summary shows on completion.
-  - **Verification notes (commands or checks)**: `flutter analyze`. Manual: start a mock cardio session → let it run → stop → see summary. Start weightlifting → log 3 sets with rest timer → finish → see summary.
+  - **Goal**: Complete CRUD for Meals and Ingredients under the Diet tab, aligned with Meals/Ingredients tabs.
+  - **Boundaries (in/out of scope)**: In — create/update/delete meals, create/update/delete ingredients (including composite ingredients), basic list and detail UI. Out — barcode scanning, real search, DB persistence.
+  - **Mock providers**: Extend existing food providers to support updates/deletes.
+  - **Done when**: Meals and Ingredients tabs both support add/edit/delete; meal list reflects updates.
+  - **Verification notes (commands or checks)**: `flutter analyze`. Manual: add/edit/delete meal and ingredient → list updates.
 
-- [ ] T06: `Dashboard & bodyweight UI — charts & trends` (status:todo)
+- [ ] T06: `Exercise — exercises list & seance flow` (status:todo)
   - **Task ID**: T06
-  - **Goal**: Build the Dashboard tab with fl_chart visualizations (calorie trend, macro donut, weight trend, exercise summary) and a bodyweight log screen. All mock data.
-  - **Boundaries (in/out of scope)**: In — `DashboardScreen` with: calorie bar chart (last 7 days with goal line), macro donut/pie chart (average split), weight trend line chart, exercise sessions summary (cardio minutes + weightlifting sessions per week). `BodyweightLogScreen` with entry form (weight + date + notes), history list, trend chart. Time range filter (daily/weekly/monthly) for charts. Out — real DB, real sensor data, export.
-  - **Mock providers**: `weeklyCalorieProvider`, `macroSplitProvider`, `weightTrendProvider`, `exerciseSummaryProvider`.
-  - **Done when**: Dashboard renders all 4 chart types with mock data. Time range filter updates charts. Bodyweight log screen shows entries and trend line.
-  - **Verification notes (commands or checks)**: `flutter analyze`. Manual: verify all charts render. Add mock bodyweight entry → verify it appears in list and chart.
+  - **Goal**: Build Exercises list (select only) and Seance flow with timer, exercise entries, reps, weight, and rest tracking.
+  - **Boundaries (in/out of scope)**: In — exercises list (non-editable), seance start/stop, chrono timer, add exercises with reps + weight, calculate rest time between sets. Out — persistent notification/lockscreen controls (optional future), DB persistence.
+  - **Mock providers**: `exerciseListProvider`, `activeSeanceProvider`, `seanceHistoryProvider`, `restTimerProvider` (mocked state).
+  - **Done when**: User can start a seance, add exercises with reps/weight, see elapsed time and rest durations, and stop to see a summary.
+  - **Verification notes (commands or checks)**: `flutter analyze`. Manual: start seance → add 2 exercises with sets → stop → summary appears.
+
+- [ ] T07: `Dashboard — nutrition, goals, and basic charts` (status:todo)
+  - **Task ID**: T07
+  - **Goal**: Show calorie/macro summary plus basic charts for strength and bodyweight. Add daily + monthly goals editing on the Dashboard.
+  - **Boundaries (in/out of scope)**: In — summary cards, simple charts (mock), goals editor (daily + monthly). Out — advanced chart filters, DB persistence.
+  - **Mock providers**: `dailyNutritionProvider`, `monthlyNutritionProvider`, `goalProvider`, `strengthTrendProvider`, `weightTrendProvider`.
+  - **Done when**: Dashboard shows summaries and charts. Goals can be edited and summary updates.
+  - **Verification notes (commands or checks)**: `flutter analyze`. Manual: edit goals → summary updates.
 
 ---
 

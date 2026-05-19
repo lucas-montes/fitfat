@@ -25,23 +25,22 @@ lib/
     ├── router/
     │   └── app_router.dart          # GoRouter route definitions
     ├── screens/
-    │   ├── food/                    # Food logging tab
-    │   ├── exercise/                # Exercise logging tab
-    │   ├── dashboard/               # Progress dashboard tab
-    │   └── settings/                # Settings & goals tab
+    │   ├── diet/                    # Diet tab shell + top TabBar
+    │   ├── food/                    # Meals tab UI
+    │   ├── exercise/                # Exercise tab shell + top TabBar
+    │   └── dashboard/               # Progress dashboard tab
     ├── providers/                   # Riverpod providers (mock data in Phase 1)
     └── models/                      # Domain model classes
 ```
 
 ## Routing
 
-GoRouter with 4 top-level routes:
-- `/food` — FoodScreen
-- `/exercise` — ExerciseScreen
+GoRouter with 3 top-level routes:
+- `/diet` — DietScreen (Meals/Ingredients tabs)
+- `/exercise` — ExerciseScreen (Exercises/Seances tabs)
 - `/dashboard` — DashboardScreen
-- `/settings` — SettingsScreen
 
-Default route: `/food`. Bottom navigation (StatefulShellRoute) added in T02.
+Default route: `/diet`. Bottom navigation (StatefulShellRoute) added in T02.
 
 ## State management
 

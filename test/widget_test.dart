@@ -9,7 +9,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const ProviderScope(child: FitFatApp()));
 
-    // Default route is /food, should show the Food app bar title
-    expect(find.widgetWithText(AppBar, 'Food'), findsOneWidget);
+    // Default route is /diet, should show the Diet app bar title
+    expect(find.widgetWithText(AppBar, 'Diet'), findsOneWidget);
   });
 }

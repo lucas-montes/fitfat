@@ -25,5 +25,5 @@
 - `main.dart` — app entry point with `ProviderScope` wrapper
 - `lib/src/app.dart` — `FitFatApp` with `MaterialApp.router`
 - `lib/src/app_theme.dart` — Material 3 light/dark themes (Indigo seed)
-- `lib/src/router/` — GoRouter with 4 routes (food, exercise, dashboard, settings)
-- `lib/src/screens/` — Food tab has meal list + add/edit/delete flow; other tabs placeholder
+- `lib/src/router/` — GoRouter with 3 routes (diet, exercise, dashboard)
+- `lib/src/screens/` — Diet tab has Meals/Ingredients tabs; Exercise tab has Exercises/Seances tabs

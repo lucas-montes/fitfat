@@ -18,6 +18,20 @@ class IngredientListNotifier extends Notifier<List<Ingredient>> {
   void addIngredient(Ingredient ingredient) {
     state = [...state, ingredient];
   }
+
+  void updateIngredient(Ingredient ingredient) {
+    state = [
+      for (final existing in state)
+        if (existing.id == ingredient.id) ingredient else existing,
+    ];
+    ref.read(mealLogProvider.notifier).replaceIngredient(ingredient);
+  }
+
+  void removeIngredient(String id) {
+    state = state.where((ingredient) => ingredient.id != id).toList();
+    // Also remove the ingredient from any meals that reference it.
+    ref.read(mealLogProvider.notifier).removeIngredient(id);
+  }
 }
 
 class MealLogNotifier extends Notifier<List<MealEntry>> {
@@ -40,6 +54,36 @@ class MealLogNotifier extends Notifier<List<MealEntry>> {
 
   void removeMeal(String id) {
     state = state.where((meal) => meal.id != id).toList();
+  }
+
+  void replaceIngredient(Ingredient ingredient) {
+    state = [
+      for (final meal in state)
+        MealEntry(
+          id: meal.id,
+          name: meal.name,
+          eatenAt: meal.eatenAt,
+          items: [
+            for (final item in meal.items)
+              if (item.ingredient.id == ingredient.id)
+                IngredientPortion(ingredient: ingredient, grams: item.grams)
+              else
+                item,
+          ],
+        ),
+    ];
+  }
+
+  void removeIngredient(String id) {
+    state = [
+      for (final meal in state)
+        MealEntry(
+          id: meal.id,
+          name: meal.name,
+          eatenAt: meal.eatenAt,
+          items: [for (final item in meal.items) if (item.ingredient.id != id) item],
+        ),
+    ].where((meal) => meal.items.isNotEmpty).toList();
   }
 }
 

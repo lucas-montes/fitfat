@@ -5,6 +5,25 @@ class ExerciseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Exercise'));
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Exercise'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Exercises'),
+              Tab(text: 'Seances'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            Center(child: Text('Exercises')),
+            Center(child: Text('Seances')),
+          ],
+        ),
+      ),
+    );
   }
 }

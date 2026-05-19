@@ -237,7 +237,10 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
       ),
     );
 
-    controller.dispose();
+    // Dispose the controller on the next frame to avoid disposing while the
+    // dialog's TextField is still mounted (which can trigger
+    // "_dependents.isEmpty" assertions).
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
     return result;
   }
 

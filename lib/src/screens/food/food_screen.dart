@@ -5,72 +5,67 @@ import '../../models/food_models.dart';
 import '../../providers/food_providers.dart';
 import 'add_meal_screen.dart';
 
-class FoodScreen extends ConsumerWidget {
-  const FoodScreen({super.key});
+class MealsTab extends ConsumerWidget {
+  const MealsTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final meals = ref.watch(mealLogProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: meals.isEmpty
-          ? const Center(child: Text('No meals yet'))
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-              itemBuilder: (context, index) {
-                final meal = meals[index];
-                return _MealCard(
-                  meal: meal,
-                  onTap: () => _showMealDetails(context, ref, meal),
-                );
-              },
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemCount: meals.length,
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openAddMeal(context),
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  void _openAddMeal(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AddMealScreen()),
-    );
-  }
-
-  void _showMealDetails(
-    BuildContext context,
-    WidgetRef ref,
-    MealEntry meal,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => _MealDetailSheet(
-        meal: meal,
-        onEdit: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => AddMealScreen(initialMeal: meal)),
+    return meals.isEmpty
+        ? const Center(child: Text('No meals yet'))
+        : ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+            itemBuilder: (context, index) {
+              final meal = meals[index];
+              return _MealCard(
+                meal: meal,
+                onTap: () => _openEditMeal(context, meal),
+                onDelete: () => _deleteMeal(ref, meal.id),
+              );
+            },
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemCount: meals.length,
           );
-        },
-        onDelete: () {
-          ref.read(mealLogProvider.notifier).removeMeal(meal.id);
-          Navigator.of(context).pop();
-        },
+  }
+
+  void _openEditMeal(BuildContext context, MealEntry meal) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => AddMealScreen(initialMeal: meal)),
+    );
+  }
+
+  void _deleteMeal(WidgetRef ref, String id) {
+    _confirmAndDelete(ref, id);
+  }
+
+  Future<void> _confirmAndDelete(WidgetRef ref, String id) async {
+    final confirm = await showDialog<bool>(
+      context: ref.context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete meal?'),
+        content: const Text('This will remove the meal from your log.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
+        ],
       ),
     );
+    if (confirm != true) return;
+    ref.read(mealLogProvider.notifier).removeMeal(id);
   }
 }
 
 class _MealCard extends StatelessWidget {
-  const _MealCard({required this.meal, required this.onTap});
+  const _MealCard({
+    required this.meal,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   final MealEntry meal;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +87,10 @@ class _MealCard extends StatelessWidget {
             ],
           ),
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: onDelete,
+        ),
       ),
     );
   }
@@ -120,74 +118,6 @@ class _MacroRow extends StatelessWidget {
   Widget _macroChip(String label, double value, String unit) {
     return Chip(
       label: Text('$label ${value.toStringAsFixed(1)}$unit'),
-    );
-  }
-}
-
-class _MealDetailSheet extends StatelessWidget {
-  const _MealDetailSheet({
-    required this.meal,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final MealEntry meal;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final macros = meal.totalMacros;
-    final formattedTime = DateFormat('MMM d, h:mm a').format(meal.eatenAt);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            meal.name?.trim().isEmpty ?? true ? 'Meal' : meal.name!,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 4),
-          Text(formattedTime),
-          const SizedBox(height: 12),
-          _MacroRow(macros: macros),
-          const SizedBox(height: 16),
-          Text(
-            'Ingredients',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          ...meal.items.map(
-            (item) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(item.ingredient.name),
-              subtitle: Text('${item.grams.toStringAsFixed(0)} g'),
-              trailing: Text(
-                '${item.macros.calories.toStringAsFixed(0)} kcal',
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              FilledButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit),
-                label: const Text('Edit'),
-              ),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Delete'),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
