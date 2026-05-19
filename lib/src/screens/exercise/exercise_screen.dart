@@ -8,13 +8,17 @@ class ExerciseScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Exercise'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Exercises'),
-              Tab(text: 'Seances'),
-            ],
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: AppBar(
+            elevation: 0,
+            title: const SizedBox.shrink(),
+            bottom: const TabBar(
+              tabs: [
+                Tab(text: 'Exercises'),
+                Tab(text: 'Seances'),
+              ],
+            ),
           ),
         ),
         body: const TabBarView(

@@ -32,14 +32,18 @@ class _DietScreenState extends ConsumerState<DietScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Diet'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Meals'),
-            Tab(text: 'Ingredients'),
-          ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: AppBar(
+          elevation: 0,
+          title: const SizedBox.shrink(),
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'Meals'),
+              Tab(text: 'Ingredients'),
+            ],
+          ),
         ),
       ),
       body: TabBarView(
