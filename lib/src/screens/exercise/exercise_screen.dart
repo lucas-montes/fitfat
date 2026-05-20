@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/exercise_models.dart';
+import '../../models/seance_models.dart';
 import '../../providers/exercise_providers.dart';
+import '../../providers/seance_providers.dart';
+import 'seance_library_screen.dart';
+import 'create_seance_screen.dart';
 import '../../widgets/appbar_seance_indicator.dart';
 
 class ExerciseScreen extends ConsumerWidget {
@@ -80,10 +84,25 @@ class SeancesHistoryTab extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.all(16),
-          child: FilledButton.icon(
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Start Seance'),
-            onPressed: () => ref.read(activeSeanceProvider.notifier).startSeance(),
+          child: Row(
+            children: [
+              FilledButton.icon(
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Start Seance'),
+                onPressed: () => ref.read(activeSeanceProvider.notifier).startSeance(),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                icon: const Icon(Icons.library_books),
+                label: const Text('Seance Library'),
+                onPressed: () async {
+                  // ignore: use_build_context_synchronously
+                  await Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const SeanceLibraryScreen(),
+                  ));
+                },
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -102,7 +121,41 @@ class SeancesHistoryTab extends ConsumerWidget {
                           '${DateFormat('MMM d, h:mm a').format(seance.startedAt)} • '
                           '${_formatDuration(seance.duration)}',
                         ),
-                        trailing: const Icon(Icons.history),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.copy),
+                              onPressed: () async {
+                                // Create a template derived from this seance's exercises
+                                final exercises = seance.exercises.map((e) {
+                                  final lastSet = e.sets.isNotEmpty ? e.sets.last : null;
+                                  return ExerciseTemplate(
+                                    id: e.id,
+                                    name: e.exercise.name,
+                                    sets: e.sets.isNotEmpty ? e.sets.length : 3,
+                                    reps: lastSet?.reps ?? 8,
+                                    plannedWeightKg: lastSet?.weight,
+                                    restSeconds: 60,
+                                  );
+                                }).toList();
+                                final template = SeanceTemplate(
+                                  id: DateTime.now().microsecondsSinceEpoch.toString(),
+                                  name: 'From ${DateFormat('MMM d').format(seance.startedAt)}',
+                                  exercises: exercises,
+                                );
+                                await ref.read(templateListProvider.notifier).createTemplate(template);
+                                final created = ref.read(templateListProvider).last;
+                                // ignore: use_build_context_synchronously
+                                await Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) => CreateSeanceScreen(template: created),
+                                ));
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.history),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -293,7 +346,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
             const SizedBox(height: 24),
             if (entry.sets.isNotEmpty) ...[
               Card(
-                color: Colors.blue.withOpacity(0.1),
+                color: Colors.blue.withAlpha(26),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(

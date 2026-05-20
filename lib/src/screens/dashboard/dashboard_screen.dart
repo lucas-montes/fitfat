@@ -379,7 +379,7 @@ class StrengthTrendChart extends ConsumerWidget {
                 height: 8,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
-                  color: Colors.blue.withOpacity(0.2),
+                  color: Colors.blue.withAlpha(51),
                 ),
                 child: FractionallySizedBox(
                   widthFactor: maxWeight / 200,

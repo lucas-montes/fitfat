@@ -48,6 +48,7 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       completedAt: state!.completedAt,
       restBetweenSets: state!.restBetweenSets,
     );
+    // Note: returns void for compatibility; callers can inspect state if needed.
   }
 
   void addSet(int exerciseIndex, int reps, double weight) {
