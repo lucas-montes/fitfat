@@ -17,23 +17,29 @@
 
 ## Implementation phases
 
-- **Phase 1 (current):** Build all screens with mock data via Riverpod providers. Iterate on UI freely.
-- **Phase 2 (planned):** Replace mocks with Drift database, add barcode scanner and pedometer hardware integration.
+- **Phase 1 (current):** Complete all remaining features — Goals simplification, tab order fix, fl_chart strength trend, Drift persistence.
+- **Phase 2 (planned):** UI/UX polish pass — consistency, states, responsive layout — then validation and context sync.
 
 ## Current status
 
 - `main.dart` — app entry point with `ProviderScope` wrapper; bootstrap includes `FlutterForegroundTask.initCommunicationPort()` for background-service messaging
 - `lib/src/app.dart` — `FitFatApp` with `MaterialApp.router`
 - `lib/src/app_theme.dart` — Material 3 light/dark themes (Indigo seed)
-- `lib/src/router/` — GoRouter with 3 routes (diet, exercise, dashboard)
-- `lib/src/screens/` — Diet tab has Meals/Ingredients tabs; Exercise tab has Exercises/Seances tabs; Dashboard shows daily/monthly nutrition + goals
-- `lib/src/services/seance_foreground_service.dart` — NEW: Foreground service wrapper for background timer via `flutter_foreground_task`
-- `lib/src/widgets/appbar_seance_indicator.dart` — NEW: AppBar action widget showing running-seance icon + elapsed time; visible on all tabs
+- `lib/src/router/` — GoRouter with 3 routes (diet, exercise, dashboard) — currently opens on Diet as default (T07 will change to Dashboard)
+- `lib/src/screens/` — Diet tab has Meals/Ingredients tabs (full CRUD); Exercise tab has Exercises/Seances tabs (+ template library, create/edit/clone/start); Dashboard shows daily/monthly nutrition + goals
+- `lib/src/services/seance_foreground_service.dart` — Foreground service wrapper for background timer via `flutter_foreground_task`
+- `lib/src/widgets/appbar_seance_indicator.dart` — AppBar action widget showing running-seance icon + elapsed time; visible on all tabs
 - Platform changes: Android manifest (`FOREGROUND_SERVICE` permission), iOS plist/AppDelegate for background-task support
 
-**Latest iteration (Session X - T01):**
-- Implemented background timer + persistent notification for active seances
-- Added AppBar indicator across all tabs (Diet, Dashboard, Exercise) showing seance progress
-- Both Android (foreground service) and iOS (background task) platforms configured
-- All Dart code analyzer-clean; widget tests passing
-- Device testing pending (see `context/tmp/T01-implementation-summary.md`)
+**Completed features:**
+- Diet CRUD (meals + ingredients with add/edit/delete)
+- Exercise list, seance lifecycle (start/stop/add sets/timer/complete/history)
+- Seance template system (create/edit/clone/start from template, repository pattern)
+- Background timer with persistent notification (Android foreground service + iOS best-effort)
+- AppBar seance indicator on all tabs
+- Dashboard daily nutrition card with computed macro targets
+- Goal system: sealed `Goal` types (`StrengthGoal | BodyWeightGoal`) with user profile (age/sex/height/weight/activity) and TDEE-based macro computation (Mifflin-St Jeor)
+- Goal type selector dialog (Gain Strength / Change Body Weight) with read-only computed macros
+- Strength/bodyweight trend charts (placeholder implementations)
+
+**Next up:** Tab order fix (T07), fl_chart strength trend (T08), Drift persistence (T09), UI/UX polish (T10), validation (T11).

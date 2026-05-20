@@ -1,4 +1,7 @@
-# Seance & Dashboard UI Plan
+# [SUPERSEDED] Seance & Dashboard UI Plan
+
+> **Superseded by** `context/plans/unified-roadmap.md` (2026-05-20).
+> Tasks carried forward into the unified roadmap. Do not implement from this file.
 
 Last updated: 2026-05-20
 

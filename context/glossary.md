@@ -15,3 +15,10 @@
 | Weightlifting | Exercise tracked by sets, reps, weight, and rest time between sets. |
 | Drift | SQLite ORM for Dart. Planned for Phase 2 local storage. |
 | Pedometer | Phone built-in step sensor. Planned for Phase 2. |
+| User Profile | Personal data (age, sex, height, weight, activity level) used for TDEE computation. Set when creating a goal. |
+| TDEE | Total Daily Energy Expenditure, computed via Mifflin-St Jeor equation. Used to derive macro targets from goal type. |
+| Goal | A sealed type (`StrengthGoal | BodyWeightGoal`) representing the user's fitness objective. Each goal type has different macro computation rules. |
+| Strength Goal | Goal type: target a specific exercise weight (e.g. Bench Press → 100 kg). Protein = 2.2g/kg bodyweight. |
+| Body Weight Goal | Goal type: gain, lose, or maintain to a target weight. Protein varies by direction (2.0/2.4/1.8 g/kg). |
+| Activity Level | 5-level multiplier (Sedentary 1.2 → Very Active 1.9) used in TDEE calculation. |
+| Computed Macros | Read-only daily calorie/protein/carbs/fat targets derived from goal type + user profile via TDEE. |

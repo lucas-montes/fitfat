@@ -3,6 +3,10 @@ import '../models/dashboard_models.dart';
 import '../models/food_models.dart';
 import 'food_providers.dart';
 
+// ---------------------------------------------------------------------------
+// Chart period
+// ---------------------------------------------------------------------------
+
 final chartPeriodProvider = NotifierProvider<ChartPeriodNotifier, ChartPeriod>(
   ChartPeriodNotifier.new,
 );
@@ -16,32 +20,168 @@ class ChartPeriodNotifier extends Notifier<ChartPeriod> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// User profile
+// ---------------------------------------------------------------------------
 
-final goalProvider = NotifierProvider<GoalNotifier, NutritionGoal>(
-  GoalNotifier.new,
+final userProfileProvider = NotifierProvider<UserProfileNotifier, UserProfile?>(
+  UserProfileNotifier.new,
 );
+
+class UserProfileNotifier extends Notifier<UserProfile?> {
+  @override
+  UserProfile? build() => null;
+
+  void setProfile(UserProfile profile) {
+    state = profile;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Goal (sealed: StrengthGoal | BodyWeightGoal)
+// ---------------------------------------------------------------------------
+
+final goalProvider = NotifierProvider<GoalNotifier, Goal?>(GoalNotifier.new);
+
+class GoalNotifier extends Notifier<Goal?> {
+  @override
+  Goal? build() => null;
+
+  void setGoal(Goal goal) {
+    state = goal;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TDEE computation
+// ---------------------------------------------------------------------------
+
+/// Computes Basal Metabolic Rate using Mifflin-St Jeor equation.
+double _bmr(UserProfile profile) {
+  final base =
+      10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age;
+  return switch (profile.sex) {
+    Sex.male => base + 5,
+    Sex.female => base - 161,
+  };
+}
+
+/// Computes Total Daily Energy Expenditure.
+double _tdee(UserProfile profile) {
+  return _bmr(profile) * profile.activityLevel.factor;
+}
+
+/// Returns the caloric target per day for the given goal and TDEE.
+double _caloricTarget(Goal goal, double tdee) {
+  return switch (goal) {
+    StrengthGoal() => tdee,
+    BodyWeightGoal(direction: BodyWeightDirection.gain) => tdee + 300,
+    BodyWeightGoal(direction: BodyWeightDirection.lose) => tdee - 500,
+    BodyWeightGoal(direction: BodyWeightDirection.maintain) => tdee,
+  };
+}
+
+/// Returns the protein grams-per-kg-bodyweight factor for the given goal.
+double _proteinFactor(Goal goal) {
+  return switch (goal) {
+    StrengthGoal() => 2.2,
+    BodyWeightGoal(direction: BodyWeightDirection.gain) => 2.0,
+    BodyWeightGoal(direction: BodyWeightDirection.lose) => 2.4,
+    BodyWeightGoal(direction: BodyWeightDirection.maintain) => 1.8,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Computed macros — derived from profile + goal
+// ---------------------------------------------------------------------------
+
+final computedMacrosProvider = Provider<ComputedMacros>((ref) {
+  final profile = ref.watch(userProfileProvider);
+  final goal = ref.watch(goalProvider);
+
+  if (profile == null || goal == null) {
+    return ComputedMacros.zero;
+  }
+
+  final tdee = _tdee(profile);
+  final targetCalories = _caloricTarget(
+    goal,
+    tdee,
+  ).clamp(1200, double.infinity);
+
+  // Protein: g/kg bodyweight
+  final proteinGrams = (_proteinFactor(goal) * profile.weightKg)
+      .roundToDouble();
+
+  // Fat: 25% of total calories / 9 cal per gram
+  final fatGrams = ((targetCalories * 0.25) / 9).roundToDouble();
+
+  // Carbs: remaining calories / 4 cal per gram
+  final proteinCalories = proteinGrams * 4;
+  final fatCalories = fatGrams * 9;
+  final carbCalories = (targetCalories - proteinCalories - fatCalories).clamp(
+    0,
+    double.infinity,
+  );
+  final carbGrams = (carbCalories / 4).roundToDouble();
+
+  return ComputedMacros(
+    dailyCalories: targetCalories.roundToDouble(),
+    dailyProtein: proteinGrams,
+    dailyCarbs: carbGrams,
+    dailyFat: fatGrams,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Legacy NutritionGoal provider — wraps computedMacros into old shape
+// for any remaining consumers (will be removed in T08/T09)
+// ---------------------------------------------------------------------------
+
+final legacyNutritionGoalProvider = Provider<NutritionGoal>((ref) {
+  final macros = ref.watch(computedMacrosProvider);
+  final goal = ref.watch(goalProvider);
+
+  final targetWeight = switch (goal) {
+    StrengthGoal(:final targetWeightKg) => targetWeightKg,
+    BodyWeightGoal(:final targetWeightKg) => targetWeightKg,
+    null => 80.0,
+  };
+
+  return NutritionGoal(
+    dailyCalories: macros.dailyCalories,
+    dailyProtein: macros.dailyProtein,
+    dailyCarbs: macros.dailyCarbs,
+    dailyFat: macros.dailyFat,
+    targetWeight: targetWeight,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Daily / monthly nutrition (unchanged)
+// ---------------------------------------------------------------------------
 
 final dailyNutritionProvider = Provider<MacroNutrients>((ref) {
   final meals = ref.watch(mealLogProvider);
   final today = DateTime.now();
 
   return meals
-      .where((meal) =>
-          meal.eatenAt.year == today.year &&
-          meal.eatenAt.month == today.month &&
-          meal.eatenAt.day == today.day)
-      .fold(
-        MacroNutrients.zero,
-        (sum, meal) => sum + meal.totalMacros,
-      );
+      .where(
+        (meal) =>
+            meal.eatenAt.year == today.year &&
+            meal.eatenAt.month == today.month &&
+            meal.eatenAt.day == today.day,
+      )
+      .fold(MacroNutrients.zero, (sum, meal) => sum + meal.totalMacros);
 });
 
 final monthlyNutritionProvider = Provider<MacroNutrients>((ref) {
   final meals = ref.watch(mealLogProvider);
   final now = DateTime.now();
 
-  final mealsThisMonth = meals.where((meal) =>
-      meal.eatenAt.year == now.year && meal.eatenAt.month == now.month);
+  final mealsThisMonth = meals.where(
+    (meal) => meal.eatenAt.year == now.year && meal.eatenAt.month == now.month,
+  );
 
   if (mealsThisMonth.isEmpty) return MacroNutrients.zero;
 
@@ -57,46 +197,17 @@ final monthlyNutritionProvider = Provider<MacroNutrients>((ref) {
   return total.scale(1.0 / daysInMonth);
 });
 
-final strengthTrendProvider =
-    Provider<List<StrengthDataPoint>>((ref) {
+// ---------------------------------------------------------------------------
+// Trend data (unchanged, still seed data until T08/T09)
+// ---------------------------------------------------------------------------
+
+final strengthTrendProvider = Provider<List<StrengthDataPoint>>((ref) {
   return _seedStrengthData();
 });
 
-final weightTrendProvider =
-    Provider<List<WeightDataPoint>>((ref) {
+final weightTrendProvider = Provider<List<WeightDataPoint>>((ref) {
   return _seedWeightData();
 });
-
-class GoalNotifier extends Notifier<NutritionGoal> {
-  @override
-  NutritionGoal build() => _defaultGoal();
-
-  void updateGoal({
-    double? dailyCalories,
-    double? dailyProtein,
-    double? dailyCarbs,
-    double? dailyFat,
-    double? targetWeight,
-  }) {
-    state = NutritionGoal(
-      dailyCalories: dailyCalories ?? state.dailyCalories,
-      dailyProtein: dailyProtein ?? state.dailyProtein,
-      dailyCarbs: dailyCarbs ?? state.dailyCarbs,
-      dailyFat: dailyFat ?? state.dailyFat,
-      targetWeight: targetWeight ?? state.targetWeight,
-    );
-  }
-}
-
-NutritionGoal _defaultGoal() {
-  return const NutritionGoal(
-    dailyCalories: 2000,
-    dailyProtein: 150,
-    dailyCarbs: 200,
-    dailyFat: 65,
-    targetWeight: 80,
-  );
-}
 
 List<StrengthDataPoint> _seedStrengthData() {
   final now = DateTime.now();
@@ -106,25 +217,31 @@ List<StrengthDataPoint> _seedStrengthData() {
     final date = now.subtract(Duration(days: i));
 
     // Bench Press trend
-    data.add(StrengthDataPoint(
-      date: date,
-      exercise: 'Bench Press',
-      maxWeight: 100 + (90 - i) * 0.3 + (i % 5) * 2,
-    ));
+    data.add(
+      StrengthDataPoint(
+        date: date,
+        exercise: 'Bench Press',
+        maxWeight: 100 + (90 - i) * 0.3 + (i % 5) * 2,
+      ),
+    );
 
     // Deadlift trend
-    data.add(StrengthDataPoint(
-      date: date,
-      exercise: 'Deadlift',
-      maxWeight: 150 + (90 - i) * 0.5 + (i % 7) * 2,
-    ));
+    data.add(
+      StrengthDataPoint(
+        date: date,
+        exercise: 'Deadlift',
+        maxWeight: 150 + (90 - i) * 0.5 + (i % 7) * 2,
+      ),
+    );
 
     // Squat trend
-    data.add(StrengthDataPoint(
-      date: date,
-      exercise: 'Squat',
-      maxWeight: 120 + (90 - i) * 0.4 + (i % 6) * 1.5,
-    ));
+    data.add(
+      StrengthDataPoint(
+        date: date,
+        exercise: 'Squat',
+        maxWeight: 120 + (90 - i) * 0.4 + (i % 6) * 1.5,
+      ),
+    );
   }
 
   return data;
@@ -136,10 +253,12 @@ List<WeightDataPoint> _seedWeightData() {
 
   for (int i = 90; i >= 0; i--) {
     final date = now.subtract(Duration(days: i));
-    data.add(WeightDataPoint(
-      date: date,
-      weight: 85 - (90 - i) * 0.15 + (i % 10) * 0.2,
-    ));
+    data.add(
+      WeightDataPoint(
+        date: date,
+        weight: 85 - (90 - i) * 0.15 + (i % 10) * 0.2,
+      ),
+    );
   }
 
   return data;

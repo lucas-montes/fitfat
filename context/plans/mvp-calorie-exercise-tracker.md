@@ -1,4 +1,7 @@
-# Plan: mvp-calorie-exercise-tracker
+# [SUPERSEDED] Plan: mvp-calorie-exercise-tracker
+
+> **Superseded by** `context/plans/unified-roadmap.md` (2026-05-20).
+> Tasks carried forward into the unified roadmap. Do not implement from this file.
 
 ## Change Summary
 

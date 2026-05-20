@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../models/dashboard_models.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../widgets/appbar_seance_indicator.dart';
@@ -33,13 +34,17 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Daily nutrition card — reads computed macros
+// ---------------------------------------------------------------------------
+
 class DailyNutritionCard extends ConsumerWidget {
   const DailyNutritionCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dailyNutrition = ref.watch(dailyNutritionProvider);
-    final goal = ref.watch(goalProvider);
+    final macros = ref.watch(computedMacrosProvider);
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -48,42 +53,47 @@ class DailyNutritionCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Today',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Today', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             _buildMacroRow(
               context,
               'Calories',
-              dailyNutrition.calories.toStringAsFixed(0),
-              goal.dailyCalories.toStringAsFixed(0),
+              '${dailyNutrition.calories.toStringAsFixed(0)} kcal',
+              '${macros.dailyCalories.toStringAsFixed(0)} kcal',
               Colors.blue,
             ),
             const SizedBox(height: 12),
             _buildMacroRow(
               context,
               'Protein',
-              dailyNutrition.protein.toStringAsFixed(1),
-              goal.dailyProtein.toStringAsFixed(1),
+              '${dailyNutrition.protein.toStringAsFixed(1)}g',
+              '${macros.dailyProtein.toStringAsFixed(0)}g',
               Colors.red,
             ),
             const SizedBox(height: 12),
             _buildMacroRow(
               context,
               'Carbs',
-              dailyNutrition.carbs.toStringAsFixed(1),
-              goal.dailyCarbs.toStringAsFixed(1),
+              '${dailyNutrition.carbs.toStringAsFixed(1)}g',
+              '${macros.dailyCarbs.toStringAsFixed(0)}g',
               Colors.orange,
             ),
             const SizedBox(height: 12),
             _buildMacroRow(
               context,
               'Fat',
-              dailyNutrition.fat.toStringAsFixed(1),
-              goal.dailyFat.toStringAsFixed(1),
+              '${dailyNutrition.fat.toStringAsFixed(1)}g',
+              '${macros.dailyFat.toStringAsFixed(0)}g',
               Colors.green,
             ),
+            const SizedBox(height: 8),
+            if (macros == ComputedMacros.zero)
+              Text(
+                'Set a goal and your profile to see daily targets',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
           ],
         ),
       ),
@@ -111,11 +121,15 @@ class DailyNutritionCard extends ConsumerWidget {
             Text(label),
           ],
         ),
-        Text('$value / $target g'),
+        Text('$value / $target'),
       ],
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Goals card — shows current goal type and computed macros
+// ---------------------------------------------------------------------------
 
 class GoalsCard extends ConsumerWidget {
   const GoalsCard({super.key});
@@ -123,6 +137,7 @@ class GoalsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goal = ref.watch(goalProvider);
+    final macros = ref.watch(computedMacrosProvider);
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -134,96 +149,161 @@ class GoalsCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Goals',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
+                Text('Goals', style: Theme.of(context).textTheme.titleLarge),
                 IconButton(
                   icon: const Icon(Icons.edit),
-                  onPressed: () => _showGoalsEditor(context, ref, goal),
+                  onPressed: () => _showGoalSetup(context, ref),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            _buildGoalRow('Daily Calories', '${goal.dailyCalories.toStringAsFixed(0)} kcal'),
-            const SizedBox(height: 8),
-            _buildGoalRow('Daily Protein', '${goal.dailyProtein.toStringAsFixed(0)}g'),
-            const SizedBox(height: 8),
-            _buildGoalRow('Daily Carbs', '${goal.dailyCarbs.toStringAsFixed(0)}g'),
-            const SizedBox(height: 8),
-            _buildGoalRow('Daily Fat', '${goal.dailyFat.toStringAsFixed(0)}g'),
-            const SizedBox(height: 8),
-            _buildGoalRow('Target Weight', '${goal.targetWeight.toStringAsFixed(1)}kg'),
+            if (goal == null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children: [
+                    Text(
+                      'No goal set yet.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('Set Your Goal'),
+                      onPressed: () => _showGoalSetup(context, ref),
+                    ),
+                  ],
+                ),
+              )
+            else ...[
+              _buildGoalTypeHeader(context, goal),
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'Daily Targets (computed)',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              _buildGoalRow(
+                'Calories',
+                '${macros.dailyCalories.toStringAsFixed(0)} kcal',
+              ),
+              const SizedBox(height: 4),
+              _buildGoalRow(
+                'Protein',
+                '${macros.dailyProtein.toStringAsFixed(0)}g',
+              ),
+              const SizedBox(height: 4),
+              _buildGoalRow(
+                'Carbs',
+                '${macros.dailyCarbs.toStringAsFixed(0)}g',
+              ),
+              const SizedBox(height: 4),
+              _buildGoalRow('Fat', '${macros.dailyFat.toStringAsFixed(0)}g'),
+            ],
           ],
         ),
       ),
     );
   }
 
+  Widget _buildGoalTypeHeader(BuildContext context, Goal goal) {
+    return switch (goal) {
+      StrengthGoal(:final exerciseName, :final targetWeightKg) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Chip(
+            label: const Text('Gain Strength'),
+            avatar: const Icon(Icons.fitness_center, size: 18),
+          ),
+          const SizedBox(height: 8),
+          Text('$exerciseName → ${targetWeightKg.toStringAsFixed(1)} kg'),
+        ],
+      ),
+      BodyWeightGoal(
+        :final targetWeightKg,
+        :final direction,
+        :final targetDate,
+      ) =>
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Chip(
+              label: Text('${direction.label} Weight'),
+              avatar: const Icon(Icons.monitor_weight, size: 18),
+            ),
+            const SizedBox(height: 8),
+            Text('Target: ${targetWeightKg.toStringAsFixed(1)} kg'),
+            if (targetDate != null)
+              Text('By: ${DateFormat('MMM d, yyyy').format(targetDate)}'),
+          ],
+        ),
+    };
+  }
+
   Widget _buildGoalRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(fontSize: 13)),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        ),
       ],
     );
   }
 
-  void _showGoalsEditor(
-    BuildContext context,
-    WidgetRef ref,
-    NutritionGoal goal,
-  ) {
-    showDialog(
+  void _showGoalSetup(BuildContext context, WidgetRef ref) {
+    final profile = ref.read(userProfileProvider);
+    if (profile == null) {
+      _showProfileSetup(context, ref);
+    } else {
+      showDialog(
+        context: context,
+        builder: (_) => const GoalTypeSelectorDialog(),
+      );
+    }
+  }
+
+  Future<void> _showProfileSetup(BuildContext context, WidgetRef ref) async {
+    final profile = await showDialog<UserProfile>(
       context: context,
-      builder: (context) => GoalsEditDialog(goal: goal),
+      builder: (_) => const ProfileSetupDialog(),
     );
+    if (profile != null && context.mounted) {
+      ref.read(userProfileProvider.notifier).setProfile(profile);
+      showDialog(
+        context: context,
+        builder: (_) => const GoalTypeSelectorDialog(),
+      );
+    }
   }
 }
 
-class GoalsEditDialog extends ConsumerStatefulWidget {
-  const GoalsEditDialog({required this.goal, super.key});
+// ---------------------------------------------------------------------------
+// Profile setup dialog
+// ---------------------------------------------------------------------------
 
-  final NutritionGoal goal;
+class ProfileSetupDialog extends ConsumerStatefulWidget {
+  const ProfileSetupDialog({super.key});
 
   @override
-  ConsumerState<GoalsEditDialog> createState() => _GoalsEditDialogState();
+  ConsumerState<ProfileSetupDialog> createState() => _ProfileSetupDialogState();
 }
 
-class _GoalsEditDialogState extends ConsumerState<GoalsEditDialog> {
-  late TextEditingController _caloriesController;
-  late TextEditingController _proteinController;
-  late TextEditingController _carbsController;
-  late TextEditingController _fatController;
-  late TextEditingController _weightController;
-
-  @override
-  void initState() {
-    super.initState();
-    _caloriesController = TextEditingController(
-      text: widget.goal.dailyCalories.toStringAsFixed(0),
-    );
-    _proteinController = TextEditingController(
-      text: widget.goal.dailyProtein.toStringAsFixed(0),
-    );
-    _carbsController = TextEditingController(
-      text: widget.goal.dailyCarbs.toStringAsFixed(0),
-    );
-    _fatController = TextEditingController(
-      text: widget.goal.dailyFat.toStringAsFixed(0),
-    );
-    _weightController = TextEditingController(
-      text: widget.goal.targetWeight.toStringAsFixed(1),
-    );
-  }
+class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
+  final _ageController = TextEditingController();
+  final _heightController = TextEditingController();
+  final _weightController = TextEditingController();
+  Sex _sex = Sex.male;
+  ActivityLevel _activity = ActivityLevel.moderate;
 
   @override
   void dispose() {
-    _caloriesController.dispose();
-    _proteinController.dispose();
-    _carbsController.dispose();
-    _fatController.dispose();
+    _ageController.dispose();
+    _heightController.dispose();
     _weightController.dispose();
     super.dispose();
   }
@@ -231,43 +311,37 @@ class _GoalsEditDialogState extends ConsumerState<GoalsEditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Edit Goals'),
+      title: const Text('Your Profile'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: _caloriesController,
+              controller: _ageController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                label: Text('Daily Calories'),
+                label: Text('Age'),
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _proteinController,
-              keyboardType: TextInputType.number,
+            DropdownButtonFormField<Sex>(
+              initialValue: _sex,
               decoration: const InputDecoration(
-                label: Text('Daily Protein (g)'),
+                label: Text('Sex'),
                 border: OutlineInputBorder(),
               ),
+              items: Sex.values
+                  .map((s) => DropdownMenuItem(value: s, child: Text(s.label)))
+                  .toList(),
+              onChanged: (v) => setState(() => _sex = v!),
             ),
             const SizedBox(height: 12),
             TextField(
-              controller: _carbsController,
+              controller: _heightController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                label: Text('Daily Carbs (g)'),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _fatController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                label: Text('Daily Fat (g)'),
+                label: Text('Height (cm)'),
                 border: OutlineInputBorder(),
               ),
             ),
@@ -276,9 +350,21 @@ class _GoalsEditDialogState extends ConsumerState<GoalsEditDialog> {
               controller: _weightController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                label: Text('Target Weight (kg)'),
+                label: Text('Weight (kg)'),
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<ActivityLevel>(
+              initialValue: _activity,
+              decoration: const InputDecoration(
+                label: Text('Activity Level'),
+                border: OutlineInputBorder(),
+              ),
+              items: ActivityLevel.values
+                  .map((a) => DropdownMenuItem(value: a, child: Text(a.label)))
+                  .toList(),
+              onChanged: (v) => setState(() => _activity = v!),
             ),
           ],
         ),
@@ -290,14 +376,20 @@ class _GoalsEditDialogState extends ConsumerState<GoalsEditDialog> {
         ),
         FilledButton(
           onPressed: () {
-            ref.read(goalProvider.notifier).updateGoal(
-                  dailyCalories: double.tryParse(_caloriesController.text),
-                  dailyProtein: double.tryParse(_proteinController.text),
-                  dailyCarbs: double.tryParse(_carbsController.text),
-                  dailyFat: double.tryParse(_fatController.text),
-                  targetWeight: double.tryParse(_weightController.text),
-                );
-            Navigator.pop(context);
+            final age = int.tryParse(_ageController.text);
+            final height = double.tryParse(_heightController.text);
+            final weight = double.tryParse(_weightController.text);
+            if (age == null || height == null || weight == null) return;
+            Navigator.pop(
+              context,
+              UserProfile(
+                age: age,
+                sex: _sex,
+                heightCm: height,
+                weightKg: weight,
+                activityLevel: _activity,
+              ),
+            );
           },
           child: const Text('Save'),
         ),
@@ -305,6 +397,196 @@ class _GoalsEditDialogState extends ConsumerState<GoalsEditDialog> {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Goal type selector dialog
+// ---------------------------------------------------------------------------
+
+class GoalTypeSelectorDialog extends ConsumerStatefulWidget {
+  const GoalTypeSelectorDialog({super.key});
+
+  @override
+  ConsumerState<GoalTypeSelectorDialog> createState() =>
+      _GoalTypeSelectorDialogState();
+}
+
+class _GoalTypeSelectorDialogState
+    extends ConsumerState<GoalTypeSelectorDialog> {
+  bool _isStrength = true;
+
+  // Strength fields
+  final _exerciseController = TextEditingController();
+  final _strengthTargetController = TextEditingController();
+  DateTime? _strengthTargetDate;
+
+  // Body weight fields
+  final _bwTargetController = TextEditingController();
+  BodyWeightDirection _direction = BodyWeightDirection.lose;
+  DateTime? _bwTargetDate;
+
+  @override
+  void dispose() {
+    _exerciseController.dispose();
+    _strengthTargetController.dispose();
+    _bwTargetController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Set Your Goal'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: true, label: Text('Gain Strength')),
+                ButtonSegment(value: false, label: Text('Change Weight')),
+              ],
+              selected: {_isStrength},
+              onSelectionChanged: (v) => setState(() => _isStrength = v.first),
+            ),
+            const SizedBox(height: 16),
+            if (_isStrength)
+              _buildStrengthFields()
+            else
+              _buildBodyWeightFields(),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _saveGoal, child: const Text('Save')),
+      ],
+    );
+  }
+
+  Widget _buildStrengthFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: _exerciseController,
+          decoration: const InputDecoration(
+            label: Text('Exercise (e.g. Bench Press)'),
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _strengthTargetController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            label: Text('Target Weight (kg)'),
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildDatePicker(
+          label: 'Target date (optional)',
+          date: _strengthTargetDate,
+          onPicked: (d) => setState(() => _strengthTargetDate = d),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBodyWeightFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DropdownButtonFormField<BodyWeightDirection>(
+          initialValue: _direction,
+          decoration: const InputDecoration(
+            label: Text('Direction'),
+            border: OutlineInputBorder(),
+          ),
+          items: BodyWeightDirection.values
+              .map((d) => DropdownMenuItem(value: d, child: Text(d.label)))
+              .toList(),
+          onChanged: (v) => setState(() => _direction = v!),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _bwTargetController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            label: Text('Target Weight (kg)'),
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildDatePicker(
+          label: 'Target date (optional)',
+          date: _bwTargetDate,
+          onPicked: (d) => setState(() => _bwTargetDate = d),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatePicker({
+    required String label,
+    required DateTime? date,
+    required ValueChanged<DateTime> onPicked,
+  }) {
+    final formatted = date != null
+        ? DateFormat('MMM d, yyyy').format(date)
+        : 'Not set';
+    return Row(
+      children: [
+        Expanded(child: Text('$label: $formatted')),
+        TextButton(
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: date ?? DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+            );
+            if (picked != null) onPicked(picked);
+          },
+          child: const Text('Pick'),
+        ),
+      ],
+    );
+  }
+
+  void _saveGoal() {
+    final Goal goal;
+    if (_isStrength) {
+      final exercise = _exerciseController.text.trim();
+      final target = double.tryParse(_strengthTargetController.text);
+      if (exercise.isEmpty || target == null) return;
+      goal = StrengthGoal(
+        exerciseName: exercise,
+        targetWeightKg: target,
+        targetDate: _strengthTargetDate,
+      );
+    } else {
+      final target = double.tryParse(_bwTargetController.text);
+      if (target == null) return;
+      goal = BodyWeightGoal(
+        targetWeightKg: target,
+        direction: _direction,
+        targetDate: _bwTargetDate,
+      );
+    }
+    ref.read(goalProvider.notifier).setGoal(goal);
+    Navigator.pop(context);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Charts (unchanged — kept from original, will be replaced in T08)
+// ---------------------------------------------------------------------------
 
 class StrengthTrendChart extends ConsumerWidget {
   const StrengthTrendChart({super.key});
@@ -344,7 +626,9 @@ class StrengthTrendChart extends ConsumerWidget {
                   }).toList(),
                   onChanged: (newPeriod) {
                     if (newPeriod != null) {
-                      ref.read(chartPeriodProvider.notifier).updatePeriod(newPeriod);
+                      ref
+                          .read(chartPeriodProvider.notifier)
+                          .updatePeriod(newPeriod);
                     }
                   },
                 ),
@@ -368,7 +652,9 @@ class StrengthTrendChart extends ConsumerWidget {
     for (final exercise in exercises) {
       final exerciseData = data.where((d) => d.exercise == exercise).toList();
       if (exerciseData.isNotEmpty) {
-        final maxWeight = exerciseData.map((d) => d.maxWeight).reduce((a, b) => a > b ? a : b);
+        final maxWeight = exerciseData
+            .map((d) => d.maxWeight)
+            .reduce((a, b) => a > b ? a : b);
         widgets.add(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,14 +702,20 @@ class BodyweightTrendChart extends ConsumerWidget {
 
     final now = DateTime.now();
     final minDate = now.subtract(const Duration(days: 90));
-    final filteredData = weightData.where((d) => d.date.isAfter(minDate)).toList();
+    final filteredData = weightData
+        .where((d) => d.date.isAfter(minDate))
+        .toList();
 
     if (filteredData.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final minWeight = filteredData.map((d) => d.weight).reduce((a, b) => a < b ? a : b);
-    final maxWeight = filteredData.map((d) => d.weight).reduce((a, b) => a > b ? a : b);
+    final minWeight = filteredData
+        .map((d) => d.weight)
+        .reduce((a, b) => a < b ? a : b);
+    final maxWeight = filteredData
+        .map((d) => d.weight)
+        .reduce((a, b) => a > b ? a : b);
     final range = maxWeight - minWeight;
 
     return Card(
@@ -442,30 +734,27 @@ class BodyweightTrendChart extends ConsumerWidget {
               height: 120,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(
-                  filteredData.length,
-                  (i) {
-                    final data = filteredData[i];
-                    final normalizedHeight = range > 0
-                        ? (data.weight - minWeight) / range
-                        : 0.5;
-                    return Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Container(
-                            height: normalizedHeight * 100,
-                            width: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
+                children: List.generate(filteredData.length, (i) {
+                  final data = filteredData[i];
+                  final normalizedHeight = range > 0
+                      ? (data.weight - minWeight) / range
+                      : 0.5;
+                  return Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          height: normalizedHeight * 100,
+                          width: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ),
             ),
             const SizedBox(height: 12),
