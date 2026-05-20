@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/exercise_models.dart';
 import '../../providers/exercise_providers.dart';
+import '../../widgets/appbar_seance_indicator.dart';
 
 class ExerciseScreen extends ConsumerWidget {
   const ExerciseScreen({super.key});
@@ -23,6 +24,7 @@ class ExerciseScreen extends ConsumerWidget {
           child: AppBar(
             elevation: 0,
             title: const SizedBox.shrink(),
+            actions: const [SeanceAppBarAction()],
             bottom: const TabBar(
               tabs: [
                 Tab(text: 'Exercises'),
@@ -43,7 +45,7 @@ class ExerciseScreen extends ConsumerWidget {
 }
 
 class ExercisesListTab extends ConsumerWidget {
-  const ExercisesListTab();
+  const ExercisesListTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,7 +70,7 @@ class ExercisesListTab extends ConsumerWidget {
 }
 
 class SeancesHistoryTab extends ConsumerWidget {
-  const SeancesHistoryTab();
+  const SeancesHistoryTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

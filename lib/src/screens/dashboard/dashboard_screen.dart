@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/dashboard_models.dart';
 import '../../providers/dashboard_providers.dart';
+import '../../widgets/appbar_seance_indicator.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -12,6 +13,7 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         elevation: 0,
         title: const SizedBox.shrink(),
+        actions: const [SeanceAppBarAction()],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -32,7 +34,7 @@ class DashboardScreen extends ConsumerWidget {
 }
 
 class DailyNutritionCard extends ConsumerWidget {
-  const DailyNutritionCard();
+  const DailyNutritionCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -116,7 +118,7 @@ class DailyNutritionCard extends ConsumerWidget {
 }
 
 class GoalsCard extends ConsumerWidget {
-  const GoalsCard();
+  const GoalsCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -305,7 +307,7 @@ class _GoalsEditDialogState extends ConsumerState<GoalsEditDialog> {
 }
 
 class StrengthTrendChart extends ConsumerWidget {
-  const StrengthTrendChart();
+  const StrengthTrendChart({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -342,7 +344,7 @@ class StrengthTrendChart extends ConsumerWidget {
                   }).toList(),
                   onChanged: (newPeriod) {
                     if (newPeriod != null) {
-                      ref.read(chartPeriodProvider.notifier).state = newPeriod;
+                      ref.read(chartPeriodProvider.notifier).updatePeriod(newPeriod);
                     }
                   },
                 ),
@@ -406,7 +408,7 @@ class StrengthTrendChart extends ConsumerWidget {
 }
 
 class BodyweightTrendChart extends ConsumerWidget {
-  const BodyweightTrendChart();
+  const BodyweightTrendChart({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

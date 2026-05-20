@@ -22,9 +22,18 @@
 
 ## Current status
 
-- `main.dart` — app entry point with `ProviderScope` wrapper
+- `main.dart` — app entry point with `ProviderScope` wrapper; bootstrap includes `FlutterForegroundTask.initCommunicationPort()` for background-service messaging
 - `lib/src/app.dart` — `FitFatApp` with `MaterialApp.router`
 - `lib/src/app_theme.dart` — Material 3 light/dark themes (Indigo seed)
 - `lib/src/router/` — GoRouter with 3 routes (diet, exercise, dashboard)
-- `lib/src/screens/diet/diet_screen.dart` — Meals/Ingredients tabs use a contextual `AppBar` add action that stays in sync with the active tab
-- `lib/src/screens/` — Diet tab has Meals/Ingredients tabs; Exercise tab has Exercises/Seances tabs
+- `lib/src/screens/` — Diet tab has Meals/Ingredients tabs; Exercise tab has Exercises/Seances tabs; Dashboard shows daily/monthly nutrition + goals
+- `lib/src/services/seance_foreground_service.dart` — NEW: Foreground service wrapper for background timer via `flutter_foreground_task`
+- `lib/src/widgets/appbar_seance_indicator.dart` — NEW: AppBar action widget showing running-seance icon + elapsed time; visible on all tabs
+- Platform changes: Android manifest (`FOREGROUND_SERVICE` permission), iOS plist/AppDelegate for background-task support
+
+**Latest iteration (Session X - T01):**
+- Implemented background timer + persistent notification for active seances
+- Added AppBar indicator across all tabs (Diet, Dashboard, Exercise) showing seance progress
+- Both Android (foreground service) and iOS (background task) platforms configured
+- All Dart code analyzer-clean; widget tests passing
+- Device testing pending (see `context/tmp/T01-implementation-summary.md`)

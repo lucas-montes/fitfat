@@ -5,6 +5,7 @@ import '../../providers/food_providers.dart';
 import '../food/add_meal_screen.dart';
 import '../food/custom_ingredient_screen.dart';
 import '../food/widgets/food_entry_card.dart';
+import '../../widgets/appbar_seance_indicator.dart';
 
 class DietScreen extends ConsumerStatefulWidget {
   const DietScreen({super.key});
@@ -37,6 +38,7 @@ class _DietScreenState extends ConsumerState<DietScreen>
         child: AppBar(
           elevation: 0,
           title: const SizedBox.shrink(),
+            actions: const [SeanceAppBarAction()],
           bottom: TabBar(
             controller: _tabController,
             tabs: const [

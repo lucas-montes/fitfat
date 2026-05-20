@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../models/exercise_models.dart';
+import '../services/seance_foreground_service.dart';
 
 final exerciseListProvider = Provider<List<ExerciseDefinition>>((ref) {
   return _seedExercises();
@@ -26,6 +29,8 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       startedAt: DateTime.now(),
       exercises: [],
     );
+    // Start notification/foreground task for the active seance
+    unawaited(SeanceForegroundService.instance.start(state!.startedAt));
   }
 
   void addExercise(ExerciseDefinition exercise) {
@@ -80,6 +85,8 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
     );
     ref.read(seanceHistoryProvider.notifier).addSeance(completed);
     state = null;
+    // Stop notifications/foreground tasks
+    unawaited(SeanceForegroundService.instance.stop());
   }
 }
 

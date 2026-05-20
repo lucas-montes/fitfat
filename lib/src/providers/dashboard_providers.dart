@@ -10,6 +10,10 @@ final chartPeriodProvider = NotifierProvider<ChartPeriodNotifier, ChartPeriod>(
 class ChartPeriodNotifier extends Notifier<ChartPeriod> {
   @override
   ChartPeriod build() => ChartPeriod.thirtyDays;
+
+  void updatePeriod(ChartPeriod period) {
+    state = period;
+  }
 }
 
 
