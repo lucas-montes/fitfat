@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/seance_providers.dart';
+import '../../providers/exercise_providers.dart';
 
 import 'create_seance_screen.dart';
 
@@ -12,7 +13,7 @@ class SeanceLibraryScreen extends ConsumerWidget {
     final templates = ref.watch(templateListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Seance Library')),
+      appBar: AppBar(title: const Text('Templates: Start or Create')),
       body: templates.isEmpty
           ? const Center(child: Text('No templates yet'))
           : ListView.separated(
@@ -29,9 +30,17 @@ class SeanceLibraryScreen extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
+                          icon: const Icon(Icons.play_arrow),
+                          tooltip: 'Start',
+                          onPressed: () {
+                            // Start a seance from this template
+                            ref.read(activeSeanceProvider.notifier).startSeanceFromTemplate(t);
+                            Navigator.of(context).pop(); // Go back to main screen to show active seance
+                          },
+                        ),
+                        IconButton(
                           icon: const Icon(Icons.edit),
                           onPressed: () async {
-                            // ignore: use_build_context_synchronously
                             await Navigator.of(context).push(MaterialPageRoute(
                               builder: (_) => CreateSeanceScreen(template: t),
                             ));
@@ -44,8 +53,6 @@ class SeanceLibraryScreen extends ConsumerWidget {
                             final cloned = await ref
                                 .read(templateListProvider.notifier)
                                 .cloneTemplate(t.id);
-                            // immediately navigate to edit the cloned template
-                            // ignore: use_build_context_synchronously
                             await Navigator.of(context).push(MaterialPageRoute(
                               builder: (_) => CreateSeanceScreen(template: cloned),
                             ));
@@ -66,7 +73,6 @@ class SeanceLibraryScreen extends ConsumerWidget {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // ignore: use_build_context_synchronously
           await Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => const CreateSeanceScreen(),
           ));

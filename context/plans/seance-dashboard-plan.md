@@ -1,6 +1,6 @@
 # Seance & Dashboard UI Plan
 
-Last updated: 2026-05-19
+Last updated: 2026-05-20
 
 Summary
 -------
@@ -61,17 +61,26 @@ T01 — Current Seance lifecycle & background timer
   - On iOS device: confirm local notification appears and in-app indicator behaves as expected; document any limitations.
 
 T02 — Create vs Start workflows, seance templates and cloning
+- **Status**: IN PROGRESS ◐ (Partially implemented)
 - Description: Add distinct flows for "Create Seance" (template) and "Start Seance" (begin active) and implement cloning/redo to another day.
-- Subtasks:
-  - Add a "Seance Library" (list of prepared templates) and a "Created Seances" area (templates not yet started).
-  - Allow creating a template with exercises, planned sets/reps/weights/rest times.
-  - When starting a seance, allow selecting a template or starting an ad-hoc seance (exercise list only).
-  - Implement Clone/Redo action available from seance history item: clone copies exercises (optionally include sets/weights — default: exercises + planned meta, not historical actual sets). Allow editing before start.
+- Implemented in latest session:
+  - Added in-memory template domain + repository port/adapter (`SeanceRepository`, `InMemorySeanceRepository`).
+  - Added `Seance Library` UI and `Create/Edit Template` UI.
+  - Added clone action from seance history to create an editable template copy.
+  - Added provider-level test for template creation/listing.
+  - Clarified cloning rule: copy only exercise plan metadata (sets/reps/planned weight/rest), never per-seance historical performed sets.
+- Remaining for T02 completion:
+  - Add explicit "Start from template" flow from `Seance Library` into active seance.
+  - Add ad-hoc start vs template start selector (single entry point).
+  - Add schedule/date field on cloned template before start (or explicitly defer schedule to Phase 2 and document).
+  - Add widget tests covering create/edit/clone/start flows (not only provider-level test).
 - Acceptance criteria:
-  - Users can create templates and start them without retyping everything.
-  - Users can clone a previous seance into a new seance scheduled/dated for another day and edit before starting.
+  - Users can create templates and start them without retyping everything. (Pending)
+  - Users can clone a previous seance into a new editable template. (Implemented)
+  - Clone does not copy historical performed set logs. (Implemented)
 - Verification:
-  - Unit / widget tests for seance create/clone UI flows.
+  - `flutter analyze` clean.
+  - Widget tests for seance create/clone/start UI flows.
 
 T03 — Current Seance UI, per-exercise drill-down and set-copy behavior
 - Description: Improve current seance UI with per-exercise drill-down page that shows set history and an add-set form. Tapping a previous set populates the add-set form for quick copy.
@@ -147,10 +156,23 @@ T09 — Data model, persistence & migration (Drift)
   - Seances and history persist across app restarts.
   - Providers stream DB-backed data with minimal API changes to UI.
 
+T10 — Validation & cleanup
+- Description: Final cross-feature validation pass and context cleanup before closing this plan.
+- Subtasks:
+  - Run analyzer/tests and fix only in-scope regressions.
+  - Smoke-test critical journeys: start seance, clone template, dashboard goals update, chart rendering.
+  - Update `context/overview.md`, `context/architecture.md`, and decisions notes for durable current state.
+  - Remove obsolete plan notes and open questions that are resolved.
+- Acceptance criteria:
+  - Plan tasks T01–T09 marked with final statuses.
+  - Context files represent current implemented behavior and known limits.
+  - No unresolved blocker remains for Phase 1 completion.
+
 Delivery plan & priorities
 -------------------------
-- Phase 1 (MVP): T01, T03, T05, T06, T07, T08 (UI-first; Android notification basic). Focus: reliable in-app behavior and Android notification.
-- Phase 2 (Stability & persistence): T02, T04, T09 (template library, robust background service with foreground notification/lock-screen handling, DB migration).
+- Phase 1 (MVP remaining): T02 (finish remaining items), T03, T05, T06, T07, T08.
+- Phase 2 (Stability & persistence): T04, T09.
+- Finalization: T10 validation & cleanup.
 
 Dependencies
 ------------
@@ -165,9 +187,8 @@ Risks & Notes
 
 Open questions for the user (decisions required before implementation)
 ---------------------------------------------------------------
-1. Platform priority: Should we implement Android-first for robust background timers and provide iOS fallbacks, or attempt parity across both platforms now?
-2. For cloning seances: prefer copying exercises only (default) or copy historical sets/weights as well?
-3. For Goals Strength type: should user select which lift (Bench/Squat/Deadlift) as the primary goal, or allow a generic strength goal without selecting a lift?
+1. For Goals Strength type: should user select which lift (Bench/Squat/Deadlift) as the primary goal, or allow a generic strength goal without selecting a lift?
+2. For template scheduling in T02: do we need a required date/schedule now, or can template scheduling stay optional until persistence (T09)?
 
 Mermaid: Seance lifecycle
 
@@ -191,15 +212,15 @@ Files likely to change during implementation
 
 Definition of done
 ------------------
-- Plan file created (this file).
-- User confirms priorities and answers open questions.
-- Implementation ticket selected and started.
+- T01 complete, T02 complete, and T03–T09 implemented with acceptance criteria met.
+- T10 validation/cleanup complete.
+- Context reflects the current state; temporary notes either promoted or discarded.
 
 Next steps
 ----------
-1. Please review this plan and answer the three open questions.
-2. Confirm which single task you want implemented first (Phase 1 recommended: T01 or T03).
-3. I will then create an implementation todo (move to context/plans or update existing todo list) and begin the work.
+1. Implement T03 (Current Seance drill-down + set-copy behavior).
+2. Then complete remaining T02 items (start-from-template and create-vs-start entry flow) if not finished during T03 integration.
+3. Continue with T06 → T05 → T07 → T08, then Phase 2 tasks T04 and T09, then T10.
 
 ---
 File path: `context/plans/seance-dashboard-plan.md`

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../testing_flags.dart';
 import 'package:intl/intl.dart';
 import '../../models/exercise_models.dart';
 import '../../models/seance_models.dart';
@@ -84,23 +85,36 @@ class SeancesHistoryTab extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FilledButton.icon(
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Start Seance'),
-                onPressed: () => ref.read(activeSeanceProvider.notifier).startSeance(),
+              const Text(
+                'Quick Actions',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              const SizedBox(width: 12),
-              FilledButton.icon(
-                icon: const Icon(Icons.library_books),
-                label: const Text('Seance Library'),
-                onPressed: () async {
-                  // ignore: use_build_context_synchronously
-                  await Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const SeanceLibraryScreen(),
-                  ));
-                },
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Start Blank Seance'),
+                      onPressed: () => ref.read(activeSeanceProvider.notifier).startSeance(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.library_books),
+                      label: const Text('Templates / Start from Template'),
+                      onPressed: () async {
+                        await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const SeanceLibraryScreen(),
+                        ));
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -391,6 +405,7 @@ class _TimerWidgetState extends ConsumerState<TimerWidget> {
   }
 
   void _startTimer() {
+    if (disableUiTimers) return;
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         setState(() {

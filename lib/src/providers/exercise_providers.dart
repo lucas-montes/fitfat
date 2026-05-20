@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../models/exercise_models.dart';
+import '../models/seance_models.dart';
 import '../services/seance_foreground_service.dart';
 
 final exerciseListProvider = Provider<List<ExerciseDefinition>>((ref) {
@@ -20,6 +21,25 @@ final seanceHistoryProvider =
 );
 
 class ActiveSeanceNotifier extends Notifier<Seance?> {
+
+    /// Start a seance from a SeanceTemplate's exercise plan (no history, just planned sets/reps/weights/rest)
+    void startSeanceFromTemplate(SeanceTemplate template) {
+      state = Seance(
+        id: const Uuid().v4(),
+        startedAt: DateTime.now(),
+        exercises: template.exercises.map((e) => ExerciseEntry(
+          id: const Uuid().v4(),
+          exercise: ExerciseDefinition(
+            id: e.id,
+            name: e.name,
+          ),
+          sets: List.generate(e.sets, (_) => ExerciseSet(reps: e.reps, weight: e.plannedWeightKg ?? 0)),
+          startedAt: DateTime.now(),
+        )).toList(),
+      );
+      // Start notification/foreground task for the active seance
+      unawaited(SeanceForegroundService.instance.start(state!.startedAt));
+    }
   @override
   Seance? build() => null;
 
