@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/exercise_models.dart';
 import '../models/seance_models.dart';
 import '../services/seance_foreground_service.dart';
+
+const _activeSeanceKey = 'active_seance_json';
 
 final exerciseListProvider = Provider<List<ExerciseDefinition>>((ref) {
   return _seedExercises();
@@ -20,6 +24,42 @@ final seanceHistoryProvider =
     );
 
 class ActiveSeanceNotifier extends Notifier<Seance?> {
+  @override
+  Seance? build() {
+    // Kick off async restore from SharedPreferences on provider init
+    Future.microtask(() => restoreFromPrefs());
+    return null;
+  }
+
+  /// Call on app boot to restore active seance from SharedPreferences.
+  Future<void> restoreFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final json = prefs.getString(_activeSeanceKey);
+    if (json == null) return;
+    try {
+      state = Seance.fromJson(
+        Map<String, dynamic>.from(const JsonDecoder().convert(json) as Map),
+      );
+      if (state != null && state!.isActive) {
+        unawaited(SeanceForegroundService.instance.start(state!.startedAt));
+      }
+    } catch (_) {
+      await prefs.remove(_activeSeanceKey);
+    }
+  }
+
+  Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (state == null) {
+      await prefs.remove(_activeSeanceKey);
+    } else {
+      await prefs.setString(
+        _activeSeanceKey,
+        const JsonEncoder().convert(state!.toJson()),
+      );
+    }
+  }
+
   void startSeanceFromTemplate(SeanceTemplate template) {
     state = Seance(
       id: const Uuid().v4(),
@@ -36,12 +76,9 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
         );
       }).toList(),
     );
-    // Start notification/foreground task for the active seance
     unawaited(SeanceForegroundService.instance.start(state!.startedAt));
+    unawaited(_persist());
   }
-
-  @override
-  Seance? build() => null;
 
   void startSeance() {
     state = Seance(
@@ -49,14 +86,12 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       startedAt: DateTime.now(),
       exercises: [],
     );
-    // Start notification/foreground task for the active seance
     unawaited(SeanceForegroundService.instance.start(state!.startedAt));
+    unawaited(_persist());
   }
 
   void addExercise(ExerciseDefinition exercise) {
     if (state == null) return;
-    // NOTE: Prevent duplicates by name (exercises from templates use template IDs,
-    // so matching by ID would miss duplicates from template-started seances).
     final alreadyAdded = state!.exercises.any(
       (e) => e.exercise.name.toLowerCase() == exercise.name.toLowerCase(),
     );
@@ -75,6 +110,7 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       completedAt: state!.completedAt,
       restBetweenSets: state!.restBetweenSets,
     );
+    unawaited(_persist());
   }
 
   void removeExercise(int index) {
@@ -89,6 +125,7 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       completedAt: state!.completedAt,
       restBetweenSets: state!.restBetweenSets,
     );
+    unawaited(_persist());
   }
 
   void addSet(int exerciseIndex, int reps, double weight) {
@@ -117,6 +154,7 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       completedAt: state!.completedAt,
       restBetweenSets: state!.restBetweenSets,
     );
+    unawaited(_persist());
   }
 
   void completeSeance() {
@@ -131,15 +169,15 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
     );
     ref.read(seanceHistoryProvider.notifier).addSeance(completed);
     state = null;
-    // Stop notifications/foreground tasks
     unawaited(SeanceForegroundService.instance.stop());
+    unawaited(_persist());
   }
 
   void cancelSeance() {
     if (state == null) return;
     state = null;
-    // Stop notifications/foreground tasks — do not add to history
     unawaited(SeanceForegroundService.instance.stop());
+    unawaited(_persist());
   }
 }
 
