@@ -67,10 +67,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.play_arrow).first);
     // pumpAndSettle is safe here because disableUiTimers prevents the seance timer
     await tester.pumpAndSettle();
-    // Switch to the Current Seance tab
-    await tester.tap(find.text('Current Seance'));
-    await tester.pumpAndSettle();
-    // Should show active seance UI (AppBar title "Active Seance")
+    // Starting a seance pushes /current-seance route — should show active seance UI
     expect(find.text('Active Seance'), findsOneWidget);
   });
 }

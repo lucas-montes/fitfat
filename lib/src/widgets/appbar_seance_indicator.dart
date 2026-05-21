@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../providers/exercise_providers.dart';
+import '../screens/exercise/current_seance_screen.dart'
+    show CurrentSeanceScreen;
 
 class SeanceAppBarAction extends ConsumerStatefulWidget {
   const SeanceAppBarAction({super.key});
@@ -68,7 +69,11 @@ class _SeanceAppBarActionState extends ConsumerState<SeanceAppBarAction> {
           ),
           InkWell(
             borderRadius: BorderRadius.circular(24),
-            onTap: () => context.go('/exercise'),
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(builder: (_) => const CurrentSeanceScreen()),
+              );
+            },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(

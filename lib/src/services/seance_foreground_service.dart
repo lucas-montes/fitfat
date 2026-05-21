@@ -52,7 +52,7 @@ class SeanceForegroundService {
       serviceId: _seanceServiceId,
       notificationTitle: 'Seance running',
       notificationText: _formatElapsed(DateTime.now().difference(startedAt)),
-      notificationInitialRoute: '/exercise',
+      notificationInitialRoute: '/current-seance',
       callback: seanceTaskCallback,
     );
   }
@@ -63,12 +63,14 @@ class SeanceForegroundService {
   }
 
   Future<void> _requestPermissions() async {
-    final notificationPermission = await FlutterForegroundTask.checkNotificationPermission();
+    final notificationPermission =
+        await FlutterForegroundTask.checkNotificationPermission();
     if (notificationPermission != NotificationPermission.granted) {
       await FlutterForegroundTask.requestNotificationPermission();
     }
 
-    if (Platform.isAndroid && !await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+    if (Platform.isAndroid &&
+        !await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
       await FlutterForegroundTask.requestIgnoreBatteryOptimization();
     }
   }
@@ -92,7 +94,9 @@ class SeanceTaskHandler extends TaskHandler {
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    final startedAtMillis = await FlutterForegroundTask.getData(key: _seanceStartedAtKey);
+    final startedAtMillis = await FlutterForegroundTask.getData(
+      key: _seanceStartedAtKey,
+    );
     if (startedAtMillis is int) {
       _startedAt = DateTime.fromMillisecondsSinceEpoch(startedAtMillis);
     }
@@ -107,7 +111,7 @@ class SeanceTaskHandler extends TaskHandler {
     FlutterForegroundTask.updateService(
       notificationTitle: 'Seance running',
       notificationText: _formatElapsed(elapsed),
-      notificationInitialRoute: '/exercise',
+      notificationInitialRoute: '/current-seance',
     );
   }
 

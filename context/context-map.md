@@ -12,7 +12,7 @@ Index of durable context files in this directory.
 | `plans/post-mvp-polish.md` | **Completed** — 8 follow-up tasks: profile, goals, dashboard macros, templates, seance UX. |
 | `plans/template-sets-seance-guard.md` | **Completed** — multi-set template model, seance start guard, searchable add exercise, timer fix. |
 | `plans/ui-ux-round-3.md` | **Completed** — Dashboard tab position, template add without sets + tap-to-edit, per-set rest, current seance search+remove, seance name. |
-| `decisions/platform-background-timer-tradeoffs.md` | Android vs iOS background timer analysis |
+| `navigation-concepts.md` | Explainer: Navigator, GoRouter, StatefulShellRoute, BuildContext, and routing options for fitfat. |
 | `goals/goals-macros.md` | Goal types, TDEE computation, macro split rules, providers |
 | `handovers/` | Session handover notes |
 | `tmp/` | Scratch space for AI working memory and session-specific notes (gitignored) |

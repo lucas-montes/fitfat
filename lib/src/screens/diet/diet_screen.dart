@@ -33,27 +33,21 @@ class _DietScreenState extends ConsumerState<DietScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: AppBar(
-          elevation: 0,
-          title: const SizedBox.shrink(),
-            actions: const [SeanceAppBarAction()],
-          bottom: TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'Meals'),
-              Tab(text: 'Ingredients'),
-            ],
-          ),
+      appBar: AppBar(
+        elevation: 0,
+        title: const SizedBox.shrink(),
+        actions: const [SeanceAppBarAction()],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Meals'),
+            Tab(text: 'Ingredients'),
+          ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          MealsTab(),
-          _IngredientsTab(),
-        ],
+        children: const [MealsTab(), _IngredientsTab()],
       ),
     );
   }
@@ -102,15 +96,15 @@ class MealsTab extends ConsumerWidget {
   }
 
   void _openAddMeal(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AddMealScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AddMealScreen()));
   }
 
   void _editMeal(BuildContext context, MealEntry meal) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => AddMealScreen(initialMeal: meal)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => AddMealScreen(initialMeal: meal)));
   }
 
   void _deleteMeal(WidgetRef ref, String id) {
@@ -124,8 +118,14 @@ class MealsTab extends ConsumerWidget {
         title: const Text('Delete meal?'),
         content: const Text('This will remove the meal from your log.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -210,10 +210,18 @@ class _IngredientsTab extends ConsumerWidget {
       context: ref.context,
       builder: (context) => AlertDialog(
         title: const Text('Delete ingredient?'),
-        content: const Text('This will remove the ingredient and any portions from meals.'),
+        content: const Text(
+          'This will remove the ingredient and any portions from meals.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );

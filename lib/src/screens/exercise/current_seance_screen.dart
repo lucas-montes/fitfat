@@ -1,0 +1,381 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../testing_flags.dart';
+import '../../models/exercise_models.dart';
+import '../../providers/exercise_providers.dart';
+
+class CurrentSeanceScreen extends ConsumerStatefulWidget {
+  const CurrentSeanceScreen({super.key});
+
+  @override
+  ConsumerState<CurrentSeanceScreen> createState() =>
+      _CurrentSeanceScreenState();
+}
+
+class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
+  int? _selectedExerciseIndex;
+  late PageController _pageController;
+  final _exerciseSearchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _exerciseSearchController.dispose();
+    super.dispose();
+  }
+
+  void _selectExercise(int index) {
+    setState(() {
+      _selectedExerciseIndex = index;
+      _pageController = PageController(initialPage: index);
+    });
+  }
+
+  void _backToList() {
+    setState(() => _selectedExerciseIndex = null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final seance = ref.watch(activeSeanceProvider);
+
+    if (seance == null) {
+      return const Scaffold(body: Center(child: Text('No active seance')));
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          _selectedExerciseIndex != null
+              ? seance.exercises[_selectedExerciseIndex!].exercise.name
+              : seance.name ?? 'Active Seance',
+        ),
+        elevation: 0,
+        leading: _selectedExerciseIndex != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _backToList,
+              )
+            : null,
+        automaticallyImplyLeading: _selectedExerciseIndex != null,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(child: TimerWidget(seance: seance)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.stop),
+            tooltip: 'Cancel seance',
+            onPressed: () {
+              ref.read(activeSeanceProvider.notifier).cancelSeance();
+              Navigator.of(context, rootNavigator: true).pop();
+            },
+          ),
+        ],
+      ),
+      body: _selectedExerciseIndex != null
+          ? _buildDetailView(seance)
+          : _buildExerciseListView(seance),
+      floatingActionButton: _selectedExerciseIndex == null
+          ? FloatingActionButton.extended(
+              label: const Text('Complete Seance'),
+              icon: const Icon(Icons.check),
+              onPressed: () {
+                ref.read(activeSeanceProvider.notifier).completeSeance();
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            )
+          : (_selectedExerciseIndex == seance.exercises.length - 1)
+          ? FloatingActionButton.extended(
+              label: const Text('Complete Seance'),
+              icon: const Icon(Icons.check),
+              onPressed: () {
+                ref.read(activeSeanceProvider.notifier).completeSeance();
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            )
+          : null,
+    );
+  }
+
+  Widget _buildExerciseListView(Seance seance) {
+    final exercises = ref.watch(exerciseListProvider);
+    final query = _exerciseSearchController.text.trim().toLowerCase();
+    final addedNames = seance.exercises
+        .map((e) => e.exercise.name.toLowerCase())
+        .toSet();
+    final filtered = query.isEmpty
+        ? <ExerciseDefinition>[]
+        : exercises.where((e) {
+            final matches = e.name.toLowerCase().contains(query);
+            return matches && !addedNames.contains(e.name.toLowerCase());
+          }).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      children: [
+        if (seance.exercises.isNotEmpty) ...[
+          Text('Exercises', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          ...seance.exercises.asMap().entries.map((entry) {
+            final i = entry.key;
+            final e = entry.value;
+            return Card(
+              child: ListTile(
+                leading: const Icon(Icons.fitness_center),
+                title: Text(e.exercise.name),
+                subtitle: Text(
+                  '${e.sets.length} set${e.sets.length == 1 ? '' : 's'}',
+                ),
+                onTap: () => _selectExercise(i),
+                trailing: IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: () =>
+                      ref.read(activeSeanceProvider.notifier).removeExercise(i),
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
+        Text('Add Exercise', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _exerciseSearchController,
+          decoration: const InputDecoration(
+            label: Text('Search exercises'),
+            hintText: 'Type to find exercises...',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          style: const TextStyle(fontSize: 13),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 8),
+        if (filtered.isNotEmpty)
+          ...filtered.map((exercise) {
+            return Card(
+              child: ListTile(
+                title: Text(exercise.name),
+                subtitle: Text(exercise.category),
+                trailing: const Icon(Icons.add_circle),
+                onTap: () => ref
+                    .read(activeSeanceProvider.notifier)
+                    .addExercise(exercise),
+              ),
+            );
+          })
+        else if (query.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Text(
+                'No exercises found matching "$query"',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDetailView(Seance seance) {
+    return PageView.builder(
+      controller: _pageController,
+      onPageChanged: (index) => setState(() => _selectedExerciseIndex = index),
+      itemBuilder: (context, index) {
+        final entry = seance.exercises[index];
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.exercise.category,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Sets (${entry.sets.length})',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              ...List.generate(entry.sets.length, (i) {
+                final set = entry.sets[i];
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Set ${i + 1}'),
+                        Text(
+                          '${set.reps} reps × ${set.weight.toStringAsFixed(1)}kg',
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 24),
+              Text('Add Set', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              AddSetForm(
+                onAdd: (reps, weight) => ref
+                    .read(activeSeanceProvider.notifier)
+                    .addSet(index, reps, weight),
+              ),
+              const SizedBox(height: 24),
+              if (entry.sets.isNotEmpty)
+                Card(
+                  color: Colors.blue.withAlpha(26),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Summary',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Total Reps: ${entry.totalReps}'),
+                        Text(
+                          'Total Weight: ${entry.totalWeight.toStringAsFixed(1)}kg',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+      itemCount: seance.exercises.length,
+    );
+  }
+}
+
+class TimerWidget extends ConsumerStatefulWidget {
+  const TimerWidget({required this.seance, super.key});
+
+  final Seance seance;
+
+  @override
+  ConsumerState<TimerWidget> createState() => _TimerWidgetState();
+}
+
+class _TimerWidgetState extends ConsumerState<TimerWidget> {
+  late Duration _elapsed;
+
+  @override
+  void initState() {
+    super.initState();
+    _elapsed = Duration.zero;
+    _startTimer();
+  }
+
+  void _startTimer() {
+    if (disableUiTimers) return;
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(
+          () => _elapsed = DateTime.now().difference(widget.seance.startedAt),
+        );
+        _startTimer();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = _elapsed.inMinutes;
+    final seconds = _elapsed.inSeconds % 60;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Text(
+        '$minutes:${seconds.toString().padLeft(2, '0')}',
+        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+class AddSetForm extends StatefulWidget {
+  const AddSetForm({required this.onAdd, super.key});
+
+  final Function(int reps, double weight) onAdd;
+
+  @override
+  State<AddSetForm> createState() => _AddSetFormState();
+}
+
+class _AddSetFormState extends State<AddSetForm> {
+  final _repsController = TextEditingController();
+  final _weightController = TextEditingController();
+
+  @override
+  void dispose() {
+    _repsController.dispose();
+    _weightController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _repsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  label: Text('Reps'),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _weightController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  label: Text('Weight (kg)'),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          icon: const Icon(Icons.add),
+          label: const Text('Add Set'),
+          onPressed: () {
+            final reps = int.tryParse(_repsController.text) ?? 0;
+            final weight = double.tryParse(_weightController.text) ?? 0;
+            if (reps > 0 && weight > 0) {
+              widget.onAdd(reps, weight);
+              _repsController.clear();
+              _weightController.clear();
+            }
+          },
+        ),
+      ],
+    );
+  }
+}

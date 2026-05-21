@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/seance_providers.dart';
 import '../../providers/exercise_providers.dart';
-
+import 'current_seance_screen.dart' show CurrentSeanceScreen;
 import 'create_seance_screen.dart';
 
 class SeanceLibraryScreen extends ConsumerWidget {
@@ -112,6 +112,15 @@ class SeanceLibraryScreen extends ConsumerWidget {
                                         ref
                                             .read(activeSeanceProvider.notifier)
                                             .startSeanceFromTemplate(t);
+                                        Navigator.of(
+                                          context,
+                                          rootNavigator: true,
+                                        ).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const CurrentSeanceScreen(),
+                                          ),
+                                        );
                                         Navigator.pop(ctx);
                                         Navigator.of(context).pop();
                                       },
@@ -125,6 +134,11 @@ class SeanceLibraryScreen extends ConsumerWidget {
                                   .read(activeSeanceProvider.notifier)
                                   .startSeanceFromTemplate(t);
                               Navigator.of(context).pop();
+                              Navigator.of(context, rootNavigator: true).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const CurrentSeanceScreen(),
+                                ),
+                              );
                             }
                           },
                         ),

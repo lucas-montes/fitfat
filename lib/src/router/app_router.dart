@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../screens/diet/diet_screen.dart';
+import '../screens/exercise/current_seance_screen.dart';
 import '../screens/exercise/exercise_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 
@@ -33,9 +34,18 @@ class AppShell extends StatelessWidget {
   }
 }
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final appRouter = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/dashboard',
   routes: [
+    // Global route for active seance — accessible from anywhere
+    GoRoute(
+      path: '/current-seance',
+      name: 'current-seance',
+      builder: (context, state) => const CurrentSeanceScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return AppShell(navigationShell: navigationShell);

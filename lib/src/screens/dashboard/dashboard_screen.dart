@@ -17,18 +17,15 @@ class DashboardScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(kToolbarHeight),
-          child: AppBar(
-            elevation: 0,
-            title: const SizedBox.shrink(),
-            actions: const [SeanceAppBarAction()],
-            bottom: const TabBar(
-              tabs: [
-                Tab(text: 'Overview'),
-                Tab(text: 'Goals'),
-              ],
-            ),
+        appBar: AppBar(
+          elevation: 0,
+          title: const SizedBox.shrink(),
+          actions: const [SeanceAppBarAction()],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Overview'),
+              Tab(text: 'Goals'),
+            ],
           ),
         ),
         body: TabBarView(children: [_OverviewTab(), const _GoalsTab()]),

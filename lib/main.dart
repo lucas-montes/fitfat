@@ -6,7 +6,7 @@ import 'src/router/app_router.dart';
 
 void _onForegroundTaskData(Object data) {
   if (data is Map<String, dynamic> && data['type'] == 'open_current_seance') {
-    appRouter.go('/exercise');
+    appRouter.go('/current-seance');
   }
 }
 
