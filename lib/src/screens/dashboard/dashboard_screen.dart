@@ -7,7 +7,6 @@ import '../../models/exercise_models.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/exercise_providers.dart';
 import '../../widgets/appbar_seance_indicator.dart';
-import '../../widgets/date_input_field.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -528,20 +527,30 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Birthdate field — tap to type dd/mm/yyyy or use calendar icon
-            DateInputField(
-              date: _birthDate,
-              onChanged: (d) => setState(() => _birthDate = d),
-              label: 'Birthdate',
-              firstDate: DateTime(1900),
-              lastDate: DateTime.now().subtract(const Duration(days: 1)),
-            ),
-            // NOTE: Age is computed from birthDate for TDEE
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
+            // Birthdate picker — calendar-only, consistent with other inputs
+            InputDecorator(
+              decoration: InputDecoration(
+                label: const Text('Birthdate'),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.calendar_month),
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _birthDate,
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now().subtract(
+                        const Duration(days: 1),
+                      ),
+                      initialEntryMode: DatePickerEntryMode.calendarOnly,
+                      switchToInputEntryModeIcon: null,
+                    );
+                    if (picked != null) setState(() => _birthDate = picked);
+                  },
+                ),
+              ),
               child: Text(
-                'Age: ${_computeAge(_birthDate)}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                '${DateFormat('dd/MM/yyyy').format(_birthDate)}  (age ${_computeAge(_birthDate)})',
               ),
             ),
             const SizedBox(height: 12),
@@ -709,15 +718,31 @@ class _BodyWeightGoalDialogState extends ConsumerState<BodyWeightGoalDialog> {
   }
 
   Widget _buildDatePicker() {
-    // NOTE: Uses DateInputField for manual dd/mm/yyyy entry + calendar picker.
-    // Date format is dd/mm/yyyy per user preference.
     final initial = _targetDate ?? DateTime.now().add(const Duration(days: 1));
-    return DateInputField(
-      date: initial,
-      onChanged: (d) => setState(() => _targetDate = d),
-      label: 'Target date',
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    return InputDecorator(
+      decoration: InputDecoration(
+        label: const Text('Target date'),
+        border: const OutlineInputBorder(),
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.calendar_month),
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: initial,
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+              initialEntryMode: DatePickerEntryMode.calendarOnly,
+              switchToInputEntryModeIcon: null,
+            );
+            if (picked != null) setState(() => _targetDate = picked);
+          },
+        ),
+      ),
+      child: Text(
+        _targetDate != null
+            ? DateFormat('dd/MM/yyyy').format(_targetDate!)
+            : 'Not set',
+      ),
     );
   }
 
@@ -855,15 +880,31 @@ class _StrengthGoalDialogState extends ConsumerState<StrengthGoalDialog> {
   }
 
   Widget _buildDatePicker() {
-    // NOTE: Uses DateInputField for manual dd/mm/yyyy entry + calendar picker.
-    // Date format is dd/mm/yyyy per user preference.
     final initial = _targetDate ?? DateTime.now().add(const Duration(days: 1));
-    return DateInputField(
-      date: initial,
-      onChanged: (d) => setState(() => _targetDate = d),
-      label: 'Target date',
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    return InputDecorator(
+      decoration: InputDecoration(
+        label: const Text('Target date'),
+        border: const OutlineInputBorder(),
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.calendar_month),
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: initial,
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+              initialEntryMode: DatePickerEntryMode.calendarOnly,
+              switchToInputEntryModeIcon: null,
+            );
+            if (picked != null) setState(() => _targetDate = picked);
+          },
+        ),
+      ),
+      child: Text(
+        _targetDate != null
+            ? DateFormat('dd/MM/yyyy').format(_targetDate!)
+            : 'Not set',
+      ),
     );
   }
 

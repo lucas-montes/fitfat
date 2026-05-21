@@ -493,18 +493,17 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
     // NOTE: query is empty by default — no exercises shown until user types.
     final query = _exerciseSearchController.text.trim().toLowerCase();
     // Filter: only show exercises matching the query AND not already in the seance
+    // NOTE: Match by name too, not just ID, because template-started seances use
+    // template IDs that don't match the global exercise list IDs.
+    final addedNames = seance.exercises
+        .map((e) => e.exercise.name.toLowerCase())
+        .toSet();
     final filtered = query.isEmpty
         ? <ExerciseDefinition>[]
         : exercises.where((e) {
             final matches = e.name.toLowerCase().contains(query);
-            final alreadyInSeance = seance.exercises.any(
-              (se) => se.exercise.id == e.id,
-            );
-            return matches && !alreadyInSeance;
+            return matches && !addedNames.contains(e.name.toLowerCase());
           }).toList();
-
-    // IDs already in the seance — used to show check icons next to search results
-    final addedIds = seance.exercises.map((e) => e.exercise.id).toSet();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -523,22 +522,13 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                 subtitle: Text(
                   '${e.sets.length} set${e.sets.length == 1 ? '' : 's'}',
                 ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right),
-                      onPressed: () => _selectExercise(i),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      onPressed: () {
-                        ref
-                            .read(activeSeanceProvider.notifier)
-                            .removeExercise(i);
-                      },
-                    ),
-                  ],
+                // NOTE: entire row is tappable to enter detail view
+                onTap: () => _selectExercise(i),
+                trailing: IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: () {
+                    ref.read(activeSeanceProvider.notifier).removeExercise(i);
+                  },
                 ),
               ),
             );
@@ -567,10 +557,10 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               child: ListTile(
                 title: Text(exercise.name),
                 subtitle: Text(exercise.category),
-                trailing: addedIds.contains(exercise.id)
+                trailing: addedNames.contains(exercise.name.toLowerCase())
                     ? const Icon(Icons.check, color: Colors.green)
                     : const Icon(Icons.add_circle),
-                onTap: addedIds.contains(exercise.id)
+                onTap: addedNames.contains(exercise.name.toLowerCase())
                     ? null
                     : () => ref
                           .read(activeSeanceProvider.notifier)

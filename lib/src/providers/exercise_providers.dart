@@ -55,6 +55,12 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
 
   void addExercise(ExerciseDefinition exercise) {
     if (state == null) return;
+    // NOTE: Prevent duplicates by name (exercises from templates use template IDs,
+    // so matching by ID would miss duplicates from template-started seances).
+    final alreadyAdded = state!.exercises.any(
+      (e) => e.exercise.name.toLowerCase() == exercise.name.toLowerCase(),
+    );
+    if (alreadyAdded) return;
     final newEntry = ExerciseEntry(
       id: const Uuid().v4(),
       exercise: exercise,
@@ -69,7 +75,6 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       completedAt: state!.completedAt,
       restBetweenSets: state!.restBetweenSets,
     );
-    // Note: returns void for compatibility; callers can inspect state if needed.
   }
 
   void removeExercise(int index) {
