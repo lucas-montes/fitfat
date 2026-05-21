@@ -8,7 +8,6 @@ import '../../providers/seance_providers.dart';
 import 'current_seance_screen.dart' show CurrentSeanceScreen;
 import 'create_seance_screen.dart';
 import 'seance_library_screen.dart';
-import '../../widgets/appbar_seance_indicator.dart';
 
 class ExerciseScreen extends ConsumerWidget {
   const ExerciseScreen({super.key});
@@ -19,9 +18,8 @@ class ExerciseScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 0,
           elevation: 0,
-          title: const SizedBox.shrink(),
-          actions: const [SeanceAppBarAction()],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Seances'),

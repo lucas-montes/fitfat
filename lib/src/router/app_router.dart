@@ -4,6 +4,7 @@ import '../screens/diet/diet_screen.dart';
 import '../screens/exercise/current_seance_screen.dart';
 import '../screens/exercise/exercise_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
+import '../widgets/appbar_seance_indicator.dart' show SeanceFloatingPill;
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
@@ -19,7 +20,12 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: navigationShell,
+      body: Stack(
+        children: [
+          navigationShell,
+          Positioned(right: 16, bottom: 16, child: const SeanceFloatingPill()),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         destinations: _destinations,

@@ -6,7 +6,6 @@ import '../../models/dashboard_models.dart';
 import '../../models/exercise_models.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/exercise_providers.dart';
-import '../../widgets/appbar_seance_indicator.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -18,9 +17,8 @@ class DashboardScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 0,
           elevation: 0,
-          title: const SizedBox.shrink(),
-          actions: const [SeanceAppBarAction()],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Overview'),
