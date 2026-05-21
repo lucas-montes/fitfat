@@ -10,18 +10,9 @@ class AppShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   static const _destinations = [
-    NavigationDestination(
-      icon: Icon(Icons.restaurant_menu),
-      label: 'Diet',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.fitness_center),
-      label: 'Exercise',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.dashboard),
-      label: 'Dashboard',
-    ),
+    NavigationDestination(icon: Icon(Icons.restaurant_menu), label: 'Diet'),
+    NavigationDestination(icon: Icon(Icons.dashboard), label: 'Dashboard'),
+    NavigationDestination(icon: Icon(Icons.fitness_center), label: 'Exercise'),
   ];
 
   @override
@@ -43,7 +34,7 @@ class AppShell extends StatelessWidget {
 }
 
 final appRouter = GoRouter(
-  initialLocation: '/diet',
+  initialLocation: '/dashboard',
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
@@ -62,18 +53,18 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/exercise',
-              name: 'exercise',
-              builder: (context, state) => const ExerciseScreen(),
+              path: '/dashboard',
+              name: 'dashboard',
+              builder: (context, state) => const DashboardScreen(),
             ),
           ],
         ),
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/dashboard',
-              name: 'dashboard',
-              builder: (context, state) => const DashboardScreen(),
+              path: '/exercise',
+              name: 'exercise',
+              builder: (context, state) => const ExerciseScreen(),
             ),
           ],
         ),

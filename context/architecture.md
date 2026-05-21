@@ -56,7 +56,7 @@ GoRouter with 3 top-level routes via StatefulShellRoute:
 - `/exercise` — `ExerciseScreen` (Exercises/Seances tabs; shows `CurrentSeanceScreen` when a seance is active)
 - `/dashboard` — `DashboardScreen`
 
-Default route: `/diet` (will change to `/dashboard` in T07).
+Default route: `/dashboard`. Bottom nav order: Diet / Dashboard / Exercise.
 
 ## State management
 
@@ -71,7 +71,7 @@ Phase 2 replaces with DB-backed async providers.
 | flutter_riverpod | ^3.3.1 | State management |
 | go_router | ^17.2.3 | Declarative routing |
 | intl | ^0.20.2 | Date/number formatting |
-| fl_chart | ^1.2.0 | Charts (used from T06) |
+| fl_chart | ^1.2.0 | Charts (strength trend line chart, dashboard) |
 | uuid | ^4.5.3 | Unique ID generation |
 | cupertino_icons | ^1.0.8 | iOS-style icons |
 | flutter_foreground_task | ^9.2.2 | Background timer via foreground service (Android + iOS) |

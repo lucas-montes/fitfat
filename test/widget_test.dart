@@ -11,12 +11,16 @@ void main() {
     disableUiTimers = true;
     await tester.pumpWidget(const ProviderScope(child: FitFatApp()));
 
-    // Default route is /diet, should show the Diet tabs.
+    // Default route is /dashboard; navigate to Diet tab.
+    await tester.tap(find.text('Diet'));
+    await tester.pumpAndSettle();
     expect(find.text('Meals'), findsOneWidget);
     expect(find.text('Ingredients'), findsOneWidget);
   });
 
-  testWidgets('Navigate to Exercise tab and open Seance Library', (tester) async {
+  testWidgets('Navigate to Exercise tab and open Seance Library', (
+    tester,
+  ) async {
     await tester.pumpWidget(const ProviderScope(child: FitFatApp()));
     await tester.pumpAndSettle();
 
@@ -28,42 +32,45 @@ void main() {
     await tester.tap(find.text('Seances'));
     await tester.pumpAndSettle();
     expect(find.text('Start Blank Seance'), findsOneWidget);
-    expect(find.text('Templates / Start from Template'), findsOneWidget);
 
-    // Open Seance Library
-    await tester.tap(find.text('Templates / Start from Template'));
+    // Open create template screen via the Create button
+    await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
-    expect(find.text('Templates: Start or Create'), findsOneWidget);
-    expect(find.text('No templates yet'), findsOneWidget);
+    expect(find.text('Create Template'), findsOneWidget);
   });
 
   testWidgets('Create template and start seance from template', (tester) async {
+    disableUiTimers = true;
     await tester.pumpWidget(const ProviderScope(child: FitFatApp()));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Exercise'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Seances'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Templates / Start from Template'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.add));
+    // Tap "Create" to open template creator
+    await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
     // Fill in template name
     await tester.enterText(find.byType(TextField).first, 'Push Day');
-    // Add an exercise
+    // Type in the search field to add a custom exercise
     await tester.enterText(find.byType(TextField).at(1), 'Bench Press');
-    await tester.tap(find.text('Add'));
     await tester.pumpAndSettle();
-    // Save template
-    await tester.tap(find.text('Save Template'));
+    // Tap the add_circle suffix icon to add as custom exercise
+    await tester.tap(find.byIcon(Icons.add_circle));
+    await tester.pumpAndSettle();
+    // Save template (Save button in AppBar)
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     // Should see template in library
     expect(find.text('Push Day'), findsOneWidget);
     // Start seance from template
-    await tester.tap(find.byIcon(Icons.play_arrow));
-    // Do a single pump (avoid pumpAndSettle because the Active Seance starts a recurring timer)
-    await tester.pump();
-    // Should navigate back to Exercise tab and show active seance UI
+    await tester.tap(find.byIcon(Icons.play_arrow).first);
+    // pumpAndSettle is safe here because disableUiTimers prevents the seance timer
+    await tester.pumpAndSettle();
+    // Switch to the Current Seance tab
+    await tester.tap(find.text('Current Seance'));
+    await tester.pumpAndSettle();
+    // Should show active seance UI (AppBar title "Active Seance")
     expect(find.text('Active Seance'), findsOneWidget);
   });
 }

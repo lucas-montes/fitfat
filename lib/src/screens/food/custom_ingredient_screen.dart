@@ -65,12 +65,18 @@ class _CustomIngredientScreenState
     final filteredIngredients = query.isEmpty
         ? <Ingredient>[]
         : ingredients
-            .where((ingredient) =>
-                ingredient.name.toLowerCase().contains(query))
-            .toList();
+              .where(
+                (ingredient) => ingredient.name.toLowerCase().contains(query),
+              )
+              .toList();
 
     return Scaffold(
       appBar: AppBar(
+        title: Text(
+          widget.initialIngredient == null
+              ? 'Add Ingredient'
+              : 'Edit Ingredient',
+        ),
         actions: [
           if (_canSave(per100g))
             Padding(
@@ -115,13 +121,9 @@ class _CustomIngredientScreenState
           ),
           const SizedBox(height: 12),
           if (_buildFromIngredients) ...[
-            Text(
-              'Components',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Components', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            if (_components.isEmpty)
-              const Text('No components added yet'),
+            if (_components.isEmpty) const Text('No components added yet'),
             for (final component in _components)
               Card(
                 child: ListTile(
@@ -227,7 +229,10 @@ class _CustomIngredientScreenState
       MacroNutrients.zero,
       (sum, portion) => sum + portion.macros,
     );
-    final totalGrams = components.fold(0.0, (sum, portion) => sum + portion.grams);
+    final totalGrams = components.fold(
+      0.0,
+      (sum, portion) => sum + portion.grams,
+    );
     if (totalGrams == 0) return MacroNutrients.zero;
     return totals.scale(100.0 / totalGrams);
   }
@@ -250,7 +255,10 @@ class _CustomIngredientScreenState
     if (_buildFromIngredients) {
       return _components.isNotEmpty;
     }
-    return per100g.calories > 0 || per100g.protein > 0 || per100g.carbs > 0 || per100g.fat > 0;
+    return per100g.calories > 0 ||
+        per100g.protein > 0 ||
+        per100g.carbs > 0 ||
+        per100g.fat > 0;
   }
 
   Future<void> _addComponent(Ingredient ingredient) async {
@@ -280,7 +288,9 @@ class _CustomIngredientScreenState
 
   void _removeComponent(IngredientPortion component) {
     setState(() {
-      _components = _components.where((existing) => existing != component).toList();
+      _components = _components
+          .where((existing) => existing != component)
+          .toList();
     });
   }
 
@@ -308,7 +318,9 @@ class _CustomIngredientScreenState
           ),
           FilledButton(
             onPressed: () {
-              final value = double.tryParse(controller.text.replaceAll(',', '.'));
+              final value = double.tryParse(
+                controller.text.replaceAll(',', '.'),
+              );
               if (value == null || value <= 0) return;
               Navigator.of(context).pop(value);
             },

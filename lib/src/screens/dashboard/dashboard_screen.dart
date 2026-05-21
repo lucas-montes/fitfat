@@ -1,34 +1,60 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/dashboard_models.dart';
+import '../../models/exercise_models.dart';
 import '../../providers/dashboard_providers.dart';
+import '../../providers/exercise_providers.dart';
 import '../../widgets/appbar_seance_indicator.dart';
+import '../../widgets/date_input_field.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        title: const SizedBox.shrink(),
-        actions: const [SeanceAppBarAction()],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const DailyNutritionCard(),
-            const SizedBox(height: 16),
-            const GoalsCard(),
-            const SizedBox(height: 16),
-            const StrengthTrendChart(),
-            const SizedBox(height: 16),
-            const BodyweightTrendChart(),
-            const SizedBox(height: 96),
-          ],
+    // NOTE: Dashboard tab bar height matches Diet tab via PreferredSize(kToolbarHeight)
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: AppBar(
+            elevation: 0,
+            title: const SizedBox.shrink(),
+            actions: const [SeanceAppBarAction()],
+            bottom: const TabBar(
+              tabs: [
+                Tab(text: 'Overview'),
+                Tab(text: 'Goals'),
+              ],
+            ),
+          ),
         ),
+        body: TabBarView(children: [_OverviewTab(), const _GoalsTab()]),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Overview tab — nutrition, charts, no goals card
+// ---------------------------------------------------------------------------
+
+class _OverviewTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SingleChildScrollView(
+      child: Column(
+        children: const [
+          DailyNutritionCard(),
+          SizedBox(height: 16),
+          StrengthTrendChart(),
+          SizedBox(height: 16),
+          BodyweightTrendChart(),
+          SizedBox(height: 96),
+        ],
       ),
     );
   }
@@ -89,7 +115,7 @@ class DailyNutritionCard extends ConsumerWidget {
             const SizedBox(height: 8),
             if (macros == ComputedMacros.zero)
               Text(
-                'Set a goal and your profile to see daily targets',
+                'Set a bodyweight goal and your profile to see daily targets.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -128,157 +154,329 @@ class DailyNutritionCard extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Goals card — shows current goal type and computed macros
+// Goals tab — manage bodyweight goal + N strength goals
 // ---------------------------------------------------------------------------
 
-class GoalsCard extends ConsumerWidget {
-  const GoalsCard({super.key});
+class _GoalsTab extends ConsumerWidget {
+  const _GoalsTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goal = ref.watch(goalProvider);
-    final macros = ref.watch(computedMacrosProvider);
+    final goalsData = ref.watch(goalsProvider);
+    final hasProfile = ref.watch(userProfileProvider) != null;
+    final hasAnyGoal =
+        goalsData.bodyWeightGoal != null || goalsData.strengthGoals.isNotEmpty;
 
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Bodyweight goal section
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Goals', style: Theme.of(context).textTheme.titleLarge),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _showGoalSetup(context, ref),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (goal == null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'No goal set yet.',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      'Body Weight Goal',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 8),
-                    FilledButton.icon(
+                    if (goalsData.bodyWeightGoal != null)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 20),
+                            onPressed: () => _editBodyWeightGoal(
+                              context,
+                              ref,
+                              goalsData.bodyWeightGoal!,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, size: 20),
+                            onPressed: () =>
+                                _confirmDeleteBodyWeight(context, ref),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (goalsData.bodyWeightGoal == null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      children: [
+                        Text(
+                          'No bodyweight goal set.',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Body Weight Goal'),
+                          onPressed: () => hasProfile
+                              ? _createBodyWeightGoal(context, ref)
+                              : _promptProfileFirst(context, ref),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  Chip(
+                    label: Text(
+                      '${goalsData.bodyWeightGoal!.direction.label} Weight',
+                    ),
+                    avatar: const Icon(Icons.monitor_weight, size: 18),
+                  ),
+                  const SizedBox(height: 8),
+                  _goalDetailRow(
+                    'Target',
+                    '${goalsData.bodyWeightGoal!.targetWeightKg.toStringAsFixed(1)} kg',
+                  ),
+                  if (goalsData.bodyWeightGoal!.targetDate != null)
+                    _goalDetailRow(
+                      'By',
+                      DateFormat(
+                        'MMM d, yyyy',
+                      ).format(goalsData.bodyWeightGoal!.targetDate!),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Strength goals section
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Strength Goals',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.add),
-                      label: const Text('Set Your Goal'),
-                      onPressed: () => _showGoalSetup(context, ref),
+                      tooltip: 'Add strength goal',
+                      onPressed: () => hasProfile
+                          ? _createStrengthGoal(context, ref)
+                          : _promptProfileFirst(context, ref),
                     ),
                   ],
                 ),
-              )
-            else ...[
-              _buildGoalTypeHeader(context, goal),
-              const SizedBox(height: 12),
-              const Divider(),
-              const SizedBox(height: 8),
-              Text(
-                'Daily Targets (computed)',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              _buildGoalRow(
-                'Calories',
-                '${macros.dailyCalories.toStringAsFixed(0)} kcal',
-              ),
-              const SizedBox(height: 4),
-              _buildGoalRow(
-                'Protein',
-                '${macros.dailyProtein.toStringAsFixed(0)}g',
-              ),
-              const SizedBox(height: 4),
-              _buildGoalRow(
-                'Carbs',
-                '${macros.dailyCarbs.toStringAsFixed(0)}g',
-              ),
-              const SizedBox(height: 4),
-              _buildGoalRow('Fat', '${macros.dailyFat.toStringAsFixed(0)}g'),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGoalTypeHeader(BuildContext context, Goal goal) {
-    return switch (goal) {
-      StrengthGoal(:final exerciseName, :final targetWeightKg) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Chip(
-            label: const Text('Gain Strength'),
-            avatar: const Icon(Icons.fitness_center, size: 18),
-          ),
-          const SizedBox(height: 8),
-          Text('$exerciseName → ${targetWeightKg.toStringAsFixed(1)} kg'),
-        ],
-      ),
-      BodyWeightGoal(
-        :final targetWeightKg,
-        :final direction,
-        :final targetDate,
-      ) =>
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Chip(
-              label: Text('${direction.label} Weight'),
-              avatar: const Icon(Icons.monitor_weight, size: 18),
+                const SizedBox(height: 8),
+                if (goalsData.strengthGoals.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'No strength goals yet. Tap + to add (one per exercise).',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                else
+                  for (final sg in goalsData.strengthGoals) ...[
+                    _strengthGoalTile(context, ref, sg),
+                    const Divider(height: 1),
+                  ],
+              ],
             ),
-            const SizedBox(height: 8),
-            Text('Target: ${targetWeightKg.toStringAsFixed(1)} kg'),
-            if (targetDate != null)
-              Text('By: ${DateFormat('MMM d, yyyy').format(targetDate)}'),
-          ],
+          ),
         ),
-    };
-  }
-
-  Widget _buildGoalRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 13)),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        ),
+        if (!hasProfile && !hasAnyGoal)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Column(
+                children: [
+                  Text(
+                    'Set up your profile first',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: () => _promptProfileFirst(context, ref),
+                    child: const Text('Create Profile'),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (hasProfile)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Center(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.edit, size: 16),
+                label: const Text('Edit Profile'),
+                onPressed: () => _promptProfileFirst(context, ref),
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  void _showGoalSetup(BuildContext context, WidgetRef ref) {
-    final profile = ref.read(userProfileProvider);
-    if (profile == null) {
-      _showProfileSetup(context, ref);
-    } else {
-      showDialog(
-        context: context,
-        builder: (_) => const GoalTypeSelectorDialog(),
-      );
-    }
+  Widget _goalDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+        ],
+      ),
+    );
   }
 
-  Future<void> _showProfileSetup(BuildContext context, WidgetRef ref) async {
-    final profile = await showDialog<UserProfile>(
-      context: context,
-      builder: (_) => const ProfileSetupDialog(),
+  Widget _strengthGoalTile(
+    BuildContext context,
+    WidgetRef ref,
+    StrengthGoal goal,
+  ) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.fitness_center),
+      title: Text(
+        '${goal.exerciseName} → ${goal.targetWeightKg.toStringAsFixed(0)} kg',
+      ),
+      subtitle: goal.targetDate != null
+          ? Text('By ${DateFormat('MMM d, yyyy').format(goal.targetDate!)}')
+          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.edit, size: 20),
+            onPressed: () => _editStrengthGoal(context, ref, goal),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, size: 20),
+            onPressed: () =>
+                _confirmDeleteStrength(context, ref, goal.exerciseName),
+          ),
+        ],
+      ),
     );
-    if (profile != null && context.mounted) {
-      ref.read(userProfileProvider.notifier).setProfile(profile);
-      showDialog(
-        context: context,
-        builder: (_) => const GoalTypeSelectorDialog(),
-      );
-    }
+  }
+
+  void _promptProfileFirst(BuildContext context, WidgetRef ref) {
+    final existing = ref.read(userProfileProvider);
+    showDialog(
+      context: context,
+      builder: (_) => ProfileSetupDialog(initial: existing),
+    ).then((profile) {
+      if (profile != null && context.mounted) {
+        ref
+            .read(userProfileProvider.notifier)
+            .setProfile(profile as UserProfile);
+      }
+    });
+  }
+
+  void _createBodyWeightGoal(BuildContext context, WidgetRef ref) {
+    showDialog(context: context, builder: (_) => const BodyWeightGoalDialog());
+  }
+
+  void _editBodyWeightGoal(
+    BuildContext context,
+    WidgetRef ref,
+    BodyWeightGoal existing,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) => BodyWeightGoalDialog(existing: existing),
+    );
+  }
+
+  void _confirmDeleteBodyWeight(BuildContext context, WidgetRef ref) {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete bodyweight goal?'),
+        content: const Text(
+          'This will clear your weight target and macro targets.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true && context.mounted) {
+        ref.read(goalsProvider.notifier).clearBodyWeightGoal();
+      }
+    });
+  }
+
+  void _createStrengthGoal(BuildContext context, WidgetRef ref) {
+    showDialog(context: context, builder: (_) => const StrengthGoalDialog());
+  }
+
+  void _editStrengthGoal(
+    BuildContext context,
+    WidgetRef ref,
+    StrengthGoal existing,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) => StrengthGoalDialog(existing: existing),
+    );
+  }
+
+  void _confirmDeleteStrength(
+    BuildContext context,
+    WidgetRef ref,
+    String exerciseName,
+  ) {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete strength goal for $exerciseName?'),
+        content: const Text('This will remove the goal.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true && context.mounted) {
+        ref.read(goalsProvider.notifier).removeStrengthGoal(exerciseName);
+      }
+    });
   }
 }
 
@@ -287,22 +485,36 @@ class GoalsCard extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class ProfileSetupDialog extends ConsumerStatefulWidget {
-  const ProfileSetupDialog({super.key});
+  const ProfileSetupDialog({super.key, this.initial});
+
+  final UserProfile? initial;
 
   @override
   ConsumerState<ProfileSetupDialog> createState() => _ProfileSetupDialogState();
 }
 
 class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
-  final _ageController = TextEditingController();
+  DateTime _birthDate = DateTime(1990);
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
   Sex _sex = Sex.male;
   ActivityLevel _activity = ActivityLevel.moderate;
 
   @override
+  void initState() {
+    super.initState();
+    final init = widget.initial;
+    if (init != null) {
+      _birthDate = init.birthDate;
+      _heightController.text = init.heightCm.toString();
+      _weightController.text = init.weightKg.toString();
+      _sex = init.sex;
+      _activity = init.activityLevel;
+    }
+  }
+
+  @override
   void dispose() {
-    _ageController.dispose();
     _heightController.dispose();
     _weightController.dispose();
     super.dispose();
@@ -311,17 +523,25 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Your Profile'),
+      title: Text(widget.initial == null ? 'Your Profile' : 'Edit Profile'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: _ageController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                label: Text('Age'),
-                border: OutlineInputBorder(),
+            // Birthdate field — tap to type dd/mm/yyyy or use calendar icon
+            DateInputField(
+              date: _birthDate,
+              onChanged: (d) => setState(() => _birthDate = d),
+              label: 'Birthdate',
+              firstDate: DateTime(1900),
+              lastDate: DateTime.now().subtract(const Duration(days: 1)),
+            ),
+            // NOTE: Age is computed from birthDate for TDEE
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                'Age: ${_computeAge(_birthDate)}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ),
             const SizedBox(height: 12),
@@ -376,14 +596,13 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
         ),
         FilledButton(
           onPressed: () {
-            final age = int.tryParse(_ageController.text);
             final height = double.tryParse(_heightController.text);
             final weight = double.tryParse(_weightController.text);
-            if (age == null || height == null || weight == null) return;
+            if (height == null || weight == null) return;
             Navigator.pop(
               context,
               UserProfile(
-                age: age,
+                birthDate: _birthDate,
                 sex: _sex,
                 heightCm: height,
                 weightKg: weight,
@@ -396,197 +615,277 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
       ],
     );
   }
+
+  int _computeAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Goal type selector dialog
+// Body weight goal dialog
 // ---------------------------------------------------------------------------
 
-class GoalTypeSelectorDialog extends ConsumerStatefulWidget {
-  const GoalTypeSelectorDialog({super.key});
+class BodyWeightGoalDialog extends ConsumerStatefulWidget {
+  const BodyWeightGoalDialog({super.key, this.existing});
+
+  final BodyWeightGoal? existing;
 
   @override
-  ConsumerState<GoalTypeSelectorDialog> createState() =>
-      _GoalTypeSelectorDialogState();
+  ConsumerState<BodyWeightGoalDialog> createState() =>
+      _BodyWeightGoalDialogState();
 }
 
-class _GoalTypeSelectorDialogState
-    extends ConsumerState<GoalTypeSelectorDialog> {
-  bool _isStrength = true;
-
-  // Strength fields
-  final _exerciseController = TextEditingController();
-  final _strengthTargetController = TextEditingController();
-  DateTime? _strengthTargetDate;
-
-  // Body weight fields
-  final _bwTargetController = TextEditingController();
+class _BodyWeightGoalDialogState extends ConsumerState<BodyWeightGoalDialog> {
+  final _weightController = TextEditingController();
   BodyWeightDirection _direction = BodyWeightDirection.lose;
-  DateTime? _bwTargetDate;
+  DateTime? _targetDate;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    if (e != null) {
+      _weightController.text = e.targetWeightKg.toString();
+      _direction = e.direction;
+      _targetDate = e.targetDate;
+    }
+  }
 
   @override
   void dispose() {
-    _exerciseController.dispose();
-    _strengthTargetController.dispose();
-    _bwTargetController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Set Your Goal'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: true, label: Text('Gain Strength')),
-                ButtonSegment(value: false, label: Text('Change Weight')),
-              ],
-              selected: {_isStrength},
-              onSelectionChanged: (v) => setState(() => _isStrength = v.first),
+      title: Text(
+        widget.existing == null
+            ? 'Add Body Weight Goal'
+            : 'Edit Body Weight Goal',
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButtonFormField<BodyWeightDirection>(
+            initialValue: _direction,
+            decoration: const InputDecoration(
+              label: Text('Direction'),
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 16),
-            if (_isStrength)
-              _buildStrengthFields()
-            else
-              _buildBodyWeightFields(),
-          ],
-        ),
+            items: BodyWeightDirection.values
+                .map((d) => DropdownMenuItem(value: d, child: Text(d.label)))
+                .toList(),
+            onChanged: (v) => setState(() => _direction = v!),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _weightController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              label: Text('Target Weight (kg)'),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildDatePicker(),
+        ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        FilledButton(onPressed: _saveGoal, child: const Text('Save')),
+        FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }
 
-  Widget _buildStrengthFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          controller: _exerciseController,
-          decoration: const InputDecoration(
-            label: Text('Exercise (e.g. Bench Press)'),
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _strengthTargetController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            label: Text('Target Weight (kg)'),
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildDatePicker(
-          label: 'Target date (optional)',
-          date: _strengthTargetDate,
-          onPicked: (d) => setState(() => _strengthTargetDate = d),
-        ),
-      ],
+  Widget _buildDatePicker() {
+    // NOTE: Uses DateInputField for manual dd/mm/yyyy entry + calendar picker.
+    // Date format is dd/mm/yyyy per user preference.
+    final initial = _targetDate ?? DateTime.now().add(const Duration(days: 1));
+    return DateInputField(
+      date: initial,
+      onChanged: (d) => setState(() => _targetDate = d),
+      label: 'Target date',
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
     );
   }
 
-  Widget _buildBodyWeightFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        DropdownButtonFormField<BodyWeightDirection>(
-          initialValue: _direction,
-          decoration: const InputDecoration(
-            label: Text('Direction'),
-            border: OutlineInputBorder(),
-          ),
-          items: BodyWeightDirection.values
-              .map((d) => DropdownMenuItem(value: d, child: Text(d.label)))
-              .toList(),
-          onChanged: (v) => setState(() => _direction = v!),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _bwTargetController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            label: Text('Target Weight (kg)'),
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildDatePicker(
-          label: 'Target date (optional)',
-          date: _bwTargetDate,
-          onPicked: (d) => setState(() => _bwTargetDate = d),
-        ),
-      ],
+  void _save() {
+    final target = double.tryParse(_weightController.text);
+    if (target == null) return;
+    final goal = BodyWeightGoal(
+      targetWeightKg: target,
+      direction: _direction,
+      targetDate: _targetDate,
     );
-  }
-
-  Widget _buildDatePicker({
-    required String label,
-    required DateTime? date,
-    required ValueChanged<DateTime> onPicked,
-  }) {
-    final formatted = date != null
-        ? DateFormat('MMM d, yyyy').format(date)
-        : 'Not set';
-    return Row(
-      children: [
-        Expanded(child: Text('$label: $formatted')),
-        TextButton(
-          onPressed: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: date ?? DateTime.now(),
-              firstDate: DateTime.now(),
-              lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-            );
-            if (picked != null) onPicked(picked);
-          },
-          child: const Text('Pick'),
-        ),
-      ],
-    );
-  }
-
-  void _saveGoal() {
-    final Goal goal;
-    if (_isStrength) {
-      final exercise = _exerciseController.text.trim();
-      final target = double.tryParse(_strengthTargetController.text);
-      if (exercise.isEmpty || target == null) return;
-      goal = StrengthGoal(
-        exerciseName: exercise,
-        targetWeightKg: target,
-        targetDate: _strengthTargetDate,
-      );
-    } else {
-      final target = double.tryParse(_bwTargetController.text);
-      if (target == null) return;
-      goal = BodyWeightGoal(
-        targetWeightKg: target,
-        direction: _direction,
-        targetDate: _bwTargetDate,
-      );
-    }
-    ref.read(goalProvider.notifier).setGoal(goal);
+    ref.read(goalsProvider.notifier).setBodyWeightGoal(goal);
     Navigator.pop(context);
   }
 }
 
 // ---------------------------------------------------------------------------
-// Charts (unchanged — kept from original, will be replaced in T08)
+// Strength goal dialog
 // ---------------------------------------------------------------------------
+
+class StrengthGoalDialog extends ConsumerStatefulWidget {
+  const StrengthGoalDialog({super.key, this.existing});
+
+  final StrengthGoal? existing;
+
+  @override
+  ConsumerState<StrengthGoalDialog> createState() => _StrengthGoalDialogState();
+}
+
+class _StrengthGoalDialogState extends ConsumerState<StrengthGoalDialog> {
+  final _exerciseController = TextEditingController();
+  final _weightController = TextEditingController();
+  DateTime? _targetDate;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    if (e != null) {
+      _exerciseController.text = e.exerciseName;
+      _weightController.text = e.targetWeightKg.toString();
+      _targetDate = e.targetDate;
+    }
+  }
+
+  @override
+  void dispose() {
+    _exerciseController.dispose();
+    _weightController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allExercises = ref.watch(exerciseListProvider);
+    final goalsData = ref.watch(goalsProvider);
+    final existingStrengthNames = goalsData.strengthGoals
+        .map((g) => g.exerciseName)
+        .toSet();
+
+    return AlertDialog(
+      title: Text(
+        widget.existing == null ? 'Add Strength Goal' : 'Edit Strength Goal',
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Autocomplete<ExerciseDefinition>(
+            optionsBuilder: (textEditingValue) {
+              final text = textEditingValue.text.toLowerCase();
+              if (text.isEmpty) return Iterable.empty();
+              return allExercises.where(
+                (e) =>
+                    e.name.toLowerCase().contains(text) &&
+                    !existingStrengthNames.contains(e.name),
+              );
+            },
+            displayStringForOption: (e) => e.name,
+            fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+              // Sync external controller when Autocomplete controller changes
+              controller.addListener(() {
+                if (_exerciseController.text != controller.text) {
+                  _exerciseController.text = controller.text;
+                }
+              });
+              return TextField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  label: Text('Exercise'),
+                  hintText: 'Search or type custom name',
+                  border: OutlineInputBorder(),
+                ),
+                onSubmitted: (value) {
+                  final match = allExercises.where(
+                    (e) => e.name.toLowerCase() == value.toLowerCase(),
+                  );
+                  if (match.isNotEmpty) {
+                    _exerciseController.text = match.first.name;
+                    onSubmitted();
+                  }
+                },
+              );
+            },
+            onSelected: (exercise) {
+              _exerciseController.text = exercise.name;
+              _exerciseController.selection = TextSelection.collapsed(
+                offset: exercise.name.length,
+              );
+              // Also update the TextField if it's visible
+              setState(() {});
+            },
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _weightController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              label: Text('Target Weight (kg)'),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildDatePicker(),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _save, child: const Text('Save')),
+      ],
+    );
+  }
+
+  Widget _buildDatePicker() {
+    // NOTE: Uses DateInputField for manual dd/mm/yyyy entry + calendar picker.
+    // Date format is dd/mm/yyyy per user preference.
+    final initial = _targetDate ?? DateTime.now().add(const Duration(days: 1));
+    return DateInputField(
+      date: initial,
+      onChanged: (d) => setState(() => _targetDate = d),
+      label: 'Target date',
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+  }
+
+  void _save() {
+    final exercise = _exerciseController.text.trim();
+    final target = double.tryParse(_weightController.text);
+    if (exercise.isEmpty || target == null) return;
+    final goal = StrengthGoal(
+      exerciseName: exercise,
+      targetWeightKg: target,
+      targetDate: _targetDate,
+    );
+    ref.read(goalsProvider.notifier).addStrengthGoal(goal);
+    Navigator.pop(context);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Strength trend chart — fl_chart LineChart + goal progress bar
+// ---------------------------------------------------------------------------
+
+const _chartColors = [Colors.blue, Colors.orange, Colors.green];
 
 class StrengthTrendChart extends ConsumerWidget {
   const StrengthTrendChart({super.key});
@@ -595,12 +894,48 @@ class StrengthTrendChart extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final period = ref.watch(chartPeriodProvider);
     final strengthData = ref.watch(strengthTrendProvider);
+    final goalsData = ref.watch(goalsProvider);
 
     final days = periodDays(period);
     final cutoffDate = DateTime.now().subtract(Duration(days: days));
     final filteredData = strengthData
         .where((d) => d.date.isAfter(cutoffDate))
         .toList();
+
+    final exercises = ['Bench Press', 'Deadlift', 'Squat'];
+    final exerciseLines = <LineChartBarData>[];
+
+    for (var i = 0; i < exercises.length; i++) {
+      final exerciseData = filteredData
+          .where((d) => d.exercise == exercises[i])
+          .toList();
+      if (exerciseData.isEmpty) continue;
+
+      exerciseLines.add(
+        LineChartBarData(
+          spots: List.generate(
+            exerciseData.length,
+            (j) => FlSpot(j.toDouble(), exerciseData[j].maxWeight),
+          ),
+          isCurved: true,
+          preventCurveOverShooting: true,
+          color: _chartColors[i],
+          barWidth: 2.5,
+          dotData: const FlDotData(show: false),
+          belowBarData: BarAreaData(
+            show: true,
+            color: _chartColors[i].withAlpha(30),
+          ),
+        ),
+      );
+    }
+
+    // Build Y-axis labels from all data
+    final allWeights = filteredData.map((d) => d.maxWeight);
+    final minY = (allWeights.reduce((a, b) => a < b ? a : b) * 0.95)
+        .floorToDouble();
+    final maxY = (allWeights.reduce((a, b) => a > b ? a : b) * 1.05)
+        .ceilToDouble();
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -635,63 +970,145 @@ class StrengthTrendChart extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            ..._buildStrengthChartData(context, filteredData),
+            SizedBox(
+              height: 200,
+              child: exerciseLines.isEmpty
+                  ? const Center(child: Text('No strength data'))
+                  : LineChart(
+                      LineChartData(
+                        minX: 0,
+                        maxX:
+                            (exerciseLines.isNotEmpty
+                                    ? exerciseLines.first.spots.length - 1
+                                    : 0)
+                                .toDouble(),
+                        minY: minY,
+                        maxY: maxY,
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: ((maxY - minY) / 4).clamp(
+                            1,
+                            double.infinity,
+                          ),
+                        ),
+                        titlesData: FlTitlesData(
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          bottomTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 40,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  '${value.toInt()}',
+                                  style: const TextStyle(fontSize: 10),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        lineBarsData: exerciseLines,
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 12),
+            // Legend
+            Wrap(
+              spacing: 16,
+              runSpacing: 4,
+              children: List.generate(exercises.length, (i) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: _chartColors[i],
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(exercises[i], style: const TextStyle(fontSize: 12)),
+                  ],
+                );
+              }),
+            ),
+            // Goal progress bar: find matching strength goal
+            if (goalsData.strengthGoals.isNotEmpty)
+              for (final sg in goalsData.strengthGoals)
+                _buildStrengthProgress(context, filteredData, sg),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildStrengthChartData(
+  Widget _buildStrengthProgress(
     BuildContext context,
     List<StrengthDataPoint> data,
+    StrengthGoal goal,
   ) {
-    final exercises = ['Bench Press', 'Deadlift', 'Squat'];
-    final widgets = <Widget>[];
+    final exerciseData = data
+        .where((d) => d.exercise == goal.exerciseName)
+        .toList();
+    final currentMax = exerciseData.isNotEmpty
+        ? exerciseData.map((d) => d.maxWeight).reduce((a, b) => a > b ? a : b)
+        : 0.0;
 
-    for (final exercise in exercises) {
-      final exerciseData = data.where((d) => d.exercise == exercise).toList();
-      if (exerciseData.isNotEmpty) {
-        final maxWeight = exerciseData
-            .map((d) => d.maxWeight)
-            .reduce((a, b) => a > b ? a : b);
-        widgets.add(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(exercise),
-              const SizedBox(height: 4),
-              Container(
-                height: 8,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.blue.withAlpha(51),
-                ),
-                child: FractionallySizedBox(
-                  widthFactor: maxWeight / 200,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      color: Colors.blue,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${maxWeight.toStringAsFixed(1)}kg',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 12),
-            ],
+    final progress = goal.targetWeightKg > 0
+        ? (currentMax / goal.targetWeightKg).clamp(0.0, 1.0)
+        : 0.0;
+    final remaining = goal.targetWeightKg - currentMax;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Goal: ${goal.exerciseName} → ${goal.targetWeightKg.toStringAsFixed(0)} kg',
+            style: Theme.of(context).textTheme.titleSmall,
           ),
-        );
-      }
-    }
-
-    return widgets;
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 10,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
+              color: progress >= 1.0 ? Colors.green : Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            progress >= 1.0
+                ? 'Goal reached! (${currentMax.toStringAsFixed(0)} kg)'
+                : '${currentMax.toStringAsFixed(0)} kg / ${goal.targetWeightKg.toStringAsFixed(0)} kg '
+                      '(${(progress * 100).toStringAsFixed(0)}%) — '
+                      '${remaining.toStringAsFixed(0)} kg to go',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Bodyweight trend chart (unchanged)
+// ---------------------------------------------------------------------------
 
 class BodyweightTrendChart extends ConsumerWidget {
   const BodyweightTrendChart({super.key});

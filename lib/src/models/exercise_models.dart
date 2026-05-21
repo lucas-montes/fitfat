@@ -11,10 +11,7 @@ class ExerciseDefinition {
 }
 
 class ExerciseSet {
-  const ExerciseSet({
-    required this.reps,
-    required this.weight,
-  });
+  const ExerciseSet({required this.reps, required this.weight});
 
   final int reps;
   final double weight;
@@ -35,13 +32,15 @@ class ExerciseEntry {
   final DateTime startedAt;
   final DateTime? completedAt;
 
-  double get totalWeight => sets.fold(0.0, (sum, set) => sum + (set.reps * set.weight));
+  double get totalWeight =>
+      sets.fold(0.0, (sum, set) => sum + (set.reps * set.weight));
   int get totalReps => sets.fold(0, (sum, set) => sum + set.reps);
 }
 
 class Seance {
   const Seance({
     required this.id,
+    this.name,
     required this.startedAt,
     required this.exercises,
     this.completedAt,
@@ -49,6 +48,7 @@ class Seance {
   });
 
   final String id;
+  final String? name;
   final DateTime startedAt;
   final List<ExerciseEntry> exercises;
   final DateTime? completedAt;

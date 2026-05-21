@@ -35,18 +35,28 @@ enum ActivityLevel {
 @immutable
 class UserProfile {
   const UserProfile({
-    required this.age,
+    required this.birthDate,
     required this.sex,
     required this.heightCm,
     required this.weightKg,
     required this.activityLevel,
   });
 
-  final int age;
+  final DateTime birthDate;
   final Sex sex;
   final double heightCm;
   final double weightKg;
   final ActivityLevel activityLevel;
+
+  int get age {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -89,6 +99,16 @@ class BodyWeightGoal extends Goal {
   final double targetWeightKg;
   final BodyWeightDirection direction;
   final DateTime? targetDate;
+}
+
+/// Holds all user goals: at most one bodyweight goal + N strength goals
+/// (one per exercise).
+@immutable
+class GoalsData {
+  const GoalsData({this.bodyWeightGoal, this.strengthGoals = const []});
+
+  final BodyWeightGoal? bodyWeightGoal;
+  final List<StrengthGoal> strengthGoals;
 }
 
 // ---------------------------------------------------------------------------

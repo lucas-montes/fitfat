@@ -8,9 +8,10 @@ Index of durable context files in this directory.
 | `architecture.md` | System architecture, folder structure, routing, state management, deps |
 | `patterns.md` | Coding patterns, state management approach, navigation, theme |
 | `glossary.md` | Project-specific terminology |
-| `plans/unified-roadmap.md` | **Active plan** — unified roadmap (features → UI/UX polish). Supersedes both `mvp-calorie-exercise-tracker.md` and `seance-dashboard-plan.md`. |
-| `plans/mvp-calorie-exercise-tracker.md` | **Superseded** — use `unified-roadmap.md` instead |
-| `plans/seance-dashboard-plan.md` | **Superseded** — use `unified-roadmap.md` instead |
+| `plans/unified-roadmap.md` | **Completed** — unified roadmap, all 11 tasks done. T09 (Drift) deferred. |
+| `plans/post-mvp-polish.md` | **Completed** — 8 follow-up tasks: profile, goals, dashboard macros, templates, seance UX. |
+| `plans/template-sets-seance-guard.md` | **Completed** — multi-set template model, seance start guard, searchable add exercise, timer fix. |
+| `plans/ui-ux-round-3.md` | **Completed** — Dashboard tab position, template add without sets + tap-to-edit, per-set rest, current seance search+remove, seance name. |
 | `decisions/platform-background-timer-tradeoffs.md` | Android vs iOS background timer analysis |
 | `goals/goals-macros.md` | Goal types, TDEE computation, macro split rules, providers |
 | `handovers/` | Session handover notes |

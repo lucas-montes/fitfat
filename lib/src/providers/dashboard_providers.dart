@@ -38,17 +38,54 @@ class UserProfileNotifier extends Notifier<UserProfile?> {
 }
 
 // ---------------------------------------------------------------------------
-// Goal (sealed: StrengthGoal | BodyWeightGoal)
+// Goals (bodyweight + N strength goals)
 // ---------------------------------------------------------------------------
 
-final goalProvider = NotifierProvider<GoalNotifier, Goal?>(GoalNotifier.new);
+final goalsProvider = NotifierProvider<GoalsNotifier, GoalsData>(
+  GoalsNotifier.new,
+);
 
-class GoalNotifier extends Notifier<Goal?> {
+class GoalsNotifier extends Notifier<GoalsData> {
   @override
-  Goal? build() => null;
+  GoalsData build() => const GoalsData();
 
-  void setGoal(Goal goal) {
-    state = goal;
+  void setBodyWeightGoal(BodyWeightGoal goal) {
+    state = GoalsData(bodyWeightGoal: goal, strengthGoals: state.strengthGoals);
+  }
+
+  void clearBodyWeightGoal() {
+    state = GoalsData(bodyWeightGoal: null, strengthGoals: state.strengthGoals);
+  }
+
+  void addStrengthGoal(StrengthGoal goal) {
+    // Enforce one per exercise: replace if same exercise exists
+    state = GoalsData(
+      bodyWeightGoal: state.bodyWeightGoal,
+      strengthGoals: [
+        for (final g in state.strengthGoals)
+          if (g.exerciseName != goal.exerciseName) g,
+        goal,
+      ],
+    );
+  }
+
+  void updateStrengthGoal(String exerciseName, StrengthGoal updated) {
+    state = GoalsData(
+      bodyWeightGoal: state.bodyWeightGoal,
+      strengthGoals: [
+        for (final g in state.strengthGoals)
+          if (g.exerciseName == exerciseName) updated else g,
+      ],
+    );
+  }
+
+  void removeStrengthGoal(String exerciseName) {
+    state = GoalsData(
+      bodyWeightGoal: state.bodyWeightGoal,
+      strengthGoals: state.strengthGoals
+          .where((g) => g.exerciseName != exerciseName)
+          .toList(),
+    );
   }
 }
 
@@ -97,26 +134,29 @@ double _proteinFactor(Goal goal) {
 
 final computedMacrosProvider = Provider<ComputedMacros>((ref) {
   final profile = ref.watch(userProfileProvider);
-  final goal = ref.watch(goalProvider);
+  final goalsData = ref.watch(goalsProvider);
 
-  if (profile == null || goal == null) {
+  if (profile == null) {
     return ComputedMacros.zero;
   }
 
   final tdee = _tdee(profile);
+  final goal = goalsData.bodyWeightGoal;
+
+  if (goal == null) {
+    // Maintenance mode: no goal set, show TDEE maintenance macros
+    return _computeMacros(profile, tdee, 1.8); // 1.8g/kg maintain protein
+  }
+
   final targetCalories = _caloricTarget(
     goal,
     tdee,
   ).clamp(1200, double.infinity);
 
-  // Protein: g/kg bodyweight
-  final proteinGrams = (_proteinFactor(goal) * profile.weightKg)
-      .roundToDouble();
-
-  // Fat: 25% of total calories / 9 cal per gram
+  final proteinFactor = _proteinFactor(goal);
+  final proteinGrams = (proteinFactor * profile.weightKg).roundToDouble();
   final fatGrams = ((targetCalories * 0.25) / 9).roundToDouble();
 
-  // Carbs: remaining calories / 4 cal per gram
   final proteinCalories = proteinGrams * 4;
   final fatCalories = fatGrams * 9;
   final carbCalories = (targetCalories - proteinCalories - fatCalories).clamp(
@@ -133,6 +173,32 @@ final computedMacrosProvider = Provider<ComputedMacros>((ref) {
   );
 });
 
+/// Computes maintenance macros from TDEE with the given protein factor.
+ComputedMacros _computeMacros(
+  UserProfile profile,
+  double tdee,
+  double proteinFactor,
+) {
+  final targetCalories = tdee.clamp(1200, double.infinity);
+  final proteinGrams = (proteinFactor * profile.weightKg).roundToDouble();
+  final fatGrams = ((targetCalories * 0.25) / 9).roundToDouble();
+
+  final proteinCalories = proteinGrams * 4;
+  final fatCalories = fatGrams * 9;
+  final carbCalories = (targetCalories - proteinCalories - fatCalories).clamp(
+    0,
+    double.infinity,
+  );
+  final carbGrams = (carbCalories / 4).roundToDouble();
+
+  return ComputedMacros(
+    dailyCalories: targetCalories.roundToDouble(),
+    dailyProtein: proteinGrams,
+    dailyCarbs: carbGrams,
+    dailyFat: fatGrams,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Legacy NutritionGoal provider — wraps computedMacros into old shape
 // for any remaining consumers (will be removed in T08/T09)
@@ -140,10 +206,9 @@ final computedMacrosProvider = Provider<ComputedMacros>((ref) {
 
 final legacyNutritionGoalProvider = Provider<NutritionGoal>((ref) {
   final macros = ref.watch(computedMacrosProvider);
-  final goal = ref.watch(goalProvider);
+  final goalsData = ref.watch(goalsProvider);
 
-  final targetWeight = switch (goal) {
-    StrengthGoal(:final targetWeightKg) => targetWeightKg,
+  final targetWeight = switch (goalsData.bodyWeightGoal) {
     BodyWeightGoal(:final targetWeightKg) => targetWeightKg,
     null => 80.0,
   };

@@ -56,20 +56,35 @@ class _SeanceAppBarActionState extends ConsumerState<SeanceAppBarAction> {
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: () => context.go('/exercise'),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.fitness_center),
-              const SizedBox(width: 8),
-              Text(_format(_elapsed)),
-            ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.stop),
+            tooltip: 'Cancel seance',
+            onPressed: () {
+              ref.read(activeSeanceProvider.notifier).cancelSeance();
+            },
           ),
-        ),
+          InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: () => context.go('/exercise'),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.fitness_center, size: 20),
+                  const SizedBox(width: 4),
+                  Text(
+                    _format(_elapsed),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

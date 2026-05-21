@@ -1,38 +1,37 @@
 import 'package:flutter/foundation.dart';
 
 @immutable
+class PlannedSet {
+  const PlannedSet({required this.reps, this.weightKg, this.restSeconds = 60});
+
+  final int reps;
+  final double? weightKg;
+  final int restSeconds;
+}
+
+@immutable
 class ExerciseTemplate {
   final String id;
   final String name;
-  final int sets;
-  final int reps;
-  final double? plannedWeightKg;
-  final int restSeconds;
+  final List<PlannedSet> plannedSets;
+
+  int get totalSets => plannedSets.length;
 
   const ExerciseTemplate({
     required this.id,
     required this.name,
-    required this.sets,
-    required this.reps,
-    this.plannedWeightKg,
-    required this.restSeconds,
+    required this.plannedSets,
   });
 
   ExerciseTemplate copyWith({
     String? id,
     String? name,
-    int? sets,
-    int? reps,
-    double? plannedWeightKg,
-    int? restSeconds,
+    List<PlannedSet>? plannedSets,
   }) {
     return ExerciseTemplate(
       id: id ?? this.id,
       name: name ?? this.name,
-      sets: sets ?? this.sets,
-      reps: reps ?? this.reps,
-      plannedWeightKg: plannedWeightKg ?? this.plannedWeightKg,
-      restSeconds: restSeconds ?? this.restSeconds,
+      plannedSets: plannedSets ?? this.plannedSets,
     );
   }
 }
