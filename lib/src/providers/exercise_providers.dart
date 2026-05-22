@@ -219,29 +219,4 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
   }
 }
 
-final _uuid = Uuid();
-
-List<ExerciseDefinition> _seedExercises() {
-  return [
-    ExerciseDefinition(id: _uuid.v4(), name: 'Bench Press', category: 'Chest'),
-    ExerciseDefinition(id: _uuid.v4(), name: 'Squats', category: 'Legs'),
-    ExerciseDefinition(id: _uuid.v4(), name: 'Deadlifts', category: 'Back'),
-    ExerciseDefinition(id: _uuid.v4(), name: 'Pull-ups', category: 'Back'),
-    ExerciseDefinition(id: _uuid.v4(), name: 'Dumbbell Rows', category: 'Back'),
-    ExerciseDefinition(
-      id: _uuid.v4(),
-      name: 'Shoulder Press',
-      category: 'Shoulders',
-    ),
-    ExerciseDefinition(id: _uuid.v4(), name: 'Lat Pulldown', category: 'Back'),
-    ExerciseDefinition(id: _uuid.v4(), name: 'Leg Press', category: 'Legs'),
-    ExerciseDefinition(
-      id: _uuid.v4(),
-      name: 'Dumbbell Curls',
-      category: 'Arms',
-    ),
-    ExerciseDefinition(id: _uuid.v4(), name: 'Tricep Dips', category: 'Arms'),
-  ];
-}
-
 List<Seance> _seedSeances() => [];

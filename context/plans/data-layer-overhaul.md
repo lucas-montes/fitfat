@@ -84,9 +84,12 @@ flowchart TD
 - Added try/catch to all DB calls to handle environments without DB access (tests, first launch).
 - **Verification**: `flutter analyze` — no errors; `flutter test` — 6/6 passed.
 
-### T09: Validation & fix tests (status:todo)
-- Run `flutter analyze`, fix any issues, update widget tests to work with DB
-- **Files**: `test/`
+### T09: Validation & fix tests (status:done)
+- **Completed**: 2026-05-21
+- `flutter analyze` — **No issues found**
+- `flutter test` — **6/6 passed**
+- Removed unused `_seedExercises()` function (no longer needed — seed data comes from DB)
+- Removed unused `_uuid` import from exercise_providers.dart
 
 ### T10: Network connectivity detection (status:todo)
 - **Goal**: Add `connectivity_plus` package. Create a `ConnectivityService` that exposes `isOnline` stream.
