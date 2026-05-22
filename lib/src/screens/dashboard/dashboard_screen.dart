@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../models/dashboard_models.dart';
 import '../../models/exercise_models.dart';
 import '../../providers/dashboard_providers.dart';
@@ -14,7 +18,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // NOTE: Dashboard tab bar height matches Diet tab via PreferredSize(kToolbarHeight)
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 0,
@@ -23,10 +27,13 @@ class DashboardScreen extends ConsumerWidget {
             tabs: [
               Tab(text: 'Overview'),
               Tab(text: 'Goals'),
+              Tab(text: 'Settings'),
             ],
           ),
         ),
-        body: TabBarView(children: [_OverviewTab(), const _GoalsTab()]),
+        body: TabBarView(
+          children: [_OverviewTab(), const _GoalsTab(), const _SettingsTab()],
+        ),
       ),
     );
   }
@@ -1222,5 +1229,113 @@ class BodyweightTrendChart extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+// ---------------------------------------------------------------------------
+// Settings tab — export & delete database
+// ---------------------------------------------------------------------------
+
+class _SettingsTab extends ConsumerWidget {
+  const _SettingsTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Database', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 16),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.file_download),
+                title: const Text('Export database'),
+                subtitle: const Text('Share the SQLite database file'),
+                onTap: () => _exportDb(context),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: const Text(
+                  'Delete all data',
+                  style: TextStyle(color: Colors.red),
+                ),
+                subtitle: const Text('Remove everything and restart fresh'),
+                onTap: () => _deleteDb(context),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _exportDb(BuildContext context) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/fitfat.db');
+      if (!file.existsSync()) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No database file found')),
+          );
+        }
+        return;
+      }
+      await Share.shareXFiles([XFile(file.path)], text: 'fitfat database');
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+      }
+    }
+  }
+
+  Future<void> _deleteDb(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete all data?'),
+        content: const Text(
+          'This will remove all your data including meals, exercises, seances, '
+          'goals, and profile. A fresh database will be created on next launch.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete everything'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/fitfat.db');
+      if (file.existsSync()) {
+        await file.delete();
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Database deleted. Restart the app to recreate it.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      }
+    }
   }
 }

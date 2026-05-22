@@ -46,6 +46,7 @@ dependencies:
   sqlite3: ^2.4.0
   path_provider: ^2.0.0
   path: ^1.8.0
+  share_plus: ^13.1.0
 
 dev_dependencies:
   flutter_test:
