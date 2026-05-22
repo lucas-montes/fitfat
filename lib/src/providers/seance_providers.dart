@@ -1,16 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/seance_models.dart';
 import '../repositories/seance_repository.dart';
-import '../repositories/in_memory_seance_repository.dart';
+import '../repositories/drift/drift_seance_repository.dart' as drift;
+import 'database_providers.dart';
 import 'exercise_providers.dart';
 
 final seanceRepositoryProvider = Provider<SeanceRepository>((ref) {
-  return InMemorySeanceRepository();
+  final db = ref.watch(databaseProvider);
+  return drift.DriftSeanceRepository(db);
 });
 
-final templateListProvider = NotifierProvider<TemplateListNotifier, List<SeanceTemplate>>(
-  TemplateListNotifier.new,
-);
+final templateListProvider =
+    NotifierProvider<TemplateListNotifier, List<SeanceTemplate>>(
+      TemplateListNotifier.new,
+    );
 
 class TemplateListNotifier extends Notifier<List<SeanceTemplate>> {
   late final SeanceRepository _repo;
@@ -42,7 +45,10 @@ class TemplateListNotifier extends Notifier<List<SeanceTemplate>> {
     state = state.where((t) => t.id != id).toList();
   }
 
-  Future<SeanceTemplate> cloneTemplate(String id, {DateTime? scheduledFor}) async {
+  Future<SeanceTemplate> cloneTemplate(
+    String id, {
+    DateTime? scheduledFor,
+  }) async {
     final cloned = await _repo.cloneTemplate(id, scheduledFor: scheduledFor);
     state = [...state, cloned];
     return cloned;
@@ -50,9 +56,10 @@ class TemplateListNotifier extends Notifier<List<SeanceTemplate>> {
 }
 
 /// Active seance plan mapping: maps active seance exercise entry id -> planned exercise template
-final activeSeancePlanProvider = NotifierProvider<ActiveSeancePlanNotifier, Map<String, ExerciseTemplate>>(
-  ActiveSeancePlanNotifier.new,
-);
+final activeSeancePlanProvider =
+    NotifierProvider<ActiveSeancePlanNotifier, Map<String, ExerciseTemplate>>(
+      ActiveSeancePlanNotifier.new,
+    );
 
 class ActiveSeancePlanNotifier extends Notifier<Map<String, ExerciseTemplate>> {
   @override
@@ -73,7 +80,11 @@ class ActiveSeancePlanNotifier extends Notifier<Map<String, ExerciseTemplate>> {
     final seance = ref.read(activeSeanceProvider);
     if (seance == null) return;
     final Map<String, ExerciseTemplate> map = {};
-    for (var i = 0; i < template.exercises.length && i < seance.exercises.length; i++) {
+    for (
+      var i = 0;
+      i < template.exercises.length && i < seance.exercises.length;
+      i++
+    ) {
       map[seance.exercises[i].id] = template.exercises[i];
     }
     state = map;

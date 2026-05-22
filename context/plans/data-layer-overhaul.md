@@ -63,13 +63,18 @@ flowchart TD
 - Removed `_seedExercises()` (no longer needed — seed data comes from DB `onCreate`).
 - **Verification**: `flutter analyze` — no errors; `flutter test` — 6/6 passed.
 
-### T06: Rewrite food provider (status:todo)
-- Replace `IngredientListNotifier`, `MealLogNotifier` with DB-backed versions
-- **Files**: `lib/src/providers/food_providers.dart`
+### T06: Rewrite food provider (status:deferred)
+- Deferred — food model uses composite ingredients (`Ingredient.fromComponents`) which the flat DB tables don't support. Needs schema changes and aligned seed data.
 
-### T07: Rewrite seance/template provider (status:todo)
-- Replace `ActiveSeanceNotifier`, `SeanceHistoryNotifier`, `TemplateListNotifier` with DB-backed versions
-- **Files**: `lib/src/providers/exercise_providers.dart`, `lib/src/providers/seance_providers.dart`
+### T07: Rewrite seance/template provider (status:done)
+- **Completed**: 2026-05-21
+- Implemented `DriftSeanceRepository` (full `SeanceRepository` port) with:
+  - 3-level CRUD through `templates` → `template_exercises` → `template_sets` tables
+  - Cascade delete on template removal
+  - Full assemble on read (joins sets + exercises into nested `SeanceTemplate`)
+- Switched `seanceRepositoryProvider` from `InMemorySeanceRepository` to `DriftSeanceRepository`
+- Updated tests: both widget tests and unit tests override the repo with `InMemorySeanceRepository` to avoid DB dependency
+- **Verification**: `flutter analyze` — no errors; `flutter test` — 6/6 passed.
 
 ### T08: Rewrite dashboard/goal/profile provider (status:todo)
 - Replace `userProfileProvider`, `goalsProvider`, seed data with DB-backed versions

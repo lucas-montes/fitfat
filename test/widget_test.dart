@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitfat/src/testing_flags.dart';
 import 'package:fitfat/src/app.dart';
+import 'package:fitfat/src/providers/seance_providers.dart';
+import 'package:fitfat/src/repositories/in_memory_seance_repository.dart';
 
 void main() {
   testWidgets('App launches and shows food screen', (
@@ -41,7 +43,17 @@ void main() {
 
   testWidgets('Create template and start seance from template', (tester) async {
     disableUiTimers = true;
-    await tester.pumpWidget(const ProviderScope(child: FitFatApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          // Use in-memory repo so tests don't need a database
+          seanceRepositoryProvider.overrideWithValue(
+            InMemorySeanceRepository(),
+          ),
+        ],
+        child: const FitFatApp(),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Exercise'));
     await tester.pumpAndSettle();
