@@ -13,7 +13,8 @@
 | Seance | A workout session composed of exercises with reps and weights. |
 | Cardio | Timed exercise activities (walking, skateboarding, running) tracked with duration and steps. |
 | Weightlifting | Exercise tracked by sets, reps, weight, and rest time between sets. |
-| Drift | SQLite ORM for Dart. Planned for Phase 2 local storage. |
+| Drift | SQLite ORM for Dart. Uses codegen to generate type-safe query methods from table definitions. Runs from `AppDatabase` class. |
+| AppDatabase | Singleton Drift database class with 13 tables and all query methods. Seed data inserted on first create. |
 | Pedometer | Phone built-in step sensor. Planned for Phase 2. |
 | User Profile | Personal data (birthdate, sex, height, weight, activity level) used for TDEE computation. Set when creating a goal. Edit accessible from Goals tab. |
 | TDEE | Total Daily Energy Expenditure, computed via Mifflin-St Jeor equation. Used to derive macro targets from goal type. |

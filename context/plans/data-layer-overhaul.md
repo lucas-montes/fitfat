@@ -38,59 +38,48 @@ flowchart TD
 
 ## Task list
 
-### T01: Drift setup — database class + dependency (status:todo)
-- **Goal**: Add `drift`, `sqlite3_flutter_libs`, `drift_dev`, `build_runner` deps. Create `build.yaml`. Define `AppDatabase` class with connection.
-- **Files**: `pubspec.yaml`, `build.yaml`, `lib/src/database/app_database.dart`
-- **Done when**: `flutter analyze` passes, database class compiles.
+### T01: Drift setup — database class + dependency (status:done)
+- **Completed**: 2026-05-21
+- **Files**: `pubspec.yaml`, `build.yaml`, `lib/src/database/app_database.dart`, `lib/src/database/tables.dart`
 
-### T02: Define Drift tables — exercise, ingredient, meal, seance, template, goal, profile (status:todo)
-- **Goal**: One Drift table per domain model. Include all columns needed for queries (dates, foreign keys, computed fields).
-- **Tables**:
-  - `exercises` — id, name, category, lastSyncedAt
-  - `ingredients` — id, name, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g, lastSyncedAt
-  - `meals` — id, name, eatenAt, notes
-  - `meal_ingredients` — id, mealId (FK), ingredientId (FK), grams
-  - `seances` — id, name, startedAt, completedAt, restBetweenSets (not persisted as Duration)
-  - `exercise_entries` — id, seanceId (FK), exerciseId (FK), startedAt, completedAt
-  - `exercise_sets` — id, entryId (FK), reps, weight
-  - `templates` — id, name
-  - `template_exercises` — id, templateId (FK), name (denormalized)
-  - `template_sets` — id, templateExerciseId (FK), reps, weightKg, restSeconds
-  - `goals` — id, type (strength|bodyweight), exerciseName (nullable), targetWeightKg, direction (nullable), targetDate (nullable)
-  - `user_profile` — id (singleton), birthDate, sex, heightCm, weightKg, activityLevel
-- **Files**: `lib/src/database/tables.dart`
-- **Done when**: All tables defined, `dart run build_runner build` succeeds.
+### T02: Define Drift tables (status:done)
+- **Completed**: 2026-05-21
+- **13 tables**: exercises, ingredients, meals, meal_ingredients, seances, exercise_entries, exercise_sets, templates, template_exercises, template_sets, goals, user_profile, body_weight_entries
 
-### T03: Generate DAOs + data classes (status:todo)
-- **Goal**: Run Drift codegen. Create DAOs with `watchAll()`, `insert`, `update`, `delete` methods per domain.
-- **Files**: `lib/src/database/daos/` (one DAO per domain)
-- **Done when**: Generated `database.g.dart` compiles, DAOs attach to `AppDatabase`.
+### T03: Codegen + query methods (status:done)
+- **Completed**: 2026-05-21
+- **Files**: `lib/src/database/app_database.dart` (all query methods inlined on `AppDatabase` class), `lib/src/database/app_database.g.dart` (generated)
 
-### T04: Repository interfaces — define ports for each domain (status:todo)
-- **Goal**: One abstract interface class per domain defining read/write operations. Ports are platform-independent (no Flutter/Drift types in signatures).
-- **Files**: `lib/src/repositories/interfaces/` — `ExerciseRepository`, `IngredientRepository`, `MealRepository`, `SeanceRepository`, `TemplateRepository`, `GoalRepository`, `ProfileRepository`
-- **Done when**: All interfaces defined, compile clean.
+### T04: Seed data + database provider (status:done)
+- **Completed**: 2026-05-21
+- Added `migrationStrategy` with `onCreate` that seeds 10 default exercises and 12 default ingredients
+- Created `lib/src/providers/database_providers.dart` with `databaseProvider` (singleton `AppDatabase`)
+- **Files**: `lib/src/database/app_database.dart`, `lib/src/providers/database_providers.dart`
+- **Verification**: `flutter analyze` — 0 issues; `flutter test` — 6/6 passed.
 
-### T05: Drift repository implementations (status:todo)
-- **Goal**: One implementation per interface that delegates to Drift DAOs. Every method returns `Future` or `Stream`.
-- **Files**: `lib/src/repositories/drift/`
-- **Done when**: All methods implemented, analyzer clean.
+### T05: Rewrite exercise provider (status:done)
+- **Completed**: 2026-05-21
+- Changed `exerciseListProvider` from `Provider<List>` to `NotifierProvider<ExerciseListNotifier, List>`. Same consumer-facing type — no UI changes. `ExerciseListNotifier.build()` calls `_loadFromDb()` which reads from Drift and sets state. Falls back to empty `[]` if DB is empty or not ready yet.
+- Removed `_seedExercises()` (no longer needed — seed data comes from DB `onCreate`).
+- **Verification**: `flutter analyze` — no errors; `flutter test` — 6/6 passed.
 
-### T06: Seed data migration (status:todo)
-- **Goal**: Insert default exercises, seed ingredients on first launch if DB is empty. Use `migrationStrategy` or `beforeOpen` callback.
-- **Files**: `lib/src/database/app_database.dart`
-- **Done when**: Fresh install shows same exercise list as current in-memory seed.
+### T06: Rewrite food provider (status:todo)
+- Replace `IngredientListNotifier`, `MealLogNotifier` with DB-backed versions
+- **Files**: `lib/src/providers/food_providers.dart`
 
-### T07: Rewrite Riverpod providers to use repositories (status:todo)
-- **Goal**: Replace in-memory NotifierProviders with StreamProvider / FutureProvider that read from Drift repositories. Write operations go through repository methods.
-- **Files**: `lib/src/providers/` — all 4 files
-- **Done when**: All existing UI screens work with DB-backed data. `flutter analyze` clean, tests pass.
+### T07: Rewrite seance/template provider (status:todo)
+- Replace `ActiveSeanceNotifier`, `SeanceHistoryNotifier`, `TemplateListNotifier` with DB-backed versions
+- **Files**: `lib/src/providers/exercise_providers.dart`, `lib/src/providers/seance_providers.dart`
 
-### T08: Active seance — keep SharedPreferences for now (status:done)
-- Already implemented with JSON serialization via SharedPreferences.
-- Will be moved to Drift in a follow-up if it becomes relational (e.g., querying active seance exercises).
+### T08: Rewrite dashboard/goal/profile provider (status:todo)
+- Replace `userProfileProvider`, `goalsProvider`, seed data with DB-backed versions
+- **Files**: `lib/src/providers/dashboard_providers.dart`
 
-### T09: Network connectivity detection (status:todo)
+### T09: Validation & fix tests (status:todo)
+- Run `flutter analyze`, fix any issues, update widget tests to work with DB
+- **Files**: `test/`
+
+### T10: Network connectivity detection (status:todo)
 - **Goal**: Add `connectivity_plus` package. Create a `ConnectivityService` that exposes `isOnline` stream.
 - **Files**: `lib/src/services/connectivity_service.dart`
 - **Done when**: Provider emits `true`/`false` based on actual network state.

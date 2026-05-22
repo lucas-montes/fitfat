@@ -44,6 +44,8 @@ class ExercisesListTab extends ConsumerWidget {
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      itemCount: exercises.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final exercise = exercises[index];
         return Card(
@@ -54,8 +56,6 @@ class ExercisesListTab extends ConsumerWidget {
           ),
         );
       },
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemCount: exercises.length,
     );
   }
 }
@@ -71,8 +71,7 @@ class SeancesHistoryTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
-        // When a seance is running, show an active card instead of "New Seance"
-        if (ref.watch(activeSeanceProvider) case final seance?)
+        if (ref.watch(activeSeanceProvider) case final running?)
           Card(
             color: Theme.of(context).colorScheme.primaryContainer,
             child: Padding(
@@ -100,14 +99,14 @@ class SeancesHistoryTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    seance.name ?? 'Unnamed seance',
+                    running.name ?? 'Unnamed seance',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${seance.exercises.length} exercise${seance.exercises.length == 1 ? '' : 's'}',
+                    '${running.exercises.length} exercise${running.exercises.length == 1 ? '' : 's'}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(
                         context,
@@ -121,13 +120,12 @@ class SeancesHistoryTab extends ConsumerWidget {
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.visibility),
                           label: const Text('View'),
-                          onPressed: () {
-                            Navigator.of(context, rootNavigator: true).push(
-                              MaterialPageRoute(
-                                builder: (_) => const CurrentSeanceScreen(),
+                          onPressed: () =>
+                              Navigator.of(context, rootNavigator: true).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const CurrentSeanceScreen(),
+                                ),
                               ),
-                            );
-                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -135,11 +133,9 @@ class SeancesHistoryTab extends ConsumerWidget {
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.stop),
                           label: const Text('Stop'),
-                          onPressed: () {
-                            ref
-                                .read(activeSeanceProvider.notifier)
-                                .cancelSeance();
-                          },
+                          onPressed: () => ref
+                              .read(activeSeanceProvider.notifier)
+                              .cancelSeance(),
                         ),
                       ),
                     ],
@@ -148,7 +144,6 @@ class SeancesHistoryTab extends ConsumerWidget {
               ),
             ),
           )
-        // When no seance is running, show the "New Seance" card
         else
           Card(
             child: Padding(
@@ -261,7 +256,6 @@ class SeancesHistoryTab extends ConsumerWidget {
 
 class _TemplateCard extends ConsumerWidget {
   const _TemplateCard({required this.template});
-
   final SeanceTemplate template;
 
   @override
@@ -379,7 +373,6 @@ class _TemplateCard extends ConsumerWidget {
 
 class _SeanceHistoryCard extends ConsumerWidget {
   const _SeanceHistoryCard({required this.seance});
-
   final Seance seance;
 
   @override
@@ -389,15 +382,12 @@ class _SeanceHistoryCard extends ConsumerWidget {
         .take(3)
         .join(', ');
     final hasMore = seance.exercises.length > 3;
-
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         title: Text(exerciseNames.isNotEmpty ? exerciseNames : 'Empty seance'),
         subtitle: Text(
-          '${seance.exercises.length} exercise${seance.exercises.length == 1 ? '' : 's'} • '
-          '${DateFormat('MMM d, h:mm a').format(seance.startedAt)} • '
-          '${_formatDuration(seance.duration)}${hasMore ? ' • +${seance.exercises.length - 3} more' : ''}',
+          '${seance.exercises.length} exercise${seance.exercises.length == 1 ? '' : 's'} • ${DateFormat('MMM d, h:mm a').format(seance.startedAt)} • ${_formatDuration(seance.duration)}${hasMore ? ' • +${seance.exercises.length - 3} more' : ''}',
         ),
         trailing: PopupMenuButton<String>(
           onSelected: (value) async {
@@ -452,9 +442,6 @@ String _formatDuration(Duration duration) {
   final seconds = duration.inSeconds % 60;
   return '$minutes:${seconds.toString().padLeft(2, '0')}';
 }
-
-// _formatDuration, CurrentSeanceScreen, TimerWidget, and AddSetForm
-// have been extracted to current_seance_screen.dart
 
 void confirmReplaceSeance(
   BuildContext context,

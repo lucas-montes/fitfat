@@ -7,12 +7,34 @@ import 'package:uuid/uuid.dart';
 import '../models/exercise_models.dart';
 import '../models/seance_models.dart';
 import '../services/seance_foreground_service.dart';
+import 'database_providers.dart';
 
 const _activeSeanceKey = 'active_seance_json';
 
-final exerciseListProvider = Provider<List<ExerciseDefinition>>((ref) {
-  return _seedExercises();
-});
+final exerciseListProvider =
+    NotifierProvider<ExerciseListNotifier, List<ExerciseDefinition>>(
+      ExerciseListNotifier.new,
+    );
+
+class ExerciseListNotifier extends Notifier<List<ExerciseDefinition>> {
+  @override
+  List<ExerciseDefinition> build() {
+    _loadFromDb();
+    return [];
+  }
+
+  Future<void> _loadFromDb() async {
+    final db = ref.read(databaseProvider);
+    final rows = await db.getAllExercises();
+    if (rows.isEmpty) return;
+    state = rows
+        .map(
+          (e) =>
+              ExerciseDefinition(id: e.id, name: e.name, category: e.category),
+        )
+        .toList();
+  }
+}
 
 final activeSeanceProvider = NotifierProvider<ActiveSeanceNotifier, Seance?>(
   ActiveSeanceNotifier.new,

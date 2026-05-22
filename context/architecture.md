@@ -5,12 +5,14 @@
 ```mermaid
 flowchart TD
     UI["UI Layer<br/>Screens & Widgets"]
-    State["State Layer<br/>Riverpod Providers"]
-    Models["Domain Models<br/>Dart classes (no DB yet)"]
+    State["State Layer<br/>Riverpod Providers (streams)"]
+    DB["Data Layer<br/>Drift (SQLite)"]
+    Models["Domain Models<br/>Dart classes"]
     Router["Navigation Layer<br/>go_router"]
 
     UI --> State
-    State --> Models
+    State --> DB
+    DB --> Models
     UI --> Router
 ```
 
@@ -29,7 +31,12 @@ lib/
     │   ├── food/                    # Meals tab UI (MealsTab, AddMealScreen, CustomIngredientScreen, FoodEntryCard)
     │   ├── exercise/                # Exercise tab (ExercisesTab, SeancesTab, CurrentSeanceScreen, SeanceLibraryScreen, CreateSeanceScreen)
     │   └── dashboard/               # Progress dashboard tab (DailyNutritionCard, GoalsCard, StrengthTrendChart, BodyweightTrendChart)
-    ├── providers/                   # Riverpod providers (mock data in Phase 1)
+    ├── database/
+    │   ├── app_database.dart        # AppDatabase — Drift DB class with all query methods + seed data
+    │   ├── app_database.g.dart      # Generated Drift code
+    │   └── tables.dart              # All 13 Drift table definitions
+    ├── providers/                   # Riverpod providers (migrating to DB-backed)
+    │   ├── database_providers.dart  # databaseProvider (singleton AppDatabase)
     │   ├── food_providers.dart      # IngredientListNotifier, MealLogNotifier
     │   ├── exercise_providers.dart  # ActiveSeanceNotifier, SeanceHistoryNotifier
     │   ├── seance_providers.dart    # TemplateListNotifier, ActiveSeancePlanNotifier
@@ -61,8 +68,8 @@ Default route: `/dashboard`. Bottom nav order: Diet / Dashboard / Exercise.
 ## State management
 
 Riverpod (no codegen). Providers written manually.
-Phase 1 uses `Provider<T>` returning mock data.
-Phase 2 replaces with DB-backed async providers.
+Phase 1 (complete) used `Provider<T>` returning mock data.
+Phase 2 (in progress) migrates to `StreamProvider` backed by Drift SQLite database.
 
 ## Dependencies
 
@@ -75,3 +82,12 @@ Phase 2 replaces with DB-backed async providers.
 | uuid | ^4.5.3 | Unique ID generation |
 | cupertino_icons | ^1.0.8 | iOS-style icons |
 | flutter_foreground_task | ^9.2.2 | Background timer via foreground service (Android + iOS) |
+| flutter_local_notifications | ^18.0.0 | Local notifications for seance updates |
+| shared_preferences | ^2.5.5 | Key-value persistence (active seance) |
+| drift | ^2.20.0 | SQLite ORM — local database |
+| sqlite3_flutter_libs | ^0.5.0 | Native SQLite libraries |
+| sqlite3 | ^2.4.0 | Dart SQLite bindings |
+| path_provider | ^2.0.0 | File system paths for DB file |
+| path | ^1.8.0 | Path manipulation |
+| drift_dev | ^2.20.0 | Drift code generator (dev) |
+| build_runner | ^2.4.0 | Codegen runner (dev) |

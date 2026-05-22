@@ -18,7 +18,7 @@
 ## Implementation phases
 
 - **Phase 1 (done):** All features complete — diet CRUD, exercise seance + templates + timer, goals system, charts, Dashboard tabs.
-- **Phase 2 (done):** UI/UX polish — Diet Add Ingredient title, Dashboard goals tabs + multi-goal, Exercise tab reorder + Current Seance tab, stop/cancel, seance flow redesign.
+- **Phase 2 (in progress):** Data layer overhaul — Drift SQLite database with Riverpod stream providers replacing in-memory mock data. T01–T05 done (DB setup, tables, codegen, seed data + provider, exercise list persistence).
 - **Phase 3 (done):** Post-MVP polish — birthdate profile, maintenance macros, goal UX, template editing, seance navigation improvement.
 
 ## Current status
