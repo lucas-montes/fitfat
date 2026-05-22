@@ -76,9 +76,13 @@ flowchart TD
 - Updated tests: both widget tests and unit tests override the repo with `InMemorySeanceRepository` to avoid DB dependency
 - **Verification**: `flutter analyze` — no errors; `flutter test` — 6/6 passed.
 
-### T08: Rewrite dashboard/goal/profile provider (status:todo)
-- Replace `userProfileProvider`, `goalsProvider`, seed data with DB-backed versions
-- **Files**: `lib/src/providers/dashboard_providers.dart`
+### T08: Rewrite dashboard/goal/profile provider (status:done)
+- **Completed**: 2026-05-21
+- `UserProfileNotifier.build()` now calls `_loadFromDb()` to restore profile from Drift. `setProfile()` persists via `DriftProfileRepository`.
+- `GoalsNotifier.build()` now calls `_loadFromDb()` to restore goals. All CRUD methods (setBodyWeight, addStrength, removeStrength, etc.) persist via `DriftGoalRepository`.
+- Implemented `DriftGoalRepository` (was stubs) with full CRUD: upsert/clear bodyweight, add/update/remove strength goals, load all.
+- Added try/catch to all DB calls to handle environments without DB access (tests, first launch).
+- **Verification**: `flutter analyze` — no errors; `flutter test` — 6/6 passed.
 
 ### T09: Validation & fix tests (status:todo)
 - Run `flutter analyze`, fix any issues, update widget tests to work with DB

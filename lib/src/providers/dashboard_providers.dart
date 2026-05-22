@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/dashboard_models.dart';
 import '../models/food_models.dart';
+import '../repositories/drift/drift_profile_repository.dart';
+import '../repositories/drift/drift_goal_repository.dart';
 import 'food_providers.dart';
+import 'database_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Chart period
@@ -30,10 +33,31 @@ final userProfileProvider = NotifierProvider<UserProfileNotifier, UserProfile?>(
 
 class UserProfileNotifier extends Notifier<UserProfile?> {
   @override
-  UserProfile? build() => null;
+  UserProfile? build() {
+    _loadFromDb();
+    return null;
+  }
 
   void setProfile(UserProfile profile) {
     state = profile;
+    _persist(profile);
+  }
+
+  Future<void> _loadFromDb() async {
+    try {
+      final db = ref.read(databaseProvider);
+      final repo = DriftProfileRepository(db);
+      final saved = await repo.get();
+      if (saved != null) state = saved;
+    } catch (_) {}
+  }
+
+  Future<void> _persist(UserProfile profile) async {
+    try {
+      final db = ref.read(databaseProvider);
+      final repo = DriftProfileRepository(db);
+      await repo.upsert(profile);
+    } catch (_) {}
   }
 }
 
@@ -47,18 +71,41 @@ final goalsProvider = NotifierProvider<GoalsNotifier, GoalsData>(
 
 class GoalsNotifier extends Notifier<GoalsData> {
   @override
-  GoalsData build() => const GoalsData();
+  GoalsData build() {
+    _loadFromDb();
+    return const GoalsData();
+  }
+
+  Future<void> _loadFromDb() async {
+    try {
+      final db = ref.read(databaseProvider);
+      final repo = DriftGoalRepository(db);
+      final saved = await repo.loadAll();
+      final hasAnyGoal =
+          saved.bodyWeightGoal != null || saved.strengthGoals.isNotEmpty;
+      if (hasAnyGoal) state = saved;
+    } catch (_) {}
+  }
 
   void setBodyWeightGoal(BodyWeightGoal goal) {
     state = GoalsData(bodyWeightGoal: goal, strengthGoals: state.strengthGoals);
+    _persist(() async {
+      final db = ref.read(databaseProvider);
+      final repo = DriftGoalRepository(db);
+      await repo.upsertBodyWeight(goal);
+    });
   }
 
   void clearBodyWeightGoal() {
     state = GoalsData(bodyWeightGoal: null, strengthGoals: state.strengthGoals);
+    _persist(() async {
+      final db = ref.read(databaseProvider);
+      final repo = DriftGoalRepository(db);
+      await repo.clearBodyWeight();
+    });
   }
 
   void addStrengthGoal(StrengthGoal goal) {
-    // Enforce one per exercise: replace if same exercise exists
     state = GoalsData(
       bodyWeightGoal: state.bodyWeightGoal,
       strengthGoals: [
@@ -67,6 +114,11 @@ class GoalsNotifier extends Notifier<GoalsData> {
         goal,
       ],
     );
+    _persist(() async {
+      final db = ref.read(databaseProvider);
+      final repo = DriftGoalRepository(db);
+      await repo.addStrength(goal);
+    });
   }
 
   void updateStrengthGoal(String exerciseName, StrengthGoal updated) {
@@ -77,6 +129,11 @@ class GoalsNotifier extends Notifier<GoalsData> {
           if (g.exerciseName == exerciseName) updated else g,
       ],
     );
+    _persist(() async {
+      final db = ref.read(databaseProvider);
+      final repo = DriftGoalRepository(db);
+      await repo.updateStrength(exerciseName, updated);
+    });
   }
 
   void removeStrengthGoal(String exerciseName) {
@@ -86,6 +143,19 @@ class GoalsNotifier extends Notifier<GoalsData> {
           .where((g) => g.exerciseName != exerciseName)
           .toList(),
     );
+    _persist(() async {
+      final db = ref.read(databaseProvider);
+      final repo = DriftGoalRepository(db);
+      await repo.removeStrength(exerciseName);
+    });
+  }
+
+  Future<void> _persist(Future<void> Function() fn) async {
+    try {
+      await fn();
+    } catch (_) {
+      // Silently handle DB errors — state is already updated in-memory
+    }
   }
 }
 

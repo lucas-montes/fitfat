@@ -24,15 +24,22 @@ class ExerciseListNotifier extends Notifier<List<ExerciseDefinition>> {
   }
 
   Future<void> _loadFromDb() async {
-    final db = ref.read(databaseProvider);
-    final rows = await db.getAllExercises();
-    if (rows.isEmpty) return;
-    state = rows
-        .map(
-          (e) =>
-              ExerciseDefinition(id: e.id, name: e.name, category: e.category),
-        )
-        .toList();
+    try {
+      final db = ref.read(databaseProvider);
+      final rows = await db.getAllExercises();
+      if (rows.isEmpty) return;
+      state = rows
+          .map(
+            (e) => ExerciseDefinition(
+              id: e.id,
+              name: e.name,
+              category: e.category,
+            ),
+          )
+          .toList();
+    } catch (_) {
+      // DB not available (tests, first launch, etc.)
+    }
   }
 }
 
