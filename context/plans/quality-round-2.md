@@ -40,10 +40,9 @@ Fixes and improvements collected from user notes. Sorted by priority/type.
 
 ## History & Metrics
 
-### H01: Exercise history view (status:todo)
-- Add per-exercise history showing past seances where that exercise was used, with sets, reps, weight, and progression.
-- **Files**: New screen or expand `ExercisesListTab`.
-- **Done when**: Tapping an exercise in the exercise list shows its history.
+### H01: Exercise history view (status:done)
+- Added `ExerciseHistoryScreen` — shows completed seances containing the selected exercise. Each entry displays the date, number of sets, per-set reps×weight, and the best set (by weight). Accessed by tapping any exercise in the exercise list.
+- **Files**: `lib/src/screens/exercise/exercise_history_screen.dart` (new), `lib/src/screens/exercise/exercise_screen.dart`
 
 ### H02: Redesign seance history cards (status:todo)
 - Current cards show comma-separated exercise names and duration. New design: date as header, each exercise as a row with "3 sets: 10×60kg, 8×65kg", last set time on the right.

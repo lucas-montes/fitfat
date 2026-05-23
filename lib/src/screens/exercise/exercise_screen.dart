@@ -6,6 +6,7 @@ import '../../models/exercise_models.dart';
 import '../../models/seance_models.dart';
 import '../../providers/exercise_providers.dart';
 import '../../providers/seance_providers.dart';
+import 'exercise_history_screen.dart';
 import 'create_seance_screen.dart';
 import 'seance_library_screen.dart';
 
@@ -53,6 +54,13 @@ class ExercisesListTab extends ConsumerWidget {
             title: Text(exercise.name),
             subtitle: Text(exercise.category),
             trailing: const Icon(Icons.info_outline),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ExerciseHistoryScreen(exercise: exercise),
+                ),
+              );
+            },
           ),
         );
       },
