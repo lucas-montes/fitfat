@@ -51,10 +51,9 @@ Fixes and improvements collected from user notes. Sorted by priority/type.
 - Added `ExerciseHistoryScreen` — shows completed seances containing the selected exercise. Each entry displays the date, number of sets, per-set reps×weight, and the best set (by weight). Accessed by tapping any exercise in the exercise list.
 - **Files**: `lib/src/screens/exercise/exercise_history_screen.dart` (new), `lib/src/screens/exercise/exercise_screen.dart`
 
-### H02: Redesign seance history cards (status:todo)
-- Current cards show comma-separated exercise names and duration. New design: date as header, each exercise as a row with "3 sets: 10×60kg, 8×65kg", last set time on the right.
-- **Files**: `lib/src/screens/exercise/exercise_screen.dart` (`_SeanceHistoryCard`)
-- **Done when**: History cards follow the new layout.
+### H02: Redesign seance history cards (status:done)
+- Completely redesigned `_SeanceHistoryCard`: date header (e.g. "Monday, May 23, 2026"), seance name, per-exercise rows showing set count and summary (e.g. "10×60, 8×65"), duration footer. "Create template" moved to a bottom sheet (⋮ button).
+- **Files**: `lib/src/screens/exercise/exercise_screen.dart`
 
 ### H03: Rest timer in notification (status:todo)
 - After adding a set, the notification should show "Rest: 60s remaining" countdown so the user doesn't need the app open.

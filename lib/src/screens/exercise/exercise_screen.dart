@@ -370,58 +370,122 @@ class _SeanceHistoryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final exerciseNames = seance.exercises
-        .map((e) => e.exercise.name)
-        .take(3)
-        .join(', ');
-    final hasMore = seance.exercises.length > 3;
+    final dateStr = DateFormat('EEEE, MMM d, yyyy').format(seance.startedAt);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(exerciseNames.isNotEmpty ? exerciseNames : 'Empty seance'),
-        subtitle: Text(
-          '${seance.exercises.length} exercise${seance.exercises.length == 1 ? '' : 's'} • ${DateFormat('MMM d, h:mm a').format(seance.startedAt)} • ${_formatDuration(seance.duration)}${hasMore ? ' • +${seance.exercises.length - 3} more' : ''}',
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) async {
-            if (value == 'create-template') {
-              final exercises = seance.exercises.map((e) {
-                return ExerciseTemplate(
-                  id: e.id,
-                  name: e.exercise.name,
-                  plannedSets: e.sets.isNotEmpty
-                      ? e.sets
-                            .map(
-                              (s) =>
-                                  PlannedSet(reps: s.reps, weightKg: s.weight),
-                            )
-                            .toList()
-                      : [const PlannedSet(reps: 8)],
-                );
-              }).toList();
-              final template = SeanceTemplate(
-                id: DateTime.now().microsecondsSinceEpoch.toString(),
-                name: 'From ${DateFormat('MMM d').format(seance.startedAt)}',
-                exercises: exercises,
-              );
-              await ref
-                  .read(templateListProvider.notifier)
-                  .createTemplate(template);
-              final created = ref.read(templateListProvider).last;
-              if (context.mounted) {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => CreateSeanceScreen(template: created),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    dateStr,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                Text(
+                  seance.name ?? 'Seance',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.more_vert, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => _showMenu(context, ref),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (seance.exercises.isEmpty)
+              Text('No exercises', style: Theme.of(context).textTheme.bodySmall)
+            else
+              ...seance.exercises.map((entry) {
+                final setCount = entry.sets.length;
+                final setSummary = entry.sets
+                    .map((s) => '${s.reps}×${s.weight.toStringAsFixed(0)}')
+                    .join(', ');
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${entry.exercise.name}: $setCount set${setCount == 1 ? '' : 's'}',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                      if (setSummary.isNotEmpty)
+                        Flexible(
+                          child: Text(
+                            setSummary,
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
                   ),
                 );
-                await ref.read(templateListProvider.notifier).loadTemplates();
-              }
-            }
-          },
-          itemBuilder: (_) => const [
-            PopupMenuItem(
-              value: 'create-template',
-              child: Text('Create template from this'),
+              }),
+            const SizedBox(height: 4),
+            Text(
+              _formatDuration(seance.duration),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMenu(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: const Text('Create template from this'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final exercises = seance.exercises.map((e) {
+                  return ExerciseTemplate(
+                    id: e.id,
+                    name: e.exercise.name,
+                    plannedSets: e.sets.isNotEmpty
+                        ? e.sets
+                              .map(
+                                (s) => PlannedSet(
+                                  reps: s.reps,
+                                  weightKg: s.weight,
+                                ),
+                              )
+                              .toList()
+                        : [const PlannedSet(reps: 8)],
+                  );
+                }).toList();
+                final template = SeanceTemplate(
+                  id: DateTime.now().microsecondsSinceEpoch.toString(),
+                  name: 'From ${DateFormat('MMM d').format(seance.startedAt)}',
+                  exercises: exercises,
+                );
+                await ref
+                    .read(templateListProvider.notifier)
+                    .createTemplate(template);
+                final created = ref.read(templateListProvider).last;
+                if (context.mounted) {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CreateSeanceScreen(template: created),
+                    ),
+                  );
+                  await ref.read(templateListProvider.notifier).loadTemplates();
+                }
+              },
             ),
           ],
         ),
