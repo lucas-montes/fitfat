@@ -301,56 +301,61 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
     int setIndex,
     ExerciseSet set,
   ) async {
-    final repsController = TextEditingController(text: set.reps.toString());
-    final weightController = TextEditingController(text: set.weight.toString());
-
     final result = await showDialog<Map<String, double>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Set'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: repsController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                label: Text('Reps'),
-                border: OutlineInputBorder(),
+      builder: (ctx) {
+        final repsC = TextEditingController(text: set.reps.toString());
+        final weightC = TextEditingController(text: set.weight.toString());
+        return AlertDialog(
+          title: const Text('Edit Set'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: repsC,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  label: Text('Reps'),
+                  border: OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: weightC,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  label: Text('Weight (kg)'),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                repsC.dispose();
+                weightC.dispose();
+                Navigator.pop(ctx);
+              },
+              child: const Text('Cancel'),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: weightController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                label: Text('Weight (kg)'),
-                border: OutlineInputBorder(),
-              ),
+            FilledButton(
+              onPressed: () {
+                final reps = int.tryParse(repsC.text);
+                final weight = double.tryParse(weightC.text);
+                if (reps != null && weight != null) {
+                  Navigator.pop(ctx, {
+                    'reps': reps.toDouble(),
+                    'weight': weight,
+                  });
+                }
+              },
+              child: const Text('Save'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final reps = int.tryParse(repsController.text);
-              final weight = double.tryParse(weightController.text);
-              if (reps != null && weight != null) {
-                Navigator.pop(ctx, {'reps': reps.toDouble(), 'weight': weight});
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+        );
+      },
     );
-
-    repsController.dispose();
-    weightController.dispose();
 
     if (result != null && mounted) {
       ref
