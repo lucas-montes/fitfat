@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import '../database/app_database.dart'
+    hide Seance, ExerciseEntry, ExerciseSet, Exercise;
 import '../models/exercise_models.dart';
 import '../models/seance_models.dart';
 import '../services/seance_foreground_service.dart';
@@ -272,9 +275,15 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
 
   void completeSeance() {
     if (state == null) return;
+    final now = DateTime.now();
+    final defaultName =
+        'Seance - ${now.day.toString().padLeft(2, '0')}/'
+        '${now.month.toString().padLeft(2, '0')}/'
+        '${now.year} ${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}';
     final completed = Seance(
       id: state!.id,
-      name: state!.name,
+      name: state!.name ?? defaultName,
       startedAt: state!.startedAt,
       exercises: state!.exercises,
       completedAt: DateTime.now(),
@@ -296,11 +305,121 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
 
 class SeanceHistoryNotifier extends Notifier<List<Seance>> {
   @override
-  List<Seance> build() => _seedSeances();
+  List<Seance> build() {
+    _loadFromDb();
+    return [];
+  }
+
+  Future<void> _loadFromDb() async {
+    try {
+      final db = ref.read(databaseProvider);
+      final seanceRows = await (db.select(
+        db.seances,
+      )..where((t) => t.completedAt.isNotNull())).get();
+      final result = <Seance>[];
+      for (final sr in seanceRows) {
+        final entryRows = await (db.select(
+          db.exerciseEntries,
+        )..where((t) => t.seanceId.equals(sr.id))).get();
+        final exercises = <ExerciseEntry>[];
+        for (final er in entryRows) {
+          final setRows = await (db.select(
+            db.exerciseSets,
+          )..where((t) => t.entryId.equals(er.id))).get();
+          exercises.add(
+            ExerciseEntry(
+              id: er.id,
+              exercise: ExerciseDefinition(id: er.exerciseId, name: ''),
+              sets: setRows
+                  .map((s) => ExerciseSet(reps: s.reps, weight: s.weight))
+                  .toList(),
+              startedAt: er.startedAt,
+              completedAt: er.completedAt,
+            ),
+          );
+        }
+        result.add(
+          Seance(
+            id: sr.id,
+            name: sr.name,
+            startedAt: sr.startedAt,
+            exercises: exercises,
+            completedAt: sr.completedAt,
+          ),
+        );
+      }
+      if (result.isNotEmpty) state = result;
+    } catch (_) {}
+  }
+
+  Future<void> _saveToDb(Seance seance) async {
+    try {
+      final db = ref.read(databaseProvider);
+      // Save the seance
+      await db
+          .into(db.seances)
+          .insertOnConflictUpdate(
+            SeancesCompanion(
+              id: Value(seance.id),
+              name: Value(seance.name),
+              startedAt: Value(seance.startedAt),
+              completedAt: Value(seance.completedAt),
+              restBetweenSetsMillis: Value(
+                seance.restBetweenSets.inMilliseconds,
+              ),
+            ),
+          );
+      // Save each exercise entry + sets
+      for (final entry in seance.exercises) {
+        // Find or create the exercise definition
+        final existing = await (db.select(
+          db.exercises,
+        )..where((t) => t.name.equals(entry.exercise.name))).get();
+        final exerciseId = existing.isNotEmpty
+            ? existing.first.id
+            : const Uuid().v4();
+        if (existing.isEmpty) {
+          await db
+              .into(db.exercises)
+              .insert(
+                ExercisesCompanion.insert(
+                  id: exerciseId,
+                  name: entry.exercise.name,
+                  category: entry.exercise.category,
+                ),
+              );
+        }
+        // Save the exercise entry
+        await db
+            .into(db.exerciseEntries)
+            .insertOnConflictUpdate(
+              ExerciseEntriesCompanion(
+                id: Value(entry.id),
+                seanceId: Value(seance.id),
+                exerciseId: Value(exerciseId),
+                startedAt: Value(entry.startedAt),
+                completedAt: Value(entry.completedAt),
+              ),
+            );
+        // Save all sets
+        for (final set in entry.sets) {
+          await db
+              .into(db.exerciseSets)
+              .insert(
+                ExerciseSetsCompanion.insert(
+                  id: const Uuid().v4(),
+                  entryId: entry.id,
+                  reps: set.reps,
+                  weight: set.weight,
+                ),
+              );
+        }
+      }
+    } catch (_) {}
+  }
 
   void addSeance(Seance seance) {
     state = [...state, seance];
+    _saveToDb(seance);
   }
 }
-
-List<Seance> _seedSeances() => [];
