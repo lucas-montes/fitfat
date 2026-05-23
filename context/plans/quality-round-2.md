@@ -55,10 +55,11 @@ Fixes and improvements collected from user notes. Sorted by priority/type.
 - Completely redesigned `_SeanceHistoryCard`: date header (e.g. "Monday, May 23, 2026"), seance name, per-exercise rows showing set count and summary (e.g. "10×60, 8×65"), duration footer. "Create template" moved to a bottom sheet (⋮ button).
 - **Files**: `lib/src/screens/exercise/exercise_screen.dart`
 
-### H03: Rest timer in notification (status:todo)
-- After adding a set, the notification should show "Rest: 60s remaining" countdown so the user doesn't need the app open.
-- **Files**: `lib/src/services/seance_foreground_service.dart`
-- **Done when**: Notification updates to show rest countdown after a set is added.
+### H03: Rest timer in notification (status:done)
+- Added `_restStartedAtKey` — when a set is added, the foreground service saves the current timestamp. The background `SeanceTaskHandler` reads it and shows "Rest: Xs remaining" in the notification until it hits 0, then falls back to the elapsed time.
+- `ActiveSeanceNotifier.addSet()` now calls `SeanceForegroundService.instance.restSet(90)` after each set.
+- Rest period defaults to 90 seconds.
+- **Files**: `lib/src/services/seance_foreground_service.dart`, `lib/src/providers/exercise_providers.dart`
 
 ---
 

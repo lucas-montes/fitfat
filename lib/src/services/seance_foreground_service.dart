@@ -5,6 +5,8 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 const int _seanceServiceId = 256;
 const String _seanceStartedAtKey = 'seance_started_at_millis';
+const String _restStartedAtKey = 'rest_started_at_millis';
+const int _defaultRestSeconds = 90;
 
 @pragma('vm:entry-point')
 void seanceTaskCallback() {
@@ -60,6 +62,14 @@ class SeanceForegroundService {
   Future<void> stop() async {
     await FlutterForegroundTask.stopService();
     await FlutterForegroundTask.removeData(key: _seanceStartedAtKey);
+    await FlutterForegroundTask.removeData(key: _restStartedAtKey);
+  }
+
+  Future<void> restSet(int restSeconds) async {
+    await FlutterForegroundTask.saveData(
+      key: _restStartedAtKey,
+      value: DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   Future<void> _requestPermissions() async {
@@ -91,6 +101,7 @@ class SeanceForegroundService {
 
 class SeanceTaskHandler extends TaskHandler {
   DateTime? _startedAt;
+  DateTime? _restStartedAt;
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -100,6 +111,12 @@ class SeanceTaskHandler extends TaskHandler {
     if (startedAtMillis is int) {
       _startedAt = DateTime.fromMillisecondsSinceEpoch(startedAtMillis);
     }
+    final restAtMillis = await FlutterForegroundTask.getData(
+      key: _restStartedAtKey,
+    );
+    if (restAtMillis is int) {
+      _restStartedAt = DateTime.fromMillisecondsSinceEpoch(restAtMillis);
+    }
   }
 
   @override
@@ -107,10 +124,26 @@ class SeanceTaskHandler extends TaskHandler {
     final startedAt = _startedAt;
     if (startedAt == null) return;
 
-    final elapsed = timestamp.difference(startedAt);
+    String text;
+    final restAt = _restStartedAt;
+    if (restAt != null) {
+      final restElapsed = timestamp.difference(restAt);
+      final restRemaining = _defaultRestSeconds - restElapsed.inSeconds;
+      if (restRemaining > 0) {
+        text = 'Rest: ${restRemaining}s remaining';
+      } else {
+        _restStartedAt = null;
+        text =
+            'Seance running — ${_formatElapsed(timestamp.difference(startedAt))}';
+      }
+    } else {
+      text =
+          'Seance running — ${_formatElapsed(timestamp.difference(startedAt))}';
+    }
+
     FlutterForegroundTask.updateService(
       notificationTitle: 'Seance running',
-      notificationText: _formatElapsed(elapsed),
+      notificationText: text,
       notificationInitialRoute: '/current-seance',
     );
   }

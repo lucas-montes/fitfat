@@ -191,6 +191,7 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       restBetweenSets: state!.restBetweenSets,
     );
     unawaited(_persist());
+    unawaited(SeanceForegroundService.instance.restSet(90));
   }
 
   void toggleSetCompleted(int exerciseIndex, int setIndex) {
