@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../testing_flags.dart';
 import '../../models/exercise_models.dart';
 import '../../providers/exercise_providers.dart';
@@ -214,6 +215,9 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               const SizedBox(height: 12),
               ...List.generate(entry.sets.length, (i) {
                 final set = entry.sets[i];
+                final time = set.completedAt != null
+                    ? DateFormat('HH:mm').format(set.completedAt!)
+                    : null;
                 return Card(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -221,12 +225,27 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Set ${i + 1}'),
+                          Checkbox(
+                            value: set.isCompleted,
+                            onChanged: (_) => ref
+                                .read(activeSeanceProvider.notifier)
+                                .toggleSetCompleted(index, i),
+                          ),
+                          Expanded(child: Text('Set ${i + 1}')),
                           Text(
                             '${set.reps} reps × ${set.weight.toStringAsFixed(1)}kg',
                           ),
+                          if (time != null) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              time,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

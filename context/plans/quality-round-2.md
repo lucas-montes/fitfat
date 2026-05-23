@@ -32,6 +32,13 @@ Fixes and improvements collected from user notes. Sorted by priority/type.
 - Added `updateSet(exerciseIndex, setIndex, reps, weight)` to `ActiveSeanceNotifier`.
 - Set cards in the detail view are now wrapped in `InkWell` — tapping opens an edit dialog with the current reps/weight. Save calls `updateSet` on the provider.
 
+### S04: Set completion tracking & per-set timestamp (status:done)
+- `ExerciseSet` now has optional `completedAt` (DateTime) with `isCompleted` getter.
+- `addSet()` auto-completes the new set and any previously uncompleted sets in the same exercise.
+- Added `toggleSetCompleted(exerciseIndex, setIndex)` to `ActiveSeanceNotifier` — toggles completion on/off for manual checkboxes.
+- Detail view shows each set with a checkbox, reps×weight, and HH:mm completion time.
+- JSON serialization updated for active seance persistence.
+
 ### S03: Add notes/variations to sets (status:idea)
 - Some exercises have variations (close-grip, pause reps, Larsen press). Could be solved with notes per set or sub-categories per exercise. Needs design discussion.
 - **Outcome**: Deferred to future discussion.

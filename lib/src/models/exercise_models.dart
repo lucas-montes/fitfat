@@ -24,16 +24,30 @@ class ExerciseDefinition {
 }
 
 class ExerciseSet {
-  const ExerciseSet({required this.reps, required this.weight});
+  const ExerciseSet({
+    required this.reps,
+    required this.weight,
+    this.completedAt,
+  });
 
   final int reps;
   final double weight;
+  final DateTime? completedAt;
 
-  Map<String, dynamic> toJson() => {'reps': reps, 'weight': weight};
+  bool get isCompleted => completedAt != null;
+
+  Map<String, dynamic> toJson() => {
+    'reps': reps,
+    'weight': weight,
+    'completedAt': completedAt?.toIso8601String(),
+  };
 
   factory ExerciseSet.fromJson(Map<String, dynamic> json) => ExerciseSet(
     reps: json['reps'] as int,
     weight: (json['weight'] as num).toDouble(),
+    completedAt: json['completedAt'] != null
+        ? DateTime.parse(json['completedAt'] as String)
+        : null,
   );
 }
 

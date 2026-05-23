@@ -161,13 +161,58 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
     if (state == null || exerciseIndex >= state!.exercises.length) return;
     final exercises = state!.exercises;
     final exercise = exercises[exerciseIndex];
+    // New sets are auto-completed; also mark any uncompleted previous sets
+    final now = DateTime.now();
+    final updatedSets = exercise.sets
+        .map(
+          (s) => s.isCompleted
+              ? s
+              : ExerciseSet(reps: s.reps, weight: s.weight, completedAt: now),
+        )
+        .followedBy([ExerciseSet(reps: reps, weight: weight, completedAt: now)])
+        .toList();
     final updatedExercise = ExerciseEntry(
       id: exercise.id,
       exercise: exercise.exercise,
-      sets: [
-        ...exercise.sets,
-        ExerciseSet(reps: reps, weight: weight),
+      sets: updatedSets,
+      startedAt: exercise.startedAt,
+      completedAt: exercise.completedAt,
+    );
+    state = Seance(
+      id: state!.id,
+      name: state!.name,
+      startedAt: state!.startedAt,
+      exercises: [
+        ...exercises.sublist(0, exerciseIndex),
+        updatedExercise,
+        ...exercises.sublist(exerciseIndex + 1),
       ],
+      completedAt: state!.completedAt,
+      restBetweenSets: state!.restBetweenSets,
+    );
+    unawaited(_persist());
+  }
+
+  void toggleSetCompleted(int exerciseIndex, int setIndex) {
+    if (state == null || exerciseIndex >= state!.exercises.length) return;
+    final exercises = state!.exercises;
+    final exercise = exercises[exerciseIndex];
+    final set = exercise.sets[setIndex];
+    final updatedSets = [
+      for (int i = 0; i < exercise.sets.length; i++)
+        if (i == setIndex)
+          ExerciseSet(
+            reps: set.reps,
+            weight: set.weight,
+            completedAt: set.isCompleted ? null : DateTime.now(),
+          )
+        else
+          exercise.sets[i],
+    ];
+    final updatedExercise = ExerciseEntry(
+      id: exercise.id,
+      exercise: exercise.exercise,
+      sets: updatedSets,
       startedAt: exercise.startedAt,
       completedAt: exercise.completedAt,
     );
