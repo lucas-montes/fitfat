@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/seance_providers.dart';
 import '../../providers/exercise_providers.dart';
-import 'current_seance_screen.dart' show CurrentSeanceScreen;
 import 'create_seance_screen.dart';
 
 class SeanceLibraryScreen extends ConsumerWidget {
@@ -115,14 +115,8 @@ class SeanceLibraryScreen extends ConsumerWidget {
                                         Navigator.of(
                                           context,
                                           rootNavigator: true,
-                                        ).push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                const CurrentSeanceScreen(),
-                                          ),
-                                        );
-                                        Navigator.pop(ctx);
-                                        Navigator.of(context).pop();
+                                        ).pop();
+                                        context.push('/current-seance');
                                       },
                                       child: const Text('Start new seance'),
                                     ),
@@ -134,11 +128,7 @@ class SeanceLibraryScreen extends ConsumerWidget {
                                   .read(activeSeanceProvider.notifier)
                                   .startSeanceFromTemplate(t);
                               Navigator.of(context).pop();
-                              Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const CurrentSeanceScreen(),
-                                ),
-                              );
+                              context.push('/current-seance');
                             }
                           },
                         ),

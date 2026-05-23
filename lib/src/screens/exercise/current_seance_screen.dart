@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../testing_flags.dart';
 import '../../models/exercise_models.dart';
 import '../../providers/exercise_providers.dart';
@@ -74,7 +75,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
             tooltip: 'Cancel seance',
             onPressed: () {
               ref.read(activeSeanceProvider.notifier).cancelSeance();
-              Navigator.of(context, rootNavigator: true).pop();
+              context.go('/exercise');
             },
           ),
         ],
@@ -88,7 +89,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               icon: const Icon(Icons.check),
               onPressed: () {
                 ref.read(activeSeanceProvider.notifier).completeSeance();
-                Navigator.of(context, rootNavigator: true).pop();
+                context.go('/exercise');
               },
             )
           : (_selectedExerciseIndex == seance.exercises.length - 1)
@@ -97,7 +98,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               icon: const Icon(Icons.check),
               onPressed: () {
                 ref.read(activeSeanceProvider.notifier).completeSeance();
-                Navigator.of(context, rootNavigator: true).pop();
+                context.go('/exercise');
               },
             )
           : null,

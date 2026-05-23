@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../models/exercise_models.dart';
 import '../../models/seance_models.dart';
 import '../../providers/exercise_providers.dart';
 import '../../providers/seance_providers.dart';
-import 'current_seance_screen.dart' show CurrentSeanceScreen;
 import 'create_seance_screen.dart';
 import 'seance_library_screen.dart';
 
@@ -120,12 +120,7 @@ class SeancesHistoryTab extends ConsumerWidget {
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.visibility),
                           label: const Text('View'),
-                          onPressed: () =>
-                              Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const CurrentSeanceScreen(),
-                                ),
-                              ),
+                          onPressed: () => context.push('/current-seance'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -163,11 +158,7 @@ class SeancesHistoryTab extends ConsumerWidget {
                       label: const Text('Start Blank Seance'),
                       onPressed: () {
                         ref.read(activeSeanceProvider.notifier).startSeance();
-                        Navigator.of(context, rootNavigator: true).push(
-                          MaterialPageRoute(
-                            builder: (_) => const CurrentSeanceScreen(),
-                          ),
-                        );
+                        context.push('/current-seance');
                       },
                     ),
                   ),
@@ -272,19 +263,13 @@ class _TemplateCard extends ConsumerWidget {
                 ref
                     .read(activeSeanceProvider.notifier)
                     .startSeanceFromTemplate(template);
-                Navigator.of(context, rootNavigator: true).push(
-                  MaterialPageRoute(
-                    builder: (_) => const CurrentSeanceScreen(),
-                  ),
-                );
+                context.push('/current-seance');
               });
             } else {
               ref
                   .read(activeSeanceProvider.notifier)
                   .startSeanceFromTemplate(template);
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(builder: (_) => const CurrentSeanceScreen()),
-              );
+              context.push('/current-seance');
             }
           },
           child: Padding(

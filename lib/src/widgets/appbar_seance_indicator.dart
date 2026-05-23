@@ -2,10 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/exercise_providers.dart';
-import '../screens/exercise/current_seance_screen.dart'
-    show CurrentSeanceScreen;
 
 /// Floating pill that appears at the bottom-right when a seance is running.
 /// Tap to open the current seance screen.
@@ -63,11 +62,7 @@ class _SeanceFloatingPillState extends ConsumerState<SeanceFloatingPill> {
       color: Theme.of(context).colorScheme.primaryContainer,
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
-        onTap: () {
-          Navigator.of(context, rootNavigator: true).push(
-            MaterialPageRoute(builder: (_) => const CurrentSeanceScreen()),
-          );
-        },
+        onTap: () => context.push('/current-seance'),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
