@@ -105,7 +105,12 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
         );
       }).toList(),
     );
-    unawaited(SeanceForegroundService.instance.start(state!.startedAt));
+    unawaited(
+      SeanceForegroundService.instance.start(
+        state!.startedAt,
+        seanceName: template.name,
+      ),
+    );
     unawaited(_persist());
   }
 

@@ -59,6 +59,7 @@ Fixes and improvements collected from user notes. Sorted by priority/type.
 - Added `_restStartedAtKey` — when a set is added, the foreground service saves the current timestamp. The background `SeanceTaskHandler` reads it and shows "Rest: Xs remaining" in the notification until it hits 0, then falls back to the elapsed time.
 - `ActiveSeanceNotifier.addSet()` now calls `SeanceForegroundService.instance.restSet(90)` after each set.
 - Rest period defaults to 90 seconds.
+- Notification title shows seance name (or "Seance"), body shows "Elapsed: 12:34" and "Rest: 60s left" on separate lines.
 - **Files**: `lib/src/services/seance_foreground_service.dart`, `lib/src/providers/exercise_providers.dart`
 
 ---
