@@ -186,6 +186,39 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
     unawaited(_persist());
   }
 
+  void updateSet(int exerciseIndex, int setIndex, int reps, double weight) {
+    if (state == null || exerciseIndex >= state!.exercises.length) return;
+    final exercises = state!.exercises;
+    final exercise = exercises[exerciseIndex];
+    final updatedSets = [
+      for (int i = 0; i < exercise.sets.length; i++)
+        if (i == setIndex)
+          ExerciseSet(reps: reps, weight: weight)
+        else
+          exercise.sets[i],
+    ];
+    final updatedExercise = ExerciseEntry(
+      id: exercise.id,
+      exercise: exercise.exercise,
+      sets: updatedSets,
+      startedAt: exercise.startedAt,
+      completedAt: exercise.completedAt,
+    );
+    state = Seance(
+      id: state!.id,
+      name: state!.name,
+      startedAt: state!.startedAt,
+      exercises: [
+        ...exercises.sublist(0, exerciseIndex),
+        updatedExercise,
+        ...exercises.sublist(exerciseIndex + 1),
+      ],
+      completedAt: state!.completedAt,
+      restBetweenSets: state!.restBetweenSets,
+    );
+    unawaited(_persist());
+  }
+
   void completeSeance() {
     if (state == null) return;
     final completed = Seance(

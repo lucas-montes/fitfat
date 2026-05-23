@@ -25,15 +25,12 @@ Fixes and improvements collected from user notes. Sorted by priority/type.
 
 ## Exercise Sets
 
-### S01: Previous set values should copy to new set (status:todo)
-- When adding a new set, the reps/weight fields should pre-fill with the previous set's values for convenience.
-- **Files**: `lib/src/screens/exercise/current_seance_screen.dart` (`AddSetForm`)
-- **Done when**: Tapping "Add Set" pre-fills reps and weight from the last set in the same exercise.
+### S01: Previous set values should copy to new set (status:done)
+- `AddSetForm` now accepts optional `initialReps` and `initialWeight` parameters. In `_buildDetailView`, these are populated from the last set's values. `didUpdateWidget` updates the controllers when the parent rebuilds with new initial values.
 
-### S02: Edit previous sets (status:todo)
-- Tapping a completed set should open a dialog to edit reps/weight. On save, update the set in `ActiveSeanceNotifier`.
-- **Files**: `lib/src/screens/exercise/current_seance_screen.dart`, `lib/src/providers/exercise_providers.dart` (add `updateSet` method)
-- **Done when**: Tapping any set shows an edit dialog. Changes are reflected in the active seance.
+### S02: Edit previous sets (status:done)
+- Added `updateSet(exerciseIndex, setIndex, reps, weight)` to `ActiveSeanceNotifier`.
+- Set cards in the detail view are now wrapped in `InkWell` — tapping opens an edit dialog with the current reps/weight. Save calls `updateSet` on the provider.
 
 ### S03: Add notes/variations to sets (status:idea)
 - Some exercises have variations (close-grip, pause reps, Larsen press). Could be solved with notes per set or sub-categories per exercise. Needs design discussion.

@@ -215,16 +215,20 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               ...List.generate(entry.sets.length, (i) {
                 final set = entry.sets[i];
                 return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Set ${i + 1}'),
-                        Text(
-                          '${set.reps} reps × ${set.weight.toStringAsFixed(1)}kg',
-                        ),
-                      ],
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _editSetDialog(index, i, set),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Set ${i + 1}'),
+                          Text(
+                            '${set.reps} reps × ${set.weight.toStringAsFixed(1)}kg',
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -233,6 +237,12 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               Text('Add Set', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
               AddSetForm(
+                initialReps: entry.sets.isNotEmpty
+                    ? entry.sets.last.reps
+                    : null,
+                initialWeight: entry.sets.isNotEmpty
+                    ? entry.sets.last.weight
+                    : null,
                 onAdd: (reps, weight) => ref
                     .read(activeSeanceProvider.notifier)
                     .addSet(index, reps, weight),
@@ -265,6 +275,74 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
       },
       itemCount: seance.exercises.length,
     );
+  }
+
+  Future<void> _editSetDialog(
+    int exerciseIndex,
+    int setIndex,
+    ExerciseSet set,
+  ) async {
+    final repsController = TextEditingController(text: set.reps.toString());
+    final weightController = TextEditingController(text: set.weight.toString());
+
+    final result = await showDialog<Map<String, double>>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Set'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: repsController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                label: Text('Reps'),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: weightController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                label: Text('Weight (kg)'),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final reps = int.tryParse(repsController.text);
+              final weight = double.tryParse(weightController.text);
+              if (reps != null && weight != null) {
+                Navigator.pop(ctx, {'reps': reps.toDouble(), 'weight': weight});
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    repsController.dispose();
+    weightController.dispose();
+
+    if (result != null && mounted) {
+      ref
+          .read(activeSeanceProvider.notifier)
+          .updateSet(
+            exerciseIndex,
+            setIndex,
+            result['reps']!.toInt(),
+            result['weight']!,
+          );
+    }
   }
 }
 
@@ -317,17 +395,48 @@ class _TimerWidgetState extends ConsumerState<TimerWidget> {
 }
 
 class AddSetForm extends StatefulWidget {
-  const AddSetForm({required this.onAdd, super.key});
+  const AddSetForm({
+    super.key,
+    required this.onAdd,
+    this.initialReps,
+    this.initialWeight,
+  });
 
   final Function(int reps, double weight) onAdd;
+  final int? initialReps;
+  final double? initialWeight;
 
   @override
   State<AddSetForm> createState() => _AddSetFormState();
 }
 
 class _AddSetFormState extends State<AddSetForm> {
-  final _repsController = TextEditingController();
-  final _weightController = TextEditingController();
+  late TextEditingController _repsController;
+  late TextEditingController _weightController;
+
+  @override
+  void initState() {
+    super.initState();
+    _repsController = TextEditingController(
+      text: widget.initialReps?.toString() ?? '',
+    );
+    _weightController = TextEditingController(
+      text: widget.initialWeight?.toString() ?? '',
+    );
+  }
+
+  @override
+  void didUpdateWidget(AddSetForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialReps != widget.initialReps &&
+        widget.initialReps != null) {
+      _repsController.text = widget.initialReps.toString();
+    }
+    if (oldWidget.initialWeight != widget.initialWeight &&
+        widget.initialWeight != null) {
+      _weightController.text = widget.initialWeight.toString();
+    }
+  }
 
   @override
   void dispose() {
