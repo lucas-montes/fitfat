@@ -12,7 +12,8 @@ Index of durable context files in this directory.
 | `plans/post-mvp-polish.md` | **Completed** — 8 follow-up tasks: profile, goals, dashboard macros, templates, seance UX. |
 | `plans/template-sets-seance-guard.md` | **Completed** — multi-set template model, seance start guard, searchable add exercise, timer fix. |
 | `plans/ui-ux-round-3.md` | **Completed** — Dashboard tab position, template add without sets + tap-to-edit, per-set rest, current seance search+remove, seance name. |
-| `plans/data-layer-overhaul.md` | **Active plan** — Drift DB, repository interfaces, provider rewrite, connectivity, remote sync. |
+| `plans/data-layer-overhaul.md` | **Completed** — Drift DB, repository interfaces, provider rewrite, food persistence, in-memory DB for tests. |
+| `plans/quality-round-2.md` | **Active plan** — bugs, seance flow, sets, history, timer, polish. |
 | `navigation-concepts.md` | Explainer: Navigator, GoRouter, StatefulShellRoute, BuildContext, and routing options for fitfat. |
 | `goals/goals-macros.md` | Goal types, TDEE computation, macro split rules, providers |
 | `handovers/` | Session handover notes |

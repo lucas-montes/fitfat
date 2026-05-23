@@ -63,8 +63,19 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                 icon: const Icon(Icons.arrow_back),
                 onPressed: _backToList,
               )
-            : null,
-        automaticallyImplyLeading: _selectedExerciseIndex != null,
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back to app',
+                onPressed: () {
+                  // If there's no previous route to pop to, go to Exercise tab
+                  if (!context.canPop()) {
+                    context.go('/exercise');
+                  } else {
+                    context.pop();
+                  }
+                },
+              ),
+        automaticallyImplyLeading: true,
         actions: [
           Padding(
             padding: const EdgeInsets.all(16),
@@ -83,25 +94,6 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
       body: _selectedExerciseIndex != null
           ? _buildDetailView(seance)
           : _buildExerciseListView(seance),
-      floatingActionButton: _selectedExerciseIndex == null
-          ? FloatingActionButton.extended(
-              label: const Text('Complete Seance'),
-              icon: const Icon(Icons.check),
-              onPressed: () {
-                ref.read(activeSeanceProvider.notifier).completeSeance();
-                context.go('/exercise');
-              },
-            )
-          : (_selectedExerciseIndex == seance.exercises.length - 1)
-          ? FloatingActionButton.extended(
-              label: const Text('Complete Seance'),
-              icon: const Icon(Icons.check),
-              onPressed: () {
-                ref.read(activeSeanceProvider.notifier).completeSeance();
-                context.go('/exercise');
-              },
-            )
-          : null,
     );
   }
 
@@ -119,7 +111,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
           }).toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         if (seance.exercises.isNotEmpty) ...[
           Text('Exercises', style: Theme.of(context).textTheme.titleMedium),
@@ -184,6 +176,17 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               ),
             ),
           ),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            icon: const Icon(Icons.check),
+            label: const Text('Complete Seance'),
+            onPressed: () {
+              ref.read(activeSeanceProvider.notifier).completeSeance();
+              context.go('/exercise');
+            },
+          ),
+        ),
       ],
     );
   }
