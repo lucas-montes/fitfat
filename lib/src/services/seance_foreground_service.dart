@@ -5,9 +5,8 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 const int _seanceServiceId = 256;
 const String _seanceStartedAtKey = 'seance_started_at_millis';
-const String _restStartedAtKey = 'rest_started_at_millis';
+const String _lastSetAtKey = 'last_set_completed_at_millis';
 const String _seanceNameKey = 'seance_name';
-const int _defaultRestSeconds = 90;
 
 @pragma('vm:entry-point')
 void seanceTaskCallback() {
@@ -57,9 +56,10 @@ class SeanceForegroundService {
         value: seanceName,
       );
     }
+    final title = seanceName ?? _formatDate(startedAt);
     await FlutterForegroundTask.startService(
       serviceId: _seanceServiceId,
-      notificationTitle: seanceName ?? 'Seance',
+      notificationTitle: title,
       notificationText:
           'Elapsed: ${_formatElapsed(DateTime.now().difference(startedAt))}',
       notificationInitialRoute: '/current-seance',
@@ -70,23 +70,22 @@ class SeanceForegroundService {
   Future<void> stop() async {
     await FlutterForegroundTask.stopService();
     await FlutterForegroundTask.removeData(key: _seanceStartedAtKey);
-    await FlutterForegroundTask.removeData(key: _restStartedAtKey);
+    await FlutterForegroundTask.removeData(key: _lastSetAtKey);
   }
 
-  Future<void> restSet(int restSeconds) async {
+  Future<void> lastSetCompleted() async {
     await FlutterForegroundTask.saveData(
-      key: _restStartedAtKey,
+      key: _lastSetAtKey,
       value: DateTime.now().millisecondsSinceEpoch,
     );
   }
 
   Future<void> _requestPermissions() async {
-    final notificationPermission =
+    final permission =
         await FlutterForegroundTask.checkNotificationPermission();
-    if (notificationPermission != NotificationPermission.granted) {
+    if (permission != NotificationPermission.granted) {
       await FlutterForegroundTask.requestNotificationPermission();
     }
-
     if (Platform.isAndroid &&
         !await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
       await FlutterForegroundTask.requestIgnoreBatteryOptimization();
@@ -95,21 +94,24 @@ class SeanceForegroundService {
 
   String _formatElapsed(Duration elapsed) {
     if (elapsed.inHours > 0) {
-      final hours = elapsed.inHours;
-      final minutes = elapsed.inMinutes % 60;
-      final seconds = elapsed.inSeconds % 60;
-      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      final h = elapsed.inHours;
+      final m = elapsed.inMinutes % 60;
+      final s = elapsed.inSeconds % 60;
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     }
+    final m = elapsed.inMinutes;
+    final s = elapsed.inSeconds % 60;
+    return '${m.toString()}:${s.toString().padLeft(2, '0')}';
+  }
 
-    final minutes = elapsed.inMinutes;
-    final seconds = elapsed.inSeconds % 60;
-    return '${minutes.toString()}:${seconds.toString().padLeft(2, '0')}';
+  String _formatDate(DateTime dt) {
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
 }
 
 class SeanceTaskHandler extends TaskHandler {
   DateTime? _startedAt;
-  DateTime? _restStartedAt;
+  DateTime? _lastSetAt;
   String? _seanceName;
 
   @override
@@ -120,11 +122,11 @@ class SeanceTaskHandler extends TaskHandler {
     if (startedAtMillis is int) {
       _startedAt = DateTime.fromMillisecondsSinceEpoch(startedAtMillis);
     }
-    final restAtMillis = await FlutterForegroundTask.getData(
-      key: _restStartedAtKey,
+    final lastSetMillis = await FlutterForegroundTask.getData(
+      key: _lastSetAtKey,
     );
-    if (restAtMillis is int) {
-      _restStartedAt = DateTime.fromMillisecondsSinceEpoch(restAtMillis);
+    if (lastSetMillis is int) {
+      _lastSetAt = DateTime.fromMillisecondsSinceEpoch(lastSetMillis);
     }
     _seanceName =
         await FlutterForegroundTask.getData(key: _seanceNameKey) as String?;
@@ -134,22 +136,28 @@ class SeanceTaskHandler extends TaskHandler {
   void onRepeatEvent(DateTime timestamp) {
     final startedAt = _startedAt;
     if (startedAt == null) return;
+    // Re-read last set time from SharedPreferences each tick so new values
+    // from the foreground (lastSetCompleted) are picked up immediately.
+    _lastSetAt = null; // reset, will be re-read below
+    // ignore: discarded_futures
+    FlutterForegroundTask.getData(key: _lastSetAtKey).then((value) {
+      if (value is int) {
+        _lastSetAt = DateTime.fromMillisecondsSinceEpoch(value);
+      }
+      _buildNotification(timestamp, startedAt);
+    });
+  }
 
+  void _buildNotification(DateTime timestamp, DateTime startedAt) {
     final elapsed = timestamp.difference(startedAt);
     final elapsedStr = _formatElapsed(elapsed);
-    final title = _seanceName ?? 'Seance';
+    final title = _seanceName ?? _formatDate(startedAt);
 
     String text;
-    final restAt = _restStartedAt;
-    if (restAt != null) {
-      final restElapsed = timestamp.difference(restAt);
-      final restRemaining = _defaultRestSeconds - restElapsed.inSeconds;
-      if (restRemaining > 0) {
-        text = 'Elapsed: $elapsedStr\nRest: ${restRemaining}s left';
-      } else {
-        _restStartedAt = null;
-        text = 'Elapsed: $elapsedStr';
-      }
+    final lastSet = _lastSetAt;
+    if (lastSet != null) {
+      final restStr = _formatElapsed(timestamp.difference(lastSet));
+      text = 'Elapsed: $elapsedStr\nRest: $restStr';
     } else {
       text = 'Elapsed: $elapsedStr';
     }
@@ -171,14 +179,17 @@ class SeanceTaskHandler extends TaskHandler {
 
   String _formatElapsed(Duration elapsed) {
     if (elapsed.inHours > 0) {
-      final hours = elapsed.inHours;
-      final minutes = elapsed.inMinutes % 60;
-      final seconds = elapsed.inSeconds % 60;
-      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      final h = elapsed.inHours;
+      final m = elapsed.inMinutes % 60;
+      final s = elapsed.inSeconds % 60;
+      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     }
+    final m = elapsed.inMinutes;
+    final s = elapsed.inSeconds % 60;
+    return '${m.toString()}:${s.toString().padLeft(2, '0')}';
+  }
 
-    final minutes = elapsed.inMinutes;
-    final seconds = elapsed.inSeconds % 60;
-    return '${minutes.toString()}:${seconds.toString().padLeft(2, '0')}';
+  String _formatDate(DateTime dt) {
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
 }
