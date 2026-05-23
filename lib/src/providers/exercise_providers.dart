@@ -9,8 +9,11 @@ import '../database/app_database.dart'
     hide Seance, ExerciseEntry, ExerciseSet, Exercise;
 import '../models/exercise_models.dart';
 import '../models/seance_models.dart';
+import '../services/logger.dart';
 import '../services/seance_foreground_service.dart';
 import 'database_providers.dart';
+
+final _log = logger('exercise_providers');
 
 const _activeSeanceKey = 'active_seance_json';
 
@@ -40,9 +43,7 @@ class ExerciseListNotifier extends Notifier<List<ExerciseDefinition>> {
             ),
           )
           .toList();
-    } catch (_) {
-      // DB not available (tests, first launch, etc.)
-    }
+    } catch (_) {}
   }
 }
 
@@ -58,12 +59,10 @@ final seanceHistoryProvider =
 class ActiveSeanceNotifier extends Notifier<Seance?> {
   @override
   Seance? build() {
-    // Kick off async restore from SharedPreferences on provider init
     Future.microtask(() => restoreFromPrefs());
     return null;
   }
 
-  /// Call on app boot to restore active seance from SharedPreferences.
   Future<void> restoreFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString(_activeSeanceKey);
@@ -75,8 +74,8 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       if (state != null && state!.isActive) {
         unawaited(SeanceForegroundService.instance.start(state!.startedAt));
       }
-    } catch (_) {
-      await prefs.remove(_activeSeanceKey);
+    } catch (e, stack) {
+      _log.warning('Could not load exercise from DB', e, stack);
     }
   }
 
@@ -97,16 +96,21 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       id: const Uuid().v4(),
       name: template.name,
       startedAt: DateTime.now(),
-      exercises: template.exercises.map((e) {
-        return ExerciseEntry(
-          id: const Uuid().v4(),
-          exercise: ExerciseDefinition(id: e.id, name: e.name),
-          sets: e.plannedSets
-              .map((ps) => ExerciseSet(reps: ps.reps, weight: ps.weightKg ?? 0))
-              .toList(),
-          startedAt: DateTime.now(),
-        );
-      }).toList(),
+      exercises: template.exercises
+          .map(
+            (e) => ExerciseEntry(
+              id: const Uuid().v4(),
+              exercise: ExerciseDefinition(id: e.id, name: e.name),
+              sets: e.plannedSets
+                  .map(
+                    (ps) =>
+                        ExerciseSet(reps: ps.reps, weight: ps.weightKg ?? 0),
+                  )
+                  .toList(),
+              startedAt: DateTime.now(),
+            ),
+          )
+          .toList(),
     );
     unawaited(
       SeanceForegroundService.instance.start(
@@ -129,21 +133,23 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
 
   void addExercise(ExerciseDefinition exercise) {
     if (state == null) return;
-    final alreadyAdded = state!.exercises.any(
+    if (state!.exercises.any(
       (e) => e.exercise.name.toLowerCase() == exercise.name.toLowerCase(),
-    );
-    if (alreadyAdded) return;
-    final newEntry = ExerciseEntry(
-      id: const Uuid().v4(),
-      exercise: exercise,
-      sets: [],
-      startedAt: DateTime.now(),
-    );
+    ))
+      return;
     state = Seance(
       id: state!.id,
       name: state!.name,
       startedAt: state!.startedAt,
-      exercises: [...state!.exercises, newEntry],
+      exercises: [
+        ...state!.exercises,
+        ExerciseEntry(
+          id: const Uuid().v4(),
+          exercise: exercise,
+          sets: [],
+          startedAt: DateTime.now(),
+        ),
+      ],
       completedAt: state!.completedAt,
       restBetweenSets: state!.restBetweenSets,
     );
@@ -169,7 +175,6 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
     if (state == null || exerciseIndex >= state!.exercises.length) return;
     final exercises = state!.exercises;
     final exercise = exercises[exerciseIndex];
-    // New sets are auto-completed; also mark any uncompleted previous sets
     final now = DateTime.now();
     final updatedSets = exercise.sets
         .map(
@@ -179,20 +184,19 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
         )
         .followedBy([ExerciseSet(reps: reps, weight: weight, completedAt: now)])
         .toList();
-    final updatedExercise = ExerciseEntry(
-      id: exercise.id,
-      exercise: exercise.exercise,
-      sets: updatedSets,
-      startedAt: exercise.startedAt,
-      completedAt: exercise.completedAt,
-    );
     state = Seance(
       id: state!.id,
       name: state!.name,
       startedAt: state!.startedAt,
       exercises: [
         ...exercises.sublist(0, exerciseIndex),
-        updatedExercise,
+        ExerciseEntry(
+          id: exercise.id,
+          exercise: exercise.exercise,
+          sets: updatedSets,
+          startedAt: exercise.startedAt,
+          completedAt: exercise.completedAt,
+        ),
         ...exercises.sublist(exerciseIndex + 1),
       ],
       completedAt: state!.completedAt,
@@ -204,8 +208,7 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
 
   void toggleSetCompleted(int exerciseIndex, int setIndex) {
     if (state == null || exerciseIndex >= state!.exercises.length) return;
-    final exercises = state!.exercises;
-    final exercise = exercises[exerciseIndex];
+    final exercise = state!.exercises[exerciseIndex];
     final set = exercise.sets[setIndex];
     final updatedSets = [
       for (int i = 0; i < exercise.sets.length; i++)
@@ -218,21 +221,20 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
         else
           exercise.sets[i],
     ];
-    final updatedExercise = ExerciseEntry(
-      id: exercise.id,
-      exercise: exercise.exercise,
-      sets: updatedSets,
-      startedAt: exercise.startedAt,
-      completedAt: exercise.completedAt,
-    );
     state = Seance(
       id: state!.id,
       name: state!.name,
       startedAt: state!.startedAt,
       exercises: [
-        ...exercises.sublist(0, exerciseIndex),
-        updatedExercise,
-        ...exercises.sublist(exerciseIndex + 1),
+        ...state!.exercises.sublist(0, exerciseIndex),
+        ExerciseEntry(
+          id: exercise.id,
+          exercise: exercise.exercise,
+          sets: updatedSets,
+          startedAt: exercise.startedAt,
+          completedAt: exercise.completedAt,
+        ),
+        ...state!.exercises.sublist(exerciseIndex + 1),
       ],
       completedAt: state!.completedAt,
       restBetweenSets: state!.restBetweenSets,
@@ -242,8 +244,7 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
 
   void updateSet(int exerciseIndex, int setIndex, int reps, double weight) {
     if (state == null || exerciseIndex >= state!.exercises.length) return;
-    final exercises = state!.exercises;
-    final exercise = exercises[exerciseIndex];
+    final exercise = state!.exercises[exerciseIndex];
     final updatedSets = [
       for (int i = 0; i < exercise.sets.length; i++)
         if (i == setIndex)
@@ -251,21 +252,20 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
         else
           exercise.sets[i],
     ];
-    final updatedExercise = ExerciseEntry(
-      id: exercise.id,
-      exercise: exercise.exercise,
-      sets: updatedSets,
-      startedAt: exercise.startedAt,
-      completedAt: exercise.completedAt,
-    );
     state = Seance(
       id: state!.id,
       name: state!.name,
       startedAt: state!.startedAt,
       exercises: [
-        ...exercises.sublist(0, exerciseIndex),
-        updatedExercise,
-        ...exercises.sublist(exerciseIndex + 1),
+        ...state!.exercises.sublist(0, exerciseIndex),
+        ExerciseEntry(
+          id: exercise.id,
+          exercise: exercise.exercise,
+          sets: updatedSets,
+          startedAt: exercise.startedAt,
+          completedAt: exercise.completedAt,
+        ),
+        ...state!.exercises.sublist(exerciseIndex + 1),
       ],
       completedAt: state!.completedAt,
       restBetweenSets: state!.restBetweenSets,
@@ -277,16 +277,13 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
     if (state == null) return;
     final now = DateTime.now();
     final defaultName =
-        'Seance - ${now.day.toString().padLeft(2, '0')}/'
-        '${now.month.toString().padLeft(2, '0')}/'
-        '${now.year} ${now.hour.toString().padLeft(2, '0')}:'
-        '${now.minute.toString().padLeft(2, '0')}';
+        'Seance - ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final completed = Seance(
       id: state!.id,
       name: state!.name ?? defaultName,
       startedAt: state!.startedAt,
       exercises: state!.exercises,
-      completedAt: DateTime.now(),
+      completedAt: now,
       restBetweenSets: state!.restBetweenSets,
     );
     ref.read(seanceHistoryProvider.notifier).addSeance(completed);
@@ -323,13 +320,20 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
         )..where((t) => t.seanceId.equals(sr.id))).get();
         final exercises = <ExerciseEntry>[];
         for (final er in entryRows) {
+          // Look up the exercise name from the exercises table
+          final exRow = await (db.select(
+            db.exercises,
+          )..where((t) => t.id.equals(er.exerciseId))).getSingleOrNull();
           final setRows = await (db.select(
             db.exerciseSets,
           )..where((t) => t.entryId.equals(er.id))).get();
           exercises.add(
             ExerciseEntry(
               id: er.id,
-              exercise: ExerciseDefinition(id: er.exerciseId, name: ''),
+              exercise: ExerciseDefinition(
+                id: er.exerciseId,
+                name: exRow?.name ?? '',
+              ),
               sets: setRows
                   .map((s) => ExerciseSet(reps: s.reps, weight: s.weight))
                   .toList(),
@@ -349,7 +353,9 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
         );
       }
       if (result.isNotEmpty) state = result;
-    } catch (_) {}
+    } catch (e, stack) {
+      _log.severe('Failed to load seance history', e, stack);
+    }
   }
 
   Future<void> _saveToDb(Seance seance) async {
@@ -358,7 +364,7 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
       // Save the seance
       await db
           .into(db.seances)
-          .insertOnConflictUpdate(
+          .insert(
             SeancesCompanion(
               id: Value(seance.id),
               name: Value(seance.name),
@@ -368,10 +374,10 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
                 seance.restBetweenSets.inMilliseconds,
               ),
             ),
+            mode: InsertMode.insertOrReplace,
           );
       // Save each exercise entry + sets
       for (final entry in seance.exercises) {
-        // Find or create the exercise definition
         final existing = await (db.select(
           db.exercises,
         )..where((t) => t.name.equals(entry.exercise.name))).get();
@@ -389,10 +395,9 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
                 ),
               );
         }
-        // Save the exercise entry
         await db
             .into(db.exerciseEntries)
-            .insertOnConflictUpdate(
+            .insert(
               ExerciseEntriesCompanion(
                 id: Value(entry.id),
                 seanceId: Value(seance.id),
@@ -400,8 +405,8 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
                 startedAt: Value(entry.startedAt),
                 completedAt: Value(entry.completedAt),
               ),
+              mode: InsertMode.insertOrReplace,
             );
-        // Save all sets
         for (final set in entry.sets) {
           await db
               .into(db.exerciseSets)
@@ -415,11 +420,13 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
               );
         }
       }
-    } catch (_) {}
+    } catch (e, stack) {
+      _log.severe('Failed to save seance', e, stack);
+    }
   }
 
   void addSeance(Seance seance) {
     state = [...state, seance];
-    _saveToDb(seance);
+    unawaited(_saveToDb(seance));
   }
 }
