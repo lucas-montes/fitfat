@@ -1,12 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/native.dart';
 import 'package:fitfat/src/providers/food_providers.dart';
-import 'package:fitfat/src/models/food_models.dart';
+import 'package:fitfat/src/providers/database_providers.dart';
+import 'package:fitfat/src/database/app_database.dart' show AppDatabase;
+import 'package:fitfat/src/models/food_models.dart' show Ingredient;
 
 void main() {
   test('updateIngredient propagates into meals', () {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+    final container = ProviderContainer(
+      overrides: [
+        databaseProvider.overrideWith(
+          (ref) => AppDatabase.forTesting(NativeDatabase.memory()),
+        ),
+      ],
+    );
+    addTearDown(() {
+      container.read(databaseProvider).close();
+      container.dispose();
+    });
 
     final ingredients = container.read(ingredientListProvider);
     final donut = ingredients.firstWhere((i) => i.name == 'Donut');
@@ -25,24 +37,33 @@ void main() {
 
     final meals = container.read(mealLogProvider);
 
-    final found = meals.any((meal) =>
-        meal.items.any((item) =>
+    final found = meals.any(
+      (meal) => meal.items.any(
+        (item) =>
             item.ingredient.id == donut.id &&
-            item.ingredient.caloriesPer100g == updated.caloriesPer100g));
+            item.ingredient.caloriesPer100g == updated.caloriesPer100g,
+      ),
+    );
 
     expect(found, isTrue);
   });
 
   test('removeIngredient removes portions and empty meals', () {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+    final container = ProviderContainer(
+      overrides: [
+        databaseProvider.overrideWith(
+          (ref) => AppDatabase.forTesting(NativeDatabase.memory()),
+        ),
+      ],
+    );
+    addTearDown(() {
+      container.read(databaseProvider).close();
+      container.dispose();
+    });
 
     final ingredients = container.read(ingredientListProvider);
     final pizza = ingredients.firstWhere((i) => i.name == 'Homemade Pizza');
 
-    // Ensure meals are seeded (mealLogProvider built) before we remove the
-    // ingredient, otherwise MealLogNotifier.build may attempt to reference the
-    // removed ingredient while seeding meals.
     container.read(mealLogProvider);
     container.read(ingredientListProvider.notifier).removeIngredient(pizza.id);
 
@@ -50,13 +71,12 @@ void main() {
     expect(ingredientsAfter.any((i) => i.id == pizza.id), isFalse);
 
     final meals = container.read(mealLogProvider);
-    // The seeded data had two meals; removing the pizza ingredient should
-    // remove the pizza-only meal and leave the Snack meal intact.
     expect(meals.length, 1);
     expect(meals.first.name, 'Snack');
 
-    final anyPizza = meals.any((meal) =>
-        meal.items.any((item) => item.ingredient.id == pizza.id));
+    final anyPizza = meals.any(
+      (meal) => meal.items.any((item) => item.ingredient.id == pizza.id),
+    );
     expect(anyPizza, isFalse);
   });
 }

@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../models/food_models.dart';
+import '../repositories/drift/drift_ingredient_repository.dart';
+import 'database_providers.dart';
 
 final ingredientListProvider =
     NotifierProvider<IngredientListNotifier, List<Ingredient>>(
-  IngredientListNotifier.new,
-);
+      IngredientListNotifier.new,
+    );
 
 final mealLogProvider = NotifierProvider<MealLogNotifier, List<MealEntry>>(
   MealLogNotifier.new,
@@ -13,10 +17,44 @@ final mealLogProvider = NotifierProvider<MealLogNotifier, List<MealEntry>>(
 
 class IngredientListNotifier extends Notifier<List<Ingredient>> {
   @override
-  List<Ingredient> build() => _seedIngredients();
+  List<Ingredient> build() {
+    _loadFromDb();
+    return _seedIngredients();
+  }
+
+  void _loadFromDb() {
+    Future.microtask(() async {
+      try {
+        final db = ref.read(databaseProvider);
+        final repo = DriftIngredientRepository(db);
+        final existing = await repo.getAll();
+        if (existing.isEmpty) return;
+        final existingNames = existing.map((e) => e.name).toSet();
+        state = [
+          ...state.where((s) => !existingNames.contains(s.name)),
+          ...existing,
+        ];
+      } catch (_) {}
+    });
+  }
+
+  void _persist() {
+    Future.microtask(() async {
+      try {
+        final db = ref.read(databaseProvider);
+        final repo = DriftIngredientRepository(db);
+        for (final ingredient in state) {
+          if (ingredient.components.isEmpty) {
+            await repo.insert(ingredient);
+          }
+        }
+      } catch (_) {}
+    });
+  }
 
   void addIngredient(Ingredient ingredient) {
     state = [...state, ingredient];
+    _persist();
   }
 
   void updateIngredient(Ingredient ingredient) {
@@ -25,11 +63,11 @@ class IngredientListNotifier extends Notifier<List<Ingredient>> {
         if (existing.id == ingredient.id) ingredient else existing,
     ];
     ref.read(mealLogProvider.notifier).replaceIngredient(ingredient);
+    _persist();
   }
 
   void removeIngredient(String id) {
     state = state.where((ingredient) => ingredient.id != id).toList();
-    // Also remove the ingredient from any meals that reference it.
     ref.read(mealLogProvider.notifier).removeIngredient(id);
   }
 }
@@ -81,7 +119,10 @@ class MealLogNotifier extends Notifier<List<MealEntry>> {
           id: meal.id,
           name: meal.name,
           eatenAt: meal.eatenAt,
-          items: [for (final item in meal.items) if (item.ingredient.id != id) item],
+          items: [
+            for (final item in meal.items)
+              if (item.ingredient.id != id) item,
+          ],
         ),
     ].where((meal) => meal.items.isNotEmpty).toList();
   }
@@ -138,7 +179,6 @@ List<Ingredient> _seedIngredients() {
     carbsPer100g: 10.6,
     fatPer100g: 0,
   );
-
   final pizza = Ingredient.fromComponents(
     id: _uuid.v4(),
     name: 'Homemade Pizza',
@@ -149,7 +189,6 @@ List<Ingredient> _seedIngredients() {
       IngredientPortion(ingredient: oliveOil, grams: 15),
     ],
   );
-
   return [flour, tomato, cheese, oliveOil, donut, cola, pizza];
 }
 
@@ -158,7 +197,6 @@ List<MealEntry> _seedMeals(List<Ingredient> ingredients) {
   final donut = ingredients.firstWhere((item) => item.name == 'Donut');
   final cola = ingredients.firstWhere((item) => item.name == 'Cola');
   final pizza = ingredients.firstWhere((item) => item.name == 'Homemade Pizza');
-
   return [
     MealEntry(
       id: _uuid.v4(),
@@ -173,9 +211,7 @@ List<MealEntry> _seedMeals(List<Ingredient> ingredients) {
       id: _uuid.v4(),
       name: 'Homemade Pizza',
       eatenAt: DateTime(now.year, now.month, now.day, 13, 15),
-      items: [
-        IngredientPortion(ingredient: pizza, grams: 180),
-      ],
+      items: [IngredientPortion(ingredient: pizza, grams: 180)],
     ),
   ];
 }

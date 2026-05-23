@@ -63,8 +63,13 @@ flowchart TD
 - Removed `_seedExercises()` (no longer needed — seed data comes from DB `onCreate`).
 - **Verification**: `flutter analyze` — no errors; `flutter test` — 6/6 passed.
 
-### T06: Rewrite food provider (status:deferred)
-- Deferred — food model uses composite ingredients (`Ingredient.fromComponents`) which the flat DB tables don't support. Needs schema changes and aligned seed data.
+### T06: Rewrite food provider (status:done)
+- **Completed**: 2026-05-23
+- `IngredientListNotifier` now loads ingredients from Drift on build and persists mutations (add, update) via `DriftIngredientRepository`. Composite ingredients (Homemade Pizza) stay in-memory; simple ingredients persist to DB.
+- Added `AppDatabase.forTesting(QueryExecutor)` factory for test use with in-memory SQLite.
+- Updated food provider tests to override `databaseProvider` with in-memory Drift database.
+- Seed ingredients (Flour, Donut, Cola) still seeded via `_seedIngredients()` and deduplicated against DB entries.
+- **Verification**: `flutter analyze` — no errors; `flutter test` — 6/6 passed (including 2 food provider tests).
 
 ### T07: Rewrite seance/template provider (status:done)
 - **Completed**: 2026-05-21
