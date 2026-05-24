@@ -1,8 +1,8 @@
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'src/app.dart';
-import 'src/router/app_router.dart';
+import 'src/app/main.dart';
+import 'src/app/router.dart';
 import 'src/services/logger.dart' show initLogging;
 
 void _onForegroundTaskData(Object data) {

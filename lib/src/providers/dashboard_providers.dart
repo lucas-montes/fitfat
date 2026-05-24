@@ -3,7 +3,6 @@ import '../models/dashboard_models.dart';
 import '../models/food_models.dart';
 import '../repositories/drift/drift_profile_repository.dart';
 import '../repositories/drift/drift_goal_repository.dart';
-import 'food_providers.dart';
 import 'database_providers.dart';
 
 // ---------------------------------------------------------------------------
