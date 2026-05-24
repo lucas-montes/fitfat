@@ -1,16 +1,27 @@
 # fitfat
 
-A new Flutter project.
+```mermaid
+flowchart TD
+  App[Flutter App] --> Scope[ProviderScope creates Riverpod container]
 
-## Getting Started
+  Scope --> UI[UI Widgets DietScreen / MealsTab]
+  Scope --> DBP[databaseProvider Provider<AppDatabase>]
+  Scope --> REP[mealRepositoryProvider Provider<MealRepository>]
+  Scope --> CP[mealControllerProvider NotifierProvider<MealListController, MealListState>]
 
-This project is a starting point for a Flutter application.
+  DBP --> DB[(AppDatabase Drift / SQLite)]
+  REP --> DBP
+  CP --> REP
 
-A few resources to get you started if this is your first Flutter project:
+  UI -->|ref.watch / ref.read| CP
+  UI -->|ref.watch / ref.read| REP
+  UI -->|ref.watch / ref.read| DBP
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+  CP --> CTRL[MealListController business logic]
+  CTRL --> REP
+  CTRL -->|load / filter / paginate| STATE[MealListState]
+  STATE --> UI
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+  REP --> IMPL[DriftMealRepository adapter]
+  IMPL --> DB
+```

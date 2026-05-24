@@ -13,23 +13,23 @@ void main() {
     // dependencies in the test environment. This keeps tests fast and
     // isolated while exercising the controller logic.
     final repo = InMemoryMealRepository();
-    final container = ProviderContainer(overrides: [
-      mealRepositoryProvider.overrideWithValue(repo),
-    ]);
+    final container = ProviderContainer(
+      overrides: [mealRepositoryProvider.overrideWithValue(repo)],
+    );
 
     addTearDown(() async {
       container.dispose();
     });
 
-    final day = DateTime(2026, 5, 24);
+    final month = DateTime(2026, 5, 1);
 
     final controller = container.read(mealControllerProvider.notifier);
 
     // initial load should succeed (empty data)
     try {
-      await controller.load(day);
+      await controller.loadMonth(month);
     } catch (e, st) {
-      print('controller.load threw: $e\n$st');
+      print('controller.loadMonth threw: $e\n$st');
     }
     final state = container.read(mealControllerProvider);
     if (state.status == MealListStatus.error) {
@@ -39,7 +39,12 @@ void main() {
     expect(state.meals, isEmpty);
 
     // add a meal with no ingredient items (allowed)
-    final meal = MealEntry(id: const Uuid().v4(), name: 'Apple', eatenAt: day.add(const Duration(hours: 12)), items: []);
+    final meal = MealEntry(
+      id: const Uuid().v4(),
+      name: 'Apple',
+      eatenAt: month.add(const Duration(hours: 12)),
+      items: [],
+    );
     // sanity-check: try repository upsert directly to see low-level errors
     try {
       await repo.upsert(meal);

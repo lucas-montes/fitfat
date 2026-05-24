@@ -64,14 +64,11 @@ class MealsTab extends ConsumerStatefulWidget {
 }
 
 class _MealsTabState extends ConsumerState<MealsTab> {
-  late final DateTime _day;
-
   @override
   void initState() {
     super.initState();
-    _day = DateTime.now();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(mealControllerProvider.notifier).load(_day);
+      ref.read(mealControllerProvider.notifier).loadMonth(DateTime.now());
     });
   }
 
@@ -116,11 +113,15 @@ class _MealsTabState extends ConsumerState<MealsTab> {
   }
 
   void _openAddMeal(BuildContext context) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddMealScreen()));
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AddMealScreen()));
   }
 
   void _editMeal(BuildContext context, MealEntry meal) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddMealScreen(initialMeal: meal)));
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => AddMealScreen(initialMeal: meal)));
   }
 
   void _deleteMeal(String id) async {
@@ -130,8 +131,14 @@ class _MealsTabState extends ConsumerState<MealsTab> {
         title: const Text('Delete meal?'),
         content: const Text('This will remove the meal from your log.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );

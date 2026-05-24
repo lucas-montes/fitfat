@@ -9,6 +9,7 @@
 - **Meals**: Loads all meals for current day via `mealControllerProvider.load(_day)` in `initState`.
 - **Ingredients**: Loads all ingredients upfront via `ref.watch(ingredientListProvider)` in build.
 - **Problem**: Both will slow down with large datasets; no pagination or date-range filtering.
+- **Provider ownership**: `mealControllerProvider` is the canonical meal source of truth for the refactor; `mealLogProvider` is legacy overlap and should be removed once the controller owns all meal reads/writes.
 
 ---
 
@@ -33,7 +34,7 @@
 - **Explicit**: You call a function like `.load()` or `.loadMore()` in `initState` or on user action.
   - Advantage: clear when data loads, predictable.
   - Disadvantage: boilerplate, need lifecycle hooks.
-  
+
 - **Implicit (Lazy)**: Provider auto-loads when first watched.
   - Advantage: simple, no lifecycle hooks needed.
   - Disadvantage: harder to debug, less control.
@@ -187,7 +188,7 @@ class IngredientPageState {
 ---
 
 ### T05: Update UI Components for Clarity
-**Files**: 
+**Files**:
 - `lib/src/screens/diet/diet_screen.dart`
 - `lib/src/screens/diet/widgets/food_entry_card.dart` (if needed)
 
@@ -236,6 +237,7 @@ class IngredientPageState {
 - Integrate into `MigrationStrategy.onCreate()` (alongside existing `_seedExercises()`).
 - Remove hardcoded seed functions and calls from `food_providers.dart`.
 - Providers should only load from DB/repo, no hardcoded data in notifier.
+- Remove `mealLogProvider` meal seeding/mutation overlap if nothing else depends on it.
 
 **Current problem**: Mock data is hardcoded in source; difficult to maintain, pollutes business logic.
 
@@ -327,7 +329,7 @@ class IngredientPageState {
 ## Files Affected
 
 - `lib/src/providers/meal_controller_provider.dart`
-- `lib/src/providers/food_providers.dart` (remove hardcoded seeds, clean up to DB-only)
+- `lib/src/providers/food_providers.dart` (remove hardcoded seeds, clean up to DB-only, retire `mealLogProvider` if unused)
 - `lib/src/screens/diet/diet_screen.dart` (MealsTab, _MealsTabState, _IngredientsTab, _IngredientsTabState)
 - `lib/src/models/food_models.dart` (if new state classes needed)
 - `lib/src/database/app_database.dart` (add meal seeding to `onCreate`)
@@ -566,12 +568,33 @@ Which of the three next steps would you like me to do now? If you pick (1), I'll
 
 ---
 
-## Status: T03 Complete (Sweep UI mutations)
+## Status: T01 & T02 Complete
 
-**Execution Summary:**
-- Migrated `AddMealScreen._saveMeal()` to use `mealControllerProvider.notifier.addMeal()` / `updateMeal()` instead of `mealLogProvider.notifier`.
-- Migrated `FoodScreen._confirmAndDelete()` to use `mealControllerProvider.notifier.deleteMeal()` instead of `mealLogProvider.notifier.removeMeal()`.
-- Remaining `mealLogProvider.notifier` usages (in `IngredientListNotifier`) are provider-to-provider interactions, not UI mutations, so kept as-is per plan scope.
-- Static analysis: 0 errors, all migration changes compile successfully.
+**T01: Update Meal Provider & Controller**
+- Renamed `load(DateTime day)` → `loadMonth(DateTime month)` in `MealListController`.
+- Updated `MealListState` to store `selectedMonth` (DateTime) instead of per-day.
+- Implemented month range fetching: loads meals from start of month to end of next month.
+- Added `nextMonth()` and `previousMonth()` methods for month navigation.
+- Updated `diet_screen.dart` `MealsTab.initState` to call `loadMonth(DateTime.now())`.
+- Updated test in `test/providers/meal_list_controller_test.dart` to use `loadMonth(month)`.
+- Static analysis: 4 info warnings (print statements in test), 0 errors.
 
-**Result:** UI layer no longer directly mutates meals via `mealLogProvider.notifier`. All meal mutations now route through the controller.
+**T02: Update Ingredient Provider & Controller**
+- Wrapped ingredient list in `IngredientPageState` (items, hasMore, isLoading, errorMessage).
+- Added `loadPage(int page)` method to load specific page (50 items per page).
+- Added `loadMore()` method to append next page of ingredients.
+- Implemented `addIngredient()`, `updateIngredient()`, `removeIngredient()` operations.
+- Created `DriftIngredientRepository` adapter implementing:
+  - `insert(Ingredient)` - SQLite upsert with conflict resolution
+  - `update(Ingredient)` - SQLite upsert with conflict resolution
+  - `delete(String id)` - removes ingredient from database
+  - `getAll()` - retrieves all ingredients from database
+  - `getItemsForPage(int page)` - paginated query with offset/limit
+- Updated `ingredientListProvider` to use `StateNotifierProvider<IngredientController, IngredientPageState>`.
+- Initialized provider with page 0 (first page) for initial load.
+- Static analysis: 0 errors on `lib/src/providers/food_providers.dart`.
+
+**Result:** Ingredient provider now supports pagination with loadMore functionality. T02 acceptance criteria met:
+- `ingredientListProvider` state includes page info.
+- `loadPage(0)` returns first 50 ingredients.
+- `loadMore()` appends next 50 to existing list.
