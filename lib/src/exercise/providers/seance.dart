@@ -9,8 +9,8 @@ import 'package:uuid/uuid.dart';
 import '../../adapters/drift/drift_seance_repository.dart';
 import '../../database/app_database.dart'
 		hide Seance, ExerciseEntry, ExerciseSet, Exercise;
-import '../../models/exercise_models.dart';
-import '../../models/seance_models.dart';
+import '../../models/exercise.dart';
+import '../../models/seance.dart';
 import '../../database/providers.dart';
 import '../../services/logger.dart';
 import '../../services/seance_foreground_service.dart';

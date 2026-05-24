@@ -1,4 +1,4 @@
-import '../../models/seance_models.dart';
+import '../../models/seance.dart';
 
 abstract class SeanceRepository {
 	Future<List<SeanceTemplate>> listTemplates();

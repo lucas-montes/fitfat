@@ -1,4 +1,4 @@
-import '../../models/food_models.dart';
+import '../../models/food.dart';
 
 abstract class MealRepository {
   Future<List<MealEntry>> getByDate(DateTime date);

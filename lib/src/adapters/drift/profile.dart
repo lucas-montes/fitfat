@@ -1,6 +1,6 @@
 import '../../database/app_database.dart';
 import '../../dashboard/repositories/profile.dart';
-import '../../models/dashboard_models.dart';
+import '../../models/dashboard.dart';
 
 class DriftProfileRepository implements ProfileRepository {
   DriftProfileRepository(this._db);

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../diet/providers/meals.dart';
-import '../../models/dashboard_models.dart';
-import '../../models/food_models.dart';
+import '../../models/dashboard.dart';
+import '../../models/food.dart';
 import '../../database/providers.dart';
 import '../../adapters/drift/goals.dart';
 import '../../adapters/drift/profile.dart';

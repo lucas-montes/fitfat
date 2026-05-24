@@ -1,4 +1,4 @@
-import '../../models/food_models.dart';
+import '../../models/food.dart';
 
 abstract class IngredientRepository {
   Future<List<Ingredient>> getAll();

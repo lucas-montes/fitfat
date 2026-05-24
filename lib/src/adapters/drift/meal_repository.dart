@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
 import '../../diet/repositories/meals.dart';
-import '../../models/food_models.dart';
+import '../../models/food.dart';
 
 class DriftMealRepository implements MealRepository {
   DriftMealRepository(this._db);

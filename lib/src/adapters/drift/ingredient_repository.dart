@@ -2,7 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../database/app_database.dart' hide Ingredient;
 import '../../diet/repositories/ingredients.dart';
-import '../../models/food_models.dart';
+import '../../models/food.dart';
 
 class DriftIngredientRepository implements IngredientRepository {
   DriftIngredientRepository(this._db);

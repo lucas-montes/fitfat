@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart';
 import '../../exercise/repository/seance.dart';
-import '../../models/seance_models.dart';
+import '../../models/seance.dart';
 
 class DriftSeanceRepository implements SeanceRepository {
   DriftSeanceRepository(this._db);

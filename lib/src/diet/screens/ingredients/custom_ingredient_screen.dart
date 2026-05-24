@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import '../../../models/food_models.dart';
+import '../../../models/food.dart';
 import '../../providers/ingredients.dart';
 
 class CustomIngredientScreen extends ConsumerStatefulWidget {

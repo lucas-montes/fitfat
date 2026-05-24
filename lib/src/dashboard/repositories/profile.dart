@@ -1,4 +1,4 @@
-import '../../models/dashboard_models.dart';
+import '../../models/dashboard.dart';
 
 abstract class ProfileRepository {
   Future<UserProfile?> get();

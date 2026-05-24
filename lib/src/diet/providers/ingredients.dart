@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/food_models.dart';
+import '../../models/food.dart';
 import '../../database/providers.dart';
 import '../../adapters/drift/ingredient_repository.dart';
 import '../repositories/ingredients.dart';

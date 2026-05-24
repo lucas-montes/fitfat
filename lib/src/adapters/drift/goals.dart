@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart';
 import '../../dashboard/repositories/goals.dart';
-import '../../models/dashboard_models.dart';
+import '../../models/dashboard.dart';
 
 class DriftGoalRepository implements GoalRepository {
   DriftGoalRepository(this._db);

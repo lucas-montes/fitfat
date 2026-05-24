@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/exercise_models.dart';
-import '../../models/seance_models.dart';
+import '../../models/exercise.dart';
+import '../../models/seance.dart';
 import '../providers/seance.dart';
 
 class CreateSeanceScreen extends ConsumerStatefulWidget {
