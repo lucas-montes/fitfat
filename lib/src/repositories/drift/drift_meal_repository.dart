@@ -1,25 +1,4 @@
-import '../../database/app_database.dart';
-import '../../models/food_models.dart';
-import '../interfaces/meal_repository.dart';
-
-class DriftMealRepository implements MealRepository {
-  DriftMealRepository(this._db);
-
-  final AppDatabase _db;
-
-  @override
-  Future<List<MealEntry>> getByDate(DateTime date) async {
-    // TODO: implement with proper joining once food providers are migrated
-    return [];
-  }
-
-  @override
-  Future<void> insert(MealEntry meal) async {
-    // TODO: implement with transaction once providers are migrated
-  }
-
-  @override
-  Future<void> delete(String id) async {
-    await _db.deleteMeal(id);
-  }
-}
+// Re-export the fully-implemented Drift adapter located under
+// `lib/src/adapters/drift/` so there's a single canonical
+// implementation of `DriftMealRepository` in the codebase.
+export '../../adapters/drift/drift_meal_repository.dart';

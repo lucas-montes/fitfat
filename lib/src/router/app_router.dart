@@ -52,6 +52,8 @@ final appRouter = GoRouter(
       name: 'current-seance',
       builder: (context, state) => const CurrentSeanceScreen(),
     ),
+    // Group of routes that share the same shell (bottom navigation bar)
+    // They are kept in memory when switching between them, so their state is preserved
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return AppShell(navigationShell: navigationShell);

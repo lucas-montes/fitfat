@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/food_models.dart';
 import '../../providers/food_providers.dart';
-import '../food/add_meal_screen.dart';
-import '../food/custom_ingredient_screen.dart';
-import '../food/widgets/food_entry_card.dart';
+import '../../providers/meal_controller_provider.dart';
+import 'add_meal_screen.dart';
+import 'custom_ingredient_screen.dart';
+import 'widgets/food_entry_card.dart';
 
+// Widget that is used by the router to display the diet screen, which contains tabs for meals and ingredients
+// He's responsible to load the state
 class DietScreen extends ConsumerStatefulWidget {
   const DietScreen({super.key});
 
@@ -13,6 +16,7 @@ class DietScreen extends ConsumerStatefulWidget {
   ConsumerState<DietScreen> createState() => _DietScreenState();
 }
 
+// This creates the display logic for the screen
 class _DietScreenState extends ConsumerState<DietScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
@@ -29,6 +33,7 @@ class _DietScreenState extends ConsumerState<DietScreen>
     super.dispose();
   }
 
+  // This build the TapBar to go from Meals to Ingredients and display the list
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,17 +56,33 @@ class _DietScreenState extends ConsumerState<DietScreen>
   }
 }
 
-class MealsTab extends ConsumerWidget {
+class MealsTab extends ConsumerStatefulWidget {
   const MealsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final meals = ref.watch(mealLogProvider);
+  ConsumerState<MealsTab> createState() => _MealsTabState();
+}
+
+class _MealsTabState extends ConsumerState<MealsTab> {
+  late final DateTime _day;
+
+  @override
+  void initState() {
+    super.initState();
+    _day = DateTime.now();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(mealControllerProvider.notifier).load(_day);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(mealControllerProvider);
+    final meals = state.meals;
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       itemBuilder: (context, index) {
-        // Add button at the top
         if (index == 0) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -77,12 +98,13 @@ class MealsTab extends ConsumerWidget {
         if (mealIndex >= meals.length) return null;
 
         final meal = meals[mealIndex];
+        final title = (meal.name?.trim().isEmpty ?? true) ? 'Meal' : meal.name!;
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: FoodEntryCard(
-            title: meal.name?.trim().isEmpty ?? true ? 'Meal' : meal.name!,
+            title: title,
             onTap: () => _editMeal(context, meal),
-            onDelete: () => _deleteMeal(ref, meal.id),
+            onDelete: () => _deleteMeal(meal.id),
             body: Text(
               '${meal.totalMacros.calories.toStringAsFixed(0)} kcal · ${meal.items.length} item${meal.items.length == 1 ? '' : 's'}',
             ),
@@ -94,41 +116,27 @@ class MealsTab extends ConsumerWidget {
   }
 
   void _openAddMeal(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AddMealScreen()));
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddMealScreen()));
   }
 
   void _editMeal(BuildContext context, MealEntry meal) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => AddMealScreen(initialMeal: meal)));
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => AddMealScreen(initialMeal: meal)));
   }
 
-  void _deleteMeal(WidgetRef ref, String id) {
-    _confirmAndDeleteMeal(ref, id);
-  }
-
-  Future<void> _confirmAndDeleteMeal(WidgetRef ref, String id) async {
+  void _deleteMeal(String id) async {
     final confirmed = await showDialog<bool>(
       context: ref.context,
       builder: (context) => AlertDialog(
         title: const Text('Delete meal?'),
         content: const Text('This will remove the meal from your log.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Delete')),
         ],
       ),
     );
     if (confirmed != true) return;
-    ref.read(mealLogProvider.notifier).removeMeal(id);
+    await ref.read(mealControllerProvider.notifier).deleteMeal(id);
   }
 }
 

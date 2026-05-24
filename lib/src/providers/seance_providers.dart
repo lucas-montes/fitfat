@@ -21,8 +21,15 @@ class TemplateListNotifier extends Notifier<List<SeanceTemplate>> {
   @override
   List<SeanceTemplate> build() {
     _repo = ref.read(seanceRepositoryProvider);
-    // start empty; UI can call loadTemplates if desired
+    _loadFromDb();
     return [];
+  }
+
+  Future<void> _loadFromDb() async {
+    try {
+      final list = await _repo.listTemplates();
+      if (list.isNotEmpty) state = list;
+    } catch (_) {}
   }
 
   Future<void> loadTemplates() async {

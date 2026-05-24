@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/food_models.dart';
 import '../../providers/food_providers.dart';
+import '../../providers/meal_controller_provider.dart';
 import 'custom_ingredient_screen.dart';
 
 class AddMealScreen extends ConsumerStatefulWidget {
@@ -328,11 +329,11 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
       items: _items,
     );
 
-    final notifier = ref.read(mealLogProvider.notifier);
+    final controller = ref.read(mealControllerProvider.notifier);
     if (widget.initialMeal == null) {
-      notifier.addMeal(meal);
+      controller.addMeal(meal);
     } else {
-      notifier.updateMeal(meal);
+      controller.updateMeal(widget.initialMeal!.id, meal);
     }
 
     Navigator.of(context).pop();

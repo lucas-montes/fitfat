@@ -33,7 +33,13 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @visibleForTesting
-  AppDatabase.forTesting(QueryExecutor executor) : super(executor);
+  AppDatabase.forTesting(super.executor);
+
+  /// Public constructor that allows creating an `AppDatabase` with a
+  /// custom [QueryExecutor]. This is useful for dev or non-production
+  /// databases (e.g. a separate file-backed DB) without touching the
+  /// default production connection.
+  AppDatabase.open(super.executor);
 
   @override
   int get schemaVersion => 1;

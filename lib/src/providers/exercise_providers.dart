@@ -135,8 +135,9 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
     if (state == null) return;
     if (state!.exercises.any(
       (e) => e.exercise.name.toLowerCase() == exercise.name.toLowerCase(),
-    ))
+    )) {
       return;
+    }
     state = Seance(
       id: state!.id,
       name: state!.name,

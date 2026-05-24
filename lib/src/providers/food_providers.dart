@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../models/food_models.dart';
 import '../repositories/drift/drift_ingredient_repository.dart';
 import 'database_providers.dart';
+import 'repositories.dart';
 
 final ingredientListProvider =
     NotifierProvider<IngredientListNotifier, List<Ingredient>>(
@@ -75,12 +76,36 @@ class IngredientListNotifier extends Notifier<List<Ingredient>> {
 class MealLogNotifier extends Notifier<List<MealEntry>> {
   @override
   List<MealEntry> build() {
-    final ingredients = ref.read(ingredientListProvider);
-    return _seedMeals(ingredients);
+    _loadFromDb();
+    return [];
+  }
+
+  Future<void> _loadFromDb() async {
+    try {
+      final repo = ref.read(mealRepositoryProvider);
+      final existing = await repo.getAll();
+      if (existing.isEmpty) {
+        // seed initial meals from ingredients provider for local-first UX
+        final ingredients = ref.read(ingredientListProvider);
+        state = _seedMeals(ingredients);
+        // persist seeded meals
+        for (final meal in state) {
+          await repo.upsert(meal);
+        }
+        return;
+      }
+      state = existing;
+    } catch (_) {}
   }
 
   void addMeal(MealEntry meal) {
     state = [...state, meal];
+    Future.microtask(() async {
+      try {
+        final repo = ref.read(mealRepositoryProvider);
+        await repo.upsert(meal);
+      } catch (_) {}
+    });
   }
 
   void updateMeal(MealEntry meal) {
@@ -88,10 +113,22 @@ class MealLogNotifier extends Notifier<List<MealEntry>> {
       for (final existing in state)
         if (existing.id == meal.id) meal else existing,
     ];
+    Future.microtask(() async {
+      try {
+        final repo = ref.read(mealRepositoryProvider);
+        await repo.upsert(meal);
+      } catch (_) {}
+    });
   }
 
   void removeMeal(String id) {
     state = state.where((meal) => meal.id != id).toList();
+    Future.microtask(() async {
+      try {
+        final repo = ref.read(mealRepositoryProvider);
+        await repo.delete(id);
+      } catch (_) {}
+    });
   }
 
   void replaceIngredient(Ingredient ingredient) {

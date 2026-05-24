@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'src/app.dart';
 import 'src/router/app_router.dart';
+import 'src/services/logger.dart' show initLogging;
 
 void _onForegroundTaskData(Object data) {
   if (data is Map<String, dynamic> && data['type'] == 'open_current_seance') {
@@ -12,6 +13,7 @@ void _onForegroundTaskData(Object data) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  initLogging();
   FlutterForegroundTask.initCommunicationPort();
   FlutterForegroundTask.addTaskDataCallback(_onForegroundTaskData);
   runApp(const ProviderScope(child: FitFatApp()));
