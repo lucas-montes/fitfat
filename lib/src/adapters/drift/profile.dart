@@ -1,6 +1,6 @@
 import '../../database/app_database.dart';
+import '../../dashboard/repositories/profile.dart';
 import '../../models/dashboard_models.dart';
-import '../interfaces/profile_repository.dart';
 
 class DriftProfileRepository implements ProfileRepository {
   DriftProfileRepository(this._db);
@@ -36,7 +36,7 @@ class DriftProfileRepository implements ProfileRepository {
 
   ActivityLevel _parseActivity(String value) {
     return ActivityLevel.values.firstWhere(
-      (a) => a.name == value,
+      (activity) => activity.name == value,
       orElse: () => ActivityLevel.moderate,
     );
   }

@@ -11,7 +11,7 @@ import '../../database/app_database.dart'
 		hide Seance, ExerciseEntry, ExerciseSet, Exercise;
 import '../../models/exercise_models.dart';
 import '../../models/seance_models.dart';
-import '../../providers/database_providers.dart';
+import '../../database/providers.dart';
 import '../../services/logger.dart';
 import '../../services/seance_foreground_service.dart';
 import '../repository/seance.dart';

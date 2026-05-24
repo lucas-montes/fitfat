@@ -2,9 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../diet/providers/meals.dart';
 import '../../models/dashboard_models.dart';
 import '../../models/food_models.dart';
-import '../../providers/database_providers.dart';
-import '../../repositories/drift/drift_goal_repository.dart';
-import '../../repositories/drift/drift_profile_repository.dart';
+import '../../database/providers.dart';
+import '../../adapters/drift/goals.dart';
+import '../../adapters/drift/profile.dart';
 
 // ---------------------------------------------------------------------------
 // Chart period
