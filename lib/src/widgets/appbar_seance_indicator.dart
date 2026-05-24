@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../providers/exercise_providers.dart';
+import '../exercise/providers/seance.dart';
 
 /// Floating pill that appears at the bottom-right when a seance is running.
 /// Tap to open the current seance screen.

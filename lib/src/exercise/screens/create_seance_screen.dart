@@ -4,8 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../models/exercise_models.dart';
 import '../../models/seance_models.dart';
-import '../../providers/exercise_providers.dart';
-import '../../providers/seance_providers.dart';
+import '../providers/seance.dart';
 
 class CreateSeanceScreen extends ConsumerStatefulWidget {
   const CreateSeanceScreen({this.template, super.key});

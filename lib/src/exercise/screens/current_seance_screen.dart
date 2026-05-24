@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../testing_flags.dart';
 import '../../models/exercise_models.dart';
-import '../../providers/exercise_providers.dart';
+import '../providers/seance.dart';
 
 class CurrentSeanceScreen extends ConsumerStatefulWidget {
   const CurrentSeanceScreen({super.key});
@@ -390,7 +389,6 @@ class _TimerWidgetState extends ConsumerState<TimerWidget> {
   }
 
   void _startTimer() {
-    if (disableUiTimers) return;
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         setState(

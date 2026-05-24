@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/exercise_models.dart';
-import '../../providers/exercise_providers.dart';
+import '../providers/seance.dart';
 
 class ExerciseHistoryScreen extends ConsumerWidget {
   const ExerciseHistoryScreen({required this.exercise, super.key});

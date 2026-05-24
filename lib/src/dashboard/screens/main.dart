@@ -9,7 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../models/dashboard_models.dart';
 import '../../models/exercise_models.dart';
 import '../../providers/dashboard_providers.dart';
-import '../../providers/exercise_providers.dart';
+import '../../exercise/providers/seance.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});

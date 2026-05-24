@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../providers/seance_providers.dart';
-import '../../providers/exercise_providers.dart';
+import '../providers/seance.dart';
 import 'create_seance_screen.dart';
 
 class SeanceLibraryScreen extends ConsumerWidget {
