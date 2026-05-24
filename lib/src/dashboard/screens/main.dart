@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/dashboard_models.dart';
 import '../../models/exercise_models.dart';
-import '../../providers/dashboard_providers.dart';
+import '../providers/dashboard.dart';
 import '../../exercise/providers/seance.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -1283,7 +1283,9 @@ class _SettingsTab extends ConsumerWidget {
         }
         return;
       }
-      await Share.shareXFiles([XFile(file.path)], text: 'fitfat database');
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path)], text: 'fitfat database'),
+      );
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(

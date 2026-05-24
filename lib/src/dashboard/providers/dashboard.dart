@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/dashboard_models.dart';
-import '../models/food_models.dart';
-import '../repositories/drift/drift_profile_repository.dart';
-import '../repositories/drift/drift_goal_repository.dart';
-import 'database_providers.dart';
+import '../../diet/providers/meals.dart';
+import '../../models/dashboard_models.dart';
+import '../../models/food_models.dart';
+import '../../providers/database_providers.dart';
+import '../../repositories/drift/drift_goal_repository.dart';
+import '../../repositories/drift/drift_profile_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Chart period
@@ -296,7 +297,7 @@ final legacyNutritionGoalProvider = Provider<NutritionGoal>((ref) {
 // ---------------------------------------------------------------------------
 
 final dailyNutritionProvider = Provider<MacroNutrients>((ref) {
-  final meals = ref.watch(mealLogProvider);
+  final meals = ref.watch(mealsProvider).meals;
   final today = DateTime.now();
 
   return meals
@@ -310,7 +311,7 @@ final dailyNutritionProvider = Provider<MacroNutrients>((ref) {
 });
 
 final monthlyNutritionProvider = Provider<MacroNutrients>((ref) {
-  final meals = ref.watch(mealLogProvider);
+  final meals = ref.watch(mealsProvider).meals;
   final now = DateTime.now();
 
   final mealsThisMonth = meals.where(
