@@ -4,33 +4,36 @@ import 'package:drift/drift.dart' show Value;
 import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
-import '../../diet/repositories/meals.dart';
 import '../../models/food.dart';
 
-class DriftMealRepository implements MealRepository {
+class DriftMealRepository {
   DriftMealRepository(this._db);
 
   final db.AppDatabase _db;
   final _uuid = const Uuid();
 
-  @override
   Future<void> delete(String id) async {
     await _db.deleteMeal(id);
   }
 
-  @override
   Future<List<MealEntry>> getByDate(DateTime date) async {
-    final rows = await _db.getMealsByDate(date);
-    return Future.wait(rows.map(_mapMealRowToDomain));
+    final start = DateTime(date.year, date.month, 1);
+    final end = DateTime(date.year, date.month + 1, 1)
+        .subtract(const Duration(milliseconds: 1));
+    final rows = await _db.select(_db.meals).get();
+    final filtered = rows.where(
+      (row) => !row.eatenAt.isBefore(start) && !row.eatenAt.isAfter(end),
+    );
+    return Future.wait(filtered.map(_mapMealRowToDomain));
   }
 
-  @override
   Stream<List<MealEntry>> watchMealsForDay(DateTime date) {
-    final start = DateTime(date.year, date.month, date.day);
-    final end = start.add(const Duration(days: 1));
+    final start = DateTime(date.year, date.month, 1);
+    final end = DateTime(date.year, date.month + 1, 1);
     return _db.watchMeals().asyncMap((rows) async {
       final filtered = rows.where(
-        (row) => row.eatenAt.isAfter(start) && row.eatenAt.isBefore(end),
+        (row) =>
+            !row.eatenAt.isBefore(start) && row.eatenAt.isBefore(end),
       );
       return Future.wait(filtered.map(_mapMealRowToDomain));
     });
@@ -68,13 +71,7 @@ class DriftMealRepository implements MealRepository {
     );
   }
 
-  @override
   Future<void> insert(MealEntry meal) async {
-    await upsert(meal);
-  }
-
-  @override
-  Future<void> upsert(MealEntry meal) async {
     final companion = db.MealsCompanion.insert(
       id: meal.id,
       name: meal.name ?? '',
@@ -82,12 +79,39 @@ class DriftMealRepository implements MealRepository {
       notes: Value.absent(),
     );
 
-    await _db.into(_db.meals).insertOnConflictUpdate(companion);
+    // Insert the meal row; fail if it already exists.
+    await _db.insertMeal(companion);
 
+    // Insert associated ingredients (no deletion on insert).
+    for (final item in meal.items) {
+      final mealIngredient = db.MealIngredientsCompanion.insert(
+        id: _uuid.v7(),
+        mealId: meal.id,
+        ingredientId: item.ingredient.id,
+        grams: item.grams,
+      );
+      await _db.insertMealIngredient(mealIngredient);
+    }
+  }
+
+
+
+  Future<void> update(MealEntry meal) async {
+    final companion = db.MealsCompanion.insert(
+      id: meal.id,
+      name: meal.name ?? '',
+      eatenAt: meal.eatenAt,
+      notes: Value.absent(),
+    );
+
+    // Replace the existing row (will fail silently if row doesn't exist).
+    await _db.update(_db.meals).replace(companion);
+
+    // Replace ingredients: delete existing then reinsert.
     await _db.deleteMealIngredientsByMeal(meal.id);
     for (final item in meal.items) {
       final mealIngredient = db.MealIngredientsCompanion.insert(
-        id: _uuid.v4(),
+        id: _uuid.v7(),
         mealId: meal.id,
         ingredientId: item.ingredient.id,
         grams: item.grams,

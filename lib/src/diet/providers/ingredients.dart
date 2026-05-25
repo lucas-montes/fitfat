@@ -4,16 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/food.dart';
 import '../../database/providers.dart';
-import '../../adapters/drift/ingredient_repository.dart';
-import '../repositories/ingredients.dart';
+import '../../adapters/drift/ingredients.dart';
 
-final ingredientRepositoryProvider = Provider<IngredientRepository>((ref) {
+final ingredientRepositoryProvider = Provider<DriftIngredientRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return DriftIngredientRepository(db);
 });
 
 class IngredientsController extends Notifier<List<Ingredient>> {
-  late final IngredientRepository _repo;
+  late final DriftIngredientRepository _repo;
   bool _loaded = false;
 
   @override

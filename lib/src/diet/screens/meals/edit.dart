@@ -63,7 +63,7 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
               child: FilledButton.icon(
                 onPressed: _saveMeal,
                 icon: const Icon(Icons.check),
-                label: Text(widget.initialMeal == null ? 'Save' : 'Update'),
+                label: Text('Save'),
               ),
             ),
         ],
@@ -307,11 +307,12 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
     if (!mounted) return;
     if (ingredient == null) return;
 
-    ref.read(ingredientsProvider.notifier).addIngredient(ingredient);
-
     final grams = await _promptForGrams(context);
     if (!mounted) return;
     if (grams == null) return;
+
+    await ref.read(ingredientsProvider.notifier).addIngredient(ingredient);
+
     setState(() {
       _items = [
         ..._items,
@@ -320,10 +321,10 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
     });
   }
 
-  void _saveMeal() {
+  Future<void> _saveMeal() async {
     final name = _nameController.text.trim();
     final meal = MealEntry(
-      id: widget.initialMeal?.id ?? _uuid.v4(),
+      id: widget.initialMeal?.id ?? _uuid.v7(),
       name: name.isEmpty ? null : name,
       eatenAt: _eatenAt,
       items: _items,
@@ -331,11 +332,29 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
 
     final controller = ref.read(mealsProvider.notifier);
     if (widget.initialMeal == null) {
-      controller.addMeal(meal);
+      try {
+        await controller.addMeal(meal);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save meal: $e')),
+          );
+        }
+        return;
+      }
     } else {
-      controller.updateMeal(widget.initialMeal!.id, meal);
+      try {
+        await controller.updateMeal(widget.initialMeal!.id, meal);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update meal: $e')),
+          );
+        }
+        return;
+      }
     }
 
-    Navigator.of(context).pop();
+    if (mounted) Navigator.of(context).pop();
   }
 }

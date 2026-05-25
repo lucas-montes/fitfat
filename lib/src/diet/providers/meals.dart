@@ -4,10 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/food.dart';
 import '../../database/providers.dart';
-import '../../adapters/drift/meal_repository.dart';
-import '../repositories/meals.dart';
+import '../../adapters/drift/meals.dart';
 
-final mealRepositoryProvider = Provider<MealRepository>((ref) {
+final mealRepositoryProvider = Provider<DriftMealRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return DriftMealRepository(db);
 });
@@ -43,7 +42,7 @@ class MealsState {
 }
 
 class MealsController extends Notifier<MealsState> {
-  late final MealRepository _repo;
+  late final DriftMealRepository _repo;
   StreamSubscription<List<MealEntry>>? _repoSub;
 
   @override
@@ -109,7 +108,7 @@ class MealsController extends Notifier<MealsState> {
   }
 
   Future<void> updateMeal(String id, MealEntry meal) async {
-    await _repo.upsert(meal);
+    await _repo.update(meal);
     state = state.copyWith(
       meals: [
         for (final existing in state.meals)

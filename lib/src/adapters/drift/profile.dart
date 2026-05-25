@@ -1,13 +1,11 @@
 import '../../database/app_database.dart';
-import '../../dashboard/repositories/profile.dart';
 import '../../models/dashboard.dart';
 
-class DriftProfileRepository implements ProfileRepository {
+class DriftProfileRepository {
   DriftProfileRepository(this._db);
 
   final AppDatabase _db;
 
-  @override
   Future<UserProfile?> get() async {
     final row = await _db.watchProfile().first;
     if (row == null) return null;
@@ -20,7 +18,6 @@ class DriftProfileRepository implements ProfileRepository {
     );
   }
 
-  @override
   Future<void> upsert(UserProfile profile) async {
     await _db.upsertProfile(
       UserProfileCompanion.insert(

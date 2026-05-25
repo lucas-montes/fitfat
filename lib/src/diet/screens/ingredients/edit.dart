@@ -342,13 +342,13 @@ class _CustomIngredientScreenState
     Ingredient ingredient;
     if (_buildFromIngredients) {
       ingredient = Ingredient.fromComponents(
-        id: widget.initialIngredient?.id ?? _uuid.v4(),
+        id: widget.initialIngredient?.id ?? _uuid.v7(),
         name: name,
         components: _components,
       );
     } else {
       ingredient = Ingredient(
-        id: widget.initialIngredient?.id ?? _uuid.v4(),
+        id: widget.initialIngredient?.id ?? _uuid.v7(),
         name: name,
         caloriesPer100g: per100g.calories,
         proteinPer100g: per100g.protein,

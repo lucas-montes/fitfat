@@ -2,16 +2,14 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart';
-import '../../exercise/repository/seance.dart';
 import '../../models/seance.dart';
 
-class DriftSeanceRepository implements SeanceRepository {
+class DriftSeanceRepository {
   DriftSeanceRepository(this._db);
 
   final AppDatabase _db;
   final _uuid = const Uuid();
 
-  @override
   Future<List<SeanceTemplate>> listTemplates() async {
     final templates = await _db.select(_db.templates).get();
     final result = <SeanceTemplate>[];
@@ -21,14 +19,13 @@ class DriftSeanceRepository implements SeanceRepository {
     return result;
   }
 
-  @override
   Future<SeanceTemplate> createTemplate(SeanceTemplate template) async {
-    final templateId = template.id.isNotEmpty ? template.id : _uuid.v4();
+    final templateId = template.id.isNotEmpty ? template.id : _uuid.v7();
     await _db.into(_db.templates).insert(
       TemplatesCompanion.insert(id: templateId, name: template.name),
     );
     for (final exercise in template.exercises) {
-      final exerciseId = exercise.id.isNotEmpty ? exercise.id : _uuid.v4();
+      final exerciseId = exercise.id.isNotEmpty ? exercise.id : _uuid.v7();
       await _db.into(_db.templateExercises).insert(
         TemplateExercisesCompanion.insert(
           id: exerciseId,
@@ -39,7 +36,7 @@ class DriftSeanceRepository implements SeanceRepository {
       for (final plannedSet in exercise.plannedSets) {
         await _db.into(_db.templateSets).insert(
           TemplateSetsCompanion.insert(
-            id: _uuid.v4(),
+            id: _uuid.v7(),
             templateExerciseId: exerciseId,
             reps: plannedSet.reps,
             weightKg: Value(plannedSet.weightKg),
@@ -51,7 +48,6 @@ class DriftSeanceRepository implements SeanceRepository {
     return template.copyWith(id: templateId);
   }
 
-  @override
   Future<void> deleteTemplate(String id) async {
     final exercises = await (
       _db.select(_db.templateExercises)
@@ -68,7 +64,6 @@ class DriftSeanceRepository implements SeanceRepository {
     await (_db.delete(_db.templates)..where((table) => table.id.equals(id))).go();
   }
 
-  @override
   Future<SeanceTemplate> updateTemplate(SeanceTemplate template) async {
     await _db.update(_db.templates).replace(
       TemplatesCompanion(
@@ -89,7 +84,7 @@ class DriftSeanceRepository implements SeanceRepository {
           ..where((table) => table.templateId.equals(template.id)))
         .go();
     for (final exercise in template.exercises) {
-      final exerciseId = _uuid.v4();
+      final exerciseId = _uuid.v7();
       await _db.into(_db.templateExercises).insert(
         TemplateExercisesCompanion.insert(
           id: exerciseId,
@@ -100,7 +95,7 @@ class DriftSeanceRepository implements SeanceRepository {
       for (final plannedSet in exercise.plannedSets) {
         await _db.into(_db.templateSets).insert(
           TemplateSetsCompanion.insert(
-            id: _uuid.v4(),
+            id: _uuid.v7(),
             templateExerciseId: exerciseId,
             reps: plannedSet.reps,
             weightKg: Value(plannedSet.weightKg),
@@ -112,7 +107,6 @@ class DriftSeanceRepository implements SeanceRepository {
     return template;
   }
 
-  @override
   Future<SeanceTemplate> cloneTemplate(
     String id, {
     DateTime? scheduledFor,
@@ -122,11 +116,11 @@ class DriftSeanceRepository implements SeanceRepository {
           .getSingle(),
     );
     final cloned = original.copyWith(
-      id: _uuid.v4(),
+      id: _uuid.v7(),
       name: '${original.name} (copy)',
       scheduledFor: scheduledFor,
       exercises: original.exercises
-          .map((exercise) => exercise.copyWith(id: _uuid.v4()))
+          .map((exercise) => exercise.copyWith(id: _uuid.v7()))
           .toList(),
     );
     return createTemplate(cloned);

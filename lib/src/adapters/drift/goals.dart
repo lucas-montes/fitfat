@@ -2,21 +2,19 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart';
-import '../../dashboard/repositories/goals.dart';
 import '../../models/dashboard.dart';
 
-class DriftGoalRepository implements GoalRepository {
+class DriftGoalRepository {
   DriftGoalRepository(this._db);
 
   final AppDatabase _db;
   final _uuid = const Uuid();
 
-  @override
   Future<void> upsertBodyWeight(BodyWeightGoal goal) async {
     await (_db.delete(_db.goals)..where((table) => table.type.equals('bodyweight'))).go();
     await _db.into(_db.goals).insert(
       GoalsCompanion.insert(
-        id: _uuid.v4(),
+        id: _uuid.v7(),
         type: 'bodyweight',
         targetWeightKg: goal.targetWeightKg,
         direction: Value(_directionToString(goal.direction)),
@@ -25,19 +23,17 @@ class DriftGoalRepository implements GoalRepository {
     );
   }
 
-  @override
   Future<void> clearBodyWeight() async {
     await (_db.delete(_db.goals)..where((table) => table.type.equals('bodyweight'))).go();
   }
 
-  @override
   Future<void> addStrength(StrengthGoal goal) async {
     await (_db.delete(_db.goals)..where(
       (table) => table.type.equals('strength') & table.exerciseName.equals(goal.exerciseName),
     )).go();
     await _db.into(_db.goals).insert(
       GoalsCompanion.insert(
-        id: _uuid.v4(),
+        id: _uuid.v7(),
         type: 'strength',
         exerciseName: Value(goal.exerciseName),
         targetWeightKg: goal.targetWeightKg,
@@ -46,14 +42,13 @@ class DriftGoalRepository implements GoalRepository {
     );
   }
 
-  @override
   Future<void> updateStrength(String exerciseName, StrengthGoal goal) async {
     await (_db.delete(_db.goals)..where(
       (table) => table.type.equals('strength') & table.exerciseName.equals(exerciseName),
     )).go();
     await _db.into(_db.goals).insert(
       GoalsCompanion.insert(
-        id: _uuid.v4(),
+        id: _uuid.v7(),
         type: 'strength',
         exerciseName: Value(goal.exerciseName),
         targetWeightKg: goal.targetWeightKg,
@@ -62,14 +57,12 @@ class DriftGoalRepository implements GoalRepository {
     );
   }
 
-  @override
   Future<void> removeStrength(String exerciseName) async {
     await (_db.delete(_db.goals)..where(
       (table) => table.type.equals('strength') & table.exerciseName.equals(exerciseName),
     )).go();
   }
 
-  @override
   Future<GoalsData> loadAll() async {
     final rows = await _db.select(_db.goals).get();
     BodyWeightGoal? bodyWeightGoal;

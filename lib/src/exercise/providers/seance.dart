@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../adapters/drift/drift_seance_repository.dart';
+import '../../adapters/drift/seance.dart';
 import '../../database/app_database.dart'
 		hide Seance, ExerciseEntry, ExerciseSet, Exercise;
 import '../../models/exercise.dart';
@@ -14,7 +14,6 @@ import '../../models/seance.dart';
 import '../../database/providers.dart';
 import '../../services/logger.dart';
 import '../../services/seance_foreground_service.dart';
-import '../repository/seance.dart';
 
 final _log = logger('exercise_seance');
 const _activeSeanceKey = 'active_seance_json';
@@ -58,7 +57,7 @@ final seanceHistoryProvider =
 	SeanceHistoryNotifier.new,
 );
 
-final seanceRepositoryProvider = Provider<SeanceRepository>((ref) {
+final seanceRepositoryProvider = Provider<DriftSeanceRepository>((ref) {
 	final db = ref.watch(databaseProvider);
 	return DriftSeanceRepository(db);
 });
@@ -440,7 +439,7 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
 }
 
 class TemplateListNotifier extends Notifier<List<SeanceTemplate>> {
-	late final SeanceRepository _repo;
+	late final DriftSeanceRepository _repo;
 
 	@override
 	List<SeanceTemplate> build() {
