@@ -265,10 +265,15 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
 	void updateSet(int exerciseIndex, int setIndex, int reps, double weight) {
 		if (state == null || exerciseIndex >= state!.exercises.length) return;
 		final exercise = state!.exercises[exerciseIndex];
+		final currentSet = exercise.sets[setIndex];
 		final updatedSets = [
 			for (var i = 0; i < exercise.sets.length; i++)
 				if (i == setIndex)
-					ExerciseSet(reps: reps, weight: weight)
+					ExerciseSet(
+						reps: reps,
+						weight: weight,
+						completedAt: currentSet.completedAt,
+					)
 				else
 					exercise.sets[i],
 		];
@@ -294,7 +299,15 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
 	}
 
 	void completeSeance() {
+		print('[UI] completeSeance called; current active state: $state');
 		if (state == null) return;
+		print('[UI] active seance exercises count=${state!.exercises.length}');
+		if (state!.exercises.isEmpty) {
+			state = null;
+			unawaited(SeanceForegroundService.instance.stop());
+			unawaited(_persist());
+			return;
+		}
 		final now = DateTime.now();
 		final defaultName =
 				'Seance - ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
@@ -329,15 +342,19 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
 
 	Future<void> _loadFromDb() async {
 		try {
+			print('[DB] _loadFromDb: Starting load...');
 			final db = ref.read(databaseProvider);
 			final seanceRows = await (db.select(
 				db.seances,
 			)..where((table) => table.completedAt.isNotNull())).get();
+			print('[DB] _loadFromDb: Found ${seanceRows.length} completed seances');
 			final result = <Seance>[];
 			for (final seanceRow in seanceRows) {
+				print('[DB] Loading seance: id=${seanceRow.id}, name=${seanceRow.name}');
 				final entryRows = await (db.select(
 					db.exerciseEntries,
 				)..where((table) => table.seanceId.equals(seanceRow.id))).get();
+				print('[DB] Seance ${seanceRow.id} has ${entryRows.length} exercise entries');
 				final exercises = <ExerciseEntry>[];
 				for (final entryRow in entryRows) {
 					final exerciseRow = await (db.select(
@@ -346,12 +363,14 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
 					final setRows = await (db.select(
 						db.exerciseSets,
 					)..where((table) => table.entryId.equals(entryRow.id))).get();
+					print('[DB] Entry ${entryRow.id}: exercise=${exerciseRow?.name ?? entryRow.exerciseId}, sets=${setRows.length}');
 					exercises.add(
 						ExerciseEntry(
 							id: entryRow.id,
 							exercise: ExerciseDefinition(
 								id: entryRow.exerciseId,
-								name: exerciseRow?.name ?? '',
+								name: exerciseRow?.name ?? entryRow.exerciseId,
+								category: exerciseRow?.category ?? 'General',
 							),
 							sets: setRows
 									.map((setRow) => ExerciseSet(reps: setRow.reps, weight: setRow.weight))
@@ -368,12 +387,19 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
 						startedAt: seanceRow.startedAt,
 						exercises: exercises,
 						completedAt: seanceRow.completedAt,
+						restBetweenSets: Duration(
+							milliseconds: seanceRow.restBetweenSetsMillis,
+						),
 					),
 				);
 			}
-			if (result.isNotEmpty) {
-				state = result;
-			}
+			result.sort((a, b) {
+				final aCompleted = a.completedAt ?? a.startedAt;
+				final bCompleted = b.completedAt ?? b.startedAt;
+				return bCompleted.compareTo(aCompleted);
+			});
+			print('[DB] _loadFromDb: Loaded ${result.length} seances total');
+			state = result;
 		} catch (e, stack) {
 			_log.severe('Failed to load seance history', e, stack);
 		}
@@ -382,59 +408,80 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
 	Future<void> _saveToDb(Seance seance) async {
 		try {
 			final db = ref.read(databaseProvider);
-			await db.into(db.seances).insert(
-				SeancesCompanion(
-					id: Value(seance.id),
-					name: Value(seance.name),
-					startedAt: Value(seance.startedAt),
-					completedAt: Value(seance.completedAt),
-					restBetweenSetsMillis: Value(seance.restBetweenSets.inMilliseconds),
-				),
-				mode: InsertMode.insertOrReplace,
-			);
-			for (final entry in seance.exercises) {
-				final existing = await (db.select(
-					db.exercises,
-				)..where((table) => table.name.equals(entry.exercise.name))).get();
-				final exerciseId = existing.isNotEmpty ? existing.first.id : const Uuid().v4();
-				if (existing.isEmpty) {
+			print('[DB] Saving seance: id=${seance.id}, name=${seance.name}, exercises=${seance.exercises.length}, completedAt=${seance.completedAt}');
+			await db.transaction(() async {
+				await db.into(db.seances).insert(
+					SeancesCompanion(
+						id: Value(seance.id),
+						name: Value(seance.name),
+						startedAt: Value(seance.startedAt),
+						completedAt: Value(seance.completedAt),
+						restBetweenSetsMillis: Value(seance.restBetweenSets.inMilliseconds),
+					),
+					mode: InsertMode.insertOrReplace,
+				);
+				print('[DB] Seance record inserted: id=${seance.id}, name=${seance.name}, completedAt=${seance.completedAt}');
+
+				for (final entry in seance.exercises) {
+					final exerciseId =
+						entry.exercise.id.isNotEmpty ? entry.exercise.id : const Uuid().v4();
+
 					await db.into(db.exercises).insert(
 						ExercisesCompanion.insert(
 							id: exerciseId,
 							name: entry.exercise.name,
 							category: entry.exercise.category,
 						),
+						mode: InsertMode.insertOrReplace,
 					);
-				}
-				await db.into(db.exerciseEntries).insert(
-					ExerciseEntriesCompanion(
-						id: Value(entry.id),
-						seanceId: Value(seance.id),
-						exerciseId: Value(exerciseId),
-						startedAt: Value(entry.startedAt),
-						completedAt: Value(entry.completedAt),
-					),
-					mode: InsertMode.insertOrReplace,
-				);
-				for (final set in entry.sets) {
-					await db.into(db.exerciseSets).insert(
-						ExerciseSetsCompanion.insert(
-							id: const Uuid().v4(),
-							entryId: entry.id,
-							reps: set.reps,
-							weight: set.weight,
+
+					await db.into(db.exerciseEntries).insert(
+						ExerciseEntriesCompanion(
+							id: Value(entry.id),
+							seanceId: Value(seance.id),
+							exerciseId: Value(exerciseId),
+							startedAt: Value(entry.startedAt),
+							completedAt: Value(entry.completedAt ?? seance.completedAt),
 						),
+						mode: InsertMode.insertOrReplace,
 					);
+					print('[DB] Exercise entry inserted: exerciseId=$exerciseId, sets=${entry.sets.length}, entry.completedAt=${entry.completedAt}');
+
+					await db.deleteExerciseSetsByEntry(entry.id);
+					final completedSets = entry.sets.where((set) => set.isCompleted).toList();
+					print('[DB] Exercise ${entry.exercise.name}: total sets=${entry.sets.length}, completed=${completedSets.length}');
+					for (final set in completedSets) {
+						await db.into(db.exerciseSets).insert(
+							ExerciseSetsCompanion.insert(
+								id: const Uuid().v4(),
+								entryId: entry.id,
+								reps: set.reps,
+								weight: set.weight,
+							),
+						);
+					}
 				}
-			}
+			});
 		} catch (e, stack) {
 			_log.severe('Failed to save seance', e, stack);
+			print('[DB] Failed to save seance ${seance.id}: $e');
 		}
 	}
 
 	void addSeance(Seance seance) {
-		state = [...state, seance];
-		unawaited(_saveToDb(seance));
+		print('[UI] addSeance called with: id=${seance.id}, name=${seance.name}, exercises=${seance.exercises.length}');
+		print('[UI] Seance details: completedAt=${seance.completedAt}, exercises detail: ${seance.exercises.map((e) => '${e.exercise.name}:${e.sets.length}sets').join(", ")}');
+		state = [seance, ...state];
+		print('[UI] State updated, current count: ${state.length}');
+		print('[UI] State after update: ${state.map((s) => '${s.name}:completed=${s.completedAt != null}').join(", ")}');
+		unawaited(() async {
+			print('[UI] Starting async save/load');
+			await _saveToDb(seance);
+			print('[UI] Saved to DB, now reloading...');
+			await _loadFromDb();
+			print('[UI] Reload complete, final state count: ${state.length}');
+			print('[UI] Final state: ${state.map((s) => '${s.name}:completed=${s.completedAt != null}').join(", ")}');
+		}());
 	}
 }
 

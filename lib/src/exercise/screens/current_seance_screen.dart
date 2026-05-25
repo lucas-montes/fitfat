@@ -42,6 +42,30 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
     setState(() => _selectedExerciseIndex = null);
   }
 
+  Future<bool> _confirmDiscardEmptySeance() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Discard empty seance?'),
+        content: const Text(
+          'This seance has no exercises and will not be saved to history.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep editing'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+
+    return confirm == true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final seance = ref.watch(activeSeanceProvider);
@@ -181,9 +205,16 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
           child: FilledButton.icon(
             icon: const Icon(Icons.check),
             label: const Text('Complete Seance'),
-            onPressed: () {
+            onPressed: () async {
+              if (seance.exercises.isEmpty) {
+                final discard = await _confirmDiscardEmptySeance();
+                if (!discard || !context.mounted) return;
+              }
+
               ref.read(activeSeanceProvider.notifier).completeSeance();
-              context.go('/exercise');
+              if (context.mounted) {
+                context.go('/exercise');
+              }
             },
           ),
         ),

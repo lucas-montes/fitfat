@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../models/food.dart';
 import '../providers/ingredients.dart';
 import '../providers/meals.dart';
@@ -8,49 +9,27 @@ import 'ingredients/edit.dart';
 import 'widgets/food_entry_card.dart';
 
 // Widget that is used by the router to display the diet screen, which contains tabs for meals and ingredients
-// He's responsible to load the state
-class DietScreen extends ConsumerStatefulWidget {
+class DietScreen extends StatelessWidget {
   const DietScreen({super.key});
 
   @override
-  ConsumerState<DietScreen> createState() => _DietScreenState();
-}
-
-// This creates the display logic for the screen
-class _DietScreenState extends ConsumerState<DietScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  // This build the TapBar to go from Meals to Ingredients and display the list
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 0,
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Meals'),
-            Tab(text: 'Ingredients'),
-          ],
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          toolbarHeight: 0,
+          elevation: 0,
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Meals'),
+              Tab(text: 'Ingredients'),
+            ],
+          ),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [MealsTab(), _IngredientsTab()],
+        body: const TabBarView(
+          children: [MealsTab(), _IngredientsTab()],
+        ),
       ),
     );
   }
@@ -64,6 +43,9 @@ class MealsTab extends ConsumerStatefulWidget {
 }
 
 class _MealsTabState extends ConsumerState<MealsTab> {
+  final DateFormat _dayFormat = DateFormat('EEE, MMM d');
+  final DateFormat _timeFormat = DateFormat('h:mm a');
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +58,11 @@ class _MealsTabState extends ConsumerState<MealsTab> {
   Widget build(BuildContext context) {
     final state = ref.watch(mealsProvider);
     final meals = state.meals;
+    final groupedMeals = _groupMealsByDay(meals);
+    // Debug: log UI-side meal count to ensure provider updates are seen
+    try {
+      print('[UI] MealsTab build: meals=${meals.length} status=${state.status}');
+    } catch (_) {}
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -91,25 +78,89 @@ class _MealsTabState extends ConsumerState<MealsTab> {
           );
         }
 
-        final mealIndex = index - 1;
-        if (mealIndex >= meals.length) return null;
+        final groupIndex = index - 1;
+        if (groupIndex >= groupedMeals.length) return null;
 
-        final meal = meals[mealIndex];
-        final title = (meal.name?.trim().isEmpty ?? true) ? 'Meal' : meal.name!;
+        final group = groupedMeals[groupIndex];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: FoodEntryCard(
-            title: title,
-            onTap: () => _editMeal(context, meal),
-            onDelete: () => _deleteMeal(meal.id),
-            body: Text(
-              '${meal.totalMacros.calories.toStringAsFixed(0)} kcal · ${meal.items.length} item${meal.items.length == 1 ? '' : 's'}',
-            ),
-          ),
+          child: _buildDayGroupCard(context, group),
         );
       },
-      itemCount: meals.length + 1,
+      itemCount: groupedMeals.length + 1,
     );
+  }
+
+  List<_MealsDayGroup> _groupMealsByDay(List<MealEntry> meals) {
+    final grouped = <DateTime, List<MealEntry>>{};
+    for (final meal in meals) {
+      final dayKey = DateTime(meal.eatenAt.year, meal.eatenAt.month, meal.eatenAt.day);
+      grouped.putIfAbsent(dayKey, () => <MealEntry>[]).add(meal);
+    }
+
+    final entries = grouped.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+
+    return entries
+        .map((entry) => _MealsDayGroup(day: entry.key, meals: entry.value))
+        .toList();
+  }
+
+  Widget _buildDayGroupCard(BuildContext context, _MealsDayGroup group) {
+    final dailyTotals = group.meals.fold(
+      MacroNutrients.zero,
+      (sum, meal) => sum + meal.totalMacros,
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _dayFormat.format(group.day),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Total: ${_formatMacros(dailyTotals)}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+            const SizedBox(height: 4),
+            for (final meal in group.meals) _buildMealRow(context, meal),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMealRow(BuildContext context, MealEntry meal) {
+    final title = (meal.name?.trim().isEmpty ?? true) ? 'Meal' : meal.name!;
+    final macros = meal.totalMacros;
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(title),
+      subtitle: Text(
+        '${_timeFormat.format(meal.eatenAt)} · ${_formatMacros(macros)} · ${meal.items.length} item${meal.items.length == 1 ? '' : 's'}',
+      ),
+      onTap: () => _editMeal(context, meal),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete_outline),
+        tooltip: 'Delete meal',
+        onPressed: () => _deleteMeal(meal.id),
+      ),
+    );
+  }
+
+  String _formatMacros(MacroNutrients macros) {
+    return '${macros.calories.toStringAsFixed(0)} kcal · '
+        'P ${macros.protein.toStringAsFixed(1)}g · '
+        'C ${macros.carbs.toStringAsFixed(1)}g · '
+        'F ${macros.fat.toStringAsFixed(1)}g';
   }
 
   void _openAddMeal(BuildContext context) {
@@ -145,6 +196,13 @@ class _MealsTabState extends ConsumerState<MealsTab> {
     if (confirmed != true) return;
     await ref.read(mealsProvider.notifier).deleteMeal(id);
   }
+}
+
+class _MealsDayGroup {
+  const _MealsDayGroup({required this.day, required this.meals});
+
+  final DateTime day;
+  final List<MealEntry> meals;
 }
 
 class _IngredientsTab extends ConsumerWidget {

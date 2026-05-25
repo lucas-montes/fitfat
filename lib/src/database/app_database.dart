@@ -273,6 +273,11 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final docsDir = await getApplicationDocumentsDirectory();
     final dbPath = p.join(docsDir.path, 'fitfat.db');
+    // Debug: log the database file path so we can confirm where the DB is stored
+    try {
+      // Use print so it's visible in Flutter logs during development
+      print('[DB] Opening database at: $dbPath');
+    } catch (_) {}
     return NativeDatabase(File(dbPath));
   });
 }
