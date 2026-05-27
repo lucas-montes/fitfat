@@ -16,6 +16,7 @@ part 'app_database.g.dart';
   tables: [
     Exercises,
     Ingredients,
+    IngredientComponents,
     Meals,
     MealIngredients,
     Seances,
@@ -42,7 +43,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -50,6 +51,20 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
       await _seedExercises();
       await _seedIngredients();
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        // Add new ingredient fields (nullable = safe for existing rows)
+        await m.addColumn(ingredients, ingredients.creatorId);
+        await m.addColumn(ingredients, ingredients.isArchived);
+        await m.addColumn(ingredients, ingredients.sodiumPer100g);
+        await m.addColumn(ingredients, ingredients.fiberPer100g);
+        await m.addColumn(ingredients, ingredients.sugarsPer100g);
+        await m.addColumn(ingredients, ingredients.saturatedFatPer100g);
+        await m.addColumn(ingredients, ingredients.cholesterolPer100g);
+        // Create junction table for composite ingredients
+        await m.createTable(ingredientComponents);
+      }
     },
   );
 

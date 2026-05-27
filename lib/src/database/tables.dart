@@ -20,13 +20,34 @@ class Exercises extends Table {
 class Ingredients extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
+  TextColumn get creatorId => text().nullable()();
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+
   RealColumn get caloriesPer100g => real()();
   RealColumn get proteinPer100g => real()();
   RealColumn get carbsPer100g => real()();
   RealColumn get fatPer100g => real()();
+  RealColumn get sodiumPer100g => real().nullable()();
+  RealColumn get fiberPer100g => real().nullable()();
+  RealColumn get sugarsPer100g => real().nullable()();
+  RealColumn get saturatedFatPer100g => real().nullable()();
+  RealColumn get cholesterolPer100g => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Ingredient components (composite/recipe ingredients)
+// ---------------------------------------------------------------------------
+
+class IngredientComponents extends Table {
+  TextColumn get ingredientId => text().references(Ingredients, #id)();
+  TextColumn get componentId => text().references(Ingredients, #id)();
+  RealColumn get grams => real()();
+
+  @override
+  Set<Column> get primaryKey => {ingredientId, componentId};
 }
 
 // ---------------------------------------------------------------------------

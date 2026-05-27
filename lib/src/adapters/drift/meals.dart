@@ -26,12 +26,7 @@ class DriftMealRepository {
         ..where((t) => t.eatenAt.isBetweenValues(start, end))
         ..orderBy([(t) => OrderingTerm(expression: t.eatenAt, mode: OrderingMode.desc)])
     ).get();
-    try {
-      print('[DB] getByDate for $start - $end: found ${rows.length} rows');
-      for (final r in rows) {
-        print('[DB]  - meal row id=${r.id} eatenAt=${r.eatenAt} name=${r.name}');
-      }
-    } catch (_) {}
+
 
     // Map rows to domain objects, but guard against failures converting
     // individual rows so a single bad row won't break the whole query.
@@ -56,12 +51,7 @@ class DriftMealRepository {
           ..orderBy([(t) => OrderingTerm(expression: t.eatenAt, mode: OrderingMode.desc)]))
         .watch()
         .asyncMap((rows) async {
-      try {
-        print('[DB] watchMealsForDay for $start - $end: rows=${rows.length}');
-        for (final r in rows) {
-          print('[DB]  - meal row id=${r.id} eatenAt=${r.eatenAt} name=${r.name}');
-        }
-      } catch (_) {}
+
 
       final mapped = await Future.wait(rows.map((r) async {
         try {

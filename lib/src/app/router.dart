@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../diet/screens/main.dart';
 import '../exercise/screens/current_seance_screen.dart';
-import '../exercise/screens/exercise_screen.dart';
+import '../exercise/screens/main.dart';
 import '../dashboard/screens/main.dart';
 import '../widgets/appbar_seance_indicator.dart' show SeanceFloatingPill;
 

@@ -285,6 +285,32 @@ class $IngredientsTable extends Ingredients
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _creatorIdMeta = const VerificationMeta(
+    'creatorId',
+  );
+  @override
+  late final GeneratedColumn<String> creatorId = GeneratedColumn<String>(
+    'creator_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _caloriesPer100gMeta = const VerificationMeta(
     'caloriesPer100g',
   );
@@ -329,14 +355,76 @@ class $IngredientsTable extends Ingredients
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sodiumPer100gMeta = const VerificationMeta(
+    'sodiumPer100g',
+  );
+  @override
+  late final GeneratedColumn<double> sodiumPer100g = GeneratedColumn<double>(
+    'sodium_per100g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fiberPer100gMeta = const VerificationMeta(
+    'fiberPer100g',
+  );
+  @override
+  late final GeneratedColumn<double> fiberPer100g = GeneratedColumn<double>(
+    'fiber_per100g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sugarsPer100gMeta = const VerificationMeta(
+    'sugarsPer100g',
+  );
+  @override
+  late final GeneratedColumn<double> sugarsPer100g = GeneratedColumn<double>(
+    'sugars_per100g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _saturatedFatPer100gMeta =
+      const VerificationMeta('saturatedFatPer100g');
+  @override
+  late final GeneratedColumn<double> saturatedFatPer100g =
+      GeneratedColumn<double>(
+        'saturated_fat_per100g',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _cholesterolPer100gMeta =
+      const VerificationMeta('cholesterolPer100g');
+  @override
+  late final GeneratedColumn<double> cholesterolPer100g =
+      GeneratedColumn<double>(
+        'cholesterol_per100g',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     name,
+    creatorId,
+    isArchived,
     caloriesPer100g,
     proteinPer100g,
     carbsPer100g,
     fatPer100g,
+    sodiumPer100g,
+    fiberPer100g,
+    sugarsPer100g,
+    saturatedFatPer100g,
+    cholesterolPer100g,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -362,6 +450,18 @@ class $IngredientsTable extends Ingredients
       );
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('creator_id')) {
+      context.handle(
+        _creatorIdMeta,
+        creatorId.isAcceptableOrUnknown(data['creator_id']!, _creatorIdMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
     }
     if (data.containsKey('calories_per100g')) {
       context.handle(
@@ -404,6 +504,51 @@ class $IngredientsTable extends Ingredients
     } else if (isInserting) {
       context.missing(_fatPer100gMeta);
     }
+    if (data.containsKey('sodium_per100g')) {
+      context.handle(
+        _sodiumPer100gMeta,
+        sodiumPer100g.isAcceptableOrUnknown(
+          data['sodium_per100g']!,
+          _sodiumPer100gMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fiber_per100g')) {
+      context.handle(
+        _fiberPer100gMeta,
+        fiberPer100g.isAcceptableOrUnknown(
+          data['fiber_per100g']!,
+          _fiberPer100gMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sugars_per100g')) {
+      context.handle(
+        _sugarsPer100gMeta,
+        sugarsPer100g.isAcceptableOrUnknown(
+          data['sugars_per100g']!,
+          _sugarsPer100gMeta,
+        ),
+      );
+    }
+    if (data.containsKey('saturated_fat_per100g')) {
+      context.handle(
+        _saturatedFatPer100gMeta,
+        saturatedFatPer100g.isAcceptableOrUnknown(
+          data['saturated_fat_per100g']!,
+          _saturatedFatPer100gMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cholesterol_per100g')) {
+      context.handle(
+        _cholesterolPer100gMeta,
+        cholesterolPer100g.isAcceptableOrUnknown(
+          data['cholesterol_per100g']!,
+          _cholesterolPer100gMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -421,6 +566,14 @@ class $IngredientsTable extends Ingredients
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      creatorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creator_id'],
+      ),
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
       caloriesPer100g: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}calories_per100g'],
@@ -437,6 +590,26 @@ class $IngredientsTable extends Ingredients
         DriftSqlType.double,
         data['${effectivePrefix}fat_per100g'],
       )!,
+      sodiumPer100g: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sodium_per100g'],
+      ),
+      fiberPer100g: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fiber_per100g'],
+      ),
+      sugarsPer100g: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sugars_per100g'],
+      ),
+      saturatedFatPer100g: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}saturated_fat_per100g'],
+      ),
+      cholesterolPer100g: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cholesterol_per100g'],
+      ),
     );
   }
 
@@ -449,27 +622,60 @@ class $IngredientsTable extends Ingredients
 class Ingredient extends DataClass implements Insertable<Ingredient> {
   final String id;
   final String name;
+  final String? creatorId;
+  final bool isArchived;
   final double caloriesPer100g;
   final double proteinPer100g;
   final double carbsPer100g;
   final double fatPer100g;
+  final double? sodiumPer100g;
+  final double? fiberPer100g;
+  final double? sugarsPer100g;
+  final double? saturatedFatPer100g;
+  final double? cholesterolPer100g;
   const Ingredient({
     required this.id,
     required this.name,
+    this.creatorId,
+    required this.isArchived,
     required this.caloriesPer100g,
     required this.proteinPer100g,
     required this.carbsPer100g,
     required this.fatPer100g,
+    this.sodiumPer100g,
+    this.fiberPer100g,
+    this.sugarsPer100g,
+    this.saturatedFatPer100g,
+    this.cholesterolPer100g,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || creatorId != null) {
+      map['creator_id'] = Variable<String>(creatorId);
+    }
+    map['is_archived'] = Variable<bool>(isArchived);
     map['calories_per100g'] = Variable<double>(caloriesPer100g);
     map['protein_per100g'] = Variable<double>(proteinPer100g);
     map['carbs_per100g'] = Variable<double>(carbsPer100g);
     map['fat_per100g'] = Variable<double>(fatPer100g);
+    if (!nullToAbsent || sodiumPer100g != null) {
+      map['sodium_per100g'] = Variable<double>(sodiumPer100g);
+    }
+    if (!nullToAbsent || fiberPer100g != null) {
+      map['fiber_per100g'] = Variable<double>(fiberPer100g);
+    }
+    if (!nullToAbsent || sugarsPer100g != null) {
+      map['sugars_per100g'] = Variable<double>(sugarsPer100g);
+    }
+    if (!nullToAbsent || saturatedFatPer100g != null) {
+      map['saturated_fat_per100g'] = Variable<double>(saturatedFatPer100g);
+    }
+    if (!nullToAbsent || cholesterolPer100g != null) {
+      map['cholesterol_per100g'] = Variable<double>(cholesterolPer100g);
+    }
     return map;
   }
 
@@ -477,10 +683,29 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
     return IngredientsCompanion(
       id: Value(id),
       name: Value(name),
+      creatorId: creatorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(creatorId),
+      isArchived: Value(isArchived),
       caloriesPer100g: Value(caloriesPer100g),
       proteinPer100g: Value(proteinPer100g),
       carbsPer100g: Value(carbsPer100g),
       fatPer100g: Value(fatPer100g),
+      sodiumPer100g: sodiumPer100g == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sodiumPer100g),
+      fiberPer100g: fiberPer100g == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fiberPer100g),
+      sugarsPer100g: sugarsPer100g == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sugarsPer100g),
+      saturatedFatPer100g: saturatedFatPer100g == null && nullToAbsent
+          ? const Value.absent()
+          : Value(saturatedFatPer100g),
+      cholesterolPer100g: cholesterolPer100g == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cholesterolPer100g),
     );
   }
 
@@ -492,10 +717,21 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
     return Ingredient(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      creatorId: serializer.fromJson<String?>(json['creatorId']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
       caloriesPer100g: serializer.fromJson<double>(json['caloriesPer100g']),
       proteinPer100g: serializer.fromJson<double>(json['proteinPer100g']),
       carbsPer100g: serializer.fromJson<double>(json['carbsPer100g']),
       fatPer100g: serializer.fromJson<double>(json['fatPer100g']),
+      sodiumPer100g: serializer.fromJson<double?>(json['sodiumPer100g']),
+      fiberPer100g: serializer.fromJson<double?>(json['fiberPer100g']),
+      sugarsPer100g: serializer.fromJson<double?>(json['sugarsPer100g']),
+      saturatedFatPer100g: serializer.fromJson<double?>(
+        json['saturatedFatPer100g'],
+      ),
+      cholesterolPer100g: serializer.fromJson<double?>(
+        json['cholesterolPer100g'],
+      ),
     );
   }
   @override
@@ -504,32 +740,65 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
+      'creatorId': serializer.toJson<String?>(creatorId),
+      'isArchived': serializer.toJson<bool>(isArchived),
       'caloriesPer100g': serializer.toJson<double>(caloriesPer100g),
       'proteinPer100g': serializer.toJson<double>(proteinPer100g),
       'carbsPer100g': serializer.toJson<double>(carbsPer100g),
       'fatPer100g': serializer.toJson<double>(fatPer100g),
+      'sodiumPer100g': serializer.toJson<double?>(sodiumPer100g),
+      'fiberPer100g': serializer.toJson<double?>(fiberPer100g),
+      'sugarsPer100g': serializer.toJson<double?>(sugarsPer100g),
+      'saturatedFatPer100g': serializer.toJson<double?>(saturatedFatPer100g),
+      'cholesterolPer100g': serializer.toJson<double?>(cholesterolPer100g),
     };
   }
 
   Ingredient copyWith({
     String? id,
     String? name,
+    Value<String?> creatorId = const Value.absent(),
+    bool? isArchived,
     double? caloriesPer100g,
     double? proteinPer100g,
     double? carbsPer100g,
     double? fatPer100g,
+    Value<double?> sodiumPer100g = const Value.absent(),
+    Value<double?> fiberPer100g = const Value.absent(),
+    Value<double?> sugarsPer100g = const Value.absent(),
+    Value<double?> saturatedFatPer100g = const Value.absent(),
+    Value<double?> cholesterolPer100g = const Value.absent(),
   }) => Ingredient(
     id: id ?? this.id,
     name: name ?? this.name,
+    creatorId: creatorId.present ? creatorId.value : this.creatorId,
+    isArchived: isArchived ?? this.isArchived,
     caloriesPer100g: caloriesPer100g ?? this.caloriesPer100g,
     proteinPer100g: proteinPer100g ?? this.proteinPer100g,
     carbsPer100g: carbsPer100g ?? this.carbsPer100g,
     fatPer100g: fatPer100g ?? this.fatPer100g,
+    sodiumPer100g: sodiumPer100g.present
+        ? sodiumPer100g.value
+        : this.sodiumPer100g,
+    fiberPer100g: fiberPer100g.present ? fiberPer100g.value : this.fiberPer100g,
+    sugarsPer100g: sugarsPer100g.present
+        ? sugarsPer100g.value
+        : this.sugarsPer100g,
+    saturatedFatPer100g: saturatedFatPer100g.present
+        ? saturatedFatPer100g.value
+        : this.saturatedFatPer100g,
+    cholesterolPer100g: cholesterolPer100g.present
+        ? cholesterolPer100g.value
+        : this.cholesterolPer100g,
   );
   Ingredient copyWithCompanion(IngredientsCompanion data) {
     return Ingredient(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      creatorId: data.creatorId.present ? data.creatorId.value : this.creatorId,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
       caloriesPer100g: data.caloriesPer100g.present
           ? data.caloriesPer100g.value
           : this.caloriesPer100g,
@@ -542,6 +811,21 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
       fatPer100g: data.fatPer100g.present
           ? data.fatPer100g.value
           : this.fatPer100g,
+      sodiumPer100g: data.sodiumPer100g.present
+          ? data.sodiumPer100g.value
+          : this.sodiumPer100g,
+      fiberPer100g: data.fiberPer100g.present
+          ? data.fiberPer100g.value
+          : this.fiberPer100g,
+      sugarsPer100g: data.sugarsPer100g.present
+          ? data.sugarsPer100g.value
+          : this.sugarsPer100g,
+      saturatedFatPer100g: data.saturatedFatPer100g.present
+          ? data.saturatedFatPer100g.value
+          : this.saturatedFatPer100g,
+      cholesterolPer100g: data.cholesterolPer100g.present
+          ? data.cholesterolPer100g.value
+          : this.cholesterolPer100g,
     );
   }
 
@@ -550,10 +834,17 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
     return (StringBuffer('Ingredient(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('creatorId: $creatorId, ')
+          ..write('isArchived: $isArchived, ')
           ..write('caloriesPer100g: $caloriesPer100g, ')
           ..write('proteinPer100g: $proteinPer100g, ')
           ..write('carbsPer100g: $carbsPer100g, ')
-          ..write('fatPer100g: $fatPer100g')
+          ..write('fatPer100g: $fatPer100g, ')
+          ..write('sodiumPer100g: $sodiumPer100g, ')
+          ..write('fiberPer100g: $fiberPer100g, ')
+          ..write('sugarsPer100g: $sugarsPer100g, ')
+          ..write('saturatedFatPer100g: $saturatedFatPer100g, ')
+          ..write('cholesterolPer100g: $cholesterolPer100g')
           ..write(')'))
         .toString();
   }
@@ -562,10 +853,17 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
   int get hashCode => Object.hash(
     id,
     name,
+    creatorId,
+    isArchived,
     caloriesPer100g,
     proteinPer100g,
     carbsPer100g,
     fatPer100g,
+    sodiumPer100g,
+    fiberPer100g,
+    sugarsPer100g,
+    saturatedFatPer100g,
+    cholesterolPer100g,
   );
   @override
   bool operator ==(Object other) =>
@@ -573,36 +871,64 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
       (other is Ingredient &&
           other.id == this.id &&
           other.name == this.name &&
+          other.creatorId == this.creatorId &&
+          other.isArchived == this.isArchived &&
           other.caloriesPer100g == this.caloriesPer100g &&
           other.proteinPer100g == this.proteinPer100g &&
           other.carbsPer100g == this.carbsPer100g &&
-          other.fatPer100g == this.fatPer100g);
+          other.fatPer100g == this.fatPer100g &&
+          other.sodiumPer100g == this.sodiumPer100g &&
+          other.fiberPer100g == this.fiberPer100g &&
+          other.sugarsPer100g == this.sugarsPer100g &&
+          other.saturatedFatPer100g == this.saturatedFatPer100g &&
+          other.cholesterolPer100g == this.cholesterolPer100g);
 }
 
 class IngredientsCompanion extends UpdateCompanion<Ingredient> {
   final Value<String> id;
   final Value<String> name;
+  final Value<String?> creatorId;
+  final Value<bool> isArchived;
   final Value<double> caloriesPer100g;
   final Value<double> proteinPer100g;
   final Value<double> carbsPer100g;
   final Value<double> fatPer100g;
+  final Value<double?> sodiumPer100g;
+  final Value<double?> fiberPer100g;
+  final Value<double?> sugarsPer100g;
+  final Value<double?> saturatedFatPer100g;
+  final Value<double?> cholesterolPer100g;
   final Value<int> rowid;
   const IngredientsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.creatorId = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.caloriesPer100g = const Value.absent(),
     this.proteinPer100g = const Value.absent(),
     this.carbsPer100g = const Value.absent(),
     this.fatPer100g = const Value.absent(),
+    this.sodiumPer100g = const Value.absent(),
+    this.fiberPer100g = const Value.absent(),
+    this.sugarsPer100g = const Value.absent(),
+    this.saturatedFatPer100g = const Value.absent(),
+    this.cholesterolPer100g = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IngredientsCompanion.insert({
     required String id,
     required String name,
+    this.creatorId = const Value.absent(),
+    this.isArchived = const Value.absent(),
     required double caloriesPer100g,
     required double proteinPer100g,
     required double carbsPer100g,
     required double fatPer100g,
+    this.sodiumPer100g = const Value.absent(),
+    this.fiberPer100g = const Value.absent(),
+    this.sugarsPer100g = const Value.absent(),
+    this.saturatedFatPer100g = const Value.absent(),
+    this.cholesterolPer100g = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -613,19 +939,34 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
   static Insertable<Ingredient> custom({
     Expression<String>? id,
     Expression<String>? name,
+    Expression<String>? creatorId,
+    Expression<bool>? isArchived,
     Expression<double>? caloriesPer100g,
     Expression<double>? proteinPer100g,
     Expression<double>? carbsPer100g,
     Expression<double>? fatPer100g,
+    Expression<double>? sodiumPer100g,
+    Expression<double>? fiberPer100g,
+    Expression<double>? sugarsPer100g,
+    Expression<double>? saturatedFatPer100g,
+    Expression<double>? cholesterolPer100g,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (creatorId != null) 'creator_id': creatorId,
+      if (isArchived != null) 'is_archived': isArchived,
       if (caloriesPer100g != null) 'calories_per100g': caloriesPer100g,
       if (proteinPer100g != null) 'protein_per100g': proteinPer100g,
       if (carbsPer100g != null) 'carbs_per100g': carbsPer100g,
       if (fatPer100g != null) 'fat_per100g': fatPer100g,
+      if (sodiumPer100g != null) 'sodium_per100g': sodiumPer100g,
+      if (fiberPer100g != null) 'fiber_per100g': fiberPer100g,
+      if (sugarsPer100g != null) 'sugars_per100g': sugarsPer100g,
+      if (saturatedFatPer100g != null)
+        'saturated_fat_per100g': saturatedFatPer100g,
+      if (cholesterolPer100g != null) 'cholesterol_per100g': cholesterolPer100g,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -633,19 +974,33 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
   IngredientsCompanion copyWith({
     Value<String>? id,
     Value<String>? name,
+    Value<String?>? creatorId,
+    Value<bool>? isArchived,
     Value<double>? caloriesPer100g,
     Value<double>? proteinPer100g,
     Value<double>? carbsPer100g,
     Value<double>? fatPer100g,
+    Value<double?>? sodiumPer100g,
+    Value<double?>? fiberPer100g,
+    Value<double?>? sugarsPer100g,
+    Value<double?>? saturatedFatPer100g,
+    Value<double?>? cholesterolPer100g,
     Value<int>? rowid,
   }) {
     return IngredientsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      creatorId: creatorId ?? this.creatorId,
+      isArchived: isArchived ?? this.isArchived,
       caloriesPer100g: caloriesPer100g ?? this.caloriesPer100g,
       proteinPer100g: proteinPer100g ?? this.proteinPer100g,
       carbsPer100g: carbsPer100g ?? this.carbsPer100g,
       fatPer100g: fatPer100g ?? this.fatPer100g,
+      sodiumPer100g: sodiumPer100g ?? this.sodiumPer100g,
+      fiberPer100g: fiberPer100g ?? this.fiberPer100g,
+      sugarsPer100g: sugarsPer100g ?? this.sugarsPer100g,
+      saturatedFatPer100g: saturatedFatPer100g ?? this.saturatedFatPer100g,
+      cholesterolPer100g: cholesterolPer100g ?? this.cholesterolPer100g,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -659,6 +1014,12 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (creatorId.present) {
+      map['creator_id'] = Variable<String>(creatorId.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
     if (caloriesPer100g.present) {
       map['calories_per100g'] = Variable<double>(caloriesPer100g.value);
     }
@@ -671,6 +1032,23 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
     if (fatPer100g.present) {
       map['fat_per100g'] = Variable<double>(fatPer100g.value);
     }
+    if (sodiumPer100g.present) {
+      map['sodium_per100g'] = Variable<double>(sodiumPer100g.value);
+    }
+    if (fiberPer100g.present) {
+      map['fiber_per100g'] = Variable<double>(fiberPer100g.value);
+    }
+    if (sugarsPer100g.present) {
+      map['sugars_per100g'] = Variable<double>(sugarsPer100g.value);
+    }
+    if (saturatedFatPer100g.present) {
+      map['saturated_fat_per100g'] = Variable<double>(
+        saturatedFatPer100g.value,
+      );
+    }
+    if (cholesterolPer100g.present) {
+      map['cholesterol_per100g'] = Variable<double>(cholesterolPer100g.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -682,10 +1060,302 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
     return (StringBuffer('IngredientsCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('creatorId: $creatorId, ')
+          ..write('isArchived: $isArchived, ')
           ..write('caloriesPer100g: $caloriesPer100g, ')
           ..write('proteinPer100g: $proteinPer100g, ')
           ..write('carbsPer100g: $carbsPer100g, ')
           ..write('fatPer100g: $fatPer100g, ')
+          ..write('sodiumPer100g: $sodiumPer100g, ')
+          ..write('fiberPer100g: $fiberPer100g, ')
+          ..write('sugarsPer100g: $sugarsPer100g, ')
+          ..write('saturatedFatPer100g: $saturatedFatPer100g, ')
+          ..write('cholesterolPer100g: $cholesterolPer100g, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $IngredientComponentsTable extends IngredientComponents
+    with TableInfo<$IngredientComponentsTable, IngredientComponent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IngredientComponentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ingredientIdMeta = const VerificationMeta(
+    'ingredientId',
+  );
+  @override
+  late final GeneratedColumn<String> ingredientId = GeneratedColumn<String>(
+    'ingredient_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES ingredients (id)',
+    ),
+  );
+  static const VerificationMeta _componentIdMeta = const VerificationMeta(
+    'componentId',
+  );
+  @override
+  late final GeneratedColumn<String> componentId = GeneratedColumn<String>(
+    'component_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES ingredients (id)',
+    ),
+  );
+  static const VerificationMeta _gramsMeta = const VerificationMeta('grams');
+  @override
+  late final GeneratedColumn<double> grams = GeneratedColumn<double>(
+    'grams',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [ingredientId, componentId, grams];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ingredient_components';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IngredientComponent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('ingredient_id')) {
+      context.handle(
+        _ingredientIdMeta,
+        ingredientId.isAcceptableOrUnknown(
+          data['ingredient_id']!,
+          _ingredientIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ingredientIdMeta);
+    }
+    if (data.containsKey('component_id')) {
+      context.handle(
+        _componentIdMeta,
+        componentId.isAcceptableOrUnknown(
+          data['component_id']!,
+          _componentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_componentIdMeta);
+    }
+    if (data.containsKey('grams')) {
+      context.handle(
+        _gramsMeta,
+        grams.isAcceptableOrUnknown(data['grams']!, _gramsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_gramsMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ingredientId, componentId};
+  @override
+  IngredientComponent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IngredientComponent(
+      ingredientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ingredient_id'],
+      )!,
+      componentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}component_id'],
+      )!,
+      grams: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}grams'],
+      )!,
+    );
+  }
+
+  @override
+  $IngredientComponentsTable createAlias(String alias) {
+    return $IngredientComponentsTable(attachedDatabase, alias);
+  }
+}
+
+class IngredientComponent extends DataClass
+    implements Insertable<IngredientComponent> {
+  final String ingredientId;
+  final String componentId;
+  final double grams;
+  const IngredientComponent({
+    required this.ingredientId,
+    required this.componentId,
+    required this.grams,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['ingredient_id'] = Variable<String>(ingredientId);
+    map['component_id'] = Variable<String>(componentId);
+    map['grams'] = Variable<double>(grams);
+    return map;
+  }
+
+  IngredientComponentsCompanion toCompanion(bool nullToAbsent) {
+    return IngredientComponentsCompanion(
+      ingredientId: Value(ingredientId),
+      componentId: Value(componentId),
+      grams: Value(grams),
+    );
+  }
+
+  factory IngredientComponent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IngredientComponent(
+      ingredientId: serializer.fromJson<String>(json['ingredientId']),
+      componentId: serializer.fromJson<String>(json['componentId']),
+      grams: serializer.fromJson<double>(json['grams']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ingredientId': serializer.toJson<String>(ingredientId),
+      'componentId': serializer.toJson<String>(componentId),
+      'grams': serializer.toJson<double>(grams),
+    };
+  }
+
+  IngredientComponent copyWith({
+    String? ingredientId,
+    String? componentId,
+    double? grams,
+  }) => IngredientComponent(
+    ingredientId: ingredientId ?? this.ingredientId,
+    componentId: componentId ?? this.componentId,
+    grams: grams ?? this.grams,
+  );
+  IngredientComponent copyWithCompanion(IngredientComponentsCompanion data) {
+    return IngredientComponent(
+      ingredientId: data.ingredientId.present
+          ? data.ingredientId.value
+          : this.ingredientId,
+      componentId: data.componentId.present
+          ? data.componentId.value
+          : this.componentId,
+      grams: data.grams.present ? data.grams.value : this.grams,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngredientComponent(')
+          ..write('ingredientId: $ingredientId, ')
+          ..write('componentId: $componentId, ')
+          ..write('grams: $grams')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(ingredientId, componentId, grams);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IngredientComponent &&
+          other.ingredientId == this.ingredientId &&
+          other.componentId == this.componentId &&
+          other.grams == this.grams);
+}
+
+class IngredientComponentsCompanion
+    extends UpdateCompanion<IngredientComponent> {
+  final Value<String> ingredientId;
+  final Value<String> componentId;
+  final Value<double> grams;
+  final Value<int> rowid;
+  const IngredientComponentsCompanion({
+    this.ingredientId = const Value.absent(),
+    this.componentId = const Value.absent(),
+    this.grams = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  IngredientComponentsCompanion.insert({
+    required String ingredientId,
+    required String componentId,
+    required double grams,
+    this.rowid = const Value.absent(),
+  }) : ingredientId = Value(ingredientId),
+       componentId = Value(componentId),
+       grams = Value(grams);
+  static Insertable<IngredientComponent> custom({
+    Expression<String>? ingredientId,
+    Expression<String>? componentId,
+    Expression<double>? grams,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ingredientId != null) 'ingredient_id': ingredientId,
+      if (componentId != null) 'component_id': componentId,
+      if (grams != null) 'grams': grams,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  IngredientComponentsCompanion copyWith({
+    Value<String>? ingredientId,
+    Value<String>? componentId,
+    Value<double>? grams,
+    Value<int>? rowid,
+  }) {
+    return IngredientComponentsCompanion(
+      ingredientId: ingredientId ?? this.ingredientId,
+      componentId: componentId ?? this.componentId,
+      grams: grams ?? this.grams,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ingredientId.present) {
+      map['ingredient_id'] = Variable<String>(ingredientId.value);
+    }
+    if (componentId.present) {
+      map['component_id'] = Variable<String>(componentId.value);
+    }
+    if (grams.present) {
+      map['grams'] = Variable<double>(grams.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngredientComponentsCompanion(')
+          ..write('ingredientId: $ingredientId, ')
+          ..write('componentId: $componentId, ')
+          ..write('grams: $grams, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4323,6 +4993,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $ExercisesTable exercises = $ExercisesTable(this);
   late final $IngredientsTable ingredients = $IngredientsTable(this);
+  late final $IngredientComponentsTable ingredientComponents =
+      $IngredientComponentsTable(this);
   late final $MealsTable meals = $MealsTable(this);
   late final $MealIngredientsTable mealIngredients = $MealIngredientsTable(
     this,
@@ -4347,6 +5019,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     exercises,
     ingredients,
+    ingredientComponents,
     meals,
     mealIngredients,
     seances,
@@ -4638,20 +5311,34 @@ typedef $$IngredientsTableCreateCompanionBuilder =
     IngredientsCompanion Function({
       required String id,
       required String name,
+      Value<String?> creatorId,
+      Value<bool> isArchived,
       required double caloriesPer100g,
       required double proteinPer100g,
       required double carbsPer100g,
       required double fatPer100g,
+      Value<double?> sodiumPer100g,
+      Value<double?> fiberPer100g,
+      Value<double?> sugarsPer100g,
+      Value<double?> saturatedFatPer100g,
+      Value<double?> cholesterolPer100g,
       Value<int> rowid,
     });
 typedef $$IngredientsTableUpdateCompanionBuilder =
     IngredientsCompanion Function({
       Value<String> id,
       Value<String> name,
+      Value<String?> creatorId,
+      Value<bool> isArchived,
       Value<double> caloriesPer100g,
       Value<double> proteinPer100g,
       Value<double> carbsPer100g,
       Value<double> fatPer100g,
+      Value<double?> sodiumPer100g,
+      Value<double?> fiberPer100g,
+      Value<double?> sugarsPer100g,
+      Value<double?> saturatedFatPer100g,
+      Value<double?> cholesterolPer100g,
       Value<int> rowid,
     });
 
@@ -4702,6 +5389,16 @@ class $$IngredientsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get creatorId => $composableBuilder(
+    column: $table.creatorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<double> get caloriesPer100g => $composableBuilder(
     column: $table.caloriesPer100g,
     builder: (column) => ColumnFilters(column),
@@ -4719,6 +5416,31 @@ class $$IngredientsTableFilterComposer
 
   ColumnFilters<double> get fatPer100g => $composableBuilder(
     column: $table.fatPer100g,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sodiumPer100g => $composableBuilder(
+    column: $table.sodiumPer100g,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fiberPer100g => $composableBuilder(
+    column: $table.fiberPer100g,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sugarsPer100g => $composableBuilder(
+    column: $table.sugarsPer100g,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get saturatedFatPer100g => $composableBuilder(
+    column: $table.saturatedFatPer100g,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get cholesterolPer100g => $composableBuilder(
+    column: $table.cholesterolPer100g,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4767,6 +5489,16 @@ class $$IngredientsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get creatorId => $composableBuilder(
+    column: $table.creatorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get caloriesPer100g => $composableBuilder(
     column: $table.caloriesPer100g,
     builder: (column) => ColumnOrderings(column),
@@ -4786,6 +5518,31 @@ class $$IngredientsTableOrderingComposer
     column: $table.fatPer100g,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<double> get sodiumPer100g => $composableBuilder(
+    column: $table.sodiumPer100g,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fiberPer100g => $composableBuilder(
+    column: $table.fiberPer100g,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sugarsPer100g => $composableBuilder(
+    column: $table.sugarsPer100g,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get saturatedFatPer100g => $composableBuilder(
+    column: $table.saturatedFatPer100g,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get cholesterolPer100g => $composableBuilder(
+    column: $table.cholesterolPer100g,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$IngredientsTableAnnotationComposer
@@ -4802,6 +5559,14 @@ class $$IngredientsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get creatorId =>
+      $composableBuilder(column: $table.creatorId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<double> get caloriesPer100g => $composableBuilder(
     column: $table.caloriesPer100g,
@@ -4820,6 +5585,31 @@ class $$IngredientsTableAnnotationComposer
 
   GeneratedColumn<double> get fatPer100g => $composableBuilder(
     column: $table.fatPer100g,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get sodiumPer100g => $composableBuilder(
+    column: $table.sodiumPer100g,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get fiberPer100g => $composableBuilder(
+    column: $table.fiberPer100g,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get sugarsPer100g => $composableBuilder(
+    column: $table.sugarsPer100g,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get saturatedFatPer100g => $composableBuilder(
+    column: $table.saturatedFatPer100g,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get cholesterolPer100g => $composableBuilder(
+    column: $table.cholesterolPer100g,
     builder: (column) => column,
   );
 
@@ -4879,36 +5669,64 @@ class $$IngredientsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
+                Value<String?> creatorId = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<double> caloriesPer100g = const Value.absent(),
                 Value<double> proteinPer100g = const Value.absent(),
                 Value<double> carbsPer100g = const Value.absent(),
                 Value<double> fatPer100g = const Value.absent(),
+                Value<double?> sodiumPer100g = const Value.absent(),
+                Value<double?> fiberPer100g = const Value.absent(),
+                Value<double?> sugarsPer100g = const Value.absent(),
+                Value<double?> saturatedFatPer100g = const Value.absent(),
+                Value<double?> cholesterolPer100g = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IngredientsCompanion(
                 id: id,
                 name: name,
+                creatorId: creatorId,
+                isArchived: isArchived,
                 caloriesPer100g: caloriesPer100g,
                 proteinPer100g: proteinPer100g,
                 carbsPer100g: carbsPer100g,
                 fatPer100g: fatPer100g,
+                sodiumPer100g: sodiumPer100g,
+                fiberPer100g: fiberPer100g,
+                sugarsPer100g: sugarsPer100g,
+                saturatedFatPer100g: saturatedFatPer100g,
+                cholesterolPer100g: cholesterolPer100g,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String id,
                 required String name,
+                Value<String?> creatorId = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 required double caloriesPer100g,
                 required double proteinPer100g,
                 required double carbsPer100g,
                 required double fatPer100g,
+                Value<double?> sodiumPer100g = const Value.absent(),
+                Value<double?> fiberPer100g = const Value.absent(),
+                Value<double?> sugarsPer100g = const Value.absent(),
+                Value<double?> saturatedFatPer100g = const Value.absent(),
+                Value<double?> cholesterolPer100g = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IngredientsCompanion.insert(
                 id: id,
                 name: name,
+                creatorId: creatorId,
+                isArchived: isArchived,
                 caloriesPer100g: caloriesPer100g,
                 proteinPer100g: proteinPer100g,
                 carbsPer100g: carbsPer100g,
                 fatPer100g: fatPer100g,
+                sodiumPer100g: sodiumPer100g,
+                fiberPer100g: fiberPer100g,
+                sugarsPer100g: sugarsPer100g,
+                saturatedFatPer100g: saturatedFatPer100g,
+                cholesterolPer100g: cholesterolPer100g,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4970,6 +5788,402 @@ typedef $$IngredientsTableProcessedTableManager =
       (Ingredient, $$IngredientsTableReferences),
       Ingredient,
       PrefetchHooks Function({bool mealIngredientsRefs})
+    >;
+typedef $$IngredientComponentsTableCreateCompanionBuilder =
+    IngredientComponentsCompanion Function({
+      required String ingredientId,
+      required String componentId,
+      required double grams,
+      Value<int> rowid,
+    });
+typedef $$IngredientComponentsTableUpdateCompanionBuilder =
+    IngredientComponentsCompanion Function({
+      Value<String> ingredientId,
+      Value<String> componentId,
+      Value<double> grams,
+      Value<int> rowid,
+    });
+
+final class $$IngredientComponentsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $IngredientComponentsTable,
+          IngredientComponent
+        > {
+  $$IngredientComponentsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $IngredientsTable _ingredientIdTable(_$AppDatabase db) =>
+      db.ingredients.createAlias(
+        $_aliasNameGenerator(
+          db.ingredientComponents.ingredientId,
+          db.ingredients.id,
+        ),
+      );
+
+  $$IngredientsTableProcessedTableManager get ingredientId {
+    final $_column = $_itemColumn<String>('ingredient_id')!;
+
+    final manager = $$IngredientsTableTableManager(
+      $_db,
+      $_db.ingredients,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_ingredientIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $IngredientsTable _componentIdTable(_$AppDatabase db) =>
+      db.ingredients.createAlias(
+        $_aliasNameGenerator(
+          db.ingredientComponents.componentId,
+          db.ingredients.id,
+        ),
+      );
+
+  $$IngredientsTableProcessedTableManager get componentId {
+    final $_column = $_itemColumn<String>('component_id')!;
+
+    final manager = $$IngredientsTableTableManager(
+      $_db,
+      $_db.ingredients,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_componentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$IngredientComponentsTableFilterComposer
+    extends Composer<_$AppDatabase, $IngredientComponentsTable> {
+  $$IngredientComponentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<double> get grams => $composableBuilder(
+    column: $table.grams,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$IngredientsTableFilterComposer get ingredientId {
+    final $$IngredientsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ingredientId,
+      referencedTable: $db.ingredients,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngredientsTableFilterComposer(
+            $db: $db,
+            $table: $db.ingredients,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$IngredientsTableFilterComposer get componentId {
+    final $$IngredientsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.componentId,
+      referencedTable: $db.ingredients,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngredientsTableFilterComposer(
+            $db: $db,
+            $table: $db.ingredients,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngredientComponentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $IngredientComponentsTable> {
+  $$IngredientComponentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<double> get grams => $composableBuilder(
+    column: $table.grams,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$IngredientsTableOrderingComposer get ingredientId {
+    final $$IngredientsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ingredientId,
+      referencedTable: $db.ingredients,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngredientsTableOrderingComposer(
+            $db: $db,
+            $table: $db.ingredients,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$IngredientsTableOrderingComposer get componentId {
+    final $$IngredientsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.componentId,
+      referencedTable: $db.ingredients,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngredientsTableOrderingComposer(
+            $db: $db,
+            $table: $db.ingredients,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngredientComponentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IngredientComponentsTable> {
+  $$IngredientComponentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<double> get grams =>
+      $composableBuilder(column: $table.grams, builder: (column) => column);
+
+  $$IngredientsTableAnnotationComposer get ingredientId {
+    final $$IngredientsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ingredientId,
+      referencedTable: $db.ingredients,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngredientsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingredients,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$IngredientsTableAnnotationComposer get componentId {
+    final $$IngredientsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.componentId,
+      referencedTable: $db.ingredients,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IngredientsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ingredients,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IngredientComponentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IngredientComponentsTable,
+          IngredientComponent,
+          $$IngredientComponentsTableFilterComposer,
+          $$IngredientComponentsTableOrderingComposer,
+          $$IngredientComponentsTableAnnotationComposer,
+          $$IngredientComponentsTableCreateCompanionBuilder,
+          $$IngredientComponentsTableUpdateCompanionBuilder,
+          (IngredientComponent, $$IngredientComponentsTableReferences),
+          IngredientComponent,
+          PrefetchHooks Function({bool ingredientId, bool componentId})
+        > {
+  $$IngredientComponentsTableTableManager(
+    _$AppDatabase db,
+    $IngredientComponentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IngredientComponentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IngredientComponentsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$IngredientComponentsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> ingredientId = const Value.absent(),
+                Value<String> componentId = const Value.absent(),
+                Value<double> grams = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IngredientComponentsCompanion(
+                ingredientId: ingredientId,
+                componentId: componentId,
+                grams: grams,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ingredientId,
+                required String componentId,
+                required double grams,
+                Value<int> rowid = const Value.absent(),
+              }) => IngredientComponentsCompanion.insert(
+                ingredientId: ingredientId,
+                componentId: componentId,
+                grams: grams,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$IngredientComponentsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({ingredientId = false, componentId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (ingredientId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.ingredientId,
+                                referencedTable:
+                                    $$IngredientComponentsTableReferences
+                                        ._ingredientIdTable(db),
+                                referencedColumn:
+                                    $$IngredientComponentsTableReferences
+                                        ._ingredientIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (componentId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.componentId,
+                                referencedTable:
+                                    $$IngredientComponentsTableReferences
+                                        ._componentIdTable(db),
+                                referencedColumn:
+                                    $$IngredientComponentsTableReferences
+                                        ._componentIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$IngredientComponentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IngredientComponentsTable,
+      IngredientComponent,
+      $$IngredientComponentsTableFilterComposer,
+      $$IngredientComponentsTableOrderingComposer,
+      $$IngredientComponentsTableAnnotationComposer,
+      $$IngredientComponentsTableCreateCompanionBuilder,
+      $$IngredientComponentsTableUpdateCompanionBuilder,
+      (IngredientComponent, $$IngredientComponentsTableReferences),
+      IngredientComponent,
+      PrefetchHooks Function({bool ingredientId, bool componentId})
     >;
 typedef $$MealsTableCreateCompanionBuilder =
     MealsCompanion Function({
@@ -8371,6 +9585,8 @@ class $AppDatabaseManager {
       $$ExercisesTableTableManager(_db, _db.exercises);
   $$IngredientsTableTableManager get ingredients =>
       $$IngredientsTableTableManager(_db, _db.ingredients);
+  $$IngredientComponentsTableTableManager get ingredientComponents =>
+      $$IngredientComponentsTableTableManager(_db, _db.ingredientComponents);
   $$MealsTableTableManager get meals =>
       $$MealsTableTableManager(_db, _db.meals);
   $$MealIngredientsTableTableManager get mealIngredients =>
