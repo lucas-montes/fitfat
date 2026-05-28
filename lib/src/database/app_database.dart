@@ -140,11 +140,31 @@ class AppDatabase extends _$AppDatabase {
   // ---------------------------------------------------------------------------
 
   Stream<List<Ingredient>> watchIngredients() => select(ingredients).watch();
+  Stream<List<Ingredient>> watchNonArchivedIngredients() =>
+      (select(ingredients)..where((t) => t.isArchived.equals(false))).watch();
   Future<List<Ingredient>> getAllIngredients() => select(ingredients).get();
+  Future<List<Ingredient>> getNonArchivedIngredients() =>
+      (select(ingredients)..where((t) => t.isArchived.equals(false))).get();
+  Future<List<Ingredient>> getIngredientByIds(List<String> ids) =>
+      select(ingredients).where((t) => t.id.isIn(ids)).get();
+  Future<List<IngredientComponent>> getComponentsForIngredient(String id) =>
+      select(
+        ingredientComponents,
+      ).where((t) => t.ingredientId.equals(id)).get();
+  Future<List<Ingredient>> getArchivedIngredients() =>
+      (select(ingredients)..where((t) => t.isArchived.equals(true))).get();
   Future<void> insertIngredient(IngredientsCompanion entry) =>
       into(ingredients).insert(entry);
   Future<void> updateIngredient(IngredientsCompanion entry) =>
       update(ingredients).replace(entry);
+  Future<void> archiveIngredient(String id) =>
+      (update(ingredients)..where((t) => t.id.equals(id))).write(
+        IngredientsCompanion(isArchived: Value(true)),
+      );
+  Future<void> unarchiveIngredient(String id) =>
+      (update(ingredients)..where((t) => t.id.equals(id))).write(
+        IngredientsCompanion(isArchived: Value(false)),
+      );
   Future<void> deleteIngredient(String id) =>
       (delete(ingredients)..where((t) => t.id.equals(id))).go();
 

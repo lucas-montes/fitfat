@@ -11,12 +11,7 @@ class MacroNutrients {
   final double carbs;
   final double fat;
 
-  static const zero = MacroNutrients(
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-  );
+  static const zero = MacroNutrients(calories: 0, protein: 0, carbs: 0, fat: 0);
 
   MacroNutrients operator +(MacroNutrients other) {
     return MacroNutrients(
@@ -37,6 +32,19 @@ class MacroNutrients {
   }
 }
 
+/// Lightweight data class for junction table rows (no circular refs).
+class IngredientComponentRef {
+  IngredientComponentRef({
+    required this.id,
+    required this.name,
+    required this.grams,
+  });
+
+  final String id;
+  final String name;
+  final double grams;
+}
+
 class Ingredient {
   Ingredient({
     required this.id,
@@ -46,6 +54,13 @@ class Ingredient {
     required this.carbsPer100g,
     required this.fatPer100g,
     this.components = const [],
+    this.creatorId,
+    this.isArchived = false,
+    this.sodiumPer100g,
+    this.fiberPer100g,
+    this.sugarsPer100g,
+    this.saturatedFatPer100g,
+    this.cholesterolPer100g,
   });
 
   factory Ingredient.fromComponents({
@@ -57,7 +72,10 @@ class Ingredient {
       MacroNutrients.zero,
       (sum, portion) => sum + portion.macros,
     );
-    final totalGrams = components.fold(0.0, (sum, portion) => sum + portion.grams);
+    final totalGrams = components.fold(
+      0.0,
+      (sum, portion) => sum + portion.grams,
+    );
     final factor = totalGrams == 0 ? 0.0 : 100.0 / totalGrams;
     final per100g = totals.scale(factor);
 
@@ -79,6 +97,13 @@ class Ingredient {
   final double carbsPer100g;
   final double fatPer100g;
   final List<IngredientPortion> components;
+  final String? creatorId;
+  final bool isArchived;
+  final double? sodiumPer100g;
+  final double? fiberPer100g;
+  final double? sugarsPer100g;
+  final double? saturatedFatPer100g;
+  final double? cholesterolPer100g;
 
   bool get isComposite => components.isNotEmpty;
 

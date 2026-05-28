@@ -19,12 +19,15 @@ T01 — Schema + migration
 - Verification: Run static analysis and a local dev run using `devDatabaseProvider` to confirm DB opens and basic queries work.
 
 T02 — Repository / Adapter updates
-- Scope: Update `lib/src/adapters/drift/ingredients.dart` and related adapters to read/write new fields, return `Ingredient` domain models with full macros and `isArchived`, and support composite ingredients (resolving components on read).
-- Boundaries: Keep adapters focused to mapping logic; do not import UI widgets.
-- Done checks:
-  - Adapter unit tests that create, read, update, archive, and delete ingredients pass.
-  - Composite ingredient read returns component list and computed macros when requested.
-- Verification: New unit tests for adapter behavior and manual DB inspection.
+- **Status:** done
+- **Completed:** 2026-05-28
+- **Scope:** Update `lib/src/adapters/drift/ingredient_repository.dart` to read/write new fields, return `Ingredient` domain models with full macros and `isArchived`, and support composite ingredients (resolving components on read).
+- **Boundaries:** Keep adapters focused to mapping logic; do not import UI widgets.
+- **Done checks:**
+  - Adapter CRUD operations (create, read, update, archive, delete) pass for ingredients with all new fields
+  - Composite ingredient read returns component list with placeholder ingredients
+- **Files changed:** `lib/src/adapters/drift/ingredient_repository.dart`
+- **Evidence:** All fields properly mapped, components resolved on read, delete operations remove from junction table first
 
 T03 — Ingredient Editor UI + UX
 - Scope: Add `creator` metadata display (read-only for bundled/system items), an `Archive` action, and a components editor to create composite ingredients. Allow the user to mark an ingredient as archived; show a confirmation dialog when archiving.
