@@ -18,7 +18,7 @@
 - `lib/src/models/seance.dart`: workout templates and history data structures.
 
 ## Feature modules
-- `lib/src/diet/`: meal log, ingredient editor, and related providers.
+- `lib/src/diet/`: meal log, ingredient editor, ingredient management (archive/restore), and related providers.
 - `lib/src/dashboard/`: overview, goals, profile, and chart screens/providers.
 - `lib/src/exercise/`: active workout flow, exercise history, templates, and workout library.
 - `lib/src/settings/`: standalone settings screen currently represented in the codebase; may move into the dashboard tab.
@@ -39,6 +39,12 @@
 - There will be a shared/common ingredient database concept for supermarket ingredients (design pending — likely optional download/sync while keeping app offline-first).
 - User-selectable macro visibility is preferred; the initial visible set can stay small and user-configurable.
 - `creatorId` should not depend on a brittle hardware identifier; use a local installation UUID or a future user/profile id for attribution.
+
+## Localization
+- `lib/src/l10n/app_localizations.dart`: centralized `AppLocalizations` class with manual en/fr/es string tables. Covers meal/ingredient editor labels, dialog copy, and snackbar messages. No `.arb` files used — translations are inline with a simple `_t()` switch.
+
+## Diet preferences
+- `lib/src/diet/providers/diet_preferences.dart`: `dietPreferencesProvider` and `DietPreferencesNotifier` — persisted macro visibility toggles backed by `SharedPreferences`.
 
 ## Supporting docs
 - `doc/simple_db_example.md`: example database context.

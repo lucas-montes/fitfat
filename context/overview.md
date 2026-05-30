@@ -34,6 +34,15 @@ FitFat is a Flutter app for fitness and nutrition tracking.
 - The app appears to combine food logging, gym session tracking, and goal-based nutrition guidance.
 - The naming suggests an in-progress or refactored personal fitness tracker; terminology should be normalized around a localized workout vocabulary.
 
+## Exercise module specifics
+- **Two workout modes**: Guided mode follows predefined templates with auto-complete sets. Free-form mode allows ad-hoc set entry with smart pre-fill from last set.
+- **Rest timer**: Countdown between sets with sound/vibration alert, configurable per exercise in templates (uses existing `restBetweenSets` / `restSeconds` fields).
+- **Progression tracking**: Estimated 1RM, volume (sets×reps×weight), max weight, and personal records — charted over time.
+- **Bundled exercise library**: ~30-40 common exercises seeded on first launch, organized by muscle group. Users can also create custom exercises.
+- **Service layer needed**: Business logic (session state, rest timer, progression calculations) should be extracted into pure Dart service classes.
+- **Provider separation**: The 555-line `seance.dart` provider file should be split into focused files per concern (active session, history, templates, exercise list).
+- **Abstract repository interfaces**: Needed for `SeanceRepository` and `ExerciseRepository` to support testability and future alternative backends.
+
 ## Open questions
 - Which localization system should be used for `en`, `fr`, and `es`.
 - Whether any settings deserve their own sub-flows beyond the dashboard tab.

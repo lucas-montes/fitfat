@@ -6,6 +6,13 @@
 - `IngredientComponents`: junction table linking an ingredient to its component ingredients with gram amounts. Used for composite/recipe ingredients.
 - `IngredientPortion`: an ingredient plus a gram amount.
 - `MacroNutrients`: calories, protein, carbs, and fat totals.
+- **Composite ingredient**: an ingredient whose macros are derived from sub-ingredients (components), stored in `IngredientComponents`. Behaves like a recipe; its per-100g values are computed by summing component macros and scaling to 100g.
+- **Atomic ingredient**: a single food item with direct per-100g macro values (no components). The base unit of the ingredient database.
+- **Archived ingredient**: an ingredient with `isArchived = true`. Hidden from normal pickers but preserved for historical meal references. Can be restored or permanently deleted.
+- **Macro visibility preference**: a user-configurable setting (persisted via `SharedPreferences`) that controls which macros (calories, protein, carbs, fat, sodium, etc.) are displayed in the UI. Managed by `dietPreferencesProvider`.
+- **System item / bundled ingredient**: a pre-seeded ingredient shipped with the app (e.g., basic foods in `_seedIngredients()`). Identifiable by having a `null` creatorId. A future shared/common database concept extends this.
+- **`creatorId`**: a nullable string field on `Ingredient` that records who created the ingredient. `null` indicates a system/bundled ingredient; a local installation UUID indicates a user-created ingredient.
+- **`isArchived` flag**: a boolean field on `Ingredient` (default `false`). When `true`, the ingredient is hidden from normal ingredient pickers but remains available in archived view and historical meal data. Used as a soft-delete mechanism.
 - `Seance`: an active or completed workout session.
 - `ExerciseEntry`: one exercise inside a seance, with one or more sets.
 - `ExerciseSet`: a reps/weight pair that can be marked completed.

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/food.dart';
+import '../../l10n/app_localizations.dart';
 import '../providers/ingredients.dart';
 import '../providers/meals.dart';
+import '../providers/diet_preferences.dart';
 import 'meals/edit.dart';
 import 'ingredients/edit.dart';
 import 'widgets/food_entry_card.dart';
@@ -14,22 +16,21 @@ class DietScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 0,
           elevation: 0,
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'Meals'),
-              Tab(text: 'Ingredients'),
+              Tab(text: l10n.mealsTab),
+              Tab(text: l10n.ingredientsTab),
             ],
           ),
         ),
-        body: const TabBarView(
-          children: [MealsTab(), _IngredientsTab()],
-        ),
+        body: const TabBarView(children: [MealsTab(), _IngredientsTab()]),
       ),
     );
   }
@@ -58,10 +59,13 @@ class _MealsTabState extends ConsumerState<MealsTab> {
   Widget build(BuildContext context) {
     final state = ref.watch(mealsProvider);
     final meals = state.meals;
+    final l10n = AppLocalizations.of(context);
     final groupedMeals = _groupMealsByDay(meals);
     // Debug: log UI-side meal count to ensure provider updates are seen
     try {
-      print('[UI] MealsTab build: meals=${meals.length} status=${state.status}');
+      print(
+        '[UI] MealsTab build: meals=${meals.length} status=${state.status}',
+      );
     } catch (_) {}
 
     return ListView.builder(
@@ -94,7 +98,11 @@ class _MealsTabState extends ConsumerState<MealsTab> {
   List<_MealsDayGroup> _groupMealsByDay(List<MealEntry> meals) {
     final grouped = <DateTime, List<MealEntry>>{};
     for (final meal in meals) {
-      final dayKey = DateTime(meal.eatenAt.year, meal.eatenAt.month, meal.eatenAt.day);
+      final dayKey = DateTime(
+        meal.eatenAt.year,
+        meal.eatenAt.month,
+        meal.eatenAt.day,
+      );
       grouped.putIfAbsent(dayKey, () => <MealEntry>[]).add(meal);
     }
 
@@ -112,6 +120,7 @@ class _MealsTabState extends ConsumerState<MealsTab> {
       (sum, meal) => sum + meal.totalMacros,
     );
 
+    final prefs = ref.read(dietPreferencesProvider);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -124,7 +133,7 @@ class _MealsTabState extends ConsumerState<MealsTab> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Total: ${_formatMacros(dailyTotals)}',
+              'Total: ${_formatMacrosWithPrefs(dailyTotals, prefs)}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
@@ -161,6 +170,27 @@ class _MealsTabState extends ConsumerState<MealsTab> {
         'P ${macros.protein.toStringAsFixed(1)}g · '
         'C ${macros.carbs.toStringAsFixed(1)}g · '
         'F ${macros.fat.toStringAsFixed(1)}g';
+  }
+
+  String _formatMacrosWithPrefs(MacroNutrients macros, DietPreferences prefs) {
+    final result = StringBuffer();
+    final visibleMacros = {
+      'calories': prefs.isCaloriesVisible,
+      'protein': prefs.isProteinVisible,
+      'carbs': prefs.isCarbsVisible,
+      'fat': prefs.isFatVisible,
+    };
+
+    if (visibleMacros['calories'] ?? true)
+      result.write('${macros.calories.toStringAsFixed(0)} kcal · ');
+    if (visibleMacros['protein'] ?? true)
+      result.write('P ${macros.protein.toStringAsFixed(1)}g · ');
+    if (visibleMacros['carbs'] ?? true)
+      result.write('C ${macros.carbs.toStringAsFixed(1)}g · ');
+    if (visibleMacros['fat'] ?? true)
+      result.write('F ${macros.fat.toStringAsFixed(1)}g');
+
+    return result.toString();
   }
 
   void _openAddMeal(BuildContext context) {

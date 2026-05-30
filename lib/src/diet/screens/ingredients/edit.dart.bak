@@ -78,51 +78,6 @@ class _CustomIngredientScreenState
               : 'Edit Ingredient',
         ),
         actions: [
-          if (widget.initialIngredient != null)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: FilledButton.icon(
-                onPressed: () async {
-                  final ingredient = widget.initialIngredient;
-                  if (ingredient == null) return;
-                  final result = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Archive Ingredient'),
-                      content: const Text(
-                        'This ingredient will be hidden from regular views. '
-                        'Use the Archived Ingredients tab to restore or delete it.',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('Cancel'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Archive'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (result == true && context.mounted) {
-                    await ref
-                        .read(ingredientsProvider.notifier)
-                        .archiveIngredient(ingredient);
-                    Navigator.of(context).pop();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ingredient archived successfully'),
-                        ),
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.archive),
-                label: const Text('Archive'),
-              ),
-            ),
           if (_canSave(per100g))
             Padding(
               padding: const EdgeInsets.all(8.0),

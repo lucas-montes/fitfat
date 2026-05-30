@@ -8,6 +8,7 @@ class Exercises extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get category => text()();
+  TextColumn get creatorId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -38,8 +38,19 @@ class $ExercisesTable extends Exercises
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _creatorIdMeta = const VerificationMeta(
+    'creatorId',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, category];
+  late final GeneratedColumn<String> creatorId = GeneratedColumn<String>(
+    'creator_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, category, creatorId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -73,6 +84,12 @@ class $ExercisesTable extends Exercises
     } else if (isInserting) {
       context.missing(_categoryMeta);
     }
+    if (data.containsKey('creator_id')) {
+      context.handle(
+        _creatorIdMeta,
+        creatorId.isAcceptableOrUnknown(data['creator_id']!, _creatorIdMeta),
+      );
+    }
     return context;
   }
 
@@ -94,6 +111,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.string,
         data['${effectivePrefix}category'],
       )!,
+      creatorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creator_id'],
+      ),
     );
   }
 
@@ -107,10 +128,12 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final String id;
   final String name;
   final String category;
+  final String? creatorId;
   const Exercise({
     required this.id,
     required this.name,
     required this.category,
+    this.creatorId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -118,6 +141,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['category'] = Variable<String>(category);
+    if (!nullToAbsent || creatorId != null) {
+      map['creator_id'] = Variable<String>(creatorId);
+    }
     return map;
   }
 
@@ -126,6 +152,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       id: Value(id),
       name: Value(name),
       category: Value(category),
+      creatorId: creatorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(creatorId),
     );
   }
 
@@ -138,6 +167,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       category: serializer.fromJson<String>(json['category']),
+      creatorId: serializer.fromJson<String?>(json['creatorId']),
     );
   }
   @override
@@ -147,19 +177,27 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'category': serializer.toJson<String>(category),
+      'creatorId': serializer.toJson<String?>(creatorId),
     };
   }
 
-  Exercise copyWith({String? id, String? name, String? category}) => Exercise(
+  Exercise copyWith({
+    String? id,
+    String? name,
+    String? category,
+    Value<String?> creatorId = const Value.absent(),
+  }) => Exercise(
     id: id ?? this.id,
     name: name ?? this.name,
     category: category ?? this.category,
+    creatorId: creatorId.present ? creatorId.value : this.creatorId,
   );
   Exercise copyWithCompanion(ExercisesCompanion data) {
     return Exercise(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       category: data.category.present ? data.category.value : this.category,
+      creatorId: data.creatorId.present ? data.creatorId.value : this.creatorId,
     );
   }
 
@@ -168,37 +206,42 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     return (StringBuffer('Exercise(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('category: $category')
+          ..write('category: $category, ')
+          ..write('creatorId: $creatorId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, category);
+  int get hashCode => Object.hash(id, name, category, creatorId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Exercise &&
           other.id == this.id &&
           other.name == this.name &&
-          other.category == this.category);
+          other.category == this.category &&
+          other.creatorId == this.creatorId);
 }
 
 class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<String> id;
   final Value<String> name;
   final Value<String> category;
+  final Value<String?> creatorId;
   final Value<int> rowid;
   const ExercisesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.category = const Value.absent(),
+    this.creatorId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExercisesCompanion.insert({
     required String id,
     required String name,
     required String category,
+    this.creatorId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -207,12 +250,14 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? category,
+    Expression<String>? creatorId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (category != null) 'category': category,
+      if (creatorId != null) 'creator_id': creatorId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -221,12 +266,14 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<String>? id,
     Value<String>? name,
     Value<String>? category,
+    Value<String?>? creatorId,
     Value<int>? rowid,
   }) {
     return ExercisesCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       category: category ?? this.category,
+      creatorId: creatorId ?? this.creatorId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -243,6 +290,9 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
+    if (creatorId.present) {
+      map['creator_id'] = Variable<String>(creatorId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -255,6 +305,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('category: $category, ')
+          ..write('creatorId: $creatorId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5042,6 +5093,7 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       required String id,
       required String name,
       required String category,
+      Value<String?> creatorId,
       Value<int> rowid,
     });
 typedef $$ExercisesTableUpdateCompanionBuilder =
@@ -5049,6 +5101,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<String> category,
+      Value<String?> creatorId,
       Value<int> rowid,
     });
 
@@ -5104,6 +5157,11 @@ class $$ExercisesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get creatorId => $composableBuilder(
+    column: $table.creatorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> exerciseEntriesRefs(
     Expression<bool> Function($$ExerciseEntriesTableFilterComposer f) f,
   ) {
@@ -5153,6 +5211,11 @@ class $$ExercisesTableOrderingComposer
     column: $table.category,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get creatorId => $composableBuilder(
+    column: $table.creatorId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExercisesTableAnnotationComposer
@@ -5172,6 +5235,9 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get creatorId =>
+      $composableBuilder(column: $table.creatorId, builder: (column) => column);
 
   Expression<T> exerciseEntriesRefs<T extends Object>(
     Expression<T> Function($$ExerciseEntriesTableAnnotationComposer a) f,
@@ -5230,11 +5296,13 @@ class $$ExercisesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> category = const Value.absent(),
+                Value<String?> creatorId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion(
                 id: id,
                 name: name,
                 category: category,
+                creatorId: creatorId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -5242,11 +5310,13 @@ class $$ExercisesTableTableManager
                 required String id,
                 required String name,
                 required String category,
+                Value<String?> creatorId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion.insert(
                 id: id,
                 name: name,
                 category: category,
+                creatorId: creatorId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../exercise/services/workout_services.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -43,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,28 +66,32 @@ class AppDatabase extends _$AppDatabase {
         // Create junction table for composite ingredients
         await m.createTable(ingredientComponents);
       }
+      if (from < 3) {
+        // Add creatorId column to exercises table
+        await m.addColumn(exercises, exercises.creatorId);
+        // Seed comprehensive exercise bundle
+        await _seedExercises();
+      }
     },
   );
 
   Future<void> _seedExercises() async {
-    const seed = [
-      ('Bench Press', 'Chest'),
-      ('Squats', 'Legs'),
-      ('Deadlifts', 'Back'),
-      ('Pull-ups', 'Back'),
-      ('Dumbbell Rows', 'Back'),
-      ('Shoulder Press', 'Shoulders'),
-      ('Lat Pulldown', 'Back'),
-      ('Leg Press', 'Legs'),
-      ('Dumbbell Curls', 'Arms'),
-      ('Tricep Dips', 'Arms'),
-    ];
-    for (final (name, category) in seed) {
+    // Use comprehensive bundle from ExerciseLibraryService
+    final bundled = ExerciseLibraryService.getAllBundled();
+
+    // Get existing exercise names to skip duplicates
+    final existing = await select(exercises).get();
+    final existingNames = existing.map((e) => e.name.toLowerCase()).toSet();
+
+    for (final (name, category) in bundled) {
+      if (existingNames.contains(name.toLowerCase())) continue;
+
       await into(exercises).insert(
         ExercisesCompanion.insert(
           id: const Uuid().v4(),
           name: name,
           category: category,
+          creatorId: const Value('__system__'),
         ),
       );
     }
@@ -146,11 +151,11 @@ class AppDatabase extends _$AppDatabase {
   Future<List<Ingredient>> getNonArchivedIngredients() =>
       (select(ingredients)..where((t) => t.isArchived.equals(false))).get();
   Future<List<Ingredient>> getIngredientByIds(List<String> ids) =>
-      select(ingredients).where((t) => t.id.isIn(ids)).get();
+      (select(ingredients)..where((t) => t.id.isIn(ids))).get();
   Future<List<IngredientComponent>> getComponentsForIngredient(String id) =>
-      select(
+      (select(
         ingredientComponents,
-      ).where((t) => t.ingredientId.equals(id)).get();
+      )..where((t) => t.ingredientId.equals(id))).get();
   Future<List<Ingredient>> getArchivedIngredients() =>
       (select(ingredients)..where((t) => t.isArchived.equals(true))).get();
   Future<void> insertIngredient(IngredientsCompanion entry) =>
