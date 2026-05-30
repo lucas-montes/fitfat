@@ -101,6 +101,7 @@ class Seance {
     required this.exercises,
     this.completedAt,
     this.restBetweenSets = const Duration(seconds: 60),
+    this.isGuided = false,
   });
 
   final String id;
@@ -109,6 +110,7 @@ class Seance {
   final List<ExerciseEntry> exercises;
   final DateTime? completedAt;
   final Duration restBetweenSets;
+  final bool isGuided;
 
   Duration get duration {
     if (completedAt == null) {
@@ -126,6 +128,7 @@ class Seance {
     'exercises': exercises.map((e) => e.toJson()).toList(),
     'completedAt': completedAt?.toIso8601String(),
     'restBetweenSetsMillis': restBetweenSets.inMilliseconds,
+    'isGuided': isGuided,
   };
 
   factory Seance.fromJson(Map<String, dynamic> json) => Seance(
@@ -141,5 +144,6 @@ class Seance {
     restBetweenSets: Duration(
       milliseconds: json['restBetweenSetsMillis'] as int? ?? 60000,
     ),
+    isGuided: json['isGuided'] as bool? ?? false,
   );
 }

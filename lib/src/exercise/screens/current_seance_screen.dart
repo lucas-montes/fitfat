@@ -5,14 +5,6 @@ import 'package:intl/intl.dart';
 import '../../models/exercise.dart';
 import '../providers/seance.dart';
 
-/// True if the seance is "guided" (template-based with pre-planned sets).
-/// In guided mode, sets show completion checkboxes and auto-complete behavior.
-/// In free-form mode, sets are added ad-hoc with pre-fill from last.
-bool _isGuidedMode(Seance seance) {
-  return seance.exercises.every((e) => e.sets.isNotEmpty) &&
-      seance.exercises.isNotEmpty;
-}
-
 class CurrentSeanceScreen extends ConsumerStatefulWidget {
   const CurrentSeanceScreen({super.key});
 
@@ -82,7 +74,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
       return const Scaffold(body: Center(child: Text('No active seance')));
     }
 
-    final guided = _isGuidedMode(seance);
+    final guided = seance.isGuided;
 
     return Scaffold(
       appBar: AppBar(
@@ -719,14 +711,7 @@ class _AddSetFormState extends State<AddSetForm> {
   @override
   void didUpdateWidget(AddSetForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialReps != widget.initialReps &&
-        widget.initialReps != null) {
-      _repsController.text = widget.initialReps.toString();
-    }
-    if (oldWidget.initialWeight != widget.initialWeight &&
-        widget.initialWeight != null) {
-      _weightController.text = widget.initialWeight.toString();
-    }
+    // Do not overwrite user input — pre-fill only happens once in initState
   }
 
   @override

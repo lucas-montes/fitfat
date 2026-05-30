@@ -196,6 +196,7 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
           )
           .toList(),
       restBetweenSets: const Duration(seconds: 90),
+      isGuided: true,
     );
     unawaited(
       SeanceForegroundService.instance.start(
@@ -262,18 +263,10 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
     if (state == null || exerciseIndex >= state!.exercises.length) return;
     final exercise = state!.exercises[exerciseIndex];
     final now = DateTime.now();
-    final updatedSets = exercise.sets
-        .map(
-          (set) => set.isCompleted
-              ? set
-              : ExerciseSet(
-                  reps: set.reps,
-                  weight: set.weight,
-                  completedAt: now,
-                ),
-        )
-        .followedBy([ExerciseSet(reps: reps, weight: weight, completedAt: now)])
-        .toList();
+    final updatedSets = [
+      ...exercise.sets,
+      ExerciseSet(reps: reps, weight: weight, completedAt: now),
+    ];
     state = Seance(
       id: state!.id,
       name: state!.name,
