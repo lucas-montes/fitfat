@@ -20,7 +20,6 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
   int? _selectedExerciseIndex;
   late PageController _pageController;
   final _exerciseSearchController = TextEditingController();
-  final _selectedCategories = <String>{};
   final _prService = ProgressionService();
   bool _notificationSynced = false;
 
@@ -162,60 +161,19 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
 
   Widget _buildExerciseListView(Seance seance, bool guided) {
     final exercises = ref.watch(exerciseListProvider);
-    final seances = ref.watch(seanceHistoryProvider);
     final query = _exerciseSearchController.text.trim().toLowerCase();
-    final allCategories = exercises.map((e) => e.category).toSet().toList()
-      ..sort();
 
     final addedNames = seance.exercises
         .map((e) => e.exercise.name.toLowerCase())
         .toSet();
 
-    // Compute recently used exercises from history
-    final recentlyUsedOrder = <String>[];
-    for (final s in seances.reversed) {
-      for (final entry in s.exercises) {
-        final name = entry.exercise.name.toLowerCase();
-        if (!recentlyUsedOrder.contains(name)) {
-          recentlyUsedOrder.add(name);
-          if (recentlyUsedOrder.length >= 5) break;
-        }
-      }
-      if (recentlyUsedOrder.length >= 5) break;
-    }
-    final recentlyUsed =
-        exercises
-            .where(
-              (e) =>
-                  recentlyUsedOrder.contains(e.name.toLowerCase()) &&
-                  !addedNames.contains(e.name.toLowerCase()),
-            )
-            .toList()
-          ..sort(
-            (a, b) => recentlyUsedOrder
-                .indexOf(a.name.toLowerCase())
-                .compareTo(recentlyUsedOrder.indexOf(b.name.toLowerCase())),
-          );
-
-    final filtered = exercises.where((e) {
-      if (!addedNames.contains(e.name.toLowerCase())) {
-        if (query.isNotEmpty && !e.name.toLowerCase().contains(query)) {
-          return false;
-        }
-        if (_selectedCategories.isNotEmpty &&
-            !_selectedCategories.contains(e.category)) {
-          return false;
-        }
-        return true;
-      }
-      return false;
-    }).toList();
-
-    // Group filtered by category
-    final grouped = <String, List<ExerciseDefinition>>{};
-    for (final e in filtered) {
-      grouped.putIfAbsent(e.category, () => []).add(e);
-    }
+    final filtered = query.isEmpty
+        ? <ExerciseDefinition>[]
+        : exercises.where((e) {
+            if (addedNames.contains(e.name.toLowerCase())) return false;
+            if (!e.name.toLowerCase().contains(query)) return false;
+            return true;
+          }).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -296,52 +254,36 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 8),
-        // Category filter chips
-        if (allCategories.isNotEmpty)
-          SizedBox(
-            height: 40,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: allCategories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
-              itemBuilder: (_, i) {
-                final cat = allCategories[i];
-                final selected = _selectedCategories.contains(cat);
-                return FilterChip(
-                  label: Text(cat, style: const TextStyle(fontSize: 12)),
-                  selected: selected,
-                  onSelected: (isSelected) {
-                    setState(() {
-                      if (isSelected) {
-                        _selectedCategories.add(cat);
-                      } else {
-                        _selectedCategories.remove(cat);
-                      }
-                    });
-                  },
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                );
-              },
+        if (query.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                guided
+                    ? 'Search for exercises to add'
+                    : 'Type to find exercises',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
-          ),
-        const SizedBox(height: 8),
-        // Recently used section (when search is empty)
-        if (query.isEmpty &&
-            _selectedCategories.isEmpty &&
-            recentlyUsed.isNotEmpty) ...[
-          Text(
-            'Recently used',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          )
+        else if (filtered.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'No exercises found matching "$query"',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          ...recentlyUsed.map((exercise) {
+          )
+        else
+          ...filtered.map((exercise) {
             return Card(
               child: ListTile(
-                leading: const Icon(Icons.history, size: 20),
                 title: Text(exercise.name),
                 subtitle: Text(exercise.category),
                 trailing: const Icon(Icons.add_circle),
@@ -351,69 +293,6 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               ),
             );
           }),
-          const SizedBox(height: 8),
-        ],
-        // Filtered results grouped by category
-        if (filtered.isNotEmpty)
-          ...grouped.entries.map((entry) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (query.isNotEmpty || _selectedCategories.isNotEmpty) ...[
-                  Text(
-                    entry.key,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                ...entry.value.map((exercise) {
-                  return Card(
-                    child: ListTile(
-                      title: Text(exercise.name),
-                      subtitle: Text(exercise.category),
-                      trailing: const Icon(Icons.add_circle),
-                      onTap: () => ref
-                          .read(activeSeanceProvider.notifier)
-                          .addExercise(exercise),
-                    ),
-                  );
-                }),
-                const SizedBox(height: 8),
-              ],
-            );
-          })
-        else if (query.isNotEmpty || _selectedCategories.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.search_off,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'No exercises found',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Try a different search or clear filters',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
