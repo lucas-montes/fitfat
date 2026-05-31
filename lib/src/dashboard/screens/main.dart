@@ -47,8 +47,6 @@ class DashboardScreen extends ConsumerWidget {
 class _OverviewTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goalsData = ref.watch(goalsProvider);
-
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,15 +59,15 @@ class _OverviewTab extends ConsumerWidget {
           const WorkoutActivityCard(),
           const SizedBox(height: 8),
 
+          // ── Quick logs: water + weight ──
+          const WaterTrackerCard(),
+          const SizedBox(height: 8),
+          const _CompactWeightCard(),
+          const SizedBox(height: 8),
+
           // ── Goals overview (all active goals) ──
           const _GoalsOverviewCard(),
           const SizedBox(height: 8),
-
-          // ── Weight check-in (only if bodyweight goal exists) ──
-          if (goalsData.bodyWeightGoal != null) ...[
-            const WeightTrackerCard(),
-            const SizedBox(height: 8),
-          ],
 
           // ── 7-day streaks ──
           Padding(
@@ -84,6 +82,158 @@ class _OverviewTab extends ConsumerWidget {
           ),
           const SizedBox(height: 96),
         ],
+      ),
+    );
+  }
+}
+
+// ── Compact weight quick-log card ──
+
+class _CompactWeightCard extends ConsumerStatefulWidget {
+  const _CompactWeightCard();
+
+  @override
+  ConsumerState<_CompactWeightCard> createState() => _CompactWeightCardState();
+}
+
+class _CompactWeightCardState extends ConsumerState<_CompactWeightCard> {
+  final _weightController = TextEditingController();
+
+  @override
+  void dispose() {
+    _weightController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveWeight() async {
+    final weight = double.tryParse(_weightController.text.trim());
+    if (weight == null || weight <= 0) return;
+    await ref.read(bodyWeightTrackerProvider).addEntry(weight);
+    if (!mounted) return;
+    _weightController.clear();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Weight logged!'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final entriesAsync = ref.watch(bodyWeightEntriesProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: entriesAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (entries) {
+              final ordered = [...entries]
+                ..sort((a, b) => b.date.compareTo(a.date));
+              final latest = ordered.isNotEmpty ? ordered.first : null;
+              final recent = ordered.take(7).toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.monitor_weight, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Weight',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (latest != null) ...[
+                    Row(
+                      children: [
+                        Text(
+                          '${latest.weightKg.toStringAsFixed(1)} kg',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('MMM d, HH:mm').format(latest.date),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _weightController,
+                          decoration: const InputDecoration(
+                            hintText: 'Enter weight (kg)',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          onSubmitted: (_) => _saveWeight(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: _saveWeight,
+                        child: const Text('Log'),
+                      ),
+                    ],
+                  ),
+                  if (recent.length > 1) ...[
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    const SizedBox(height: 8),
+                    ...recent.sublist(1).map((entry) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${entry.weightKg.toStringAsFixed(1)} kg',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                            Text(
+                              DateFormat('MMM d, HH:mm').format(entry.date),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }

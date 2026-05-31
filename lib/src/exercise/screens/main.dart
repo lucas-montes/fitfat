@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/seance_foreground_service.dart';
 import '../../dashboard/screens/main.dart' as dashboard;
+import '../../dashboard/providers/dashboard.dart';
 import 'package:intl/intl.dart';
 import '../../models/exercise.dart';
 import '../../models/seance.dart';
@@ -18,7 +19,7 @@ class ExerciseScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 0,
@@ -27,11 +28,12 @@ class ExerciseScreen extends ConsumerWidget {
             tabs: [
               Tab(text: 'Workouts'),
               Tab(text: 'Exercises'),
+              Tab(text: 'Stats'),
             ],
           ),
         ),
         body: const TabBarView(
-          children: [SeancesHistoryTab(), ExercisesListTab()],
+          children: [SeancesHistoryTab(), ExercisesListTab(), StatsTab()],
         ),
       ),
     );
@@ -355,19 +357,124 @@ class SeancesHistoryTab extends ConsumerWidget {
           ...seances.reversed.map(
             (seance) => _SeanceHistoryCard(seance: seance),
           ),
+      ],
+    );
+  }
+}
 
-        // ── Training stats & charts (moved from Dashboard) ──
-        const SizedBox(height: 24),
-        Text('Training Stats', style: Theme.of(context).textTheme.titleMedium),
+class StatsTab extends ConsumerWidget {
+  const StatsTab({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final daySummaries = ref.watch(workoutDaySummariesProvider);
+
+    final totalWorkouts = daySummaries.fold<int>(
+      0,
+      (sum, day) => sum + (day.hasWorkout ? 1 : 0),
+    );
+    final totalVolume = daySummaries.fold<double>(
+      0,
+      (sum, day) => sum + day.volume,
+    );
+    final totalDuration = daySummaries.fold<Duration>(
+      Duration.zero,
+      (sum, day) => sum + day.duration,
+    );
+    final totalMinutes = totalDuration.inMinutes;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      children: [
+        // Overview stats row
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'All Time',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    _StatItem(
+                      icon: Icons.fitness_center,
+                      label: 'Workouts',
+                      value: '$totalWorkouts',
+                    ),
+                    _StatItem(
+                      icon: Icons.monitor_weight,
+                      label: 'Volume',
+                      value: '${totalVolume.toStringAsFixed(0)} kg',
+                    ),
+                    _StatItem(
+                      icon: Icons.timer,
+                      label: 'Duration',
+                      value: '${totalMinutes}m',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // This week
+        Text('This Week', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         const dashboard.WorkoutStatsRow(),
         const SizedBox(height: 16),
+        // Heatmap
+        Text('Activity', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
         const dashboard.WorkoutHeatmapCard(),
         const SizedBox(height: 16),
+        // Charts
+        Text('Trends', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
         dashboard.StrengthTrendChart(),
         const SizedBox(height: 16),
         dashboard.BodyweightTrendChart(),
       ],
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, size: 28, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
