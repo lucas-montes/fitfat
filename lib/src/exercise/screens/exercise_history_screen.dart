@@ -135,7 +135,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Complete a seance with this exercise to see it here',
+                    'Complete a workout with this exercise to see it here',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -220,13 +220,16 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
       final entry = seance.exercises.firstWhere(
         (e) => e.exercise.name == widget.exercise.name,
       );
+      final dateMs = (seance.completedAt ?? seance.startedAt)
+          .millisecondsSinceEpoch
+          .toDouble();
       final vol = _service.totalVolume(entry.sets);
-      volumeData.add(FlSpot(i.toDouble(), vol));
+      volumeData.add(FlSpot(dateMs, vol));
 
       final bestSet = _service.findBestSet(entry.sets);
       if (bestSet != null) {
         final rm = _service.epleyOneRM(bestSet.weight, bestSet.reps) ?? 0;
-        rmData.add(FlSpot(i.toDouble(), rm));
+        rmData.add(FlSpot(dateMs, rm));
       }
     }
 
@@ -263,8 +266,25 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                   ),
                   bottomTitles: AxisTitles(
                     axisNameWidget: const Text(
-                      'Sessions',
+                      'Date',
                       style: TextStyle(fontSize: 10),
+                    ),
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 22,
+                      getTitlesWidget: (value, meta) {
+                        final date = DateTime.fromMillisecondsSinceEpoch(
+                          value.toInt(),
+                        );
+                        return SideTitleWidget(
+                          meta: meta,
+                          child: Text(
+                            '${date.day.toString().padLeft(2, '0')}/'
+                            '${date.month.toString().padLeft(2, '0')}',
+                            style: const TextStyle(fontSize: 9),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -325,8 +345,25 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                     ),
                     bottomTitles: AxisTitles(
                       axisNameWidget: const Text(
-                        'Sessions',
+                        'Date',
                         style: TextStyle(fontSize: 10),
+                      ),
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 22,
+                        getTitlesWidget: (value, meta) {
+                          final date = DateTime.fromMillisecondsSinceEpoch(
+                            value.toInt(),
+                          );
+                          return SideTitleWidget(
+                            meta: meta,
+                            child: Text(
+                              '${date.day.toString().padLeft(2, '0')}/'
+                              '${date.month.toString().padLeft(2, '0')}',
+                              style: const TextStyle(fontSize: 9),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -364,7 +401,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
           controller: _searchController,
           decoration: InputDecoration(
             label: const Text('Search history'),
-            hintText: 'Search by date or seance name...',
+            hintText: 'Search by date or workout name...',
             border: const OutlineInputBorder(),
             isDense: true,
             suffixIcon: _searchController.text.isNotEmpty

@@ -235,48 +235,125 @@ class _MealsDayGroup {
   final List<MealEntry> meals;
 }
 
-class _IngredientsTab extends ConsumerWidget {
+class _IngredientsTab extends ConsumerStatefulWidget {
   const _IngredientsTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_IngredientsTab> createState() => _IngredientsTabState();
+}
+
+class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
+  final _searchController = TextEditingController();
+  bool _sortAscending = true;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ingredients = ref.watch(ingredientsProvider);
+    final query = _searchController.text.trim().toLowerCase();
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-      itemBuilder: (context, index) {
-        // Add button at the top
-        if (index == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: FilledButton.icon(
-              icon: const Icon(Icons.add),
-              label: const Text('Add Ingredient'),
-              onPressed: () => _openAddIngredient(context, ref),
-            ),
-          );
-        }
-
-        final ingredientIndex = index - 1;
-        if (ingredientIndex >= ingredients.length) return null;
-
-        final ingredient = ingredients[ingredientIndex];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: FoodEntryCard(
-            title: ingredient.name,
-            onTap: () => _editIngredient(context, ref, ingredient),
-            onDelete: () => _deleteIngredient(ref, ingredient.id),
-            body: Text(
-              '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
-              'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
-              'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
-              'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
-            ),
-          ),
+    final filtered =
+        ingredients.where((e) {
+          if (query.isNotEmpty && !e.name.toLowerCase().contains(query)) {
+            return false;
+          }
+          return true;
+        }).toList()..sort(
+          (a, b) => _sortAscending
+              ? a.name.toLowerCase().compareTo(b.name.toLowerCase())
+              : b.name.toLowerCase().compareTo(a.name.toLowerCase()),
         );
-      },
-      itemCount: ingredients.length + 1,
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search ingredients...',
+              prefixIcon: const Icon(Icons.search),
+              border: const OutlineInputBorder(),
+              isDense: true,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                ),
+                onPressed: () =>
+                    setState(() => _sortAscending = !_sortAscending),
+                tooltip: _sortAscending ? 'Sort A-Z' : 'Sort Z-A',
+              ),
+            ),
+            style: const TextStyle(fontSize: 13),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.search_off,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No ingredients found',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Try a different search or add a new ingredient',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                  itemCount: filtered.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: FilledButton.icon(
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Ingredient'),
+                          onPressed: () => _openAddIngredient(context, ref),
+                        ),
+                      );
+                    }
+                    final ingredient = filtered[index - 1];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: FoodEntryCard(
+                        title: ingredient.name,
+                        onTap: () => _editIngredient(context, ref, ingredient),
+                        onDelete: () => _deleteIngredient(ref, ingredient.id),
+                        body: Text(
+                          '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
+                          'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
+                          'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
+                          'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 

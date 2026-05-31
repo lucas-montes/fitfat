@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/seance.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/seance_foreground_service.dart';
 import 'create_seance_screen.dart';
 
 class SeanceLibraryScreen extends ConsumerWidget {
@@ -94,9 +96,9 @@ class SeanceLibraryScreen extends ConsumerWidget {
                               showDialog(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
-                                  title: const Text('Seance already running'),
+                                  title: const Text('Workout already running'),
                                   content: const Text(
-                                    'A seance is already in progress. Cancel it and start a new one?',
+                                    'A workout is already in progress. Cancel it and start a new one?',
                                   ),
                                   actions: [
                                     TextButton(
@@ -111,13 +113,25 @@ class SeanceLibraryScreen extends ConsumerWidget {
                                         ref
                                             .read(activeSeanceProvider.notifier)
                                             .startSeanceFromTemplate(t);
+                                        // Update notification title and exercise name
+                                        SeanceForegroundService.instance.start(
+                                          DateTime.now(),
+                                          seanceName: t.name,
+                                          exerciseName: t.exercises.isNotEmpty
+                                              ? t.exercises[0].name
+                                              : null,
+                                          notificationTitle:
+                                              AppLocalizations.of(
+                                                context,
+                                              ).activeWorkout,
+                                        );
                                         Navigator.of(
                                           context,
                                           rootNavigator: true,
                                         ).pop();
                                         context.push('/current-seance');
                                       },
-                                      child: const Text('Start new seance'),
+                                      child: const Text('Start new workout'),
                                     ),
                                   ],
                                 ),
@@ -126,6 +140,17 @@ class SeanceLibraryScreen extends ConsumerWidget {
                               ref
                                   .read(activeSeanceProvider.notifier)
                                   .startSeanceFromTemplate(t);
+                              // set localized notification title
+                              SeanceForegroundService.instance.start(
+                                DateTime.now(),
+                                seanceName: t.name,
+                                exerciseName: t.exercises.isNotEmpty
+                                    ? t.exercises[0].name
+                                    : null,
+                                notificationTitle: AppLocalizations.of(
+                                  context,
+                                ).activeWorkout,
+                              );
                               Navigator.of(context).pop();
                               context.push('/current-seance');
                             }

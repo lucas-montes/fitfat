@@ -4,20 +4,31 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 class SeanceNotificationService {
   SeanceNotificationService._();
 
-  static final SeanceNotificationService instance = SeanceNotificationService._();
+  static final SeanceNotificationService instance =
+      SeanceNotificationService._();
 
-  final FlutterLocalNotificationsPlugin _local = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _local =
+      FlutterLocalNotificationsPlugin();
   Timer? _updateTimer;
 
   Future<void> init() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings();
-    await _local.initialize(const InitializationSettings(android: android, iOS: ios));
+    await _local.initialize(
+      const InitializationSettings(android: android, iOS: ios),
+    );
   }
 
-  Future<void> startForeground({required String title, required DateTime startedAt}) async {
+  Future<void> startForeground({
+    required String title,
+    required DateTime startedAt,
+  }) async {
     // For now, show a persistent local notification and update it periodically.
-    await _showLocalNotification(id: 1, title: title, body: 'Tap to open current seance');
+    await _showLocalNotification(
+      id: 1,
+      title: title,
+      body: 'Tap to open current workout',
+    );
 
     // start periodic updates to refresh notification text while app is foreground
     _updateTimer?.cancel();
@@ -36,16 +47,46 @@ class SeanceNotificationService {
     } catch (_) {}
   }
 
-  Future<void> _showLocalNotification({required int id, required String title, required String body}) async {
-    const androidDetails = AndroidNotificationDetails('seance_channel', 'Seance', channelDescription: 'Active seance', importance: Importance.low, priority: Priority.defaultPriority, ongoing: true);
+  Future<void> _showLocalNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'seance_channel',
+      'Workout',
+      channelDescription: 'Active workout',
+      importance: Importance.low,
+      priority: Priority.defaultPriority,
+      ongoing: true,
+    );
     const iosDetails = DarwinNotificationDetails();
-    await _local.show(id, title, body, const NotificationDetails(android: androidDetails, iOS: iosDetails));
+    await _local.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+    );
   }
 
   Future<void> _updateLocalNotificationText(String text) async {
     // On Android we can update the foreground notification via the plugin; on iOS we update a local notification when app resumes.
     try {
-      await _local.show(1, 'Seance', text, const NotificationDetails(android: AndroidNotificationDetails('seance_channel', 'Seance', channelDescription: 'Active seance', importance: Importance.low, priority: Priority.defaultPriority, ongoing: true)));
+      await _local.show(
+        1,
+        'Workout',
+        text,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'seance_channel',
+            'Workout',
+            channelDescription: 'Active workout',
+            importance: Importance.low,
+            priority: Priority.defaultPriority,
+            ongoing: true,
+          ),
+        ),
+      );
     } catch (_) {}
   }
 

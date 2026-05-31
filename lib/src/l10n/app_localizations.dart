@@ -224,30 +224,38 @@ class AppLocalizations {
 
   String get exercises => _t('Exercises', 'Exercices', 'Ejercicios');
   String get exercise => _t('Exercise', 'Exercice', 'Ejercicio');
+  String get activeWorkout =>
+      _t('Active Workout', 'Entraînement actif', 'Entrenamiento activo');
   String get activeSeance =>
-      _t('Active Seance', 'Séance active', 'Sesión activa');
-  String get noActiveSeance =>
-      _t('No active seance', 'Aucune séance active', 'No hay sesión activa');
+      _t('Active Workout', 'Entraînement actif', 'Entrenamiento activo');
+  String get noActiveSeance => _t(
+    'No active workout',
+    'Aucun entraînement actif',
+    'No hay entrenamiento activo',
+  );
   String get guidedMode => _t('Guided', 'Guidé', 'Guiado');
   String get freeformMode => _t('Free-form', 'Libre', 'Libre');
   String get cancelSeance =>
-      _t('Cancel seance', 'Annuler la séance', 'Cancelar sesión');
+      _t('Cancel workout', 'Annuler l\'entraînement', 'Cancelar entrenamiento');
   String get backToApp =>
       _t('Back to app', 'Retour à l\'app', 'Volver a la app');
   String get discardEmptySeance => _t(
-    'Discard empty seance?',
-    'Supprimer la séance vide ?',
-    '¿Descartar sesión vacía?',
+    'Discard empty workout?',
+    'Supprimer l\'entraînement vide ?',
+    '¿Descartar entrenamiento vacío?',
   );
   String get discardEmptySeanceContent => _t(
-    'This seance has no exercises and will not be saved to history.',
-    'Cette séance n\'a pas d\'exercices et ne sera pas sauvegardée.',
-    'Esta sesión no tiene ejercicios y no se guardará en el historial.',
+    'This workout has no exercises and will not be saved to history.',
+    'Cet entraînement n\'a pas d\'exercices et ne sera pas sauvegardé.',
+    'Este entrenamiento no tiene ejercicios y no se guardará en el historial.',
   );
   String get keepEditing => _t('Keep editing', 'Continuer', 'Seguir editando');
   String get discard => _t('Discard', 'Supprimer', 'Descartar');
-  String get completeSeance =>
-      _t('Complete Seance', 'Terminer la séance', 'Completar sesión');
+  String get completeSeance => _t(
+    'Complete Workout',
+    'Terminer l\'entraînement',
+    'Completar entrenamiento',
+  );
   String get addExercise =>
       _t('Add Exercise', 'Ajouter un exercice', 'Añadir ejercicio');
   String get followPlan =>
@@ -315,7 +323,7 @@ class AppLocalizations {
   String get searchHistory =>
       _t('Search history', 'Rechercher', 'Buscar en historial');
   String get searchByDateHint => _t(
-    'Search by date or seance name...',
+    'Search by date or workout name...',
     'Rechercher par date ou nom...',
     'Buscar por fecha o nombre...',
   );
@@ -336,9 +344,9 @@ class AppLocalizations {
       _t('Max Volume (Set)', 'Volume max (Série)', 'Volumen máximo (Serie)');
   String get totalVolume => _t('Total Volume', 'Volume total', 'Volumen total');
   String get noHistoryContent => _t(
-    'Complete a seance with this exercise to see it here',
-    'Complétez une séance avec cet exercice pour le voir ici',
-    'Completa una sesión con este ejercicio para verlo aquí',
+    'Complete a workout with this exercise to see it here',
+    'Complétez un entraînement avec cet exercice pour le voir ici',
+    'Completa un entrenamiento con este ejercicio para verlo aquí',
   );
 
   // ── Library ──

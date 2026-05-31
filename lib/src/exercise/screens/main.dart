@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/seance_foreground_service.dart';
+import '../../dashboard/screens/main.dart' as dashboard;
 import 'package:intl/intl.dart';
 import '../../models/exercise.dart';
 import '../../models/seance.dart';
@@ -22,7 +25,7 @@ class ExerciseScreen extends ConsumerWidget {
           elevation: 0,
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'Seances'),
+              Tab(text: 'Workouts'),
               Tab(text: 'Exercises'),
             ],
           ),
@@ -35,34 +38,139 @@ class ExerciseScreen extends ConsumerWidget {
   }
 }
 
-class ExercisesListTab extends ConsumerWidget {
+class ExercisesListTab extends ConsumerStatefulWidget {
   const ExercisesListTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final exercises = ref.watch(exerciseListProvider);
+  ConsumerState<ExercisesListTab> createState() => _ExercisesListTabState();
+}
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-      itemCount: exercises.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final exercise = exercises[index];
-        return Card(
-          child: ListTile(
-            title: Text(exercise.name),
-            subtitle: Text(exercise.category),
-            trailing: const Icon(Icons.info_outline),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ExerciseHistoryScreen(exercise: exercise),
-                ),
-              );
-            },
+class _ExercisesListTabState extends ConsumerState<ExercisesListTab> {
+  final _searchController = TextEditingController();
+  final Set<String> _selectedCategories = {};
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final exercises = ref.watch(exerciseListProvider);
+    final query = _searchController.text.trim().toLowerCase();
+    final allCategories = exercises.map((e) => e.category).toSet().toList()
+      ..sort();
+
+    final filtered = exercises.where((e) {
+      if (query.isNotEmpty && !e.name.toLowerCase().contains(query)) {
+        return false;
+      }
+      if (_selectedCategories.isNotEmpty &&
+          !_selectedCategories.contains(e.category)) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(
+              hintText: 'Search exercises...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            style: const TextStyle(fontSize: 13),
+            onChanged: (_) => setState(() {}),
           ),
-        );
-      },
+        ),
+        if (allCategories.isNotEmpty)
+          SizedBox(
+            height: 48,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              scrollDirection: Axis.horizontal,
+              itemCount: allCategories.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                final cat = allCategories[i];
+                final selected = _selectedCategories.contains(cat);
+                return FilterChip(
+                  label: Text(cat, style: const TextStyle(fontSize: 12)),
+                  selected: selected,
+                  onSelected: (isSelected) {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedCategories.add(cat);
+                      } else {
+                        _selectedCategories.remove(cat);
+                      }
+                    });
+                  },
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              },
+            ),
+          ),
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.search_off,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No exercises found',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Try a different search or clear filters',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final exercise = filtered[index];
+                    return Card(
+                      child: ListTile(
+                        title: Text(exercise.name),
+                        subtitle: Text(exercise.category),
+                        trailing: const Icon(Icons.info_outline),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ExerciseHistoryScreen(exercise: exercise),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -106,7 +214,7 @@ class SeancesHistoryTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    running.name ?? 'Unnamed seance',
+                    running.name ?? 'Unnamed workout',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
@@ -209,7 +317,7 @@ class SeancesHistoryTab extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Center(
               child: Text(
-                'No templates yet. Create one to quickly start a seance!',
+                'No templates yet. Create one to quickly start a workout!',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -236,7 +344,7 @@ class SeancesHistoryTab extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 32),
             child: Center(
               child: Text(
-                'No seances yet. Start your first one above!',
+                'No workouts yet. Start your first one above!',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -247,6 +355,18 @@ class SeancesHistoryTab extends ConsumerWidget {
           ...seances.reversed.map(
             (seance) => _SeanceHistoryCard(seance: seance),
           ),
+
+        // ── Training stats & charts (moved from Dashboard) ──
+        const SizedBox(height: 24),
+        Text('Training Stats', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        const dashboard.WorkoutStatsRow(),
+        const SizedBox(height: 16),
+        const dashboard.WorkoutHeatmapCard(),
+        const SizedBox(height: 16),
+        dashboard.StrengthTrendChart(),
+        const SizedBox(height: 16),
+        dashboard.BodyweightTrendChart(),
       ],
     );
   }
@@ -270,12 +390,29 @@ class _TemplateCard extends ConsumerWidget {
                 ref
                     .read(activeSeanceProvider.notifier)
                     .startSeanceFromTemplate(template);
+                // update notification
+                SeanceForegroundService.instance.start(
+                  DateTime.now(),
+                  seanceName: template.name,
+                  exerciseName: template.exercises.isNotEmpty
+                      ? template.exercises[0].name
+                      : null,
+                  notificationTitle: AppLocalizations.of(context).activeWorkout,
+                );
                 context.push('/current-seance');
               });
             } else {
               ref
                   .read(activeSeanceProvider.notifier)
                   .startSeanceFromTemplate(template);
+              SeanceForegroundService.instance.start(
+                DateTime.now(),
+                seanceName: template.name,
+                exerciseName: template.exercises.isNotEmpty
+                    ? template.exercises[0].name
+                    : null,
+                notificationTitle: AppLocalizations.of(context).activeWorkout,
+              );
               context.push('/current-seance');
             }
           },
@@ -386,7 +523,7 @@ class _SeanceHistoryCard extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  seance.name ?? 'Seance',
+                  seance.name ?? 'Workout',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 IconButton(
@@ -507,9 +644,9 @@ void confirmReplaceSeance(
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Seance already running'),
+      title: const Text('Workout already running'),
       content: const Text(
-        'A seance is already in progress. Cancel it and start a new one?',
+        'A workout is already in progress. Cancel it and start a new one?',
       ),
       actions: [
         TextButton(
@@ -522,7 +659,7 @@ void confirmReplaceSeance(
             Navigator.pop(ctx);
             onConfirm();
           },
-          child: const Text('Start new seance'),
+          child: const Text('Start new workout'),
         ),
       ],
     ),

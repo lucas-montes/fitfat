@@ -18,16 +18,18 @@
 - `lib/src/models/seance.dart`: workout templates and history data structures.
 
 ## Feature modules
-- `lib/src/diet/`: meal log, ingredient editor, ingredient management (archive/restore), and related providers.
-- `lib/src/dashboard/`: overview, goals, profile, and chart screens/providers.
-- `lib/src/exercise/`: active workout flow, exercise history, templates, and workout library.
-- `lib/src/settings/`: standalone settings screen currently represented in the codebase; may move into the dashboard tab.
+- `lib/src/diet/`: meal log, ingredient editor (with advanced macros section), ingredient management (archive/restore), and related providers.
+- `lib/src/dashboard/`: focused daily glance (calories, workout status, goals, streaks), Goals sub-tab, Settings sub-tab (profile, nutrition toggles, data export/delete).
+- `lib/src/exercise/`: active workout flow, exercise history, templates, workout library (with search + category filters), training stats, heatmap, and trend charts.
+- `lib/src/app/theme.dart`: Material 3 theme with custom typography, card shapes, input decoration, and button styles.
 
 ## Product decisions
 - The app is single-user and offline-first.
 - Training and nutrition are equally important.
-- User-facing terminology should prefer localized `workout` language over `seance`.
-- Settings are currently expected to live under the dashboard.
+- User-facing terminology uses `workout` (not `seance`). Internal class/variable names retain `Seance` for backward compatibility.
+- Settings live in the Dashboard tab as a sub-tab (Profile, Nutrition, Workout, Appearance, Data).
+- Dashboard is a focused daily glance: calories/macros first, then workout status, goals, weight (conditional), and 7-day streaks.
+- Exercise tab contains training stats, heatmap, and trend charts (moved from dashboard).
 - Refactors should prioritize readability, testability, and bug reduction.
 
 ## Diet-specific notes
@@ -45,6 +47,9 @@
 
 ## Diet preferences
 - `lib/src/diet/providers/diet_preferences.dart`: `dietPreferencesProvider` and `DietPreferencesNotifier` — persisted macro visibility toggles backed by `SharedPreferences`.
+
+## Active plans
+- `context/plans/ui-ux-overhaul.md`: comprehensive UI/UX pass — theme, naming, dashboard, settings, forms, search/filters, bug fix.
 
 ## Supporting docs
 - `doc/simple_db_example.md`: example database context.

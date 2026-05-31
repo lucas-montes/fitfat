@@ -242,6 +242,9 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       restBetweenSets: state!.restBetweenSets,
     );
     unawaited(_persist());
+    unawaited(
+      SeanceForegroundService.instance.updateExerciseName(exercise.name),
+    );
   }
 
   void removeExercise(int index) {
@@ -371,7 +374,7 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
     }
     final now = DateTime.now();
     final defaultName =
-        'Seance - ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+        'Workout - ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final completed = Seance(
       id: state!.id,
       name: state!.name ?? defaultName,
@@ -537,10 +540,7 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
 
   void addSeance(Seance seance) {
     state = [seance, ...state];
-    unawaited(() async {
-      await _saveToDb(seance);
-      await _loadFromDb();
-    }());
+    unawaited(_saveToDb(seance));
   }
 }
 

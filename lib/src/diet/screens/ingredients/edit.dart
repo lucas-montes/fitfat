@@ -22,6 +22,8 @@ class _CustomIngredientScreenState
   final _proteinController = TextEditingController();
   final _carbsController = TextEditingController();
   final _fatController = TextEditingController();
+  final _sodiumController = TextEditingController();
+  final _fiberController = TextEditingController();
   final _uuid = const Uuid();
 
   bool _buildFromIngredients = true;
@@ -41,6 +43,12 @@ class _CustomIngredientScreenState
       _proteinController.text = initial.proteinPer100g.toString();
       _carbsController.text = initial.carbsPer100g.toString();
       _fatController.text = initial.fatPer100g.toString();
+      if (initial.sodiumPer100g != null) {
+        _sodiumController.text = initial.sodiumPer100g.toString();
+      }
+      if (initial.fiberPer100g != null) {
+        _fiberController.text = initial.fiberPer100g.toString();
+      }
     }
   }
 
@@ -52,6 +60,8 @@ class _CustomIngredientScreenState
     _proteinController.dispose();
     _carbsController.dispose();
     _fatController.dispose();
+    _sodiumController.dispose();
+    _fiberController.dispose();
     super.dispose();
   }
 
@@ -227,6 +237,8 @@ class _CustomIngredientScreenState
             _buildManualField(_proteinController, 'Protein per 100g (g)'),
             _buildManualField(_carbsController, 'Carbs per 100g (g)'),
             _buildManualField(_fatController, 'Fat per 100g (g)'),
+            _buildManualField(_sodiumController, 'Sodium per 100g (mg)'),
+            _buildManualField(_fiberController, 'Fiber per 100g (g)'),
           ],
         ],
       ),
@@ -392,6 +404,11 @@ class _CustomIngredientScreenState
         components: _components,
       );
     } else {
+      double? parseOptional(TextEditingController c) {
+        final v = double.tryParse(c.text.replaceAll(',', '.'));
+        return v != null && v > 0 ? v : null;
+      }
+
       ingredient = Ingredient(
         id: widget.initialIngredient?.id ?? _uuid.v7(),
         name: name,
@@ -399,6 +416,8 @@ class _CustomIngredientScreenState
         proteinPer100g: per100g.protein,
         carbsPer100g: per100g.carbs,
         fatPer100g: per100g.fat,
+        sodiumPer100g: parseOptional(_sodiumController),
+        fiberPer100g: parseOptional(_fiberController),
       );
     }
 

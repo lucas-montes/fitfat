@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/seance_foreground_service.dart';
 import '../../models/exercise.dart';
 import '../providers/seance.dart';
+import '../services/workout_services.dart';
 
 class CurrentSeanceScreen extends ConsumerStatefulWidget {
   const CurrentSeanceScreen({super.key});
@@ -17,6 +20,9 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
   int? _selectedExerciseIndex;
   late PageController _pageController;
   final _exerciseSearchController = TextEditingController();
+  final _selectedCategories = <String>{};
+  final _prService = ProgressionService();
+  bool _notificationSynced = false;
 
   @override
   void initState() {
@@ -36,6 +42,13 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
       _selectedExerciseIndex = index;
       _pageController = PageController(initialPage: index);
     });
+    // Update foreground notification with current exercise
+    final seance = ref.read(activeSeanceProvider);
+    if (seance != null && index < seance.exercises.length) {
+      SeanceForegroundService.instance.updateExerciseName(
+        seance.exercises[index].exercise.name,
+      );
+    }
   }
 
   void _backToList() {
@@ -46,9 +59,9 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Discard empty seance?'),
+        title: const Text('Discard empty workout?'),
         content: const Text(
-          'This seance has no exercises and will not be saved to history.',
+          'This workout has no exercises and will not be saved to history.',
         ),
         actions: [
           TextButton(
@@ -71,7 +84,23 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
     final seance = ref.watch(activeSeanceProvider);
 
     if (seance == null) {
-      return const Scaffold(body: Center(child: Text('No active seance')));
+      return const Scaffold(body: Center(child: Text('No active workout')));
+    }
+
+    // Ensure foreground notification has localized title and initial exercise
+    if (!_notificationSynced) {
+      _notificationSynced = true;
+      final notifTitle = AppLocalizations.of(context).activeWorkout;
+      final initialExercise = seance.exercises.isNotEmpty
+          ? seance.exercises[0].exercise.name
+          : null;
+      // Update the foreground service with localized title
+      SeanceForegroundService.instance.start(
+        seance.startedAt,
+        seanceName: seance.name,
+        exerciseName: initialExercise,
+        notificationTitle: notifTitle,
+      );
     }
 
     final guided = seance.isGuided;
@@ -81,7 +110,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
         title: Text(
           _selectedExerciseIndex != null
               ? seance.exercises[_selectedExerciseIndex!].exercise.name
-              : seance.name ?? 'Active Seance',
+              : seance.name ?? 'Active Workout',
         ),
         elevation: 0,
         leading: _selectedExerciseIndex != null
@@ -102,25 +131,13 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               ),
         automaticallyImplyLeading: true,
         actions: [
-          // Mode badge
+          // Mode icon indicator (icon-only, no text)
           Padding(
-            padding: const EdgeInsets.all(8),
-            child: Chip(
-              avatar: Icon(
-                guided ? Icons.list_alt : Icons.playlist_add,
-                size: 16,
-                color: Colors.white,
-              ),
-              label: Text(
-                guided ? 'Guided' : 'Free-form',
-                style: const TextStyle(fontSize: 11, color: Colors.white),
-              ),
-              backgroundColor: guided
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.secondary,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.only(right: 4),
+            child: Icon(
+              guided ? Icons.list_alt : Icons.playlist_add,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           Padding(
@@ -129,7 +146,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.stop),
-            tooltip: 'Cancel seance',
+            tooltip: 'Cancel workout',
             onPressed: () {
               ref.read(activeSeanceProvider.notifier).cancelSeance();
               context.go('/exercise');
@@ -145,16 +162,60 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
 
   Widget _buildExerciseListView(Seance seance, bool guided) {
     final exercises = ref.watch(exerciseListProvider);
+    final seances = ref.watch(seanceHistoryProvider);
     final query = _exerciseSearchController.text.trim().toLowerCase();
+    final allCategories = exercises.map((e) => e.category).toSet().toList()
+      ..sort();
+
     final addedNames = seance.exercises
         .map((e) => e.exercise.name.toLowerCase())
         .toSet();
-    final filtered = query.isEmpty
-        ? <ExerciseDefinition>[]
-        : exercises.where((e) {
-            final matches = e.name.toLowerCase().contains(query);
-            return matches && !addedNames.contains(e.name.toLowerCase());
-          }).toList();
+
+    // Compute recently used exercises from history
+    final recentlyUsedOrder = <String>[];
+    for (final s in seances.reversed) {
+      for (final entry in s.exercises) {
+        final name = entry.exercise.name.toLowerCase();
+        if (!recentlyUsedOrder.contains(name)) {
+          recentlyUsedOrder.add(name);
+          if (recentlyUsedOrder.length >= 5) break;
+        }
+      }
+      if (recentlyUsedOrder.length >= 5) break;
+    }
+    final recentlyUsed =
+        exercises
+            .where(
+              (e) =>
+                  recentlyUsedOrder.contains(e.name.toLowerCase()) &&
+                  !addedNames.contains(e.name.toLowerCase()),
+            )
+            .toList()
+          ..sort(
+            (a, b) => recentlyUsedOrder
+                .indexOf(a.name.toLowerCase())
+                .compareTo(recentlyUsedOrder.indexOf(b.name.toLowerCase())),
+          );
+
+    final filtered = exercises.where((e) {
+      if (!addedNames.contains(e.name.toLowerCase())) {
+        if (query.isNotEmpty && !e.name.toLowerCase().contains(query)) {
+          return false;
+        }
+        if (_selectedCategories.isNotEmpty &&
+            !_selectedCategories.contains(e.category)) {
+          return false;
+        }
+        return true;
+      }
+      return false;
+    }).toList();
+
+    // Group filtered by category
+    final grouped = <String, List<ExerciseDefinition>>{};
+    for (final e in filtered) {
+      grouped.putIfAbsent(e.category, () => []).add(e);
+    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -235,10 +296,52 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 8),
-        if (filtered.isNotEmpty)
-          ...filtered.map((exercise) {
+        // Category filter chips
+        if (allCategories.isNotEmpty)
+          SizedBox(
+            height: 40,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: allCategories.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                final cat = allCategories[i];
+                final selected = _selectedCategories.contains(cat);
+                return FilterChip(
+                  label: Text(cat, style: const TextStyle(fontSize: 12)),
+                  selected: selected,
+                  onSelected: (isSelected) {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedCategories.add(cat);
+                      } else {
+                        _selectedCategories.remove(cat);
+                      }
+                    });
+                  },
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              },
+            ),
+          ),
+        const SizedBox(height: 8),
+        // Recently used section (when search is empty)
+        if (query.isEmpty &&
+            _selectedCategories.isEmpty &&
+            recentlyUsed.isNotEmpty) ...[
+          Text(
+            'Recently used',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ...recentlyUsed.map((exercise) {
             return Card(
               child: ListTile(
+                leading: const Icon(Icons.history, size: 20),
                 title: Text(exercise.name),
                 subtitle: Text(exercise.category),
                 trailing: const Icon(Icons.add_circle),
@@ -247,16 +350,67 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                     .addExercise(exercise),
               ),
             );
+          }),
+          const SizedBox(height: 8),
+        ],
+        // Filtered results grouped by category
+        if (filtered.isNotEmpty)
+          ...grouped.entries.map((entry) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (query.isNotEmpty || _selectedCategories.isNotEmpty) ...[
+                  Text(
+                    entry.key,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+                ...entry.value.map((exercise) {
+                  return Card(
+                    child: ListTile(
+                      title: Text(exercise.name),
+                      subtitle: Text(exercise.category),
+                      trailing: const Icon(Icons.add_circle),
+                      onTap: () => ref
+                          .read(activeSeanceProvider.notifier)
+                          .addExercise(exercise),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 8),
+              ],
+            );
           })
-        else if (query.isNotEmpty)
+        else if (query.isNotEmpty || _selectedCategories.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
-              child: Text(
-                'No exercises found matching "$query"',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.search_off,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No exercises found',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Try a different search or clear filters',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -265,7 +419,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
           width: double.infinity,
           child: FilledButton.icon(
             icon: const Icon(Icons.check),
-            label: const Text('Complete Seance'),
+            label: const Text('Complete Workout'),
             onPressed: () async {
               if (seance.exercises.isEmpty) {
                 final discard = await _confirmDiscardEmptySeance();
@@ -274,7 +428,12 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
 
               ref.read(activeSeanceProvider.notifier).completeSeance();
               if (context.mounted) {
-                context.go('/exercise');
+                // Show summary before returning to exercise
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SeanceSummaryScreen(seance: seance),
+                  ),
+                );
               }
             },
           ),
@@ -289,6 +448,33 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
       onPageChanged: (index) => setState(() => _selectedExerciseIndex = index),
       itemBuilder: (context, index) {
         final entry = seance.exercises[index];
+        // Compute PRs by comparing current sets to historical best
+        final history = ref.watch(seanceHistoryProvider);
+        final historicalSets = history
+            .where(
+              (s) =>
+                  s.id != seance.id &&
+                  s.exercises.any(
+                    (e) => e.exercise.name == entry.exercise.name,
+                  ),
+            )
+            .expand(
+              (s) => s.exercises
+                  .firstWhere((e) => e.exercise.name == entry.exercise.name)
+                  .sets,
+            )
+            .toList();
+        final prService = _prService;
+        final bestHistorical = prService.findBestSet(historicalSets);
+        final bestVolume = bestHistorical != null
+            ? bestHistorical.reps * bestHistorical.weight
+            : 0.0;
+        final currentBest = prService.findBestSet(entry.sets);
+        final currentBestVolume = currentBest != null
+            ? currentBest.reps * currentBest.weight
+            : 0.0;
+        // A set is a PR if it beats the best historical set
+        final isPr = currentBest != null && currentBestVolume > bestVolume;
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -313,28 +499,78 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                     ),
                 ],
               ),
+              const SizedBox(height: 4),
+              // Compact summary row
+              if (entry.sets.isNotEmpty)
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      '${entry.totalReps} reps',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    Text(
+                      '${entry.totalWeight.toStringAsFixed(1)} kg',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    if (isPr &&
+                        currentBest != null &&
+                        currentBestVolume > bestVolume &&
+                        bestVolume > 0)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.emoji_events,
+                            size: 14,
+                            color: Colors.amber,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'PR!',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Colors.amber,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                    if (currentBest != null)
+                      Text(
+                        'e1RM: ${_prService.epleyOneRM(currentBest.weight, currentBest.reps)?.toStringAsFixed(1) ?? '-'} kg',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    if (entry.sets.every((s) => s.isCompleted) && guided)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'Done!',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               const SizedBox(height: 12),
-              ...List.generate(entry.sets.length, (i) {
-                final set = entry.sets[i];
-                if (guided) {
-                  return _GuidedSetCard(
-                    set: set,
-                    index: i,
-                    onTap: () {
-                      ref
-                          .read(activeSeanceProvider.notifier)
-                          .toggleSetCompleted(index, i);
-                    },
-                    onLongPress: () => _editSetDialog(index, i, set),
-                  );
-                } else {
-                  return _FreeformSetCard(set: set, index: i);
-                }
-              }),
-              const SizedBox(height: 24),
+              // Add Set form at the top (free-form only)
               if (!guided) ...[
-                Text('Add Set', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 AddSetForm(
                   initialReps: entry.sets.isNotEmpty
                       ? entry.sets.last.reps
@@ -346,55 +582,43 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                       .read(activeSeanceProvider.notifier)
                       .addSet(index, reps, weight),
                 ),
+                const SizedBox(height: 16),
               ],
-              const SizedBox(height: 24),
-              if (entry.sets.isNotEmpty)
-                Card(
-                  color: (guided ? Colors.green : Colors.blue).withAlpha(26),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Summary',
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Total Reps: ${entry.totalReps}'),
-                        Text(
-                          'Total Weight: ${entry.totalWeight.toStringAsFixed(1)}kg',
-                        ),
-                        if (entry.sets.every((s) => s.isCompleted) && guided)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  'All sets complete!',
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
+              ...List.generate(entry.sets.length, (i) {
+                final set = entry.sets[i];
+                final currentVol = set.reps * set.weight;
+                final setPr =
+                    currentVol >= bestVolume &&
+                    bestVolume > 0 &&
+                    currentVol > 0;
+                if (guided) {
+                  return _GuidedSetCard(
+                    set: set,
+                    index: i,
+                    isPr: setPr,
+                    onTap: () {
+                      ref
+                          .read(activeSeanceProvider.notifier)
+                          .toggleSetCompleted(index, i);
+                    },
+                    onLongPress: () => _editSetDialog(index, i, set),
+                  );
+                } else {
+                  return _FreeformSetCard(
+                    set: set,
+                    index: i,
+                    isPr: setPr,
+                    onLongPress: () => _editSetDialog(index, i, set),
+                  );
+                }
+              }),
               // Rest timer appears after completing a set in guided mode
               if (guided &&
                   entry.sets.any((s) => s.isCompleted) &&
                   !entry.sets.every((s) => s.isCompleted))
                 _RestTimerOverlay(seance: seance),
+              // Previous sessions history panel
+              _PreviousSessionsPanel(exerciseName: entry.exercise.name),
             ],
           ),
         );
@@ -477,6 +701,80 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
   }
 }
 
+// ── Previous sessions history panel ──
+
+class _PreviousSessionsPanel extends ConsumerWidget {
+  const _PreviousSessionsPanel({required this.exerciseName});
+
+  final String exerciseName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(seanceHistoryProvider);
+    final relatedSeances = history
+        .where(
+          (s) =>
+              s.completedAt != null &&
+              s.exercises.any((e) => e.exercise.name == exerciseName),
+        )
+        .take(5)
+        .toList();
+
+    if (relatedSeances.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: ExpansionTile(
+        title: Text(
+          'Previous sessions (${relatedSeances.length})',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        subtitle: const Text('Tap to expand'),
+        initiallyExpanded: false,
+        children: relatedSeances.map((s) {
+          final entry = s.exercises.firstWhere(
+            (e) => e.exercise.name == exerciseName,
+          );
+          final dateStr =
+              '${s.completedAt!.day.toString().padLeft(2, '0')}/'
+              '${s.completedAt!.month.toString().padLeft(2, '0')}';
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+            child: Card(
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      dateStr,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    ...entry.sets.map(
+                      (set) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 1),
+                        child: Text(
+                          '${set.reps} reps × ${set.weight.toStringAsFixed(1)}kg',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 // ── Guided mode set card with swipe-to-complete ──
 
 class _GuidedSetCard extends StatelessWidget {
@@ -485,12 +783,14 @@ class _GuidedSetCard extends StatelessWidget {
     required this.index,
     required this.onTap,
     required this.onLongPress,
+    this.isPr = false,
   });
 
   final ExerciseSet set;
   final int index;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final bool isPr;
 
   @override
   Widget build(BuildContext context) {
@@ -556,6 +856,15 @@ class _GuidedSetCard extends StatelessWidget {
                   'Tap to complete',
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
+              if (isPr)
+                const Padding(
+                  padding: EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.emoji_events,
+                    size: 16,
+                    color: Colors.amber,
+                  ),
+                ),
             ],
           ),
         ),
@@ -589,37 +898,63 @@ class _GuidedSetCard extends StatelessWidget {
 // ── Free-form mode set card ──
 
 class _FreeformSetCard extends StatelessWidget {
-  const _FreeformSetCard({required this.set, required this.index});
+  const _FreeformSetCard({
+    required this.set,
+    required this.index,
+    required this.onLongPress,
+    this.isPr = false,
+  });
 
   final ExerciseSet set;
   final int index;
+  final VoidCallback onLongPress;
+  final bool isPr;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Set ${index + 1}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${set.reps} reps × ${set.weight.toStringAsFixed(1)}kg',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onLongPress: onLongPress,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Set ${index + 1}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${set.reps} reps × ${set.weight.toStringAsFixed(1)}kg',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              Text(
+                set.completedAt != null
+                    ? DateFormat('HH:mm').format(set.completedAt!)
+                    : '—',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              if (isPr)
+                const Padding(
+                  padding: EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.emoji_events,
+                    size: 16,
+                    color: Colors.amber,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -660,12 +995,17 @@ class _TimerWidgetState extends ConsumerState<TimerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final minutes = _elapsed.inMinutes;
+    final totalMinutes = _elapsed.inMinutes;
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
     final seconds = _elapsed.inSeconds % 60;
+    final timeText = hours > 0
+        ? '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
+        : '$minutes:${seconds.toString().padLeft(2, '0')}';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Text(
-        '$minutes:${seconds.toString().padLeft(2, '0')}',
+        timeText,
         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
           fontSize: 18,
           fontWeight: FontWeight.bold,
@@ -850,6 +1190,187 @@ class _RestTimerOverlayState extends ConsumerState<_RestTimerOverlay> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Seance Summary Screen (EX07) ──
+
+class SeanceSummaryScreen extends StatelessWidget {
+  const SeanceSummaryScreen({required this.seance, super.key});
+
+  final Seance seance;
+
+  @override
+  Widget build(BuildContext context) {
+    final duration = seance.duration;
+    final totalVolume = seance.exercises.fold<double>(
+      0,
+      (sum, entry) =>
+          sum +
+          entry.sets.fold<double>(0, (s, set) => s + (set.reps * set.weight)),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Workout Summary'),
+        automaticallyImplyLeading: false,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Seance name & duration
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    seance.name ?? 'Untitled Workout',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Duration',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                          Text(
+                            '${duration.inHours}h ${(duration.inMinutes % 60)}m',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Volume',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                          Text(
+                            '${totalVolume.toStringAsFixed(0)} kg',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Exercises',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                          Text(
+                            '${seance.exercises.length}',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Per-exercise breakdown
+          Text(
+            'Exercise Breakdown',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          ...seance.exercises.map((entry) {
+            final totalSets = entry.sets.length;
+            final completedSets = entry.sets.where((s) => s.isCompleted).length;
+            final exVolume = entry.sets.fold<double>(
+              0,
+              (s, set) => s + (set.reps * set.weight),
+            );
+            final bestSet = entry.sets.isEmpty
+                ? null
+                : entry.sets.reduce(
+                    (a, b) => (a.weight * a.reps) > (b.weight * b.reps) ? a : b,
+                  );
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          entry.exercise.name,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        if (bestSet != null &&
+                            (bestSet.weight * bestSet.reps) > 0)
+                          Chip(
+                            label: const Text('Best'),
+                            avatar: const Icon(Icons.emoji_events, size: 16),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$completedSets/$totalSets sets | ${exVolume.toStringAsFixed(0)} kg volume',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (bestSet != null)
+                      Text(
+                        'Best: ${bestSet.reps}x${bestSet.weight.toStringAsFixed(1)}kg',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 24),
+          // Finish button
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.check_circle),
+              label: const Text('Finish'),
+              onPressed: () {
+                Navigator.of(context).popUntil(
+                  (route) =>
+                      route.isFirst || route.settings.name == '/exercise',
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }

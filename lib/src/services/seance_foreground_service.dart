@@ -7,6 +7,8 @@ const int _seanceServiceId = 256;
 const String _seanceStartedAtKey = 'seance_started_at_millis';
 const String _lastSetAtKey = 'last_set_completed_at_millis';
 const String _seanceNameKey = 'seance_name';
+const String _currentExerciseNameKey = 'current_exercise_name';
+const String _notificationTitleKey = 'notification_title';
 
 @pragma('vm:entry-point')
 void seanceTaskCallback() {
@@ -25,8 +27,8 @@ class SeanceForegroundService {
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: 'seance_channel',
-        channelName: 'Seance',
-        channelDescription: 'Running seance timer',
+        channelName: 'Workout',
+        channelDescription: 'Running workout timer',
         onlyAlertOnce: true,
       ),
       iosNotificationOptions: const IOSNotificationOptions(
@@ -44,7 +46,12 @@ class SeanceForegroundService {
     _initialized = true;
   }
 
-  Future<void> start(DateTime startedAt, {String? seanceName}) async {
+  Future<void> start(
+    DateTime startedAt, {
+    String? seanceName,
+    String? exerciseName,
+    String? notificationTitle,
+  }) async {
     await init();
     await FlutterForegroundTask.saveData(
       key: _seanceStartedAtKey,
@@ -56,7 +63,19 @@ class SeanceForegroundService {
         value: seanceName,
       );
     }
-    final title = seanceName ?? _formatDate(startedAt);
+    if (exerciseName != null) {
+      await FlutterForegroundTask.saveData(
+        key: _currentExerciseNameKey,
+        value: exerciseName,
+      );
+    }
+    final title = notificationTitle ?? _formatDate(startedAt);
+    if (notificationTitle != null) {
+      await FlutterForegroundTask.saveData(
+        key: _notificationTitleKey,
+        value: notificationTitle,
+      );
+    }
     await FlutterForegroundTask.startService(
       serviceId: _seanceServiceId,
       notificationTitle: title,
@@ -77,6 +96,13 @@ class SeanceForegroundService {
     await FlutterForegroundTask.saveData(
       key: _lastSetAtKey,
       value: DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+
+  Future<void> updateExerciseName(String exerciseName) async {
+    await FlutterForegroundTask.saveData(
+      key: _currentExerciseNameKey,
+      value: exerciseName,
     );
   }
 
@@ -113,6 +139,8 @@ class SeanceTaskHandler extends TaskHandler {
   DateTime? _startedAt;
   DateTime? _lastSetAt;
   String? _seanceName;
+  String? _currentExerciseName;
+  String? _notificationTitle;
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -130,19 +158,35 @@ class SeanceTaskHandler extends TaskHandler {
     }
     _seanceName =
         await FlutterForegroundTask.getData(key: _seanceNameKey) as String?;
+    _currentExerciseName =
+        await FlutterForegroundTask.getData(key: _currentExerciseNameKey)
+            as String?;
+    _notificationTitle =
+        await FlutterForegroundTask.getData(key: _notificationTitleKey)
+            as String?;
   }
 
   @override
   void onRepeatEvent(DateTime timestamp) {
     final startedAt = _startedAt;
     if (startedAt == null) return;
-    // Re-read last set time from SharedPreferences each tick so new values
-    // from the foreground (lastSetCompleted) are picked up immediately.
+    // Re-read last set time, exercise name, and title from storage each tick
+    // so new values from the foreground are picked up immediately.
     _lastSetAt = null; // reset, will be re-read below
     // ignore: discarded_futures
-    FlutterForegroundTask.getData(key: _lastSetAtKey).then((value) {
-      if (value is int) {
-        _lastSetAt = DateTime.fromMillisecondsSinceEpoch(value);
+    Future.wait([
+      FlutterForegroundTask.getData(key: _lastSetAtKey),
+      FlutterForegroundTask.getData(key: _currentExerciseNameKey),
+      FlutterForegroundTask.getData(key: _notificationTitleKey),
+    ]).then((values) {
+      if (values[0] is int) {
+        _lastSetAt = DateTime.fromMillisecondsSinceEpoch(values[0] as int);
+      }
+      if (values[1] is String) {
+        _currentExerciseName = values[1] as String?;
+      }
+      if (values[2] is String) {
+        _notificationTitle = values[2] as String?;
       }
       _buildNotification(timestamp, startedAt);
     });
@@ -151,16 +195,32 @@ class SeanceTaskHandler extends TaskHandler {
   void _buildNotification(DateTime timestamp, DateTime startedAt) {
     final elapsed = timestamp.difference(startedAt);
     final elapsedStr = _formatElapsed(elapsed);
-    final title = _seanceName ?? _formatDate(startedAt);
+    final title = _notificationTitle ?? _formatDate(startedAt);
 
+    // Build body: [Exercise name] — [Seance name] or just elapsed time
     String text;
+    final exercise = _currentExerciseName;
+    final seance = _seanceName;
+
+    String exerciseSeanceInfo = '';
+    if (exercise != null && seance != null) {
+      exerciseSeanceInfo = '$exercise — $seance\n';
+    } else if (exercise != null) {
+      exerciseSeanceInfo = '$exercise\n';
+    } else if (seance != null) {
+      exerciseSeanceInfo = '$seance\n';
+    }
+
     final lastSet = _lastSetAt;
+    String elapsedRest = '';
     if (lastSet != null) {
       final restStr = _formatElapsed(timestamp.difference(lastSet));
-      text = 'Elapsed: $elapsedStr\nRest: $restStr';
+      elapsedRest = 'Elapsed: $elapsedStr\nRest: $restStr';
     } else {
-      text = 'Elapsed: $elapsedStr';
+      elapsedRest = 'Elapsed: $elapsedStr';
     }
+
+    text = '$exerciseSeanceInfo$elapsedRest';
 
     FlutterForegroundTask.updateService(
       notificationTitle: title,

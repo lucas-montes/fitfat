@@ -13,7 +13,7 @@
 - **System item / bundled ingredient**: a pre-seeded ingredient shipped with the app (e.g., basic foods in `_seedIngredients()`). Identifiable by having a `null` creatorId. A future shared/common database concept extends this.
 - **`creatorId`**: a nullable string field on `Ingredient` that records who created the ingredient. `null` indicates a system/bundled ingredient; a local installation UUID indicates a user-created ingredient.
 - **`isArchived` flag**: a boolean field on `Ingredient` (default `false`). When `true`, the ingredient is hidden from normal ingredient pickers but remains available in archived view and historical meal data. Used as a soft-delete mechanism.
-- `Seance`: an active or completed workout session.
+- `Seance`: an active or completed workout session. User-facing labels use "workout" (not "seance"). Internal class/variable names retain `Seance` for backward compatibility.
 - `ExerciseEntry`: one exercise inside a seance, with one or more sets.
 - `ExerciseSet`: a reps/weight pair that can be marked completed.
 - `ExerciseDefinition`: reusable exercise catalog item.
