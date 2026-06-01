@@ -1,0 +1,418 @@
+{
+  "@@locale": "en",
+  "appTitle": "fitfat",
+
+  "mealsTab": "Meals",
+  "ingredientsTab": "Ingredients",
+  "addMeal": "Add Meal",
+  "addIngredient": "Add Ingredient",
+  "editIngredient": "Edit Ingredient",
+  "editMeal": "Edit Meal",
+  "archivedIngredients": "Archived Ingredients",
+
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "archive": "Archive",
+  "restore": "Restore",
+  "add": "Add",
+  "change": "Change",
+  "clear": "Clear",
+
+  "ingredientName": "Ingredient name",
+  "buildFromIngredients": "Build from ingredients",
+  "components": "Components",
+  "noComponentsAdded": "No components added yet",
+  "addComponents": "Add ingredients",
+  "searchIngredients": "Search ingredients",
+  "typeToSearchIngredient": "Type to search ingredients",
+  "caloriesPer100g": "Calories per 100g",
+  "proteinPer100g": "Protein per 100g (g)",
+  "carbsPer100g": "Carbs per 100g (g)",
+  "fatPer100g": "Fat per 100g (g)",
+  "sodiumPer100g": "Sodium per 100g (mg)",
+  "fiberPer100g": "Fiber per 100g (g)",
+  "amountInGrams": "Amount in grams",
+  "gramsHint": "e.g. 80",
+  "gramsHintMeal": "e.g. 120",
+  "createNewIngredient": "Create new ingredient",
+
+  "mealNameOptional": "Meal name (optional)",
+  "selectedIngredients": "Selected ingredients",
+  "noIngredientsSelected": "No ingredients selected yet",
+  "noIngredientsFound": "No ingredients found",
+
+  "archiveIngredientTitle": "Archive Ingredient",
+  "archiveIngredientContent": "This ingredient will be hidden from regular views. Use the Archived Ingredients tab to restore or delete it.",
+  "deleteMealTitle": "Delete meal?",
+  "deleteMealContent": "This will remove the meal from your log.",
+  "deleteIngredientTitle": "Delete ingredient?",
+  "deleteIngredientContent": "This will remove the ingredient and any portions from meals.",
+  "permanentlyDeleteTitle": "Permanently Delete Ingredient",
+  "permanentlyDeleteContent": "This ingredient will be deleted permanently. It cannot be restored.",
+  "restoreIngredientTitle": "Restore Ingredient",
+
+  "deleteMealTooltip": "Delete meal",
+  "deleteIngredientTooltip": "Delete",
+
+  "ingredientArchived": "Ingredient archived successfully",
+  "ingredientDeleted": "Ingredient deleted successfully",
+  "ingredientRestored": "Ingredient restored successfully",
+
+  "meal": "Meal",
+  "sortAZ": "Sort A-Z",
+  "sortZA": "Sort Z-A",
+  "noIngredientsFoundSubtext": "Try a different search or add a new ingredient",
+
+  "kcalAbbrev": "kcal",
+  "proteinAbbrev": "P",
+  "carbsAbbrev": "C",
+  "fatAbbrev": "F",
+
+  "eatenAtLabel": "Eaten at: {time}",
+  "@eatenAtLabel": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+
+  "failedToSave": "Failed to save meal: {error}",
+  "@failedToSave": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "failedToUpdate": "Failed to update meal: {error}",
+  "@failedToUpdate": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "items": "{count,plural, one{{count} item} other{{count} items}}",
+  "@items": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+
+  "formatMacros": "{kcal} kcal · P {protein}g · C {carbs}g · F {fat}g",
+  "@formatMacros": {
+    "placeholders": {
+      "kcal": {},
+      "protein": {},
+      "carbs": {},
+      "fat": {}
+    }
+  },
+  "formatPer100g": "Per 100g: {kcal} kcal · P {protein}g · C {carbs}g · F {fat}g",
+  "@formatPer100g": {
+    "placeholders": {
+      "kcal": {},
+      "protein": {},
+      "carbs": {},
+      "fat": {}
+    }
+  },
+  "formatTotal": "Total: {total}",
+  "@formatTotal": {
+    "placeholders": {
+      "total": {}
+    }
+  },
+
+  "exercises": "Exercises",
+  "exercise": "Exercise",
+  "activeWorkout": "Active Workout",
+  "activeSeance": "Active Workout",
+  "noActiveSeance": "No active workout",
+  "guidedMode": "Guided",
+  "freeformMode": "Free-form",
+  "cancelSeance": "Cancel workout",
+  "backToApp": "Back to app",
+  "discardEmptySeance": "Discard empty workout?",
+  "discardEmptySeanceContent": "This workout has no exercises and will not be saved to history.",
+  "keepEditing": "Keep editing",
+  "discard": "Discard",
+  "completeSeance": "Complete Workout",
+  "addExercise": "Add Exercise",
+  "followPlan": "Follow the plan",
+  "searchToAdd": "Search to add",
+  "searchExercises": "Search exercises",
+  "exerciseTypeToSearch": "Type to search exercises...",
+  "typeToFindExercises": "Type to find exercises...",
+
+  "sets": "Sets",
+  "set": "Set",
+  "setsLower": "sets",
+  "done": "done",
+  "summary": "Summary",
+  "totalReps": "Total Reps",
+  "totalWeight": "Total Weight",
+  "addSet": "Add Set",
+  "tapToComplete": "Tap to complete",
+  "noExercisesFound": "No exercises found matching",
+  "repsLower": "reps",
+  "preFilledFrom": "Pre-filled from",
+  "allSetsComplete": "All sets complete!",
+  "restTimer": "Rest Timer",
+  "skip": "Skip",
+  "restOver": "Rest over!",
+  "getReadyNextSet": "Get ready for your next set!",
+  "editSet": "Edit Set",
+  "weightKg": "Weight (kg)",
+
+  "history": "History",
+  "records": "Records",
+  "noHistory": "No history yet",
+  "sessions": "Sessions",
+  "volume": "Volume",
+  "time": "Time",
+  "searchHistory": "Search history",
+  "searchByDateHint": "Search by date or workout name...",
+  "volumeProgression": "Volume Progression",
+  "estimated1RM": "Estimated 1RM Progression",
+  "bestEstimated1RM": "Best Estimated 1RM",
+  "maxWeight": "Max Weight",
+  "maxVolume": "Max Volume (Set)",
+  "totalVolume": "Total Volume",
+  "noHistoryContent": "Complete a workout with this exercise to see it here",
+
+  "library": "Library",
+  "createExercise": "Create Exercise",
+  "exerciseName": "Exercise name",
+  "category": "Category",
+  "templates": "Templates",
+  "createTemplate": "Create Template",
+
+  "exercisesCount": "{count,plural, one{{count} exercise} other{{count} exercises}}",
+  "@exercisesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "setsCount": "{count,plural, one{{count} set} other{{count} sets}}",
+  "@setsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+
+  "workoutsTab": "Workouts",
+  "statsTab": "Stats",
+  "searchExercisesHint": "Search exercises...",
+  "noExercisesFoundSimple": "No exercises found",
+  "noExercisesFoundAction": "Try a different search or clear filters",
+
+  "runningWorkout": "Running Seance",
+  "unnamedWorkout": "Unnamed workout",
+  "viewWorkout": "View",
+  "stopWorkout": "Stop",
+  "newSeance": "New Seance",
+  "startBlankSeance": "Start Blank Seance",
+  "create": "Create",
+  "noTemplatesYet": "No templates yet. Create one to quickly start a workout!",
+  "browseAllTemplates": "Browse all templates",
+  "noWorkoutsYet": "No workouts yet. Start your first one above!",
+
+  "allTime": "All Time",
+  "workouts": "Workouts",
+  "duration": "Duration",
+  "thisWeek": "This Week",
+  "activity": "Activity",
+  "trends": "Trends",
+
+  "edit": "Edit",
+  "clone": "Clone",
+  "start": "Start",
+  "createTemplateFrom": "Create template from this",
+
+  "workoutAlreadyRunning": "Workout already running",
+  "workoutAlreadyRunningContent": "A workout is already in progress. Cancel it and start a new one?",
+  "startNewWorkout": "Start new workout",
+  "workout": "Workout",
+  "noExercises": "No exercises",
+
+  "pr": "PR!",
+  "oneRM": "e1RM",
+  "workoutSummary": "Workout Summary",
+  "untitledWorkout": "Untitled Workout",
+  "exerciseBreakdown": "Exercise Breakdown",
+  "best": "Best",
+  "finish": "Finish",
+  "previousSessions": "Previous sessions ({count})",
+  "@previousSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "tapToExpand": "Tap to expand",
+  "reps": "Reps",
+
+  "templateLibrary": "Template Library",
+  "createFirstTemplate": "Create your first template",
+  "createTemplate": "Create Template",
+  "editTemplate": "Edit Template",
+  "templateNameLabel": "Template name",
+  "addCustom": "Add as custom",
+  "searchAboveHint": "Search an exercise above to add it. Tap an exercise in the list to configure sets and reps.",
+  "noExercisesAdded": "No exercises added yet",
+  "noSetsConfigured": "No sets configured — tap to edit",
+  "remove": "Remove",
+  "restSeconds": "Rest (s)",
+
+  "pastMonth": "Past month",
+  "past3Months": "Past 3 months",
+  "pastYear": "Past year",
+  "noHistoryFor": "No history for {name} yet",
+  "@noHistoryFor": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "completeWorkoutToSee": "Complete a workout with this exercise to see it here",
+  "records": "Records",
+  "volumeProgression": "Volume Progression",
+  "date": "Date",
+  "searchHistory": "Search history",
+  "searchByDateWorkout": "Search by date or workout name...",
+  "sessionsCount": "{count,plural, one{{count} session} other{{count} sessions}}",
+  "time": "Time",
+  "bestEstimated1RM": "Best Estimated 1RM",
+  "maxWeight": "Max Weight",
+  "maxVolumeSet": "Max Volume (Set)",
+  "totalVolume": "Total Volume",
+  "notAvailable": "N/A",
+  "across": "Across",
+
+  "overviewTab": "Overview",
+  "goalsTab": "Goals",
+  "settingsTab": "Settings",
+  "weight": "Weight",
+  "weightLogged": "Weight logged!",
+  "enterWeightKg": "Enter weight (kg)",
+  "log": "Log",
+  "weightTracker": "Weight Tracker",
+  "noWeightEntries": "No weight entries yet.",
+  "latest": "Latest",
+  "logWeight": "Log Weight",
+  "historyLast7Entries": "History (last 7 entries)",
+  "waterIntake": "Water Intake",
+  "goal": "Goal",
+  "setDailyWaterGoal": "Set Daily Water Goal",
+  "litersExample": "Liters (e.g., 2.5)",
+  "todaysActivity": "Today's activity",
+  "workoutInProgress": "Workout in progress",
+  "recentWorkout": "Recent workout",
+  "exercisesCompleted": "exercises completed",
+  "noWorkoutsToday": "No workouts yet. Start a session to see today's summary here.",
+  "elapsed": "elapsed",
+  "last84Days": "Last 84 days",
+  "noTrainingRecorded": "No training recorded on this day.",
+  "today": "Today",
+  "calories": "Calories",
+  "protein": "Protein",
+  "carbs": "Carbs",
+  "fat": "Fat",
+  "setProfileForTargets": "Set a bodyweight goal and your profile to see daily targets.",
+  "bodyWeightGoal": "Body Weight Goal",
+  "noBodyweightGoalSet": "No bodyweight goal set.",
+  "addBodyWeightGoal": "Add Body Weight Goal",
+  "target": "Target",
+  "by": "By",
+  "strengthGoals": "Strength Goals",
+  "addStrengthGoalTooltip": "Add strength goal",
+  "noStrengthGoalsYet": "No strength goals yet. Tap + to add (one per exercise).",
+  "setUpProfileFirst": "Set up your profile first",
+  "createProfile": "Create Profile",
+  "editProfile": "Edit Profile",
+  "yourProfile": "Your Profile",
+  "birthdate": "Birthdate",
+  "sex": "Sex",
+  "heightCm": "Height (cm)",
+  "activityLevel": "Activity Level",
+  "addBodyWeightGoalTitle": "Add Body Weight Goal",
+  "editBodyWeightGoalTitle": "Edit Body Weight Goal",
+  "direction": "Direction",
+  "targetWeightKg": "Target Weight (kg)",
+  "targetDate": "Target date",
+  "notSet": "Not set",
+  "addStrengthGoalTitle": "Add Strength Goal",
+  "editStrengthGoalTitle": "Edit Strength Goal",
+  "exercise": "Exercise",
+  "searchOrTypeCustom": "Search or type custom name",
+  "deleteBodyweightGoal": "Delete bodyweight goal?",
+  "deleteBodyweightGoalContent": "This will clear your weight target and macro targets.",
+  "deleteStrengthGoalTitle": "Delete strength goal for {exercise}?",
+  "@deleteStrengthGoalTitle": {
+    "placeholders": {
+      "exercise": {}
+    }
+  },
+  "deleteStrengthGoalContent": "This will remove the goal.",
+  "deleteEverything": "Delete everything",
+  "goalReached": "Goal reached!",
+  "toGo": "to go",
+  "strengthTrend": "Strength Trend",
+  "noStrengthData": "No strength data",
+  "weightTrend90Days": "Weight Trend (90 days)",
+  "profile": "Profile",
+  "setUpProfile": "Set up Profile",
+  "nutrition": "Nutrition",
+  "visibleMacros": "Visible macros",
+  "defaultRestTimer": "Default rest timer",
+  "secondsBetweenSets": "60 seconds between sets",
+  "restTimerComingSoon": "Rest timer settings coming soon",
+  "appearance": "Appearance",
+  "theme": "Theme",
+  "systemDefault": "System default",
+  "themeComingSoon": "Theme settings coming soon",
+  "data": "Data",
+  "exportDatabase": "Export database",
+  "shareDbFile": "Share the SQLite database file",
+  "deleteAllData": "Delete all data",
+  "removeEverything": "Remove everything and restart fresh",
+  "noDbFound": "No database file found",
+  "deleteAllDataTitle": "Delete all data?",
+  "deleteAllDataContent": "This will remove all your data including meals, exercises, workouts, goals, and profile. A fresh database will be created on next launch.",
+  "dbDeleted": "Database deleted. Restart the app to recreate it.",
+  "thisMonth": "This month",
+
+  "couldNotLoadWeightHistory": "Could not load weight history.",
+  "trainingHeatmap": "Training heatmap",
+  "heatmapLegendLow": "Low",
+  "heatmapLegendMid": "Mid",
+  "heatmapLegendHigh": "High",
+  "benchPress": "Bench Press",
+  "deadlift": "Deadlift",
+  "squat": "Squat",
+  "enterDetailsForMacros": "Enter your details for macro calculations",
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deleteFailed": "Delete failed: {error}",
+  "@deleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "navDiet": "Diet",
+  "navDashboard": "Dashboard",
+  "navExercise": "Exercise"
+}

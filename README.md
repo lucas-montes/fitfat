@@ -25,3 +25,7 @@ flowchart TD
   REP --> IMPL[DriftMealRepository adapter]
   IMPL --> DB
 ```
+
+for the ingredients database.
+we should have more info per ingredient/product so we can identify by country, region, supermarket, etc.
+this way we could let the user download a specific subset of products

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:fitfat/l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/seance.dart';
 import '../providers/seance.dart';
@@ -75,6 +76,7 @@ class _CreateSeanceScreenState extends ConsumerState<CreateSeanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final allExercises = ref.watch(exerciseListProvider);
     final query = _searchController.text.trim().toLowerCase();
     final filtered = query.isEmpty
@@ -87,14 +89,14 @@ class _CreateSeanceScreenState extends ConsumerState<CreateSeanceScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.template == null ? 'Create Template' : 'Edit Template',
+          widget.template == null ? l10n.createTemplate : l10n.editTemplate,
         ),
         actions: [
           if (_exercises.isNotEmpty && _nameController.text.trim().isNotEmpty)
             TextButton.icon(
               onPressed: _save,
               icon: const Icon(Icons.check, size: 18),
-              label: const Text('Save'),
+              label: Text(l10n.save),
             ),
         ],
       ),
@@ -105,8 +107,8 @@ class _CreateSeanceScreenState extends ConsumerState<CreateSeanceScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  label: Text('Template name'),
+                decoration: InputDecoration(
+                  label: Text(l10n.templateNameLabel),
                   border: OutlineInputBorder(),
                 ),
                 onChanged: (_) => setState(() {}),
@@ -120,13 +122,13 @@ class _CreateSeanceScreenState extends ConsumerState<CreateSeanceScreen> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  label: const Text('Add exercise'),
-                  hintText: 'Search exercises',
+                  label: Text(l10n.addExercise),
+                  hintText: l10n.searchExercises,
                   border: const OutlineInputBorder(),
                   suffixIcon: query.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.add_circle),
-                          tooltip: 'Add as custom',
+                          tooltip: l10n.addCustom,
                           onPressed: () {
                             _addCustomExercise(query);
                             _searchController.clear();
@@ -140,12 +142,12 @@ class _CreateSeanceScreenState extends ConsumerState<CreateSeanceScreen> {
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 12)),
           if (query.isEmpty)
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Search an exercise above to add it. Tap an exercise in the list to configure sets/reps.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                  l10n.searchAboveHint,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
               ),
             )
@@ -173,7 +175,7 @@ class _CreateSeanceScreenState extends ConsumerState<CreateSeanceScreen> {
           SliverFillRemaining(
             hasScrollBody: true,
             child: _exercises.isEmpty
-                ? const Center(child: Text('No exercises added yet'))
+                ? Center(child: Text(l10n.noExercisesAdded))
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     itemCount: _exercises.length,
@@ -219,15 +221,14 @@ class _ExerciseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: ListTile(
         leading: const Icon(Icons.fitness_center),
         title: Text(exercise.name),
         subtitle: exercise.plannedSets.isEmpty
-            ? const Text('No sets configured — tap to edit')
-            : Text(
-                '${exercise.totalSets} set${exercise.totalSets == 1 ? '' : 's'}',
-              ),
+            ? Text(l10n.noSetsConfigured)
+            : Text(l10n.setsCount(exercise.totalSets)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -332,9 +333,10 @@ class _SetsEditorPageState extends State<_SetsEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Sets (${_rows.length})'),
+        title: Text('${l10n.sets} (${_rows.length})'),
         actions: [
           TextButton(
             onPressed: () {
@@ -349,7 +351,7 @@ class _SetsEditorPageState extends State<_SetsEditorPage> {
                   .toList();
               Navigator.pop(context, planned);
             },
-            child: const Text('Done'),
+            child: Text(l10n.done),
           ),
         ],
       ),
@@ -369,7 +371,7 @@ class _SetsEditorPageState extends State<_SetsEditorPage> {
                     Row(
                       children: [
                         Text(
-                          'Set ${i + 1}',
+                          '${l10n.set} ${i + 1}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -379,7 +381,7 @@ class _SetsEditorPageState extends State<_SetsEditorPage> {
                         if (_rows.length > 1)
                           TextButton.icon(
                             icon: const Icon(Icons.remove_circle_outline),
-                            label: const Text('Remove'),
+                            label: Text(l10n.remove),
                             onPressed: () => _removeSet(i),
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.red,
@@ -397,9 +399,9 @@ class _SetsEditorPageState extends State<_SetsEditorPage> {
                           child: TextField(
                             controller: r.reps,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              label: Text('Reps'),
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              label: Text(l10n.reps),
+                              border: const OutlineInputBorder(),
                             ),
                           ),
                         ),
@@ -408,9 +410,9 @@ class _SetsEditorPageState extends State<_SetsEditorPage> {
                           child: TextField(
                             controller: r.weight,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              label: Text('Weight (kg)'),
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              label: Text(l10n.weightKg),
+                              border: const OutlineInputBorder(),
                             ),
                           ),
                         ),
@@ -419,8 +421,8 @@ class _SetsEditorPageState extends State<_SetsEditorPage> {
                           child: TextField(
                             controller: r.rest,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              label: Text('Rest (s)'),
+                            decoration: InputDecoration(
+                              label: Text(l10n.restSeconds),
                               border: OutlineInputBorder(),
                             ),
                           ),
@@ -435,7 +437,7 @@ class _SetsEditorPageState extends State<_SetsEditorPage> {
           const SizedBox(height: 8),
           OutlinedButton.icon(
             icon: const Icon(Icons.add),
-            label: const Text('Add set'),
+            label: Text(l10n.addSet),
             onPressed: _addSet,
           ),
         ],

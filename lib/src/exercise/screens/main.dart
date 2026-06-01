@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../l10n/app_localizations.dart';
+import 'package:fitfat/l10n/app_localizations.dart';
 import '../../services/seance_foreground_service.dart';
 import '../../dashboard/screens/main.dart' as dashboard;
 import '../../dashboard/providers/dashboard.dart';
@@ -18,17 +18,18 @@ class ExerciseScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 0,
           elevation: 0,
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'Workouts'),
-              Tab(text: 'Exercises'),
-              Tab(text: 'Stats'),
+              Tab(text: l10n.workoutsTab),
+              Tab(text: l10n.exercises),
+              Tab(text: l10n.statsTab),
             ],
           ),
         ),
@@ -60,6 +61,7 @@ class _ExercisesListTabState extends ConsumerState<ExercisesListTab> {
   @override
   Widget build(BuildContext context) {
     final exercises = ref.watch(exerciseListProvider);
+    final l10n = AppLocalizations.of(context)!;
     final query = _searchController.text.trim().toLowerCase();
     final allCategories = exercises.map((e) => e.category).toSet().toList()
       ..sort();
@@ -81,10 +83,10 @@ class _ExercisesListTabState extends ConsumerState<ExercisesListTab> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: TextField(
             controller: _searchController,
-            decoration: const InputDecoration(
-              hintText: 'Search exercises...',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: l10n.searchExercisesHint,
+              prefixIcon: const Icon(Icons.search),
+              border: const OutlineInputBorder(),
               isDense: true,
             ),
             style: const TextStyle(fontSize: 13),
@@ -133,14 +135,14 @@ class _ExercisesListTabState extends ConsumerState<ExercisesListTab> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'No exercises found',
+                        l10n.noExercisesFoundSimple,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Try a different search or clear filters',
+                        l10n.noExercisesFoundAction,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -184,6 +186,7 @@ class SeancesHistoryTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final seances = ref.watch(seanceHistoryProvider);
     final templates = ref.watch(templateListProvider);
+    final l10n = AppLocalizations.of(context)!;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -204,7 +207,7 @@ class SeancesHistoryTab extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Running Seance',
+                        l10n.runningWorkout,
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
                               color: Theme.of(
@@ -216,14 +219,14 @@ class SeancesHistoryTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    running.name ?? 'Unnamed workout',
+                    running.name ?? l10n.unnamedWorkout,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${running.exercises.length} exercise${running.exercises.length == 1 ? '' : 's'}',
+                    l10n.exercisesCount(running.exercises.length),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(
                         context,
@@ -236,7 +239,7 @@ class SeancesHistoryTab extends ConsumerWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.visibility),
-                          label: const Text('View'),
+                          label: Text(l10n.viewWorkout),
                           onPressed: () => context.push('/current-seance'),
                         ),
                       ),
@@ -244,7 +247,7 @@ class SeancesHistoryTab extends ConsumerWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           icon: const Icon(Icons.stop),
-                          label: const Text('Stop'),
+                          label: Text(l10n.stopWorkout),
                           onPressed: () => ref
                               .read(activeSeanceProvider.notifier)
                               .cancelSeance(),
@@ -264,7 +267,7 @@ class SeancesHistoryTab extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'New Seance',
+                    l10n.newSeance,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 12),
@@ -272,7 +275,7 @@ class SeancesHistoryTab extends ConsumerWidget {
                     width: double.infinity,
                     child: FilledButton.icon(
                       icon: const Icon(Icons.play_arrow),
-                      label: const Text('Start Blank Seance'),
+                      label: Text(l10n.startBlankSeance),
                       onPressed: () {
                         ref.read(activeSeanceProvider.notifier).startSeance();
                         context.push('/current-seance');
@@ -287,10 +290,13 @@ class SeancesHistoryTab extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Templates', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n.templates,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             TextButton.icon(
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Create'),
+              label: Text(l10n.create),
               onPressed: () async {
                 await Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const CreateSeanceScreen()),
@@ -319,7 +325,7 @@ class SeancesHistoryTab extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Center(
               child: Text(
-                'No templates yet. Create one to quickly start a workout!',
+                l10n.noTemplatesYet,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -329,7 +335,7 @@ class SeancesHistoryTab extends ConsumerWidget {
         if (templates.isNotEmpty) ...[
           TextButton.icon(
             icon: const Icon(Icons.library_books, size: 18),
-            label: const Text('Browse all templates'),
+            label: Text(l10n.browseAllTemplates),
             onPressed: () async {
               await Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SeanceLibraryScreen()),
@@ -339,14 +345,14 @@ class SeancesHistoryTab extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 16),
-        Text('History', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.history, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         if (seances.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 32),
             child: Center(
               child: Text(
-                'No workouts yet. Start your first one above!',
+                l10n.noWorkoutsYet,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -367,6 +373,7 @@ class StatsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final daySummaries = ref.watch(workoutDaySummariesProvider);
 
     final totalWorkouts = daySummaries.fold<int>(
@@ -394,7 +401,7 @@ class StatsTab extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'All Time',
+                  l10n.allTime,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
@@ -402,17 +409,17 @@ class StatsTab extends ConsumerWidget {
                   children: [
                     _StatItem(
                       icon: Icons.fitness_center,
-                      label: 'Workouts',
+                      label: l10n.workouts,
                       value: '$totalWorkouts',
                     ),
                     _StatItem(
                       icon: Icons.monitor_weight,
-                      label: 'Volume',
+                      label: l10n.volume,
                       value: '${totalVolume.toStringAsFixed(0)} kg',
                     ),
                     _StatItem(
                       icon: Icons.timer,
-                      label: 'Duration',
+                      label: l10n.duration,
                       value: '${totalMinutes}m',
                     ),
                   ],
@@ -423,17 +430,17 @@ class StatsTab extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         // This week
-        Text('This Week', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.thisWeek, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         const dashboard.WorkoutStatsRow(),
         const SizedBox(height: 16),
         // Heatmap
-        Text('Activity', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.activity, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         const dashboard.WorkoutHeatmapCard(),
         const SizedBox(height: 16),
         // Charts
-        Text('Trends', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.trends, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         dashboard.StrengthTrendChart(),
         const SizedBox(height: 16),
@@ -485,6 +492,7 @@ class _TemplateCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return SizedBox(
       width: 160,
       child: Card(
@@ -504,7 +512,9 @@ class _TemplateCard extends ConsumerWidget {
                   exerciseName: template.exercises.isNotEmpty
                       ? template.exercises[0].name
                       : null,
-                  notificationTitle: AppLocalizations.of(context).activeWorkout,
+                  notificationTitle: AppLocalizations.of(
+                    context,
+                  )!.activeWorkout,
                 );
                 context.push('/current-seance');
               });
@@ -518,7 +528,7 @@ class _TemplateCard extends ConsumerWidget {
                 exerciseName: template.exercises.isNotEmpty
                     ? template.exercises[0].name
                     : null,
-                notificationTitle: AppLocalizations.of(context).activeWorkout,
+                notificationTitle: AppLocalizations.of(context)!.activeWorkout,
               );
               context.push('/current-seance');
             }
@@ -577,17 +587,20 @@ class _TemplateCard extends ConsumerWidget {
                                 .deleteTemplate(template.id);
                         }
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Edit')),
-                        PopupMenuItem(value: 'clone', child: Text('Clone')),
-                        PopupMenuItem(value: 'delete', child: Text('Delete')),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
+                        PopupMenuItem(value: 'clone', child: Text(l10n.clone)),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(l10n.delete),
+                        ),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${template.exercises.length} exercise${template.exercises.length == 1 ? '' : 's'}',
+                  l10n.exercisesCount(template.exercises.length),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const Spacer(),
@@ -595,7 +608,10 @@ class _TemplateCard extends ConsumerWidget {
                   children: [
                     const Icon(Icons.play_arrow, size: 14),
                     const SizedBox(width: 4),
-                    Text('Start', style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      l10n.start,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ],
@@ -613,6 +629,7 @@ class _SeanceHistoryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final dateStr = DateFormat('EEEE, MMM d, yyyy').format(seance.startedAt);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -630,7 +647,7 @@ class _SeanceHistoryCard extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  seance.name ?? 'Workout',
+                  seance.name ?? l10n.workout,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 IconButton(
@@ -643,7 +660,10 @@ class _SeanceHistoryCard extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             if (seance.exercises.isEmpty)
-              Text('No exercises', style: Theme.of(context).textTheme.bodySmall)
+              Text(
+                l10n.noExercises,
+                style: Theme.of(context).textTheme.bodySmall,
+              )
             else
               ...seance.exercises.map((entry) {
                 final setCount = entry.sets.length;
@@ -656,7 +676,7 @@ class _SeanceHistoryCard extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          '${entry.exercise.name}: $setCount set${setCount == 1 ? '' : 's'}',
+                          '${entry.exercise.name}: ${l10n.setsCount(setCount)}',
                           style: const TextStyle(fontSize: 13),
                         ),
                       ),
@@ -692,7 +712,7 @@ class _SeanceHistoryCard extends ConsumerWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.copy),
-              title: const Text('Create template from this'),
+              title: Text(AppLocalizations.of(context)!.createTemplateFrom),
               onTap: () async {
                 Navigator.pop(ctx);
                 final exercises = seance.exercises.map((e) {
@@ -750,25 +770,26 @@ void confirmReplaceSeance(
 ) {
   showDialog(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Workout already running'),
-      content: const Text(
-        'A workout is already in progress. Cancel it and start a new one?',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () {
-            ref.read(activeSeanceProvider.notifier).cancelSeance();
-            Navigator.pop(ctx);
-            onConfirm();
-          },
-          child: const Text('Start new workout'),
-        ),
-      ],
-    ),
+    builder: (ctx) {
+      final l10n = AppLocalizations.of(ctx)!;
+      return AlertDialog(
+        title: Text(l10n.workoutAlreadyRunning),
+        content: Text(l10n.workoutAlreadyRunningContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref.read(activeSeanceProvider.notifier).cancelSeance();
+              Navigator.pop(ctx);
+              onConfirm();
+            },
+            child: Text(l10n.startNewWorkout),
+          ),
+        ],
+      );
+    },
   );
 }

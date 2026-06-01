@@ -31,6 +31,14 @@ FitFat is a Flutter app for fitness and nutrition tracking.
 - `lib/src/adapters/drift/` converts between Drift rows and domain models.
 - `lib/src/diet/`, `lib/src/dashboard/`, and `lib/src/exercise/` contain the feature UI and Riverpod controllers.
 
+## Localization
+- **ARB-based generated localization** via `flutter gen-l10n`. Files in `lib/l10n/`:
+  - `app_en.arb`, `app_fr.arb`, `app_es.arb` — string definitions
+  - `app_localizations.dart` — generated `AppLocalizations` class (do not edit manually)
+- Configured via `l10n.yaml` at project root.
+- `pubspec.yaml` has `generate: true` under `flutter:`.
+- Supports en, fr, es.
+
 ## Inferred product intent
 - The app appears to combine food logging, gym session tracking, and goal-based nutrition guidance.
 - The naming suggests an in-progress or refactored personal fitness tracker; terminology should be normalized around a localized workout vocabulary.

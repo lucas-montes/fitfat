@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/seance.dart';
-import '../../l10n/app_localizations.dart';
+import 'package:fitfat/l10n/app_localizations.dart';
 import '../../services/seance_foreground_service.dart';
 import 'create_seance_screen.dart';
 
@@ -11,23 +11,24 @@ class SeanceLibraryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final templates = ref.watch(templateListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Template Library')),
+      appBar: AppBar(title: Text(l10n.templateLibrary)),
       body: templates.isEmpty
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'No templates yet',
+                    l10n.noTemplatesYet,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 8),
                   FilledButton.icon(
                     icon: const Icon(Icons.add),
-                    label: const Text('Create your first template'),
+                    label: Text(l10n.createFirstTemplate),
                     onPressed: () async {
                       await Navigator.of(context).push(
                         MaterialPageRoute(
@@ -63,7 +64,7 @@ class SeanceLibraryScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${t.exercises.length} exercise${t.exercises.length == 1 ? '' : 's'}',
+                                l10n.exercisesCount(t.exercises.length),
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                               if (t.exercises.isNotEmpty) ...[
@@ -89,52 +90,59 @@ class SeanceLibraryScreen extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                           ),
                           icon: const Icon(Icons.play_arrow),
-                          label: const Text('Start'),
+                          label: Text(l10n.start),
                           onPressed: () {
                             final active = ref.read(activeSeanceProvider);
                             if (active != null) {
                               showDialog(
                                 context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text('Workout already running'),
-                                  content: const Text(
-                                    'A workout is already in progress. Cancel it and start a new one?',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx),
-                                      child: const Text('Cancel'),
+                                builder: (ctx) {
+                                  final d10n = AppLocalizations.of(ctx)!;
+                                  return AlertDialog(
+                                    title: Text(d10n.workoutAlreadyRunning),
+                                    content: Text(
+                                      d10n.workoutAlreadyRunningContent,
                                     ),
-                                    FilledButton(
-                                      onPressed: () {
-                                        ref
-                                            .read(activeSeanceProvider.notifier)
-                                            .cancelSeance();
-                                        ref
-                                            .read(activeSeanceProvider.notifier)
-                                            .startSeanceFromTemplate(t);
-                                        // Update notification title and exercise name
-                                        SeanceForegroundService.instance.start(
-                                          DateTime.now(),
-                                          seanceName: t.name,
-                                          exerciseName: t.exercises.isNotEmpty
-                                              ? t.exercises[0].name
-                                              : null,
-                                          notificationTitle:
-                                              AppLocalizations.of(
-                                                context,
-                                              ).activeWorkout,
-                                        );
-                                        Navigator.of(
-                                          context,
-                                          rootNavigator: true,
-                                        ).pop();
-                                        context.push('/current-seance');
-                                      },
-                                      child: const Text('Start new workout'),
-                                    ),
-                                  ],
-                                ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: Text(d10n.cancel),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () {
+                                          ref
+                                              .read(
+                                                activeSeanceProvider.notifier,
+                                              )
+                                              .cancelSeance();
+                                          ref
+                                              .read(
+                                                activeSeanceProvider.notifier,
+                                              )
+                                              .startSeanceFromTemplate(t);
+                                          // Update notification title and exercise name
+                                          SeanceForegroundService.instance
+                                              .start(
+                                                DateTime.now(),
+                                                seanceName: t.name,
+                                                exerciseName:
+                                                    t.exercises.isNotEmpty
+                                                    ? t.exercises[0].name
+                                                    : null,
+                                                notificationTitle:
+                                                    d10n.activeWorkout,
+                                              );
+                                          Navigator.of(
+                                            context,
+                                            rootNavigator: true,
+                                          ).pop();
+                                          context.push('/current-seance');
+                                        },
+                                        child: Text(d10n.startNewWorkout),
+                                      ),
+                                    ],
+                                  );
+                                },
                               );
                             } else {
                               ref
@@ -147,9 +155,7 @@ class SeanceLibraryScreen extends ConsumerWidget {
                                 exerciseName: t.exercises.isNotEmpty
                                     ? t.exercises[0].name
                                     : null,
-                                notificationTitle: AppLocalizations.of(
-                                  context,
-                                ).activeWorkout,
+                                notificationTitle: l10n.activeWorkout,
                               );
                               Navigator.of(context).pop();
                               context.push('/current-seance');
@@ -191,12 +197,18 @@ class SeanceLibraryScreen extends ConsumerWidget {
                                     .deleteTemplate(t.id);
                             }
                           },
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(value: 'edit', child: Text('Edit')),
-                            PopupMenuItem(value: 'clone', child: Text('Clone')),
+                          itemBuilder: (_) => [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text(l10n.edit),
+                            ),
+                            PopupMenuItem(
+                              value: 'clone',
+                              child: Text(l10n.clone),
+                            ),
                             PopupMenuItem(
                               value: 'delete',
-                              child: Text('Delete'),
+                              child: Text(l10n.delete),
                             ),
                           ],
                         ),

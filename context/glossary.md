@@ -21,3 +21,5 @@
 - `Goal`: either `StrengthGoal` or `BodyWeightGoal`.
 - `UserProfile`: birth date, sex, height, weight, and activity level.
 - `ComputedMacros`: derived daily calorie and macro targets from profile + goal.
+- **ARB localization**: Flutter's standard `flutter gen-l10n` pipeline using `.arb` files. Key naming convention: `snake_case` matching English string content. Generated `AppLocalizations` class at `lib/l10n/app_localizations.dart`. Supports en, fr, es. Usage: `AppLocalizations.of(context)!.keyName`.
+- **`AppLocalizations`**: generated localization class from ARB files. Use `AppLocalizations.of(context)!` (note the `!` — the generated `of()` returns nullable). Provides getters for plain strings and methods for parameterized/plural strings.

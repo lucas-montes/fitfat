@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:fitfat/l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../providers/seance.dart';
 import '../services/workout_services.dart';
@@ -91,6 +92,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final seances = _getSeances();
     final allSets = _getAllSets(seances);
 
@@ -104,21 +106,27 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
             itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'all',
-                child: Text('All time${_dateFilter == 'all' ? ' ✓' : ''}'),
+                child: Text(
+                  '${l10n.allTime}${_dateFilter == 'all' ? ' ✓' : ''}',
+                ),
               ),
               PopupMenuItem(
                 value: 'month',
-                child: Text('Past month${_dateFilter == 'month' ? ' ✓' : ''}'),
+                child: Text(
+                  '${l10n.pastMonth}${_dateFilter == 'month' ? ' ✓' : ''}',
+                ),
               ),
               PopupMenuItem(
                 value: '3months',
                 child: Text(
-                  'Past 3 months${_dateFilter == '3months' ? ' ✓' : ''}',
+                  '${l10n.past3Months}${_dateFilter == '3months' ? ' ✓' : ''}',
                 ),
               ),
               PopupMenuItem(
                 value: 'year',
-                child: Text('Past year${_dateFilter == 'year' ? ' ✓' : ''}'),
+                child: Text(
+                  '${l10n.pastYear}${_dateFilter == 'year' ? ' ✓' : ''}',
+                ),
               ),
             ],
           ),
@@ -130,12 +138,12 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'No history for ${widget.exercise.name} yet',
+                    l10n.noHistoryFor(widget.exercise.name),
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Complete a workout with this exercise to see it here',
+                    l10n.completeWorkoutToSee,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -172,7 +180,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                             ),
                           ),
                           onPressed: () => setState(() => _selectedTab = 0),
-                          child: const Text('History'),
+                          child: Text(l10n.history),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -194,7 +202,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                             ),
                           ),
                           onPressed: () => setState(() => _selectedTab = 1),
-                          child: const Text('Records'),
+                          child: Text(l10n.records),
                         ),
                       ),
                     ],
@@ -211,6 +219,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
   }
 
   Widget _buildHistoryTab(List<Seance> seances) {
+    final l10n = AppLocalizations.of(context)!;
     // Prepare chart data
     final volumeData = <FlSpot>[];
     final rmData = <FlSpot>[];
@@ -239,7 +248,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
         // Volume chart
         if (volumeData.length >= 2) ...[
           Text(
-            'Volume Progression',
+            l10n.volumeProgression,
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 8),
@@ -259,14 +268,14 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                     sideTitles: SideTitles(showTitles: false),
                   ),
                   leftTitles: AxisTitles(
-                    axisNameWidget: const Text(
-                      'Volume',
+                    axisNameWidget: Text(
+                      l10n.volume,
                       style: TextStyle(fontSize: 10),
                     ),
                   ),
                   bottomTitles: AxisTitles(
-                    axisNameWidget: const Text(
-                      'Date',
+                    axisNameWidget: Text(
+                      l10n.date,
                       style: TextStyle(fontSize: 10),
                     ),
                     sideTitles: SideTitles(
@@ -318,7 +327,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
           // e1RM chart
           if (rmData.length >= 2) ...[
             Text(
-              'Estimated 1RM Progression',
+              l10n.estimated1RM,
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
@@ -338,15 +347,15 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                       sideTitles: SideTitles(showTitles: false),
                     ),
                     leftTitles: AxisTitles(
-                      axisNameWidget: const Text(
-                        'e1RM',
+                      axisNameWidget: Text(
+                        l10n.oneRM,
                         style: TextStyle(fontSize: 10),
                       ),
                     ),
                     bottomTitles: AxisTitles(
-                      axisNameWidget: const Text(
-                        'Date',
-                        style: TextStyle(fontSize: 10),
+                      axisNameWidget: Text(
+                        l10n.date,
+                        style: const TextStyle(fontSize: 10),
                       ),
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -400,8 +409,8 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
         TextField(
           controller: _searchController,
           decoration: InputDecoration(
-            label: const Text('Search history'),
-            hintText: 'Search by date or workout name...',
+            label: Text(l10n.searchHistory),
+            hintText: l10n.searchByDateWorkout,
             border: const OutlineInputBorder(),
             isDense: true,
             suffixIcon: _searchController.text.isNotEmpty
@@ -418,7 +427,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          '${seances.length} session${seances.length == 1 ? '' : 's'}',
+          l10n.sessionsCount(seances.length),
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 8),
@@ -454,8 +463,8 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${entry.sets.length} set${entry.sets.length == 1 ? '' : 's'} · '
-                    '${_service.totalVolume(entry.sets).toStringAsFixed(0)}kg volume',
+                    '${l10n.setsCount(entry.sets.length)} · '
+                    '${_service.totalVolume(entry.sets).toStringAsFixed(0)}kg',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 8),
@@ -490,7 +499,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
-                        'Best set e1RM: ${estRm.toStringAsFixed(1)} kg',
+                        '${l10n.best} ${l10n.oneRM}: ${estRm.toStringAsFixed(1)} kg',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.green.shade700,
@@ -508,6 +517,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
   }
 
   Widget _buildRecordsTab(List<ExerciseSet> allSets) {
+    final l10n = AppLocalizations.of(context)!;
     final bestSet = _service.findBestSet(allSets);
     final maxWeightSet = _service.findMaxWeight(allSets);
     final maxVolSet = _service.findMaxVolumeSet(allSets);
@@ -521,8 +531,10 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
       children: [
         _RecordCard(
           icon: Icons.emoji_events,
-          title: 'Best Estimated 1RM',
-          value: bestRm != null ? '${bestRm.toStringAsFixed(1)} kg' : 'N/A',
+          title: l10n.bestEstimated1RM,
+          value: bestRm != null
+              ? '${bestRm.toStringAsFixed(1)} kg'
+              : l10n.notAvailable,
           subtitle: bestSet != null
               ? '${bestSet.reps} reps @ ${bestSet.weight.toStringAsFixed(1)} kg'
               : null,
@@ -531,20 +543,20 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
         const SizedBox(height: 12),
         _RecordCard(
           icon: Icons.fitness_center,
-          title: 'Max Weight',
+          title: l10n.maxWeight,
           value: maxWeightSet != null
               ? '${maxWeightSet.weight.toStringAsFixed(1)} kg'
-              : 'N/A',
+              : l10n.notAvailable,
           subtitle: maxWeightSet != null ? '${maxWeightSet.reps} reps' : null,
           color: Colors.blue,
         ),
         const SizedBox(height: 12),
         _RecordCard(
           icon: Icons.trending_up,
-          title: 'Max Volume (Set)',
+          title: l10n.maxVolumeSet,
           value: maxVolSet != null
               ? '${(maxVolSet.reps * maxVolSet.weight).toStringAsFixed(0)} kg'
-              : 'N/A',
+              : l10n.notAvailable,
           subtitle: maxVolSet != null
               ? '${maxVolSet.reps} reps × ${maxVolSet.weight.toStringAsFixed(1)} kg'
               : null,
@@ -553,10 +565,9 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
         const SizedBox(height: 12),
         _RecordCard(
           icon: Icons.bar_chart,
-          title: 'Total Volume',
+          title: l10n.totalVolume,
           value: '${totalVol.toStringAsFixed(0)} kg',
-          subtitle:
-              'Across ${allSets.length} set${allSets.length == 1 ? '' : 's'}',
+          subtitle: '${l10n.across} ${l10n.setsCount(allSets.length)}',
           color: Colors.purple,
         ),
       ],
@@ -577,6 +588,7 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final totalSessions = seances.length;
     final totalVolume = seances.fold<double>(
       0,
@@ -598,12 +610,12 @@ class _SummaryCard extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _Stat(label: 'Sessions', value: '$totalSessions'),
+            _Stat(label: l10n.sessions, value: '$totalSessions'),
             _Stat(
-              label: 'Volume',
+              label: l10n.volume,
               value: '${totalVolume.toStringAsFixed(0)} kg',
             ),
-            _Stat(label: 'Time', value: '${totalMinutes} min'),
+            _Stat(label: l10n.time, value: '${totalMinutes} min'),
           ],
         ),
       ),

@@ -5,20 +5,36 @@ import '../exercise/screens/current_seance_screen.dart';
 import '../exercise/screens/main.dart';
 import '../dashboard/screens/main.dart';
 import '../widgets/appbar_seance_indicator.dart' show SeanceFloatingPill;
+import 'package:fitfat/l10n/app_localizations.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  static const _destinations = [
-    NavigationDestination(icon: Icon(Icons.restaurant_menu), label: 'Diet'),
-    NavigationDestination(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-    NavigationDestination(icon: Icon(Icons.fitness_center), label: 'Exercise'),
-  ];
+  // Destinations constructed at build time to support localized labels
+  // See T12: replaced hardcoded labels with AppLocalizations
+  // (was static const — now built with context)
+  // _destinations is intentionally a getter in build()
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final destinations = [
+      NavigationDestination(
+        icon: const Icon(Icons.restaurant_menu),
+        label: l10n.navDiet,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.dashboard),
+        label: l10n.navDashboard,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.fitness_center),
+        label: l10n.navExercise,
+      ),
+    ];
+
     return Scaffold(
       body: Stack(
         children: [
@@ -28,7 +44,7 @@ class AppShell extends StatelessWidget {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        destinations: _destinations,
+        destinations: destinations,
         onDestinationSelected: (index) {
           navigationShell.goBranch(
             index,

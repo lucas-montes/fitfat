@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:fitfat/l10n/app_localizations.dart';
 import '../../../models/food.dart';
 import '../../providers/ingredients.dart';
 
@@ -68,6 +69,7 @@ class _CustomIngredientScreenState
   @override
   Widget build(BuildContext context) {
     final ingredients = ref.watch(ingredientsProvider);
+    final l10n = AppLocalizations.of(context)!;
     final query = _searchController.text.trim().toLowerCase();
     final per100g = _buildFromIngredients
         ? _computePer100g(_components)
@@ -84,8 +86,8 @@ class _CustomIngredientScreenState
       appBar: AppBar(
         title: Text(
           widget.initialIngredient == null
-              ? 'Add Ingredient'
-              : 'Edit Ingredient',
+              ? l10n.addIngredient
+              : l10n.editIngredient,
         ),
         actions: [
           if (widget.initialIngredient != null)
@@ -98,19 +100,16 @@ class _CustomIngredientScreenState
                   final result = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('Archive Ingredient'),
-                      content: const Text(
-                        'This ingredient will be hidden from regular views. '
-                        'Use the Archived Ingredients tab to restore or delete it.',
-                      ),
+                      title: Text(l10n.archiveIngredientTitle),
+                      content: Text(l10n.archiveIngredientContent),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('Cancel'),
+                          child: Text(l10n.cancel),
                         ),
                         FilledButton(
                           onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Archive'),
+                          child: Text(l10n.archive),
                         ),
                       ],
                     ),
@@ -122,15 +121,13 @@ class _CustomIngredientScreenState
                     Navigator.of(context).pop();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ingredient archived successfully'),
-                        ),
+                        SnackBar(content: Text(l10n.ingredientArchived)),
                       );
                     }
                   }
                 },
                 icon: const Icon(Icons.archive),
-                label: const Text('Archive'),
+                label: Text(l10n.archive),
               ),
             ),
           if (_canSave(per100g))
@@ -139,7 +136,7 @@ class _CustomIngredientScreenState
               child: FilledButton.icon(
                 onPressed: () => _save(per100g),
                 icon: const Icon(Icons.check),
-                label: const Text('Save'),
+                label: Text(l10n.save),
               ),
             ),
         ],
@@ -155,30 +152,34 @@ class _CustomIngredientScreenState
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'Per 100g: '
-              '${per100g.calories.toStringAsFixed(0)} kcal · '
-              'P ${per100g.protein.toStringAsFixed(1)}g · '
-              'C ${per100g.carbs.toStringAsFixed(1)}g · '
-              'F ${per100g.fat.toStringAsFixed(1)}g',
+              l10n.formatPer100g(
+                per100g.calories,
+                per100g.protein,
+                per100g.carbs,
+                per100g.fat,
+              ),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
           const SizedBox(height: 20),
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(labelText: 'Ingredient name'),
+            decoration: InputDecoration(labelText: l10n.ingredientName),
           ),
           const SizedBox(height: 12),
           SwitchListTile(
             value: _buildFromIngredients,
             onChanged: (value) => setState(() => _buildFromIngredients = value),
-            title: const Text('Build from ingredients'),
+            title: Text(l10n.buildFromIngredients),
           ),
           const SizedBox(height: 12),
           if (_buildFromIngredients) ...[
-            Text('Components', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n.components,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
-            if (_components.isEmpty) const Text('No components added yet'),
+            if (_components.isEmpty) Text(l10n.noComponentsAdded),
             for (final component in _components)
               Card(
                 child: ListTile(
@@ -201,7 +202,7 @@ class _CustomIngredientScreenState
               ),
             const SizedBox(height: 16),
             Text(
-              'Add ingredients',
+              l10n.addComponents,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
@@ -209,7 +210,7 @@ class _CustomIngredientScreenState
               controller: _searchController,
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
-                labelText: 'Search ingredients',
+                labelText: l10n.searchIngredients,
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close),
@@ -222,23 +223,23 @@ class _CustomIngredientScreenState
             ),
             const SizedBox(height: 12),
             if (query.isNotEmpty)
-              ..._buildComponentResults(filteredIngredients)
+              ..._buildComponentResults(filteredIngredients, l10n)
             else
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
-                  'Type to search ingredients',
+                  l10n.typeToSearchIngredient,
                   style: Theme.of(context).textTheme.bodySmall,
                   textAlign: TextAlign.center,
                 ),
               ),
           ] else ...[
-            _buildManualField(_caloriesController, 'Calories per 100g'),
-            _buildManualField(_proteinController, 'Protein per 100g (g)'),
-            _buildManualField(_carbsController, 'Carbs per 100g (g)'),
-            _buildManualField(_fatController, 'Fat per 100g (g)'),
-            _buildManualField(_sodiumController, 'Sodium per 100g (mg)'),
-            _buildManualField(_fiberController, 'Fiber per 100g (g)'),
+            _buildManualField(_caloriesController, l10n.caloriesPer100g),
+            _buildManualField(_proteinController, l10n.proteinPer100g),
+            _buildManualField(_carbsController, l10n.carbsPer100g),
+            _buildManualField(_fatController, l10n.fatPer100g),
+            _buildManualField(_sodiumController, l10n.sodiumPer100g),
+            _buildManualField(_fiberController, l10n.fiberPer100g),
           ],
         ],
       ),
@@ -246,17 +247,20 @@ class _CustomIngredientScreenState
     );
   }
 
-  List<Widget> _buildComponentResults(List<Ingredient> ingredients) {
+  List<Widget> _buildComponentResults(
+    List<Ingredient> ingredients,
+    AppLocalizations l10n,
+  ) {
     return [
       for (final ingredient in ingredients)
         Card(
           child: ListTile(
             title: Text(ingredient.name),
             subtitle: Text(
-              '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
-              'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
-              'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
-              'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
+              '${ingredient.caloriesPer100g.toStringAsFixed(0)} ${l10n.kcalAbbrev} · '
+              '${l10n.proteinAbbrev} ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
+              '${l10n.carbsAbbrev} ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
+              '${l10n.fatAbbrev} ${ingredient.fatPer100g.toStringAsFixed(1)}g',
             ),
             trailing: IconButton(
               icon: const Icon(Icons.add),
@@ -359,19 +363,20 @@ class _CustomIngredientScreenState
       text: initialValue?.toStringAsFixed(0) ?? '',
     );
 
+    final l10n = AppLocalizations.of(context)!;
     final result = await showDialog<double>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Amount in grams'),
+        title: Text(l10n.amountInGrams),
         content: TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(hintText: 'e.g. 80'),
+          decoration: InputDecoration(hintText: l10n.gramsHint),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -381,7 +386,7 @@ class _CustomIngredientScreenState
               if (value == null || value <= 0) return;
               Navigator.of(context).pop(value);
             },
-            child: const Text('Add'),
+            child: Text(l10n.add),
           ),
         ],
       ),

@@ -1,0 +1,417 @@
+{
+  "@@locale": "es",
+  "appTitle": "fitfat",
+
+  "mealsTab": "Comidas",
+  "ingredientsTab": "Ingredientes",
+  "addMeal": "Añadir comida",
+  "addIngredient": "Añadir ingrediente",
+  "editIngredient": "Editar ingrediente",
+  "editMeal": "Editar comida",
+  "archivedIngredients": "Ingredientes archivados",
+
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "archive": "Archivar",
+  "restore": "Restaurar",
+  "add": "Añadir",
+  "change": "Cambiar",
+  "clear": "Limpiar",
+
+  "ingredientName": "Nombre del ingrediente",
+  "buildFromIngredients": "Componer a partir de ingredientes",
+  "components": "Componentes",
+  "noComponentsAdded": "No hay componentes añadidos",
+  "addComponents": "Añadir ingredientes",
+  "searchIngredients": "Buscar ingredientes",
+  "typeToSearchIngredient": "Escriba para buscar",
+  "caloriesPer100g": "Calorías por 100g",
+  "proteinPer100g": "Proteínas por 100g (g)",
+  "carbsPer100g": "Carbohidratos por 100g (g)",
+  "fatPer100g": "Grasas por 100g (g)",
+  "sodiumPer100g": "Sodio por 100g (mg)",
+  "fiberPer100g": "Fibra por 100g (g)",
+  "amountInGrams": "Cantidad en gramos",
+  "gramsHint": "ej. 80",
+  "gramsHintMeal": "ej. 120",
+  "createNewIngredient": "Crear nuevo ingrediente",
+
+  "mealNameOptional": "Nombre de la comida (opcional)",
+  "selectedIngredients": "Ingredientes seleccionados",
+  "noIngredientsSelected": "No hay ingredientes seleccionados",
+  "noIngredientsFound": "No se encontraron ingredientes",
+
+  "archiveIngredientTitle": "Archivar ingrediente",
+  "archiveIngredientContent": "Este ingrediente se ocultará de las vistas normales. Use la pestaña Ingredientes archivados para restaurarlo o eliminarlo.",
+  "deleteMealTitle": "¿Eliminar comida?",
+  "deleteMealContent": "Esto eliminará la comida de su registro.",
+  "deleteIngredientTitle": "¿Eliminar ingrediente?",
+  "deleteIngredientContent": "Esto eliminará el ingrediente y sus porciones de las comidas.",
+  "permanentlyDeleteTitle": "Eliminar ingrediente permanentemente",
+  "permanentlyDeleteContent": "Este ingrediente se eliminará permanentemente. No se puede restaurar.",
+  "restoreIngredientTitle": "Restaurar ingrediente",
+
+  "deleteMealTooltip": "Eliminar comida",
+  "deleteIngredientTooltip": "Eliminar",
+
+  "ingredientArchived": "Ingrediente archivado correctamente",
+  "ingredientDeleted": "Ingrediente eliminado correctamente",
+  "ingredientRestored": "Ingrediente restaurado correctamente",
+
+  "meal": "Comida",
+  "sortAZ": "Ordenar A-Z",
+  "sortZA": "Ordenar Z-A",
+  "noIngredientsFoundSubtext": "Pruebe con otra búsqueda o añada un nuevo ingrediente",
+
+  "kcalAbbrev": "kcal",
+  "proteinAbbrev": "P",
+  "carbsAbbrev": "C",
+  "fatAbbrev": "G",
+
+  "eatenAtLabel": "Comido a las: {time}",
+  "@eatenAtLabel": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+
+  "failedToSave": "Error al guardar la comida: {error}",
+  "@failedToSave": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "failedToUpdate": "Error al actualizar la comida: {error}",
+  "@failedToUpdate": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "items": "{count,plural, one{{count} elemento} other{{count} elementos}}",
+  "@items": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+
+  "formatMacros": "{kcal} kcal · P {protein}g · C {carbs}g · G {fat}g",
+  "@formatMacros": {
+    "placeholders": {
+      "kcal": {},
+      "protein": {},
+      "carbs": {},
+      "fat": {}
+    }
+  },
+  "formatPer100g": "Por 100g: {kcal} kcal · P {protein}g · C {carbs}g · G {fat}g",
+  "@formatPer100g": {
+    "placeholders": {
+      "kcal": {},
+      "protein": {},
+      "carbs": {},
+      "fat": {}
+    }
+  },
+  "formatTotal": "Total: {total}",
+  "@formatTotal": {
+    "placeholders": {
+      "total": {}
+    }
+  },
+
+  "exercises": "Ejercicios",
+  "exercise": "Ejercicio",
+  "activeWorkout": "Entrenamiento activo",
+  "activeSeance": "Entrenamiento activo",
+  "noActiveSeance": "No hay entrenamiento activo",
+  "guidedMode": "Guiado",
+  "freeformMode": "Libre",
+  "cancelSeance": "Cancelar entrenamiento",
+  "backToApp": "Volver a la app",
+  "discardEmptySeance": "¿Descartar entrenamiento vacío?",
+  "discardEmptySeanceContent": "Este entrenamiento no tiene ejercicios y no se guardará en el historial.",
+  "keepEditing": "Seguir editando",
+  "discard": "Descartar",
+  "completeSeance": "Completar entrenamiento",
+  "addExercise": "Añadir ejercicio",
+  "followPlan": "Seguir el plan",
+  "searchToAdd": "Buscar para añadir",
+  "searchExercises": "Buscar ejercicios",
+  "exerciseTypeToSearch": "Escriba para buscar...",
+  "typeToFindExercises": "Escriba para encontrar...",
+
+  "sets": "Series",
+  "set": "Serie",
+  "setsLower": "series",
+  "done": "hecho",
+  "summary": "Resumen",
+  "totalReps": "Reps totales",
+  "totalWeight": "Peso total",
+  "addSet": "Añadir serie",
+  "tapToComplete": "Tocar para completar",
+  "noExercisesFound": "No se encontraron ejercicios para",
+  "repsLower": "reps",
+  "preFilledFrom": "Prellenado desde",
+  "allSetsComplete": "¡Todas las series completas!",
+  "restTimer": "Temporizador de descanso",
+  "skip": "Saltar",
+  "restOver": "¡Descanso terminado!",
+  "getReadyNextSet": "¡Prepárate para la próxima serie!",
+  "editSet": "Editar serie",
+  "weightKg": "Peso (kg)",
+
+  "history": "Historial",
+  "records": "Récords",
+  "noHistory": "Sin historial",
+  "sessions": "Sesiones",
+  "volume": "Volumen",
+  "time": "Tiempo",
+  "searchHistory": "Buscar en historial",
+  "searchByDateHint": "Buscar por fecha o nombre...",
+  "volumeProgression": "Progresión del volumen",
+  "estimated1RM": "Progresión de 1RM estimada",
+  "bestEstimated1RM": "Mejor 1RM estimada",
+  "maxWeight": "Peso máximo",
+  "maxVolume": "Volumen máximo (Serie)",
+  "totalVolume": "Volumen total",
+  "noHistoryContent": "Completa un entrenamiento con este ejercicio para verlo aquí",
+
+  "library": "Biblioteca",
+  "createExercise": "Crear ejercicio",
+  "exerciseName": "Nombre del ejercicio",
+  "category": "Categoría",
+  "templates": "Plantillas",
+  "createTemplate": "Crear plantilla",
+
+  "exercisesCount": "{count,plural, one{{count} ejercicio} other{{count} ejercicios}}",
+  "@exercisesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "setsCount": "{count,plural, one{{count} serie} other{{count} series}}",
+  "@setsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+
+  "workoutsTab": "Entrenamientos",
+  "statsTab": "Estadísticas",
+  "searchExercisesHint": "Buscar ejercicios...",
+  "noExercisesFoundSimple": "No se encontraron ejercicios",
+  "noExercisesFoundAction": "Pruebe con otra búsqueda o borre los filtros",
+
+  "runningWorkout": "Sesión en curso",
+  "unnamedWorkout": "Entrenamiento sin nombre",
+  "viewWorkout": "Ver",
+  "stopWorkout": "Detener",
+  "newSeance": "Nueva sesión",
+  "startBlankSeance": "Iniciar sesión en blanco",
+  "create": "Crear",
+  "noTemplatesYet": "Aún no hay plantillas. ¡Crea una para empezar rápido!",
+  "browseAllTemplates": "Explorar todas las plantillas",
+  "noWorkoutsYet": "Aún no hay entrenamientos. ¡Empieza el primero arriba!",
+
+  "allTime": "Todo el tiempo",
+  "workouts": "Entrenamientos",
+  "duration": "Duración",
+  "thisWeek": "Esta semana",
+  "activity": "Actividad",
+  "trends": "Tendencias",
+
+  "edit": "Editar",
+  "clone": "Duplicar",
+  "start": "Iniciar",
+  "createTemplateFrom": "Crear plantilla a partir de esto",
+
+  "workoutAlreadyRunning": "Entrenamiento ya en curso",
+  "workoutAlreadyRunningContent": "Ya hay un entrenamiento en curso. ¿Cancelarlo y empezar uno nuevo?",
+  "startNewWorkout": "Iniciar nuevo entrenamiento",
+  "workout": "Entrenamiento",
+  "noExercises": "Sin ejercicios",
+
+  "pr": "¡RP!",
+  "oneRM": "1RM est.",
+  "workoutSummary": "Resumen del entrenamiento",
+  "untitledWorkout": "Entrenamiento sin título",
+  "exerciseBreakdown": "Desglose de ejercicios",
+  "best": "Mejor",
+  "finish": "Finalizar",
+  "previousSessions": "Sesiones anteriores ({count})",
+  "@previousSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "compact"
+      }
+    }
+  },
+  "tapToExpand": "Toque para expandir",
+  "reps": "Repeticiones",
+
+  "templateLibrary": "Biblioteca de plantillas",
+  "createFirstTemplate": "Crea tu primera plantilla",
+  "createTemplate": "Crear plantilla",
+  "editTemplate": "Editar plantilla",
+  "templateNameLabel": "Nombre de la plantilla",
+  "addCustom": "Añadir como personalizado",
+  "searchAboveHint": "Busca un ejercicio arriba para añadirlo. Toca un ejercicio en la lista para configurar series y repeticiones.",
+  "noExercisesAdded": "Aún no se han añadido ejercicios",
+  "noSetsConfigured": "Sin series configuradas — toque para editar",
+  "remove": "Eliminar",
+  "restSeconds": "Descanso (s)",
+
+  "pastMonth": "Último mes",
+  "past3Months": "Últimos 3 meses",
+  "pastYear": "Último año",
+  "noHistoryFor": "Aún no hay historial para {name}",
+  "@noHistoryFor": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "completeWorkoutToSee": "Completa un entrenamiento con este ejercicio para verlo aquí",
+  "records": "Récords",
+  "volumeProgression": "Progresión de volumen",
+  "date": "Fecha",
+  "searchHistory": "Buscar en historial",
+  "searchByDateWorkout": "Buscar por fecha o nombre de entrenamiento...",
+  "sessionsCount": "{count,plural, one{{count} sesión} other{{count} sesiones}}",
+  "time": "Tiempo",
+  "bestEstimated1RM": "Mejor 1RM estimada",
+  "maxWeight": "Peso máximo",
+  "maxVolumeSet": "Volumen máx. (serie)",
+  "totalVolume": "Volumen total",
+  "notAvailable": "N/D",
+  "across": "En",
+
+  "overviewTab": "Resumen",
+  "goalsTab": "Objetivos",
+  "settingsTab": "Ajustes",
+  "weight": "Peso",
+  "weightLogged": "¡Peso registrado!",
+  "enterWeightKg": "Ingrese peso (kg)",
+  "log": "Registrar",
+  "weightTracker": "Control de peso",
+  "noWeightEntries": "Aún no hay registros de peso.",
+  "latest": "Último",
+  "logWeight": "Registrar peso",
+  "historyLast7Entries": "Historial (últimas 7 entradas)",
+  "waterIntake": "Hidratación",
+  "goal": "Objetivo",
+  "setDailyWaterGoal": "Establecer objetivo de agua diario",
+  "litersExample": "Litros (ej. 2.5)",
+  "todaysActivity": "Actividad de hoy",
+  "workoutInProgress": "Entrenamiento en curso",
+  "recentWorkout": "Último entrenamiento",
+  "exercisesCompleted": "ejercicios completados",
+  "noWorkoutsToday": "Aún no hay entrenamientos. Inicia una sesión para ver el resumen aquí.",
+  "elapsed": "transcurrido",
+  "last84Days": "Últimos 84 días",
+  "noTrainingRecorded": "No hay entrenamientos registrados este día.",
+  "today": "Hoy",
+  "calories": "Calorías",
+  "protein": "Proteínas",
+  "carbs": "Carbohidratos",
+  "fat": "Grasas",
+  "setProfileForTargets": "Establece un objetivo de peso y tu perfil para ver los objetivos diarios.",
+  "bodyWeightGoal": "Objetivo de peso",
+  "noBodyweightGoalSet": "No hay objetivo de peso establecido.",
+  "addBodyWeightGoal": "Añadir objetivo de peso",
+  "target": "Meta",
+  "by": "Para el",
+  "strengthGoals": "Objetivos de fuerza",
+  "addStrengthGoalTooltip": "Añadir objetivo de fuerza",
+  "noStrengthGoalsYet": "Aún no hay objetivos de fuerza. Toca + para añadir (uno por ejercicio).",
+  "setUpProfileFirst": "Configura tu perfil primero",
+  "createProfile": "Crear perfil",
+  "editProfile": "Editar perfil",
+  "yourProfile": "Tu perfil",
+  "birthdate": "Fecha de nacimiento",
+  "sex": "Sexo",
+  "heightCm": "Altura (cm)",
+  "activityLevel": "Nivel de actividad",
+  "addBodyWeightGoalTitle": "Añadir objetivo de peso",
+  "editBodyWeightGoalTitle": "Editar objetivo de peso",
+  "direction": "Dirección",
+  "targetWeightKg": "Peso objetivo (kg)",
+  "targetDate": "Fecha objetivo",
+  "notSet": "No establecido",
+  "addStrengthGoalTitle": "Añadir objetivo de fuerza",
+  "editStrengthGoalTitle": "Editar objetivo de fuerza",
+  "searchOrTypeCustom": "Buscar o escribir nombre personalizado",
+  "deleteBodyweightGoal": "¿Eliminar objetivo de peso?",
+  "deleteBodyweightGoalContent": "Esto borrará tu objetivo de peso y tus objetivos de macros.",
+  "deleteStrengthGoalTitle": "¿Eliminar objetivo de fuerza para {exercise}?",
+  "@deleteStrengthGoalTitle": {
+    "placeholders": {
+      "exercise": {}
+    }
+  },
+  "deleteStrengthGoalContent": "Esto eliminará el objetivo.",
+  "deleteEverything": "Eliminar todo",
+  "goalReached": "¡Objetivo alcanzado!",
+  "toGo": "restante",
+  "strengthTrend": "Tendencia de fuerza",
+  "noStrengthData": "Sin datos de fuerza",
+  "weightTrend90Days": "Tendencia de peso (90 días)",
+  "profile": "Perfil",
+  "setUpProfile": "Configurar perfil",
+  "nutrition": "Nutrición",
+  "visibleMacros": "Macros visibles",
+  "defaultRestTimer": "Temporizador de descanso predeterminado",
+  "secondsBetweenSets": "60 segundos entre series",
+  "restTimerComingSoon": "Próximamente: configuración del temporizador de descanso",
+  "appearance": "Apariencia",
+  "theme": "Tema",
+  "systemDefault": "Predeterminado del sistema",
+  "themeComingSoon": "Próximamente: configuración del tema",
+  "data": "Datos",
+  "exportDatabase": "Exportar base de datos",
+  "shareDbFile": "Compartir el archivo SQLite",
+  "deleteAllData": "Eliminar todos los datos",
+  "removeEverything": "Eliminar todo y empezar de nuevo",
+  "noDbFound": "No se encontró archivo de base de datos",
+  "deleteAllDataTitle": "¿Eliminar todos los datos?",
+  "deleteAllDataContent": "Esto eliminará todos tus datos, incluyendo comidas, ejercicios, entrenamientos, objetivos y perfil. Se creará una nueva base de datos al reiniciar.",
+  "dbDeleted": "Base de datos eliminada. Reinicia la aplicación para recrearla.",
+  "thisMonth": "Este mes",
+
+  "couldNotLoadWeightHistory": "No se pudo cargar el historial de peso.",
+  "trainingHeatmap": "Mapa de calor de entrenamientos",
+  "heatmapLegendLow": "Bajo",
+  "heatmapLegendMid": "Medio",
+  "heatmapLegendHigh": "Alto",
+  "benchPress": "Press de banca",
+  "deadlift": "Peso muerto",
+  "squat": "Sentadilla",
+  "enterDetailsForMacros": "Ingrese sus detalles para los cálculos de macros",
+  "exportFailed": "Error al exportar: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deleteFailed": "Error al eliminar: {error}",
+  "@deleteFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "navDiet": "Comidas",
+  "navDashboard": "Panel",
+  "navExercise": "Entrenamiento"
+}

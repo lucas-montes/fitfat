@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../l10n/app_localizations.dart';
+import 'package:fitfat/l10n/app_localizations.dart';
 import '../../services/seance_foreground_service.dart';
 import '../../models/exercise.dart';
 import '../providers/seance.dart';
@@ -55,21 +55,20 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
   }
 
   Future<bool> _confirmDiscardEmptySeance() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Discard empty workout?'),
-        content: const Text(
-          'This workout has no exercises and will not be saved to history.',
-        ),
+        title: Text(l10n.discardEmptySeance),
+        content: Text(l10n.discardEmptySeanceContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Keep editing'),
+            child: Text(l10n.keepEditing),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Discard'),
+            child: Text(l10n.discard),
           ),
         ],
       ),
@@ -80,16 +79,17 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final seance = ref.watch(activeSeanceProvider);
 
     if (seance == null) {
-      return const Scaffold(body: Center(child: Text('No active workout')));
+      return Scaffold(body: Center(child: Text(l10n.noActiveSeance)));
     }
 
     // Ensure foreground notification has localized title and initial exercise
     if (!_notificationSynced) {
       _notificationSynced = true;
-      final notifTitle = AppLocalizations.of(context).activeWorkout;
+      final notifTitle = AppLocalizations.of(context)!.activeWorkout;
       final initialExercise = seance.exercises.isNotEmpty
           ? seance.exercises[0].exercise.name
           : null;
@@ -109,7 +109,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
         title: Text(
           _selectedExerciseIndex != null
               ? seance.exercises[_selectedExerciseIndex!].exercise.name
-              : seance.name ?? 'Active Workout',
+              : seance.name ?? l10n.activeSeance,
         ),
         elevation: 0,
         leading: _selectedExerciseIndex != null
@@ -119,7 +119,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
               )
             : IconButton(
                 icon: const Icon(Icons.arrow_back),
-                tooltip: 'Back to app',
+                tooltip: l10n.backToApp,
                 onPressed: () {
                   if (!context.canPop()) {
                     context.go('/exercise');
@@ -145,7 +145,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.stop),
-            tooltip: 'Cancel workout',
+            tooltip: l10n.cancelSeance,
             onPressed: () {
               ref.read(activeSeanceProvider.notifier).cancelSeance();
               context.go('/exercise');
@@ -160,6 +160,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
   }
 
   Widget _buildExerciseListView(Seance seance, bool guided) {
+    final l10n = AppLocalizations.of(context)!;
     final exercises = ref.watch(exerciseListProvider);
     final query = _exerciseSearchController.text.trim().toLowerCase();
 
@@ -181,10 +182,13 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
         if (seance.exercises.isNotEmpty) ...[
           Row(
             children: [
-              Text('Exercises', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                l10n.exercises,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const Spacer(),
               Text(
-                '${seance.exercises.length} exercise${seance.exercises.length == 1 ? '' : 's'}',
+                l10n.exercisesCount(seance.exercises.length),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -221,8 +225,8 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                 title: Text(e.exercise.name),
                 subtitle: Text(
                   guided
-                      ? '$completedSets/${e.sets.length} sets'
-                      : '${e.sets.length} set${e.sets.length == 1 ? '' : 's'}',
+                      ? '$completedSets/${e.sets.length} ${l10n.setsLower}'
+                      : l10n.setsCount(e.sets.length),
                 ),
                 onTap: () => _selectExercise(i),
                 trailing: IconButton(
@@ -236,17 +240,17 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
           const SizedBox(height: 16),
         ],
         Text(
-          guided ? 'Follow the plan' : 'Add Exercise',
+          guided ? l10n.followPlan : l10n.addExercise,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _exerciseSearchController,
           decoration: InputDecoration(
-            label: Text(guided ? 'Search to add' : 'Search exercises'),
+            label: Text(guided ? l10n.searchToAdd : l10n.searchExercises),
             hintText: guided
-                ? 'Type to search exercises...'
-                : 'Type to find exercises...',
+                ? l10n.exerciseTypeToSearch
+                : l10n.typeToFindExercises,
             border: const OutlineInputBorder(),
             isDense: true,
           ),
@@ -259,9 +263,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
               child: Text(
-                guided
-                    ? 'Search for exercises to add'
-                    : 'Type to find exercises',
+                guided ? l10n.searchToAdd : l10n.typeToFindExercises,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -273,7 +275,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
               child: Text(
-                'No exercises found matching "$query"',
+                '${l10n.noExercisesFound} "$query"',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -298,7 +300,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
           width: double.infinity,
           child: FilledButton.icon(
             icon: const Icon(Icons.check),
-            label: const Text('Complete Workout'),
+            label: Text(l10n.completeSeance),
             onPressed: () async {
               if (seance.exercises.isEmpty) {
                 final discard = await _confirmDiscardEmptySeance();
@@ -322,6 +324,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
   }
 
   Widget _buildDetailView(Seance seance, bool guided) {
+    final l10n = AppLocalizations.of(context)!;
     return PageView.builder(
       controller: _pageController,
       onPageChanged: (index) => setState(() => _selectedExerciseIndex = index),
@@ -368,12 +371,12 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Sets (${entry.sets.length})',
+                    '${l10n.sets} (${entry.sets.length})',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   if (guided)
                     Text(
-                      '${entry.sets.where((s) => s.isCompleted).length}/${entry.sets.length} done',
+                      '${entry.sets.where((s) => s.isCompleted).length}/${entry.sets.length} ${l10n.done}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                 ],
@@ -386,7 +389,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                   runSpacing: 4,
                   children: [
                     Text(
-                      '${entry.totalReps} reps',
+                      '${entry.totalReps} ${l10n.repsLower}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     Text(
@@ -407,7 +410,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                           ),
                           const SizedBox(width: 2),
                           Text(
-                            'PR!',
+                            l10n.pr,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Colors.amber,
@@ -418,7 +421,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                       ),
                     if (currentBest != null)
                       Text(
-                        'e1RM: ${_prService.epleyOneRM(currentBest.weight, currentBest.reps)?.toStringAsFixed(1) ?? '-'} kg',
+                        '${l10n.oneRM}: ${_prService.epleyOneRM(currentBest.weight, currentBest.reps)?.toStringAsFixed(1) ?? '-'} kg',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.green.shade700,
                           fontWeight: FontWeight.bold,
@@ -435,7 +438,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                           ),
                           const SizedBox(width: 2),
                           Text(
-                            'Done!',
+                            l10n.done,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Colors.green,
@@ -511,31 +514,32 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
     int setIndex,
     ExerciseSet set,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await showDialog<Map<String, double>>(
       context: context,
       builder: (ctx) {
         final repsC = TextEditingController(text: set.reps.toString());
         final weightC = TextEditingController(text: set.weight.toString());
         return AlertDialog(
-          title: const Text('Edit Set'),
+          title: Text(l10n.editSet),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: repsC,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  label: Text('Reps'),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  label: Text(l10n.reps),
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: weightC,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  label: Text('Weight (kg)'),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  label: Text(l10n.weightKg),
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
@@ -547,7 +551,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                 weightC.dispose();
                 Navigator.pop(ctx);
               },
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () {
@@ -560,7 +564,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                   });
                 }
               },
-              child: const Text('Save'),
+              child: Text(l10n.save),
             ),
           ],
         );
@@ -589,6 +593,7 @@ class _PreviousSessionsPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final history = ref.watch(seanceHistoryProvider);
     final relatedSeances = history
         .where(
@@ -605,10 +610,10 @@ class _PreviousSessionsPanel extends ConsumerWidget {
       padding: const EdgeInsets.only(top: 16),
       child: ExpansionTile(
         title: Text(
-          'Previous sessions (${relatedSeances.length})',
+          l10n.previousSessions(relatedSeances.length),
           style: Theme.of(context).textTheme.titleSmall,
         ),
-        subtitle: const Text('Tap to expand'),
+        subtitle: Text(l10n.tapToExpand),
         initiallyExpanded: false,
         children: relatedSeances.map((s) {
           final entry = s.exercises.firstWhere(
@@ -673,6 +678,7 @@ class _GuidedSetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final card = Card(
       color: set.isCompleted ? Colors.green.withAlpha(20) : null,
       child: InkWell(
@@ -705,7 +711,7 @@ class _GuidedSetCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Set ${index + 1}',
+                      '${l10n.set} ${index + 1}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         decoration: set.isCompleted
@@ -732,7 +738,7 @@ class _GuidedSetCard extends StatelessWidget {
                 )
               else
                 Text(
-                  'Tap to complete',
+                  l10n.tapToComplete,
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               if (isPr)
@@ -791,6 +797,7 @@ class _FreeformSetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -806,7 +813,7 @@ class _FreeformSetCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Set ${index + 1}',
+                      '${l10n.set} ${index + 1}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 2),
@@ -942,6 +949,7 @@ class _AddSetFormState extends State<AddSetForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         Row(
@@ -950,9 +958,9 @@ class _AddSetFormState extends State<AddSetForm> {
               child: TextField(
                 controller: _repsController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  label: Text('Reps'),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  label: Text(l10n.reps),
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ),
@@ -961,8 +969,8 @@ class _AddSetFormState extends State<AddSetForm> {
               child: TextField(
                 controller: _weightController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  label: Text('Weight (kg)'),
+                decoration: InputDecoration(
+                  label: Text(l10n.weightKg),
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -972,7 +980,7 @@ class _AddSetFormState extends State<AddSetForm> {
         const SizedBox(height: 12),
         FilledButton.icon(
           icon: const Icon(Icons.add),
-          label: const Text('Add Set'),
+          label: Text(l10n.addSet),
           onPressed: () {
             final reps = int.tryParse(_repsController.text) ?? 0;
             final weight = double.tryParse(_weightController.text) ?? 0;
@@ -1011,6 +1019,7 @@ class _RestTimerOverlayState extends ConsumerState<_RestTimerOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final timer = ref.watch(restTimerProvider);
     if (!timer.isRunning && timer.remainingSeconds == 0) {
       return const SizedBox.shrink();
@@ -1034,20 +1043,20 @@ class _RestTimerOverlayState extends ConsumerState<_RestTimerOverlay> {
                 children: [
                   const Icon(Icons.timer, size: 20),
                   Text(
-                    'Rest Timer',
+                    l10n.restTimer,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   TextButton(
                     onPressed: () =>
                         ref.read(restTimerProvider.notifier).skipRest(),
-                    child: const Text('Skip'),
+                    child: Text(l10n.skip),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
                 timer.isFinished
-                    ? 'Rest over!'
+                    ? l10n.restOver
                     : '$minutes:${seconds.toString().padLeft(2, '0')}',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   fontWeight: FontWeight.bold,
@@ -1056,9 +1065,9 @@ class _RestTimerOverlayState extends ConsumerState<_RestTimerOverlay> {
               ),
               if (timer.isFinished) ...[
                 const SizedBox(height: 8),
-                const Text(
-                  'Get ready for your next set!',
-                  style: TextStyle(color: Colors.green),
+                Text(
+                  l10n.getReadyNextSet,
+                  style: const TextStyle(color: Colors.green),
                 ),
               ],
               const SizedBox(height: 12),
@@ -1083,6 +1092,7 @@ class SeanceSummaryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final duration = seance.duration;
     final totalVolume = seance.exercises.fold<double>(
       0,
@@ -1093,7 +1103,7 @@ class SeanceSummaryScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Workout Summary'),
+        title: Text(l10n.workoutSummary),
         automaticallyImplyLeading: false,
       ),
       body: ListView(
@@ -1107,7 +1117,7 @@ class SeanceSummaryScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    seance.name ?? 'Untitled Workout',
+                    seance.name ?? l10n.untitledWorkout,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
@@ -1118,7 +1128,7 @@ class SeanceSummaryScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Duration',
+                            l10n.duration,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(
@@ -1136,7 +1146,7 @@ class SeanceSummaryScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Volume',
+                            l10n.volume,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(
@@ -1154,7 +1164,7 @@ class SeanceSummaryScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Exercises',
+                            l10n.exercises,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(
@@ -1177,7 +1187,7 @@ class SeanceSummaryScreen extends StatelessWidget {
           const SizedBox(height: 16),
           // Per-exercise breakdown
           Text(
-            'Exercise Breakdown',
+            l10n.exerciseBreakdown,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -1210,7 +1220,7 @@ class SeanceSummaryScreen extends StatelessWidget {
                         if (bestSet != null &&
                             (bestSet.weight * bestSet.reps) > 0)
                           Chip(
-                            label: const Text('Best'),
+                            label: Text(l10n.best),
                             avatar: const Icon(Icons.emoji_events, size: 16),
                             visualDensity: VisualDensity.compact,
                           ),
@@ -1225,7 +1235,7 @@ class SeanceSummaryScreen extends StatelessWidget {
                     ),
                     if (bestSet != null)
                       Text(
-                        'Best: ${bestSet.reps}x${bestSet.weight.toStringAsFixed(1)}kg',
+                        '${l10n.best}: ${bestSet.reps}x${bestSet.weight.toStringAsFixed(1)}kg',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                   ],
@@ -1239,7 +1249,7 @@ class SeanceSummaryScreen extends StatelessWidget {
             width: double.infinity,
             child: FilledButton.icon(
               icon: const Icon(Icons.check_circle),
-              label: const Text('Finish'),
+              label: Text(l10n.finish),
               onPressed: () {
                 Navigator.of(context).popUntil(
                   (route) =>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:fitfat/l10n/app_localizations.dart';
 import '../../../models/food.dart';
 import '../../providers/ingredients.dart';
 import '../../providers/meals.dart';
@@ -45,17 +46,19 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
   @override
   Widget build(BuildContext context) {
     final availableIngredients = ref.watch(ingredientsProvider);
+    final l10n = AppLocalizations.of(context)!;
     final query = _searchController.text.trim().toLowerCase();
     final filteredIngredients = query.isEmpty
         ? <Ingredient>[]
-      : availableIngredients
-            .where((ingredient) =>
-                ingredient.name.toLowerCase().contains(query))
-            .toList();
+        : availableIngredients
+              .where(
+                (ingredient) => ingredient.name.toLowerCase().contains(query),
+              )
+              .toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.initialMeal == null ? 'Add Meal' : 'Edit Meal'),
+        title: Text(widget.initialMeal == null ? l10n.addMeal : l10n.editMeal),
         actions: [
           if (_items.isNotEmpty)
             Padding(
@@ -63,7 +66,7 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
               child: FilledButton.icon(
                 onPressed: _saveMeal,
                 icon: const Icon(Icons.check),
-                label: Text('Save'),
+                label: Text(l10n.save),
               ),
             ),
         ],
@@ -73,20 +76,17 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
         children: [
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Meal name (optional)',
-            ),
+            decoration: InputDecoration(labelText: l10n.mealNameOptional),
           ),
           const SizedBox(height: 12),
-          _buildTimePicker(context),
+          _buildTimePicker(context, l10n),
           const SizedBox(height: 20),
           Text(
-            'Selected ingredients',
+            l10n.selectedIngredients,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
-          if (_items.isEmpty)
-            const Text('No ingredients selected yet'),
+          if (_items.isEmpty) Text(l10n.noIngredientsSelected),
           for (final item in _items)
             Card(
               child: ListTile(
@@ -109,7 +109,7 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
             ),
           const SizedBox(height: 20),
           Text(
-            'Add ingredients',
+            l10n.addComponents,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -117,7 +117,7 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
             controller: _searchController,
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.search),
-              labelText: 'Search ingredients',
+              labelText: l10n.searchIngredients,
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.close),
@@ -130,12 +130,12 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
           ),
           const SizedBox(height: 12),
           if (query.isNotEmpty)
-            ..._buildResultsOrCustom(filteredIngredients)
+            ..._buildResultsOrCustom(filteredIngredients, l10n)
           else
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Text(
-                'Type to search ingredients',
+                l10n.typeToSearchIngredient,
                 style: Theme.of(context).textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
@@ -146,12 +146,12 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
     );
   }
 
-  Widget _buildTimePicker(BuildContext context) {
+  Widget _buildTimePicker(BuildContext context, AppLocalizations l10n) {
     final formatted = DateFormat('MMM d, h:mm a').format(_eatenAt);
 
     return Row(
       children: [
-        Expanded(child: Text('Eaten at: $formatted')),
+        Expanded(child: Text(l10n.eatenAtLabel(formatted))),
         TextButton(
           onPressed: () async {
             final time = await showTimePicker(
@@ -169,13 +169,16 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
               );
             });
           },
-          child: const Text('Change'),
+          child: Text(l10n.change),
         ),
       ],
     );
   }
 
-  List<Widget> _buildResultsOrCustom(List<Ingredient> filtered) {
+  List<Widget> _buildResultsOrCustom(
+    List<Ingredient> filtered,
+    AppLocalizations l10n,
+  ) {
     final widgets = <Widget>[];
     if (filtered.isEmpty) {
       widgets.add(
@@ -183,12 +186,12 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             children: [
-              const Text('No ingredients found'),
+              Text(l10n.noIngredientsFound),
               const SizedBox(height: 8),
               TextButton.icon(
                 onPressed: _addCustomIngredient,
                 icon: const Icon(Icons.add_circle_outline),
-                label: const Text('Create new ingredient'),
+                label: Text(l10n.createNewIngredient),
               ),
             ],
           ),
@@ -201,10 +204,10 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
             child: ListTile(
               title: Text(ingredient.name),
               subtitle: Text(
-                '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
-                'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
-                'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
-                'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
+                '${ingredient.caloriesPer100g.toStringAsFixed(0)} ${l10n.kcalAbbrev} · '
+                '${l10n.proteinAbbrev} ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
+                '${l10n.carbsAbbrev} ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
+                '${l10n.fatAbbrev} ${ingredient.fatPer100g.toStringAsFixed(1)}g',
               ),
               trailing: IconButton(
                 icon: const Icon(Icons.add),
@@ -220,7 +223,7 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
           child: TextButton.icon(
             onPressed: _addCustomIngredient,
             icon: const Icon(Icons.add_circle_outline),
-            label: const Text('Create new ingredient'),
+            label: Text(l10n.createNewIngredient),
           ),
         ),
       );
@@ -267,27 +270,30 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
       text: initialValue?.toStringAsFixed(0) ?? '',
     );
 
+    final l10n = AppLocalizations.of(context)!;
     final result = await showDialog<double>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Amount in grams'),
+        title: Text(l10n.amountInGrams),
         content: TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(hintText: 'e.g. 120'),
+          decoration: InputDecoration(hintText: l10n.gramsHintMeal),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
-              final value = double.tryParse(controller.text.replaceAll(',', '.'));
+              final value = double.tryParse(
+                controller.text.replaceAll(',', '.'),
+              );
               if (value == null || value <= 0) return;
               Navigator.of(context).pop(value);
             },
-            child: const Text('Add'),
+            child: Text(l10n.add),
           ),
         ],
       ),
@@ -336,8 +342,9 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
         await controller.addMeal(meal);
       } catch (e) {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save meal: $e')),
+            SnackBar(content: Text(l10n.failedToSave(e.toString()))),
           );
         }
         return;
@@ -347,8 +354,9 @@ class _AddMealScreenState extends ConsumerState<AddMealScreen> {
         await controller.updateMeal(widget.initialMeal!.id, meal);
       } catch (e) {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update meal: $e')),
+            SnackBar(content: Text(l10n.failedToUpdate(e.toString()))),
           );
         }
         return;

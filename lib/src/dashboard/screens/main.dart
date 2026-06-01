@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:fitfat/l10n/app_localizations.dart';
 import '../../models/dashboard.dart';
 import '../../models/exercise.dart';
 import '../providers/dashboard.dart';
@@ -17,6 +18,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     // NOTE: Dashboard tab bar height matches Diet tab via PreferredSize(kToolbarHeight)
     return DefaultTabController(
       length: 3,
@@ -24,11 +26,11 @@ class DashboardScreen extends ConsumerWidget {
         appBar: AppBar(
           toolbarHeight: 0,
           elevation: 0,
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'Overview'),
-              Tab(text: 'Goals'),
-              Tab(text: 'Settings'),
+              Tab(text: l10n.overviewTab),
+              Tab(text: l10n.goalsTab),
+              Tab(text: l10n.settingsTab),
             ],
           ),
         ),
@@ -111,16 +113,18 @@ class _CompactWeightCardState extends ConsumerState<_CompactWeightCard> {
     await ref.read(bodyWeightTrackerProvider).addEntry(weight);
     if (!mounted) return;
     _weightController.clear();
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Weight logged!'),
-        duration: Duration(seconds: 1),
+      SnackBar(
+        content: Text(l10n.weightLogged),
+        duration: const Duration(seconds: 1),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final entriesAsync = ref.watch(bodyWeightEntriesProvider);
 
     return Padding(
@@ -145,7 +149,7 @@ class _CompactWeightCardState extends ConsumerState<_CompactWeightCard> {
                       const Icon(Icons.monitor_weight, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        'Weight',
+                        l10n.weight,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -178,11 +182,11 @@ class _CompactWeightCardState extends ConsumerState<_CompactWeightCard> {
                       Expanded(
                         child: TextField(
                           controller: _weightController,
-                          decoration: const InputDecoration(
-                            hintText: 'Enter weight (kg)',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            hintText: l10n.enterWeightKg,
+                            border: const OutlineInputBorder(),
                             isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
+                            contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 10,
                             ),
@@ -196,7 +200,7 @@ class _CompactWeightCardState extends ConsumerState<_CompactWeightCard> {
                       const SizedBox(width: 8),
                       FilledButton(
                         onPressed: _saveWeight,
-                        child: const Text('Log'),
+                        child: Text(l10n.log),
                       ),
                     ],
                   ),
@@ -287,6 +291,7 @@ class _WeightTrackerCardState extends ConsumerState<WeightTrackerCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final entriesAsync = ref.watch(bodyWeightEntriesProvider);
 
     return Card(
@@ -296,7 +301,7 @@ class _WeightTrackerCardState extends ConsumerState<WeightTrackerCard> {
         child: entriesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) => Text(
-            'Could not load weight history.',
+            l10n.couldNotLoadWeightHistory,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.error,
             ),
@@ -315,14 +320,14 @@ class _WeightTrackerCardState extends ConsumerState<WeightTrackerCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Weight Tracker',
+                  l10n.weightTracker,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   latest == null
-                      ? 'No weight entries yet.'
-                      : 'Latest: ${latest.weightKg.toStringAsFixed(1)} kg${delta == null ? '' : ' · ${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(1)} kg vs previous'}',
+                      ? l10n.noWeightEntries
+                      : '${l10n.latest}: ${latest.weightKg.toStringAsFixed(1)} kg${delta == null ? '' : ' · ${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(1)} kg vs previous'}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -337,9 +342,9 @@ class _WeightTrackerCardState extends ConsumerState<WeightTrackerCard> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        decoration: const InputDecoration(
-                          labelText: 'Weight (kg)',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.weightKg,
+                          border: const OutlineInputBorder(),
                           isDense: true,
                         ),
                       ),
@@ -358,7 +363,7 @@ class _WeightTrackerCardState extends ConsumerState<WeightTrackerCard> {
                   child: FilledButton.icon(
                     onPressed: _saveWeight,
                     icon: const Icon(Icons.monitor_weight),
-                    label: const Text('Log Weight'),
+                    label: Text(l10n.logWeight),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -372,13 +377,13 @@ class _WeightTrackerCardState extends ConsumerState<WeightTrackerCard> {
                 const SizedBox(height: 12),
                 ExpansionTile(
                   tilePadding: EdgeInsets.zero,
-                  title: const Text('History (last 7 entries)'),
+                  title: Text(l10n.historyLast7Entries),
                   children: history.isEmpty
                       ? [
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Text(
-                              'No history yet.',
+                              l10n.noHistory,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ),
@@ -435,40 +440,44 @@ class _WaterTrackerCardState extends ConsumerState<WaterTrackerCard> {
   Future<void> _showGoalDialog() async {
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Set Daily Water Goal'),
-        content: TextField(
-          controller: _goalController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            labelText: 'Liters (e.g., 2.5)',
-            border: OutlineInputBorder(),
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(l10n.setDailyWaterGoal),
+          content: TextField(
+            controller: _goalController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: l10n.litersExample,
+              border: const OutlineInputBorder(),
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final liters = double.tryParse(_goalController.text.trim());
-              if (liters != null && liters > 0) {
-                await ref
-                    .read(waterTrackerProvider.notifier)
-                    .setDailyGoal((liters * 1000).toInt());
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final liters = double.tryParse(_goalController.text.trim());
+                if (liters != null && liters > 0) {
+                  await ref
+                      .read(waterTrackerProvider.notifier)
+                      .setDailyGoal((liters * 1000).toInt());
+                }
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: Text(l10n.save),
+            ),
+          ],
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final waterState = ref.watch(waterTrackerProvider);
     final todayMl = waterState.getTodayMl();
     final progressFraction = waterState.dailyGoalMl > 0
@@ -484,7 +493,10 @@ class _WaterTrackerCardState extends ConsumerState<WaterTrackerCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Water Intake', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              l10n.waterIntake,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 8),
             Text(
               '${(todayMl / 1000).toStringAsFixed(1)}L / ${(waterState.dailyGoalMl / 1000).toStringAsFixed(1)}L',
@@ -525,20 +537,20 @@ class _WaterTrackerCardState extends ConsumerState<WaterTrackerCard> {
                 TextButton.icon(
                   onPressed: _showGoalDialog,
                   icon: const Icon(Icons.edit),
-                  label: const Text('Goal'),
+                  label: Text(l10n.goal),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             ExpansionTile(
               tilePadding: EdgeInsets.zero,
-              title: const Text('History (last 7 days)'),
+              title: Text(l10n.historyLast7Entries),
               children: history.isEmpty
                   ? [
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Text(
-                          'No history yet.',
+                          l10n.noHistory,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
@@ -571,34 +583,33 @@ class WorkoutActivityCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final activeSeance = ref.watch(activeSeanceProvider);
     final stats = ref.watch(workoutDashboardStatsProvider);
 
-    final title = activeSeance != null
-        ? 'Today\'s activity'
-        : 'Today\'s activity';
+    final title = l10n.todaysActivity;
 
     final content = activeSeance != null
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Workout in progress',
+                l10n.workoutInProgress,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              Text(activeSeance.name ?? 'Untitled workout'),
+              Text(activeSeance.name ?? l10n.untitledWorkout),
               const SizedBox(height: 4),
               Text(
-                'Started at ${DateFormat('HH:mm').format(activeSeance.startedAt)} · '
+                '${DateFormat('HH:mm').format(activeSeance.startedAt)} · '
                 '${activeSeance.exercises.length} exercises · '
-                '${_formatDuration(activeSeance.duration)} elapsed',
+                '${_formatDuration(activeSeance.duration)} ${l10n.elapsed}',
               ),
             ],
           )
         : stats.lastWorkout == null
         ? Text(
-            'No workouts yet. Start a session to see today\'s summary here.',
+            l10n.noWorkoutsToday,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -607,7 +618,7 @@ class WorkoutActivityCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                stats.lastWorkout!.name ?? 'Recent workout',
+                stats.lastWorkout!.name ?? l10n.recentWorkout,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -618,7 +629,7 @@ class WorkoutActivityCard extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${stats.lastWorkout!.exercises.length} exercises completed',
+                '${stats.lastWorkout!.exercises.length} ${l10n.exercisesCompleted}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -648,6 +659,7 @@ class WorkoutStatsRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final stats = ref.watch(workoutDashboardStatsProvider);
 
     return Padding(
@@ -657,22 +669,22 @@ class WorkoutStatsRow extends ConsumerWidget {
         runSpacing: 12,
         children: [
           _DashboardStatCard(
-            label: 'This week',
+            label: l10n.thisWeek,
             value: '${stats.weekSessions}',
             icon: Icons.calendar_view_week,
           ),
           _DashboardStatCard(
-            label: 'This month',
+            label: l10n.thisMonth,
             value: '${stats.monthSessions}',
             icon: Icons.calendar_month,
           ),
           _DashboardStatCard(
-            label: 'Volume',
+            label: l10n.volume,
             value: _formatVolume(stats.monthVolume),
             icon: Icons.fitness_center,
           ),
           _DashboardStatCard(
-            label: 'Time',
+            label: l10n.time,
             value: _formatDuration(stats.monthDuration),
             icon: Icons.timer,
           ),
@@ -727,6 +739,7 @@ class WorkoutHeatmapCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final days = ref.watch(workoutDaySummariesProvider);
     if (days.isEmpty) return const SizedBox.shrink();
 
@@ -747,11 +760,11 @@ class WorkoutHeatmapCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Training heatmap',
+                  l10n.trainingHeatmap,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 Text(
-                  'Last 84 days',
+                  l10n.last84Days,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -826,15 +839,15 @@ class WorkoutHeatmapCard extends ConsumerWidget {
                 ),
                 _HeatmapLegendDot(
                   color: _heatmapColor(context, maxVolume * 0.33, maxVolume),
-                  label: 'Low',
+                  label: l10n.heatmapLegendLow,
                 ),
                 _HeatmapLegendDot(
                   color: _heatmapColor(context, maxVolume * 0.66, maxVolume),
-                  label: 'Mid',
+                  label: l10n.heatmapLegendMid,
                 ),
                 _HeatmapLegendDot(
                   color: _heatmapColor(context, maxVolume, maxVolume),
-                  label: 'High',
+                  label: l10n.heatmapLegendHigh,
                 ),
               ],
             ),
@@ -888,6 +901,7 @@ void _showWorkoutDayDetails(BuildContext context, WorkoutDaySummary day) {
     showDragHandle: true,
     isScrollControlled: true,
     builder: (sheetContext) {
+      final l10n = AppLocalizations.of(sheetContext)!;
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -901,7 +915,7 @@ void _showWorkoutDayDetails(BuildContext context, WorkoutDaySummary day) {
               ),
               const SizedBox(height: 8),
               Text(
-                '${day.seances.length} session${day.seances.length == 1 ? '' : 's'} · '
+                '${l10n.sessionsCount(day.seances.length)} · '
                 '${_formatVolume(day.volume)} · ${_formatDuration(day.duration)}',
                 style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
@@ -910,7 +924,7 @@ void _showWorkoutDayDetails(BuildContext context, WorkoutDaySummary day) {
               const SizedBox(height: 16),
               if (day.seances.isEmpty)
                 Text(
-                  'No training recorded on this day.',
+                  l10n.noTrainingRecorded,
                   style: Theme.of(sheetContext).textTheme.bodyMedium,
                 )
               else
@@ -918,7 +932,7 @@ void _showWorkoutDayDetails(BuildContext context, WorkoutDaySummary day) {
                   (seance) => Card(
                     child: ListTile(
                       leading: const Icon(Icons.fitness_center),
-                      title: Text(seance.name ?? 'Workout'),
+                      title: Text(seance.name ?? l10n.workout),
                       subtitle: Text(
                         '${DateFormat('HH:mm').format(seance.completedAt ?? seance.startedAt)} · '
                         '${seance.exercises.length} exercises · ${_formatDuration(seance.duration)}',
@@ -965,6 +979,7 @@ class DailyNutritionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final dailyNutrition = ref.watch(dailyNutritionProvider);
     final macros = ref.watch(computedMacrosProvider);
 
@@ -975,11 +990,11 @@ class DailyNutritionCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Today', style: Theme.of(context).textTheme.titleLarge),
+            Text(l10n.today, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             _buildMacroRow(
               context,
-              'Calories',
+              l10n.calories,
               '${dailyNutrition.calories.toStringAsFixed(0)} kcal',
               '${macros.dailyCalories.toStringAsFixed(0)} kcal',
               Colors.blue,
@@ -987,7 +1002,7 @@ class DailyNutritionCard extends ConsumerWidget {
             const SizedBox(height: 12),
             _buildMacroRow(
               context,
-              'Protein',
+              l10n.protein,
               '${dailyNutrition.protein.toStringAsFixed(1)}g',
               '${macros.dailyProtein.toStringAsFixed(0)}g',
               Colors.red,
@@ -995,7 +1010,7 @@ class DailyNutritionCard extends ConsumerWidget {
             const SizedBox(height: 12),
             _buildMacroRow(
               context,
-              'Carbs',
+              l10n.carbs,
               '${dailyNutrition.carbs.toStringAsFixed(1)}g',
               '${macros.dailyCarbs.toStringAsFixed(0)}g',
               Colors.orange,
@@ -1003,7 +1018,7 @@ class DailyNutritionCard extends ConsumerWidget {
             const SizedBox(height: 12),
             _buildMacroRow(
               context,
-              'Fat',
+              l10n.fat,
               '${dailyNutrition.fat.toStringAsFixed(1)}g',
               '${macros.dailyFat.toStringAsFixed(0)}g',
               Colors.green,
@@ -1011,7 +1026,7 @@ class DailyNutritionCard extends ConsumerWidget {
             const SizedBox(height: 8),
             if (macros == ComputedMacros.zero)
               Text(
-                'Set a bodyweight goal and your profile to see daily targets.',
+                l10n.setProfileForTargets,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -1058,6 +1073,7 @@ class _GoalsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final goalsData = ref.watch(goalsProvider);
     final hasProfile = ref.watch(userProfileProvider) != null;
     final hasAnyGoal =
@@ -1077,7 +1093,7 @@ class _GoalsTab extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Body Weight Goal',
+                      l10n.bodyWeightGoal,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     if (goalsData.bodyWeightGoal != null)
@@ -1108,7 +1124,7 @@ class _GoalsTab extends ConsumerWidget {
                     child: Column(
                       children: [
                         Text(
-                          'No bodyweight goal set.',
+                          l10n.noBodyweightGoalSet,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: Theme.of(
@@ -1119,7 +1135,7 @@ class _GoalsTab extends ConsumerWidget {
                         const SizedBox(height: 8),
                         OutlinedButton.icon(
                           icon: const Icon(Icons.add),
-                          label: const Text('Add Body Weight Goal'),
+                          label: Text(l10n.addBodyWeightGoal),
                           onPressed: () => hasProfile
                               ? _createBodyWeightGoal(context, ref)
                               : _promptProfileFirst(context, ref),
@@ -1136,12 +1152,12 @@ class _GoalsTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   _goalDetailRow(
-                    'Target',
+                    l10n.target,
                     '${goalsData.bodyWeightGoal!.targetWeightKg.toStringAsFixed(1)} kg',
                   ),
                   if (goalsData.bodyWeightGoal!.targetDate != null)
                     _goalDetailRow(
-                      'By',
+                      l10n.by,
                       DateFormat(
                         'MMM d, yyyy',
                       ).format(goalsData.bodyWeightGoal!.targetDate!),
@@ -1164,12 +1180,12 @@ class _GoalsTab extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Strength Goals',
+                      l10n.strengthGoals,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     IconButton(
                       icon: const Icon(Icons.add),
-                      tooltip: 'Add strength goal',
+                      tooltip: l10n.addStrengthGoalTooltip,
                       onPressed: () => hasProfile
                           ? _createStrengthGoal(context, ref)
                           : _promptProfileFirst(context, ref),
@@ -1181,7 +1197,7 @@ class _GoalsTab extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'No strength goals yet. Tap + to add (one per exercise).',
+                      l10n.noStrengthGoalsYet,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -1203,13 +1219,13 @@ class _GoalsTab extends ConsumerWidget {
               child: Column(
                 children: [
                   Text(
-                    'Set up your profile first',
+                    l10n.setUpProfileFirst,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: () => _promptProfileFirst(context, ref),
-                    child: const Text('Create Profile'),
+                    child: Text(l10n.createProfile),
                   ),
                 ],
               ),
@@ -1221,7 +1237,7 @@ class _GoalsTab extends ConsumerWidget {
             child: Center(
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.edit, size: 16),
-                label: const Text('Edit Profile'),
+                label: Text(l10n.editProfile),
                 onPressed: () => _promptProfileFirst(context, ref),
               ),
             ),
@@ -1251,6 +1267,7 @@ class _GoalsTab extends ConsumerWidget {
     WidgetRef ref,
     StrengthGoal goal,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.fitness_center),
@@ -1258,7 +1275,9 @@ class _GoalsTab extends ConsumerWidget {
         '${goal.exerciseName} → ${goal.targetWeightKg.toStringAsFixed(0)} kg',
       ),
       subtitle: goal.targetDate != null
-          ? Text('By ${DateFormat('MMM d, yyyy').format(goal.targetDate!)}')
+          ? Text(
+              '${l10n.by} ${DateFormat('MMM d, yyyy').format(goal.targetDate!)}',
+            )
           : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1309,22 +1328,23 @@ class _GoalsTab extends ConsumerWidget {
   void _confirmDeleteBodyWeight(BuildContext context, WidgetRef ref) {
     showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete bodyweight goal?'),
-        content: const Text(
-          'This will clear your weight target and macro targets.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(l10n.deleteBodyweightGoal),
+          content: Text(l10n.deleteBodyweightGoalContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.delete),
+            ),
+          ],
+        );
+      },
     ).then((confirmed) {
       if (confirmed == true && context.mounted) {
         ref.read(goalsProvider.notifier).clearBodyWeightGoal();
@@ -1354,20 +1374,23 @@ class _GoalsTab extends ConsumerWidget {
   ) {
     showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Delete strength goal for $exerciseName?'),
-        content: const Text('This will remove the goal.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(l10n.deleteStrengthGoalTitle(exerciseName)),
+          content: Text(l10n.deleteStrengthGoalContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.delete),
+            ),
+          ],
+        );
+      },
     ).then((confirmed) {
       if (confirmed == true && context.mounted) {
         ref.read(goalsProvider.notifier).removeStrengthGoal(exerciseName);
@@ -1418,8 +1441,9 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(widget.initial == null ? 'Your Profile' : 'Edit Profile'),
+      title: Text(widget.initial == null ? l10n.yourProfile : l10n.editProfile),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1427,7 +1451,7 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
             // Birthdate picker — calendar-only, consistent with other inputs
             InputDecorator(
               decoration: InputDecoration(
-                label: const Text('Birthdate'),
+                label: Text(l10n.birthdate),
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.calendar_month),
@@ -1453,9 +1477,9 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
             const SizedBox(height: 12),
             DropdownButtonFormField<Sex>(
               initialValue: _sex,
-              decoration: const InputDecoration(
-                label: Text('Sex'),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                label: Text(l10n.sex),
+                border: const OutlineInputBorder(),
               ),
               items: Sex.values
                   .map((s) => DropdownMenuItem(value: s, child: Text(s.label)))
@@ -1466,26 +1490,26 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
             TextField(
               controller: _heightController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                label: Text('Height (cm)'),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                label: Text(l10n.heightCm),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _weightController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                label: Text('Weight (kg)'),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                label: Text(l10n.weightKg),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<ActivityLevel>(
               initialValue: _activity,
-              decoration: const InputDecoration(
-                label: Text('Activity Level'),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                label: Text(l10n.activityLevel),
+                border: const OutlineInputBorder(),
               ),
               items: ActivityLevel.values
                   .map((a) => DropdownMenuItem(value: a, child: Text(a.label)))
@@ -1498,7 +1522,7 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () {
@@ -1516,7 +1540,7 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
               ),
             );
           },
-          child: const Text('Save'),
+          child: Text(l10n.save),
         ),
       ],
     );
@@ -1571,20 +1595,21 @@ class _BodyWeightGoalDialogState extends ConsumerState<BodyWeightGoalDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
       title: Text(
         widget.existing == null
-            ? 'Add Body Weight Goal'
-            : 'Edit Body Weight Goal',
+            ? l10n.addBodyWeightGoalTitle
+            : l10n.editBodyWeightGoalTitle,
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           DropdownButtonFormField<BodyWeightDirection>(
             initialValue: _direction,
-            decoration: const InputDecoration(
-              label: Text('Direction'),
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              label: Text(l10n.direction),
+              border: const OutlineInputBorder(),
             ),
             items: BodyWeightDirection.values
                 .map((d) => DropdownMenuItem(value: d, child: Text(d.label)))
@@ -1595,9 +1620,9 @@ class _BodyWeightGoalDialogState extends ConsumerState<BodyWeightGoalDialog> {
           TextField(
             controller: _weightController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              label: Text('Target Weight (kg)'),
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              label: Text(l10n.targetWeightKg),
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
@@ -1607,18 +1632,19 @@ class _BodyWeightGoalDialogState extends ConsumerState<BodyWeightGoalDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
-        FilledButton(onPressed: _save, child: const Text('Save')),
+        FilledButton(onPressed: _save, child: Text(l10n.save)),
       ],
     );
   }
 
   Widget _buildDatePicker() {
+    final l10n = AppLocalizations.of(context)!;
     final initial = _targetDate ?? DateTime.now().add(const Duration(days: 1));
     return InputDecorator(
       decoration: InputDecoration(
-        label: const Text('Target date'),
+        label: Text(l10n.targetDate),
         border: const OutlineInputBorder(),
         suffixIcon: IconButton(
           icon: const Icon(Icons.calendar_month),
@@ -1638,7 +1664,7 @@ class _BodyWeightGoalDialogState extends ConsumerState<BodyWeightGoalDialog> {
       child: Text(
         _targetDate != null
             ? DateFormat('dd/MM/yyyy').format(_targetDate!)
-            : 'Not set',
+            : l10n.notSet,
       ),
     );
   }
@@ -1694,6 +1720,7 @@ class _StrengthGoalDialogState extends ConsumerState<StrengthGoalDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final allExercises = ref.watch(exerciseListProvider);
     final goalsData = ref.watch(goalsProvider);
     final existingStrengthNames = goalsData.strengthGoals
@@ -1702,7 +1729,9 @@ class _StrengthGoalDialogState extends ConsumerState<StrengthGoalDialog> {
 
     return AlertDialog(
       title: Text(
-        widget.existing == null ? 'Add Strength Goal' : 'Edit Strength Goal',
+        widget.existing == null
+            ? l10n.addStrengthGoalTitle
+            : l10n.editStrengthGoalTitle,
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1728,10 +1757,10 @@ class _StrengthGoalDialogState extends ConsumerState<StrengthGoalDialog> {
               return TextField(
                 controller: controller,
                 focusNode: focusNode,
-                decoration: const InputDecoration(
-                  label: Text('Exercise'),
-                  hintText: 'Search or type custom name',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  label: Text(l10n.exercise),
+                  hintText: l10n.searchOrTypeCustom,
+                  border: const OutlineInputBorder(),
                 ),
                 onSubmitted: (value) {
                   final match = allExercises.where(
@@ -1757,9 +1786,9 @@ class _StrengthGoalDialogState extends ConsumerState<StrengthGoalDialog> {
           TextField(
             controller: _weightController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              label: Text('Target Weight (kg)'),
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              label: Text(l10n.targetWeightKg),
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
@@ -1769,18 +1798,19 @@ class _StrengthGoalDialogState extends ConsumerState<StrengthGoalDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
-        FilledButton(onPressed: _save, child: const Text('Save')),
+        FilledButton(onPressed: _save, child: Text(l10n.save)),
       ],
     );
   }
 
   Widget _buildDatePicker() {
+    final l10n = AppLocalizations.of(context)!;
     final initial = _targetDate ?? DateTime.now().add(const Duration(days: 1));
     return InputDecorator(
       decoration: InputDecoration(
-        label: const Text('Target date'),
+        label: Text(l10n.targetDate),
         border: const OutlineInputBorder(),
         suffixIcon: IconButton(
           icon: const Icon(Icons.calendar_month),
@@ -1800,7 +1830,7 @@ class _StrengthGoalDialogState extends ConsumerState<StrengthGoalDialog> {
       child: Text(
         _targetDate != null
             ? DateFormat('dd/MM/yyyy').format(_targetDate!)
-            : 'Not set',
+            : l10n.notSet,
       ),
     );
   }
@@ -1828,6 +1858,7 @@ class _GoalsOverviewCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final goalsData = ref.watch(goalsProvider);
     final hasAnyGoal =
         goalsData.bodyWeightGoal != null || goalsData.strengthGoals.isNotEmpty;
@@ -1842,14 +1873,17 @@ class _GoalsOverviewCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Goals', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                l10n.goalsTab,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               if (goalsData.bodyWeightGoal != null)
                 _GoalProgressTile(
                   icon: Icons.monitor_weight,
                   label: '${goalsData.bodyWeightGoal!.direction.label} Weight',
                   detail:
-                      'Target: ${goalsData.bodyWeightGoal!.targetWeightKg.toStringAsFixed(1)} kg',
+                      '${l10n.target}: ${goalsData.bodyWeightGoal!.targetWeightKg.toStringAsFixed(1)} kg',
                 ),
               if (goalsData.bodyWeightGoal != null &&
                   goalsData.strengthGoals.isNotEmpty)
@@ -1859,7 +1893,7 @@ class _GoalsOverviewCard extends ConsumerWidget {
                   icon: Icons.fitness_center,
                   label: goal.exerciseName,
                   detail:
-                      'Target: ${goal.targetWeightKg.toStringAsFixed(1)} kg',
+                      '${l10n.target}: ${goal.targetWeightKg.toStringAsFixed(1)} kg',
                 ),
                 if (goal != goalsData.strengthGoals.last)
                   const SizedBox(height: 8),
@@ -1917,6 +1951,7 @@ class _CalorieStreakCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final nutrition = ref.watch(dailyNutritionProvider);
     final macros = ref.watch(computedMacrosProvider);
 
@@ -1952,7 +1987,7 @@ class _CalorieStreakCard extends ConsumerWidget {
                 const Text('🔥', style: TextStyle(fontSize: 16)),
                 const SizedBox(width: 6),
                 Text(
-                  'Calories',
+                  l10n.calories,
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
@@ -1997,6 +2032,7 @@ class _WorkoutStreakCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final daySummaries = ref.watch(workoutDaySummariesProvider);
 
     // Check last 7 days for workout completion
@@ -2033,7 +2069,7 @@ class _WorkoutStreakCard extends ConsumerWidget {
                 const Text('🏋️', style: TextStyle(fontSize: 16)),
                 const SizedBox(width: 6),
                 Text(
-                  'Workouts',
+                  l10n.workouts,
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
@@ -2084,6 +2120,7 @@ class StrengthTrendChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final period = ref.watch(chartPeriodProvider);
     final strengthData = ref.watch(strengthTrendProvider);
     final goalsData = ref.watch(goalsProvider);
@@ -2094,7 +2131,7 @@ class StrengthTrendChart extends ConsumerWidget {
         .where((d) => d.date.isAfter(cutoffDate))
         .toList();
 
-    final exercises = ['Bench Press', 'Deadlift', 'Squat'];
+    final exercises = [l10n.benchPress, l10n.deadlift, l10n.squat];
     final exerciseLines = <LineChartBarData>[];
 
     for (var i = 0; i < exercises.length; i++) {
@@ -2140,7 +2177,7 @@ class StrengthTrendChart extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Strength Trend',
+                  l10n.strengthTrend,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 DropdownButton<ChartPeriod>(
@@ -2165,7 +2202,7 @@ class StrengthTrendChart extends ConsumerWidget {
             SizedBox(
               height: 200,
               child: exerciseLines.isEmpty
-                  ? const Center(child: Text('No strength data'))
+                  ? Center(child: Text(l10n.noStrengthData))
                   : LineChart(
                       LineChartData(
                         minX: 0,
@@ -2250,6 +2287,7 @@ class StrengthTrendChart extends ConsumerWidget {
     List<StrengthDataPoint> data,
     StrengthGoal goal,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final exerciseData = data
         .where((d) => d.exercise == goal.exerciseName)
         .toList();
@@ -2268,7 +2306,7 @@ class StrengthTrendChart extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Goal: ${goal.exerciseName} → ${goal.targetWeightKg.toStringAsFixed(0)} kg',
+            '${goal.exerciseName} → ${goal.targetWeightKg.toStringAsFixed(0)} kg',
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 6),
@@ -2286,10 +2324,10 @@ class StrengthTrendChart extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             progress >= 1.0
-                ? 'Goal reached! (${currentMax.toStringAsFixed(0)} kg)'
+                ? '${l10n.goalReached} (${currentMax.toStringAsFixed(0)} kg)'
                 : '${currentMax.toStringAsFixed(0)} kg / ${goal.targetWeightKg.toStringAsFixed(0)} kg '
                       '(${(progress * 100).toStringAsFixed(0)}%) — '
-                      '${remaining.toStringAsFixed(0)} kg to go',
+                      '${remaining.toStringAsFixed(0)} kg ${l10n.toGo}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
@@ -2307,6 +2345,7 @@ class BodyweightTrendChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final weightData = ref.watch(weightTrendProvider);
 
     final now = DateTime.now();
@@ -2335,7 +2374,7 @@ class BodyweightTrendChart extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Weight Trend (90 days)',
+              l10n.weightTrend90Days,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
@@ -2389,6 +2428,7 @@ class _SettingsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final profile = ref.watch(userProfileProvider);
     final prefs = ref.watch(dietPreferencesProvider);
 
@@ -2396,16 +2436,16 @@ class _SettingsTab extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       children: [
         // ── Profile section ──
-        Text('Profile', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.profile, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         Card(
           child: ListTile(
             leading: const Icon(Icons.person),
-            title: Text(profile != null ? 'Edit Profile' : 'Set up Profile'),
+            title: Text(profile != null ? l10n.editProfile : l10n.setUpProfile),
             subtitle: Text(
               profile != null
                   ? '${profile.sex == "male" ? "Male" : "Female"} · ${profile.heightCm.toStringAsFixed(0)} cm · ${profile.weightKg.toStringAsFixed(1)} kg'
-                  : 'Enter your details for macro calculations',
+                  : l10n.enterDetailsForMacros,
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => showDialog(
@@ -2417,7 +2457,7 @@ class _SettingsTab extends ConsumerWidget {
         const SizedBox(height: 24),
 
         // ── Nutrition section ──
-        Text('Nutrition', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.nutrition, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         Card(
           child: Column(
@@ -2434,7 +2474,7 @@ class _SettingsTab extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Visible macros',
+                        l10n.visibleMacros,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -2461,20 +2501,20 @@ class _SettingsTab extends ConsumerWidget {
         const SizedBox(height: 24),
 
         // ── Workout section ──
-        Text('Workout', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.workout, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         Card(
           child: ListTile(
             leading: const Icon(Icons.timer),
-            title: const Text('Default rest timer'),
-            subtitle: const Text('60 seconds between sets'),
+            title: Text(l10n.defaultRestTimer),
+            subtitle: Text(l10n.secondsBetweenSets),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               // Placeholder — rest timer configuration coming later
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Rest timer settings coming soon'),
-                  duration: Duration(seconds: 1),
+                SnackBar(
+                  content: Text(l10n.restTimerComingSoon),
+                  duration: const Duration(seconds: 1),
                 ),
               );
             },
@@ -2483,19 +2523,19 @@ class _SettingsTab extends ConsumerWidget {
         const SizedBox(height: 24),
 
         // ── Appearance section ──
-        Text('Appearance', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.appearance, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         Card(
           child: ListTile(
             leading: const Icon(Icons.palette),
-            title: const Text('Theme'),
-            subtitle: const Text('System default'),
+            title: Text(l10n.theme),
+            subtitle: Text(l10n.systemDefault),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Theme settings coming soon'),
-                  duration: Duration(seconds: 1),
+                SnackBar(
+                  content: Text(l10n.themeComingSoon),
+                  duration: const Duration(seconds: 1),
                 ),
               );
             },
@@ -2504,25 +2544,25 @@ class _SettingsTab extends ConsumerWidget {
         const SizedBox(height: 24),
 
         // ── Data section ──
-        Text('Data', style: Theme.of(context).textTheme.titleMedium),
+        Text(l10n.data, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         Card(
           child: Column(
             children: [
               ListTile(
                 leading: const Icon(Icons.file_download),
-                title: const Text('Export database'),
-                subtitle: const Text('Share the SQLite database file'),
+                title: Text(l10n.exportDatabase),
+                subtitle: Text(l10n.shareDbFile),
                 onTap: () => _exportDb(context),
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
-                title: const Text(
-                  'Delete all data',
-                  style: TextStyle(color: Colors.red),
+                title: Text(
+                  l10n.deleteAllData,
+                  style: const TextStyle(color: Colors.red),
                 ),
-                subtitle: const Text('Remove everything and restart fresh'),
+                subtitle: Text(l10n.removeEverything),
                 onTap: () => _deleteDb(context),
               ),
             ],
@@ -2534,14 +2574,15 @@ class _SettingsTab extends ConsumerWidget {
   }
 
   Future<void> _exportDb(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/fitfat.db');
       if (!file.existsSync()) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No database file found')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.noDbFound)));
         }
         return;
       }
@@ -2552,32 +2593,33 @@ class _SettingsTab extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.exportFailed('$e'))));
       }
     }
   }
 
   Future<void> _deleteDb(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete all data?'),
-        content: const Text(
-          'This will remove all your data including meals, exercises, workouts, '
-          'goals, and profile. A fresh database will be created on next launch.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete everything'),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx)!;
+        return AlertDialog(
+          title: Text(l10n.deleteAllDataTitle),
+          content: Text(l10n.deleteAllDataContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(l10n.deleteEverything),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed != true) return;
 
@@ -2588,17 +2630,15 @@ class _SettingsTab extends ConsumerWidget {
         await file.delete();
       }
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Database deleted. Restart the app to recreate it.'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.dbDeleted)));
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.deleteFailed('$e'))));
       }
     }
   }

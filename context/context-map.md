@@ -4,6 +4,7 @@
 - `README.md`: current high-level architecture diagram.
 - `lib/main.dart`: app bootstrap, logging, and foreground task callback.
 - `lib/src/app/router.dart`: route graph and bottom navigation shell.
+- `context/ui/navigation.md`: bottom navigation localization notes (navDiet, navDashboard, navExercise)
 - `lib/src/app/main.dart`: `MaterialApp.router` wrapper and theme wiring.
 
 ## Data and persistence
@@ -43,13 +44,19 @@
 - `creatorId` should not depend on a brittle hardware identifier; use a local installation UUID or a future user/profile id for attribution.
 
 ## Localization
-- `lib/src/l10n/app_localizations.dart`: centralized `AppLocalizations` class with manual en/fr/es string tables. Covers meal/ingredient editor labels, dialog copy, and snackbar messages. No `.arb` files used — translations are inline with a simple `_t()` switch.
+- **ARB-based generated localization** via `flutter gen-l10n`.
+- `lib/l10n/app_en.arb`, `app_fr.arb`, `app_es.arb` — string definitions.
+- `lib/l10n/app_localizations.dart` — generated `AppLocalizations` class (do not edit).
+- Configured via `l10n.yaml` at project root.
+- Also uses `GlobalMaterialLocalizations`, `GlobalWidgetsLocalizations`, `GlobalCupertinoLocalizations` delegates.
+- The old manual `lib/src/l10n/app_localizations.dart` will be removed once all strings are migrated.
 
 ## Diet preferences
 - `lib/src/diet/providers/diet_preferences.dart`: `dietPreferencesProvider` and `DietPreferencesNotifier` — persisted macro visibility toggles backed by `SharedPreferences`.
 
 ## Active plans
 - `context/plans/ui-ux-overhaul.md`: comprehensive UI/UX pass — theme, naming, dashboard, settings, forms, search/filters, bug fix.
+- `context/plans/i18n-arb-migration.md`: migrate from manual `_t()` localization to Flutter standard ARB-based generated localization across all 10 source files.
 
 ## Supporting docs
 - `doc/simple_db_example.md`: example database context.

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/food.dart';
-import '../../l10n/app_localizations.dart';
+import 'package:fitfat/l10n/app_localizations.dart';
 import '../providers/ingredients.dart';
 import '../providers/meals.dart';
 import '../providers/diet_preferences.dart';
@@ -16,7 +16,7 @@ class DietScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -59,7 +59,7 @@ class _MealsTabState extends ConsumerState<MealsTab> {
   Widget build(BuildContext context) {
     final state = ref.watch(mealsProvider);
     final meals = state.meals;
-    final l10n = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final groupedMeals = _groupMealsByDay(meals);
     // Debug: log UI-side meal count to ensure provider updates are seen
     try {
@@ -76,7 +76,7 @@ class _MealsTabState extends ConsumerState<MealsTab> {
             padding: const EdgeInsets.only(bottom: 16),
             child: FilledButton.icon(
               icon: const Icon(Icons.add),
-              label: const Text('Add Meal'),
+              label: Text(l10n.addMeal),
               onPressed: () => _openAddMeal(context),
             ),
           );
@@ -115,6 +115,7 @@ class _MealsTabState extends ConsumerState<MealsTab> {
   }
 
   Widget _buildDayGroupCard(BuildContext context, _MealsDayGroup group) {
+    final l10n = AppLocalizations.of(context)!;
     final dailyTotals = group.meals.fold(
       MacroNutrients.zero,
       (sum, meal) => sum + meal.totalMacros,
@@ -133,7 +134,9 @@ class _MealsTabState extends ConsumerState<MealsTab> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Total: ${_formatMacrosWithPrefs(dailyTotals, prefs)}',
+              l10n.formatTotal(
+                _formatMacrosWithPrefs(dailyTotals, prefs, l10n),
+              ),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
@@ -147,32 +150,30 @@ class _MealsTabState extends ConsumerState<MealsTab> {
   }
 
   Widget _buildMealRow(BuildContext context, MealEntry meal) {
-    final title = (meal.name?.trim().isEmpty ?? true) ? 'Meal' : meal.name!;
+    final l10n = AppLocalizations.of(context)!;
+    final title = (meal.name?.trim().isEmpty ?? true) ? l10n.meal : meal.name!;
     final macros = meal.totalMacros;
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(title),
       subtitle: Text(
-        '${_timeFormat.format(meal.eatenAt)} · ${_formatMacros(macros)} · ${meal.items.length} item${meal.items.length == 1 ? '' : 's'}',
+        '${_timeFormat.format(meal.eatenAt)} · ${l10n.formatMacros(macros.calories, macros.protein, macros.carbs, macros.fat)} · ${l10n.items(meal.items.length)}',
       ),
       onTap: () => _editMeal(context, meal),
       trailing: IconButton(
         icon: const Icon(Icons.delete_outline),
-        tooltip: 'Delete meal',
+        tooltip: l10n.deleteMealTooltip,
         onPressed: () => _deleteMeal(meal.id),
       ),
     );
   }
 
-  String _formatMacros(MacroNutrients macros) {
-    return '${macros.calories.toStringAsFixed(0)} kcal · '
-        'P ${macros.protein.toStringAsFixed(1)}g · '
-        'C ${macros.carbs.toStringAsFixed(1)}g · '
-        'F ${macros.fat.toStringAsFixed(1)}g';
-  }
-
-  String _formatMacrosWithPrefs(MacroNutrients macros, DietPreferences prefs) {
+  String _formatMacrosWithPrefs(
+    MacroNutrients macros,
+    DietPreferences prefs,
+    AppLocalizations l10n,
+  ) {
     final result = StringBuffer();
     final visibleMacros = {
       'calories': prefs.isCaloriesVisible,
@@ -182,13 +183,19 @@ class _MealsTabState extends ConsumerState<MealsTab> {
     };
 
     if (visibleMacros['calories'] ?? true)
-      result.write('${macros.calories.toStringAsFixed(0)} kcal · ');
+      result.write(
+        '${macros.calories.toStringAsFixed(0)} ${l10n.kcalAbbrev} · ',
+      );
     if (visibleMacros['protein'] ?? true)
-      result.write('P ${macros.protein.toStringAsFixed(1)}g · ');
+      result.write(
+        '${l10n.proteinAbbrev} ${macros.protein.toStringAsFixed(1)}g · ',
+      );
     if (visibleMacros['carbs'] ?? true)
-      result.write('C ${macros.carbs.toStringAsFixed(1)}g · ');
+      result.write(
+        '${l10n.carbsAbbrev} ${macros.carbs.toStringAsFixed(1)}g · ',
+      );
     if (visibleMacros['fat'] ?? true)
-      result.write('F ${macros.fat.toStringAsFixed(1)}g');
+      result.write('${l10n.fatAbbrev} ${macros.fat.toStringAsFixed(1)}g');
 
     return result.toString();
   }
@@ -206,19 +213,20 @@ class _MealsTabState extends ConsumerState<MealsTab> {
   }
 
   void _deleteMeal(String id) async {
+    final l10n = AppLocalizations.of(ref.context)!;
     final confirmed = await showDialog<bool>(
       context: ref.context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete meal?'),
-        content: const Text('This will remove the meal from your log.'),
+        title: Text(l10n.deleteMealTitle),
+        content: Text(l10n.deleteMealContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -255,6 +263,7 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
   @override
   Widget build(BuildContext context) {
     final ingredients = ref.watch(ingredientsProvider);
+    final l10n = AppLocalizations.of(context)!;
     final query = _searchController.text.trim().toLowerCase();
 
     final filtered =
@@ -276,7 +285,7 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search ingredients...',
+              hintText: l10n.searchIngredients,
               prefixIcon: const Icon(Icons.search),
               border: const OutlineInputBorder(),
               isDense: true,
@@ -286,7 +295,7 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
                 ),
                 onPressed: () =>
                     setState(() => _sortAscending = !_sortAscending),
-                tooltip: _sortAscending ? 'Sort A-Z' : 'Sort Z-A',
+                tooltip: _sortAscending ? l10n.sortAZ : l10n.sortZA,
               ),
             ),
             style: const TextStyle(fontSize: 13),
@@ -306,14 +315,14 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'No ingredients found',
+                        l10n.noIngredientsFound,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Try a different search or add a new ingredient',
+                        l10n.noIngredientsFoundSubtext,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -330,7 +339,7 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
                         padding: const EdgeInsets.only(bottom: 16),
                         child: FilledButton.icon(
                           icon: const Icon(Icons.add),
-                          label: const Text('Add Ingredient'),
+                          label: Text(l10n.addIngredient),
                           onPressed: () => _openAddIngredient(context, ref),
                         ),
                       );
@@ -343,10 +352,10 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
                         onTap: () => _editIngredient(context, ref, ingredient),
                         onDelete: () => _deleteIngredient(ref, ingredient.id),
                         body: Text(
-                          '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal · '
-                          'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
-                          'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
-                          'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
+                          '${ingredient.caloriesPer100g.toStringAsFixed(0)} ${l10n.kcalAbbrev} · '
+                          '${l10n.proteinAbbrev} ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
+                          '${l10n.carbsAbbrev} ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
+                          '${l10n.fatAbbrev} ${ingredient.fatPer100g.toStringAsFixed(1)}g',
                         ),
                       ),
                     );
@@ -384,21 +393,20 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
   }
 
   Future<void> _confirmAndDelete(WidgetRef ref, String id) async {
+    final l10n = AppLocalizations.of(ref.context)!;
     final confirmed = await showDialog<bool>(
       context: ref.context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete ingredient?'),
-        content: const Text(
-          'This will remove the ingredient and any portions from meals.',
-        ),
+        title: Text(l10n.deleteIngredientTitle),
+        content: Text(l10n.deleteIngredientContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
