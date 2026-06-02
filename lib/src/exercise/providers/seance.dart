@@ -115,9 +115,13 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
   }
 
   void startSeance() {
+    final now = DateTime.now();
+    final defaultName =
+        'Workout - ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     state = Seance(
       id: const Uuid().v4(),
-      startedAt: DateTime.now(),
+      name: defaultName,
+      startedAt: now,
       exercises: [],
     );
     unawaited(SeanceForegroundService.instance.start(state!.startedAt));
@@ -280,11 +284,9 @@ class ActiveSeanceNotifier extends Notifier<Seance?> {
       return;
     }
     final now = DateTime.now();
-    final defaultName =
-        'Workout - ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final completed = Seance(
       id: state!.id,
-      name: state!.name ?? defaultName,
+      name: state!.name,
       startedAt: state!.startedAt,
       exercises: state!.exercises,
       completedAt: now,
@@ -341,8 +343,11 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
               ),
               sets: setRows
                   .map(
-                    (setRow) =>
-                        ExerciseSet(reps: setRow.reps, weight: setRow.weight),
+                    (setRow) => ExerciseSet(
+                      reps: setRow.reps,
+                      weight: setRow.weight,
+                      completedAt: setRow.completedAt,
+                    ),
                   )
                   .toList(),
               startedAt: entryRow.startedAt,
@@ -435,6 +440,7 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
                     entryId: entry.id,
                     reps: set.reps,
                     weight: set.weight,
+                    completedAt: Value(set.completedAt),
                   ),
                 );
           }
@@ -445,9 +451,10 @@ class SeanceHistoryNotifier extends Notifier<List<Seance>> {
     }
   }
 
-  void addSeance(Seance seance) {
+  Future<void> addSeance(Seance seance) async {
+    // Save to DB first so any racing _loadFromDb() from build() will find it
+    await _saveToDb(seance);
     state = [seance, ...state];
-    unawaited(_saveToDb(seance));
   }
 }
 

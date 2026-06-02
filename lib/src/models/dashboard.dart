@@ -1,17 +1,10 @@
 import 'package:flutter/foundation.dart';
 
+import 'enums.dart';
+
 // ---------------------------------------------------------------------------
 // User profile
 // ---------------------------------------------------------------------------
-
-enum Sex { male, female }
-
-extension SexLabel on Sex {
-  String get label => switch (this) {
-    Sex.male => 'Male',
-    Sex.female => 'Female',
-  };
-}
 
 enum ActivityLevel {
   sedentary(1.2),
@@ -36,14 +29,14 @@ enum ActivityLevel {
 class UserProfile {
   const UserProfile({
     required this.birthDate,
-    required this.sex,
+    required this.gender,
     required this.heightCm,
     required this.weightKg,
     required this.activityLevel,
   });
 
   final DateTime birthDate;
-  final Sex sex;
+  final Gender gender;
   final double heightCm;
   final double weightKg;
   final ActivityLevel activityLevel;

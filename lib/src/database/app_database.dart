@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../exercise/services/workout_services.dart';
+import '../models/enums.dart';
 import '../services/logger.dart';
 import 'tables.dart';
 
@@ -47,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -74,6 +75,18 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(exercises, exercises.creatorId);
         // Seed comprehensive exercise bundle
         await _seedExercises();
+      }
+      if (from < 4) {
+        // Rename sex column to gender in user_profile table
+        await m.database.customStatement(
+          'ALTER TABLE user_profile RENAME COLUMN sex TO gender',
+        );
+      }
+      if (from < 5) {
+        // Add completedAt column to exercise_sets table
+        await m.database.customStatement(
+          'ALTER TABLE exercise_sets ADD COLUMN completed_at TEXT',
+        );
       }
     },
   );

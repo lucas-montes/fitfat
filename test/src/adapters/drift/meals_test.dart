@@ -21,9 +21,7 @@ void main() {
       await database.close();
     });
 
-    Future<food.Ingredient> seedIngredient({
-      required String name,
-    }) async {
+    Future<food.Ingredient> seedIngredient({required String name}) async {
       final ingredientId = uuid.v4();
       await database.insertIngredient(
         IngredientsCompanion.insert(
@@ -52,9 +50,7 @@ void main() {
         id: uuid.v7(),
         name: 'Lunch',
         eatenAt: DateTime(2026, 5, 24, 12),
-        items: [
-          food.IngredientPortion(ingredient: ingredient, grams: 150),
-        ],
+        items: [food.IngredientPortion(ingredient: ingredient, grams: 150)],
       );
 
       await repository.insert(meal);
@@ -80,9 +76,7 @@ void main() {
           id: mealId,
           name: 'Dinner',
           eatenAt: eatenAt,
-          items: [
-            food.IngredientPortion(ingredient: ingredient, grams: 100),
-          ],
+          items: [food.IngredientPortion(ingredient: ingredient, grams: 100)],
         ),
       );
 
@@ -91,9 +85,7 @@ void main() {
           id: mealId,
           name: 'Updated Dinner',
           eatenAt: eatenAt,
-          items: [
-            food.IngredientPortion(ingredient: ingredient, grams: 200),
-          ],
+          items: [food.IngredientPortion(ingredient: ingredient, grams: 200)],
         ),
       );
 

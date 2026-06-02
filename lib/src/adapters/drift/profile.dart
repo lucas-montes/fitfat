@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import '../../database/app_database.dart';
 import '../../models/dashboard.dart';
 
@@ -5,27 +7,40 @@ class DriftProfileRepository {
   DriftProfileRepository(this._db);
 
   final AppDatabase _db;
+  final _uuid = const Uuid();
 
   Future<UserProfile?> get() async {
     final row = await _db.watchProfile().first;
     if (row == null) return null;
+
+    // Compute average weight from last 7 body weight entries
+    final allWeights = await _db.watchBodyWeight().first;
+    final sorted = List<BodyWeightEntry>.from(allWeights)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final last7 = sorted.take(7).toList();
+    final avgWeight = last7.isEmpty
+        ? 0.0
+        : last7.fold<double>(0, (sum, e) => sum + e.weightKg) / last7.length;
+
     return UserProfile(
       birthDate: row.birthDate,
-      sex: row.sex == 'male' ? Sex.male : Sex.female,
+      gender: row.gender,
       heightCm: row.heightCm,
-      weightKg: row.weightKg,
+      weightKg: avgWeight,
       activityLevel: _parseActivity(row.activityLevel),
     );
   }
 
   Future<void> upsert(UserProfile profile) async {
+    // Reuse existing ID if profile already exists; otherwise generate UUID v7
+    final existing = await _db.watchProfile().first;
+    final id = existing?.id ?? _uuid.v7();
     await _db.upsertProfile(
       UserProfileCompanion.insert(
-        id: 'default',
+        id: id,
         birthDate: profile.birthDate,
-        sex: profile.sex == Sex.male ? 'male' : 'female',
+        gender: profile.gender,
         heightCm: profile.heightCm,
-        weightKg: profile.weightKg,
         activityLevel: profile.activityLevel.name,
       ),
     );

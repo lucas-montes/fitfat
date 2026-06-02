@@ -5,7 +5,7 @@ import '../../models/exercise.dart';
 class WorkoutSessionService {
   /// Whether the session is guided (template-based) or free-form.
   bool get isGuided => _isGuided;
-  bool _isGuided = false;
+  final bool _isGuided = false;
 
   /// The elapsed duration since the session started.
   Duration elapsed(DateTime startedAt) => DateTime.now().difference(startedAt);

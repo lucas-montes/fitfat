@@ -13,6 +13,8 @@
 - `lib/src/adapters/drift/`: database-backed repositories/adapters.
 
 ## Domain models
+- `lib/src/models/enums.dart`: shared enums (`Gender`, with `GenderLabel` extension).
+- `context/exercise/seance-persistence.md`: seance save/load flow — DB schema, domain model hierarchy, save transaction, load queries, SharedPreferences for active seance, race condition guard.
 - `lib/src/models/food.dart`: ingredients, meal entries, and macro calculations.
 - `lib/src/models/exercise.dart`: exercise definitions, entries, sets, and active seance model.
 - `lib/src/models/dashboard.dart`: user profile, goals, computed macros, chart periods.
@@ -55,6 +57,8 @@
 - `lib/src/diet/providers/diet_preferences.dart`: `dietPreferencesProvider` and `DietPreferencesNotifier` — persisted macro visibility toggles backed by `SharedPreferences`.
 
 ## Active plans
+- `context/plans/profile-gender-uuid-fix.md`: extract shared Gender enum, rename sex→gender column, derive weight from BodyWeightEntries, use UUID v7 for profile ID. ✅ Done
+- `context/plans/exercise-workout-fixes.md`: fix compile errors in DriftSeanceRepository, seance provider, and current_seance_screen.
 - `context/plans/ui-ux-overhaul.md`: comprehensive UI/UX pass — theme, naming, dashboard, settings, forms, search/filters, bug fix.
 - `context/plans/i18n-arb-migration.md`: migrate from manual `_t()` localization to Flutter standard ARB-based generated localization across all 10 source files.
 

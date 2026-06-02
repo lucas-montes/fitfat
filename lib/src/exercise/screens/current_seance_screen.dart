@@ -397,10 +397,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
                       '${entry.totalWeight.toStringAsFixed(1)} kg',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                    if (isPr &&
-                        currentBest != null &&
-                        currentBestVolume > bestVolume &&
-                        bestVolume > 0)
+                    if (isPr && bestVolume > 0)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

@@ -49,26 +49,17 @@ class MealsController extends Notifier<MealsState> {
   MealsState build() {
     _repo = ref.read(mealRepositoryProvider);
     ref.onDispose(() => _repoSub?.cancel());
-    return MealsState(
-      status: MealsStatus.idle,
-      selectedMonth: DateTime.now(),
-    );
+    return MealsState(status: MealsStatus.idle, selectedMonth: DateTime.now());
   }
 
   Future<void> loadMonth(DateTime month) async {
-    state = state.copyWith(
-      status: MealsStatus.loading,
-      selectedMonth: month,
-    );
+    state = state.copyWith(status: MealsStatus.loading, selectedMonth: month);
     try {
       final monthStart = DateTime(month.year, month.month, 1);
       _subscribeToRepo(monthStart);
       final mealsList = await _repo.getByDate(monthStart);
       if (ref.mounted) {
-        state = state.copyWith(
-          status: MealsStatus.data,
-          meals: mealsList,
-        );
+        state = state.copyWith(status: MealsStatus.data, meals: mealsList);
       }
     } catch (e) {
       if (ref.mounted) {
@@ -82,24 +73,26 @@ class MealsController extends Notifier<MealsState> {
 
   void _subscribeToRepo(DateTime monthStart) {
     _repoSub?.cancel();
-    _repoSub = _repo.watchMealsForDay(monthStart).listen(
-      (mealsList) {
-        if (ref.mounted) {
-          state = state.copyWith(
-            status: MealsStatus.data,
-            meals: mealsList,
-          );
-        }
-      },
-      onError: (e) {
-        if (ref.mounted) {
-          state = state.copyWith(
-            status: MealsStatus.error,
-            errorMessage: e.toString(),
-          );
-        }
-      },
-    );
+    _repoSub = _repo
+        .watchMealsForDay(monthStart)
+        .listen(
+          (mealsList) {
+            if (ref.mounted) {
+              state = state.copyWith(
+                status: MealsStatus.data,
+                meals: mealsList,
+              );
+            }
+          },
+          onError: (e) {
+            if (ref.mounted) {
+              state = state.copyWith(
+                status: MealsStatus.error,
+                errorMessage: e.toString(),
+              );
+            }
+          },
+        );
   }
 
   Future<void> addMeal(MealEntry meal) async {

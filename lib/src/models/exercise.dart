@@ -96,7 +96,7 @@ class ExerciseEntry {
 class Seance {
   const Seance({
     required this.id,
-    this.name,
+    this.name = '',
     required this.startedAt,
     required this.exercises,
     this.completedAt,
@@ -105,7 +105,7 @@ class Seance {
   });
 
   final String id;
-  final String? name;
+  final String name;
   final DateTime startedAt;
   final List<ExerciseEntry> exercises;
   final DateTime? completedAt;
@@ -133,7 +133,7 @@ class Seance {
 
   factory Seance.fromJson(Map<String, dynamic> json) => Seance(
     id: json['id'] as String,
-    name: json['name'] as String?,
+    name: json['name'] as String? ?? '',
     startedAt: DateTime.parse(json['startedAt'] as String),
     exercises: (json['exercises'] as List)
         .map((e) => ExerciseEntry.fromJson(e as Map<String, dynamic>))

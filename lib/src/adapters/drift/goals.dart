@@ -11,56 +11,75 @@ class DriftGoalRepository {
   final _uuid = const Uuid();
 
   Future<void> upsertBodyWeight(BodyWeightGoal goal) async {
-    await (_db.delete(_db.goals)..where((table) => table.type.equals('bodyweight'))).go();
-    await _db.into(_db.goals).insert(
-      GoalsCompanion.insert(
-        id: _uuid.v7(),
-        type: 'bodyweight',
-        targetWeightKg: goal.targetWeightKg,
-        direction: Value(_directionToString(goal.direction)),
-        targetDate: Value(goal.targetDate),
-      ),
-    );
+    await (_db.delete(
+      _db.goals,
+    )..where((table) => table.type.equals('bodyweight'))).go();
+    await _db
+        .into(_db.goals)
+        .insert(
+          GoalsCompanion.insert(
+            id: _uuid.v7(),
+            type: 'bodyweight',
+            targetWeightKg: goal.targetWeightKg,
+            direction: Value(_directionToString(goal.direction)),
+            targetDate: Value(goal.targetDate),
+          ),
+        );
   }
 
   Future<void> clearBodyWeight() async {
-    await (_db.delete(_db.goals)..where((table) => table.type.equals('bodyweight'))).go();
+    await (_db.delete(
+      _db.goals,
+    )..where((table) => table.type.equals('bodyweight'))).go();
   }
 
   Future<void> addStrength(StrengthGoal goal) async {
     await (_db.delete(_db.goals)..where(
-      (table) => table.type.equals('strength') & table.exerciseName.equals(goal.exerciseName),
-    )).go();
-    await _db.into(_db.goals).insert(
-      GoalsCompanion.insert(
-        id: _uuid.v7(),
-        type: 'strength',
-        exerciseName: Value(goal.exerciseName),
-        targetWeightKg: goal.targetWeightKg,
-        targetDate: Value(goal.targetDate),
-      ),
-    );
+          (table) =>
+              table.type.equals('strength') &
+              table.exerciseName.equals(goal.exerciseName),
+        ))
+        .go();
+    await _db
+        .into(_db.goals)
+        .insert(
+          GoalsCompanion.insert(
+            id: _uuid.v7(),
+            type: 'strength',
+            exerciseName: Value(goal.exerciseName),
+            targetWeightKg: goal.targetWeightKg,
+            targetDate: Value(goal.targetDate),
+          ),
+        );
   }
 
   Future<void> updateStrength(String exerciseName, StrengthGoal goal) async {
     await (_db.delete(_db.goals)..where(
-      (table) => table.type.equals('strength') & table.exerciseName.equals(exerciseName),
-    )).go();
-    await _db.into(_db.goals).insert(
-      GoalsCompanion.insert(
-        id: _uuid.v7(),
-        type: 'strength',
-        exerciseName: Value(goal.exerciseName),
-        targetWeightKg: goal.targetWeightKg,
-        targetDate: Value(goal.targetDate),
-      ),
-    );
+          (table) =>
+              table.type.equals('strength') &
+              table.exerciseName.equals(exerciseName),
+        ))
+        .go();
+    await _db
+        .into(_db.goals)
+        .insert(
+          GoalsCompanion.insert(
+            id: _uuid.v7(),
+            type: 'strength',
+            exerciseName: Value(goal.exerciseName),
+            targetWeightKg: goal.targetWeightKg,
+            targetDate: Value(goal.targetDate),
+          ),
+        );
   }
 
   Future<void> removeStrength(String exerciseName) async {
     await (_db.delete(_db.goals)..where(
-      (table) => table.type.equals('strength') & table.exerciseName.equals(exerciseName),
-    )).go();
+          (table) =>
+              table.type.equals('strength') &
+              table.exerciseName.equals(exerciseName),
+        ))
+        .go();
   }
 
   Future<GoalsData> loadAll() async {
@@ -86,7 +105,10 @@ class DriftGoalRepository {
       }
     }
 
-    return GoalsData(bodyWeightGoal: bodyWeightGoal, strengthGoals: strengthGoals);
+    return GoalsData(
+      bodyWeightGoal: bodyWeightGoal,
+      strengthGoals: strengthGoals,
+    );
   }
 
   BodyWeightDirection _parseDirection(String? value) {

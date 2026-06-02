@@ -59,7 +59,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
       return filtered
           .where(
             (s) =>
-                (s.name?.toLowerCase().contains(query) ?? false) ||
+                s.name.toLowerCase().contains(query) ||
                 DateFormat(
                   'MMM d, yyyy',
                 ).format(s.completedAt!).toLowerCase().contains(query),

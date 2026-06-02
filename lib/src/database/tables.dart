@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../models/enums.dart';
+
 // ---------------------------------------------------------------------------
 // Exercises list (seed data, can be synced from remote)
 // ---------------------------------------------------------------------------
@@ -83,9 +85,11 @@ class MealIngredients extends Table {
 // Seances
 // ---------------------------------------------------------------------------
 
+//NOTE: maybe completedAt is nullable because we save the values in the databae to be able to close the app and not lose progress, if it's the case maybe we could save it somewhere else in the meantime
+
 class Seances extends Table {
   TextColumn get id => text()();
-  TextColumn get name => text().nullable()();
+  TextColumn get name => text()();
   DateTimeColumn get startedAt => dateTime()();
   DateTimeColumn get completedAt => dateTime().nullable()();
   IntColumn get restBetweenSetsMillis =>
@@ -119,14 +123,13 @@ class ExerciseSets extends Table {
   TextColumn get entryId => text().references(ExerciseEntries, #id)();
   IntColumn get reps => integer()();
   RealColumn get weight => real()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
-// ---------------------------------------------------------------------------
-// Templates
-// ---------------------------------------------------------------------------
+// A predefined workout template
 
 class Templates extends Table {
   TextColumn get id => text()();
@@ -136,10 +139,7 @@ class Templates extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-// ---------------------------------------------------------------------------
-// Template exercises (exercises added to a template)
-// ---------------------------------------------------------------------------
-
+//TODO: not sure about this one, maybe we need to link it with an actual exercise
 class TemplateExercises extends Table {
   TextColumn get id => text()();
   TextColumn get templateId => text().references(Templates, #id)();
@@ -149,16 +149,12 @@ class TemplateExercises extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-// ---------------------------------------------------------------------------
-// Template planned sets (planned sets within a template exercise)
-// ---------------------------------------------------------------------------
-
 class TemplateSets extends Table {
   TextColumn get id => text()();
   TextColumn get templateExerciseId =>
       text().references(TemplateExercises, #id)();
   IntColumn get reps => integer()();
-  RealColumn get weightKg => real().nullable()();
+  RealColumn get weightKg => real()();
   IntColumn get restSeconds => integer().withDefault(const Constant(60))();
 
   @override
@@ -189,9 +185,8 @@ class Goals extends Table {
 class UserProfile extends Table {
   TextColumn get id => text()();
   DateTimeColumn get birthDate => dateTime()();
-  TextColumn get sex => text()(); // 'male' | 'female'
+  TextColumn get gender => textEnum<Gender>()();
   RealColumn get heightCm => real()();
-  RealColumn get weightKg => real()();
   TextColumn get activityLevel =>
       text()(); // 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive'
 
@@ -199,14 +194,19 @@ class UserProfile extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-// ---------------------------------------------------------------------------
-// Body weight entries (track weight over time)
-// ---------------------------------------------------------------------------
-
 class BodyWeightEntries extends Table {
   TextColumn get id => text()();
   DateTimeColumn get date => dateTime()();
   RealColumn get weightKg => real()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class WaterConsumption extends Table {
+  TextColumn get id => text()();
+  DateTimeColumn get date => dateTime()();
+  RealColumn get liters => real()();
 
   @override
   Set<Column> get primaryKey => {id};

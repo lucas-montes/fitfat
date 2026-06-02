@@ -27,7 +27,7 @@ FitFat is a Flutter app for fitness and nutrition tracking.
 - `lib/src/app/router.dart` defines the bottom-nav shell and the active-session route.
 - `lib/src/app/theme.dart` defines Material 3 theme with custom typography, card shapes, input decoration, and button styles.
 - `lib/src/database/` defines Drift tables and the database provider.
-- `lib/src/models/` holds domain models for food, exercise, dashboard, and seance data.
+- `lib/src/models/` holds domain models for food, exercise, dashboard, and seance data, plus shared enums (`enums.dart`).
 - `lib/src/adapters/drift/` converts between Drift rows and domain models.
 - `lib/src/diet/`, `lib/src/dashboard/`, and `lib/src/exercise/` contain the feature UI and Riverpod controllers.
 

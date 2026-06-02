@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../diet/providers/meals.dart';
 import '../../models/dashboard.dart';
+import '../../models/enums.dart';
 import '../../models/exercise.dart';
 import '../../models/food.dart';
 import '../../database/app_database.dart' hide Goal, Seance;
@@ -182,9 +183,9 @@ class GoalsNotifier extends Notifier<GoalsData> {
 double _bmr(UserProfile profile) {
   final base =
       10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age;
-  return switch (profile.sex) {
-    Sex.male => base + 5,
-    Sex.female => base - 161,
+  return switch (profile.gender) {
+    Gender.male => base + 5,
+    Gender.female => base - 161,
   };
 }
 
@@ -590,17 +591,14 @@ const _defaultWaterGoalMl = 2500; // 2.5L
 /// Provider for water tracker state (current day's water intake + history)
 final waterTrackerProvider =
     NotifierProvider<WaterTrackerNotifier, WaterTrackerState>(
-  WaterTrackerNotifier.new,
-);
+      WaterTrackerNotifier.new,
+    );
 
 class WaterTrackerState {
   final Map<String, int> dailyTotals; // "YYYY-MM-DD" -> ml
   final int dailyGoalMl;
 
-  WaterTrackerState({
-    required this.dailyTotals,
-    required this.dailyGoalMl,
-  });
+  WaterTrackerState({required this.dailyTotals, required this.dailyGoalMl});
 
   int getTodayMl() {
     final today = _formatDate(DateTime.now());
@@ -626,10 +624,7 @@ class WaterTrackerNotifier extends Notifier<WaterTrackerState> {
   @override
   WaterTrackerState build() {
     _load();
-    return WaterTrackerState(
-      dailyTotals: {},
-      dailyGoalMl: _defaultWaterGoalMl,
-    );
+    return WaterTrackerState(dailyTotals: {}, dailyGoalMl: _defaultWaterGoalMl);
   }
 
   Future<void> _load() async {
@@ -649,10 +644,7 @@ class WaterTrackerNotifier extends Notifier<WaterTrackerState> {
       // Load daily goal
       final goalMl = prefs.getInt(_waterDailyGoalKey) ?? _defaultWaterGoalMl;
 
-      state = WaterTrackerState(
-        dailyTotals: dailyTotals,
-        dailyGoalMl: goalMl,
-      );
+      state = WaterTrackerState(dailyTotals: dailyTotals, dailyGoalMl: goalMl);
     } catch (e) {
       if (kDebugMode) print('Failed to load water tracker: $e');
       state = WaterTrackerState(
@@ -665,10 +657,7 @@ class WaterTrackerNotifier extends Notifier<WaterTrackerState> {
   Future<void> _save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        _waterTrackerKey,
-        jsonEncode(state.dailyTotals),
-      );
+      await prefs.setString(_waterTrackerKey, jsonEncode(state.dailyTotals));
       await prefs.setInt(_waterDailyGoalKey, state.dailyGoalMl);
     } catch (e) {
       if (kDebugMode) print('Failed to save water tracker: $e');
@@ -691,10 +680,7 @@ class WaterTrackerNotifier extends Notifier<WaterTrackerState> {
   }
 
   Future<void> setDailyGoal(int ml) async {
-    state = WaterTrackerState(
-      dailyTotals: state.dailyTotals,
-      dailyGoalMl: ml,
-    );
+    state = WaterTrackerState(dailyTotals: state.dailyTotals, dailyGoalMl: ml);
     await _save();
   }
 

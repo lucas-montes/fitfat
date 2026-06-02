@@ -21,87 +21,97 @@ class DriftSeanceRepository {
 
   Future<SeanceTemplate> createTemplate(SeanceTemplate template) async {
     final templateId = template.id.isNotEmpty ? template.id : _uuid.v7();
-    await _db.into(_db.templates).insert(
-      TemplatesCompanion.insert(id: templateId, name: template.name),
-    );
+    await _db
+        .into(_db.templates)
+        .insert(TemplatesCompanion.insert(id: templateId, name: template.name));
     for (final exercise in template.exercises) {
       final exerciseId = exercise.id.isNotEmpty ? exercise.id : _uuid.v7();
-      await _db.into(_db.templateExercises).insert(
-        TemplateExercisesCompanion.insert(
-          id: exerciseId,
-          templateId: templateId,
-          name: exercise.name,
-        ),
-      );
+      await _db
+          .into(_db.templateExercises)
+          .insert(
+            TemplateExercisesCompanion.insert(
+              id: exerciseId,
+              templateId: templateId,
+              name: exercise.name,
+            ),
+          );
       for (final plannedSet in exercise.plannedSets) {
-        await _db.into(_db.templateSets).insert(
-          TemplateSetsCompanion.insert(
-            id: _uuid.v7(),
-            templateExerciseId: exerciseId,
-            reps: plannedSet.reps,
-            weightKg: Value(plannedSet.weightKg),
-            restSeconds: Value(plannedSet.restSeconds),
-          ),
-        );
+        await _db
+            .into(_db.templateSets)
+            .insert(
+              TemplateSetsCompanion.insert(
+                id: _uuid.v7(),
+                templateExerciseId: exerciseId,
+                reps: plannedSet.reps,
+                weightKg: plannedSet.weightKg ?? 0.0,
+                restSeconds: Value(plannedSet.restSeconds),
+              ),
+            );
       }
     }
     return template.copyWith(id: templateId);
   }
 
   Future<void> deleteTemplate(String id) async {
-    final exercises = await (
-      _db.select(_db.templateExercises)
-        ..where((table) => table.templateId.equals(id))
-    ).get();
+    final exercises = await (_db.select(
+      _db.templateExercises,
+    )..where((table) => table.templateId.equals(id))).get();
     for (final exercise in exercises) {
-      await (_db.delete(_db.templateSets)
-            ..where((table) => table.templateExerciseId.equals(exercise.id)))
-          .go();
+      await (_db.delete(
+        _db.templateSets,
+      )..where((table) => table.templateExerciseId.equals(exercise.id))).go();
     }
-    await (_db.delete(_db.templateExercises)
-          ..where((table) => table.templateId.equals(id)))
-        .go();
-    await (_db.delete(_db.templates)..where((table) => table.id.equals(id))).go();
+    await (_db.delete(
+      _db.templateExercises,
+    )..where((table) => table.templateId.equals(id))).go();
+    await (_db.delete(
+      _db.templates,
+    )..where((table) => table.id.equals(id))).go();
   }
 
   Future<SeanceTemplate> updateTemplate(SeanceTemplate template) async {
-    await _db.update(_db.templates).replace(
-      TemplatesCompanion(
-        id: Value(template.id),
-        name: Value(template.name),
-      ),
-    );
-    final oldExercises = await (
-      _db.select(_db.templateExercises)
-        ..where((table) => table.templateId.equals(template.id))
-    ).get();
-    for (final exercise in oldExercises) {
-      await (_db.delete(_db.templateSets)
-            ..where((table) => table.templateExerciseId.equals(exercise.id)))
-          .go();
-    }
-    await (_db.delete(_db.templateExercises)
-          ..where((table) => table.templateId.equals(template.id)))
-        .go();
-    for (final exercise in template.exercises) {
-      final exerciseId = _uuid.v7();
-      await _db.into(_db.templateExercises).insert(
-        TemplateExercisesCompanion.insert(
-          id: exerciseId,
-          templateId: template.id,
-          name: exercise.name,
-        ),
-      );
-      for (final plannedSet in exercise.plannedSets) {
-        await _db.into(_db.templateSets).insert(
-          TemplateSetsCompanion.insert(
-            id: _uuid.v7(),
-            templateExerciseId: exerciseId,
-            reps: plannedSet.reps,
-            weightKg: Value(plannedSet.weightKg),
-            restSeconds: Value(plannedSet.restSeconds),
+    await _db
+        .update(_db.templates)
+        .replace(
+          TemplatesCompanion(
+            id: Value(template.id),
+            name: Value(template.name),
           ),
         );
+    final oldExercises = await (_db.select(
+      _db.templateExercises,
+    )..where((table) => table.templateId.equals(template.id))).get();
+    for (final exercise in oldExercises) {
+      await (_db.delete(
+        _db.templateSets,
+      )..where((table) => table.templateExerciseId.equals(exercise.id))).go();
+    }
+    await (_db.delete(
+      _db.templateExercises,
+    )..where((table) => table.templateId.equals(template.id))).go();
+    for (final exercise in template.exercises) {
+      final exerciseId = _uuid.v7();
+      await _db
+          .into(_db.templateExercises)
+          .insert(
+            TemplateExercisesCompanion.insert(
+              id: exerciseId,
+              templateId: template.id,
+              name: exercise.name,
+            ),
+          );
+      for (final plannedSet in exercise.plannedSets) {
+        await _db
+            .into(_db.templateSets)
+            .insert(
+              TemplateSetsCompanion.insert(
+                id: _uuid.v7(),
+                templateExerciseId: exerciseId,
+                reps: plannedSet.reps,
+                weightKg: plannedSet.weightKg ?? 0.0,
+                restSeconds: Value(plannedSet.restSeconds),
+              ),
+            );
       }
     }
     return template;
@@ -112,8 +122,9 @@ class DriftSeanceRepository {
     DateTime? scheduledFor,
   }) async {
     final original = await _assembleTemplate(
-      await (_db.select(_db.templates)..where((table) => table.id.equals(id)))
-          .getSingle(),
+      await (_db.select(
+        _db.templates,
+      )..where((table) => table.id.equals(id))).getSingle(),
     );
     final cloned = original.copyWith(
       id: _uuid.v7(),
@@ -127,16 +138,16 @@ class DriftSeanceRepository {
   }
 
   Future<SeanceTemplate> _assembleTemplate(Template template) async {
-    final exerciseRows = await (
-      _db.select(_db.templateExercises)
-        ..where((table) => table.templateId.equals(template.id))
-    ).get();
+    final exerciseRows = await (_db.select(
+      _db.templateExercises,
+    )..where((table) => table.templateId.equals(template.id))).get();
     final exercises = <ExerciseTemplate>[];
     for (final exerciseRow in exerciseRows) {
-      final setRows = await (
-        _db.select(_db.templateSets)
-          ..where((table) => table.templateExerciseId.equals(exerciseRow.id))
-      ).get();
+      final setRows =
+          await (_db.select(_db.templateSets)..where(
+                (table) => table.templateExerciseId.equals(exerciseRow.id),
+              ))
+              .get();
       exercises.add(
         ExerciseTemplate(
           id: exerciseRow.id,
@@ -153,6 +164,10 @@ class DriftSeanceRepository {
         ),
       );
     }
-    return SeanceTemplate(id: template.id, name: template.name, exercises: exercises);
+    return SeanceTemplate(
+      id: template.id,
+      name: template.name,
+      exercises: exercises,
+    );
   }
 }

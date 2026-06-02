@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 import '../../models/dashboard.dart';
+import '../../models/enums.dart';
 import '../../models/exercise.dart';
 import '../providers/dashboard.dart';
 import '../../diet/providers/diet_preferences.dart';
@@ -1417,7 +1418,7 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
   DateTime _birthDate = DateTime(1990);
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
-  Sex _sex = Sex.male;
+  Gender _gender = Gender.male;
   ActivityLevel _activity = ActivityLevel.moderate;
 
   @override
@@ -1428,7 +1429,7 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
       _birthDate = init.birthDate;
       _heightController.text = init.heightCm.toString();
       _weightController.text = init.weightKg.toString();
-      _sex = init.sex;
+      _gender = init.gender;
       _activity = init.activityLevel;
     }
   }
@@ -1476,16 +1477,16 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<Sex>(
-              initialValue: _sex,
+            DropdownButtonFormField<Gender>(
+              initialValue: _gender,
               decoration: InputDecoration(
                 label: Text(l10n.sex),
                 border: const OutlineInputBorder(),
               ),
-              items: Sex.values
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s.label)))
+              items: Gender.values
+                  .map((g) => DropdownMenuItem(value: g, child: Text(g.label)))
                   .toList(),
-              onChanged: (v) => setState(() => _sex = v!),
+              onChanged: (v) => setState(() => _gender = v!),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -1530,11 +1531,13 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
             final height = double.tryParse(_heightController.text);
             final weight = double.tryParse(_weightController.text);
             if (height == null || weight == null) return;
+            // Also insert a body weight entry so weight tracking is in sync
+            ref.read(bodyWeightTrackerProvider).addEntry(weight);
             Navigator.pop(
               context,
               UserProfile(
                 birthDate: _birthDate,
-                sex: _sex,
+                gender: _gender,
                 heightCm: height,
                 weightKg: weight,
                 activityLevel: _activity,
@@ -2445,7 +2448,7 @@ class _SettingsTab extends ConsumerWidget {
             title: Text(profile != null ? l10n.editProfile : l10n.setUpProfile),
             subtitle: Text(
               profile != null
-                  ? '${profile.sex == "male" ? "Male" : "Female"} · ${profile.heightCm.toStringAsFixed(0)} cm · ${profile.weightKg.toStringAsFixed(1)} kg'
+                  ? '${profile.gender.label} · ${profile.heightCm.toStringAsFixed(0)} cm · ${profile.weightKg.toStringAsFixed(1)} kg'
                   : l10n.enterDetailsForMacros,
             ),
             trailing: const Icon(Icons.chevron_right),

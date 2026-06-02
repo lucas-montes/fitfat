@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 final _macroDisplayKey = 'macro_display_preference';
 
 /// Provider for diet preferences (macro visibility settings)
@@ -47,10 +46,7 @@ class DietPreferencesNotifier extends Notifier<DietPreferences> {
 
   Future<void> savePrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _macroDisplayKey,
-      const JsonEncoder().convert(state),
-    );
+    await prefs.setString(_macroDisplayKey, const JsonEncoder().convert(state));
   }
 
   void toggleMacro(String key) {

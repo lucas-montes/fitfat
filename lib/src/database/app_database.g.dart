@@ -2055,9 +2055,9 @@ class $SeancesTable extends Seances with TableInfo<$SeancesTable, Seance> {
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
     'name',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _startedAtMeta = const VerificationMeta(
     'startedAt',
@@ -2122,6 +2122,8 @@ class $SeancesTable extends Seances with TableInfo<$SeancesTable, Seance> {
         _nameMeta,
         name.isAcceptableOrUnknown(data['name']!, _nameMeta),
       );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
     }
     if (data.containsKey('started_at')) {
       context.handle(
@@ -2165,7 +2167,7 @@ class $SeancesTable extends Seances with TableInfo<$SeancesTable, Seance> {
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
-      ),
+      )!,
       startedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}started_at'],
@@ -2189,13 +2191,13 @@ class $SeancesTable extends Seances with TableInfo<$SeancesTable, Seance> {
 
 class Seance extends DataClass implements Insertable<Seance> {
   final String id;
-  final String? name;
+  final String name;
   final DateTime startedAt;
   final DateTime? completedAt;
   final int restBetweenSetsMillis;
   const Seance({
     required this.id,
-    this.name,
+    required this.name,
     required this.startedAt,
     this.completedAt,
     required this.restBetweenSetsMillis,
@@ -2204,9 +2206,7 @@ class Seance extends DataClass implements Insertable<Seance> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    if (!nullToAbsent || name != null) {
-      map['name'] = Variable<String>(name);
-    }
+    map['name'] = Variable<String>(name);
     map['started_at'] = Variable<DateTime>(startedAt);
     if (!nullToAbsent || completedAt != null) {
       map['completed_at'] = Variable<DateTime>(completedAt);
@@ -2218,7 +2218,7 @@ class Seance extends DataClass implements Insertable<Seance> {
   SeancesCompanion toCompanion(bool nullToAbsent) {
     return SeancesCompanion(
       id: Value(id),
-      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      name: Value(name),
       startedAt: Value(startedAt),
       completedAt: completedAt == null && nullToAbsent
           ? const Value.absent()
@@ -2234,7 +2234,7 @@ class Seance extends DataClass implements Insertable<Seance> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Seance(
       id: serializer.fromJson<String>(json['id']),
-      name: serializer.fromJson<String?>(json['name']),
+      name: serializer.fromJson<String>(json['name']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       restBetweenSetsMillis: serializer.fromJson<int>(
@@ -2247,7 +2247,7 @@ class Seance extends DataClass implements Insertable<Seance> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'name': serializer.toJson<String?>(name),
+      'name': serializer.toJson<String>(name),
       'startedAt': serializer.toJson<DateTime>(startedAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'restBetweenSetsMillis': serializer.toJson<int>(restBetweenSetsMillis),
@@ -2256,13 +2256,13 @@ class Seance extends DataClass implements Insertable<Seance> {
 
   Seance copyWith({
     String? id,
-    Value<String?> name = const Value.absent(),
+    String? name,
     DateTime? startedAt,
     Value<DateTime?> completedAt = const Value.absent(),
     int? restBetweenSetsMillis,
   }) => Seance(
     id: id ?? this.id,
-    name: name.present ? name.value : this.name,
+    name: name ?? this.name,
     startedAt: startedAt ?? this.startedAt,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     restBetweenSetsMillis: restBetweenSetsMillis ?? this.restBetweenSetsMillis,
@@ -2309,7 +2309,7 @@ class Seance extends DataClass implements Insertable<Seance> {
 
 class SeancesCompanion extends UpdateCompanion<Seance> {
   final Value<String> id;
-  final Value<String?> name;
+  final Value<String> name;
   final Value<DateTime> startedAt;
   final Value<DateTime?> completedAt;
   final Value<int> restBetweenSetsMillis;
@@ -2324,12 +2324,13 @@ class SeancesCompanion extends UpdateCompanion<Seance> {
   });
   SeancesCompanion.insert({
     required String id,
-    this.name = const Value.absent(),
+    required String name,
     required DateTime startedAt,
     this.completedAt = const Value.absent(),
     this.restBetweenSetsMillis = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
+       name = Value(name),
        startedAt = Value(startedAt);
   static Insertable<Seance> custom({
     Expression<String>? id,
@@ -2352,7 +2353,7 @@ class SeancesCompanion extends UpdateCompanion<Seance> {
 
   SeancesCompanion copyWith({
     Value<String>? id,
-    Value<String?>? name,
+    Value<String>? name,
     Value<DateTime>? startedAt,
     Value<DateTime?>? completedAt,
     Value<int>? restBetweenSetsMillis,
@@ -2833,8 +2834,25 @@ class $ExerciseSetsTable extends ExerciseSets
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, entryId, reps, weight];
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    entryId,
+    reps,
+    weight,
+    completedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2876,6 +2894,15 @@ class $ExerciseSetsTable extends ExerciseSets
     } else if (isInserting) {
       context.missing(_weightMeta);
     }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2901,6 +2928,10 @@ class $ExerciseSetsTable extends ExerciseSets
         DriftSqlType.double,
         data['${effectivePrefix}weight'],
       )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
     );
   }
 
@@ -2915,11 +2946,13 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
   final String entryId;
   final int reps;
   final double weight;
+  final DateTime? completedAt;
   const ExerciseSet({
     required this.id,
     required this.entryId,
     required this.reps,
     required this.weight,
+    this.completedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2928,6 +2961,9 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
     map['entry_id'] = Variable<String>(entryId);
     map['reps'] = Variable<int>(reps);
     map['weight'] = Variable<double>(weight);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
     return map;
   }
 
@@ -2937,6 +2973,9 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
       entryId: Value(entryId),
       reps: Value(reps),
       weight: Value(weight),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
     );
   }
 
@@ -2950,6 +2989,7 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
       entryId: serializer.fromJson<String>(json['entryId']),
       reps: serializer.fromJson<int>(json['reps']),
       weight: serializer.fromJson<double>(json['weight']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
     );
   }
   @override
@@ -2960,6 +3000,7 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
       'entryId': serializer.toJson<String>(entryId),
       'reps': serializer.toJson<int>(reps),
       'weight': serializer.toJson<double>(weight),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
     };
   }
 
@@ -2968,11 +3009,13 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
     String? entryId,
     int? reps,
     double? weight,
+    Value<DateTime?> completedAt = const Value.absent(),
   }) => ExerciseSet(
     id: id ?? this.id,
     entryId: entryId ?? this.entryId,
     reps: reps ?? this.reps,
     weight: weight ?? this.weight,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
   );
   ExerciseSet copyWithCompanion(ExerciseSetsCompanion data) {
     return ExerciseSet(
@@ -2980,6 +3023,9 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
       entryId: data.entryId.present ? data.entryId.value : this.entryId,
       reps: data.reps.present ? data.reps.value : this.reps,
       weight: data.weight.present ? data.weight.value : this.weight,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
     );
   }
 
@@ -2989,13 +3035,14 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
           ..write('id: $id, ')
           ..write('entryId: $entryId, ')
           ..write('reps: $reps, ')
-          ..write('weight: $weight')
+          ..write('weight: $weight, ')
+          ..write('completedAt: $completedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, entryId, reps, weight);
+  int get hashCode => Object.hash(id, entryId, reps, weight, completedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3003,7 +3050,8 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
           other.id == this.id &&
           other.entryId == this.entryId &&
           other.reps == this.reps &&
-          other.weight == this.weight);
+          other.weight == this.weight &&
+          other.completedAt == this.completedAt);
 }
 
 class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
@@ -3011,12 +3059,14 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
   final Value<String> entryId;
   final Value<int> reps;
   final Value<double> weight;
+  final Value<DateTime?> completedAt;
   final Value<int> rowid;
   const ExerciseSetsCompanion({
     this.id = const Value.absent(),
     this.entryId = const Value.absent(),
     this.reps = const Value.absent(),
     this.weight = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExerciseSetsCompanion.insert({
@@ -3024,6 +3074,7 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
     required String entryId,
     required int reps,
     required double weight,
+    this.completedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        entryId = Value(entryId),
@@ -3034,6 +3085,7 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
     Expression<String>? entryId,
     Expression<int>? reps,
     Expression<double>? weight,
+    Expression<DateTime>? completedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3041,6 +3093,7 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
       if (entryId != null) 'entry_id': entryId,
       if (reps != null) 'reps': reps,
       if (weight != null) 'weight': weight,
+      if (completedAt != null) 'completed_at': completedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3050,6 +3103,7 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
     Value<String>? entryId,
     Value<int>? reps,
     Value<double>? weight,
+    Value<DateTime?>? completedAt,
     Value<int>? rowid,
   }) {
     return ExerciseSetsCompanion(
@@ -3057,6 +3111,7 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
       entryId: entryId ?? this.entryId,
       reps: reps ?? this.reps,
       weight: weight ?? this.weight,
+      completedAt: completedAt ?? this.completedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3076,6 +3131,9 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
     if (weight.present) {
       map['weight'] = Variable<double>(weight.value);
     }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3089,6 +3147,7 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
           ..write('entryId: $entryId, ')
           ..write('reps: $reps, ')
           ..write('weight: $weight, ')
+          ..write('completedAt: $completedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3608,9 +3667,9 @@ class $TemplateSetsTable extends TemplateSets
   late final GeneratedColumn<double> weightKg = GeneratedColumn<double>(
     'weight_kg',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.double,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _restSecondsMeta = const VerificationMeta(
     'restSeconds',
@@ -3673,6 +3732,8 @@ class $TemplateSetsTable extends TemplateSets
         _weightKgMeta,
         weightKg.isAcceptableOrUnknown(data['weight_kg']!, _weightKgMeta),
       );
+    } else if (isInserting) {
+      context.missing(_weightKgMeta);
     }
     if (data.containsKey('rest_seconds')) {
       context.handle(
@@ -3707,7 +3768,7 @@ class $TemplateSetsTable extends TemplateSets
       weightKg: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}weight_kg'],
-      ),
+      )!,
       restSeconds: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}rest_seconds'],
@@ -3725,13 +3786,13 @@ class TemplateSet extends DataClass implements Insertable<TemplateSet> {
   final String id;
   final String templateExerciseId;
   final int reps;
-  final double? weightKg;
+  final double weightKg;
   final int restSeconds;
   const TemplateSet({
     required this.id,
     required this.templateExerciseId,
     required this.reps,
-    this.weightKg,
+    required this.weightKg,
     required this.restSeconds,
   });
   @override
@@ -3740,9 +3801,7 @@ class TemplateSet extends DataClass implements Insertable<TemplateSet> {
     map['id'] = Variable<String>(id);
     map['template_exercise_id'] = Variable<String>(templateExerciseId);
     map['reps'] = Variable<int>(reps);
-    if (!nullToAbsent || weightKg != null) {
-      map['weight_kg'] = Variable<double>(weightKg);
-    }
+    map['weight_kg'] = Variable<double>(weightKg);
     map['rest_seconds'] = Variable<int>(restSeconds);
     return map;
   }
@@ -3752,9 +3811,7 @@ class TemplateSet extends DataClass implements Insertable<TemplateSet> {
       id: Value(id),
       templateExerciseId: Value(templateExerciseId),
       reps: Value(reps),
-      weightKg: weightKg == null && nullToAbsent
-          ? const Value.absent()
-          : Value(weightKg),
+      weightKg: Value(weightKg),
       restSeconds: Value(restSeconds),
     );
   }
@@ -3770,7 +3827,7 @@ class TemplateSet extends DataClass implements Insertable<TemplateSet> {
         json['templateExerciseId'],
       ),
       reps: serializer.fromJson<int>(json['reps']),
-      weightKg: serializer.fromJson<double?>(json['weightKg']),
+      weightKg: serializer.fromJson<double>(json['weightKg']),
       restSeconds: serializer.fromJson<int>(json['restSeconds']),
     );
   }
@@ -3781,7 +3838,7 @@ class TemplateSet extends DataClass implements Insertable<TemplateSet> {
       'id': serializer.toJson<String>(id),
       'templateExerciseId': serializer.toJson<String>(templateExerciseId),
       'reps': serializer.toJson<int>(reps),
-      'weightKg': serializer.toJson<double?>(weightKg),
+      'weightKg': serializer.toJson<double>(weightKg),
       'restSeconds': serializer.toJson<int>(restSeconds),
     };
   }
@@ -3790,13 +3847,13 @@ class TemplateSet extends DataClass implements Insertable<TemplateSet> {
     String? id,
     String? templateExerciseId,
     int? reps,
-    Value<double?> weightKg = const Value.absent(),
+    double? weightKg,
     int? restSeconds,
   }) => TemplateSet(
     id: id ?? this.id,
     templateExerciseId: templateExerciseId ?? this.templateExerciseId,
     reps: reps ?? this.reps,
-    weightKg: weightKg.present ? weightKg.value : this.weightKg,
+    weightKg: weightKg ?? this.weightKg,
     restSeconds: restSeconds ?? this.restSeconds,
   );
   TemplateSet copyWithCompanion(TemplateSetsCompanion data) {
@@ -3843,7 +3900,7 @@ class TemplateSetsCompanion extends UpdateCompanion<TemplateSet> {
   final Value<String> id;
   final Value<String> templateExerciseId;
   final Value<int> reps;
-  final Value<double?> weightKg;
+  final Value<double> weightKg;
   final Value<int> restSeconds;
   final Value<int> rowid;
   const TemplateSetsCompanion({
@@ -3858,12 +3915,13 @@ class TemplateSetsCompanion extends UpdateCompanion<TemplateSet> {
     required String id,
     required String templateExerciseId,
     required int reps,
-    this.weightKg = const Value.absent(),
+    required double weightKg,
     this.restSeconds = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        templateExerciseId = Value(templateExerciseId),
-       reps = Value(reps);
+       reps = Value(reps),
+       weightKg = Value(weightKg);
   static Insertable<TemplateSet> custom({
     Expression<String>? id,
     Expression<String>? templateExerciseId,
@@ -3887,7 +3945,7 @@ class TemplateSetsCompanion extends UpdateCompanion<TemplateSet> {
     Value<String>? id,
     Value<String>? templateExerciseId,
     Value<int>? reps,
-    Value<double?>? weightKg,
+    Value<double>? weightKg,
     Value<int>? restSeconds,
     Value<int>? rowid,
   }) {
@@ -4393,32 +4451,21 @@ class $UserProfileTable extends UserProfile
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _sexMeta = const VerificationMeta('sex');
   @override
-  late final GeneratedColumn<String> sex = GeneratedColumn<String>(
-    'sex',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
+  late final GeneratedColumnWithTypeConverter<Gender, String> gender =
+      GeneratedColumn<String>(
+        'gender',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<Gender>($UserProfileTable.$convertergender);
   static const VerificationMeta _heightCmMeta = const VerificationMeta(
     'heightCm',
   );
   @override
   late final GeneratedColumn<double> heightCm = GeneratedColumn<double>(
     'height_cm',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _weightKgMeta = const VerificationMeta(
-    'weightKg',
-  );
-  @override
-  late final GeneratedColumn<double> weightKg = GeneratedColumn<double>(
-    'weight_kg',
     aliasedName,
     false,
     type: DriftSqlType.double,
@@ -4439,9 +4486,8 @@ class $UserProfileTable extends UserProfile
   List<GeneratedColumn> get $columns => [
     id,
     birthDate,
-    sex,
+    gender,
     heightCm,
-    weightKg,
     activityLevel,
   ];
   @override
@@ -4469,14 +4515,6 @@ class $UserProfileTable extends UserProfile
     } else if (isInserting) {
       context.missing(_birthDateMeta);
     }
-    if (data.containsKey('sex')) {
-      context.handle(
-        _sexMeta,
-        sex.isAcceptableOrUnknown(data['sex']!, _sexMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sexMeta);
-    }
     if (data.containsKey('height_cm')) {
       context.handle(
         _heightCmMeta,
@@ -4484,14 +4522,6 @@ class $UserProfileTable extends UserProfile
       );
     } else if (isInserting) {
       context.missing(_heightCmMeta);
-    }
-    if (data.containsKey('weight_kg')) {
-      context.handle(
-        _weightKgMeta,
-        weightKg.isAcceptableOrUnknown(data['weight_kg']!, _weightKgMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_weightKgMeta);
     }
     if (data.containsKey('activity_level')) {
       context.handle(
@@ -4521,17 +4551,15 @@ class $UserProfileTable extends UserProfile
         DriftSqlType.dateTime,
         data['${effectivePrefix}birth_date'],
       )!,
-      sex: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sex'],
-      )!,
+      gender: $UserProfileTable.$convertergender.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}gender'],
+        )!,
+      ),
       heightCm: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}height_cm'],
-      )!,
-      weightKg: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}weight_kg'],
       )!,
       activityLevel: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -4544,21 +4572,22 @@ class $UserProfileTable extends UserProfile
   $UserProfileTable createAlias(String alias) {
     return $UserProfileTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<Gender, String, String> $convertergender =
+      const EnumNameConverter<Gender>(Gender.values);
 }
 
 class UserProfileData extends DataClass implements Insertable<UserProfileData> {
   final String id;
   final DateTime birthDate;
-  final String sex;
+  final Gender gender;
   final double heightCm;
-  final double weightKg;
   final String activityLevel;
   const UserProfileData({
     required this.id,
     required this.birthDate,
-    required this.sex,
+    required this.gender,
     required this.heightCm,
-    required this.weightKg,
     required this.activityLevel,
   });
   @override
@@ -4566,9 +4595,12 @@ class UserProfileData extends DataClass implements Insertable<UserProfileData> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['birth_date'] = Variable<DateTime>(birthDate);
-    map['sex'] = Variable<String>(sex);
+    {
+      map['gender'] = Variable<String>(
+        $UserProfileTable.$convertergender.toSql(gender),
+      );
+    }
     map['height_cm'] = Variable<double>(heightCm);
-    map['weight_kg'] = Variable<double>(weightKg);
     map['activity_level'] = Variable<String>(activityLevel);
     return map;
   }
@@ -4577,9 +4609,8 @@ class UserProfileData extends DataClass implements Insertable<UserProfileData> {
     return UserProfileCompanion(
       id: Value(id),
       birthDate: Value(birthDate),
-      sex: Value(sex),
+      gender: Value(gender),
       heightCm: Value(heightCm),
-      weightKg: Value(weightKg),
       activityLevel: Value(activityLevel),
     );
   }
@@ -4592,9 +4623,10 @@ class UserProfileData extends DataClass implements Insertable<UserProfileData> {
     return UserProfileData(
       id: serializer.fromJson<String>(json['id']),
       birthDate: serializer.fromJson<DateTime>(json['birthDate']),
-      sex: serializer.fromJson<String>(json['sex']),
+      gender: $UserProfileTable.$convertergender.fromJson(
+        serializer.fromJson<String>(json['gender']),
+      ),
       heightCm: serializer.fromJson<double>(json['heightCm']),
-      weightKg: serializer.fromJson<double>(json['weightKg']),
       activityLevel: serializer.fromJson<String>(json['activityLevel']),
     );
   }
@@ -4604,9 +4636,10 @@ class UserProfileData extends DataClass implements Insertable<UserProfileData> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'birthDate': serializer.toJson<DateTime>(birthDate),
-      'sex': serializer.toJson<String>(sex),
+      'gender': serializer.toJson<String>(
+        $UserProfileTable.$convertergender.toJson(gender),
+      ),
       'heightCm': serializer.toJson<double>(heightCm),
-      'weightKg': serializer.toJson<double>(weightKg),
       'activityLevel': serializer.toJson<String>(activityLevel),
     };
   }
@@ -4614,25 +4647,22 @@ class UserProfileData extends DataClass implements Insertable<UserProfileData> {
   UserProfileData copyWith({
     String? id,
     DateTime? birthDate,
-    String? sex,
+    Gender? gender,
     double? heightCm,
-    double? weightKg,
     String? activityLevel,
   }) => UserProfileData(
     id: id ?? this.id,
     birthDate: birthDate ?? this.birthDate,
-    sex: sex ?? this.sex,
+    gender: gender ?? this.gender,
     heightCm: heightCm ?? this.heightCm,
-    weightKg: weightKg ?? this.weightKg,
     activityLevel: activityLevel ?? this.activityLevel,
   );
   UserProfileData copyWithCompanion(UserProfileCompanion data) {
     return UserProfileData(
       id: data.id.present ? data.id.value : this.id,
       birthDate: data.birthDate.present ? data.birthDate.value : this.birthDate,
-      sex: data.sex.present ? data.sex.value : this.sex,
+      gender: data.gender.present ? data.gender.value : this.gender,
       heightCm: data.heightCm.present ? data.heightCm.value : this.heightCm,
-      weightKg: data.weightKg.present ? data.weightKg.value : this.weightKg,
       activityLevel: data.activityLevel.present
           ? data.activityLevel.value
           : this.activityLevel,
@@ -4644,9 +4674,8 @@ class UserProfileData extends DataClass implements Insertable<UserProfileData> {
     return (StringBuffer('UserProfileData(')
           ..write('id: $id, ')
           ..write('birthDate: $birthDate, ')
-          ..write('sex: $sex, ')
+          ..write('gender: $gender, ')
           ..write('heightCm: $heightCm, ')
-          ..write('weightKg: $weightKg, ')
           ..write('activityLevel: $activityLevel')
           ..write(')'))
         .toString();
@@ -4654,65 +4683,58 @@ class UserProfileData extends DataClass implements Insertable<UserProfileData> {
 
   @override
   int get hashCode =>
-      Object.hash(id, birthDate, sex, heightCm, weightKg, activityLevel);
+      Object.hash(id, birthDate, gender, heightCm, activityLevel);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is UserProfileData &&
           other.id == this.id &&
           other.birthDate == this.birthDate &&
-          other.sex == this.sex &&
+          other.gender == this.gender &&
           other.heightCm == this.heightCm &&
-          other.weightKg == this.weightKg &&
           other.activityLevel == this.activityLevel);
 }
 
 class UserProfileCompanion extends UpdateCompanion<UserProfileData> {
   final Value<String> id;
   final Value<DateTime> birthDate;
-  final Value<String> sex;
+  final Value<Gender> gender;
   final Value<double> heightCm;
-  final Value<double> weightKg;
   final Value<String> activityLevel;
   final Value<int> rowid;
   const UserProfileCompanion({
     this.id = const Value.absent(),
     this.birthDate = const Value.absent(),
-    this.sex = const Value.absent(),
+    this.gender = const Value.absent(),
     this.heightCm = const Value.absent(),
-    this.weightKg = const Value.absent(),
     this.activityLevel = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   UserProfileCompanion.insert({
     required String id,
     required DateTime birthDate,
-    required String sex,
+    required Gender gender,
     required double heightCm,
-    required double weightKg,
     required String activityLevel,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        birthDate = Value(birthDate),
-       sex = Value(sex),
+       gender = Value(gender),
        heightCm = Value(heightCm),
-       weightKg = Value(weightKg),
        activityLevel = Value(activityLevel);
   static Insertable<UserProfileData> custom({
     Expression<String>? id,
     Expression<DateTime>? birthDate,
-    Expression<String>? sex,
+    Expression<String>? gender,
     Expression<double>? heightCm,
-    Expression<double>? weightKg,
     Expression<String>? activityLevel,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (birthDate != null) 'birth_date': birthDate,
-      if (sex != null) 'sex': sex,
+      if (gender != null) 'gender': gender,
       if (heightCm != null) 'height_cm': heightCm,
-      if (weightKg != null) 'weight_kg': weightKg,
       if (activityLevel != null) 'activity_level': activityLevel,
       if (rowid != null) 'rowid': rowid,
     });
@@ -4721,18 +4743,16 @@ class UserProfileCompanion extends UpdateCompanion<UserProfileData> {
   UserProfileCompanion copyWith({
     Value<String>? id,
     Value<DateTime>? birthDate,
-    Value<String>? sex,
+    Value<Gender>? gender,
     Value<double>? heightCm,
-    Value<double>? weightKg,
     Value<String>? activityLevel,
     Value<int>? rowid,
   }) {
     return UserProfileCompanion(
       id: id ?? this.id,
       birthDate: birthDate ?? this.birthDate,
-      sex: sex ?? this.sex,
+      gender: gender ?? this.gender,
       heightCm: heightCm ?? this.heightCm,
-      weightKg: weightKg ?? this.weightKg,
       activityLevel: activityLevel ?? this.activityLevel,
       rowid: rowid ?? this.rowid,
     );
@@ -4747,14 +4767,13 @@ class UserProfileCompanion extends UpdateCompanion<UserProfileData> {
     if (birthDate.present) {
       map['birth_date'] = Variable<DateTime>(birthDate.value);
     }
-    if (sex.present) {
-      map['sex'] = Variable<String>(sex.value);
+    if (gender.present) {
+      map['gender'] = Variable<String>(
+        $UserProfileTable.$convertergender.toSql(gender.value),
+      );
     }
     if (heightCm.present) {
       map['height_cm'] = Variable<double>(heightCm.value);
-    }
-    if (weightKg.present) {
-      map['weight_kg'] = Variable<double>(weightKg.value);
     }
     if (activityLevel.present) {
       map['activity_level'] = Variable<String>(activityLevel.value);
@@ -4770,9 +4789,8 @@ class UserProfileCompanion extends UpdateCompanion<UserProfileData> {
     return (StringBuffer('UserProfileCompanion(')
           ..write('id: $id, ')
           ..write('birthDate: $birthDate, ')
-          ..write('sex: $sex, ')
+          ..write('gender: $gender, ')
           ..write('heightCm: $heightCm, ')
-          ..write('weightKg: $weightKg, ')
           ..write('activityLevel: $activityLevel, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -6941,7 +6959,7 @@ typedef $$MealIngredientsTableProcessedTableManager =
 typedef $$SeancesTableCreateCompanionBuilder =
     SeancesCompanion Function({
       required String id,
-      Value<String?> name,
+      required String name,
       required DateTime startedAt,
       Value<DateTime?> completedAt,
       Value<int> restBetweenSetsMillis,
@@ -6950,7 +6968,7 @@ typedef $$SeancesTableCreateCompanionBuilder =
 typedef $$SeancesTableUpdateCompanionBuilder =
     SeancesCompanion Function({
       Value<String> id,
-      Value<String?> name,
+      Value<String> name,
       Value<DateTime> startedAt,
       Value<DateTime?> completedAt,
       Value<int> restBetweenSetsMillis,
@@ -7160,7 +7178,7 @@ class $$SeancesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String?> name = const Value.absent(),
+                Value<String> name = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<int> restBetweenSetsMillis = const Value.absent(),
@@ -7176,7 +7194,7 @@ class $$SeancesTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                Value<String?> name = const Value.absent(),
+                required String name,
                 required DateTime startedAt,
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<int> restBetweenSetsMillis = const Value.absent(),
@@ -7780,6 +7798,7 @@ typedef $$ExerciseSetsTableCreateCompanionBuilder =
       required String entryId,
       required int reps,
       required double weight,
+      Value<DateTime?> completedAt,
       Value<int> rowid,
     });
 typedef $$ExerciseSetsTableUpdateCompanionBuilder =
@@ -7788,6 +7807,7 @@ typedef $$ExerciseSetsTableUpdateCompanionBuilder =
       Value<String> entryId,
       Value<int> reps,
       Value<double> weight,
+      Value<DateTime?> completedAt,
       Value<int> rowid,
     });
 
@@ -7839,6 +7859,11 @@ class $$ExerciseSetsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$ExerciseEntriesTableFilterComposer get entryId {
     final $$ExerciseEntriesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -7887,6 +7912,11 @@ class $$ExerciseSetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ExerciseEntriesTableOrderingComposer get entryId {
     final $$ExerciseEntriesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -7928,6 +7958,11 @@ class $$ExerciseSetsTableAnnotationComposer
 
   GeneratedColumn<double> get weight =>
       $composableBuilder(column: $table.weight, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
 
   $$ExerciseEntriesTableAnnotationComposer get entryId {
     final $$ExerciseEntriesTableAnnotationComposer composer = $composerBuilder(
@@ -7985,12 +8020,14 @@ class $$ExerciseSetsTableTableManager
                 Value<String> entryId = const Value.absent(),
                 Value<int> reps = const Value.absent(),
                 Value<double> weight = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExerciseSetsCompanion(
                 id: id,
                 entryId: entryId,
                 reps: reps,
                 weight: weight,
+                completedAt: completedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7999,12 +8036,14 @@ class $$ExerciseSetsTableTableManager
                 required String entryId,
                 required int reps,
                 required double weight,
+                Value<DateTime?> completedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExerciseSetsCompanion.insert(
                 id: id,
                 entryId: entryId,
                 reps: reps,
                 weight: weight,
+                completedAt: completedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8717,7 +8756,7 @@ typedef $$TemplateSetsTableCreateCompanionBuilder =
       required String id,
       required String templateExerciseId,
       required int reps,
-      Value<double?> weightKg,
+      required double weightKg,
       Value<int> restSeconds,
       Value<int> rowid,
     });
@@ -8726,7 +8765,7 @@ typedef $$TemplateSetsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> templateExerciseId,
       Value<int> reps,
-      Value<double?> weightKg,
+      Value<double> weightKg,
       Value<int> restSeconds,
       Value<int> rowid,
     });
@@ -8943,7 +8982,7 @@ class $$TemplateSetsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> templateExerciseId = const Value.absent(),
                 Value<int> reps = const Value.absent(),
-                Value<double?> weightKg = const Value.absent(),
+                Value<double> weightKg = const Value.absent(),
                 Value<int> restSeconds = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TemplateSetsCompanion(
@@ -8959,7 +8998,7 @@ class $$TemplateSetsTableTableManager
                 required String id,
                 required String templateExerciseId,
                 required int reps,
-                Value<double?> weightKg = const Value.absent(),
+                required double weightKg,
                 Value<int> restSeconds = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TemplateSetsCompanion.insert(
@@ -9259,9 +9298,8 @@ typedef $$UserProfileTableCreateCompanionBuilder =
     UserProfileCompanion Function({
       required String id,
       required DateTime birthDate,
-      required String sex,
+      required Gender gender,
       required double heightCm,
-      required double weightKg,
       required String activityLevel,
       Value<int> rowid,
     });
@@ -9269,9 +9307,8 @@ typedef $$UserProfileTableUpdateCompanionBuilder =
     UserProfileCompanion Function({
       Value<String> id,
       Value<DateTime> birthDate,
-      Value<String> sex,
+      Value<Gender> gender,
       Value<double> heightCm,
-      Value<double> weightKg,
       Value<String> activityLevel,
       Value<int> rowid,
     });
@@ -9295,18 +9332,14 @@ class $$UserProfileTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get sex => $composableBuilder(
-    column: $table.sex,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnWithTypeConverterFilters<Gender, Gender, String> get gender =>
+      $composableBuilder(
+        column: $table.gender,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnFilters<double> get heightCm => $composableBuilder(
     column: $table.heightCm,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get weightKg => $composableBuilder(
-    column: $table.weightKg,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9335,18 +9368,13 @@ class $$UserProfileTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get sex => $composableBuilder(
-    column: $table.sex,
+  ColumnOrderings<String> get gender => $composableBuilder(
+    column: $table.gender,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<double> get heightCm => $composableBuilder(
     column: $table.heightCm,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get weightKg => $composableBuilder(
-    column: $table.weightKg,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9371,14 +9399,11 @@ class $$UserProfileTableAnnotationComposer
   GeneratedColumn<DateTime> get birthDate =>
       $composableBuilder(column: $table.birthDate, builder: (column) => column);
 
-  GeneratedColumn<String> get sex =>
-      $composableBuilder(column: $table.sex, builder: (column) => column);
+  GeneratedColumnWithTypeConverter<Gender, String> get gender =>
+      $composableBuilder(column: $table.gender, builder: (column) => column);
 
   GeneratedColumn<double> get heightCm =>
       $composableBuilder(column: $table.heightCm, builder: (column) => column);
-
-  GeneratedColumn<double> get weightKg =>
-      $composableBuilder(column: $table.weightKg, builder: (column) => column);
 
   GeneratedColumn<String> get activityLevel => $composableBuilder(
     column: $table.activityLevel,
@@ -9419,17 +9444,15 @@ class $$UserProfileTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<DateTime> birthDate = const Value.absent(),
-                Value<String> sex = const Value.absent(),
+                Value<Gender> gender = const Value.absent(),
                 Value<double> heightCm = const Value.absent(),
-                Value<double> weightKg = const Value.absent(),
                 Value<String> activityLevel = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UserProfileCompanion(
                 id: id,
                 birthDate: birthDate,
-                sex: sex,
+                gender: gender,
                 heightCm: heightCm,
-                weightKg: weightKg,
                 activityLevel: activityLevel,
                 rowid: rowid,
               ),
@@ -9437,17 +9460,15 @@ class $$UserProfileTableTableManager
               ({
                 required String id,
                 required DateTime birthDate,
-                required String sex,
+                required Gender gender,
                 required double heightCm,
-                required double weightKg,
                 required String activityLevel,
                 Value<int> rowid = const Value.absent(),
               }) => UserProfileCompanion.insert(
                 id: id,
                 birthDate: birthDate,
-                sex: sex,
+                gender: gender,
                 heightCm: heightCm,
-                weightKg: weightKg,
                 activityLevel: activityLevel,
                 rowid: rowid,
               ),

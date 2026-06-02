@@ -15,11 +15,12 @@
 - **`isArchived` flag**: a boolean field on `Ingredient` (default `false`). When `true`, the ingredient is hidden from normal ingredient pickers but remains available in archived view and historical meal data. Used as a soft-delete mechanism.
 - `Seance`: an active or completed workout session. User-facing labels use "workout" (not "seance"). Internal class/variable names retain `Seance` for backward compatibility.
 - `ExerciseEntry`: one exercise inside a seance, with one or more sets.
-- `ExerciseSet`: a reps/weight pair that can be marked completed.
+- `ExerciseSet`: a reps/weight pair with an optional `completedAt` timestamp. Persisted in the `exercise_sets` table. A set with a non-null `completedAt` is considered completed (`isCompleted`).
 - `ExerciseDefinition`: reusable exercise catalog item.
 - `SeanceTemplate`: a reusable workout template made of exercise templates.
 - `Goal`: either `StrengthGoal` or `BodyWeightGoal`.
-- `UserProfile`: birth date, sex, height, weight, and activity level.
+- `Gender`: enum (`male`, `female`) used for BMR computation and profile display. Defined in `lib/src/models/enums.dart` with a `GenderLabel` extension providing `.label`.
+- `UserProfile`: birth date, gender, height, weight (computed from average of last 7 `BodyWeightEntry` values), and activity level.
 - `ComputedMacros`: derived daily calorie and macro targets from profile + goal.
 - **ARB localization**: Flutter's standard `flutter gen-l10n` pipeline using `.arb` files. Key naming convention: `snake_case` matching English string content. Generated `AppLocalizations` class at `lib/l10n/app_localizations.dart`. Supports en, fr, es. Usage: `AppLocalizations.of(context)!.keyName`.
 - **`AppLocalizations`**: generated localization class from ARB files. Use `AppLocalizations.of(context)!` (note the `!` — the generated `of()` returns nullable). Provides getters for plain strings and methods for parameterized/plural strings.

@@ -39,9 +39,7 @@ class MacroCalculationService {
   }
 
   /// Group meals by calendar day (date only, ignoring time), sorted descending.
-  Map<DateTime, List<MealEntry>> groupMealsByDay(
-    List<MealEntry> meals,
-  ) {
+  Map<DateTime, List<MealEntry>> groupMealsByDay(List<MealEntry> meals) {
     final grouped = <DateTime, List<MealEntry>>{};
 
     for (final meal in meals) {

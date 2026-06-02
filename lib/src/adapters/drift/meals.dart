@@ -21,82 +21,103 @@ class DriftMealRepository {
 
   Future<List<MealEntry>> getByDate(DateTime date) async {
     final start = DateTime(date.year, date.month, 1);
-    final end = DateTime(date.year, date.month + 1, 1)
-        .subtract(const Duration(milliseconds: 1));
+    final end = DateTime(
+      date.year,
+      date.month + 1,
+      1,
+    ).subtract(const Duration(milliseconds: 1));
     // Query the DB directly for the month range to avoid loading all rows.
-    final rows = await (
-      _db.select(_db.meals)
-        ..where((t) => t.eatenAt.isBetweenValues(start, end))
-        ..orderBy([(t) => OrderingTerm(expression: t.eatenAt, mode: OrderingMode.desc)])
-    ).get();
-
+    final rows =
+        await (_db.select(_db.meals)
+              ..where((t) => t.eatenAt.isBetweenValues(start, end))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.eatenAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
 
     // Map rows to domain objects, but guard against failures converting
     // individual rows so a single bad row won't break the whole query.
-    final mapped = await Future.wait(rows.map((r) async {
-      try {
-        return await _mapMealRowToDomain(r);
-      } catch (e, st) {
-        _log.severe('Failed to map meal ${r.id}', e, st);
-        return null;
-      }
-    }));
+    final mapped = await Future.wait(
+      rows.map((r) async {
+        try {
+          return await _mapMealRowToDomain(r);
+        } catch (e, st) {
+          _log.severe('Failed to map meal ${r.id}', e, st);
+          return null;
+        }
+      }),
+    );
     return mapped.whereType<MealEntry>().toList();
   }
 
   Stream<List<MealEntry>> watchMealsForDay(DateTime date) {
     final start = DateTime(date.year, date.month, 1);
-    final end = DateTime(date.year, date.month + 1, 1)
-        .subtract(const Duration(milliseconds: 1));
+    final end = DateTime(
+      date.year,
+      date.month + 1,
+      1,
+    ).subtract(const Duration(milliseconds: 1));
     // Use a DB-level watcher that only observes meals within the month range.
     return (_db.select(_db.meals)
           ..where((t) => t.eatenAt.isBetweenValues(start, end))
-          ..orderBy([(t) => OrderingTerm(expression: t.eatenAt, mode: OrderingMode.desc)]))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.eatenAt, mode: OrderingMode.desc),
+          ]))
         .watch()
         .asyncMap((rows) async {
-
-
-      final mapped = await Future.wait(rows.map((r) async {
-        try {
-          return await _mapMealRowToDomain(r);
-        } catch (e, st) {
-          _log.severe('Failed to map meal ${r.id} in watcher', e, st);
-          return null;
-        }
-      }));
-      return mapped.whereType<MealEntry>().toList();
-    });
+          final mapped = await Future.wait(
+            rows.map((r) async {
+              try {
+                return await _mapMealRowToDomain(r);
+              } catch (e, st) {
+                _log.severe('Failed to map meal ${r.id} in watcher', e, st);
+                return null;
+              }
+            }),
+          );
+          return mapped.whereType<MealEntry>().toList();
+        });
   }
 
   Future<MealEntry> _mapMealRowToDomain(db.Meal mealRow) async {
-    final ingredientRows = await (
-      _db.select(_db.mealIngredients)
-        ..where((table) => table.mealId.equals(mealRow.id))
-    ).get();
+    final ingredientRows = await (_db.select(
+      _db.mealIngredients,
+    )..where((table) => table.mealId.equals(mealRow.id))).get();
 
-    final portions = await Future.wait(ingredientRows.map((mealIngredient) async {
-      final ingredientRow = await (
-        _db.select(_db.ingredients)
-          ..where((table) => table.id.equals(mealIngredient.ingredientId))
-      ).getSingleOrNull();
+    final portions = await Future.wait(
+      ingredientRows.map((mealIngredient) async {
+        final ingredientRow =
+            await (_db.select(_db.ingredients)..where(
+                  (table) => table.id.equals(mealIngredient.ingredientId),
+                ))
+                .getSingleOrNull();
 
-      if (ingredientRow == null) {
-        // Missing ingredient referenced by meal_ingredients; log and skip.
-        _log.warning('Missing ingredient ${mealIngredient.ingredientId} for meal ${mealRow.id} - skipping portion');
-        return null;
-      }
+        if (ingredientRow == null) {
+          // Missing ingredient referenced by meal_ingredients; log and skip.
+          _log.warning(
+            'Missing ingredient ${mealIngredient.ingredientId} for meal ${mealRow.id} - skipping portion',
+          );
+          return null;
+        }
 
-      final ingredient = Ingredient(
-        id: ingredientRow.id,
-        name: ingredientRow.name,
-        caloriesPer100g: ingredientRow.caloriesPer100g,
-        proteinPer100g: ingredientRow.proteinPer100g,
-        carbsPer100g: ingredientRow.carbsPer100g,
-        fatPer100g: ingredientRow.fatPer100g,
-      );
+        final ingredient = Ingredient(
+          id: ingredientRow.id,
+          name: ingredientRow.name,
+          caloriesPer100g: ingredientRow.caloriesPer100g,
+          proteinPer100g: ingredientRow.proteinPer100g,
+          carbsPer100g: ingredientRow.carbsPer100g,
+          fatPer100g: ingredientRow.fatPer100g,
+        );
 
-      return IngredientPortion(ingredient: ingredient, grams: mealIngredient.grams);
-    }));
+        return IngredientPortion(
+          ingredient: ingredient,
+          grams: mealIngredient.grams,
+        );
+      }),
+    );
     final filteredPortions = portions.whereType<IngredientPortion>().toList();
 
     return MealEntry(
@@ -137,8 +158,6 @@ class DriftMealRepository {
       await _db.insertMealIngredient(mealIngredient);
     }
   }
-
-
 
   Future<void> update(MealEntry meal) async {
     final companion = db.MealsCompanion.insert(
