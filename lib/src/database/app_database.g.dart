@@ -2077,9 +2077,9 @@ class $SeancesTable extends Seances with TableInfo<$SeancesTable, Seance> {
   late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
     'completed_at',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _restBetweenSetsMillisMeta =
       const VerificationMeta('restBetweenSetsMillis');
@@ -2141,6 +2141,8 @@ class $SeancesTable extends Seances with TableInfo<$SeancesTable, Seance> {
           _completedAtMeta,
         ),
       );
+    } else if (isInserting) {
+      context.missing(_completedAtMeta);
     }
     if (data.containsKey('rest_between_sets_millis')) {
       context.handle(
@@ -2175,7 +2177,7 @@ class $SeancesTable extends Seances with TableInfo<$SeancesTable, Seance> {
       completedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}completed_at'],
-      ),
+      )!,
       restBetweenSetsMillis: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}rest_between_sets_millis'],
@@ -2193,13 +2195,13 @@ class Seance extends DataClass implements Insertable<Seance> {
   final String id;
   final String name;
   final DateTime startedAt;
-  final DateTime? completedAt;
+  final DateTime completedAt;
   final int restBetweenSetsMillis;
   const Seance({
     required this.id,
     required this.name,
     required this.startedAt,
-    this.completedAt,
+    required this.completedAt,
     required this.restBetweenSetsMillis,
   });
   @override
@@ -2208,9 +2210,7 @@ class Seance extends DataClass implements Insertable<Seance> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['started_at'] = Variable<DateTime>(startedAt);
-    if (!nullToAbsent || completedAt != null) {
-      map['completed_at'] = Variable<DateTime>(completedAt);
-    }
+    map['completed_at'] = Variable<DateTime>(completedAt);
     map['rest_between_sets_millis'] = Variable<int>(restBetweenSetsMillis);
     return map;
   }
@@ -2220,9 +2220,7 @@ class Seance extends DataClass implements Insertable<Seance> {
       id: Value(id),
       name: Value(name),
       startedAt: Value(startedAt),
-      completedAt: completedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(completedAt),
+      completedAt: Value(completedAt),
       restBetweenSetsMillis: Value(restBetweenSetsMillis),
     );
   }
@@ -2236,7 +2234,7 @@ class Seance extends DataClass implements Insertable<Seance> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
-      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      completedAt: serializer.fromJson<DateTime>(json['completedAt']),
       restBetweenSetsMillis: serializer.fromJson<int>(
         json['restBetweenSetsMillis'],
       ),
@@ -2249,7 +2247,7 @@ class Seance extends DataClass implements Insertable<Seance> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'startedAt': serializer.toJson<DateTime>(startedAt),
-      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'completedAt': serializer.toJson<DateTime>(completedAt),
       'restBetweenSetsMillis': serializer.toJson<int>(restBetweenSetsMillis),
     };
   }
@@ -2258,13 +2256,13 @@ class Seance extends DataClass implements Insertable<Seance> {
     String? id,
     String? name,
     DateTime? startedAt,
-    Value<DateTime?> completedAt = const Value.absent(),
+    DateTime? completedAt,
     int? restBetweenSetsMillis,
   }) => Seance(
     id: id ?? this.id,
     name: name ?? this.name,
     startedAt: startedAt ?? this.startedAt,
-    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    completedAt: completedAt ?? this.completedAt,
     restBetweenSetsMillis: restBetweenSetsMillis ?? this.restBetweenSetsMillis,
   );
   Seance copyWithCompanion(SeancesCompanion data) {
@@ -2311,7 +2309,7 @@ class SeancesCompanion extends UpdateCompanion<Seance> {
   final Value<String> id;
   final Value<String> name;
   final Value<DateTime> startedAt;
-  final Value<DateTime?> completedAt;
+  final Value<DateTime> completedAt;
   final Value<int> restBetweenSetsMillis;
   final Value<int> rowid;
   const SeancesCompanion({
@@ -2326,12 +2324,13 @@ class SeancesCompanion extends UpdateCompanion<Seance> {
     required String id,
     required String name,
     required DateTime startedAt,
-    this.completedAt = const Value.absent(),
+    required DateTime completedAt,
     this.restBetweenSetsMillis = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
-       startedAt = Value(startedAt);
+       startedAt = Value(startedAt),
+       completedAt = Value(completedAt);
   static Insertable<Seance> custom({
     Expression<String>? id,
     Expression<String>? name,
@@ -2355,7 +2354,7 @@ class SeancesCompanion extends UpdateCompanion<Seance> {
     Value<String>? id,
     Value<String>? name,
     Value<DateTime>? startedAt,
-    Value<DateTime?>? completedAt,
+    Value<DateTime>? completedAt,
     Value<int>? restBetweenSetsMillis,
     Value<int>? rowid,
   }) {
@@ -2471,9 +2470,9 @@ class $ExerciseEntriesTable extends ExerciseEntries
   late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
     'completed_at',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -2532,6 +2531,8 @@ class $ExerciseEntriesTable extends ExerciseEntries
           _completedAtMeta,
         ),
       );
+    } else if (isInserting) {
+      context.missing(_completedAtMeta);
     }
     return context;
   }
@@ -2561,7 +2562,7 @@ class $ExerciseEntriesTable extends ExerciseEntries
       completedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}completed_at'],
-      ),
+      )!,
     );
   }
 
@@ -2576,13 +2577,13 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
   final String seanceId;
   final String exerciseId;
   final DateTime startedAt;
-  final DateTime? completedAt;
+  final DateTime completedAt;
   const ExerciseEntry({
     required this.id,
     required this.seanceId,
     required this.exerciseId,
     required this.startedAt,
-    this.completedAt,
+    required this.completedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2591,9 +2592,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
     map['seance_id'] = Variable<String>(seanceId);
     map['exercise_id'] = Variable<String>(exerciseId);
     map['started_at'] = Variable<DateTime>(startedAt);
-    if (!nullToAbsent || completedAt != null) {
-      map['completed_at'] = Variable<DateTime>(completedAt);
-    }
+    map['completed_at'] = Variable<DateTime>(completedAt);
     return map;
   }
 
@@ -2603,9 +2602,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
       seanceId: Value(seanceId),
       exerciseId: Value(exerciseId),
       startedAt: Value(startedAt),
-      completedAt: completedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(completedAt),
+      completedAt: Value(completedAt),
     );
   }
 
@@ -2619,7 +2616,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
       seanceId: serializer.fromJson<String>(json['seanceId']),
       exerciseId: serializer.fromJson<String>(json['exerciseId']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
-      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      completedAt: serializer.fromJson<DateTime>(json['completedAt']),
     );
   }
   @override
@@ -2630,7 +2627,7 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
       'seanceId': serializer.toJson<String>(seanceId),
       'exerciseId': serializer.toJson<String>(exerciseId),
       'startedAt': serializer.toJson<DateTime>(startedAt),
-      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'completedAt': serializer.toJson<DateTime>(completedAt),
     };
   }
 
@@ -2639,13 +2636,13 @@ class ExerciseEntry extends DataClass implements Insertable<ExerciseEntry> {
     String? seanceId,
     String? exerciseId,
     DateTime? startedAt,
-    Value<DateTime?> completedAt = const Value.absent(),
+    DateTime? completedAt,
   }) => ExerciseEntry(
     id: id ?? this.id,
     seanceId: seanceId ?? this.seanceId,
     exerciseId: exerciseId ?? this.exerciseId,
     startedAt: startedAt ?? this.startedAt,
-    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    completedAt: completedAt ?? this.completedAt,
   );
   ExerciseEntry copyWithCompanion(ExerciseEntriesCompanion data) {
     return ExerciseEntry(
@@ -2692,7 +2689,7 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
   final Value<String> seanceId;
   final Value<String> exerciseId;
   final Value<DateTime> startedAt;
-  final Value<DateTime?> completedAt;
+  final Value<DateTime> completedAt;
   final Value<int> rowid;
   const ExerciseEntriesCompanion({
     this.id = const Value.absent(),
@@ -2707,12 +2704,13 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
     required String seanceId,
     required String exerciseId,
     required DateTime startedAt,
-    this.completedAt = const Value.absent(),
+    required DateTime completedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        seanceId = Value(seanceId),
        exerciseId = Value(exerciseId),
-       startedAt = Value(startedAt);
+       startedAt = Value(startedAt),
+       completedAt = Value(completedAt);
   static Insertable<ExerciseEntry> custom({
     Expression<String>? id,
     Expression<String>? seanceId,
@@ -2736,7 +2734,7 @@ class ExerciseEntriesCompanion extends UpdateCompanion<ExerciseEntry> {
     Value<String>? seanceId,
     Value<String>? exerciseId,
     Value<DateTime>? startedAt,
-    Value<DateTime?>? completedAt,
+    Value<DateTime>? completedAt,
     Value<int>? rowid,
   }) {
     return ExerciseEntriesCompanion(
@@ -6961,7 +6959,7 @@ typedef $$SeancesTableCreateCompanionBuilder =
       required String id,
       required String name,
       required DateTime startedAt,
-      Value<DateTime?> completedAt,
+      required DateTime completedAt,
       Value<int> restBetweenSetsMillis,
       Value<int> rowid,
     });
@@ -6970,7 +6968,7 @@ typedef $$SeancesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<DateTime> startedAt,
-      Value<DateTime?> completedAt,
+      Value<DateTime> completedAt,
       Value<int> restBetweenSetsMillis,
       Value<int> rowid,
     });
@@ -7180,7 +7178,7 @@ class $$SeancesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
-                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> completedAt = const Value.absent(),
                 Value<int> restBetweenSetsMillis = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SeancesCompanion(
@@ -7196,7 +7194,7 @@ class $$SeancesTableTableManager
                 required String id,
                 required String name,
                 required DateTime startedAt,
-                Value<DateTime?> completedAt = const Value.absent(),
+                required DateTime completedAt,
                 Value<int> restBetweenSetsMillis = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SeancesCompanion.insert(
@@ -7270,7 +7268,7 @@ typedef $$ExerciseEntriesTableCreateCompanionBuilder =
       required String seanceId,
       required String exerciseId,
       required DateTime startedAt,
-      Value<DateTime?> completedAt,
+      required DateTime completedAt,
       Value<int> rowid,
     });
 typedef $$ExerciseEntriesTableUpdateCompanionBuilder =
@@ -7279,7 +7277,7 @@ typedef $$ExerciseEntriesTableUpdateCompanionBuilder =
       Value<String> seanceId,
       Value<String> exerciseId,
       Value<DateTime> startedAt,
-      Value<DateTime?> completedAt,
+      Value<DateTime> completedAt,
       Value<int> rowid,
     });
 
@@ -7649,7 +7647,7 @@ class $$ExerciseEntriesTableTableManager
                 Value<String> seanceId = const Value.absent(),
                 Value<String> exerciseId = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
-                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> completedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExerciseEntriesCompanion(
                 id: id,
@@ -7665,7 +7663,7 @@ class $$ExerciseEntriesTableTableManager
                 required String seanceId,
                 required String exerciseId,
                 required DateTime startedAt,
-                Value<DateTime?> completedAt = const Value.absent(),
+                required DateTime completedAt,
                 Value<int> rowid = const Value.absent(),
               }) => ExerciseEntriesCompanion.insert(
                 id: id,

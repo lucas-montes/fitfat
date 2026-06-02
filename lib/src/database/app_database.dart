@@ -48,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -86,6 +86,12 @@ class AppDatabase extends _$AppDatabase {
         // Add completedAt column to exercise_sets table
         await m.database.customStatement(
           'ALTER TABLE exercise_sets ADD COLUMN completed_at TEXT',
+        );
+      }
+      if (from < 6) {
+        // Make seances.completed_at non-nullable — fill any null values first
+        await m.database.customStatement(
+          'UPDATE seances SET completed_at = started_at WHERE completed_at IS NULL',
         );
       }
     },
@@ -224,9 +230,6 @@ class AppDatabase extends _$AppDatabase {
   // ---------------------------------------------------------------------------
 
   Stream<List<Seance>> watchSeances() => select(seances).watch();
-  Stream<Seance?> watchActiveSeance() => (select(
-    seances,
-  )..where((t) => t.completedAt.isNull())).watchSingleOrNull();
   Future<void> insertSeance(SeancesCompanion entry) =>
       into(seances).insert(entry);
   Future<void> updateSeance(SeancesCompanion entry) =>

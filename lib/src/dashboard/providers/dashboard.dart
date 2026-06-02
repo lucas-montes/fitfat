@@ -11,7 +11,7 @@ import '../../database/app_database.dart' hide Goal, Seance;
 import '../../database/providers.dart';
 import '../../adapters/drift/goals.dart';
 import '../../adapters/drift/profile.dart';
-import '../../exercise/providers/seance.dart';
+import '../../exercise/providers/seances/history.dart';
 import '../../services/logger.dart';
 
 final _log = logger('dashboard_providers');

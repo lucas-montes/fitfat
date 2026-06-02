@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
+
+import '../../exercise/providers/seances/history.dart';
+
 import '../../models/exercise.dart';
-import '../providers/seance.dart';
 import '../services/workout_services.dart';
 
 class ExerciseHistoryScreen extends ConsumerStatefulWidget {

@@ -2,13 +2,14 @@
 
 ## Change summary
 
-Five issues in the exercise module:
+Six issues in the exercise module:
 
 1. **Type mismatch** — `TemplateSetsCompanion.insert.weightKg` expects raw `double`, but gets `Value<double?>`.
 2. **Seance.name nullable** — `String?` causes `Value<String?>` → `Value<String>` mismatch. Root fix: make it non-nullable with a datetime default when starting without a template.
 3. **ExerciseSets lacks completedAt** — sets are saved without their completion timestamp; read-back loses the `completedAt`, so `isCompleted` returns `false` on historical sets. Needs DB schema change + save/read wiring + migration.
 4. **Redundant null check** — `currentBest != null` in PR condition is always true (warning).
 5. **Race condition in history save** — `addSeance()` sets in-memory state then fires `_saveToDb()` unawaited. But `build()` also fires `_loadFromDb()` async which can **overwrite** `state` with `[]` before the save completes. Fix: save DB first, then set memory state.
+6. **Seances.completedAt is nullable in DB but never null** — active seances are persisted via SharedPreferences, not the DB. Every seance in the database is completed, so the column should be non-nullable. Also removes the dead `watchActiveSeance()` query that relied on null `completedAt`.
 
 ## Success criteria
 
@@ -108,22 +109,38 @@ Five issues in the exercise module:
   - Verification notes: Standard validation commands.
   - **Status:** done
 
+### T08: Make Seances.completedAt non-nullable in DB (every DB seance is completed)
+
+- [x] T08: Make seances.completedAt non-nullable + remove dead watchActiveSeance (status:done)
+  - Task ID: T08
+  - Goal: Since active seances are persisted via SharedPreferences, every seance in the database is necessarily completed. Make `completedAt` non-nullable in the schema, remove the dead `watchActiveSeance()` query, and regenerate Drift code.
+    1. `lib/src/database/tables.dart`: `DateTimeColumn get completedAt => dateTime()();` (remove `.nullable()`)
+    2. `lib/src/database/app_database.dart`: bump `schemaVersion` from 5 → 6, add migration to fill null completed_at values
+    3. Remove `watchActiveSeance()` from `app_database.dart`
+    4. `lib/src/exercise/providers/seance.dart` `_saveToDb()`: `completedAt: Value(seance.completedAt!)` (non-nullable companion now)
+  - Boundaries: In — `lib/src/database/tables.dart`, `lib/src/database/app_database.dart`, `lib/src/exercise/providers/seance.dart`. Out — exercise set `completedAt`.
+  - Done when: `Seances.completedAt` is non-nullable; `watchActiveSeance()` removed; `flutter analyze` reports 0 errors; Drift code regenerated.
+  - Verification notes: `grep 'nullable' lib/src/database/tables.dart | grep completedAt` returns no matches. `grep -n 'watchActiveSeance' lib/src/database/app_database.dart` returns no matches.
+  - **Status:** done
+  - **Files changed:** `lib/src/database/tables.dart`, `lib/src/database/app_database.dart`, `lib/src/database/app_database.g.dart` (generated), `lib/src/exercise/providers/seance.dart`
+
 ## Validation Report
 
 ### Commands run
-- `flutter analyze` → 18 issues found (previously 19; the `unnecessary_null_comparison` from T05 was resolved). All 18 are pre-existing warnings/infos, **zero errors**.
+- `flutter analyze` → 17 issues found (all pre-existing warnings/infos, **zero errors**). Db. `watchActiveSeance()` removed from DB code.
 - `flutter test` → 66 passed, 7 failed (all 7 failures from `libsqlite3.so` environment issue — pre-existing, not related to this plan)
-- `dart format --set-exit-if-changed lib/ test/` → 53 files, 0 changed (clean)
+- `dart format --set-exit-if-changed lib/ test/` → clean
 
 ### Success-criteria verification
-- [x] `TemplateSetsCompanion.insert.weightKg` accepts raw `double` — fixed in T01
-- [x] `Seance.name` is non-nullable `String` — fixed in T02 (root cause)
-- [x] `ExerciseSets` table has `completedAt` column — added in T03 (schema v5, migration)
-- [x] Sets save and read `completedAt` correctly — wired in T04
-- [x] No `unnecessary_null_comparison` on `currentBest` in PR condition — fixed in T05
-- [x] `flutter analyze` across exercise module reports **0 errors** (all 3 original compile errors resolved)
-- [x] All domain-model semantics preserved (nullable `weightKg` defaults to 0.0, `seance.name` defaults to `''`)
-- [x] No race condition between `addSeance()` and `_loadFromDb()` — save happens before in-memory update (T06)
+- [x] `TemplateSetsCompanion.insert.weightKg` accepts raw `double` — T01
+- [x] `Seance.name` is non-nullable `String` — T02
+- [x] `ExerciseSets` table has `completedAt` column — T03 (schema v5)
+- [x] Sets save and read `completedAt` correctly — T04
+- [x] No `unnecessary_null_comparison` on `currentBest` — T05
+- [x] No race condition between `addSeance()` and `_loadFromDb()` — T06
+- [x] `flutter analyze` across exercise module reports **0 errors** — all T01-T07
+- [x] `Seances.completedAt` is non-nullable in DB — T08
+- [x] `watchActiveSeance()` dead query removed — T08
 
 ### Original errors before plan
 | File | Error | Task |

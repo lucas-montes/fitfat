@@ -58,7 +58,7 @@
 
 ## Active plans
 - `context/plans/profile-gender-uuid-fix.md`: extract shared Gender enum, rename sex→gender column, derive weight from BodyWeightEntries, use UUID v7 for profile ID. ✅ Done
-- `context/plans/exercise-workout-fixes.md`: fix compile errors in DriftSeanceRepository, seance provider, and current_seance_screen.
+- `context/plans/exercise-workout-fixes.md`: fix compile errors, make Seance.name non-nullable, add completedAt to ExerciseSets, fix race condition in history save, make Seances.completedAt non-nullable. ✅ Done
 - `context/plans/ui-ux-overhaul.md`: comprehensive UI/UX pass — theme, naming, dashboard, settings, forms, search/filters, bug fix.
 - `context/plans/i18n-arb-migration.md`: migrate from manual `_t()` localization to Flutter standard ARB-based generated localization across all 10 source files.
 

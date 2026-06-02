@@ -600,7 +600,7 @@ class WorkoutActivityCard extends ConsumerWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              Text(activeSeance.name ?? l10n.untitledWorkout),
+              Text(activeSeance.name),
               const SizedBox(height: 4),
               Text(
                 '${DateFormat('HH:mm').format(activeSeance.startedAt)} · '
@@ -620,7 +620,7 @@ class WorkoutActivityCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                stats.lastWorkout!.name ?? l10n.recentWorkout,
+                stats.lastWorkout!.name,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -934,7 +934,7 @@ void _showWorkoutDayDetails(BuildContext context, WorkoutDaySummary day) {
                   (seance) => Card(
                     child: ListTile(
                       leading: const Icon(Icons.fitness_center),
-                      title: Text(seance.name ?? l10n.workout),
+                      title: Text(seance.name),
                       subtitle: Text(
                         '${DateFormat('HH:mm').format(seance.completedAt ?? seance.startedAt)} · '
                         '${seance.exercises.length} exercises · ${_formatDuration(seance.duration)}',
@@ -1960,7 +1960,7 @@ class _CalorieStreakCard extends ConsumerWidget {
     final macros = ref.watch(computedMacrosProvider);
 
     // Check last 7 days for calorie compliance
-    final now = DateTime.now();
+
     int streak = 0;
     for (int i = 0; i < 7; i++) {
       // For simplicity, count today if on track, previous days as on track

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
+
+import '../../exercise/providers/seances/history.dart';
+
 import '../../services/seance_foreground_service.dart';
 import '../../dashboard/screens/main.dart' as dashboard;
 import '../../dashboard/providers/dashboard.dart';
@@ -220,7 +223,7 @@ class SeancesHistoryTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    running.name ?? l10n.unnamedWorkout,
+                    running.name,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
@@ -647,10 +650,7 @@ class _SeanceHistoryCard extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
-                Text(
-                  seance.name ?? l10n.workout,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text(seance.name, style: Theme.of(context).textTheme.bodySmall),
                 IconButton(
                   icon: const Icon(Icons.more_vert, size: 18),
                   padding: EdgeInsets.zero,

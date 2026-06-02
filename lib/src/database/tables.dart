@@ -91,7 +91,7 @@ class Seances extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   DateTimeColumn get startedAt => dateTime()();
-  DateTimeColumn get completedAt => dateTime().nullable()();
+  DateTimeColumn get completedAt => dateTime()();
   IntColumn get restBetweenSetsMillis =>
       integer().withDefault(const Constant(60000))();
 
@@ -108,12 +108,14 @@ class ExerciseEntries extends Table {
   TextColumn get seanceId => text().references(Seances, #id)();
   TextColumn get exerciseId => text().references(Exercises, #id)();
   DateTimeColumn get startedAt => dateTime()();
-  DateTimeColumn get completedAt => dateTime().nullable()();
+  DateTimeColumn get completedAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
+// ---------------------------------------------------------------------------
+// Exercise entries (exercises within a seance)
 // ---------------------------------------------------------------------------
 // Exercise sets (individual sets within an exercise entry)
 // ---------------------------------------------------------------------------

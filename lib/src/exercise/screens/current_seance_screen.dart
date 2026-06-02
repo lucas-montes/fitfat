@@ -3,11 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
+
+import '../../exercise/providers/seances/history.dart';
+
 import '../../services/seance_foreground_service.dart';
 import '../../models/exercise.dart';
 import '../providers/seance.dart';
 import '../providers/exercises.dart';
+
 import '../services/workout_services.dart';
+
+
 
 class CurrentSeanceScreen extends ConsumerStatefulWidget {
   const CurrentSeanceScreen({super.key});
@@ -110,7 +116,7 @@ class _CurrentSeanceScreenState extends ConsumerState<CurrentSeanceScreen> {
         title: Text(
           _selectedExerciseIndex != null
               ? seance.exercises[_selectedExerciseIndex!].exercise.name
-              : seance.name ?? l10n.activeSeance,
+              : seance.name,
         ),
         elevation: 0,
         leading: _selectedExerciseIndex != null
@@ -1115,7 +1121,7 @@ class SeanceSummaryScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    seance.name ?? l10n.untitledWorkout,
+                    seance.name,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
