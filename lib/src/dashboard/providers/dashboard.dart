@@ -11,6 +11,9 @@ import '../../database/providers.dart';
 import '../../adapters/drift/goals.dart';
 import '../../adapters/drift/profile.dart';
 import '../../exercise/providers/seance.dart';
+import '../../services/logger.dart';
+
+final _log = logger('dashboard_providers');
 
 // ---------------------------------------------------------------------------
 // Chart period
@@ -55,7 +58,9 @@ class UserProfileNotifier extends Notifier<UserProfile?> {
       final repo = DriftProfileRepository(db);
       final saved = await repo.get();
       if (saved != null) state = saved;
-    } catch (_) {}
+    } catch (e, st) {
+      _log.warning('Failed to load profile from database', e, st);
+    }
   }
 
   Future<void> _persist(UserProfile profile) async {
@@ -63,7 +68,9 @@ class UserProfileNotifier extends Notifier<UserProfile?> {
       final db = ref.read(databaseProvider);
       final repo = DriftProfileRepository(db);
       await repo.upsert(profile);
-    } catch (_) {}
+    } catch (e, st) {
+      _log.warning('Failed to persist profile to database', e, st);
+    }
   }
 }
 
@@ -90,7 +97,9 @@ class GoalsNotifier extends Notifier<GoalsData> {
       final hasAnyGoal =
           saved.bodyWeightGoal != null || saved.strengthGoals.isNotEmpty;
       if (hasAnyGoal) state = saved;
-    } catch (_) {}
+    } catch (e, st) {
+      _log.warning('Failed to load goals from database', e, st);
+    }
   }
 
   void setBodyWeightGoal(BodyWeightGoal goal) {
@@ -159,8 +168,8 @@ class GoalsNotifier extends Notifier<GoalsData> {
   Future<void> _persist(Future<void> Function() fn) async {
     try {
       await fn();
-    } catch (_) {
-      // Silently handle DB errors — state is already updated in-memory
+    } catch (e, st) {
+      _log.warning('Failed to persist data into the database', e, st);
     }
   }
 }

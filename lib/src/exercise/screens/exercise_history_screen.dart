@@ -615,7 +615,7 @@ class _SummaryCard extends StatelessWidget {
               label: l10n.volume,
               value: '${totalVolume.toStringAsFixed(0)} kg',
             ),
-            _Stat(label: l10n.time, value: '${totalMinutes} min'),
+            _Stat(label: l10n.time, value: '$totalMinutes min'),
           ],
         ),
       ),

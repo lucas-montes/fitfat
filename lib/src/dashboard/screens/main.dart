@@ -12,6 +12,7 @@ import '../../models/exercise.dart';
 import '../providers/dashboard.dart';
 import '../../diet/providers/diet_preferences.dart';
 import '../../exercise/providers/seance.dart';
+import '../../exercise/providers/exercises.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -134,7 +135,7 @@ class _CompactWeightCardState extends ConsumerState<_CompactWeightCard> {
           padding: const EdgeInsets.all(16),
           child: entriesAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (entries) {
               final ordered = [...entries]
                 ..sort((a, b) => b.date.compareTo(a.date));

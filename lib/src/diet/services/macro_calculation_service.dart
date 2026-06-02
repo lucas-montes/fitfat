@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import '../../models/food.dart';
 
 /// Pure Dart service for macro calculations and meal grouping.
@@ -41,7 +39,7 @@ class MacroCalculationService {
   }
 
   /// Group meals by calendar day (date only, ignoring time), sorted descending.
-  LinkedHashMap<DateTime, List<MealEntry>> groupMealsByDay(
+  Map<DateTime, List<MealEntry>> groupMealsByDay(
     List<MealEntry> meals,
   ) {
     final grouped = <DateTime, List<MealEntry>>{};
@@ -58,7 +56,7 @@ class MacroCalculationService {
 
     // Sort days descending, and meals within each day by eatenAt ascending
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    final result = LinkedHashMap<DateTime, List<MealEntry>>();
+    final result = <DateTime, List<MealEntry>>{};
     for (final key in sortedKeys) {
       final mealsForDay = grouped[key]!;
       mealsForDay.sort((a, b) => a.eatenAt.compareTo(b.eatenAt));

@@ -39,7 +39,7 @@ class DriftIngredientRepository {
     // Second pass: resolve components for composite ingredients
     for (final ingredient in ingredientMap.values) {
       if (ingredient.components.isNotEmpty) {
-        final components = await _db.getComponentsForIngredient(ingredient.id!);
+        final components = await _db.getComponentsForIngredient(ingredient.id);
         if (components.isNotEmpty) {
           for (final c in components) {
             final componentIngredient = Ingredient(
@@ -75,8 +75,6 @@ class DriftIngredientRepository {
     final ingredientResult = await _db.getIngredientByIds([id]);
     if (ingredientResult.isEmpty) return null;
     final ingredient = ingredientResult.first;
-    if (ingredient == null) return null;
-    if (ingredient.id == null) return null;
 
     // Get components if this is a composite ingredient
     final components = await _db.getComponentsForIngredient(id);

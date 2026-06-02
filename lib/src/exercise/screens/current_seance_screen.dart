@@ -6,6 +6,7 @@ import 'package:fitfat/l10n/app_localizations.dart';
 import '../../services/seance_foreground_service.dart';
 import '../../models/exercise.dart';
 import '../providers/seance.dart';
+import '../providers/exercises.dart';
 import '../services/workout_services.dart';
 
 class CurrentSeanceScreen extends ConsumerStatefulWidget {

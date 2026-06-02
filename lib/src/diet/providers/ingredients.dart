@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/food.dart';
 import '../../database/providers.dart';
 import '../../adapters/drift/ingredient_repository.dart';
+import '../../services/logger.dart';
+
+final _log = logger('ingredients_provider');
 
 final ingredientRepositoryProvider = Provider<DriftIngredientRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -29,7 +32,9 @@ class IngredientsController extends Notifier<List<Ingredient>> {
     try {
       final items = await _repo.getAll();
       state = items;
-    } catch (_) {}
+    } catch (e, st) {
+      _log.warning('Failed to load ingredients', e, st);
+    }
   }
 
   Future<void> addIngredient(Ingredient ingredient) async {

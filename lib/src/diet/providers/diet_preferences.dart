@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
+
 
 final _macroDisplayKey = 'macro_display_preference';
 
@@ -47,20 +47,15 @@ class DietPreferencesNotifier extends Notifier<DietPreferences> {
 
   Future<void> savePrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    if (state == null) {
-      await prefs.remove(_macroDisplayKey);
-      return;
-    }
     await prefs.setString(
       _macroDisplayKey,
-      const JsonEncoder().convert(state!),
+      const JsonEncoder().convert(state),
     );
   }
 
   void toggleMacro(String key) {
-    if (state == null) return;
-    final currentValue = state!.macros[key] ?? true;
-    final newMacros = Map<String, bool>.from(state!.macros);
+    final currentValue = state.macros[key] ?? true;
+    final newMacros = Map<String, bool>.from(state.macros);
     newMacros[key] = !currentValue;
     state = DietPreferences(macros: newMacros);
     savePrefs();

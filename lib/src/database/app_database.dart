@@ -9,9 +9,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../exercise/services/workout_services.dart';
+import '../services/logger.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
+
+final _log = logger('app_database');
 
 @DriftDatabase(
   tables: [
@@ -316,8 +319,12 @@ LazyDatabase _openConnection() {
     // Debug: log the database file path so we can confirm where the DB is stored
     try {
       // Use print so it's visible in Flutter logs during development
-      print('[DB] Opening database at: $dbPath');
-    } catch (_) {}
+      if (kDebugMode) {
+        print('[DB] Opening database at: $dbPath');
+      }
+    } catch (e, st) {
+      _log.warning('Failed to log database path', e, st);
+    }
     return NativeDatabase(File(dbPath));
   });
 }

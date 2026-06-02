@@ -5,6 +5,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
 import '../../models/food.dart';
+import '../../services/logger.dart';
+
+final _log = logger('drift_meal_repository');
 
 class DriftMealRepository {
   DriftMealRepository(this._db);
@@ -34,7 +37,7 @@ class DriftMealRepository {
       try {
         return await _mapMealRowToDomain(r);
       } catch (e, st) {
-        print('[DB] Failed to map meal ${r.id}: $e\n$st');
+        _log.severe('Failed to map meal ${r.id}', e, st);
         return null;
       }
     }));
@@ -57,7 +60,7 @@ class DriftMealRepository {
         try {
           return await _mapMealRowToDomain(r);
         } catch (e, st) {
-          print('[DB] Failed to map meal ${r.id} in watcher: $e\n$st');
+          _log.severe('Failed to map meal ${r.id} in watcher', e, st);
           return null;
         }
       }));
@@ -79,9 +82,7 @@ class DriftMealRepository {
 
       if (ingredientRow == null) {
         // Missing ingredient referenced by meal_ingredients; log and skip.
-        try {
-          print('[DB] Missing ingredient ${mealIngredient.ingredientId} for meal ${mealRow.id} - skipping portion');
-        } catch (_) {}
+        _log.warning('Missing ingredient ${mealIngredient.ingredientId} for meal ${mealRow.id} - skipping portion');
         return null;
       }
 
@@ -117,12 +118,12 @@ class DriftMealRepository {
     // Insert the meal row; fail if it already exists.
     await _db.insertMeal(companion);
 
-    // Debug: print meals count after insert to verify persistence during runtime
+    // Debug: log meals count after insert to verify persistence during runtime
     try {
       final all = await _db.select(_db.meals).get();
-      print('[DB] Inserted meal ${meal.id}. Meals in DB: ${all.length}');
+      _log.fine('Inserted meal ${meal.id}. Meals in DB: ${all.length}');
     } catch (e, st) {
-      print('[DB] Failed to query meals after insert: $e\n$st');
+      _log.severe('Failed to query meals after insert', e, st);
     }
 
     // Insert associated ingredients (no deletion on insert).

@@ -6,6 +6,7 @@ import 'package:fitfat/l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/seance.dart';
 import '../providers/seance.dart';
+import '../providers/exercises.dart';
 
 class CreateSeanceScreen extends ConsumerStatefulWidget {
   const CreateSeanceScreen({this.template, super.key});

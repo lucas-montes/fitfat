@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'logger.dart';
+
+final _log = logger('seance_notifications');
 
 class SeanceNotificationService {
   SeanceNotificationService._();
@@ -44,7 +47,9 @@ class SeanceNotificationService {
     // Nothing to stop for foreground task in this scaffold; cancel local notifications.
     try {
       await _local.cancelAll();
-    } catch (_) {}
+    } catch (e, st) {
+      _log.warning('Failed to cancel local notifications', e, st);
+    }
   }
 
   Future<void> _showLocalNotification({
@@ -87,7 +92,9 @@ class SeanceNotificationService {
           ),
         ),
       );
-    } catch (_) {}
+    } catch (e, st) {
+      _log.warning('Failed to update local notification text', e, st);
+    }
   }
 
   String _formatElapsed(Duration elapsed) {

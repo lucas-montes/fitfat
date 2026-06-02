@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'theme.dart';
 import 'router.dart';
-import '../l10n/app_localizations.dart';
-import '../../l10n/app_localizations.dart' as gen;
+import '../../l10n/app_localizations.dart';
 
 class FitFatApp extends StatelessWidget {
   const FitFatApp({super.key});
@@ -19,7 +18,6 @@ class FitFatApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        gen.AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,

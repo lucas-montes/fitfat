@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/food.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
+import '../../services/logger.dart';
 import '../providers/ingredients.dart';
 import '../providers/meals.dart';
 import '../providers/diet_preferences.dart';
 import 'meals/edit.dart';
 import 'ingredients/edit.dart';
 import 'widgets/food_entry_card.dart';
+
+final _log = logger('diet_meals_tab');
 
 // Widget that is used by the router to display the diet screen, which contains tabs for meals and ingredients
 class DietScreen extends StatelessWidget {
@@ -61,12 +64,7 @@ class _MealsTabState extends ConsumerState<MealsTab> {
     final meals = state.meals;
     final l10n = AppLocalizations.of(context)!;
     final groupedMeals = _groupMealsByDay(meals);
-    // Debug: log UI-side meal count to ensure provider updates are seen
-    try {
-      print(
-        '[UI] MealsTab build: meals=${meals.length} status=${state.status}',
-      );
-    } catch (_) {}
+    _log.info('MealsTab build: meals=${meals.length} status=${state.status}');
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -175,27 +173,25 @@ class _MealsTabState extends ConsumerState<MealsTab> {
     AppLocalizations l10n,
   ) {
     final result = StringBuffer();
-    final visibleMacros = {
-      'calories': prefs.isCaloriesVisible,
-      'protein': prefs.isProteinVisible,
-      'carbs': prefs.isCarbsVisible,
-      'fat': prefs.isFatVisible,
-    };
 
-    if (visibleMacros['calories'] ?? true)
+    if (prefs.isCaloriesVisible) {
       result.write(
         '${macros.calories.toStringAsFixed(0)} ${l10n.kcalAbbrev} · ',
       );
-    if (visibleMacros['protein'] ?? true)
+    }
+    if (prefs.isProteinVisible) {
       result.write(
         '${l10n.proteinAbbrev} ${macros.protein.toStringAsFixed(1)}g · ',
       );
-    if (visibleMacros['carbs'] ?? true)
+    }
+    if (prefs.isCarbsVisible) {
       result.write(
         '${l10n.carbsAbbrev} ${macros.carbs.toStringAsFixed(1)}g · ',
       );
-    if (visibleMacros['fat'] ?? true)
+    }
+    if (prefs.isFatVisible) {
       result.write('${l10n.fatAbbrev} ${macros.fat.toStringAsFixed(1)}g');
+    }
 
     return result.toString();
   }

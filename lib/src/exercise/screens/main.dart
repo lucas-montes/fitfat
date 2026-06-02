@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../models/exercise.dart';
 import '../../models/seance.dart';
 import '../providers/seance.dart';
+import '../providers/exercises.dart';
 import 'exercise_history_screen.dart';
 import 'create_seance_screen.dart';
 import 'seance_library_screen.dart';
@@ -100,7 +101,7 @@ class _ExercisesListTabState extends ConsumerState<ExercisesListTab> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               scrollDirection: Axis.horizontal,
               itemCount: allCategories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
               itemBuilder: (_, i) {
                 final cat = allCategories[i];
                 final selected = _selectedCategories.contains(cat);

@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import '../../models/exercise.dart';
 
 /// Pure Dart service for workout session state management and rest timer logic.
