@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 
-import '../../exercise/providers/seances/history.dart';
-
-import '../../models/exercise.dart';
-import '../services/workout_services.dart';
+import '../../../../models/exercise.dart';
+import '../../../providers/seances/history.dart';
+import '../../../services/workout_services.dart';
+import 'summary_card.dart';
+import 'record_card.dart';
 
 class ExerciseHistoryScreen extends ConsumerStatefulWidget {
   const ExerciseHistoryScreen({required this.exercise, super.key});
@@ -154,7 +155,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
           : Column(
               children: [
                 // Summary stats
-                _SummaryCard(
+                SummaryCard(
                   seances: seances,
                   service: _service,
                   exerciseName: widget.exercise.name,
@@ -531,7 +532,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _RecordCard(
+        RecordCard(
           icon: Icons.emoji_events,
           title: l10n.bestEstimated1RM,
           value: bestRm != null
@@ -543,7 +544,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
           color: Colors.amber,
         ),
         const SizedBox(height: 12),
-        _RecordCard(
+        RecordCard(
           icon: Icons.fitness_center,
           title: l10n.maxWeight,
           value: maxWeightSet != null
@@ -553,7 +554,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
           color: Colors.blue,
         ),
         const SizedBox(height: 12),
-        _RecordCard(
+        RecordCard(
           icon: Icons.trending_up,
           title: l10n.maxVolumeSet,
           value: maxVolSet != null
@@ -565,7 +566,7 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
           color: Colors.green,
         ),
         const SizedBox(height: 12),
-        _RecordCard(
+        RecordCard(
           icon: Icons.bar_chart,
           title: l10n.totalVolume,
           value: '${totalVol.toStringAsFixed(0)} kg',
@@ -573,116 +574,6 @@ class _ExerciseHistoryScreenState extends ConsumerState<ExerciseHistoryScreen> {
           color: Colors.purple,
         ),
       ],
-    );
-  }
-}
-
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.seances,
-    required this.service,
-    required this.exerciseName,
-  });
-
-  final List<Seance> seances;
-  final ProgressionService service;
-  final String exerciseName;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final totalSessions = seances.length;
-    final totalVolume = seances.fold<double>(
-      0,
-      (sum, s) =>
-          sum +
-          service.totalVolume(
-            s.exercises.firstWhere((e) => e.exercise.name == exerciseName).sets,
-          ),
-    );
-    final totalMinutes = seances.fold<int>(
-      0,
-      (sum, s) => sum + (s.completedAt!.difference(s.startedAt).inMinutes),
-    );
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _Stat(label: l10n.sessions, value: '$totalSessions'),
-            _Stat(
-              label: l10n.volume,
-              value: '${totalVolume.toStringAsFixed(0)} kg',
-            ),
-            _Stat(label: l10n.time, value: '$totalMinutes min'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 2),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-      ],
-    );
-  }
-}
-
-class _RecordCard extends StatelessWidget {
-  const _RecordCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-    this.subtitle,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String title;
-  final String value;
-  final String? subtitle;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withAlpha(26),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: subtitle != null ? Text(subtitle!) : null,
-        trailing: Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ),
     );
   }
 }

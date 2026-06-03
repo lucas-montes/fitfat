@@ -63,6 +63,7 @@ class _MealsTabState extends ConsumerState<MealsTab> {
     final state = ref.watch(mealsProvider);
     final meals = state.meals;
     final l10n = AppLocalizations.of(context)!;
+    final prefs = ref.watch(dietPreferencesProvider);
     final groupedMeals = _groupMealsByDay(meals);
     _log.info('MealsTab build: meals=${meals.length} status=${state.status}');
 
@@ -86,7 +87,7 @@ class _MealsTabState extends ConsumerState<MealsTab> {
         final group = groupedMeals[groupIndex];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _buildDayGroupCard(context, group),
+          child: _buildDayGroupCard(context, group, prefs),
         );
       },
       itemCount: groupedMeals.length + 1,
@@ -112,14 +113,17 @@ class _MealsTabState extends ConsumerState<MealsTab> {
         .toList();
   }
 
-  Widget _buildDayGroupCard(BuildContext context, _MealsDayGroup group) {
+  Widget _buildDayGroupCard(
+    BuildContext context,
+    _MealsDayGroup group,
+    DietPreferences prefs,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final dailyTotals = group.meals.fold(
       MacroNutrients.zero,
       (sum, meal) => sum + meal.totalMacros,
     );
 
-    final prefs = ref.read(dietPreferencesProvider);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -140,14 +144,18 @@ class _MealsTabState extends ConsumerState<MealsTab> {
             const SizedBox(height: 8),
             const Divider(height: 1),
             const SizedBox(height: 4),
-            for (final meal in group.meals) _buildMealRow(context, meal),
+            for (final meal in group.meals) _buildMealRow(context, meal, prefs),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMealRow(BuildContext context, MealEntry meal) {
+  Widget _buildMealRow(
+    BuildContext context,
+    MealEntry meal,
+    DietPreferences prefs,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final title = (meal.name?.trim().isEmpty ?? true) ? l10n.meal : meal.name!;
     final macros = meal.totalMacros;
@@ -156,7 +164,7 @@ class _MealsTabState extends ConsumerState<MealsTab> {
       contentPadding: EdgeInsets.zero,
       title: Text(title),
       subtitle: Text(
-        '${_timeFormat.format(meal.eatenAt)} · ${l10n.formatMacros(macros.calories, macros.protein, macros.carbs, macros.fat)} · ${l10n.items(meal.items.length)}',
+        '${_timeFormat.format(meal.eatenAt)} · ${_formatMacrosWithPrefs(macros, prefs, l10n)} · ${l10n.items(meal.items.length)}',
       ),
       onTap: () => _editMeal(context, meal),
       trailing: IconButton(
@@ -172,28 +180,22 @@ class _MealsTabState extends ConsumerState<MealsTab> {
     DietPreferences prefs,
     AppLocalizations l10n,
   ) {
-    final result = StringBuffer();
+    final parts = <String>[];
 
     if (prefs.isCaloriesVisible) {
-      result.write(
-        '${macros.calories.toStringAsFixed(0)} ${l10n.kcalAbbrev} · ',
-      );
+      parts.add('${macros.calories.toStringAsFixed(0)} ${l10n.kcalAbbrev}');
     }
     if (prefs.isProteinVisible) {
-      result.write(
-        '${l10n.proteinAbbrev} ${macros.protein.toStringAsFixed(1)}g · ',
-      );
+      parts.add('${l10n.proteinAbbrev} ${macros.protein.toStringAsFixed(1)}g');
     }
     if (prefs.isCarbsVisible) {
-      result.write(
-        '${l10n.carbsAbbrev} ${macros.carbs.toStringAsFixed(1)}g · ',
-      );
+      parts.add('${l10n.carbsAbbrev} ${macros.carbs.toStringAsFixed(1)}g');
     }
     if (prefs.isFatVisible) {
-      result.write('${l10n.fatAbbrev} ${macros.fat.toStringAsFixed(1)}g');
+      parts.add('${l10n.fatAbbrev} ${macros.fat.toStringAsFixed(1)}g');
     }
 
-    return result.toString();
+    return parts.join(' · ');
   }
 
   void _openAddMeal(BuildContext context) {
@@ -249,6 +251,7 @@ class _IngredientsTab extends ConsumerStatefulWidget {
 class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
   final _searchController = TextEditingController();
   bool _sortAscending = true;
+  bool _showArchived = false;
 
   @override
   void dispose() {
@@ -260,10 +263,12 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
   Widget build(BuildContext context) {
     final ingredients = ref.watch(ingredientsProvider);
     final l10n = AppLocalizations.of(context)!;
+    final prefs = ref.watch(dietPreferencesProvider);
     final query = _searchController.text.trim().toLowerCase();
 
     final filtered =
         ingredients.where((e) {
+          if (_showArchived != e.isArchived) return false;
           if (query.isNotEmpty && !e.name.toLowerCase().contains(query)) {
             return false;
           }
@@ -296,6 +301,26 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
             ),
             style: const TextStyle(fontSize: 13),
             onChanged: (_) => setState(() {}),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              FilterChip(
+                label: const Text('Active'),
+                selected: !_showArchived,
+                onSelected: (_) => setState(() => _showArchived = false),
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: Text(l10n.archivedIngredients),
+                selected: _showArchived,
+                onSelected: (_) => setState(() => _showArchived = true),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -341,18 +366,34 @@ class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
                       );
                     }
                     final ingredient = filtered[index - 1];
+                    final ingredientParts = <String>[];
+                    if (prefs.isCaloriesVisible) {
+                      ingredientParts.add(
+                        '${ingredient.caloriesPer100g.toStringAsFixed(0)} ${l10n.kcalAbbrev}',
+                      );
+                    }
+                    if (prefs.isProteinVisible) {
+                      ingredientParts.add(
+                        '${l10n.proteinAbbrev} ${ingredient.proteinPer100g.toStringAsFixed(1)}g',
+                      );
+                    }
+                    if (prefs.isCarbsVisible) {
+                      ingredientParts.add(
+                        '${l10n.carbsAbbrev} ${ingredient.carbsPer100g.toStringAsFixed(1)}g',
+                      );
+                    }
+                    if (prefs.isFatVisible) {
+                      ingredientParts.add(
+                        '${l10n.fatAbbrev} ${ingredient.fatPer100g.toStringAsFixed(1)}g',
+                      );
+                    }
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: FoodEntryCard(
                         title: ingredient.name,
                         onTap: () => _editIngredient(context, ref, ingredient),
                         onDelete: () => _deleteIngredient(ref, ingredient.id),
-                        body: Text(
-                          '${ingredient.caloriesPer100g.toStringAsFixed(0)} ${l10n.kcalAbbrev} · '
-                          '${l10n.proteinAbbrev} ${ingredient.proteinPer100g.toStringAsFixed(1)}g · '
-                          '${l10n.carbsAbbrev} ${ingredient.carbsPer100g.toStringAsFixed(1)}g · '
-                          '${l10n.fatAbbrev} ${ingredient.fatPer100g.toStringAsFixed(1)}g',
-                        ),
+                        body: Text(ingredientParts.join(' · ')),
                       ),
                     );
                   },

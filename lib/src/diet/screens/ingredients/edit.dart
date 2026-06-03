@@ -153,10 +153,10 @@ class _CustomIngredientScreenState
             ),
             child: Text(
               l10n.formatPer100g(
-                per100g.calories,
-                per100g.protein,
-                per100g.carbs,
-                per100g.fat,
+                per100g.calories.toStringAsFixed(0),
+                per100g.protein.toStringAsFixed(1),
+                per100g.carbs.toStringAsFixed(1),
+                per100g.fat.toStringAsFixed(1),
               ),
               style: Theme.of(context).textTheme.bodySmall,
             ),

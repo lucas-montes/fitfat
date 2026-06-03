@@ -1420,18 +1420,22 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
   final _weightController = TextEditingController();
   Gender _gender = Gender.male;
   ActivityLevel _activity = ActivityLevel.moderate;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    final init = widget.initial;
-    if (init != null) {
-      _birthDate = init.birthDate;
-      _heightController.text = init.heightCm.toString();
-      _weightController.text = init.weightKg.toString();
-      _gender = init.gender;
-      _activity = init.activityLevel;
-    }
+    _applyInitial(widget.initial);
+  }
+
+  void _applyInitial(UserProfile? profile) {
+    if (profile == null || _initialized) return;
+    _birthDate = profile.birthDate;
+    _heightController.text = profile.heightCm.toString();
+    _weightController.text = profile.weightKg.toString();
+    _gender = profile.gender;
+    _activity = profile.activityLevel;
+    _initialized = true;
   }
 
   @override
@@ -1444,8 +1448,15 @@ class _ProfileSetupDialogState extends ConsumerState<ProfileSetupDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // Watch profile so the dialog catches it if it loads asynchronously
+    final profile = ref.watch(userProfileProvider);
+    _applyInitial(profile ?? widget.initial);
     return AlertDialog(
-      title: Text(widget.initial == null ? l10n.yourProfile : l10n.editProfile),
+      title: Text(
+        widget.initial == null && profile == null
+            ? l10n.yourProfile
+            : l10n.editProfile,
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2072,11 +2083,14 @@ class _WorkoutStreakCard extends ConsumerWidget {
               children: [
                 const Text('🏋️', style: TextStyle(fontSize: 16)),
                 const SizedBox(width: 6),
-                Text(
-                  l10n.workouts,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                Flexible(
+                  child: Text(
+                    l10n.workouts,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -2454,7 +2468,8 @@ class _SettingsTab extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => showDialog(
               context: context,
-              builder: (_) => const ProfileSetupDialog(),
+              builder: (_) =>
+                  ProfileSetupDialog(initial: ref.read(userProfileProvider)),
             ),
           ),
         ),

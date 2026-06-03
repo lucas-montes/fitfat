@@ -17,7 +17,6 @@ final seanceHistoryProvider =
       SeanceHistoryNotifier.new,
     );
 
-
 class SeanceHistoryNotifier extends Notifier<List<Seance>> {
   @override
   List<Seance> build() {

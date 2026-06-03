@@ -48,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -92,6 +92,12 @@ class AppDatabase extends _$AppDatabase {
         // Make seances.completed_at non-nullable — fill any null values first
         await m.database.customStatement(
           'UPDATE seances SET completed_at = started_at WHERE completed_at IS NULL',
+        );
+      }
+      if (from < 7) {
+        // Remove weight_kg from user_profile (weight now comes from BodyWeightEntries)
+        await m.database.customStatement(
+          'ALTER TABLE user_profile DROP COLUMN weight_kg',
         );
       }
     },

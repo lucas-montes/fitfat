@@ -20,7 +20,6 @@ final activeSeanceProvider = NotifierProvider<ActiveSeanceNotifier, Seance?>(
   ActiveSeanceNotifier.new,
 );
 
-
 final seanceRepositoryProvider = Provider<DriftSeanceRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return DriftSeanceRepository(db);

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/seance.dart';
+import '../../providers/seance.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
-import '../../services/seance_foreground_service.dart';
-import 'create_seance_screen.dart';
+import '../../../services/seance_foreground_service.dart';
+import 'create.dart';
 
 class SeanceLibraryScreen extends ConsumerWidget {
   const SeanceLibraryScreen({super.key});

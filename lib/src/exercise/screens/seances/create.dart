@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:fitfat/l10n/app_localizations.dart';
-import '../../models/exercise.dart';
-import '../../models/seance.dart';
-import '../providers/seance.dart';
-import '../providers/exercises.dart';
+import '../../../models/exercise.dart';
+import '../../../models/seance.dart';
+import '../../providers/seance.dart';
+import '../../providers/exercises.dart';
 
 class CreateSeanceScreen extends ConsumerStatefulWidget {
   const CreateSeanceScreen({this.template, super.key});
