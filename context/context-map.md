@@ -23,6 +23,7 @@
 ## Feature modules
 - `lib/src/diet/`: meal log, ingredient editor (with advanced macros section), ingredient management (archive/restore), and related providers.
 - `lib/src/dashboard/`: focused daily glance (calories, workout status, goals, streaks), Goals sub-tab, Settings sub-tab (profile, nutrition toggles, data export/delete).
+- `lib/src/dashboard/screens/status_cards.dart`: shared compact card shell (`_StatusCard`) and 7-day mini bar chart (`_MiniBarChart`) for water/steps/weight cards.
 - `lib/src/exercise/`: active workout flow, exercise history, templates, workout library (with search + category filters), training stats, heatmap, and trend charts.
 - `lib/src/app/theme.dart`: Material 3 theme with custom typography, card shapes, input decoration, and button styles.
 
@@ -61,6 +62,7 @@
 - `context/plans/exercise-workout-fixes.md`: fix compile errors, make Seance.name non-nullable, add completedAt to ExerciseSets, fix race condition in history save, make Seances.completedAt non-nullable. ✅ Done
 - `context/plans/exercise-screens-refactor.md`: split exercise screens into subdirectories (exercises/, seances/, stats/). ✅ Done
 - `context/plans/i18n-arb-migration.md`: migrate from manual `_t()` localization to Flutter standard ARB-based generated localization across all 10 source files.
+- `context/plans/dashboard-step-water-ingredient.md`: auto step tracking via pedometer, improved water card UX (tap/double-tap/long-press), structured ingredient macro chip layout. ✅ Done
 
 ## Supporting docs
 - `doc/simple_db_example.md`: example database context.

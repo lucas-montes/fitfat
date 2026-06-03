@@ -14,6 +14,7 @@ import '../providers/dashboard.dart';
 import '../../diet/providers/diet_preferences.dart';
 import '../../exercise/providers/seance.dart';
 import '../../exercise/providers/exercises.dart';
+import 'status_cards.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -63,10 +64,19 @@ class _OverviewTab extends ConsumerWidget {
           const WorkoutActivityCard(),
           const SizedBox(height: 8),
 
-          // ── Quick logs: water + weight ──
-          const WaterTrackerCard(),
-          const SizedBox(height: 8),
-          const _CompactWeightCard(),
+          // ── Status cards row: water, steps, weight ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: const [
+                Expanded(child: WaterStatusCard()),
+                SizedBox(width: 8),
+                Expanded(child: StepStatusCard()),
+                SizedBox(width: 8),
+                Expanded(child: WeightStatusCard()),
+              ],
+            ),
+          ),
           const SizedBox(height: 8),
 
           // ── Goals overview (all active goals) ──
@@ -86,160 +96,6 @@ class _OverviewTab extends ConsumerWidget {
           ),
           const SizedBox(height: 96),
         ],
-      ),
-    );
-  }
-}
-
-// ── Compact weight quick-log card ──
-
-class _CompactWeightCard extends ConsumerStatefulWidget {
-  const _CompactWeightCard();
-
-  @override
-  ConsumerState<_CompactWeightCard> createState() => _CompactWeightCardState();
-}
-
-class _CompactWeightCardState extends ConsumerState<_CompactWeightCard> {
-  final _weightController = TextEditingController();
-
-  @override
-  void dispose() {
-    _weightController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveWeight() async {
-    final weight = double.tryParse(_weightController.text.trim());
-    if (weight == null || weight <= 0) return;
-    await ref.read(bodyWeightTrackerProvider).addEntry(weight);
-    if (!mounted) return;
-    _weightController.clear();
-    final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.weightLogged),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final entriesAsync = ref.watch(bodyWeightEntriesProvider);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: entriesAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (entries) {
-              final ordered = [...entries]
-                ..sort((a, b) => b.date.compareTo(a.date));
-              final latest = ordered.isNotEmpty ? ordered.first : null;
-              final recent = ordered.take(7).toList();
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.monitor_weight, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.weight,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (latest != null) ...[
-                    Row(
-                      children: [
-                        Text(
-                          '${latest.weightKg.toStringAsFixed(1)} kg',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          DateFormat('MMM d, HH:mm').format(latest.date),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _weightController,
-                          decoration: InputDecoration(
-                            hintText: l10n.enterWeightKg,
-                            border: const OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          onSubmitted: (_) => _saveWeight(),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: _saveWeight,
-                        child: Text(l10n.log),
-                      ),
-                    ],
-                  ),
-                  if (recent.length > 1) ...[
-                    const SizedBox(height: 12),
-                    const Divider(height: 1),
-                    const SizedBox(height: 8),
-                    ...recent.sublist(1).map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${entry.weightKg.toStringAsFixed(1)} kg',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ),
-                            Text(
-                              DateFormat('MMM d, HH:mm').format(entry.date),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ],
-              );
-            },
-          ),
-        ),
       ),
     );
   }
@@ -407,173 +263,6 @@ class _WeightTrackerCardState extends ConsumerState<WeightTrackerCard> {
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-class WaterTrackerCard extends ConsumerStatefulWidget {
-  const WaterTrackerCard({super.key});
-
-  @override
-  ConsumerState<WaterTrackerCard> createState() => _WaterTrackerCardState();
-}
-
-class _WaterTrackerCardState extends ConsumerState<WaterTrackerCard> {
-  late TextEditingController _goalController;
-
-  @override
-  void initState() {
-    super.initState();
-    _goalController = TextEditingController();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final state = ref.read(waterTrackerProvider);
-      _goalController.text = (state.dailyGoalMl / 1000).toStringAsFixed(1);
-    });
-  }
-
-  @override
-  void dispose() {
-    _goalController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _showGoalDialog() async {
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        final l10n = AppLocalizations.of(ctx)!;
-        return AlertDialog(
-          title: Text(l10n.setDailyWaterGoal),
-          content: TextField(
-            controller: _goalController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: l10n.litersExample,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final liters = double.tryParse(_goalController.text.trim());
-                if (liters != null && liters > 0) {
-                  await ref
-                      .read(waterTrackerProvider.notifier)
-                      .setDailyGoal((liters * 1000).toInt());
-                }
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              child: Text(l10n.save),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final waterState = ref.watch(waterTrackerProvider);
-    final todayMl = waterState.getTodayMl();
-    final progressFraction = waterState.dailyGoalMl > 0
-        ? todayMl / waterState.dailyGoalMl
-        : 0.0;
-    final clampedProgress = progressFraction.clamp(0.0, 1.0);
-    final history = waterState.getLastNDays(7);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.waterIntake,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${(todayMl / 1000).toStringAsFixed(1)}L / ${(waterState.dailyGoalMl / 1000).toStringAsFixed(1)}L',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: clampedProgress,
-                minHeight: 8,
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton.tonalIcon(
-                  onPressed: () async => await ref
-                      .read(waterTrackerProvider.notifier)
-                      .addWater(250),
-                  icon: const Icon(Icons.local_drink),
-                  label: const Text('+250ml'),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: () async => await ref
-                      .read(waterTrackerProvider.notifier)
-                      .addWater(500),
-                  icon: const Icon(Icons.local_drink),
-                  label: const Text('+500ml'),
-                ),
-                TextButton.icon(
-                  onPressed: _showGoalDialog,
-                  icon: const Icon(Icons.edit),
-                  label: Text(l10n.goal),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              title: Text(l10n.historyLast7Entries),
-              children: history.isEmpty
-                  ? [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          l10n.noHistory,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                    ]
-                  : history.map((entry) {
-                      return ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.local_drink, size: 18),
-                        title: Text(
-                          '${(entry.value / 1000).toStringAsFixed(1)}L',
-                        ),
-                        subtitle: Text(
-                          DateFormat(
-                            'EEE, MMM d',
-                          ).format(DateTime.parse(entry.key)),
-                        ),
-                      );
-                    }).toList(),
-            ),
-          ],
         ),
       ),
     );
@@ -1077,6 +766,7 @@ class _GoalsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final goalsData = ref.watch(goalsProvider);
+    final waterState = ref.watch(waterTrackerProvider);
     final hasProfile = ref.watch(userProfileProvider) != null;
     final hasAnyGoal =
         goalsData.bodyWeightGoal != null || goalsData.strengthGoals.isNotEmpty;
@@ -1166,6 +856,73 @@ class _GoalsTab extends ConsumerWidget {
                     ),
                   const SizedBox(height: 8),
                 ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Water goal section
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      l10n.waterIntake,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      onPressed: () => _editWaterGoal(context, ref, l10n),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${(waterState.dailyGoalMl / 1000).toStringAsFixed(1)}L / day',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Steps goal section
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Steps',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      onPressed: () => _editStepGoal(context, ref),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${ref.watch(stepTrackerProvider).dailyGoal} / day',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),
@@ -1292,6 +1049,86 @@ class _GoalsTab extends ConsumerWidget {
             icon: const Icon(Icons.delete, size: 20),
             onPressed: () =>
                 _confirmDeleteStrength(context, ref, goal.exerciseName),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editWaterGoal(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
+    final ctrl = TextEditingController(
+      text: (ref.read(waterTrackerProvider).dailyGoalMl / 1000).toStringAsFixed(
+        1,
+      ),
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.setDailyWaterGoal),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: l10n.litersExample,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final liters = double.tryParse(ctrl.text.trim());
+              if (liters != null && liters > 0) {
+                ref
+                    .read(waterTrackerProvider.notifier)
+                    .setDailyGoal((liters * 1000).toInt());
+              }
+              Navigator.pop(ctx);
+            },
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editStepGoal(BuildContext context, WidgetRef ref) {
+    final ctrl = TextEditingController(
+      text: ref.read(stepTrackerProvider).dailyGoal.toString(),
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Set Daily Steps Goal'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Steps per day',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final g = int.tryParse(ctrl.text.trim());
+              if (g != null && g > 0) {
+                ref.read(stepTrackerProvider.notifier).setDailyGoal(g);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -2466,11 +2303,17 @@ class _SettingsTab extends ConsumerWidget {
                   : l10n.enterDetailsForMacros,
             ),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => showDialog(
-              context: context,
-              builder: (_) =>
-                  ProfileSetupDialog(initial: ref.read(userProfileProvider)),
-            ),
+            onTap: () {
+              showDialog<UserProfile>(
+                context: context,
+                builder: (_) =>
+                    ProfileSetupDialog(initial: ref.read(userProfileProvider)),
+              ).then((profile) {
+                if (profile != null && context.mounted) {
+                  ref.read(userProfileProvider.notifier).setProfile(profile);
+                }
+              });
+            },
           ),
         ),
         const SizedBox(height: 24),

@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pedometer/pedometer.dart';
+import 'dart:async';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../diet/providers/meals.dart';
 import '../../models/dashboard.dart';
 import '../../models/enums.dart';
@@ -588,6 +590,14 @@ const _waterTrackerKey = 'water_tracker_data';
 const _waterDailyGoalKey = 'water_daily_goal_ml';
 const _defaultWaterGoalMl = 2500; // 2.5L
 
+const _stepTrackerKey = 'step_tracker_data';
+const _stepDailyGoalKey = 'step_daily_goal';
+const _defaultStepGoal = 10000;
+
+// ---------------------------------------------------------------------------
+// Water tracker
+// ---------------------------------------------------------------------------
+
 /// Provider for water tracker state (current day's water intake + history)
 final waterTrackerProvider =
     NotifierProvider<WaterTrackerNotifier, WaterTrackerState>(
@@ -679,6 +689,21 @@ class WaterTrackerNotifier extends Notifier<WaterTrackerState> {
     await _save();
   }
 
+  Future<void> removeWater(int ml) async {
+    final today = _formatDate(DateTime.now());
+    final currentMl = state.dailyTotals[today] ?? 0;
+
+    final newTotals = Map<String, int>.from(state.dailyTotals);
+    newTotals[today] = (currentMl - ml).clamp(0, 99999);
+
+    state = WaterTrackerState(
+      dailyTotals: newTotals,
+      dailyGoalMl: state.dailyGoalMl,
+    );
+
+    await _save();
+  }
+
   Future<void> setDailyGoal(int ml) async {
     state = WaterTrackerState(dailyTotals: state.dailyTotals, dailyGoalMl: ml);
     await _save();
@@ -694,6 +719,112 @@ class WaterTrackerNotifier extends Notifier<WaterTrackerState> {
       dailyGoalMl: state.dailyGoalMl,
     );
 
+    await _save();
+  }
+}
+
+/// Provider for step tracker state
+final stepTrackerProvider =
+    NotifierProvider<StepTrackerNotifier, StepTrackerState>(
+      StepTrackerNotifier.new,
+    );
+
+class StepTrackerState {
+  final Map<String, int> dailyTotals; // "YYYY-MM-DD" -> steps
+  final int dailyGoal;
+
+  StepTrackerState({required this.dailyTotals, required this.dailyGoal});
+
+  int getTodaySteps() {
+    final today = _formatDate(DateTime.now());
+    return dailyTotals[today] ?? 0;
+  }
+}
+
+class StepTrackerNotifier extends Notifier<StepTrackerState> {
+  StreamSubscription<StepCount>? _pedometerSub;
+  int _lastCumulative = 0;
+
+  @override
+  StepTrackerState build() {
+    _load();
+    _initPedometer();
+    ref.onDispose(() => _pedometerSub?.cancel());
+    return StepTrackerState(dailyTotals: {}, dailyGoal: _defaultStepGoal);
+  }
+
+  void _initPedometer() {
+    try {
+      _pedometerSub = Pedometer.stepCountStream.listen(
+        (event) => _onStep(event),
+        onError: (_) {},
+      );
+    } catch (_) {}
+  }
+
+  void _onStep(StepCount event) {
+    final current = event.steps;
+    if (_lastCumulative > 0) {
+      final delta = current - _lastCumulative;
+      if (delta > 0) {
+        addSteps(delta);
+      }
+    }
+    _lastCumulative = current;
+    _saveLastCumulative();
+  }
+
+  Future<void> _saveLastCumulative() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('step_last_cumulative', _lastCumulative);
+    } catch (_) {}
+  }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _lastCumulative = prefs.getInt('step_last_cumulative') ?? 0;
+      final dataStr = prefs.getString(_stepTrackerKey);
+      final dailyTotals = <String, int>{};
+      if (dataStr != null) {
+        final decoded = jsonDecode(dataStr) as Map<String, dynamic>;
+        for (final entry in decoded.entries) {
+          dailyTotals[entry.key] = entry.value as int;
+        }
+      }
+      final goal = prefs.getInt(_stepDailyGoalKey) ?? _defaultStepGoal;
+      state = StepTrackerState(dailyTotals: dailyTotals, dailyGoal: goal);
+    } catch (e) {
+      if (kDebugMode) print('Failed to load step tracker: $e');
+      state = StepTrackerState(dailyTotals: {}, dailyGoal: _defaultStepGoal);
+    }
+  }
+
+  Future<void> _save() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_stepTrackerKey, jsonEncode(state.dailyTotals));
+      await prefs.setInt(_stepDailyGoalKey, state.dailyGoal);
+    } catch (e) {
+      if (kDebugMode) print('Failed to save step tracker: $e');
+    }
+  }
+
+  Future<void> addSteps(int steps) async {
+    final today = _formatDate(DateTime.now());
+    final current = state.dailyTotals[today] ?? 0;
+    final newTotals = Map<String, int>.from(state.dailyTotals);
+    newTotals[today] = current + steps;
+    state = StepTrackerState(
+      dailyTotals: newTotals,
+      dailyGoal: state.dailyGoal,
+    );
+    await _save();
+  }
+
+  Future<void> setDailyGoal(int goal) async {
+    state = StepTrackerState(dailyTotals: state.dailyTotals, dailyGoal: goal);
     await _save();
   }
 }
