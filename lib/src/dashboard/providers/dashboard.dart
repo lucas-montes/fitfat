@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pedometer/pedometer.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -732,8 +733,13 @@ final stepTrackerProvider =
 class StepTrackerState {
   final Map<String, int> dailyTotals; // "YYYY-MM-DD" -> steps
   final int dailyGoal;
+  final bool permissionDenied;
 
-  StepTrackerState({required this.dailyTotals, required this.dailyGoal});
+  const StepTrackerState({
+    required this.dailyTotals,
+    required this.dailyGoal,
+    this.permissionDenied = false,
+  });
 
   int getTodaySteps() {
     final today = _formatDate(DateTime.now());
@@ -753,13 +759,31 @@ class StepTrackerNotifier extends Notifier<StepTrackerState> {
     return StepTrackerState(dailyTotals: {}, dailyGoal: _defaultStepGoal);
   }
 
-  void _initPedometer() {
+  Future<void> _initPedometer() async {
     try {
-      _pedometerSub = Pedometer.stepCountStream.listen(
-        (event) => _onStep(event),
-        onError: (_) {},
-      );
-    } catch (_) {}
+      final status = await Permission.activityRecognition.request();
+      if (status.isGranted) {
+        _pedometerSub = Pedometer.stepCountStream.listen(
+          (event) => _onStep(event),
+          onError: (_) {},
+        );
+      } else if (status.isPermanentlyDenied) {
+        state = StepTrackerState(
+          dailyTotals: state.dailyTotals,
+          dailyGoal: state.dailyGoal,
+          permissionDenied: true,
+        );
+      } else {
+        // Denied (not permanent) — user can be prompted again next session
+        state = StepTrackerState(
+          dailyTotals: state.dailyTotals,
+          dailyGoal: state.dailyGoal,
+          permissionDenied: true,
+        );
+      }
+    } catch (_) {
+      // Fallback: permission request failed, stay at 0 steps
+    }
   }
 
   void _onStep(StepCount event) {

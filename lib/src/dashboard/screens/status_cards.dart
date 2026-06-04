@@ -168,6 +168,23 @@ class StepStatusCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stepState = ref.watch(stepTrackerProvider);
+
+    // Show a one-time snackbar when permission is denied
+    ref.listen(stepTrackerProvider, (prev, next) {
+      if (next.permissionDenied && (prev == null || !prev.permissionDenied)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Step tracking needs activity recognition permission. '
+              'Enable it in Settings → Apps → fitfat → Permissions.',
+            ),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(label: 'OK', onPressed: () {}),
+          ),
+        );
+      }
+    });
+
     final todaySteps = stepState.getTodaySteps();
     final dailyGoal = stepState.dailyGoal;
     final progress = dailyGoal > 0
