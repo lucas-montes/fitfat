@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 
 import 'exercises/list.dart';
-import 'seances/main_tab.dart';
+import 'training/tab.dart';
 import 'stats/stats_tab.dart';
 
 class ExerciseScreen extends ConsumerWidget {
@@ -20,14 +20,14 @@ class ExerciseScreen extends ConsumerWidget {
           elevation: 0,
           bottom: TabBar(
             tabs: [
-              Tab(text: l10n.workoutsTab),
+              Tab(text: l10n.trainingTab),
               Tab(text: l10n.exercises),
               Tab(text: l10n.statsTab),
             ],
           ),
         ),
         body: const TabBarView(
-          children: [SeancesHistoryTab(), ExercisesListTab(), StatsTab()],
+          children: [TrainingTab(), ExercisesListTab(), StatsTab()],
         ),
       ),
     );

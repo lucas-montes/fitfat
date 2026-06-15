@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 
-import '../../../../models/exercise.dart';
+import '../../../../models/workout.dart' as domain;
 
 class GuidedSetCard extends StatelessWidget {
   const GuidedSetCard({
@@ -15,7 +15,7 @@ class GuidedSetCard extends StatelessWidget {
     this.isPr = false,
   });
 
-  final ExerciseSet set;
+  final domain.WeightSet set;
   final int index;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
@@ -68,7 +68,7 @@ class GuidedSetCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${set.reps} reps × ${set.weight.toStringAsFixed(1)}kg',
+                      '${set.reps} reps × ${set.weightKg.toStringAsFixed(1)}kg',
                       style: TextStyle(
                         fontSize: 13,
                         color: set.isCompleted ? Colors.grey : null,

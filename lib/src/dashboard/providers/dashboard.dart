@@ -749,53 +749,134 @@ class StepTrackerState {
 
 class StepTrackerNotifier extends Notifier<StepTrackerState> {
   StreamSubscription<StepCount>? _pedometerSub;
+  Timer? _reconnectTimer;
+  Timer? _sanityTimer;
   int _lastCumulative = 0;
+  bool _permissionGranted = false;
+  DateTime? _lastEventTimestamp;
 
   @override
   StepTrackerState build() {
+    // Keep the provider alive across tab switches so the pedometer stream
+    // stays registered. Without this, switching to the Settings tab disposes
+    // the notifier → sensor unregisters → steps stop.
+    ref.keepAlive();
     _load();
-    _initPedometer();
-    ref.onDispose(() => _pedometerSub?.cancel());
+    _connectPedometer();
+    _startSanityTimer();
+    ref.onDispose(() {
+      _pedometerSub?.cancel();
+      _reconnectTimer?.cancel();
+      _sanityTimer?.cancel();
+    });
     return StepTrackerState(dailyTotals: {}, dailyGoal: _defaultStepGoal);
   }
 
-  Future<void> _initPedometer() async {
+  /// Connect to the pedometer stream. Only requests permission once.
+  Future<void> _connectPedometer() async {
+    // If already subscribed, skip (avoids double-subscription on reconnect).
+    if (_pedometerSub != null) return;
+
     try {
-      final status = await Permission.activityRecognition.request();
-      if (status.isGranted) {
-        _pedometerSub = Pedometer.stepCountStream.listen(
-          (event) => _onStep(event),
-          onError: (_) {},
-        );
-      } else if (status.isPermanentlyDenied) {
-        state = StepTrackerState(
-          dailyTotals: state.dailyTotals,
-          dailyGoal: state.dailyGoal,
-          permissionDenied: true,
-        );
-      } else {
-        // Denied (not permanent) — user can be prompted again next session
-        state = StepTrackerState(
-          dailyTotals: state.dailyTotals,
-          dailyGoal: state.dailyGoal,
-          permissionDenied: true,
-        );
+      if (!_permissionGranted) {
+        final status = await Permission.activityRecognition.request();
+        if (!status.isGranted) {
+          if (!state.permissionDenied) {
+            state = StepTrackerState(
+              dailyTotals: state.dailyTotals,
+              dailyGoal: state.dailyGoal,
+              permissionDenied: true,
+            );
+          }
+          return;
+        }
+        _permissionGranted = true;
+        // Clear any previous denied flag so the card UI updates.
+        if (state.permissionDenied) {
+          state = StepTrackerState(
+            dailyTotals: state.dailyTotals,
+            dailyGoal: state.dailyGoal,
+            permissionDenied: false,
+          );
+        }
       }
-    } catch (_) {
-      // Fallback: permission request failed, stay at 0 steps
+
+      _pedometerSub = Pedometer.stepCountStream.listen(
+        _onStep,
+        onError: _onStreamError,
+        onDone: _onStreamDone,
+        cancelOnError: false,
+      );
+    } catch (e) {
+      _log.warning('Failed to connect pedometer stream', e);
     }
   }
 
+  /// Called for every step event from the sensor.
   void _onStep(StepCount event) {
+    _lastEventTimestamp = DateTime.now();
     final current = event.steps;
+
     if (_lastCumulative > 0) {
       final delta = current - _lastCumulative;
       if (delta > 0) {
         addSteps(delta);
+      } else if (delta < 0) {
+        // Sensor reset (device reboot) — the cumulative counter started over.
+        // Our dailyTotals are still valid, just update the baseline.
+        _lastCumulative = current;
+        _saveLastCumulative();
+        return;
       }
     }
     _lastCumulative = current;
     _saveLastCumulative();
+  }
+
+  /// Stream error: log it, cancel the dead subscription, reconnect later.
+  void _onStreamError(Object error) {
+    _log.warning('Pedometer stream error, reconnecting...', error);
+    _pedometerSub?.cancel();
+    _pedometerSub = null;
+    _scheduleReconnect();
+  }
+
+  /// Stream completed: reconnect so steps keep counting.
+  void _onStreamDone() {
+    _log.info('Pedometer stream ended, reconnecting...');
+    _pedometerSub?.cancel();
+    _pedometerSub = null;
+    _scheduleReconnect();
+  }
+
+  /// Schedule a reconnection attempt after a short delay.
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+      if (_pedometerSub == null) {
+        _connectPedometer();
+      }
+    });
+  }
+
+  /// Periodic check: if the sensor hasn't delivered an event in >45 s it may
+  /// have stalled (common during deep sleep on some devices). Reconnecting
+  /// triggers the stream to emit the latest cumulative value so we catch up.
+  void _startSanityTimer() {
+    _sanityTimer?.cancel();
+    _sanityTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      final lastEvent = _lastEventTimestamp;
+      if (lastEvent == null) return;
+      final elapsed = DateTime.now().difference(lastEvent).inSeconds;
+      if (elapsed > 45 && _pedometerSub != null) {
+        _log.info(
+          'Pedometer stream stalled (${elapsed}s since last event), reconnecting...',
+        );
+        _pedometerSub?.cancel();
+        _pedometerSub = null;
+        _scheduleReconnect();
+      }
+    });
   }
 
   Future<void> _saveLastCumulative() async {

@@ -4,7 +4,7 @@ FitFat is a Flutter app for fitness and nutrition tracking.
 
 ## What the app does now
 - Tracks meals and ingredients with macro totals.
-- Tracks exercise sessions (`seances`), exercise libraries, and workout templates.
+- Tracks exercise sessions (`workouts`), exercise libraries, and workout templates.
 - Shows a dashboard with workout activity summary, training heatmap, water tracking, weight tracking, daily nutrition, goals, and charts.
 - Persists data locally with Drift/SQLite and a small amount of `SharedPreferences` state for the active session.
 
@@ -27,7 +27,7 @@ FitFat is a Flutter app for fitness and nutrition tracking.
 - `lib/src/app/router.dart` defines the bottom-nav shell and the active-session route.
 - `lib/src/app/theme.dart` defines Material 3 theme with custom typography, card shapes, input decoration, and button styles.
 - `lib/src/database/` defines Drift tables and the database provider.
-- `lib/src/models/` holds domain models for food, exercise, dashboard, and seance data, plus shared enums (`enums.dart`).
+- `lib/src/models/` holds domain models for food, exercise, dashboard, and the unified workout model (`workout.dart`), plus shared enums (`enums.dart`).
 - `lib/src/adapters/drift/` converts between Drift rows and domain models.
 - `lib/src/diet/`, `lib/src/dashboard/`, and `lib/src/exercise/` contain the feature UI and Riverpod controllers.
 
@@ -54,14 +54,14 @@ FitFat is a Flutter app for fitness and nutrition tracking.
 - **Two workout modes**: Guided mode follows predefined templates with auto-complete sets. Free-form mode allows ad-hoc set entry with smart pre-fill from last set.
 - **Rest timer**: Countdown between sets with sound/vibration alert, configurable per exercise in templates (uses existing `restBetweenSets` / `restSeconds` fields).
 - **Progression tracking**: Estimated 1RM, volume (sets×reps×weight), max weight, and personal records — charted over time.
-- **Bundled exercise library**: ~30-40 common exercises seeded on first launch, organized by muscle group. Users can also create custom exercises.
+- **Bundled exercise library**: ~50 common exercises seeded on first launch, organized by muscle group (plus a Cardio category for sports/freeform activities). Each exercise has a `type` (weightlifting/cardio) and `met` value for calorie estimation. Users can also create custom exercises.
 - **Dashboard workout summary**: the dashboard surfaces today's workout status (active or last completed), plus a 7-day workout streak mini-heatmap. Training stats, full heatmap, and trend charts live in the Exercise tab.
 - **Dashboard goals overview**: compact card showing all active goals (bodyweight, strength) with progress indicators.
 - **Dashboard streaks**: two side-by-side 7-day mini-heatmaps for calorie compliance and workout consistency.
 - **Dashboard bodyweight tracker**: bodyweight entry card shown only when a bodyweight goal exists.
 - **Service layer needed**: Business logic (session state, rest timer, progression calculations) should be extracted into pure Dart service classes.
-- **Provider separation**: The 555-line `seance.dart` provider file should be split into focused files per concern (active session, history, templates, exercise list).
-- **Abstract repository interfaces**: Needed for `SeanceRepository` and `ExerciseRepository` to support testability and future alternative backends.
+- **Provider separation**: The old `seance.dart` provider was split into focused providers: `workout_provider.dart` (active session), `history_provider.dart` (workout history), `planned_workout_provider.dart` (scheduling), and `exercises.dart` (exercise list).
+- **Repository interfaces**: `DriftPlannedWorkoutRepository` and `DriftSeanceRepository` exist for the new and old data paths respectively.
 
 ## Open questions
 - Which localization system should be used for `en`, `fr`, and `es`.

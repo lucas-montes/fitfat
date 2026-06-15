@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../models/exercise.dart';
-
 class TimerWidget extends ConsumerStatefulWidget {
-  const TimerWidget({required this.seance, super.key});
+  const TimerWidget({required this.startedAt, super.key});
 
-  final Seance seance;
+  final DateTime startedAt;
 
   @override
   ConsumerState<TimerWidget> createState() => _TimerWidgetState();
@@ -25,9 +23,7 @@ class _TimerWidgetState extends ConsumerState<TimerWidget> {
   void _startTimer() {
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
-        setState(
-          () => _elapsed = DateTime.now().difference(widget.seance.startedAt),
-        );
+        setState(() => _elapsed = DateTime.now().difference(widget.startedAt));
         _startTimer();
       }
     });

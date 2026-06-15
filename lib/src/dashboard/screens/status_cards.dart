@@ -434,7 +434,10 @@ class _MiniBarChart extends StatelessWidget {
           final barCount = values.length;
           final gap = 2.0;
           final barWidth = barCount > 1
-              ? (totalWidth - (barCount - 1) * gap) / barCount
+              ? ((totalWidth - (barCount - 1) * gap) / barCount).clamp(
+                  0.0,
+                  double.infinity,
+                )
               : totalWidth;
 
           return Row(

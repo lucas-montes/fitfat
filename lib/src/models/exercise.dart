@@ -3,16 +3,22 @@ class ExerciseDefinition {
     required this.id,
     required this.name,
     this.category = 'General',
+    this.type = 'weightlifting',
+    this.met = 5.0,
   });
 
   final String id;
   final String name;
   final String category;
+  final String type;
+  final double met;
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'category': category,
+    'type': type,
+    'met': met,
   };
 
   factory ExerciseDefinition.fromJson(Map<String, dynamic> json) =>
@@ -20,6 +26,8 @@ class ExerciseDefinition {
         id: json['id'] as String,
         name: json['name'] as String,
         category: json['category'] as String? ?? 'General',
+        type: json['type'] as String? ?? 'weightlifting',
+        met: (json['met'] as num?)?.toDouble() ?? 5.0,
       );
 }
 

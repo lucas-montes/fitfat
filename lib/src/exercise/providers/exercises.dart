@@ -39,6 +39,8 @@ class ExerciseListNotifier extends Notifier<List<ExerciseDefinition>> {
               id: exercise.id,
               name: exercise.name,
               category: exercise.category,
+              type: exercise.type,
+              met: exercise.met,
             ),
           )
           .toList();

@@ -1,4 +1,5 @@
 import '../../models/exercise.dart';
+import '../../models/workout.dart' as domain;
 
 /// Pure Dart service for workout session state management and rest timer logic.
 /// No Flutter, no DB, no UI dependencies — fully testable.
@@ -60,7 +61,7 @@ class WorkoutSessionService {
 /// Pure Dart service for exercise library management and bundled data seeding.
 /// No Flutter, no DB, no UI dependencies.
 class ExerciseLibraryService {
-  /// Default bundled exercises organized by muscle group.
+  /// Default bundled exercises organized by category.
   static const Map<String, List<String>> bundledExercises = {
     'Chest': [
       'Bench Press',
@@ -115,6 +116,76 @@ class ExerciseLibraryService {
       'Ab Wheel Rollout',
       'Cable Crunch',
     ],
+    'Cardio': [
+      'Swimming',
+      'Running',
+      'Cycling',
+      'Skateboarding',
+      'Football',
+      'Yoga',
+      'Walking',
+      'Hiking',
+      'Rowing',
+      'Jump Rope',
+    ],
+  };
+
+  /// MET (Metabolic Equivalent of Task) values for bundled exercises.
+  /// Used for calorie estimation. Falls back to 5.0 if not listed.
+  static const Map<String, double> bundledExerciseMet = {
+    // Weightlifting defaults
+    'Bench Press': 5.5,
+    'Incline Bench Press': 5.5,
+    'Decline Bench Press': 5.5,
+    'Dumbbell Flyes': 5.0,
+    'Cable Crossovers': 5.0,
+    'Push-ups': 4.0,
+    'Chest Dips': 5.0,
+    'Deadlift': 6.0,
+    'Pull-ups': 5.0,
+    'Barbell Row': 5.0,
+    'Lat Pulldown': 5.0,
+    'Seated Cable Row': 5.0,
+    'Face Pull': 4.5,
+    'Dumbbell Row': 5.0,
+    'Squat': 6.0,
+    'Front Squat': 6.0,
+    'Leg Press': 5.0,
+    'Romanian Deadlift': 5.5,
+    'Leg Curl': 4.5,
+    'Leg Extension': 4.5,
+    'Calf Raises': 4.0,
+    'Bulgarian Split Squat': 5.5,
+    'Overhead Press': 5.0,
+    'Arnold Press': 5.0,
+    'Lateral Raise': 4.0,
+    'Front Raise': 4.0,
+    'Reverse Flyes': 4.0,
+    'Upright Row': 5.0,
+    'Barbell Curl': 4.0,
+    'Dumbbell Curl': 4.0,
+    'Hammer Curl': 4.0,
+    'Tricep Pushdown': 4.0,
+    'Skull Crushers': 4.0,
+    'Tricep Dips': 5.0,
+    'Preacher Curl': 4.0,
+    'Plank': 3.0,
+    'Crunches': 3.0,
+    'Russian Twists': 3.5,
+    'Hanging Leg Raises': 4.0,
+    'Ab Wheel Rollout': 4.0,
+    'Cable Crunch': 4.0,
+    // Cardio
+    'Swimming': 6.0,
+    'Running': 8.0,
+    'Cycling': 7.0,
+    'Skateboarding': 5.0,
+    'Football': 7.0,
+    'Yoga': 3.0,
+    'Walking': 3.5,
+    'Hiking': 5.5,
+    'Rowing': 6.0,
+    'Jump Rope': 10.0,
   };
 
   /// Returns all bundled exercises as a flat list of (name, category) pairs.
@@ -123,6 +194,17 @@ class ExerciseLibraryService {
     for (final entry in bundledExercises.entries) {
       for (final name in entry.value) {
         result.add((name, entry.key));
+      }
+    }
+    return result;
+  }
+
+  /// Returns all bundled exercises with MET values as (name, category, met).
+  static List<(String, String, double)> getAllBundledWithMet() {
+    final result = <(String, String, double)>[];
+    for (final entry in bundledExercises.entries) {
+      for (final name in entry.value) {
+        result.add((name, entry.key, bundledExerciseMet[name] ?? 5.0));
       }
     }
     return result;
@@ -226,6 +308,48 @@ class ProgressionService {
     return sets.fold<ExerciseSet?>(null, (max, set) {
       final currentVol = set.reps * set.weight;
       final maxVol = max != null ? max.reps * max.weight : 0.0;
+      return currentVol > maxVol ? set : max;
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // WeightSet overloads (new model)
+  // ---------------------------------------------------------------------------
+
+  /// Volume load for a single [domain.WeightSet] (reps × weightKg).
+  double setVolumeFromWeightSet(domain.WeightSet set) =>
+      set.reps * set.weightKg;
+
+  /// Estimated 1RM for a [domain.WeightSet] using the Epley formula.
+  double? epleyOneRMFromWeightSet(domain.WeightSet set) =>
+      epleyOneRM(set.weightKg, set.reps);
+
+  /// Find the best set (highest estimated 1RM) across a list of [domain.WeightSet].
+  domain.WeightSet? findBestSetFromWeightSets(List<domain.WeightSet> sets) {
+    if (sets.isEmpty) return null;
+    return sets.fold<domain.WeightSet?>(null, (best, set) {
+      final current = epleyOneRMFromWeightSet(set) ?? 0;
+      final bestVal = best != null ? (epleyOneRMFromWeightSet(best) ?? 0) : 0;
+      return current > bestVal ? set : best;
+    });
+  }
+
+  /// Find the maximum weight lifted across a list of [domain.WeightSet].
+  domain.WeightSet? findMaxWeightFromWeightSets(List<domain.WeightSet> sets) {
+    if (sets.isEmpty) return null;
+    return sets.fold<domain.WeightSet?>(null, (max, set) {
+      return (max == null || set.weightKg > max.weightKg) ? set : max;
+    });
+  }
+
+  /// Find the maximum volume set (reps × weightKg) in a list of [domain.WeightSet].
+  domain.WeightSet? findMaxVolumeSetFromWeightSets(
+    List<domain.WeightSet> sets,
+  ) {
+    if (sets.isEmpty) return null;
+    return sets.fold<domain.WeightSet?>(null, (max, set) {
+      final currentVol = set.reps * set.weightKg;
+      final maxVol = max != null ? max.reps * max.weightKg : 0.0;
       return currentVol > maxVol ? set : max;
     });
   }

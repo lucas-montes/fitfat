@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 
-import '../../../../models/exercise.dart';
+import '../../../../models/workout.dart' as domain;
 
-class SeanceSummaryScreen extends StatelessWidget {
-  const SeanceSummaryScreen({required this.seance, super.key});
+class WorkoutSummaryScreen extends StatelessWidget {
+  const WorkoutSummaryScreen({required this.workout, super.key});
 
-  final Seance seance;
+  final domain.Workout workout;
 
   int get _totalSets =>
-      seance.exercises.fold(0, (sum, e) => sum + e.sets.length);
+      workout.entries.fold(0, (sum, e) => sum + e.sets.length);
 
-  int get _totalReps => seance.exercises.fold(0, (sum, e) => sum + e.totalReps);
+  int get _totalReps => workout.entries.fold(0, (sum, e) => sum + e.totalReps);
 
-  double get _totalVolume => seance.exercises.fold<double>(
+  double get _totalVolume => workout.entries.fold<double>(
     0,
     (sum, entry) =>
         sum +
-        entry.sets.fold<double>(0, (s, set) => s + (set.reps * set.weight)),
+        entry.sets.fold<double>(0, (s, set) => s + (set.reps * set.weightKg)),
   );
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final duration = seance.duration;
+    final duration = workout.duration;
 
     return Scaffold(
       appBar: AppBar(
@@ -41,163 +41,84 @@ class SeanceSummaryScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    seance.name,
+                    workout.name,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _SummaryStat(
-                        label: l10n.duration,
-                        value:
-                            '${duration.inHours}h ${(duration.inMinutes % 60)}m',
-                      ),
-                      _SummaryStat(
-                        label: l10n.exercises,
-                        value: '${seance.exercises.length}',
-                      ),
-                      _SummaryStat(label: l10n.sets, value: '$_totalSets'),
-                      _SummaryStat(
-                        label: l10n.volume,
-                        value: '${_totalVolume.toStringAsFixed(0)} kg',
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 12),
-                  Center(
-                    child: Text(
-                      '${l10n.totalReps}: $_totalReps',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                  _statRow(l10n.duration, _formatDuration(duration)),
+                  if (_totalSets > 0) _statRow(l10n.sets, '$_totalSets'),
+                  if (_totalReps > 0) _statRow(l10n.totalReps, '$_totalReps'),
+                  if (_totalVolume > 0)
+                    _statRow(
+                      l10n.totalVolume,
+                      '${_totalVolume.toStringAsFixed(0)} kg',
                     ),
-                  ),
+                  if (workout.totalCardioMinutes > 0)
+                    _statRow(
+                      l10n.duration,
+                      '${workout.totalCardioMinutes} min cardio',
+                    ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          // Per-exercise breakdown
+
+          // Exercise breakdown
           Text(
             l10n.exerciseBreakdown,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
-          ...seance.exercises.map((entry) {
-            final exSets = entry.sets.length;
-            final exReps = entry.totalReps;
-            final exVolume = entry.sets.fold<double>(
-              0,
-              (s, set) => s + (set.reps * set.weight),
-            );
-            final bestSet = entry.sets.isEmpty
-                ? null
-                : entry.sets.reduce(
-                    (a, b) => (a.weight * a.reps) > (b.weight * b.reps) ? a : b,
-                  );
-
+          ...workout.entries.map((entry) {
+            final isCardio = entry.cardioDetail != null;
+            final summary = isCardio
+                ? '${entry.cardioDetail!.durationMinutes} min'
+                : '${entry.sets.length} ${l10n.setsLower} · '
+                      '${entry.totalReps} ${l10n.repsLower} · '
+                      '${entry.totalWeight.toStringAsFixed(0)} kg';
             return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          entry.exercise.name,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        if (bestSet != null &&
-                            (bestSet.weight * bestSet.reps) > 0)
-                          Chip(
-                            label: Text(l10n.best),
-                            avatar: const Icon(Icons.emoji_events, size: 16),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '$exSets ${l10n.setsLower} · $exReps ${l10n.repsLower}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                        Text(
-                          '${exVolume.toStringAsFixed(0)} kg',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    if (bestSet != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          '${l10n.best}: ${bestSet.reps}x${bestSet.weight.toStringAsFixed(1)} kg',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                        ),
-                      ),
-                  ],
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: Icon(
+                  isCardio ? Icons.directions_run : Icons.fitness_center,
                 ),
+                title: Text(entry.exercise.name),
+                subtitle: Text(summary),
               ),
             );
           }),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            child: FilledButton.icon(
-              icon: const Icon(Icons.check_circle),
-              label: Text(l10n.finish),
-              onPressed: () {
-                Navigator.of(context).popUntil(
-                  (route) =>
-                      route.isFirst || route.settings.name == '/exercise',
-                );
-              },
+            child: FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.finish),
             ),
           ),
-          const SizedBox(height: 32),
         ],
       ),
     );
   }
-}
 
-class _SummaryStat extends StatelessWidget {
-  const _SummaryStat({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+  Widget _statRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 }

@@ -10,6 +10,8 @@ class Exercises extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get category => text()();
+  TextColumn get type => text().withDefault(const Constant('weightlifting'))();
+  RealColumn get met => real().withDefault(const Constant(5.0))();
   TextColumn get creatorId => text().nullable()();
 
   @override
@@ -209,6 +211,120 @@ class WaterConsumption extends Table {
   TextColumn get id => text()();
   DateTimeColumn get date => dateTime()();
   RealColumn get liters => real()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Workouts (new unified activity model — replaces Seances eventually)
+// ---------------------------------------------------------------------------
+
+class Workouts extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  DateTimeColumn get startTime => dateTime()();
+  DateTimeColumn get endTime => dateTime().nullable()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get source => text().withDefault(const Constant('manual'))();
+  TextColumn get plannedWorkoutId => text().nullable()();
+  BoolColumn get isGuided => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Workout entries (exercises within a workout)
+// ---------------------------------------------------------------------------
+
+class WorkoutEntries extends Table {
+  TextColumn get id => text()();
+  IntColumn get sortOrder => integer()();
+  TextColumn get exerciseId => text().references(Exercises, #id)();
+  TextColumn get workoutId => text().references(Workouts, #id)();
+  TextColumn get note => text().nullable()();
+  IntColumn get effort => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Workout sets (individual sets within a weightlifting entry)
+// ---------------------------------------------------------------------------
+
+class WorkoutSets extends Table {
+  TextColumn get id => text()();
+  TextColumn get entryId => text().references(WorkoutEntries, #id)();
+  IntColumn get reps => integer()();
+  RealColumn get weightKg => real()();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Cardio details (duration-based entries within a workout)
+// ---------------------------------------------------------------------------
+
+class CardioDetails extends Table {
+  TextColumn get id => text()();
+  TextColumn get entryId => text().references(WorkoutEntries, #id).unique()();
+  IntColumn get durationMinutes => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Planned workouts (scheduled workouts with prescribed weights)
+// ---------------------------------------------------------------------------
+
+class PlannedWorkouts extends Table {
+  TextColumn get id => text()();
+  DateTimeColumn get scheduledDate => dateTime()();
+  TextColumn get name => text()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get source => text().withDefault(const Constant('manual'))();
+  TextColumn get templateId => text().nullable()();
+  BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
+  TextColumn get completedWorkoutId =>
+      text().references(Workouts, #id).nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Planned entries (prescribed exercises within a planned workout)
+// ---------------------------------------------------------------------------
+
+class PlannedEntries extends Table {
+  TextColumn get id => text()();
+  TextColumn get plannedWorkoutId => text().references(PlannedWorkouts, #id)();
+  TextColumn get exerciseId => text().references(Exercises, #id)();
+  IntColumn get sortOrder => integer()();
+  IntColumn get plannedReps => integer()();
+  RealColumn get plannedWeightKg => real()();
+  IntColumn get plannedRestSeconds => integer().nullable()();
+  TextColumn get note => text().nullable()();
+  IntColumn get effortTarget => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Planned cardio (duration-based prescribed entry within a planned workout)
+// ---------------------------------------------------------------------------
+
+class PlannedCardio extends Table {
+  TextColumn get id => text()();
+  TextColumn get plannedEntryId =>
+      text().references(PlannedEntries, #id).unique()();
+  IntColumn get plannedDurationMinutes => integer()();
 
   @override
   Set<Column> get primaryKey => {id};

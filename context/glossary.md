@@ -13,10 +13,15 @@
 - **System item / bundled ingredient**: a pre-seeded ingredient shipped with the app (e.g., basic foods in `_seedIngredients()`). Identifiable by having a `null` creatorId. A future shared/common database concept extends this.
 - **`creatorId`**: a nullable string field on `Ingredient` that records who created the ingredient. `null` indicates a system/bundled ingredient; a local installation UUID indicates a user-created ingredient.
 - **`isArchived` flag**: a boolean field on `Ingredient` (default `false`). When `true`, the ingredient is hidden from normal ingredient pickers but remains available in archived view and historical meal data. Used as a soft-delete mechanism.
-- `Seance`: an active or completed workout session. User-facing labels use "workout" (not "seance"). Internal class/variable names retain `Seance` for backward compatibility.
-- `ExerciseEntry`: one exercise inside a seance, with one or more sets.
+- `Seance` (legacy): the old domain model for workout sessions, being replaced by `Workout`. Internal class/variable names retain `Seance` for backward compatibility with the dashboard tab. User-facing labels now consistently use "workout".
+- `ExerciseEntry` (legacy): one exercise inside a seance, with one or more sets. Superseded by `WorkoutEntry`.
 - `ExerciseSet`: a reps/weight pair with an optional `completedAt` timestamp. Persisted in the `exercise_sets` table. A set with a non-null `completedAt` is considered completed (`isCompleted`).
-- `ExerciseDefinition`: reusable exercise catalog item.
+- `ExerciseDefinition`: reusable exercise catalog item. Fields: `id`, `name`, `category` (muscle group or "Cardio"), `type` ("weightlifting" | "cardio"), `met` (MET value for calorie estimation).
+- `Workout` (new model): an active or completed workout session in the unified activity model. Replaces `Seance`. Contains entries which are either weightlifting (with `WeightSet`s) or cardio (with `CardioDetail`). Has `totalVolume`, `totalCardioMinutes`, and `duration` getters. Persisted in the `workouts` table.
+- `WorkoutEntry`: one exercise inside a `Workout`, linking to an `ExerciseDefinition`. Has `effort` (1-10 scale) and `note`. Type is determined by the exercise's `type` field.
+- `WeightSet`: a single set within a weightlifting `WorkoutEntry` (domain model class in `lib/src/models/workout.dart`). Fields: `reps`, `weightKg`, `completedAt`.
+- `CardioDetail`: duration-based data for a cardio-type `WorkoutEntry`. Fields: `durationMinutes`. 1-to-1 with the entry.
+- `PlannedWorkout`: a workout scheduled for a specific date, with prescribed weights from a coach or manual entry. Converted to a `Workout` when started.
 - `SeanceTemplate`: a reusable workout template made of exercise templates.
 - `Goal`: either `StrengthGoal` or `BodyWeightGoal`.
 - `Gender`: enum (`male`, `female`) used for BMR computation and profile display. Defined in `lib/src/models/enums.dart` with a `GenderLabel` extension providing `.label`.

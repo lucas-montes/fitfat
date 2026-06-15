@@ -11,20 +11,33 @@
 - `lib/src/database/tables.dart`: Drift schema for ingredients, meals, seances, templates, goals, and profile.
 - `lib/src/database/providers.dart`: production and dev database providers.
 - `lib/src/adapters/drift/`: database-backed repositories/adapters.
+- `lib/src/adapters/drift/planned_workout_repository.dart`: `DriftPlannedWorkoutRepository` — CRUD + load-by-week + mark-completed for planned workouts. Exposed via `plannedWorkoutRepositoryProvider`.
+- `lib/src/adapters/drift/seance.dart`: `DriftSeanceRepository` — template CRUD. Exposed via `seanceRepositoryProvider`.
 
 ## Domain models
 - `lib/src/models/enums.dart`: shared enums (`Gender`, with `GenderLabel` extension).
 - `context/exercise/seance-persistence.md`: seance save/load flow — DB schema, domain model hierarchy, save transaction, load queries, SharedPreferences for active seance, race condition guard.
-- `lib/src/models/food.dart`: ingredients, meal entries, and macro calculations.
-- `lib/src/models/exercise.dart`: exercise definitions, entries, sets, and active seance model.
+- `context/exercise/workout-model.md`: new unified workout model — DB schema for all new tables plus domain model hierarchy and serialization.
+- `lib/src/models/workout.dart`: new domain model classes — `Workout`, `WorkoutEntry`, `WeightSet`, `CardioDetail`, `PlannedWorkout`, `PlannedEntry`, `PlannedCardio` with `toJson`/`fromJson`.
+- `lib/src/models/exercise.dart`: exercise definitions (also `type` + `met` fields), entries, sets, and active seance model.
 - `lib/src/models/dashboard.dart`: user profile, goals, computed macros, chart periods.
 - `lib/src/models/seance.dart`: workout templates and history data structures.
+- `lib/src/exercise/services/seance_converter.dart`: migration adapter — converts old `Seance` → new `Workout` domain model (pure Dart, no DB).
+- `lib/src/database/migrations/migrate_seances.dart`: Drift data migration — reads old tables (seances, exercise_entries, exercise_sets) and writes to new tables (workouts, workout_entries, workout_sets, cardio_details). Runs once on schema v11 upgrade.
+- `lib/src/models/food.dart`: ingredients, meal entries, and macro calculations.
 
 ## Feature modules
 - `lib/src/diet/`: meal log, ingredient editor (with advanced macros section), ingredient management (archive/restore), and related providers.
 - `lib/src/dashboard/`: focused daily glance (calories, workout status, goals, streaks), Goals sub-tab, Settings sub-tab (profile, nutrition toggles, data export/delete).
 - `lib/src/dashboard/screens/status_cards.dart`: shared compact card shell (`_StatusCard`) and 7-day mini bar chart (`_MiniBarChart`) for water/steps/weight cards.
-- `lib/src/exercise/`: active workout flow, exercise history, templates, workout library (with search + category filters), training stats, heatmap, and trend charts.
+- `lib/src/exercise/`: active workout flow (mixed weightlifting + cardio), Training tab (replace old Workouts tab), exercise history, templates, workout library (with search + category filters), training stats, heatmap, and trend charts.
+- `lib/src/exercise/screens/training/`: Training tab widgets — `TrainingTab`, `StartWorkoutCard`, `CalendarStrip`, `WorkoutHistoryCard`, `QuickLogSheet`, `DayDetailSheet`, `CreatePlannedScreen`. See [context/exercise/training-tab.md](exercise/training-tab.md), [context/exercise/quick-log.md](exercise/quick-log.md), and [context/exercise/planned-workout-scheduling.md](exercise/planned-workout-scheduling.md).
+- `lib/src/exercise/screens/stats/`: Stats tab — `StatsTab` with all-time stats, this-week stats, heatmap, cardio-by-week, and volume-by-exercise. Reads from `workoutHistoryProvider`. See [context/exercise/stats-tab.md](exercise/stats-tab.md).
+- `lib/src/exercise/screens/seances/active/`: Active workout screen (`CurrentSeanceScreen`) with mixed entry types — weightlifting sets and cardio duration. See [context/exercise/active-workout-screen.md](exercise/active-workout-screen.md).
+- `lib/src/exercise/providers/workout_provider.dart`: `ActiveWorkoutNotifier` — new model workout provider supporting weightlifting + cardio + quick-log + planned workout start.
+- `lib/src/exercise/providers/history_provider.dart`: `WorkoutHistoryNotifier` — loads completed workouts from new tables, date-range filtering, aggregate stats (volume by exercise, cardio minutes by week).
+- `lib/src/exercise/providers/planned_workout_provider.dart`: `PlannedWorkoutNotifier` — CRUD for planned workouts, create-from-template, load-by-week for calendar view, mark-completed linking.
+- `lib/src/exercise/services/workout_services.dart`: pure Dart service classes — `WorkoutSessionService`, `ExerciseLibraryService`, `ProgressionService`. `ProgressionService` supports both old `ExerciseSet` and new `domain.WeightSet` for 1RM, volume, and PR calculations.
 - `lib/src/app/theme.dart`: Material 3 theme with custom typography, card shapes, input decoration, and button styles.
 
 ## Product decisions
@@ -58,6 +71,7 @@
 - `lib/src/diet/providers/diet_preferences.dart`: `dietPreferencesProvider` and `DietPreferencesNotifier` — persisted macro visibility toggles backed by `SharedPreferences`.
 
 ## Active plans
+- `context/plans/exercise-domain-rethink.md`: unified activity model (weightlifting + cardio + quick-log), workout planning, Training tab replacing Workouts tab. Phase D–E — T10–T13 done. ✅ T01–T13 done
 - `context/plans/profile-gender-uuid-fix.md`: extract shared Gender enum, rename sex→gender column, derive weight from BodyWeightEntries, use UUID v7 for profile ID. ✅ Done
 - `context/plans/exercise-workout-fixes.md`: fix compile errors, make Seance.name non-nullable, add completedAt to ExerciseSets, fix race condition in history save, make Seances.completedAt non-nullable. ✅ Done
 - `context/plans/exercise-screens-refactor.md`: split exercise screens into subdirectories (exercises/, seances/, stats/). ✅ Done

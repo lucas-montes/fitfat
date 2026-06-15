@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../exercise/services/workout_services.dart';
 import '../models/enums.dart';
 import '../services/logger.dart';
+import 'migrations/migrate_seances.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -33,6 +34,13 @@ final _log = logger('app_database');
     Goals,
     UserProfile,
     BodyWeightEntries,
+    Workouts,
+    WorkoutEntries,
+    WorkoutSets,
+    CardioDetails,
+    PlannedWorkouts,
+    PlannedEntries,
+    PlannedCardio,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -48,7 +56,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -100,25 +108,57 @@ class AppDatabase extends _$AppDatabase {
           'ALTER TABLE user_profile DROP COLUMN weight_kg',
         );
       }
+      if (from < 8) {
+        // Add type and met columns to exercises table for unified activity model.
+        // Raw SQL needed because Drift's addColumn doesn't support withDefault.
+        await m.database.customStatement(
+          "ALTER TABLE exercises ADD COLUMN type TEXT NOT NULL DEFAULT 'weightlifting'",
+        );
+        await m.database.customStatement(
+          'ALTER TABLE exercises ADD COLUMN met REAL NOT NULL DEFAULT 5.0',
+        );
+        // Re-seed exercises to pick up cardio entries and MET values
+        await _seedExercises();
+      }
+      if (from < 9) {
+        // Create new workout model tables (unified activity model)
+        await m.createTable(workouts);
+        await m.createTable(workoutEntries);
+        await m.createTable(workoutSets);
+        await m.createTable(cardioDetails);
+      }
+      if (from < 10) {
+        // Create planning tables (scheduled workouts with prescribed weights)
+        await m.createTable(plannedWorkouts);
+        await m.createTable(plannedEntries);
+        await m.createTable(plannedCardio);
+      }
+      if (from < 11) {
+        // One-time data migration: copy old seances to new workout tables
+        await migrateLegacySeances(this);
+      }
     },
   );
 
   Future<void> _seedExercises() async {
-    // Use comprehensive bundle from ExerciseLibraryService
-    final bundled = ExerciseLibraryService.getAllBundled();
+    // Use comprehensive bundle from ExerciseLibraryService with MET values
+    final bundled = ExerciseLibraryService.getAllBundledWithMet();
 
     // Get existing exercise names to skip duplicates
     final existing = await select(exercises).get();
     final existingNames = existing.map((e) => e.name.toLowerCase()).toSet();
 
-    for (final (name, category) in bundled) {
+    for (final (name, category, met) in bundled) {
       if (existingNames.contains(name.toLowerCase())) continue;
 
+      final type = category == 'Cardio' ? 'cardio' : 'weightlifting';
       await into(exercises).insert(
         ExercisesCompanion.insert(
           id: const Uuid().v4(),
           name: name,
           category: category,
+          type: Value(type),
+          met: Value(met),
           creatorId: const Value('__system__'),
         ),
       );

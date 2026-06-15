@@ -124,22 +124,30 @@ void main() {
   });
 
   group('ExerciseLibraryService', () {
-    test('bundled exercises contains 6 muscle groups', () {
-      expect(ExerciseLibraryService.bundledExercises.keys.length, 6);
+    test('bundled exercises contains 7 categories', () {
+      expect(ExerciseLibraryService.bundledExercises.keys.length, 7);
     });
 
     test('all bundled exercise categories are present', () {
       final categories = ExerciseLibraryService.bundledExercises.keys.toSet();
       expect(
         categories,
-        containsAll(['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core']),
+        containsAll([
+          'Chest',
+          'Back',
+          'Legs',
+          'Shoulders',
+          'Arms',
+          'Core',
+          'Cardio',
+        ]),
       );
     });
 
     test('total bundled exercises count is reasonable', () {
       final all = ExerciseLibraryService.getAllBundled();
       expect(all.length, greaterThan(30));
-      expect(all.length, lessThan(50));
+      expect(all.length, lessThan(60));
     });
 
     test('search filters by name', () {

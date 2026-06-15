@@ -1,8 +1,14 @@
 import 'package:drift/drift.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart';
+import '../../database/providers.dart';
 import '../../models/seance.dart';
+
+final seanceRepositoryProvider = Provider<DriftSeanceRepository>((ref) {
+  return DriftSeanceRepository(ref.read(databaseProvider));
+});
 
 class DriftSeanceRepository {
   DriftSeanceRepository(this._db);
