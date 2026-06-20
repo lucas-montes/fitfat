@@ -1150,6 +1150,12 @@ abstract class AppLocalizations {
   /// **'Running Workout'**
   String get runningWorkout;
 
+  /// No description provided for @resumeWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume Workout'**
+  String get resumeWorkout;
+
   /// No description provided for @viewWorkout.
   ///
   /// In en, this message translates to:

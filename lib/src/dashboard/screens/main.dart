@@ -7,13 +7,14 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
+import '../../models/workout.dart';
 import '../../models/dashboard.dart';
 import '../../models/enums.dart';
-import '../../models/exercise.dart';
 import '../providers/dashboard.dart';
 import '../../diet/providers/diet_preferences.dart';
-import '../../exercise/providers/seance.dart';
+import '../../exercise/providers/active_workout.dart';
 import '../../exercise/providers/exercises.dart';
+import '../../exercise/services/workout_services.dart';
 import 'status_cards.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -275,12 +276,14 @@ class WorkoutActivityCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final activeSeance = ref.watch(activeSeanceProvider);
+    final activeWorkout = ref.watch(activeWorkoutProvider).asData?.value;
     final stats = ref.watch(workoutDashboardStatsProvider);
+    final allSets =
+        ref.watch(allCompletedWeightSetsProvider).asData?.value ?? {};
 
     final title = l10n.todaysActivity;
 
-    final content = activeSeance != null
+    final content = activeWorkout != null
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -289,12 +292,11 @@ class WorkoutActivityCard extends ConsumerWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              Text(activeSeance.name),
+              Text(activeWorkout.name),
               const SizedBox(height: 4),
               Text(
-                '${DateFormat('HH:mm').format(activeSeance.startedAt)} · '
-                '${activeSeance.exercises.length} exercises · '
-                '${_formatDuration(activeSeance.duration)} ${l10n.elapsed}',
+                '${DateFormat('HH:mm').format(activeWorkout.startedAt!)} · '
+                '${_formatDuration(activeWorkout.duration)} ${l10n.elapsed}',
               ),
             ],
           )
@@ -314,17 +316,12 @@ class WorkoutActivityCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${DateFormat('EEE, MMM d').format(stats.lastWorkout!.completedAt ?? stats.lastWorkout!.startedAt)} · '
+                '${DateFormat('EEE, MMM d').format((stats.lastWorkout!.completedAt ?? stats.lastWorkout!.startedAt)!)} · '
                 '${_formatDuration(stats.lastWorkout!.duration)} · '
-                '${_formatVolume(_seanceVolume(stats.lastWorkout!))}',
+                '${_formatVolume(_workoutVolume(stats.lastWorkout!, allSets))}',
               ),
               const SizedBox(height: 4),
-              Text(
-                '${stats.lastWorkout!.exercises.length} ${l10n.exercisesCompleted}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
+              SizedBox.shrink(),
             ],
           );
 
@@ -606,29 +603,27 @@ void _showWorkoutDayDetails(BuildContext context, WorkoutDaySummary day) {
               ),
               const SizedBox(height: 8),
               Text(
-                '${l10n.sessionsCount(day.seances.length)} · '
-                '${_formatVolume(day.volume)} · ${_formatDuration(day.duration)}',
+                '${l10n.sessionsCount(day.workouts.length)} · '
+                '${day.volume.toStringAsFixed(0)} kg · ${_formatDuration(day.duration)}',
                 style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 16),
-              if (day.seances.isEmpty)
+              if (day.workouts.isEmpty)
                 Text(
                   l10n.noTrainingRecorded,
                   style: Theme.of(sheetContext).textTheme.bodyMedium,
                 )
               else
-                ...day.seances.map(
-                  (seance) => Card(
+                ...day.workouts.map(
+                  (w) => Card(
                     child: ListTile(
                       leading: const Icon(Icons.fitness_center),
-                      title: Text(seance.name),
+                      title: Text(w.name),
                       subtitle: Text(
-                        '${DateFormat('HH:mm').format(seance.completedAt ?? seance.startedAt)} · '
-                        '${seance.exercises.length} exercises · ${_formatDuration(seance.duration)}',
+                        '${DateFormat('HH:mm').format((w.completedAt ?? w.startedAt)!)} · ${_formatDuration(w.duration)}',
                       ),
-                      trailing: Text(_formatVolume(_seanceVolume(seance))),
                     ),
                   ),
                 ),
@@ -642,14 +637,11 @@ void _showWorkoutDayDetails(BuildContext context, WorkoutDaySummary day) {
 
 String _formatVolume(double volume) => '${volume.toStringAsFixed(0)} kg';
 
-double _seanceVolume(Seance seance) {
-  return seance.exercises.fold(0.0, (sum, entry) {
-    return sum +
-        entry.sets.fold(0.0, (setSum, set) {
-          if (!set.isCompleted) return setSum;
-          return setSum + (set.reps * set.weight);
-        });
-  });
+double _workoutVolume(Workout w, Map<String, List<WeightSet>> allSets) {
+  final sets = allSets[w.id];
+  if (sets == null || sets.isEmpty) return 0;
+  final progression = ProgressionService();
+  return progression.totalVolumeFromWeightSets(sets);
 }
 
 String _formatDuration(Duration duration) {

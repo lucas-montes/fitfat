@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:fitfat/l10n/app_localizations.dart';
-import '../../../exercise/providers/history_provider.dart';
-import '../../../models/workout.dart' as domain;
+import '../../providers/workout_history.dart';
+import '../../../models/workout.dart';
 import 'stat_item.dart';
 
 class StatsTab extends ConsumerWidget {
@@ -12,23 +12,30 @@ class StatsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final workoutsAsync = ref.watch(workoutHistoryProvider);
+
+    return workoutsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (workouts) => _StatsContent(workouts: workouts),
+    );
+  }
+}
+
+class _StatsContent extends StatelessWidget {
+  const _StatsContent({required this.workouts});
+
+  final List<Workout> workouts;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final workouts = ref.watch(workoutHistoryProvider);
 
-    // Compute all-time stats from new model
     final totalWorkouts = workouts.length;
-    final totalVolume = workouts.fold<double>(
-      0,
-      (sum, w) => sum + w.totalVolume,
-    );
     final totalMinutes = workouts.fold<int>(
       0,
       (sum, w) => sum + w.duration.inMinutes,
-    );
-    final totalCardioMinutes = workouts.fold<int>(
-      0,
-      (sum, w) => sum + w.totalCardioMinutes,
     );
 
     // Compute this-week stats
@@ -36,20 +43,18 @@ class StatsTab extends ConsumerWidget {
     final weekStart = now.subtract(
       Duration(days: now.weekday - DateTime.monday),
     );
+
     final thisWeek = workouts.where((w) {
-      final t = w.endTime ?? w.startTime;
+      final t = w.completedAt ?? w.startedAt;
+      if (t == null) return false;
       return !t.isBefore(weekStart);
     }).toList();
-    final weekVolume = thisWeek.fold<double>(
-      0,
-      (sum, w) => sum + w.totalVolume,
-    );
+
     final weekDuration = thisWeek.fold<int>(
       0,
       (sum, w) => sum + w.duration.inMinutes,
     );
 
-    // Build 84-day summaries for the heatmap
     final startDate = DateTime(
       now.year,
       now.month,
@@ -77,29 +82,12 @@ class StatsTab extends ConsumerWidget {
                       value: '$totalWorkouts',
                     ),
                     StatItem(
-                      icon: Icons.monitor_weight,
-                      label: l10n.volume,
-                      value: '${totalVolume.toStringAsFixed(0)} kg',
-                    ),
-                    StatItem(
                       icon: Icons.timer,
                       label: l10n.duration,
                       value: '${totalMinutes}m',
                     ),
                   ],
                 ),
-                if (totalCardioMinutes > 0) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      StatItem(
-                        icon: Icons.directions_run,
-                        label: l10n.cardio,
-                        value: '${totalCardioMinutes}m',
-                      ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),
@@ -111,7 +99,6 @@ class StatsTab extends ConsumerWidget {
         const SizedBox(height: 8),
         _WeekStatsCard(
           weekSessions: thisWeek.length,
-          weekVolume: weekVolume,
           weekDuration: weekDuration,
         ),
         const SizedBox(height: 16),
@@ -123,30 +110,26 @@ class StatsTab extends ConsumerWidget {
           days: heatmapDays,
           maxVolume: heatmapDays.fold<double>(
             0,
-            (max, d) => d.volume > max ? d.volume : max,
+            (max, d) => d.hasWorkout && d.duration.inMinutes > max
+                ? d.duration.inMinutes.toDouble()
+                : max,
           ),
         ),
         const SizedBox(height: 16),
-
-        // Trends
-        Text(l10n.trends, style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        _CardioByWeekCard(workouts: workouts),
-        const SizedBox(height: 16),
-        _VolumeByExerciseCard(workouts: workouts),
       ],
     );
   }
 
   List<_HeatmapDay> _buildHeatmapDays(
-    List<domain.Workout> workouts,
+    List<Workout> workouts,
     DateTime startDate,
   ) {
     final days = <_HeatmapDay>[];
     for (var i = 0; i < 84; i++) {
       final date = startDate.add(Duration(days: i));
       final dayWorkouts = workouts.where((w) {
-        final t = w.endTime ?? w.startTime;
+        final t = w.completedAt ?? w.startedAt;
+        if (t == null) return false;
         return t.year == date.year &&
             t.month == date.month &&
             t.day == date.day;
@@ -155,7 +138,6 @@ class StatsTab extends ConsumerWidget {
       days.add(
         _HeatmapDay(
           date: date,
-          volume: dayWorkouts.fold<double>(0, (sum, w) => sum + w.totalVolume),
           hasWorkout: dayWorkouts.isNotEmpty,
           workouts: dayWorkouts,
           duration: dayWorkouts.fold<Duration>(
@@ -169,37 +151,27 @@ class StatsTab extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Internal data class for heatmap days
-// ---------------------------------------------------------------------------
 class _HeatmapDay {
   const _HeatmapDay({
     required this.date,
-    required this.volume,
     required this.hasWorkout,
     required this.workouts,
     required this.duration,
   });
 
   final DateTime date;
-  final double volume;
   final bool hasWorkout;
-  final List<domain.Workout> workouts;
+  final List<Workout> workouts;
   final Duration duration;
 }
 
-// ---------------------------------------------------------------------------
-// This-week stats card
-// ---------------------------------------------------------------------------
 class _WeekStatsCard extends StatelessWidget {
   const _WeekStatsCard({
     required this.weekSessions,
-    required this.weekVolume,
     required this.weekDuration,
   });
 
   final int weekSessions;
-  final double weekVolume;
   final int weekDuration;
 
   @override
@@ -216,11 +188,6 @@ class _WeekStatsCard extends StatelessWidget {
             label: l10n.thisWeek,
             value: '$weekSessions',
             icon: Icons.calendar_view_week,
-          ),
-          _StatCard(
-            label: l10n.volume,
-            value: '${weekVolume.toStringAsFixed(0)} kg',
-            icon: Icons.fitness_center,
           ),
           _StatCard(
             label: l10n.duration,
@@ -270,9 +237,6 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Heatmap grid (84-day activity grid)
-// ---------------------------------------------------------------------------
 class _HeatmapGrid extends StatelessWidget {
   const _HeatmapGrid({required this.days, required this.maxVolume});
 
@@ -343,15 +307,17 @@ class _HeatmapGrid extends StatelessWidget {
                 return Tooltip(
                   message:
                       '${DateFormat('EEE, MMM d').format(day.date)} · '
-                      '${day.volume.toStringAsFixed(0)} kg',
+                      '${day.duration.inMinutes} min',
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
-                    onTap: () => _showDayDetail(context, day),
+                    onTap: day.hasWorkout
+                        ? () => _showDayDetail(context, day)
+                        : null,
                     child: Container(
                       decoration: BoxDecoration(
                         color: _heatmapColor(
                           context,
-                          day.volume,
+                          day.duration.inMinutes.toDouble(),
                           maxVolume,
                           day.hasWorkout,
                         ),
@@ -453,7 +419,6 @@ class _HeatmapGrid extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '${day.workouts.length} ${l10n.workouts} · '
-                  '${day.volume.toStringAsFixed(0)} kg · '
                   '${_formatDuration(day.duration)}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -469,23 +434,11 @@ class _HeatmapGrid extends StatelessWidget {
                   ...day.workouts.map(
                     (w) => Card(
                       child: ListTile(
-                        leading: Icon(
-                          w.totalCardioMinutes > 0
-                              ? Icons.directions_run
-                              : Icons.fitness_center,
-                        ),
+                        leading: const Icon(Icons.fitness_center),
                         title: Text(w.name),
                         subtitle: Text(
-                          '${DateFormat('HH:mm').format(w.endTime ?? w.startTime)} · '
-                          '${w.entries.length} ${l10n.exercises} · '
+                          '${DateFormat('HH:mm').format(w.completedAt ?? w.startedAt ?? now)} · '
                           '${_formatDuration(w.duration)}',
-                        ),
-                        trailing: Text(
-                          _formatVolume(
-                            w.totalCardioMinutes > 0
-                                ? w.totalCardioMinutes.toDouble()
-                                : w.totalVolume,
-                          ),
                         ),
                       ),
                     ),
@@ -498,7 +451,7 @@ class _HeatmapGrid extends StatelessWidget {
     );
   }
 
-  String _formatVolume(double volume) => '${volume.toStringAsFixed(0)} kg';
+  DateTime get now => DateTime.now();
 
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
@@ -510,9 +463,6 @@ class _HeatmapGrid extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Heatmap legend dot
-// ---------------------------------------------------------------------------
 class _LegendDot extends StatelessWidget {
   const _LegendDot({required this.color, required this.label});
 
@@ -532,177 +482,6 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 6),
         Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Cardio by week chart
-// ---------------------------------------------------------------------------
-class _CardioByWeekCard extends StatelessWidget {
-  const _CardioByWeekCard({required this.workouts});
-
-  final List<domain.Workout> workouts;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    // Compute cardio minutes per week
-    final cardioByWeek = <String, int>{};
-    for (final w in workouts) {
-      if (w.totalCardioMinutes <= 0) continue;
-      final weekKey = _isoWeekKey(w.endTime ?? w.startTime);
-      cardioByWeek.update(
-        weekKey,
-        (v) => v + w.totalCardioMinutes,
-        ifAbsent: () => w.totalCardioMinutes,
-      );
-    }
-
-    if (cardioByWeek.isEmpty) return const SizedBox.shrink();
-
-    // Sort weeks descending
-    final sortedWeeks = cardioByWeek.entries.toList()
-      ..sort((a, b) => b.key.compareTo(a.key));
-    final recentWeeks = sortedWeeks.take(8).toList();
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${l10n.cardio} ${l10n.thisWeek}',
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            ...recentWeeks.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 72,
-                      child: Text(entry.key, style: theme.textTheme.bodySmall),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: LinearProgressIndicator(
-                        value: (entry.value / 300.0).clamp(0.0, 1.0),
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('${entry.value}m', style: theme.textTheme.bodySmall),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _isoWeekKey(DateTime date) {
-    final dayOfYear = int.parse(
-      DateUtils.dateOnly(
-        date,
-      ).difference(DateTime(date.year, 1, 1)).inDays.toString(),
-    );
-    final weekNumber = ((dayOfYear - date.weekday + 10) / 7).floor();
-    return 'W${weekNumber.toString().padLeft(2, '0')}';
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Volume by exercise card
-// ---------------------------------------------------------------------------
-class _VolumeByExerciseCard extends StatelessWidget {
-  const _VolumeByExerciseCard({required this.workouts});
-
-  final List<domain.Workout> workouts;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    // Compute volume per exercise
-    final volByExercise = <String, double>{};
-    for (final w in workouts) {
-      for (final entry in w.entries) {
-        if (entry.cardioDetail != null) continue;
-        final vol = entry.totalWeight;
-        if (vol > 0) {
-          volByExercise.update(
-            entry.exercise.name,
-            (v) => v + vol,
-            ifAbsent: () => vol,
-          );
-        }
-      }
-    }
-
-    if (volByExercise.isEmpty) return const SizedBox.shrink();
-
-    // Top 10 exercises by volume
-    final topExercises = volByExercise.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final top10 = topExercises.take(10).toList();
-    final maxVol = top10.first.value;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.volumeProgression, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
-            ...top10.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 100,
-                      child: Text(
-                        entry.key,
-                        style: theme.textTheme.bodySmall,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: LinearProgressIndicator(
-                        value: (entry.value / maxVol).clamp(0.0, 1.0),
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 64,
-                      child: Text(
-                        '${entry.value.toStringAsFixed(0)} kg',
-                        style: theme.textTheme.bodySmall,
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

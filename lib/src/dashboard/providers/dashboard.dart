@@ -8,13 +8,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../diet/providers/meals.dart';
 import '../../models/dashboard.dart';
 import '../../models/enums.dart';
-import '../../models/exercise.dart';
 import '../../models/food.dart';
-import '../../database/app_database.dart' hide Goal, Seance;
+import '../../database/app_database.dart' hide Goal;
 import '../../database/providers.dart';
 import '../../adapters/drift/goals.dart';
 import '../../adapters/drift/profile.dart';
-import '../../exercise/providers/seances/history.dart';
+import '../../exercise/providers/workout_history.dart';
+import '../../exercise/services/workout_services.dart';
+import '../../adapters/drift/workout_repository.dart';
+import '../../models/workout.dart';
 import '../../services/logger.dart';
 
 final _log = logger('dashboard_providers');
@@ -400,21 +402,32 @@ class BodyWeightTrackerController {
   }
 }
 
+/// Batch-loads WeightSets for all completed workouts.
+/// Watches workoutHistoryProvider and auto-refreshes when history changes.
+final allCompletedWeightSetsProvider =
+    FutureProvider<Map<String, List<WeightSet>>>((ref) async {
+      final history = ref.watch(workoutHistoryProvider).asData?.value ?? [];
+      if (history.isEmpty) return {};
+      final repo = ref.read(workoutRepositoryProvider);
+      final ids = history.map((w) => w.id).toList();
+      return repo.getWeightSetsByWorkoutIds(ids);
+    });
+
 @immutable
 class WorkoutDaySummary {
   const WorkoutDaySummary({
     required this.date,
-    required this.seances,
+    required this.workouts,
     required this.volume,
     required this.duration,
   });
 
   final DateTime date;
-  final List<Seance> seances;
+  final List<Workout> workouts;
   final double volume;
   final Duration duration;
 
-  bool get hasWorkout => seances.isNotEmpty;
+  bool get hasWorkout => workouts.isNotEmpty;
 }
 
 @immutable
@@ -433,11 +446,12 @@ class WorkoutDashboardStats {
   final double monthVolume;
   final Duration monthDuration;
   final WorkoutDaySummary? todaySummary;
-  final Seance? lastWorkout;
+  final Workout? lastWorkout;
 }
 
 final workoutDaySummariesProvider = Provider<List<WorkoutDaySummary>>((ref) {
-  final history = ref.watch(seanceHistoryProvider);
+  final history = ref.watch(workoutHistoryProvider).asData?.value ?? [];
+  final allSets = ref.watch(allCompletedWeightSetsProvider).asData?.value ?? {};
   final now = DateTime.now();
   final startDate = DateTime(
     now.year,
@@ -445,35 +459,36 @@ final workoutDaySummariesProvider = Provider<List<WorkoutDaySummary>>((ref) {
     now.day,
   ).subtract(const Duration(days: 83));
 
+  final progression = ProgressionService();
+
   final days = <WorkoutDaySummary>[];
   for (var index = 0; index < 84; index++) {
     final date = startDate.add(Duration(days: index));
     final sessions =
         history
             .where(
-              (seance) =>
-                  _dayKey(seance.completedAt ?? seance.startedAt) ==
-                  _dayKey(date),
+              (w) =>
+                  _dayKey(w.completedAt ?? w.startedAt ?? now) == _dayKey(date),
             )
             .toList()
           ..sort(
-            (a, b) => (b.completedAt ?? b.startedAt).compareTo(
-              a.completedAt ?? a.startedAt,
+            (a, b) => (b.completedAt ?? b.startedAt ?? now).compareTo(
+              a.completedAt ?? a.startedAt ?? now,
             ),
           );
+
+    final dayVolume = sessions.fold<double>(0, (sum, workout) {
+      final sets = allSets[workout.id];
+      if (sets == null || sets.isEmpty) return sum;
+      return sum + progression.totalVolumeFromWeightSets(sets);
+    });
 
     days.add(
       WorkoutDaySummary(
         date: date,
-        seances: sessions,
-        volume: sessions.fold(
-          0.0,
-          (sum, seance) => sum + _seanceVolume(seance),
-        ),
-        duration: sessions.fold(
-          Duration.zero,
-          (sum, seance) => sum + seance.duration,
-        ),
+        workouts: sessions,
+        volume: dayVolume,
+        duration: sessions.fold(Duration.zero, (sum, w) => sum + w.duration),
       ),
     );
   }
@@ -482,26 +497,35 @@ final workoutDaySummariesProvider = Provider<List<WorkoutDaySummary>>((ref) {
 });
 
 final workoutDashboardStatsProvider = Provider<WorkoutDashboardStats>((ref) {
-  final history = ref.watch(seanceHistoryProvider);
+  final history = ref.watch(workoutHistoryProvider).asData?.value ?? [];
   final days = ref.watch(workoutDaySummariesProvider);
+  final allSets = ref.watch(allCompletedWeightSetsProvider).asData?.value ?? {};
   final now = DateTime.now();
   final todayKey = _dayKey(now);
   final monthStart = DateTime(now.year, now.month, 1);
   final weekStart = _startOfWeek(now);
 
-  final weekSessions = history.where((seance) {
-    return _completedOnOrAfter(seance, weekStart);
+  final progression = ProgressionService();
+
+  final weekSessions = history.where((w) {
+    return _completedOnOrAfter(w, weekStart);
   }).length;
 
-  final monthWorkouts = history.where((seance) {
-    return _completedOnOrAfter(seance, monthStart);
+  final monthWorkouts = history.where((w) {
+    return _completedOnOrAfter(w, monthStart);
   }).toList();
+
+  final monthVolume = monthWorkouts.fold<double>(0, (sum, workout) {
+    final sets = allSets[workout.id];
+    if (sets == null || sets.isEmpty) return sum;
+    return sum + progression.totalVolumeFromWeightSets(sets);
+  });
 
   final todaySummary = days.firstWhere(
     (day) => _dayKey(day.date) == todayKey,
     orElse: () => WorkoutDaySummary(
       date: todayKey,
-      seances: const [],
+      workouts: const [],
       volume: 0,
       duration: Duration.zero,
     ),
@@ -510,13 +534,10 @@ final workoutDashboardStatsProvider = Provider<WorkoutDashboardStats>((ref) {
   return WorkoutDashboardStats(
     weekSessions: weekSessions,
     monthSessions: monthWorkouts.length,
-    monthVolume: monthWorkouts.fold(
-      0.0,
-      (sum, seance) => sum + _seanceVolume(seance),
-    ),
+    monthVolume: monthVolume,
     monthDuration: monthWorkouts.fold(
       Duration.zero,
-      (sum, seance) => sum + seance.duration,
+      (sum, w) => sum + w.duration,
     ),
     todaySummary: todaySummary.hasWorkout ? todaySummary : null,
     lastWorkout: history.isEmpty ? null : history.first,
@@ -525,24 +546,15 @@ final workoutDashboardStatsProvider = Provider<WorkoutDashboardStats>((ref) {
 
 DateTime _dayKey(DateTime date) => DateTime(date.year, date.month, date.day);
 
-bool _completedOnOrAfter(Seance seance, DateTime threshold) {
-  final completedAt = seance.completedAt ?? seance.startedAt;
-  return !completedAt.isBefore(threshold);
+bool _completedOnOrAfter(Workout w, DateTime threshold) {
+  final t = w.completedAt ?? w.startedAt;
+  if (t == null) return false;
+  return !t.isBefore(threshold);
 }
 
 DateTime _startOfWeek(DateTime date) {
   final dayStart = _dayKey(date);
   return dayStart.subtract(Duration(days: dayStart.weekday - DateTime.monday));
-}
-
-double _seanceVolume(Seance seance) {
-  return seance.exercises.fold(0.0, (sum, entry) {
-    return sum +
-        entry.sets.fold(0.0, (setSum, set) {
-          if (!set.isCompleted) return setSum;
-          return setSum + (set.reps * set.weight);
-        });
-  });
 }
 
 List<StrengthDataPoint> _seedStrengthData() {

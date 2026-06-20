@@ -13,7 +13,6 @@ class ExercisesListTab extends ConsumerStatefulWidget {
 
 class _ExercisesListTabState extends ConsumerState<ExercisesListTab> {
   final _searchController = TextEditingController();
-  final Set<String> _selectedCategories = {};
 
   @override
   void dispose() {
@@ -26,15 +25,9 @@ class _ExercisesListTabState extends ConsumerState<ExercisesListTab> {
     final exercises = ref.watch(exerciseListProvider);
     final l10n = AppLocalizations.of(context)!;
     final query = _searchController.text.trim().toLowerCase();
-    final allCategories = exercises.map((e) => e.category).toSet().toList()
-      ..sort();
 
     final filtered = exercises.where((e) {
       if (query.isNotEmpty && !e.name.toLowerCase().contains(query)) {
-        return false;
-      }
-      if (_selectedCategories.isNotEmpty &&
-          !_selectedCategories.contains(e.category)) {
         return false;
       }
       return true;
@@ -56,35 +49,6 @@ class _ExercisesListTabState extends ConsumerState<ExercisesListTab> {
             onChanged: (_) => setState(() {}),
           ),
         ),
-        if (allCategories.isNotEmpty)
-          SizedBox(
-            height: 48,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              scrollDirection: Axis.horizontal,
-              itemCount: allCategories.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 6),
-              itemBuilder: (_, i) {
-                final cat = allCategories[i];
-                final selected = _selectedCategories.contains(cat);
-                return FilterChip(
-                  label: Text(cat, style: const TextStyle(fontSize: 12)),
-                  selected: selected,
-                  onSelected: (isSelected) {
-                    setState(() {
-                      if (isSelected) {
-                        _selectedCategories.add(cat);
-                      } else {
-                        _selectedCategories.remove(cat);
-                      }
-                    });
-                  },
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                );
-              },
-            ),
-          ),
         Expanded(
           child: filtered.isEmpty
               ? Center(
@@ -122,7 +86,7 @@ class _ExercisesListTabState extends ConsumerState<ExercisesListTab> {
                     return Card(
                       child: ListTile(
                         title: Text(exercise.name),
-                        subtitle: Text(exercise.category),
+                        subtitle: Text(exercise.type.name),
                         trailing: const Icon(Icons.info_outline),
                         onTap: () {
                           Navigator.of(context).push(

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 
 import 'exercises/list.dart';
-import 'training/tab.dart';
+import 'workout/list.dart';
 import 'stats/stats_tab.dart';
 
 class ExerciseScreen extends ConsumerWidget {
@@ -26,8 +26,8 @@ class ExerciseScreen extends ConsumerWidget {
             ],
           ),
         ),
-        body: const TabBarView(
-          children: [TrainingTab(), ExercisesListTab(), StatsTab()],
+        body: TabBarView(
+          children: [WorkoutListTab(), ExercisesListTab(), StatsTab()],
         ),
       ),
     );

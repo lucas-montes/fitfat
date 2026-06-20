@@ -6,8 +6,8 @@ import 'src/app/router.dart';
 import 'src/services/logger.dart' show initLogging;
 
 void _onForegroundTaskData(Object data) {
-  if (data is Map<String, dynamic> && data['type'] == 'open_current_seance') {
-    appRouter.go('/current-seance');
+  if (data is Map<String, dynamic> && data['type'] == 'open_current_workout') {
+    appRouter.go('/active-workout');
   }
 }
 

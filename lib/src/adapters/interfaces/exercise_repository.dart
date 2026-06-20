@@ -1,4 +1,4 @@
-import '../../models/exercise.dart' as model;
+import '../../models/workout.dart' as model;
 
 /// Abstract interface for exercise data access.
 /// Implementations: [DriftExerciseRepository], future REST/API adapters.

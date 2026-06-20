@@ -1,33 +1,10 @@
-import '../../models/exercise.dart';
 import '../../models/workout.dart' as domain;
 
 /// Pure Dart service for workout session state management and rest timer logic.
 /// No Flutter, no DB, no UI dependencies — fully testable.
 class WorkoutSessionService {
-  /// Whether the session is guided (template-based) or free-form.
-  bool get isGuided => _isGuided;
-  final bool _isGuided = false;
-
   /// The elapsed duration since the session started.
   Duration elapsed(DateTime startedAt) => DateTime.now().difference(startedAt);
-
-  /// Total rep count across all exercises in a seance.
-  int totalReps(Seance seance) =>
-      seance.exercises.fold(0, (sum, entry) => sum + entry.totalReps);
-
-  /// Total weight volume (reps × weight) across all exercises.
-  double totalVolume(Seance seance) =>
-      seance.exercises.fold(0.0, (sum, entry) => sum + entry.totalWeight);
-
-  /// Whether a set is a "personal record" compared to previous best.
-  bool isPersonalRecord(ExerciseSet set, List<ExerciseSet> history) {
-    if (history.isEmpty) return true;
-    final best = history.fold<double>(
-      0,
-      (max, s) => max > (s.weight * s.reps) ? max : (s.weight * s.reps),
-    );
-    return (set.weight * set.reps) > best;
-  }
 
   /// Calculate rest timer duration in seconds.
   /// If [configuredRestSeconds] is provided, uses that.
@@ -211,37 +188,21 @@ class ExerciseLibraryService {
   }
 
   /// Filter exercises by name query.
-  List<ExerciseDefinition> search(
-    List<ExerciseDefinition> exercises,
+  List<domain.ExerciseDefinition> search(
+    List<domain.ExerciseDefinition> exercises,
     String query,
   ) {
     if (query.trim().isEmpty) return exercises;
     final lowerQuery = query.trim().toLowerCase();
-    return exercises.where((e) {
-      return e.name.toLowerCase().contains(lowerQuery) ||
-          e.category.toLowerCase().contains(lowerQuery);
-    }).toList();
-  }
-
-  /// Filter exercises by category.
-  List<ExerciseDefinition> filterByCategory(
-    List<ExerciseDefinition> exercises,
-    String category,
-  ) {
-    return exercises.where((e) => e.category == category).toList();
+    return exercises
+        .where((e) => e.name.toLowerCase().contains(lowerQuery))
+        .toList();
   }
 
   /// Check if two exercises are likely duplicates by normalized name.
-  bool isDuplicate(String name, List<ExerciseDefinition> existing) {
+  bool isDuplicate(String name, List<domain.ExerciseDefinition> existing) {
     final normalized = name.trim().toLowerCase();
     return existing.any((e) => e.name.trim().toLowerCase() == normalized);
-  }
-
-  /// Get unique categories from a list of exercises, sorted.
-  List<String> getCategories(List<ExerciseDefinition> exercises) {
-    final categories = exercises.map((e) => e.category).toSet().toList();
-    categories.sort();
-    return categories;
   }
 }
 
@@ -269,60 +230,22 @@ class ProgressionService {
   /// Volume load for a single set (reps × weight).
   double setVolume(int reps, double weight) => reps * weight;
 
-  /// Total volume for a list of sets.
-  double totalVolume(List<ExerciseSet> sets) {
-    return sets.fold(0.0, (sum, set) => sum + (set.reps * set.weight));
-  }
-
-  /// Total volume for a complete seance.
-  double seanceVolume(Seance seance) {
-    return seance.exercises.fold(
-      0.0,
-      (sum, entry) => sum + totalVolume(entry.sets),
-    );
-  }
-
-  /// Find the best set (highest estimated 1RM) across all sets.
-  ExerciseSet? findBestSet(List<ExerciseSet> sets) {
-    if (sets.isEmpty) return null;
-    return sets.fold<ExerciseSet?>(null, (best, set) {
-      final current = epleyOneRM(set.weight, set.reps) ?? 0;
-      final bestVal = best != null
-          ? (epleyOneRM(best.weight, best.reps) ?? 0)
-          : 0;
-      return current > bestVal ? set : best;
-    });
-  }
-
-  /// Find the maximum weight lifted across all sets.
-  ExerciseSet? findMaxWeight(List<ExerciseSet> sets) {
-    if (sets.isEmpty) return null;
-    return sets.fold<ExerciseSet?>(null, (max, set) {
-      return (max == null || set.weight > max.weight) ? set : max;
-    });
-  }
-
-  /// Find the maximum volume set (reps × weight).
-  ExerciseSet? findMaxVolumeSet(List<ExerciseSet> sets) {
-    if (sets.isEmpty) return null;
-    return sets.fold<ExerciseSet?>(null, (max, set) {
-      final currentVol = set.reps * set.weight;
-      final maxVol = max != null ? max.reps * max.weight : 0.0;
-      return currentVol > maxVol ? set : max;
-    });
-  }
-
   // ---------------------------------------------------------------------------
   // WeightSet overloads (new model)
   // ---------------------------------------------------------------------------
 
   /// Volume load for a single [domain.WeightSet] (reps × weightKg).
   double setVolumeFromWeightSet(domain.WeightSet set) =>
-      set.reps * set.weightKg;
+      set.effectiveReps * set.effectiveWeightKg;
 
   /// Estimated 1RM for a [domain.WeightSet] using the Epley formula.
   double? epleyOneRMFromWeightSet(domain.WeightSet set) =>
-      epleyOneRM(set.weightKg, set.reps);
+      epleyOneRM(set.effectiveWeightKg, set.effectiveReps);
+
+  /// Total volume for a list of [domain.WeightSet].
+  double totalVolumeFromWeightSets(List<domain.WeightSet> sets) {
+    return sets.fold(0.0, (sum, set) => sum + setVolumeFromWeightSet(set));
+  }
 
   /// Find the best set (highest estimated 1RM) across a list of [domain.WeightSet].
   domain.WeightSet? findBestSetFromWeightSets(List<domain.WeightSet> sets) {
@@ -338,7 +261,9 @@ class ProgressionService {
   domain.WeightSet? findMaxWeightFromWeightSets(List<domain.WeightSet> sets) {
     if (sets.isEmpty) return null;
     return sets.fold<domain.WeightSet?>(null, (max, set) {
-      return (max == null || set.weightKg > max.weightKg) ? set : max;
+      return (max == null || set.effectiveWeightKg > max.effectiveWeightKg)
+          ? set
+          : max;
     });
   }
 
@@ -348,8 +273,10 @@ class ProgressionService {
   ) {
     if (sets.isEmpty) return null;
     return sets.fold<domain.WeightSet?>(null, (max, set) {
-      final currentVol = set.reps * set.weightKg;
-      final maxVol = max != null ? max.reps * max.weightKg : 0.0;
+      final currentVol = set.effectiveReps * set.effectiveWeightKg;
+      final maxVol = max != null
+          ? max.effectiveReps * max.effectiveWeightKg
+          : 0.0;
       return currentVol > maxVol ? set : max;
     });
   }

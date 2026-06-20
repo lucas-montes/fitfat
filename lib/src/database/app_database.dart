@@ -8,10 +8,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../exercise/services/workout_services.dart';
 import '../models/enums.dart';
 import '../services/logger.dart';
-import 'migrations/migrate_seances.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -21,26 +19,18 @@ final _log = logger('app_database');
 @DriftDatabase(
   tables: [
     Exercises,
+    ExerciseBodyParts,
+    Workouts,
+    WeightSets,
+    CardioSets,
     Ingredients,
     IngredientComponents,
     Meals,
     MealIngredients,
-    Seances,
-    ExerciseEntries,
-    ExerciseSets,
-    Templates,
-    TemplateExercises,
-    TemplateSets,
     Goals,
     UserProfile,
     BodyWeightEntries,
-    Workouts,
-    WorkoutEntries,
-    WorkoutSets,
-    CardioDetails,
-    PlannedWorkouts,
-    PlannedEntries,
-    PlannedCardio,
+    WaterConsumption,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -56,7 +46,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -103,60 +93,120 @@ class AppDatabase extends _$AppDatabase {
         );
       }
       if (from < 7) {
-        // Remove weight_kg from user_profile (weight now comes from BodyWeightEntries)
+        // Remove weight_kg from user_profile
         await m.database.customStatement(
           'ALTER TABLE user_profile DROP COLUMN weight_kg',
         );
       }
       if (from < 8) {
-        // Add type and met columns to exercises table for unified activity model.
-        // Raw SQL needed because Drift's addColumn doesn't support withDefault.
+        // Add type and met columns to exercises table
         await m.database.customStatement(
           "ALTER TABLE exercises ADD COLUMN type TEXT NOT NULL DEFAULT 'weightlifting'",
         );
         await m.database.customStatement(
           'ALTER TABLE exercises ADD COLUMN met REAL NOT NULL DEFAULT 5.0',
         );
-        // Re-seed exercises to pick up cardio entries and MET values
         await _seedExercises();
       }
       if (from < 9) {
-        // Create new workout model tables (unified activity model)
-        await m.createTable(workouts);
-        await m.createTable(workoutEntries);
-        await m.createTable(workoutSets);
-        await m.createTable(cardioDetails);
+        // Create old workout model tables (replaced by v12 schema)
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS workouts (id TEXT PRIMARY KEY, name TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT, notes TEXT, source TEXT DEFAULT \'manual\', planned_workout_id TEXT, is_guided INTEGER DEFAULT 0)',
+        );
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS workout_entries (id TEXT PRIMARY KEY, sort_order INTEGER NOT NULL, exercise_id TEXT NOT NULL REFERENCES exercises(id), workout_id TEXT NOT NULL REFERENCES workouts(id), note TEXT, effort INTEGER)',
+        );
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS workout_sets (id TEXT PRIMARY KEY, entry_id TEXT NOT NULL REFERENCES workout_entries(id), reps INTEGER NOT NULL, weight_kg REAL NOT NULL, completed_at TEXT)',
+        );
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS cardio_details (id TEXT PRIMARY KEY, entry_id TEXT NOT NULL UNIQUE REFERENCES workout_entries(id), duration_minutes INTEGER NOT NULL)',
+        );
       }
       if (from < 10) {
-        // Create planning tables (scheduled workouts with prescribed weights)
-        await m.createTable(plannedWorkouts);
-        await m.createTable(plannedEntries);
-        await m.createTable(plannedCardio);
+        // Create planning tables (replaced by v12 schema)
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS planned_workouts (id TEXT PRIMARY KEY, scheduled_date TEXT NOT NULL, name TEXT NOT NULL, notes TEXT, source TEXT DEFAULT \'manual\', template_id TEXT, is_completed INTEGER DEFAULT 0, completed_workout_id TEXT REFERENCES workouts(id))',
+        );
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS planned_entries (id TEXT PRIMARY KEY, planned_workout_id TEXT NOT NULL REFERENCES planned_workouts(id), exercise_id TEXT NOT NULL REFERENCES exercises(id), sort_order INTEGER NOT NULL, planned_reps INTEGER NOT NULL, planned_weight_kg REAL NOT NULL, planned_rest_seconds INTEGER, note TEXT, effort_target INTEGER)',
+        );
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS planned_cardio (id TEXT PRIMARY KEY, planned_entry_id TEXT NOT NULL UNIQUE REFERENCES planned_entries(id), planned_duration_minutes INTEGER NOT NULL)',
+        );
       }
       if (from < 11) {
-        // One-time data migration: copy old seances to new workout tables
-        await migrateLegacySeances(this);
+        // One-time data migration: copy old seances to old workout tables.
+        // This migration is now a no-op — v12 drops all old workout tables.
+        // The old migration files (migrate_seances.dart, seance_converter.dart)
+        // have been removed.
+      }
+      if (from < 12) {
+        // -----------------------------------------------------------------
+        // v12: Replace the entire workout/planning schema with unified
+        // Workouts + WeightSets + CardioSets.
+        // Clean slate — drop all old workout-related tables first.
+        // -----------------------------------------------------------------
+
+        // Drop old tables (child tables first to avoid FK issues)
+        await m.deleteTable('planned_cardio');
+        await m.deleteTable('planned_entries');
+        await m.deleteTable('planned_workouts');
+        await m.deleteTable('cardio_details');
+        await m.deleteTable('workout_sets');
+        await m.deleteTable('workout_entries');
+        await m.deleteTable('workouts');
+
+        // Also drop seance-era tables that are no longer needed
+        await m.deleteTable('exercise_sets');
+        await m.deleteTable('exercise_entries');
+        await m.deleteTable('seances');
+        await m.deleteTable('template_sets');
+        await m.deleteTable('template_exercises');
+        await m.deleteTable('templates');
+
+        // Create new tables
+        await m.createTable(exerciseBodyParts);
+        await m.createTable(workouts);
+        await m.createTable(weightSets);
+        await m.createTable(cardioSets);
+
+        // Update exercises table: add description, image_url; drop category
+        await m.database.customStatement(
+          "ALTER TABLE exercises ADD COLUMN description TEXT NOT NULL DEFAULT ''",
+        );
+        await m.database.customStatement(
+          'ALTER TABLE exercises ADD COLUMN image_url TEXT',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE exercises DROP COLUMN category',
+        );
+      }
+      if (from < 13) {
+        // Add notes column to weight_sets and cardio_sets
+        await m.database.customStatement(
+          "ALTER TABLE weight_sets ADD COLUMN notes TEXT",
+        );
+        await m.database.customStatement(
+          "ALTER TABLE cardio_sets ADD COLUMN notes TEXT",
+        );
       }
     },
   );
 
   Future<void> _seedExercises() async {
-    // Use comprehensive bundle from ExerciseLibraryService with MET values
-    final bundled = ExerciseLibraryService.getAllBundledWithMet();
+    final bundled = _bundledExercises;
 
-    // Get existing exercise names to skip duplicates
     final existing = await select(exercises).get();
     final existingNames = existing.map((e) => e.name.toLowerCase()).toSet();
 
-    for (final (name, category, met) in bundled) {
+    for (final (name, type, met) in bundled) {
       if (existingNames.contains(name.toLowerCase())) continue;
 
-      final type = category == 'Cardio' ? 'cardio' : 'weightlifting';
       await into(exercises).insert(
         ExercisesCompanion.insert(
           id: const Uuid().v4(),
           name: name,
-          category: category,
           type: Value(type),
           met: Value(met),
           creatorId: const Value('__system__'),
@@ -207,6 +257,78 @@ class AppDatabase extends _$AppDatabase {
       b.insert(exercises, e, mode: InsertMode.insertOrReplace);
     }
   });
+
+  // ---------------------------------------------------------------------------
+  // Workouts
+  // ---------------------------------------------------------------------------
+
+  Stream<List<WorkoutRow>> watchWorkouts() => select(workouts).watch();
+  Future<WorkoutRow?> getWorkoutById(String id) =>
+      (select(workouts)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<List<WorkoutRow>> getWorkoutsByDate(DateTime date) {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (select(workouts)..where(
+          (t) =>
+              t.scheduledDate.isBetweenValues(start, end) |
+              t.startedAt.isBetweenValues(start, end),
+        ))
+        .get();
+  }
+
+  Future<List<WorkoutRow>> getActiveWorkouts() => (select(
+    workouts,
+  )..where((t) => t.startedAt.isNotNull() & t.completedAt.isNull())).get();
+
+  Future<void> insertWorkout(WorkoutsCompanion entry) =>
+      into(workouts).insert(entry);
+  Future<void> updateWorkout(WorkoutsCompanion entry) =>
+      update(workouts).replace(entry);
+  Future<void> deleteWorkout(String id) =>
+      (delete(workouts)..where((t) => t.id.equals(id))).go();
+
+  // ---------------------------------------------------------------------------
+  // Weight sets
+  // ---------------------------------------------------------------------------
+
+  Stream<List<WeightSetRow>> watchWeightSets(String workoutId) =>
+      (select(weightSets)..where((t) => t.workoutId.equals(workoutId))).watch();
+  Future<List<WeightSetRow>> getWeightSets(String workoutId) =>
+      (select(weightSets)..where((t) => t.workoutId.equals(workoutId))).get();
+  Future<void> insertWeightSet(WeightSetsCompanion entry) =>
+      into(weightSets).insert(entry);
+  Future<void> updateWeightSet(WeightSetsCompanion entry) =>
+      update(weightSets).replace(entry);
+  Future<void> deleteWeightSetsByWorkout(String workoutId) =>
+      (delete(weightSets)..where((t) => t.workoutId.equals(workoutId))).go();
+
+  // ---------------------------------------------------------------------------
+  // Cardio sets
+  // ---------------------------------------------------------------------------
+
+  Stream<List<CardioSetRow>> watchCardioSets(String workoutId) =>
+      (select(cardioSets)..where((t) => t.workoutId.equals(workoutId))).watch();
+  Future<List<CardioSetRow>> getCardioSets(String workoutId) =>
+      (select(cardioSets)..where((t) => t.workoutId.equals(workoutId))).get();
+  Future<void> insertCardioSet(CardioSetsCompanion entry) =>
+      into(cardioSets).insert(entry);
+  Future<void> updateCardioSet(CardioSetsCompanion entry) =>
+      update(cardioSets).replace(entry);
+  Future<void> deleteCardioSetsByWorkout(String workoutId) =>
+      (delete(cardioSets)..where((t) => t.workoutId.equals(workoutId))).go();
+
+  // ---------------------------------------------------------------------------
+  // Exercise body parts
+  // ---------------------------------------------------------------------------
+
+  Future<List<ExerciseBodyPart>> getBodyParts(String exerciseId) => (select(
+    exerciseBodyParts,
+  )..where((t) => t.exerciseId.equals(exerciseId))).get();
+  Future<void> insertBodyPart(ExerciseBodyPartsCompanion entry) =>
+      into(exerciseBodyParts).insert(entry);
+  Future<void> deleteBodyPartsByExercise(String exerciseId) => (delete(
+    exerciseBodyParts,
+  )..where((t) => t.exerciseId.equals(exerciseId))).go();
 
   // ---------------------------------------------------------------------------
   // Ingredients
@@ -272,80 +394,6 @@ class AppDatabase extends _$AppDatabase {
       (delete(mealIngredients)..where((t) => t.mealId.equals(mealId))).go();
 
   // ---------------------------------------------------------------------------
-  // Seances
-  // ---------------------------------------------------------------------------
-
-  Stream<List<Seance>> watchSeances() => select(seances).watch();
-  Future<void> insertSeance(SeancesCompanion entry) =>
-      into(seances).insert(entry);
-  Future<void> updateSeance(SeancesCompanion entry) =>
-      update(seances).replace(entry);
-
-  // ---------------------------------------------------------------------------
-  // Exercise entries
-  // ---------------------------------------------------------------------------
-
-  Stream<List<ExerciseEntry>> watchExerciseEntries(String seanceId) => (select(
-    exerciseEntries,
-  )..where((t) => t.seanceId.equals(seanceId))).watch();
-  Future<void> insertExerciseEntry(ExerciseEntriesCompanion entry) =>
-      into(exerciseEntries).insert(entry);
-  Future<void> deleteExerciseEntriesBySeance(String seanceId) =>
-      (delete(exerciseEntries)..where((t) => t.seanceId.equals(seanceId))).go();
-
-  // ---------------------------------------------------------------------------
-  // Exercise sets
-  // ---------------------------------------------------------------------------
-
-  Stream<List<ExerciseSet>> watchExerciseSets(String entryId) =>
-      (select(exerciseSets)..where((t) => t.entryId.equals(entryId))).watch();
-  Future<void> insertExerciseSet(ExerciseSetsCompanion entry) =>
-      into(exerciseSets).insert(entry);
-  Future<void> deleteExerciseSetsByEntry(String entryId) =>
-      (delete(exerciseSets)..where((t) => t.entryId.equals(entryId))).go();
-
-  // ---------------------------------------------------------------------------
-  // Templates
-  // ---------------------------------------------------------------------------
-
-  Stream<List<Template>> watchTemplates() => select(templates).watch();
-  Future<void> insertTemplate(TemplatesCompanion entry) =>
-      into(templates).insert(entry);
-  Future<void> updateTemplate(TemplatesCompanion entry) =>
-      update(templates).replace(entry);
-  Future<void> deleteTemplate(String id) =>
-      (delete(templates)..where((t) => t.id.equals(id))).go();
-
-  // ---------------------------------------------------------------------------
-  // Template exercises
-  // ---------------------------------------------------------------------------
-
-  Stream<List<TemplateExercise>> watchTemplateExercises(String templateId) =>
-      (select(
-        templateExercises,
-      )..where((t) => t.templateId.equals(templateId))).watch();
-  Future<void> insertTemplateExercise(TemplateExercisesCompanion entry) =>
-      into(templateExercises).insert(entry);
-  Future<void> deleteTemplateExercisesByTemplate(String templateId) => (delete(
-    templateExercises,
-  )..where((t) => t.templateId.equals(templateId))).go();
-
-  // ---------------------------------------------------------------------------
-  // Template planned sets
-  // ---------------------------------------------------------------------------
-
-  Stream<List<TemplateSet>> watchTemplateSets(String templateExerciseId) =>
-      (select(
-        templateSets,
-      )..where((t) => t.templateExerciseId.equals(templateExerciseId))).watch();
-  Future<void> insertTemplateSet(TemplateSetsCompanion entry) =>
-      into(templateSets).insert(entry);
-  Future<void> deleteTemplateSetsByExercise(String templateExerciseId) =>
-      (delete(
-        templateSets,
-      )..where((t) => t.templateExerciseId.equals(templateExerciseId))).go();
-
-  // ---------------------------------------------------------------------------
   // Goals
   // ---------------------------------------------------------------------------
 
@@ -378,9 +426,7 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final docsDir = await getApplicationDocumentsDirectory();
     final dbPath = p.join(docsDir.path, 'fitfat.db');
-    // Debug: log the database file path so we can confirm where the DB is stored
     try {
-      // Use print so it's visible in Flutter logs during development
       if (kDebugMode) {
         print('[DB] Opening database at: $dbPath');
       }
@@ -390,3 +436,66 @@ LazyDatabase _openConnection() {
     return NativeDatabase(File(dbPath));
   });
 }
+
+/// (name, type, met)
+const _bundledExercises = <(String, String, double)>[
+  // Cardio
+  ('Running', 'cardio', 8.0),
+  ('Walking', 'cardio', 3.5),
+  ('Cycling', 'cardio', 7.5),
+  ('Swimming', 'cardio', 6.0),
+  ('Jump Rope', 'cardio', 10.0),
+  ('Rowing', 'cardio', 6.0),
+  ('Elliptical', 'cardio', 5.0),
+  ('Stair Climber', 'cardio', 6.0),
+  // Chest
+  ('Bench Press', 'weightlifting', 5.5),
+  ('Incline Bench Press', 'weightlifting', 5.5),
+  ('Decline Bench Press', 'weightlifting', 5.5),
+  ('Dumbbell Fly', 'weightlifting', 4.0),
+  ('Cable Crossover', 'weightlifting', 4.0),
+  ('Push Up', 'weightlifting', 3.5),
+  ('Dumbbell Bench Press', 'weightlifting', 5.0),
+  // Back
+  ('Deadlift', 'weightlifting', 6.0),
+  ('Barbell Row', 'weightlifting', 5.0),
+  ('Pull Up', 'weightlifting', 5.0),
+  ('Lat Pulldown', 'weightlifting', 4.5),
+  ('Seated Cable Row', 'weightlifting', 4.5),
+  ('T-Bar Row', 'weightlifting', 5.0),
+  ('Face Pull', 'weightlifting', 3.0),
+  ('Dumbbell Row', 'weightlifting', 5.0),
+  // Shoulders
+  ('Overhead Press', 'weightlifting', 5.0),
+  ('Lateral Raise', 'weightlifting', 3.0),
+  ('Front Raise', 'weightlifting', 3.0),
+  ('Reverse Fly', 'weightlifting', 3.0),
+  ('Arnold Press', 'weightlifting', 4.5),
+  ('Shrug', 'weightlifting', 3.0),
+  // Legs
+  ('Squat', 'weightlifting', 6.0),
+  ('Leg Press', 'weightlifting', 5.0),
+  ('Leg Extension', 'weightlifting', 4.0),
+  ('Leg Curl', 'weightlifting', 4.0),
+  ('Romanian Deadlift', 'weightlifting', 5.0),
+  ('Calf Raise', 'weightlifting', 3.0),
+  ('Lunge', 'weightlifting', 4.5),
+  ('Bulgarian Split Squat', 'weightlifting', 5.0),
+  ('Hip Thrust', 'weightlifting', 4.5),
+  // Arms
+  ('Barbell Curl', 'weightlifting', 3.0),
+  ('Dumbbell Curl', 'weightlifting', 3.0),
+  ('Hammer Curl', 'weightlifting', 3.0),
+  ('Triceps Pushdown', 'weightlifting', 3.0),
+  ('Overhead Triceps Extension', 'weightlifting', 3.0),
+  ('Skull Crusher', 'weightlifting', 3.0),
+  ('Concentration Curl', 'weightlifting', 2.5),
+  ('Preacher Curl', 'weightlifting', 3.0),
+  // Core
+  ('Crunch', 'weightlifting', 2.5),
+  ('Russian Twist', 'weightlifting', 2.5),
+  ('Plank', 'weightlifting', 2.5),
+  ('Leg Raise', 'weightlifting', 2.5),
+  ('Cable Woodchop', 'weightlifting', 3.0),
+  ('Ab Wheel Rollout', 'weightlifting', 3.0),
+];

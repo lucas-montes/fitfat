@@ -1,430 +1,301 @@
 import 'package:flutter/foundation.dart';
 
-import 'exercise.dart';
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
 
-/// One set within a weightlifting WorkoutEntry.
-@immutable
-class WeightSet {
-  const WeightSet({
-    required this.reps,
-    required this.weightKg,
-    this.completedAt,
-  });
+enum ExerciseType { weightlifting, cardio }
 
-  final int reps;
-  final double weightKg;
-  final DateTime? completedAt;
-
-  bool get isCompleted => completedAt != null;
-
-  WeightSet copyWith({int? reps, double? weightKg, DateTime? completedAt}) {
-    return WeightSet(
-      reps: reps ?? this.reps,
-      weightKg: weightKg ?? this.weightKg,
-      completedAt: completedAt ?? this.completedAt,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'reps': reps,
-    'weightKg': weightKg,
-    'completedAt': completedAt?.toIso8601String(),
-  };
-
-  factory WeightSet.fromJson(Map<String, dynamic> json) => WeightSet(
-    reps: json['reps'] as int,
-    weightKg: (json['weightKg'] as num).toDouble(),
-    completedAt: json['completedAt'] != null
-        ? DateTime.parse(json['completedAt'] as String)
-        : null,
-  );
+enum BodyPart {
+  chest,
+  back,
+  shoulders,
+  biceps,
+  triceps,
+  forearms,
+  quadriceps,
+  hamstrings,
+  glutes,
+  calves,
+  abdominals,
+  obliques,
+  traps,
+  lats,
+  neck,
+  fullBody,
 }
 
-/// Duration-based data for a cardio-type WorkoutEntry.
+enum WorkoutSource { manual, coach, quickLog }
+
+// ---------------------------------------------------------------------------
+// ExerciseDefinition
+// ---------------------------------------------------------------------------
+
 @immutable
-class CardioDetail {
-  const CardioDetail({required this.durationMinutes});
-
-  final int durationMinutes;
-
-  CardioDetail copyWith({int? durationMinutes}) {
-    return CardioDetail(
-      durationMinutes: durationMinutes ?? this.durationMinutes,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {'durationMinutes': durationMinutes};
-
-  factory CardioDetail.fromJson(Map<String, dynamic> json) =>
-      CardioDetail(durationMinutes: json['durationMinutes'] as int);
-}
-
-/// One exercise within a Workout. Either weightlifting (with WeightSets)
-/// or cardio (with CardioDetail), determined by the ExerciseDefinition type.
-@immutable
-class WorkoutEntry {
-  const WorkoutEntry({
-    required this.id,
-    required this.exercise,
-    this.sets = const [],
-    this.cardioDetail,
-    this.sortOrder = 0,
-    this.note,
-    this.effort,
-  });
-
+class ExerciseDefinition {
   final String id;
-  final ExerciseDefinition exercise;
-  final List<WeightSet> sets;
-  final CardioDetail? cardioDetail;
-  final int sortOrder;
-  final String? note;
-  final int? effort;
+  final String name;
+  final ExerciseType type;
+  final double met;
+  final String description;
+  final String? imageUrl;
+  final List<BodyPart> bodyParts;
 
-  /// Total volume (reps × weight) for weightlifting entries.
-  double get totalWeight =>
-      sets.fold(0.0, (sum, set) => sum + (set.reps * set.weightKg));
+  const ExerciseDefinition({
+    required this.id,
+    required this.name,
+    this.type = ExerciseType.weightlifting,
+    this.met = 5.0,
+    this.description = '',
+    this.imageUrl,
+    this.bodyParts = const [],
+  });
 
-  /// Total reps across all sets for weightlifting entries.
-  int get totalReps => sets.fold(0, (sum, set) => sum + set.reps);
-
-  WorkoutEntry copyWith({
+  ExerciseDefinition copyWith({
     String? id,
-    ExerciseDefinition? exercise,
-    List<WeightSet>? sets,
-    CardioDetail? cardioDetail,
-    int? sortOrder,
-    String? note,
-    int? effort,
-    bool clearCardioDetail = false,
+    String? name,
+    ExerciseType? type,
+    double? met,
+    String? description,
+    String? imageUrl,
+    List<BodyPart>? bodyParts,
+    bool clearImageUrl = false,
   }) {
-    return WorkoutEntry(
+    return ExerciseDefinition(
       id: id ?? this.id,
-      exercise: exercise ?? this.exercise,
-      sets: sets ?? this.sets,
-      cardioDetail: clearCardioDetail
-          ? null
-          : (cardioDetail ?? this.cardioDetail),
-      sortOrder: sortOrder ?? this.sortOrder,
-      note: note ?? this.note,
-      effort: effort ?? this.effort,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      met: met ?? this.met,
+      description: description ?? this.description,
+      imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
+      bodyParts: bodyParts ?? this.bodyParts,
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'exercise': exercise.toJson(),
-    'sets': sets.map((s) => s.toJson()).toList(),
-    'cardioDetail': cardioDetail?.toJson(),
-    'sortOrder': sortOrder,
-    'note': note,
-    'effort': effort,
-  };
-
-  factory WorkoutEntry.fromJson(Map<String, dynamic> json) => WorkoutEntry(
-    id: json['id'] as String,
-    exercise: ExerciseDefinition.fromJson(
-      json['exercise'] as Map<String, dynamic>,
-    ),
-    sets:
-        (json['sets'] as List?)
-            ?.map((s) => WeightSet.fromJson(s as Map<String, dynamic>))
-            .toList() ??
-        [],
-    cardioDetail: json['cardioDetail'] != null
-        ? CardioDetail.fromJson(json['cardioDetail'] as Map<String, dynamic>)
-        : null,
-    sortOrder: json['sortOrder'] as int? ?? 0,
-    note: json['note'] as String?,
-    effort: json['effort'] as int?,
-  );
 }
 
-/// A completed or in-progress workout session in the unified activity model.
+// ---------------------------------------------------------------------------
+// Workout
+// ---------------------------------------------------------------------------
+
+/// A workout is the single model for all workout types:
+///
+/// | `scheduledDate` | `startedAt` | Meaning         |
+/// |-----------------|-------------|-----------------|
+/// | null            | not null    | Free-form       |
+/// | set             | null        | Scheduled/pending |
+/// | set             | not null    | Scheduled, in progress or done |
+///
+/// `completedAt == null` → active or pending.
+/// `completedAt != null` → finished.
 @immutable
 class Workout {
+  final String id;
+  final String name;
+  final DateTime? scheduledDate;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
+  final String? notes;
+  final WorkoutSource source;
+
   const Workout({
     required this.id,
     required this.name,
-    required this.startTime,
-    this.endTime,
-    this.entries = const [],
+    this.scheduledDate,
+    this.startedAt,
+    this.completedAt,
     this.notes,
-    this.source = 'manual',
-    this.plannedWorkoutId,
-    this.isGuided = false,
+    this.source = WorkoutSource.manual,
   });
 
-  final String id;
-  final String name;
-  final DateTime startTime;
-  final DateTime? endTime;
-  final List<WorkoutEntry> entries;
-  final String? notes;
-  final String source;
-  final String? plannedWorkoutId;
-  final bool isGuided;
+  bool get isScheduled => scheduledDate != null;
+  bool get isFreeform => scheduledDate == null;
+  bool get isPending => scheduledDate != null && startedAt == null;
+  bool get isActive => startedAt != null && completedAt == null;
+  bool get isCompleted => completedAt != null;
 
-  /// Duration of the workout (current elapsed time if active).
   Duration get duration {
-    if (endTime == null) {
-      return DateTime.now().difference(startTime);
+    if (completedAt != null && startedAt != null) {
+      return completedAt!.difference(startedAt!);
     }
-    return endTime!.difference(startTime);
+    if (startedAt != null) {
+      return DateTime.now().difference(startedAt!);
+    }
+    return Duration.zero;
   }
-
-  /// Whether this workout is still in progress.
-  bool get isActive => endTime == null;
-
-  /// Total volume across all weightlifting entries.
-  double get totalVolume =>
-      entries.fold(0.0, (sum, entry) => sum + entry.totalWeight);
-
-  /// Total cardio minutes across all cardio entries.
-  int get totalCardioMinutes => entries.fold(
-    0,
-    (sum, entry) => sum + (entry.cardioDetail?.durationMinutes ?? 0),
-  );
 
   Workout copyWith({
     String? id,
     String? name,
-    DateTime? startTime,
-    DateTime? endTime,
-    List<WorkoutEntry>? entries,
+    DateTime? scheduledDate,
+    DateTime? startedAt,
+    DateTime? completedAt,
     String? notes,
-    String? source,
-    String? plannedWorkoutId,
-    bool? isGuided,
-    bool clearEndTime = false,
+    WorkoutSource? source,
+    bool clearScheduledDate = false,
+    bool clearStartedAt = false,
+    bool clearCompletedAt = false,
+    bool clearNotes = false,
   }) {
     return Workout(
       id: id ?? this.id,
       name: name ?? this.name,
-      startTime: startTime ?? this.startTime,
-      endTime: clearEndTime ? null : (endTime ?? this.endTime),
-      entries: entries ?? this.entries,
-      notes: notes ?? this.notes,
+      scheduledDate: clearScheduledDate
+          ? null
+          : (scheduledDate ?? this.scheduledDate),
+      startedAt: clearStartedAt ? null : (startedAt ?? this.startedAt),
+      completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
+      notes: clearNotes ? null : (notes ?? this.notes),
       source: source ?? this.source,
-      plannedWorkoutId: plannedWorkoutId ?? this.plannedWorkoutId,
-      isGuided: isGuided ?? this.isGuided,
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'startTime': startTime.toIso8601String(),
-    'endTime': endTime?.toIso8601String(),
-    'entries': entries.map((e) => e.toJson()).toList(),
-    'notes': notes,
-    'source': source,
-    'plannedWorkoutId': plannedWorkoutId,
-    'isGuided': isGuided,
-  };
-
-  factory Workout.fromJson(Map<String, dynamic> json) => Workout(
-    id: json['id'] as String,
-    name: json['name'] as String? ?? '',
-    startTime: DateTime.parse(json['startTime'] as String),
-    endTime: json['endTime'] != null
-        ? DateTime.parse(json['endTime'] as String)
-        : null,
-    entries:
-        (json['entries'] as List?)
-            ?.map((e) => WorkoutEntry.fromJson(e as Map<String, dynamic>))
-            .toList() ??
-        [],
-    notes: json['notes'] as String?,
-    source: json['source'] as String? ?? 'manual',
-    plannedWorkoutId: json['plannedWorkoutId'] as String?,
-    isGuided: json['isGuided'] as bool? ?? false,
-  );
 }
 
 // ---------------------------------------------------------------------------
-// Planning domain models
+// WeightSet
 // ---------------------------------------------------------------------------
 
-/// Coach-prescribed duration for a cardio-type PlannedEntry.
+/// One weightlifting set within a workout.
+///
+/// Planned values are pre-filled when creating a scheduled workout.
+/// Actual values are filled during execution (null = not yet done).
+/// For free-form workouts, planned = actual from the start.
 @immutable
-class PlannedCardio {
-  const PlannedCardio({required this.plannedDurationMinutes});
-
-  final int plannedDurationMinutes;
-
-  PlannedCardio copyWith({int? plannedDurationMinutes}) {
-    return PlannedCardio(
-      plannedDurationMinutes:
-          plannedDurationMinutes ?? this.plannedDurationMinutes,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'plannedDurationMinutes': plannedDurationMinutes,
-  };
-
-  factory PlannedCardio.fromJson(Map<String, dynamic> json) => PlannedCardio(
-    plannedDurationMinutes: json['plannedDurationMinutes'] as int,
-  );
-}
-
-/// One prescribed exercise within a PlannedWorkout.
-@immutable
-class PlannedEntry {
-  const PlannedEntry({
-    required this.id,
-    required this.exercise,
-    this.plannedReps = 0,
-    this.plannedWeightKg = 0.0,
-    this.plannedRestSeconds,
-    this.sortOrder = 0,
-    this.note,
-    this.effortTarget,
-    this.plannedCardio,
-  });
-
+class WeightSet {
   final String id;
-  final ExerciseDefinition exercise;
+  final String workoutId;
+  final String exerciseId;
+  final int sortOrder;
   final int plannedReps;
   final double plannedWeightKg;
   final int? plannedRestSeconds;
-  final int sortOrder;
-  final String? note;
-  final int? effortTarget;
-  final PlannedCardio? plannedCardio;
+  final int? actualReps;
+  final double? actualWeightKg;
+  final DateTime? completedAt;
+  final String? notes;
 
-  PlannedEntry copyWith({
+  const WeightSet({
+    required this.id,
+    required this.workoutId,
+    required this.exerciseId,
+    this.sortOrder = 0,
+    this.plannedReps = 0,
+    this.plannedWeightKg = 0.0,
+    this.plannedRestSeconds,
+    this.actualReps,
+    this.actualWeightKg,
+    this.completedAt,
+    this.notes,
+  });
+
+  bool get isCompleted => completedAt != null;
+  int get effectiveReps => actualReps ?? plannedReps;
+  double get effectiveWeightKg => actualWeightKg ?? plannedWeightKg;
+  double get totalWeight => effectiveReps * effectiveWeightKg;
+
+  int? get repsDelta => actualReps != null ? actualReps! - plannedReps : null;
+  double? get weightDelta =>
+      actualWeightKg != null ? actualWeightKg! - plannedWeightKg : null;
+
+  WeightSet copyWith({
     String? id,
-    ExerciseDefinition? exercise,
+    String? workoutId,
+    String? exerciseId,
+    int? sortOrder,
     int? plannedReps,
     double? plannedWeightKg,
     int? plannedRestSeconds,
-    int? sortOrder,
-    String? note,
-    int? effortTarget,
-    PlannedCardio? plannedCardio,
-    bool clearPlannedCardio = false,
+    int? actualReps,
+    double? actualWeightKg,
+    DateTime? completedAt,
+    String? notes,
+    bool clearPlannedRestSeconds = false,
+    bool clearActualReps = false,
+    bool clearActualWeightKg = false,
+    bool clearCompletedAt = false,
+    bool clearNotes = false,
   }) {
-    return PlannedEntry(
+    return WeightSet(
       id: id ?? this.id,
-      exercise: exercise ?? this.exercise,
+      workoutId: workoutId ?? this.workoutId,
+      exerciseId: exerciseId ?? this.exerciseId,
+      sortOrder: sortOrder ?? this.sortOrder,
       plannedReps: plannedReps ?? this.plannedReps,
       plannedWeightKg: plannedWeightKg ?? this.plannedWeightKg,
-      plannedRestSeconds: plannedRestSeconds ?? this.plannedRestSeconds,
-      sortOrder: sortOrder ?? this.sortOrder,
-      note: note ?? this.note,
-      effortTarget: effortTarget ?? this.effortTarget,
-      plannedCardio: clearPlannedCardio
+      plannedRestSeconds: clearPlannedRestSeconds
           ? null
-          : (plannedCardio ?? this.plannedCardio),
+          : (plannedRestSeconds ?? this.plannedRestSeconds),
+      actualReps: clearActualReps ? null : (actualReps ?? this.actualReps),
+      actualWeightKg: clearActualWeightKg
+          ? null
+          : (actualWeightKg ?? this.actualWeightKg),
+      completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
+      notes: clearNotes ? null : (notes ?? this.notes),
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'exercise': exercise.toJson(),
-    'plannedReps': plannedReps,
-    'plannedWeightKg': plannedWeightKg,
-    'plannedRestSeconds': plannedRestSeconds,
-    'sortOrder': sortOrder,
-    'note': note,
-    'effortTarget': effortTarget,
-    'plannedCardio': plannedCardio?.toJson(),
-  };
-
-  factory PlannedEntry.fromJson(Map<String, dynamic> json) => PlannedEntry(
-    id: json['id'] as String,
-    exercise: ExerciseDefinition.fromJson(
-      json['exercise'] as Map<String, dynamic>,
-    ),
-    plannedReps: json['plannedReps'] as int? ?? 0,
-    plannedWeightKg: (json['plannedWeightKg'] as num?)?.toDouble() ?? 0.0,
-    plannedRestSeconds: json['plannedRestSeconds'] as int?,
-    sortOrder: json['sortOrder'] as int? ?? 0,
-    note: json['note'] as String?,
-    effortTarget: json['effortTarget'] as int?,
-    plannedCardio: json['plannedCardio'] != null
-        ? PlannedCardio.fromJson(json['plannedCardio'] as Map<String, dynamic>)
-        : null,
-  );
 }
 
-/// A workout scheduled for a specific date, with prescribed weights
-/// from a coach or manual entry. Can be converted to a Workout when started.
+// ---------------------------------------------------------------------------
+// CardioSet
+// ---------------------------------------------------------------------------
+
+/// One cardio set within a workout.
+///
+/// Planned values are pre-filled when creating a scheduled workout.
+/// Actual values are filled during execution (null = not yet done).
 @immutable
-class PlannedWorkout {
-  const PlannedWorkout({
+class CardioSet {
+  final String id;
+  final String workoutId;
+  final String exerciseId;
+  final int sortOrder;
+  final int plannedDurationMinutes;
+  final int? actualDurationMinutes;
+  final DateTime? completedAt;
+  final String? notes;
+
+  const CardioSet({
     required this.id,
-    required this.scheduledDate,
-    required this.name,
-    this.entries = const [],
+    required this.workoutId,
+    required this.exerciseId,
+    this.sortOrder = 0,
+    this.plannedDurationMinutes = 0,
+    this.actualDurationMinutes,
+    this.completedAt,
     this.notes,
-    this.source = 'manual',
-    this.templateId,
-    this.isCompleted = false,
-    this.completedWorkoutId,
   });
 
-  final String id;
-  final DateTime scheduledDate;
-  final String name;
-  final List<PlannedEntry> entries;
-  final String? notes;
-  final String source;
-  final String? templateId;
-  final bool isCompleted;
-  final String? completedWorkoutId;
+  bool get isCompleted => completedAt != null;
+  int get effectiveDurationMinutes =>
+      actualDurationMinutes ?? plannedDurationMinutes;
+  int? get durationDelta => actualDurationMinutes != null
+      ? actualDurationMinutes! - plannedDurationMinutes
+      : null;
 
-  PlannedWorkout copyWith({
+  CardioSet copyWith({
     String? id,
-    DateTime? scheduledDate,
-    String? name,
-    List<PlannedEntry>? entries,
+    String? workoutId,
+    String? exerciseId,
+    int? sortOrder,
+    int? plannedDurationMinutes,
+    int? actualDurationMinutes,
+    DateTime? completedAt,
     String? notes,
-    String? source,
-    String? templateId,
-    bool? isCompleted,
-    String? completedWorkoutId,
+    bool clearActualDurationMinutes = false,
+    bool clearCompletedAt = false,
+    bool clearNotes = false,
   }) {
-    return PlannedWorkout(
+    return CardioSet(
       id: id ?? this.id,
-      scheduledDate: scheduledDate ?? this.scheduledDate,
-      name: name ?? this.name,
-      entries: entries ?? this.entries,
-      notes: notes ?? this.notes,
-      source: source ?? this.source,
-      templateId: templateId ?? this.templateId,
-      isCompleted: isCompleted ?? this.isCompleted,
-      completedWorkoutId: completedWorkoutId ?? this.completedWorkoutId,
+      workoutId: workoutId ?? this.workoutId,
+      exerciseId: exerciseId ?? this.exerciseId,
+      sortOrder: sortOrder ?? this.sortOrder,
+      plannedDurationMinutes:
+          plannedDurationMinutes ?? this.plannedDurationMinutes,
+      actualDurationMinutes: clearActualDurationMinutes
+          ? null
+          : (actualDurationMinutes ?? this.actualDurationMinutes),
+      completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
+      notes: clearNotes ? null : (notes ?? this.notes),
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'scheduledDate': scheduledDate.toIso8601String(),
-    'name': name,
-    'entries': entries.map((e) => e.toJson()).toList(),
-    'notes': notes,
-    'source': source,
-    'templateId': templateId,
-    'isCompleted': isCompleted,
-    'completedWorkoutId': completedWorkoutId,
-  };
-
-  factory PlannedWorkout.fromJson(Map<String, dynamic> json) => PlannedWorkout(
-    id: json['id'] as String,
-    scheduledDate: DateTime.parse(json['scheduledDate'] as String),
-    name: json['name'] as String? ?? '',
-    entries:
-        (json['entries'] as List?)
-            ?.map((e) => PlannedEntry.fromJson(e as Map<String, dynamic>))
-            .toList() ??
-        [],
-    notes: json['notes'] as String?,
-    source: json['source'] as String? ?? 'manual',
-    templateId: json['templateId'] as String?,
-    isCompleted: json['isCompleted'] as bool? ?? false,
-    completedWorkoutId: json['completedWorkoutId'] as String?,
-  );
 }

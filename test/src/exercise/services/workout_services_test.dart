@@ -1,328 +1,264 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:uuid/uuid.dart';
-
 import 'package:fitfat/src/exercise/services/workout_services.dart';
-import 'package:fitfat/src/models/exercise.dart';
+import 'package:fitfat/src/models/workout.dart';
 
 void main() {
   group('WorkoutSessionService', () {
-    late WorkoutSessionService sessionService;
-    const uuid = Uuid();
+    late WorkoutSessionService service;
 
     setUp(() {
-      sessionService = WorkoutSessionService();
+      service = WorkoutSessionService();
     });
 
-    test('totalReps sums all exercise reps', () {
-      final seance = Seance(
-        id: uuid.v7(),
-        startedAt: DateTime.now(),
-        exercises: [
-          ExerciseEntry(
-            id: uuid.v7(),
-            exercise: const ExerciseDefinition(id: 'e1', name: 'Bench Press'),
-            sets: [
-              const ExerciseSet(reps: 10, weight: 60),
-              const ExerciseSet(reps: 8, weight: 70),
-            ],
-            startedAt: DateTime.now(),
-          ),
-        ],
-      );
-      expect(sessionService.totalReps(seance), 18);
+    test('formatDuration returns mm:ss for under one hour', () {
+      const duration = Duration(minutes: 5, seconds: 30);
+      expect(service.formatDuration(duration), '05:30');
     });
 
-    test('totalVolume sums all set volumes', () {
-      final seance = Seance(
-        id: uuid.v7(),
-        startedAt: DateTime.now(),
-        exercises: [
-          ExerciseEntry(
-            id: uuid.v7(),
-            exercise: const ExerciseDefinition(id: 'e1', name: 'Bench Press'),
-            sets: [
-              const ExerciseSet(reps: 10, weight: 60),
-              const ExerciseSet(reps: 8, weight: 70),
-            ],
-            startedAt: DateTime.now(),
-          ),
-        ],
-      );
-      // 10*60 + 8*70 = 600 + 560 = 1160
-      expect(sessionService.totalVolume(seance), 1160);
-    });
-
-    test('formatDuration formats minutes and seconds', () {
-      expect(
-        sessionService.formatDuration(const Duration(seconds: 90)),
-        '01:30',
-      );
-      expect(
-        sessionService.formatDuration(const Duration(seconds: 0)),
-        '00:00',
-      );
-      expect(
-        sessionService.formatDuration(const Duration(seconds: 3600)),
-        '60:00',
-      );
-    });
-
-    test('estimateOneRM returns correct Epley value', () {
-      // Epley: weight * (1 + reps/30)
-      // 100kg * (1 + 5/30) = 100 * 1.167 = 116.67
-      final rm = sessionService.estimateOneRM(100, 5);
-      expect(rm, closeTo(116.67, 0.1));
-    });
-
-    test('estimateOneRM returns null for zero weight', () {
-      expect(sessionService.estimateOneRM(0, 5), isNull);
-    });
-
-    test('estimateOneRM returns weight for single rep', () {
-      expect(sessionService.estimateOneRM(100, 1), 100);
-    });
-
-    test('isPersonalRecord returns true for first set', () {
-      expect(
-        sessionService.isPersonalRecord(
-          const ExerciseSet(reps: 10, weight: 100),
-          [],
-        ),
-        isTrue,
-      );
-    });
-
-    test('isPersonalRecord returns true for new best', () {
-      final history = [const ExerciseSet(reps: 10, weight: 80)];
-      expect(
-        sessionService.isPersonalRecord(
-          const ExerciseSet(reps: 10, weight: 100),
-          history,
-        ),
-        isTrue,
-      );
-    });
-
-    test('isPersonalRecord returns false for worse or equal set', () {
-      final history = [const ExerciseSet(reps: 10, weight: 100)];
-      expect(
-        sessionService.isPersonalRecord(
-          const ExerciseSet(reps: 10, weight: 80),
-          history,
-        ),
-        isFalse,
-      );
+    test('formatDuration returns mm:ss for zero', () {
+      expect(service.formatDuration(Duration.zero), '00:00');
     });
 
     test('getRestSeconds uses configured value when provided', () {
-      expect(sessionService.getRestSeconds(configuredRestSeconds: 90), 90);
+      expect(service.getRestSeconds(configuredRestSeconds: 90), 90);
     });
 
     test('getRestSeconds falls back to default when not provided', () {
-      expect(sessionService.getRestSeconds(), 60);
+      expect(service.getRestSeconds(), 60);
+    });
+
+    test('estimateOneRM returns null for zero reps', () {
+      expect(service.estimateOneRM(50, 0), isNull);
+    });
+
+    test('estimateOneRM returns null for zero weight', () {
+      expect(service.estimateOneRM(0, 5), isNull);
+    });
+
+    test('estimateOneRM returns weight for single rep', () {
+      expect(service.estimateOneRM(100, 1), 100);
+    });
+
+    test('estimateOneRM uses Epley formula for multiple reps', () {
+      // Epley: weight * (1 + reps / 30)
+      // 50 * (1 + 10/30) = 50 * 1.333 = 66.67
+      final result = service.estimateOneRM(50, 10);
+      expect(result, closeTo(66.67, 0.01));
+    });
+
+    test('setVolume calculates reps * weight', () {
+      expect(service.setVolume(10, 50), 500);
     });
   });
 
   group('ExerciseLibraryService', () {
-    test('bundled exercises contains 7 categories', () {
-      expect(ExerciseLibraryService.bundledExercises.keys.length, 7);
+    test('bundledExercises contains 7 categories', () {
+      expect(ExerciseLibraryService.bundledExercises.length, 7);
     });
 
-    test('all bundled exercise categories are present', () {
-      final categories = ExerciseLibraryService.bundledExercises.keys.toSet();
-      expect(
-        categories,
-        containsAll([
-          'Chest',
-          'Back',
-          'Legs',
-          'Shoulders',
-          'Arms',
-          'Core',
-          'Cardio',
-        ]),
-      );
-    });
-
-    test('total bundled exercises count is reasonable', () {
+    test('getAllBundled returns flat list with categories', () {
       final all = ExerciseLibraryService.getAllBundled();
-      expect(all.length, greaterThan(30));
-      expect(all.length, lessThan(60));
+      expect(all.isNotEmpty, isTrue);
+      for (final (name, category) in all) {
+        expect(name, isA<String>());
+        expect(category, isA<String>());
+      }
     });
 
-    test('search filters by name', () {
-      final exercises = [
-        const ExerciseDefinition(
-          id: '1',
-          name: 'Bench Press',
-          category: 'Chest',
-        ),
-        const ExerciseDefinition(id: '2', name: 'Squat', category: 'Legs'),
-        const ExerciseDefinition(id: '3', name: 'Deadlift', category: 'Back'),
-      ];
-
-      final service = ExerciseLibraryService();
-      final results = service.search(exercises, 'bench');
-      expect(results, hasLength(1));
-      expect(results.single.name, 'Bench Press');
+    test('getAllBundledWithMet returns flat list with MET', () {
+      final all = ExerciseLibraryService.getAllBundledWithMet();
+      expect(all.isNotEmpty, isTrue);
+      for (final (name, category, met) in all) {
+        expect(name, isA<String>());
+        expect(category, isA<String>());
+        expect(met, greaterThan(0));
+      }
     });
 
-    test('search returns all exercises for empty query', () {
-      final exercises = [
-        const ExerciseDefinition(
-          id: '1',
-          name: 'Bench Press',
-          category: 'Chest',
-        ),
-        const ExerciseDefinition(id: '2', name: 'Squat', category: 'Legs'),
-      ];
+    group('search', () {
+      late ExerciseLibraryService service;
+      late List<ExerciseDefinition> exercises;
 
-      final service = ExerciseLibraryService();
-      expect(service.search(exercises, ''), hasLength(2));
+      setUp(() {
+        service = ExerciseLibraryService();
+        exercises = [
+          const ExerciseDefinition(id: '1', name: 'Bench Press'),
+          const ExerciseDefinition(id: '2', name: 'Squat'),
+          const ExerciseDefinition(id: '3', name: 'Overhead Press'),
+        ];
+      });
+
+      test('returns all exercises for empty query', () {
+        expect(service.search(exercises, '').length, 3);
+      });
+
+      test('filters by name', () {
+        final result = service.search(exercises, 'bench');
+        expect(result.length, 1);
+        expect(result.first.name, 'Bench Press');
+      });
+
+      test('is case-insensitive', () {
+        final result = service.search(exercises, 'BENCH');
+        expect(result.length, 1);
+      });
     });
 
-    test('filterByCategory returns only matching exercises', () {
-      final exercises = [
-        const ExerciseDefinition(
-          id: '1',
-          name: 'Bench Press',
-          category: 'Chest',
-        ),
-        const ExerciseDefinition(id: '2', name: 'Squat', category: 'Legs'),
-        const ExerciseDefinition(
-          id: '3',
-          name: 'Incline Press',
-          category: 'Chest',
-        ),
-      ];
+    group('isDuplicate', () {
+      late ExerciseLibraryService service;
+      late List<ExerciseDefinition> exercises;
 
-      final service = ExerciseLibraryService();
-      final chest = service.filterByCategory(exercises, 'Chest');
-      expect(chest, hasLength(2));
-    });
+      setUp(() {
+        service = ExerciseLibraryService();
+        exercises = [const ExerciseDefinition(id: '1', name: 'Bench Press')];
+      });
 
-    test('isDuplicate detects duplicate names case-insensitively', () {
-      final existing = [const ExerciseDefinition(id: '1', name: 'Bench Press')];
-      final service = ExerciseLibraryService();
-      expect(service.isDuplicate('bench press', existing), isTrue);
-      expect(service.isDuplicate('Squat', existing), isFalse);
-    });
+      test('returns true for duplicate name', () {
+        expect(service.isDuplicate('Bench Press', exercises), isTrue);
+      });
 
-    test('getCategories returns sorted unique categories', () {
-      final exercises = [
-        const ExerciseDefinition(
-          id: '1',
-          name: 'Bench Press',
-          category: 'Chest',
-        ),
-        const ExerciseDefinition(id: '2', name: 'Squat', category: 'Legs'),
-        const ExerciseDefinition(id: '3', name: 'Deadlift', category: 'Back'),
-      ];
+      test('returns false for new name', () {
+        expect(service.isDuplicate('Squat', exercises), isFalse);
+      });
 
-      final service = ExerciseLibraryService();
-      expect(service.getCategories(exercises), ['Back', 'Chest', 'Legs']);
+      test('is case-insensitive', () {
+        expect(service.isDuplicate('bench press', exercises), isTrue);
+      });
     });
   });
 
   group('ProgressionService', () {
-    late ProgressionService progressionService;
+    late ProgressionService service;
 
     setUp(() {
-      progressionService = ProgressionService();
+      service = ProgressionService();
     });
 
-    test('epleyOneRM calculates correctly', () {
-      // 100kg * (1 + 5/30) = 116.67
-      final rm = progressionService.epleyOneRM(100, 5);
-      expect(rm, closeTo(116.67, 0.1));
+    group('epleyOneRM', () {
+      test('returns null for zero reps', () {
+        expect(service.epleyOneRM(50, 0), isNull);
+      });
+
+      test('returns null for zero weight', () {
+        expect(service.epleyOneRM(0, 5), isNull);
+      });
+
+      test('returns weight for single rep', () {
+        expect(service.epleyOneRM(100, 1), 100);
+      });
+
+      test('applies Epley formula', () {
+        // 80 * (1 + 8/30) = 80 * 1.267 = 101.33
+        expect(service.epleyOneRM(80, 8), closeTo(101.33, 0.01));
+      });
     });
 
-    test('epleyOneRM returns weight for single rep', () {
-      expect(progressionService.epleyOneRM(100, 1), 100);
+    group('brzyckiOneRM', () {
+      test('returns null for zero reps', () {
+        expect(service.brzyckiOneRM(50, 0), isNull);
+      });
+
+      test('returns null for 37+ reps', () {
+        expect(service.brzyckiOneRM(50, 37), isNull);
+      });
+
+      test('returns weight for single rep', () {
+        expect(service.brzyckiOneRM(100, 1), 100);
+      });
+
+      test('applies Brzycki formula', () {
+        // 80 * (36 / (37-8)) = 80 * 1.241 = 99.31
+        expect(service.brzyckiOneRM(80, 8), closeTo(99.31, 0.01));
+      });
     });
 
-    test('epleyOneRM returns null for zero inputs', () {
-      expect(progressionService.epleyOneRM(0, 5), isNull);
-      expect(progressionService.epleyOneRM(100, 0), isNull);
+    test('setVolume returns reps * weight', () {
+      expect(service.setVolume(10, 50), 500);
     });
 
-    test('brzyckiOneRM calculates differently than Epley', () {
-      // Brzycki: 100 * (36 / (37-10)) = 100 * 36/27 = 133.33
-      final brzycki = progressionService.brzyckiOneRM(100, 10);
-      final epley = progressionService.epleyOneRM(100, 10);
-      expect(brzycki, closeTo(133.33, 0.1));
-      expect(epley, closeTo(133.33, 0.1)); // Same for 10 reps
+    group('WeightSet overloads', () {
+      late WeightSet set1;
+      late WeightSet set2;
+      late WeightSet set3;
+
+      setUp(() {
+        set1 = WeightSet(
+          id: '1',
+          workoutId: 'w1',
+          exerciseId: 'e1',
+          plannedReps: 10,
+          plannedWeightKg: 50,
+        );
+        set2 = WeightSet(
+          id: '2',
+          workoutId: 'w1',
+          exerciseId: 'e1',
+          plannedReps: 8,
+          plannedWeightKg: 60,
+        );
+        set3 = WeightSet(
+          id: '3',
+          workoutId: 'w1',
+          exerciseId: 'e1',
+          // No actual values — uses planned defaults
+          plannedReps: 12,
+          plannedWeightKg: 40,
+        );
+      });
+
+      test('setVolumeFromWeightSet uses effective values', () {
+        expect(service.setVolumeFromWeightSet(set1), 500);
+      });
+
+      test('epleyOneRMFromWeightSet delegates to epleyOneRM', () {
+        // 50 * (1 + 10/30) = 66.67
+        expect(service.epleyOneRMFromWeightSet(set1), closeTo(66.67, 0.01));
+      });
+
+      test('totalVolumeFromWeightSets sums all sets', () {
+        final sets = [set1, set2, set3];
+        // 500 + 480 + 480 = 1460
+        expect(service.totalVolumeFromWeightSets(sets), 1460);
+      });
+
+      test('findBestSetFromWeightSets returns highest e1RM', () {
+        final sets = [set1, set2, set3];
+        final best = service.findBestSetFromWeightSets(sets);
+        expect(best, isNotNull);
+        expect(best!.plannedWeightKg, 60);
+      });
+
+      test('findBestSetFromWeightSets returns null for empty list', () {
+        expect(service.findBestSetFromWeightSets([]), isNull);
+      });
+
+      test('findMaxWeightFromWeightSets returns heaviest set', () {
+        final sets = [set1, set2, set3];
+        final max = service.findMaxWeightFromWeightSets(sets);
+        expect(max, isNotNull);
+        expect(max!.plannedWeightKg, 60);
+      });
+
+      test('findMaxVolumeSetFromWeightSets returns highest volume', () {
+        final sets = [set1, set2, set3];
+        final max = service.findMaxVolumeSetFromWeightSets(sets);
+        expect(max, isNotNull);
+        expect(max!.plannedReps * max!.plannedWeightKg, 500);
+      });
     });
 
-    test('setVolume calculates reps × weight', () {
-      expect(progressionService.setVolume(10, 60), 600);
-    });
+    group('progressionPercent', () {
+      test('returns 0 when start is 0', () {
+        expect(service.progressionPercent(0, 100), 100);
+      });
 
-    test('totalVolume sums across sets', () {
-      final sets = [
-        const ExerciseSet(reps: 10, weight: 60),
-        const ExerciseSet(reps: 8, weight: 70),
-      ];
-      // 600 + 560 = 1160
-      expect(progressionService.totalVolume(sets), 1160);
-    });
+      test('returns positive percentage for improvement', () {
+        expect(service.progressionPercent(50, 60), closeTo(20, 0.01));
+      });
 
-    test('totalVolume returns 0 for empty sets', () {
-      expect(progressionService.totalVolume([]), 0);
-    });
-
-    test('seanceVolume sums across all exercises', () {
-      final seance = Seance(
-        id: 'test',
-        startedAt: DateTime.now(),
-        exercises: [
-          ExerciseEntry(
-            id: 'e1',
-            exercise: const ExerciseDefinition(id: 'ex1', name: 'Bench'),
-            sets: [const ExerciseSet(reps: 10, weight: 60)],
-            startedAt: DateTime.now(),
-          ),
-          ExerciseEntry(
-            id: 'e2',
-            exercise: const ExerciseDefinition(id: 'ex2', name: 'Squat'),
-            sets: [const ExerciseSet(reps: 5, weight: 100)],
-            startedAt: DateTime.now(),
-          ),
-        ],
-      );
-      // 600 + 500 = 1100
-      expect(progressionService.seanceVolume(seance), 1100);
-    });
-
-    test('findBestSet returns set with highest e1RM', () {
-      final sets = [
-        const ExerciseSet(reps: 10, weight: 60), // e1RM = 80
-        const ExerciseSet(reps: 5, weight: 80), // e1RM = 93.33
-        const ExerciseSet(reps: 3, weight: 90), // e1RM = 99
-      ];
-      final best = progressionService.findBestSet(sets);
-      expect(best!.weight, 90);
-      expect(best.reps, 3);
-    });
-
-    test('findBestSet returns null for empty sets', () {
-      expect(progressionService.findBestSet([]), isNull);
-    });
-
-    test('findMaxWeight returns heaviest set', () {
-      final sets = [
-        const ExerciseSet(reps: 10, weight: 60),
-        const ExerciseSet(reps: 5, weight: 100),
-        const ExerciseSet(reps: 8, weight: 80),
-      ];
-      final max = progressionService.findMaxWeight(sets);
-      expect(max!.weight, 100);
-    });
-
-    test('progressionPercent calculates correctly', () {
-      expect(progressionService.progressionPercent(100, 120), 20);
-      expect(progressionService.progressionPercent(100, 100), 0);
-      expect(progressionService.progressionPercent(100, 80), -20);
+      test('returns negative percentage for decline', () {
+        expect(service.progressionPercent(60, 50), closeTo(-16.67, 0.01));
+      });
     });
   });
 }

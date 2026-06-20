@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../diet/screens/main.dart';
-import '../exercise/screens/seances/active/screen.dart';
 import '../exercise/screens/main.dart';
+import '../exercise/screens/workout/active_screen.dart';
 import '../dashboard/screens/main.dart';
 import '../widgets/appbar_seance_indicator.dart' show SeanceFloatingPill;
 import 'package:fitfat/l10n/app_localizations.dart';
@@ -62,12 +62,6 @@ final appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/dashboard',
   routes: [
-    // Global route for active seance — accessible from anywhere
-    GoRoute(
-      path: '/current-seance',
-      name: 'current-seance',
-      builder: (context, state) => const CurrentSeanceScreen(),
-    ),
     // Group of routes that share the same shell (bottom navigation bar)
     // They are kept in memory when switching between them, so their state is preserved
     StatefulShellRoute.indexedStack(
@@ -103,6 +97,11 @@ final appRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/active-workout',
+      name: 'active-workout',
+      builder: (context, state) => const ActiveWorkoutScreen(),
     ),
   ],
 );

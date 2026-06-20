@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../exercise/providers/seance.dart';
+import '../exercise/providers/active_workout.dart';
 
-/// Floating pill that appears at the bottom-right when a seance is running.
-/// Tap to open the current seance screen.
+/// Floating pill that appears at the bottom-right when a workout is running.
+/// Tap to open the current workout screen.
 /// Rendered in AppShell so it covers all tabs.
 class SeanceFloatingPill extends ConsumerStatefulWidget {
   const SeanceFloatingPill({super.key});
@@ -24,10 +24,10 @@ class _SeanceFloatingPillState extends ConsumerState<SeanceFloatingPill> {
   void initState() {
     super.initState();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      final seance = ref.read(activeSeanceProvider);
-      if (seance != null) {
+      final workout = ref.read(activeWorkoutProvider).asData?.value;
+      if (workout != null && workout.startedAt != null) {
         setState(() {
-          _elapsed = DateTime.now().difference(seance.startedAt);
+          _elapsed = DateTime.now().difference(workout.startedAt!);
         });
       }
     });
@@ -53,8 +53,9 @@ class _SeanceFloatingPillState extends ConsumerState<SeanceFloatingPill> {
 
   @override
   Widget build(BuildContext context) {
-    final seance = ref.watch(activeSeanceProvider);
-    if (seance == null) return const SizedBox.shrink();
+    final workoutAsync = ref.watch(activeWorkoutProvider);
+    final workout = workoutAsync.asData?.value;
+    if (workout == null) return const SizedBox.shrink();
 
     return Material(
       elevation: 6,
@@ -62,7 +63,7 @@ class _SeanceFloatingPillState extends ConsumerState<SeanceFloatingPill> {
       color: Theme.of(context).colorScheme.primaryContainer,
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
-        onTap: () => context.push('/current-seance'),
+        onTap: () => context.push('/active-workout'),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(

@@ -595,6 +595,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get runningWorkout => 'Séance en cours';
 
   @override
+  String get resumeWorkout => 'Reprendre';
+
+  @override
   String get viewWorkout => 'Voir';
 
   @override

@@ -1,37 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 
-import '../../../../models/exercise.dart';
-import '../../../services/workout_services.dart';
-
 class SummaryCard extends StatelessWidget {
   const SummaryCard({
     super.key,
-    required this.seances,
-    required this.service,
-    required this.exerciseName,
+    required this.sessionsCount,
+    required this.totalVolume,
   });
 
-  final List<Seance> seances;
-  final ProgressionService service;
-  final String exerciseName;
+  final int sessionsCount;
+  final double totalVolume;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final totalSessions = seances.length;
-    final totalVolume = seances.fold<double>(
-      0,
-      (sum, s) =>
-          sum +
-          service.totalVolume(
-            s.exercises.firstWhere((e) => e.exercise.name == exerciseName).sets,
-          ),
-    );
-    final totalMinutes = seances.fold<int>(
-      0,
-      (sum, s) => sum + (s.completedAt!.difference(s.startedAt).inMinutes),
-    );
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -40,12 +22,11 @@ class SummaryCard extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _Stat(label: l10n.sessions, value: '$totalSessions'),
+            _Stat(label: l10n.sessions, value: '$sessionsCount'),
             _Stat(
               label: l10n.volume,
               value: '${totalVolume.toStringAsFixed(0)} kg',
             ),
-            _Stat(label: l10n.time, value: '$totalMinutes min'),
           ],
         ),
       ),
