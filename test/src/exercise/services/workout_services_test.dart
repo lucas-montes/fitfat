@@ -243,7 +243,7 @@ void main() {
         final sets = [set1, set2, set3];
         final max = service.findMaxVolumeSetFromWeightSets(sets);
         expect(max, isNotNull);
-        expect(max!.plannedReps * max!.plannedWeightKg, 500);
+        expect(max!.plannedReps * max.plannedWeightKg, 500);
       });
     });
 

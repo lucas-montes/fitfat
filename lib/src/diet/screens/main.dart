@@ -250,7 +250,7 @@ class _IngredientsTab extends ConsumerStatefulWidget {
 
 class _IngredientsTabState extends ConsumerState<_IngredientsTab> {
   final _searchController = TextEditingController();
-  bool _sortAscending = true;
+  final bool _sortAscending = true;
   bool _showArchived = false;
   double? _filterMinCalories;
   double? _filterMaxCalories;
