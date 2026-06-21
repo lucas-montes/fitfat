@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -181,6 +183,56 @@ class WorkoutListTab extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Elapsed timer widget (live-ticking)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A widget that displays a live-ticking elapsed time since [startedAt].
+class _ElapsedTimerWidget extends StatefulWidget {
+  final DateTime startedAt;
+  final TextStyle? style;
+
+  const _ElapsedTimerWidget({required this.startedAt, this.style});
+
+  @override
+  State<_ElapsedTimerWidget> createState() => _ElapsedTimerWidgetState();
+}
+
+class _ElapsedTimerWidgetState extends State<_ElapsedTimerWidget> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final elapsed = DateTime.now().difference(widget.startedAt);
+    return Text(_formatDuration(elapsed), style: widget.style);
+  }
+}
+
+/// Format a [Duration] as HH:MM:SS or MM:SS.
+String _formatDuration(Duration d) {
+  final h = d.inHours;
+  final m = d.inMinutes.remainder(60);
+  final s = d.inSeconds.remainder(60);
+  if (h > 0) {
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+  return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Today's card
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -224,8 +276,8 @@ class _TodayCard extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          _formatDuration(activeWorkout!.duration),
+                        _ElapsedTimerWidget(
+                          startedAt: activeWorkout!.startedAt!,
                           style: Theme.of(context).textTheme.displaySmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
@@ -313,16 +365,6 @@ class _TodayCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatDuration(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    final s = d.inSeconds.remainder(60);
-    if (h > 0) {
-      return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-    }
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 }
 
@@ -413,6 +455,7 @@ class _HistoryItem extends StatelessWidget {
         leading: const Icon(Icons.check_circle_outline),
         title: Text(workout.name),
         subtitle: Text('$dateStr · $durationStr'),
+        onTap: () => context.go('/workout-history/${workout.id}'),
       ),
     );
   }

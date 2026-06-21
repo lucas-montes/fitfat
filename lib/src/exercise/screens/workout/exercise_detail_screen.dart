@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
@@ -7,9 +9,10 @@ import '../../providers/exercises.dart';
 import '../../../adapters/drift/workout_repository.dart';
 import '../../../models/workout.dart';
 
-/// Screen that shows all sets for one exercise within the active workout.
+/// Screen that shows sets for exercises within an active workout.
 ///
 /// Features:
+/// - Swipe left/right between exercises (PageView with chip tabs)
 /// - Inline add-set form at the top (empty fields, no defaults)
 /// - Tap an existing set to copy its values into the form
 /// - Long-press for Edit, Toggle complete, and Delete
@@ -18,6 +21,8 @@ class ExerciseWorkoutDetailScreen extends ConsumerStatefulWidget {
   final String workoutId;
   final String exerciseId;
 
+  /// [exerciseId] is the initial exercise to display. The user can swipe
+  /// to other exercises in the workout.
   const ExerciseWorkoutDetailScreen({
     super.key,
     required this.workoutId,
@@ -31,21 +36,40 @@ class ExerciseWorkoutDetailScreen extends ConsumerStatefulWidget {
 
 class _ExerciseWorkoutDetailScreenState
     extends ConsumerState<ExerciseWorkoutDetailScreen> {
+  // All sets across all exercises (loaded once)
+  List<WeightSet> _allWeightSets = [];
+  List<CardioSet> _allCardioSets = [];
+
+  // Current filtered sets
   List<WeightSet> _weightSets = [];
   List<CardioSet> _cardioSets = [];
+
+  // All exercise IDs in this workout
+  List<String> _exerciseIds = [];
+  int _currentIndex = 0;
+  late PageController _pageController;
+
   bool _loading = true;
   String? _error;
 
-  // Form controllers (start empty — no defaults)
+  // Form controllers (reused across exercises, cleared on page change)
   final _repsCtl = TextEditingController();
   final _weightCtl = TextEditingController();
   final _durationCtl = TextEditingController();
   final _notesCtl = TextEditingController();
 
+  // Rest timer state
+  bool _isResting = false;
+  DateTime? _restStartedAt;
+
+  String get _currentExerciseId =>
+      _exerciseIds.isNotEmpty ? _exerciseIds[_currentIndex] : widget.exerciseId;
+
   @override
   void initState() {
     super.initState();
-    _loadSets();
+    _pageController = PageController();
+    _loadSets(initialExerciseId: widget.exerciseId);
   }
 
   @override
@@ -54,10 +78,11 @@ class _ExerciseWorkoutDetailScreenState
     _weightCtl.dispose();
     _durationCtl.dispose();
     _notesCtl.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadSets() async {
+  Future<void> _loadSets({String? initialExerciseId}) async {
     setState(() {
       _loading = true;
       _error = null;
@@ -67,13 +92,25 @@ class _ExerciseWorkoutDetailScreenState
       final allWeight = await repo.getWeightSets(widget.workoutId);
       final allCardio = await repo.getCardioSets(widget.workoutId);
 
+      // Extract unique exercise IDs
+      final ids = <String>{
+        ...allWeight.map((s) => s.exerciseId),
+        ...allCardio.map((s) => s.exerciseId),
+      }.toList();
+
+      // Determine initial index
+      final initialIdx =
+          initialExerciseId != null && ids.contains(initialExerciseId)
+          ? ids.indexOf(initialExerciseId)
+          : 0;
+
       setState(() {
-        _weightSets = allWeight
-            .where((s) => s.exerciseId == widget.exerciseId)
-            .toList();
-        _cardioSets = allCardio
-            .where((s) => s.exerciseId == widget.exerciseId)
-            .toList();
+        _allWeightSets = allWeight;
+        _allCardioSets = allCardio;
+        _exerciseIds = ids;
+        _currentIndex = initialIdx;
+        _filterForCurrentExercise();
+        _updateRestState();
         _loading = false;
       });
     } catch (e) {
@@ -84,10 +121,72 @@ class _ExerciseWorkoutDetailScreenState
     }
   }
 
-  ExerciseDefinition? _findExercise() {
+  void _filterForCurrentExercise() {
+    final exId = _currentExerciseId;
+    _weightSets = _allWeightSets
+        .where((s) => s.exerciseId == exId)
+        .toList()
+        .reversed
+        .toList();
+    _cardioSets = _allCardioSets
+        .where((s) => s.exerciseId == exId)
+        .toList()
+        .reversed
+        .toList();
+  }
+
+  /// Scan all sets for the most recent [completedAt].
+  DateTime? _computeLastCompletedAt() {
+    DateTime? latest;
+    for (final s in _allWeightSets) {
+      if (s.completedAt != null &&
+          (latest == null || s.completedAt!.isAfter(latest))) {
+        latest = s.completedAt;
+      }
+    }
+    for (final s in _allCardioSets) {
+      if (s.completedAt != null &&
+          (latest == null || s.completedAt!.isAfter(latest))) {
+        latest = s.completedAt;
+      }
+    }
+    return latest;
+  }
+
+  void _updateRestState() {
+    final last = _computeLastCompletedAt();
+    if (last != null) {
+      _restStartedAt = last;
+      _isResting = true;
+    }
+  }
+
+  void _dismissRest() {
+    _isResting = false;
+    _restStartedAt = null;
+  }
+
+  void _onPageChanged(int index) {
+    if (!mounted) return;
+    setState(() {
+      _currentIndex = index;
+      _filterForCurrentExercise();
+      // Switching exercises resets rest
+      _isResting = false;
+      _restStartedAt = null;
+    });
+    // Clear form fields when switching exercises
+    _repsCtl.clear();
+    _weightCtl.clear();
+    _durationCtl.clear();
+    _notesCtl.clear();
+  }
+
+  ExerciseDefinition? _findExercise([String? exerciseId]) {
+    final eid = exerciseId ?? _currentExerciseId;
     final exercises = ref.read(exerciseListProvider);
     try {
-      return exercises.firstWhere((e) => e.id == widget.exerciseId);
+      return exercises.firstWhere((e) => e.id == eid);
     } catch (_) {
       return null;
     }
@@ -162,6 +261,10 @@ class _ExerciseWorkoutDetailScreenState
   // ── Inline form add-set ──
 
   Future<void> _addSetFromForm(ExerciseDefinition exercise) async {
+    // Only auto-complete for free-form workouts (user-entered values = actual values)
+    final isFreeform =
+        (ref.read(activeWorkoutProvider).asData?.value?.isFreeform) ?? false;
+
     if (exercise.type == ExerciseType.weightlifting) {
       final reps = int.tryParse(_repsCtl.text);
       final weight = double.tryParse(_weightCtl.text);
@@ -170,9 +273,12 @@ class _ExerciseWorkoutDetailScreenState
           .read(activeWorkoutProvider.notifier)
           .addWeightSet(
             workoutId: widget.workoutId,
-            exerciseId: widget.exerciseId,
+            exerciseId: exercise.id,
             plannedReps: reps,
             plannedWeightKg: weight,
+            actualReps: isFreeform ? reps : null,
+            actualWeightKg: isFreeform ? weight : null,
+            completedAt: isFreeform ? DateTime.now() : null,
             notes: _nullIfEmpty(_notesCtl.text),
             sortOrder: _nextSortOrder(),
           );
@@ -183,8 +289,10 @@ class _ExerciseWorkoutDetailScreenState
           .read(activeWorkoutProvider.notifier)
           .addCardioSet(
             workoutId: widget.workoutId,
-            exerciseId: widget.exerciseId,
+            exerciseId: exercise.id,
             plannedDurationMinutes: dur,
+            actualDurationMinutes: isFreeform ? dur : null,
+            completedAt: isFreeform ? DateTime.now() : null,
             notes: _nullIfEmpty(_notesCtl.text),
             sortOrder: _nextSortOrder(),
           );
@@ -373,6 +481,48 @@ class _ExerciseWorkoutDetailScreenState
 
   String? _nullIfEmpty(String s) => s.trim().isEmpty ? null : s.trim();
 
+  // ── Exercise chip tabs ──
+
+  Widget _buildExerciseChips() {
+    final exercises = ref.read(exerciseListProvider);
+
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _exerciseIds.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final exId = _exerciseIds[index];
+          final ex = exercises.where((e) => e.id == exId).firstOrNull;
+          final icon = ex?.type == ExerciseType.cardio
+              ? Icons.directions_run
+              : Icons.fitness_center;
+
+          return ChoiceChip(
+            selected: index == _currentIndex,
+            label: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16),
+                const SizedBox(width: 4),
+                Text(ex?.name ?? exId),
+              ],
+            ),
+            onSelected: (_) {
+              _pageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
   // ── Inline add-set form widget ──
 
   Widget _buildAddForm(ExerciseDefinition exercise) {
@@ -451,29 +601,12 @@ class _ExerciseWorkoutDetailScreenState
     );
   }
 
-  // ── Build ──
+  // ── Single exercise page ──
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final exercise = _findExercise();
-
-    return Scaffold(
-      appBar: AppBar(title: Text(exercise?.name ?? l10n.exercise)),
-      body: _buildBody(l10n, exercise),
-      // FAB removed — inline form at top replaces it
-    );
-  }
-
-  Widget _buildBody(AppLocalizations l10n, ExerciseDefinition? exercise) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_error != null) {
-      return Center(child: Text('Error: $_error'));
-    }
+  Widget _buildExercisePage(String exerciseId) {
+    final exercise = _findExercise(exerciseId);
     if (exercise == null) {
-      return Center(child: const Text('Exercise not found'));
+      return const Center(child: Text('Exercise not found'));
     }
 
     final hasWeightSets = _weightSets.isNotEmpty;
@@ -482,6 +615,15 @@ class _ExerciseWorkoutDetailScreenState
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // ── Rest timer card ──
+        if (_isResting && _restStartedAt != null) ...[
+          _RestElapsedCard(
+            startedAt: _restStartedAt!,
+            onSkip: () => setState(_dismissRest),
+          ),
+          const SizedBox(height: 8),
+        ],
+
         // ── Inline add-set form ──
         _buildAddForm(exercise),
         const SizedBox(height: 8),
@@ -527,6 +669,52 @@ class _ExerciseWorkoutDetailScreenState
       ],
     );
   }
+
+  // ── Build ──
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final currentExercise = _findExercise();
+
+    return Scaffold(
+      appBar: AppBar(title: Text(currentExercise?.name ?? l10n.exercise)),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(child: Text('Error: $_error'));
+    }
+    if (_exerciseIds.isEmpty) {
+      return Center(child: const Text('No exercises in this workout'));
+    }
+
+    return Column(
+      children: [
+        // ── Exercise chip tabs ──
+        const SizedBox(height: 8),
+        _buildExerciseChips(),
+        const SizedBox(height: 8),
+        const Divider(height: 1),
+
+        // ── PageView ──
+        Expanded(
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            children: [
+              for (final exId in _exerciseIds) _buildExercisePage(exId),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -538,6 +726,21 @@ class _FormResult {
   final double doubleValue;
   final String? notes;
   const _FormResult(this.intValue, this.doubleValue, this.notes);
+}
+
+/// Format a [DateTime] as "HH:mm".
+String _formatHHmm(DateTime dt) {
+  return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+}
+
+/// Build a subtitle widget showing an optional completed time and notes.
+/// Time and notes are separated by " · " when both present.
+Widget? _setSubtitle({DateTime? completedTime, String? notes}) {
+  final parts = <String>[];
+  if (completedTime != null) parts.add(_formatHHmm(completedTime));
+  if (notes != null && notes.isNotEmpty) parts.add(notes);
+  if (parts.isEmpty) return null;
+  return Text(parts.join(' · '), style: const TextStyle(fontSize: 12));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -577,9 +780,10 @@ class _WeightSetTile extends StatelessWidget {
             ),
           ),
           title: Text('${set.effectiveReps} × ${set.effectiveWeightKg} kg'),
-          subtitle: set.notes != null && set.notes!.isNotEmpty
-              ? Text(set.notes!, style: const TextStyle(fontSize: 12))
-              : null,
+          subtitle: _setSubtitle(
+            completedTime: completed ? set.completedAt : null,
+            notes: set.notes,
+          ),
           trailing: PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'edit') onEdit();
@@ -596,6 +800,85 @@ class _WeightSetTile extends StatelessWidget {
             ],
           ),
           onTap: onTap,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rest elapsed timer card
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A card that shows the elapsed time since [startedAt] (rest timer).
+/// Ticks every second. Has a "Skip" button to dismiss.
+class _RestElapsedCard extends StatefulWidget {
+  final DateTime startedAt;
+  final VoidCallback onSkip;
+
+  const _RestElapsedCard({required this.startedAt, required this.onSkip});
+
+  @override
+  State<_RestElapsedCard> createState() => _RestElapsedCardState();
+}
+
+class _RestElapsedCardState extends State<_RestElapsedCard> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Duration get _elapsed => DateTime.now().difference(widget.startedAt);
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60);
+    final s = d.inSeconds.remainder(60);
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            const Icon(Icons.timer_outlined),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Rest',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(_elapsed),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(onPressed: widget.onSkip, child: const Text('Skip')),
+          ],
         ),
       ),
     );
@@ -639,9 +922,10 @@ class _CardioSetTile extends StatelessWidget {
             ),
           ),
           title: Text('${set.effectiveDurationMinutes} min'),
-          subtitle: set.notes != null && set.notes!.isNotEmpty
-              ? Text(set.notes!, style: const TextStyle(fontSize: 12))
-              : null,
+          subtitle: _setSubtitle(
+            completedTime: completed ? set.completedAt : null,
+            notes: set.notes,
+          ),
           trailing: PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'edit') onEdit();

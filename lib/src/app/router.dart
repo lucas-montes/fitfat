@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../diet/screens/main.dart';
 import '../exercise/screens/main.dart';
 import '../exercise/screens/workout/active_screen.dart';
+import '../exercise/screens/workout/workout_summary_screen.dart';
+import '../exercise/screens/workout/workout_history_detail_screen.dart';
 import '../dashboard/screens/main.dart';
 import '../widgets/appbar_seance_indicator.dart' show SeanceFloatingPill;
 import 'package:fitfat/l10n/app_localizations.dart';
@@ -102,6 +104,18 @@ final appRouter = GoRouter(
       path: '/active-workout',
       name: 'active-workout',
       builder: (context, state) => const ActiveWorkoutScreen(),
+    ),
+    GoRoute(
+      path: '/workout-summary/:id',
+      name: 'workout-summary',
+      builder: (context, state) =>
+          WorkoutSummaryScreen(workoutId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/workout-history/:id',
+      name: 'workout-history',
+      builder: (context, state) =>
+          WorkoutHistoryDetailScreen(workoutId: state.pathParameters['id']!),
     ),
   ],
 );

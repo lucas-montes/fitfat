@@ -40,6 +40,8 @@
 | `lib/src/exercise/screens/workout/active_screen.dart` | ActiveWorkoutScreen — full-screen active workout with elapsed timer, exercise list grouped from sets, Add Exercise, Complete/Cancel |
 | `lib/src/exercise/screens/workout/add_exercise_sheet.dart` | AddExerciseSheet — searchable bottom sheet for picking exercises from the library |
 | `lib/src/exercise/screens/workout/exercise_detail_screen.dart` | ExerciseWorkoutDetailScreen — per-exercise set management within active workout |
+| `lib/src/exercise/screens/workout/workout_summary_screen.dart` | WorkoutSummaryScreen — post-workout summary with duration, exercises, volume; "Done" returns to Training tab |
+| `lib/src/exercise/screens/workout/workout_history_detail_screen.dart` | WorkoutHistoryDetailScreen — read-only view of a completed workout's exercises and sets, navigated from history list |
 | `lib/src/exercise/screens/exercises/list.dart` | ExercisesListTab — exercise library with search |
 | `lib/src/exercise/screens/exercises/history/` | Exercise history: screen, summary, record cards |
 | `lib/src/exercise/screens/stats/stats_tab.dart` | StatsTab — all-time stats, weekly stats, 84-day heatmap |

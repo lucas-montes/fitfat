@@ -292,7 +292,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   Future<void> _complete(String workoutId) async {
     await ref.read(activeWorkoutProvider.notifier).complete();
-    if (context.mounted) context.pop();
+    if (context.mounted) context.go('/workout-summary/$workoutId');
   }
 
   Future<void> _openAddExerciseSheet(String workoutId) async {
