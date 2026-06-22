@@ -283,7 +283,7 @@ class WorkoutActivityCard extends ConsumerWidget {
 
     final title = l10n.todaysActivity;
 
-    final content = activeWorkout != null
+    final content = activeWorkout != null && activeWorkout.isActive
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

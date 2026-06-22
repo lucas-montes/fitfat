@@ -9,8 +9,14 @@ import '../../providers/exercises.dart';
 
 /// Screen shown after completing a workout.
 ///
-/// Displays the workout name, total duration, list of exercises with set
-/// counts, and total volume. A "Done" button navigates to the Training tab.
+/// Displays:
+/// - Workout duration (large, centered)
+/// - 3 stat cards: Exercises, Sets, Volume
+/// - List of exercises with set counts and completion status
+/// - "Done" button → navigates to the Training tab (`/exercise`)
+///
+/// Data is loaded from the DB by [workoutId]. The workout must already be
+/// completed (completedAt set) before navigating here.
 class WorkoutSummaryScreen extends ConsumerStatefulWidget {
   final String workoutId;
 
@@ -34,6 +40,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
     _load();
   }
 
+  /// Fetch the completed workout and all its sets from the DB.
   Future<void> _load() async {
     try {
       final repo = ref.read(workoutRepositoryProvider);
@@ -58,6 +65,9 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
     }
   }
 
+  /// Aggregate set data per-exercise: total sets, completed sets, volume.
+  ///
+  /// Volume for weight sets = reps × weight. Volume for cardio = duration.
   List<_ExerciseSummary> _buildExerciseSummaries() {
     final exercises = ref.read(exerciseListProvider);
     final Map<String, _ExerciseSummary> groups = {};
@@ -145,7 +155,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         ),
         const SizedBox(height: 24),
 
-        // ── Stats cards ──
+        // ── Stats cards (exercises, sets, volume) ──
         Row(
           children: [
             Expanded(
@@ -215,6 +225,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
     );
   }
 
+  /// Format a Duration as mm:ss or hh:mm:ss.
   String _formatDuration(Duration d) {
     final h = d.inHours;
     final m = d.inMinutes.remainder(60);
@@ -230,6 +241,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Aggregated data for one exercise in the summary.
 class _ExerciseSummary {
   final String exerciseName;
   final bool isWeight;
@@ -240,6 +252,7 @@ class _ExerciseSummary {
   _ExerciseSummary({required this.exerciseName, required this.isWeight});
 }
 
+/// A small card showing a label and a large value (e.g. "Exercises" / "5").
 class _StatCard extends StatelessWidget {
   final String label;
   final String value;

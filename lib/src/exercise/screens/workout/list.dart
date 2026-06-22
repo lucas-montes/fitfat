@@ -261,7 +261,7 @@ class _TodayCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (activeWorkout != null) ...[
+            if (activeWorkout != null && activeWorkout!.isActive) ...[
               // ── Active workout resume card ──
               Row(
                 children: [
@@ -455,7 +455,7 @@ class _HistoryItem extends StatelessWidget {
         leading: const Icon(Icons.check_circle_outline),
         title: Text(workout.name),
         subtitle: Text('$dateStr · $durationStr'),
-        onTap: () => context.go('/workout-history/${workout.id}'),
+        onTap: () => context.push('/workout-history/${workout.id}'),
       ),
     );
   }

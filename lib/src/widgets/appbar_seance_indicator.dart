@@ -55,7 +55,7 @@ class _SeanceFloatingPillState extends ConsumerState<SeanceFloatingPill> {
   Widget build(BuildContext context) {
     final workoutAsync = ref.watch(activeWorkoutProvider);
     final workout = workoutAsync.asData?.value;
-    if (workout == null) return const SizedBox.shrink();
+    if (workout == null || !workout.isActive) return const SizedBox.shrink();
 
     return Material(
       elevation: 6,

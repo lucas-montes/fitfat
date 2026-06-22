@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 
@@ -7,10 +8,15 @@ import '../../../adapters/drift/workout_repository.dart';
 import '../../../models/workout.dart';
 import '../../providers/exercises.dart';
 
-/// Screen that shows the detail of a completed workout from history.
+/// Read-only detail view of a completed workout from the history list.
 ///
-/// Displays the workout date, duration, and a list of exercises with their
-/// individual sets (read-only).
+/// Shows the workout date, duration, and a per-exercise breakdown of all
+/// sets with their completion status. There is no edit/add functionality —
+/// this is a historical record only.
+///
+/// Navigated to via `/workout-history/:id`. An explicit back button is
+/// provided in the AppBar because GoRouter's `context.go()` (used in the
+/// history list) does not add automatic navigation controls.
 class WorkoutHistoryDetailScreen extends ConsumerStatefulWidget {
   final String workoutId;
 
@@ -35,6 +41,7 @@ class _WorkoutHistoryDetailScreenState
     _load();
   }
 
+  /// Fetch the workout and all its sets from the DB by ID.
   Future<void> _load() async {
     try {
       final repo = ref.read(workoutRepositoryProvider);
@@ -64,7 +71,15 @@ class _WorkoutHistoryDetailScreenState
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(_workout?.name ?? l10n.workout)),
+      appBar: AppBar(
+        // Explicit back button — required because context.go() from the
+        // history list does not provide automatic navigation controls.
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(_workout?.name ?? l10n.workout),
+      ),
       body: _buildBody(l10n),
     );
   }
@@ -80,6 +95,7 @@ class _WorkoutHistoryDetailScreenState
       return Center(child: const Text('Workout not found'));
     }
 
+    // Format the date from completedAt (preferred) or startedAt
     final dateStr = DateFormat(
       'EEEE, MMM d, y',
     ).format(_workout!.completedAt ?? _workout!.startedAt!);
@@ -122,6 +138,12 @@ class _WorkoutHistoryDetailScreenState
     );
   }
 
+  /// Group sets by exercise, building a header+rows section per exercise.
+  ///
+  /// Weight and cardio sets are interleaved: weight groups appear first
+  /// (in the order they appear in _weightSets), then cardio groups.
+  /// Within each group, sets are shown in the order they appear in the DB
+  /// (which is the insertion order with no explicit sorting for history).
   List<Widget> _buildExerciseGroups(AppLocalizations l10n) {
     final exercises = ref.read(exerciseListProvider);
     final groups = <String, List<Widget>>{};
@@ -166,6 +188,7 @@ class _WorkoutHistoryDetailScreenState
     ];
   }
 
+  /// Format a Duration as mm:ss or hh:mm:ss.
   String _formatDuration(Duration d) {
     final h = d.inHours;
     final m = d.inMinutes.remainder(60);
@@ -181,6 +204,7 @@ class _WorkoutHistoryDetailScreenState
 // Sub-widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Exercise header showing icon, name, and set count (e.g. "5 sets").
 class _ExerciseHeader extends StatelessWidget {
   final IconData icon;
   final String name;
@@ -220,6 +244,7 @@ class _ExerciseHeader extends StatelessWidget {
   }
 }
 
+/// A single weight set row showing "reps × weight kg" with completion icon.
 class _WeightSetRow extends StatelessWidget {
   final WeightSet set;
 
@@ -259,6 +284,7 @@ class _WeightSetRow extends StatelessWidget {
   }
 }
 
+/// A single cardio set row showing "X min" with completion icon.
 class _CardioSetRow extends StatelessWidget {
   final CardioSet set;
 
