@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../adapters/drift/workout_repository.dart';
+import '../../adapters/interfaces/workout_repository.dart';
 import '../../models/workout.dart';
 
 final workoutHistoryProvider =
@@ -11,7 +12,7 @@ final workoutHistoryProvider =
 /// Manages completed workouts for history views.
 /// State: `AsyncValue<List<Workout>>`
 class WorkoutHistoryNotifier extends Notifier<AsyncValue<List<Workout>>> {
-  DriftWorkoutRepository? _repo;
+  WorkoutRepository? _repo;
 
   @override
   AsyncValue<List<Workout>> build() {

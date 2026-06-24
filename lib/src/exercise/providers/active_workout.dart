@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../adapters/drift/workout_repository.dart';
+import '../../adapters/interfaces/workout_repository.dart';
 import '../../models/workout.dart';
+import '../services/providers.dart';
+import '../services/workout_lifecycle_service.dart';
 import '../../services/workout_foreground_service.dart';
 import 'workout_history.dart';
 
@@ -13,7 +16,7 @@ import 'workout_history.dart';
 /// The `NotifierProvider` pattern is used so that screens can both read
 /// (`ref.watch`) and mutate (`ref.read(...notifier)`) the active workout.
 ///
-/// All mutations persist to SQLite immediately via `DriftWorkoutRepository`.
+/// All mutations persist to SQLite immediately via the `WorkoutRepository`.
 /// No SharedPreferences or in-memory caching — DB is the single source of truth.
 final activeWorkoutProvider =
     NotifierProvider<ActiveWorkoutNotifier, AsyncValue<Workout?>>(
@@ -23,7 +26,8 @@ final activeWorkoutProvider =
 /// Manages the currently active workout's lifecycle.
 ///
 /// Responsibility boundaries:
-/// - DB operations → delegates to `DriftWorkoutRepository`
+/// - Lifecycle DB operations → delegates to `WorkoutLifecycleService`
+/// - Set mutation DB operations → delegates to `WorkoutRepository`
 /// - UI state → exposes `AsyncValue<Workout?>` for Riverpod watchers
 /// - Foreground notification → `WorkoutForegroundService`
 ///
@@ -37,13 +41,19 @@ final activeWorkoutProvider =
 class ActiveWorkoutNotifier extends Notifier<AsyncValue<Workout?>> {
   /// Lazily-initialized repository reference.
   /// Set once in `build()`, safe to use with `!` after that.
-  DriftWorkoutRepository? _repo;
+  WorkoutRepository? _repo;
+
+  /// Lazily-initialized lifecycle service.
+  /// Set once in `build()`, safe to use with `!` after that.
+  WorkoutLifecycleService? _lifecycleService;
 
   @override
   AsyncValue<Workout?> build() {
     // Riverpod calls build() once when the provider is first created.
-    // We grab the repository reference and fire a resume() to hydrate state.
+    // We grab the repository and lifecycle service references and fire a
+    // resume() to hydrate state.
     _repo = ref.read(workoutRepositoryProvider);
+    _lifecycleService = ref.read(workoutLifecycleServiceProvider);
     resume();
     return const AsyncValue.loading();
   }
@@ -55,7 +65,7 @@ class ActiveWorkoutNotifier extends Notifier<AsyncValue<Workout?>> {
   /// keeps running even if the app is backgrounded.
   Future<void> resume() async {
     try {
-      final active = await _repo!.getActive();
+      final active = await _lifecycleService!.resume();
       state = AsyncValue.data(active);
       if (active != null) {
         // Start a persistent notification showing elapsed workout time.
@@ -77,15 +87,7 @@ class ActiveWorkoutNotifier extends Notifier<AsyncValue<Workout?>> {
   /// Free-form workouts have `scheduledDate = null` and are started
   /// the moment the user taps "Start" — no pre-planning needed.
   Future<void> startFreeform({String? name}) async {
-    final workout = Workout(
-      id: _generateId(),
-      name: name ?? 'Workout',
-      scheduledDate: null,
-      startedAt: DateTime.now(),
-      completedAt: null,
-      source: WorkoutSource.manual,
-    );
-    await _repo!.save(workout);
+    final workout = await _lifecycleService!.startFreeform(name: name);
     state = AsyncValue.data(workout);
     unawaited(
       WorkoutForegroundService.instance.start(
@@ -100,8 +102,7 @@ class ActiveWorkoutNotifier extends Notifier<AsyncValue<Workout?>> {
   /// Scheduled workouts exist in the DB with `startedAt = null`.
   /// This sets `startedAt = now` so the workout becomes "active".
   Future<void> startScheduled(String workoutId) async {
-    await _repo!.start(workoutId);
-    final (workout, _, _) = await _repo!.getById(workoutId);
+    final workout = await _lifecycleService!.startScheduled(workoutId);
     state = AsyncValue.data(workout);
     unawaited(
       WorkoutForegroundService.instance.start(
@@ -227,7 +228,7 @@ class ActiveWorkoutNotifier extends Notifier<AsyncValue<Workout?>> {
     final current = state.asData?.value;
     if (current == null) return;
 
-    await _repo!.complete(current.id);
+    await _lifecycleService!.complete(current.id);
 
     // Update in-memory state so watchers see the workout as no longer active.
     // We must NOT set state = null here — that would trigger a competing
@@ -251,7 +252,7 @@ class ActiveWorkoutNotifier extends Notifier<AsyncValue<Workout?>> {
     final current = state.asData?.value;
     if (current == null) return;
 
-    await _repo!.delete(current.id);
+    await _lifecycleService!.cancel(current.id);
     state = const AsyncValue.data(null);
     unawaited(WorkoutForegroundService.instance.stop());
   }

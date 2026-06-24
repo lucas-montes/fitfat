@@ -6,6 +6,8 @@ import 'package:fitfat/l10n/app_localizations.dart';
 import '../../../adapters/drift/workout_repository.dart';
 import '../../../models/workout.dart';
 import '../../providers/exercises.dart';
+import 'widgets/exercise_summary.dart';
+import 'widgets/stat_card.dart';
 
 /// Screen shown after completing a workout.
 ///
@@ -68,16 +70,16 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
   /// Aggregate set data per-exercise: total sets, completed sets, volume.
   ///
   /// Volume for weight sets = reps × weight. Volume for cardio = duration.
-  List<_ExerciseSummary> _buildExerciseSummaries() {
+  List<ExerciseSummary> _buildExerciseSummaries() {
     final exercises = ref.read(exerciseListProvider);
-    final Map<String, _ExerciseSummary> groups = {};
+    final Map<String, ExerciseSummary> groups = {};
 
     for (final set in _weightSets) {
       final summary = groups.putIfAbsent(set.exerciseId, () {
         final exercise = exercises
             .where((e) => e.id == set.exerciseId)
             .firstOrNull;
-        return _ExerciseSummary(
+        return ExerciseSummary(
           exerciseName: exercise?.name ?? set.exerciseId,
           isWeight: true,
         );
@@ -92,7 +94,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         final exercise = exercises
             .where((e) => e.id == set.exerciseId)
             .firstOrNull;
-        return _ExerciseSummary(
+        return ExerciseSummary(
           exerciseName: exercise?.name ?? set.exerciseId,
           isWeight: false,
         );
@@ -159,21 +161,21 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         Row(
           children: [
             Expanded(
-              child: _StatCard(
+              child: StatCard(
                 label: l10n.exercises,
                 value: '${summaries.length}',
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _StatCard(
+              child: StatCard(
                 label: l10n.setsLower,
                 value: '${summaries.fold<int>(0, (s, e) => s + e.totalSets)}',
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _StatCard(
+              child: StatCard(
                 label: l10n.volume,
                 value: '${totalVolume.toStringAsFixed(0)} kg',
               ),
@@ -240,48 +242,3 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
-/// Aggregated data for one exercise in the summary.
-class _ExerciseSummary {
-  final String exerciseName;
-  final bool isWeight;
-  int totalSets = 0;
-  int completedSets = 0;
-  double volume = 0;
-
-  _ExerciseSummary({required this.exerciseName, required this.isWeight});
-}
-
-/// A small card showing a label and a large value (e.g. "Exercises" / "5").
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _StatCard({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

@@ -7,10 +7,11 @@ import 'package:fitfat/l10n/app_localizations.dart';
 
 import '../../providers/active_workout.dart';
 import '../../providers/exercises.dart';
-import '../../../adapters/drift/workout_repository.dart';
+import '../../services/providers.dart';
 import '../../../models/workout.dart';
 import 'add_exercise_sheet.dart';
 import 'exercise_detail_screen.dart';
+import 'widgets/exercise_group_info.dart';
 
 /// Full-screen active workout with elapsed timer, exercise list grouped from
 /// sets, an Add Exercise button, and Complete/Cancel actions.
@@ -78,9 +79,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       _setsError = null;
     });
     try {
-      final repo = ref.read(workoutRepositoryProvider);
-      final weight = await repo.getWeightSets(workoutId);
-      final cardio = await repo.getCardioSets(workoutId);
+      final service = ref.read(setManagementServiceProvider);
+      final (weight, cardio) = await service.loadSets(workoutId);
       if (mounted) {
         setState(() {
           _weightSets = weight;
@@ -104,7 +104,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   /// Only exercises that appear in `exerciseListProvider` are included
   /// (exercises deleted from the library won't show, but their orphan sets
   /// remain in the DB for data integrity).
-  List<_ExerciseGroupInfo> _buildExerciseGroups() {
+  List<ExerciseGroupInfo> _buildExerciseGroups() {
     final exercises = ref.read(exerciseListProvider);
     final Map<String, int> totalCount = {};
     final Map<String, int> completedCount = {};
@@ -124,12 +124,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       }
     }
 
-    final groups = <_ExerciseGroupInfo>[];
+    final groups = <ExerciseGroupInfo>[];
     for (final entry in totalCount.entries) {
       final exercise = exercises.where((e) => e.id == entry.key).firstOrNull;
       if (exercise != null) {
         groups.add(
-          _ExerciseGroupInfo(
+          ExerciseGroupInfo(
             exercise: exercise,
             totalSets: entry.value,
             completedSets: completedCount[entry.key] ?? 0,
@@ -311,7 +311,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   /// Build a localized label like "3 sets · done" or "1/3 sets".
-  String _setCountLabel(AppLocalizations l10n, _ExerciseGroupInfo group) {
+  String _setCountLabel(AppLocalizations l10n, ExerciseGroupInfo group) {
     if (group.completedSets == group.totalSets) {
       return '${l10n.setsCount(group.totalSets)} · ${l10n.done}';
     }
@@ -395,20 +395,4 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     }
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
-}
-
-/// Describes one exercise's group of sets in the active workout overview.
-///
-/// Used by `_buildExerciseGroups()` to render exercise cards showing the
-/// exercise name, icon, and completion progress (e.g. "3/5 sets").
-class _ExerciseGroupInfo {
-  final ExerciseDefinition exercise;
-  final int totalSets;
-  final int completedSets;
-
-  const _ExerciseGroupInfo({
-    required this.exercise,
-    required this.totalSets,
-    required this.completedSets,
-  });
 }

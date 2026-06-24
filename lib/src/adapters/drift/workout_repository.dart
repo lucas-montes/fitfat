@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../database/app_database.dart';
 import '../../database/providers.dart';
+import '../interfaces/workout_repository.dart';
 import '../../models/workout.dart' as domain;
 
-final workoutRepositoryProvider = Provider<DriftWorkoutRepository>((ref) {
+final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
   return DriftWorkoutRepository(ref.read(databaseProvider));
 });
 
-class DriftWorkoutRepository {
+class DriftWorkoutRepository implements WorkoutRepository {
   DriftWorkoutRepository(this._db);
 
   final AppDatabase _db;
@@ -19,6 +20,7 @@ class DriftWorkoutRepository {
   // ---------------------------------------------------------------------------
 
   /// Insert or update a workout and its sets.
+  @override
   Future<void> save(
     domain.Workout workout, {
     List<domain.WeightSet>? weightSets,
@@ -50,6 +52,7 @@ class DriftWorkoutRepository {
   }
 
   /// Load a workout with all its sets by ID.
+  @override
   Future<(domain.Workout, List<domain.WeightSet>, List<domain.CardioSet>)>
   getById(String id) async {
     final row = await (_db.select(
@@ -61,6 +64,7 @@ class DriftWorkoutRepository {
   }
 
   /// List workouts with scheduledDate >= today and startedAt IS NULL.
+  @override
   Future<List<domain.Workout>> listUpcoming() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -77,6 +81,7 @@ class DriftWorkoutRepository {
   }
 
   /// List workouts whose scheduledDate matches the given date.
+  @override
   Future<List<domain.Workout>> listByDate(DateTime date) async {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
@@ -87,6 +92,7 @@ class DriftWorkoutRepository {
   }
 
   /// List completed workouts, optionally filtered by date range.
+  @override
   Future<List<domain.Workout>> listCompleted({
     DateTime? from,
     DateTime? to,
@@ -105,6 +111,7 @@ class DriftWorkoutRepository {
   }
 
   /// Get the currently active workout (startedAt NOT NULL, completedAt IS NULL).
+  @override
   Future<domain.Workout?> getActive() async {
     final rows =
         await (_db.select(_db.workouts)
@@ -116,6 +123,7 @@ class DriftWorkoutRepository {
   }
 
   /// Set startedAt = now.
+  @override
   Future<void> start(String id) async {
     await _db.customUpdate(
       'UPDATE workouts SET started_at = ? WHERE id = ?',
@@ -124,6 +132,7 @@ class DriftWorkoutRepository {
   }
 
   /// Set completedAt = now.
+  @override
   Future<void> complete(String id) async {
     await _db.customUpdate(
       'UPDATE workouts SET completed_at = ? WHERE id = ?',
@@ -132,6 +141,7 @@ class DriftWorkoutRepository {
   }
 
   /// Delete a workout and cascade delete all its sets.
+  @override
   Future<void> delete(String id) async {
     await _db.transaction(() async {
       await (_db.delete(
@@ -148,10 +158,12 @@ class DriftWorkoutRepository {
   // Weight set operations
   // ---------------------------------------------------------------------------
 
+  @override
   Future<void> addWeightSet(domain.WeightSet set) async {
     await _db.into(_db.weightSets).insert(_weightSetToRow(set));
   }
 
+  @override
   Future<void> updateWeightSet(domain.WeightSet set) async {
     // Note: .replace() auto-matches on primary key — do NOT combine with .where()
     await (_db.update(_db.weightSets)).replace(_weightSetToRow(set));
@@ -161,16 +173,19 @@ class DriftWorkoutRepository {
   // Cardio set operations
   // ---------------------------------------------------------------------------
 
+  @override
   Future<void> addCardioSet(domain.CardioSet set) async {
     await _db.into(_db.cardioSets).insert(_cardioSetToRow(set));
   }
 
+  @override
   Future<void> updateCardioSet(domain.CardioSet set) async {
     // Note: .replace() auto-matches on primary key — do NOT combine with .where()
     await (_db.update(_db.cardioSets)).replace(_cardioSetToRow(set));
   }
 
   /// Remove a set by ID (works for both weight_sets and cardio_sets).
+  @override
   Future<void> removeSet(String setId) async {
     await _db.transaction(() async {
       await (_db.delete(_db.weightSets)..where((t) => t.id.equals(setId))).go();
@@ -183,6 +198,7 @@ class DriftWorkoutRepository {
   // ---------------------------------------------------------------------------
 
   /// Get all weight sets for a workout, ordered by sort_order.
+  @override
   Future<List<domain.WeightSet>> getWeightSets(String workoutId) async {
     final rows =
         await (_db.select(_db.weightSets)
@@ -193,6 +209,7 @@ class DriftWorkoutRepository {
   }
 
   /// Get all cardio sets for a workout, ordered by sort_order.
+  @override
   Future<List<domain.CardioSet>> getCardioSets(String workoutId) async {
     final rows =
         await (_db.select(_db.cardioSets)
@@ -204,6 +221,7 @@ class DriftWorkoutRepository {
 
   /// Get weight sets for multiple workouts, keyed by workoutId.
   /// Uses a single `IN` query for efficiency.
+  @override
   Future<Map<String, List<domain.WeightSet>>> getWeightSetsByWorkoutIds(
     List<String> workoutIds,
   ) async {
@@ -221,6 +239,7 @@ class DriftWorkoutRepository {
   }
 
   /// Get completed weight sets for a specific exercise across all workouts.
+  @override
   Future<List<domain.WeightSet>> getCompletedWeightSetsByExercise(
     String exerciseId,
   ) async {
