@@ -252,7 +252,7 @@ class _HeatmapGrid extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -277,29 +277,29 @@ class _HeatmapGrid extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: weekdayLabels
                   .map(
                     (label) => SizedBox(
-                      width: 36,
+                      width: 24,
                       child: Center(
-                        child: Text(label, style: theme.textTheme.bodySmall),
+                        child: Text(label, style: theme.textTheme.labelSmall),
                       ),
                     ),
                   )
                   .toList(),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: days.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 7,
-                mainAxisSpacing: 6,
-                crossAxisSpacing: 6,
+                mainAxisSpacing: 2,
+                crossAxisSpacing: 2,
                 childAspectRatio: 1,
               ),
               itemBuilder: (context, index) {
@@ -309,7 +309,7 @@ class _HeatmapGrid extends StatelessWidget {
                       '${DateFormat('EEE, MMM d').format(day.date)} · '
                       '${day.duration.inMinutes} min',
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(4),
                     onTap: day.hasWorkout
                         ? () => _showDayDetail(context, day)
                         : null,
@@ -321,18 +321,9 @@ class _HeatmapGrid extends StatelessWidget {
                           maxVolume,
                           day.hasWorkout,
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: theme.colorScheme.outlineVariant,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        DateFormat('d').format(day.date),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: day.hasWorkout
-                              ? theme.colorScheme.onPrimary
-                              : theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -340,7 +331,7 @@ class _HeatmapGrid extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

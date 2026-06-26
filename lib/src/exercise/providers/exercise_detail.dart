@@ -126,8 +126,9 @@ class ExerciseDetailNotifier extends Notifier<ExerciseDetailState> {
 
   @override
   ExerciseDetailState build() {
+    state = const ExerciseDetailState(status: ExerciseDetailStatus.loading);
     _loadSets(initialExerciseId: initialExerciseId);
-    return const ExerciseDetailState(status: ExerciseDetailStatus.loading);
+    return state;
   }
 
   // ---------------------------------------------------------------------------
@@ -190,13 +191,12 @@ class ExerciseDetailNotifier extends Notifier<ExerciseDetailState> {
   // Navigation
   // ---------------------------------------------------------------------------
 
-  /// Switch to the exercise at [index] and reset the rest timer.
+  /// Switch to the exercise at [index].
+  /// The rest timer is preserved across exercise switches so the user can
+  /// see elapsed rest time while navigating between exercises. The timer
+  /// resets naturally when a new set is completed (handled in [_loadSets]).
   void selectExercise(int index) {
-    state = state.copyWith(
-      currentIndex: index,
-      isResting: false,
-      clearRestStartedAt: true,
-    );
+    state = state.copyWith(currentIndex: index);
   }
 
   // ---------------------------------------------------------------------------

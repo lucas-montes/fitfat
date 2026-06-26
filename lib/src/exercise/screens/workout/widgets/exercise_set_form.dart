@@ -8,12 +8,12 @@ import '../../../../models/workout.dart';
 /// Shows:
 /// - Reps + Weight fields for weightlifting exercises
 /// - Duration field for cardio exercises
-/// - Optional notes field (always shown)
+/// - Optional notes field (collapsible — hidden by default, expand on tap)
 /// - "Add Set" button at the bottom
 ///
 /// The form is empty by default — no pre-populated values. The user can
 /// tap an existing set tile to copy its values into these fields.
-class ExerciseSetForm extends StatelessWidget {
+class ExerciseSetForm extends StatefulWidget {
   final ExerciseDefinition exercise;
   final TextEditingController repsController;
   final TextEditingController weightController;
@@ -32,9 +32,18 @@ class ExerciseSetForm extends StatelessWidget {
   });
 
   @override
+  State<ExerciseSetForm> createState() => _ExerciseSetFormState();
+}
+
+class _ExerciseSetFormState extends State<ExerciseSetForm> {
+  bool _notesExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final isWeight = exercise.type == ExerciseType.weightlifting;
+    final isWeight = widget.exercise.type == ExerciseType.weightlifting;
     final l10n = AppLocalizations.of(context)!;
+    final notes = widget.notesController.text;
+    final hasNotes = notes.isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -50,7 +59,7 @@ class ExerciseSetForm extends StatelessWidget {
                 children: [
                   Expanded(
                     child: TextField(
-                      controller: repsController,
+                      controller: widget.repsController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Reps',
@@ -62,7 +71,7 @@ class ExerciseSetForm extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
-                      controller: weightController,
+                      controller: widget.weightController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Weight (kg)',
@@ -75,7 +84,7 @@ class ExerciseSetForm extends StatelessWidget {
               ),
             ] else ...[
               TextField(
-                controller: durationController,
+                controller: widget.durationController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'Duration (min)',
@@ -85,20 +94,53 @@ class ExerciseSetForm extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 8),
-            TextField(
-              controller: notesController,
-              maxLines: 1,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optional)',
-                border: OutlineInputBorder(),
-                isDense: true,
+
+            // ── Collapsible notes field ──
+            if (_notesExpanded) ...[
+              TextField(
+                controller: widget.notesController,
+                maxLines: 1,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (_) => setState(() {}),
               ),
-            ),
+            ] else
+              InkWell(
+                onTap: () => setState(() => _notesExpanded = true),
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        hasNotes ? Icons.notes : Icons.note_add,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        hasNotes
+                            ? 'Notes: ${notes.length > 20 ? '${notes.substring(0, 20)}…' : notes}'
+                            : 'Add notes',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
+
+            // ── Add Set button ──
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: onAddSet,
+                onPressed: widget.onAddSet,
                 child: Text(l10n.addSet),
               ),
             ),

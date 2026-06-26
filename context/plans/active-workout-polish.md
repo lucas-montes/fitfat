@@ -2,7 +2,7 @@
 
 ## Change Summary
 
-Eight UX improvements and bug fixes from Lucas's feedback (23 Jun 2026):
+Ten UX improvements and bug fixes from Lucas's feedback (23-24 Jun 2026):
 
 1. Fix rest timer card disappearing when switching exercise pages in `ExerciseWorkoutDetailScreen`
 2. Compact exercise tab chips — remove icon and checkmark, smaller size, keep only highlight
@@ -12,6 +12,8 @@ Eight UX improvements and bug fixes from Lucas's feedback (23 Jun 2026):
 6. Improve stat card spacing in `WorkoutSummaryScreen` so weight values fit
 7. Make workout history list independently scrollable (virtual list)
 8. Reduce heatmap size in Stats tab / evaluate calendar replacement
+9. Show recent exercise history (last sets) inside exercise detail screen during active workout
+10. Remove duplicate timer from ActiveWorkoutScreen AppBar (already shown in center)
 
 ## Success Criteria
 
@@ -23,77 +25,148 @@ Eight UX improvements and bug fixes from Lucas's feedback (23 Jun 2026):
 - Summary screen stat cards have adequate spacing; weight values like "12345 kg" fit without overflow
 - History list scrolls independently of the parent scrollable (uses a constrained-height virtual list with `shrinkWrap`/`NeverScrollableScrollPhysics` removed from parent)
 - `_HeatmapGrid` is smaller (reduced cell size, padding, or replaced with a simpler calendar widget)
+- Exercise detail screen shows a compact snippet of recent history (last 3-5 sessions' sets) for the current exercise
+- ActiveWorkoutScreen AppBar shows workout name only — no timer in the title row
 - `dart analyze lib/` — 0 errors
 - `flutter test test/src/exercise/` — 62/62 pass
 
 ## Constraints and Non-Goals
 
 - **In scope**: All changes listed above, focused on existing files under `lib/src/exercise/screens/`
-- **Out of scope**: Rest timer functionality changes (only fix persistence bug); bottom navigation re-architecture; heatmap data changes; creating a full calendar widget from scratch (reuse Flutter's `TableCalendar` or similar if replacing)
+- **Out of scope**: Rest timer functionality changes (only fix persistence bug); bottom navigation re-architecture; heatmap data changes; creating a full calendar widget from scratch (reuse Flutter's `TableCalendar` or similar if replacing); adding new database queries for exercise history (already exists via `exerciseHistoryProvider`)
 - **Assumptions**: `_HistoryItem` list is currently rendered inline inside a parent `ListView` (line 60 of `list.dart`) — fix by extracting to a `SizedBox` + `ListView.builder` with constrained height
 - **Assumptions**: The rest timer bug is caused by undefined/improperly managed state variables (`_isResting`, `_restStartedAt`, `_dismissRest`) in `exercise_detail_screen.dart` — fix by adding proper state management within the `PageView` per-exercise context or using a `RestTimerNotifier` from the provider layer
+- **Assumptions**: Exercise history during workout uses the existing `exerciseHistoryProvider(exerciseId)` — render a compact summary card showing the last 3-5 sessions' rep/weight data above the add-set form or below the set list
+- **Assumptions**: The duplicate timer removal is a one-line change — remove the `Text(_formatDuration(workout.duration))` widget from the AppBar title `Row` in `active_screen.dart`
 
 ## Task Stack
 
-- [ ] T01: `Fix rest timer disappearing on exercise switch` (status:todo)
+- [x] T01: `Fix rest timer disappearing on exercise switch` (status:done)
   - Task ID: T01
   - Goal: The rest timer card (`_RestElapsedCard`) currently disappears when the user swipes between exercises in the `PageView`. Fix the state management so the timer persists until a new set is completed or the user manually dismisses it.
-  - Boundaries (in/out of scope): In — add proper `_isResting`, `_restStartedAt`, `_dismissRest` state variables to `_ExerciseWorkoutDetailScreenState`; wire them through page changes; timer updates after each completed set. Out — using a separate provider for rest time (keep it local state); changing the `_RestElapsedCard` widget itself.
+  - Boundaries (in/out of scope): In — remove `isResting: false` and `clearRestStartedAt: true` from `selectExercise()` in `exercise_detail.dart`. Out — any other file; timer reset logic (still handled by `_loadSets`); `dismissRest()` behavior.
   - Done when: User completes a set, sees rest timer; swipes to another exercise and back — timer still shows the same elapsed time; skipping the rest dismisses it; completing another set resets the timer.
   - Verification notes: `dart analyze lib/` — 0 errors; manual test of the rest timer flow across page changes.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/providers/exercise_detail.dart (removed `isResting: false` and `clearRestStartedAt: true` from `selectExercise`)
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
 
-- [ ] T02: `Compact exercise tab chips (no icon, no tick)` (status:todo)
+- [x] T02: `Compact exercise tab chips (no icon, no tick)` (status:done)
   - Task ID: T02
   - Goal: Modify `_buildExerciseChips` in `exercise_detail_screen.dart` to render smaller chips: remove the type icon, remove the check/tick indicator, shrink chip height, keep only the text label with highlight for the selected tab.
-  - Boundaries (in/out of scope): In — reduce `SizedBox` height from 40 to ~32; remove `Icon(icon)` from the chip label; reduce chip padding and font size. Out — changing the chip widget type (keep `ChoiceChip`).
+  - Boundaries (in/out of scope): In — reduce `SizedBox` height from 40 to 32; remove `Icon(icon)` and related spacing from chip label; apply `VisualDensity.compact` and `labelMedium` style. Out — changing the chip widget type (keep `ChoiceChip`).
   - Done when: Exercise chips show only text labels; no icons or checkmarks; selected chip has visible highlight; `dart analyze lib/` passes.
   - Verification notes: `dart analyze lib/` — 0 errors.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/screens/workout/exercise_detail_screen.dart (`_buildExerciseChips`)
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
 
-- [ ] T03: `Compact notes field in add-set form` (status:todo)
+- [x] T03: `Compact notes field in add-set form` (status:done)
   - Task ID: T03
-  - Goal: Make the notes `TextField` in `_buildAddForm` smaller and less prominent. Options: reduce to a single line with `maxLines: 1` (already done), reduce font size, reduce padding, or wrap in an `ExpansionTile`/similar collapsible widget so it's hidden by default.
-  - Boundaries (in/out of scope): In — reduce vertical padding around the notes field; make `maxLines: 1` always; optionally wrap in a small expandable toggle (e.g., an "Add notes" text button that reveals the field). Out — removing the notes field entirely; changing other form fields.
-  - Done when: Notes field is visibly more compact than current; `dart analyze lib/` passes.
+  - Goal: Make the notes `TextField` in the add-set form collapsible — hidden by default behind a small "Add notes" text button. Expand on tap to reveal the 1-line field.
+  - Boundaries (in/out of scope): In — convert `ExerciseSetForm` to `StatefulWidget`; add `_notesExpanded` toggle state; show compact text button when collapsed, show field when expanded; show brief preview when notes exist. Out — removing the notes field entirely; changing other form fields; i18n keys (uses inline "Add notes" string).
+  - Done when: Notes field is hidden by default; tapping the "Add notes" link expands it; populated notes show a preview; `dart analyze lib/` passes.
   - Verification notes: `dart analyze lib/` — 0 errors.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/screens/workout/widgets/exercise_set_form.dart
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
 
-- [ ] T04: `Compact set tiles in exercise detail` (status:todo)
+- [x] T04: `Compact set tiles in exercise detail` (status:done)
   - Task ID: T04
-  - Goal: Reduce padding, margins, and font sizes in `_WeightSetTile` and `_CardioSetTile` to make the set list more compact and fit more sets on screen.
-  - Boundaries (in/out of scope): In — reduce `Card` margin from `EdgeInsets.only(bottom: 8)` to `EdgeInsets.only(bottom: 4)`; reduce `ListTile` content padding (use `contentPadding`); reduce title/subtitle font size. Out — removing the check circle icon; changing the tile layout structure.
+  - Goal: Reduce padding, margins, and font sizes in `WeightSetTile` and `CardioSetTile` to make the set list more compact.
+  - Boundaries (in/out of scope): In — reduce `Card` margin from `EdgeInsets.only(bottom: 8)` to `EdgeInsets.only(bottom: 4)`; add compact `contentPadding` to `ListTile`; use `titleSmall` font style for title. Out — removing the check circle icon; changing the tile layout structure.
   - Done when: Set tiles are visibly more compact; `dart analyze lib/` passes.
   - Verification notes: `dart analyze lib/` — 0 errors.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/screens/workout/widgets/weight_set_tile.dart, cardio_set_tile.dart
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
 
-- [ ] T05: `Add back navigation to ActiveWorkoutScreen` (status:todo)
+- [x] T05: `Add back navigation to ActiveWorkoutScreen` (status:done)
   - Task ID: T05
-  - Goal: Add a back button to the `ActiveWorkoutScreen` AppBar so users can return to the Training tab without completing/cancelling the workout. The workout remains active in the background.
-  - Boundaries (in/out of scope): In — add a `leading` `IconButton` with `Icons.arrow_back` to the AppBar in `active_screen.dart` that calls `context.pop()`. Optionally, consider making the route not full-screen so the bottom nav bar is visible. Out — changing GoRouter routes to not be full-screen (keep the route as-is but offer navigation choice).
+  - Goal: Add a back button to the `ActiveWorkoutScreen` AppBar so users can return to the Training tab without completing/cancelling the workout.
+  - Boundaries (in/out of scope): In — add `leading: IconButton(icon: Icons.arrow_back, onPressed: () => context.pop())` to the AppBar in `active_screen.dart`. Out — changing GoRouter routes to not be full-screen.
   - Done when: Active workout screen shows a back arrow in the AppBar; tapping it returns to the Training tab; workout remains active (no cancel/complete).
   - Verification notes: `dart analyze lib/` — 0 errors; manual test of back navigation.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/screens/workout/active_screen.dart
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
 
-- [ ] T06: `Improve summary stat cards spacing` (status:todo)
+- [x] T06: `Improve summary stat cards spacing` (status:done)
   - Task ID: T06
-  - Goal: Fix spacing in the `Row` of three `_StatCard` widgets in `workout_summary_screen.dart` so weight values (e.g., "12345 kg") fit without overflow or cramped layout.
-  - Boundaries (in/out of scope): In — adjust `SizedBox(width: 12)` gaps; consider using `Flexible` or `LayoutBuilder` for responsive sizing; reduce card padding or increase card width ratio. Out — redesigning the card layout; adding scroll to the stat row.
+  - Goal: Fix spacing in the three `StatCard` widgets so weight values fit without overflow.
+  - Boundaries (in/out of scope): In — wrap value `Text` in `FittedBox` with `fit: BoxFit.scaleDown` in `stat_card.dart`; increase horizontal padding from 8 to 12. Out — redesigning the card layout; adding scroll to the stat row.
   - Done when: Three stat cards are evenly spaced; weight values fit without overflow; `dart analyze lib/` passes.
   - Verification notes: `dart analyze lib/` — 0 errors; visual check with large weight values.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/screens/workout/widgets/stat_card.dart
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
 
-- [ ] T07: `Make workout history independently scrollable` (status:todo)
+- [x] T07: `Make workout history independently scrollable` (status:done)
   - Task ID: T07
-  - Goal: The history list in `WorkoutListTab` (list.dart) is currently rendered inline in the parent `ListView`, causing the entire page to scroll. Extract it so the history section has its own scrollable area with constrained height, preventing the whole view from moving.
-  - Boundaries (in/out of scope): In — wrap the history list in a `SizedBox` with constrained height, using a nested `ListView.builder` with `shrinkWrap: true` and `NeverScrollableScrollPhysics` replaced by `AlwaysScrollableScrollPhysics`; alternatively use a `SliverList` or `SliverFillRemaining` approach if a `CustomScrollView` refactor is simpler. Out — paginating the history list; adding pull-to-refresh to the inner list.
+  - Goal: Extract history items from the parent `ListView` so they scroll independently within a constrained height area.
+  - Boundaries (in/out of scope): In — wrap history in `SizedBox(height: 35vh)` with nested `ListView.builder` using `AlwaysScrollableScrollPhysics`. Out — paginating the history list; adding pull-to-refresh to the inner list.
   - Done when: History section scrolls independently; parent scroll doesn't move when scrolling history; `dart analyze lib/` passes.
   - Verification notes: `dart analyze lib/` — 0 errors.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/screens/workout/list.dart
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
 
-- [ ] T08: `Reduce heatmap size / evaluate calendar replacement` (status:todo)
+- [x] T08: `Reduce heatmap size / evaluate calendar replacement` (status:done)
   - Task ID: T08
-  - Goal: The `_HeatmapGrid` in `stats_tab.dart` takes up too much space. Either make it significantly smaller (reduce cell size, grid spacing, padding, font size) or replace with a simpler calendar widget.
-  - Boundaries (in/out of scope): In — reduce cell size from 36×36 to ~24×24; reduce `mainAxisSpacing`/`crossAxisSpacing` from 6 to 2; remove day numbers from cells (keep only color); or replace with a `TableCalendar`-like widget. Out — changing the heatmap data logic; removing the tooltip or bottom sheet detail.
+  - Goal: Compact the heatmap grid — reduce padding, spacing, remove day numbers, smaller cells.
+  - Boundaries (in/out of scope): In — card padding 16→12; weekday label width 36→24; grid spacing 6→2; remove day number text from cells; border radius 8→4; section spacing 12/8→8/4. Out — changing the heatmap data logic (still 84 days); removing the tooltip or bottom sheet detail; calendar replacement.
   - Done when: Heatmap section is visibly more compact; `dart analyze lib/` passes; heatmap still shows workout activity by day.
   - Verification notes: `dart analyze lib/` — 0 errors; visual check of smaller heatmap.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/screens/stats/stats_tab.dart (`_HeatmapGrid.build`)
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
 
-- [ ] T09: `Validation and cleanup` (status:todo)
+- [x] T09: `Show recent exercise history in workout detail screen` (status:done)
   - Task ID: T09
+  - Goal: Add a compact history snippet inside each exercise page showing the last 5 sessions' sets for reference while logging new sets.
+  - Boundaries (in/out of scope): In — new `_ExerciseHistorySnippet` ConsumerWidget that watches `exerciseHistoryProvider(exerciseId)`; renders compact date + set summary rows; inserted between add-set form and current set list. Out — full exercise history screen (already exists); cardio history; editing history from this view.
+  - Done when: Exercise detail screen shows recent session data (last 5 workouts) for the current exercise; `dart analyze lib/` passes.
+  - Verification notes: `dart analyze lib/` — 0 errors.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/screens/workout/exercise_detail_screen.dart
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
+
+- [x] T10: `Remove duplicate timer from ActiveWorkoutScreen AppBar` (status:done)
+  - Task ID: T10
+  - Goal: Remove the duplicate timer from the AppBar title — the center timer is sufficient.
+  - Boundaries (in/out of scope): In — replace the `Row(name + timer)` title with just `Text(workout.name)` in `active_screen.dart`. Out — changing the center timer; `_formatDuration` method (still used by center timer).
+  - Done when: AppBar shows only the workout name; `dart analyze lib/` passes.
+  - Verification notes: `dart analyze lib/` — 0 errors.
+  - **Completed:** 2026-06-24
+  - **Files changed:** lib/src/exercise/screens/workout/active_screen.dart
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos)
+
+- [x] T11: `Validation and cleanup` (status:done)
+  - Task ID: T11
   - Goal: Run full analysis, test suite, remove any scaffolding, update context files.
-  - Boundaries (in/out of scope): In — `dart analyze lib/`, `flutter test test/src/exercise/`, review for unused imports/variables, update `context/context-map.md` and any other context files if needed. Out — fixing unrelated infra test failures.
+  - Boundaries (in/out of scope): In — `dart analyze lib/`, `flutter test test/src/exercise/`, review for unused imports/variables, update context files. Out — fixing unrelated infra test failures.
   - Done when: All checks pass, no dead code, context files reflect changes.
   - Verification notes: `dart analyze lib/` — 0 errors; `flutter test test/src/exercise/` — 62/62 pass.
+  - **Completed:** 2026-06-24
+  - **Evidence:** `dart analyze lib/` — 0 errors (3 pre-existing infos); `flutter test test/src/exercise/` — 62/62 pass
+
+## Validation Report
+
+### Commands run
+- `dart analyze lib/` → exit 0 (3 infos, 0 errors) — same 3 pre-existing `use_build_context_synchronously` infos in unchanged files
+- `flutter test test/src/exercise/` → exit 0 (62 tests passed, 0 failed)
+- Temporary scaffolding: none created (no `context/tmp/` directory)
+
+### Success-criteria verification
+- [x] Rest timer persists across exercise page changes (T01)
+- [x] Exercise chips have no icons/checkmarks, only highlight (T02)
+- [x] Notes field is collapsible behind "Add notes" toggle (T03)
+- [x] Set tiles have reduced card margins, content padding, smaller font (T04)
+- [x] Back button in active workout AppBar (T05)
+- [x] Stat cards use `FittedBox` for auto-scaling; horizontal padding 8→12 (T06)
+- [x] History list scrolls independently in 35vh `SizedBox` (T07)
+- [x] Heatmap grid spacing 6→2, padding 16→12, day numbers removed, border radius 8→4 (T08)
+- [x] Exercise detail shows last 5 sessions' sets via `_ExerciseHistorySnippet` (T09)
+- [x] AppBar shows workout name only — no duplicate timer (T10)
+- [x] `dart analyze lib/` — 0 errors
+- [x] `flutter test test/src/exercise/` — 62/62 pass

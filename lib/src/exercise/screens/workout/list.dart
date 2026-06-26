@@ -152,24 +152,27 @@ class WorkoutListTab extends ConsumerWidget {
             ),
           ),
 
-        // ── History ──
+        // ── History (independently scrollable) ──
         const SizedBox(height: 24),
         Text(l10n.history, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        if (history.isNotEmpty)
-          ...history.map((w) => HistoryItem(workout: w))
-        else
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Text(
-                l10n.noHistory,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.35,
+          child: history.isNotEmpty
+              ? ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: history.length,
+                  itemBuilder: (_, i) => HistoryItem(workout: history[i]),
+                )
+              : Center(
+                  child: Text(
+                    l10n.noHistory,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
+        ),
       ],
     );
   }

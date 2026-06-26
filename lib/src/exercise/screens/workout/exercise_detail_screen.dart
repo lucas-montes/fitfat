@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 
 import '../../providers/active_workout.dart';
+import '../../providers/exercise_history.dart';
 import '../../providers/exercises.dart';
 import '../../providers/exercise_detail.dart';
 import '../../../models/workout.dart';
@@ -416,35 +417,29 @@ class _ExerciseWorkoutDetailScreenState
   // Widget building
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// Build a horizontal row of `ChoiceChip` tabs — one per exercise.
+  /// Build a horizontal row of compact `ChoiceChip` tabs — one per exercise.
+  /// No icons or checkmarks; only the text label with highlight for selection.
   /// Tapping a chip scrolls the PageView to the matching page.
   Widget _buildExerciseChips(ExerciseDetailState state) {
     final exercises = ref.read(exerciseListProvider);
 
     return SizedBox(
-      height: 40,
+      height: 32,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: state.exerciseIds.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
           final exId = state.exerciseIds[index];
           final ex = exercises.where((e) => e.id == exId).firstOrNull;
-          final icon = ex?.type == ExerciseType.cardio
-              ? Icons.directions_run
-              : Icons.fitness_center;
 
-          return ChoiceChip(
+          return FilterChip(
             selected: index == state.currentIndex,
-            label: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 16),
-                const SizedBox(width: 4),
-                Text(ex?.name ?? exId),
-              ],
-            ),
+            showCheckmark: false,
+            label: Text(ex?.name ?? exId),
+            labelStyle: Theme.of(context).textTheme.labelMedium,
+            visualDensity: VisualDensity.compact,
             onSelected: (_) {
               _pageController.animateToPage(
                 index,
@@ -538,6 +533,10 @@ class _ExerciseWorkoutDetailScreenState
             ),
           ),
         ],
+
+        // Recent exercise history (last sessions' sets for reference)
+        const SizedBox(height: 8),
+        _ExerciseHistorySnippet(exerciseId: exerciseId),
       ],
     );
   }
@@ -549,12 +548,17 @@ class _ExerciseWorkoutDetailScreenState
     final currentExercise = _findExercise(state.currentExerciseId);
 
     // Sync PageController to the correct page after data finishes loading.
+    // Defer to a post-frame callback so the PageView is guaranteed to be
+    // built and attached to the controller before we access it.
     ref.listen(exerciseDetailProvider(_providerKey), (prev, next) {
       if (prev?.status != ExerciseDetailStatus.data &&
           next.status == ExerciseDetailStatus.data) {
-        if (next.currentIndex != (_pageController.page?.round() ?? 0)) {
-          _pageController.jumpToPage(next.currentIndex);
-        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients &&
+              next.currentIndex != (_pageController.page?.round() ?? 0)) {
+            _pageController.jumpToPage(next.currentIndex);
+          }
+        });
       }
     });
 
@@ -600,6 +604,171 @@ class _ExerciseWorkoutDetailScreenState
           ],
         );
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Exercise history snippet — collapsible mini-tiles
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Compact collapsible list of recent sessions for an exercise.
+///
+/// Each session shows the date and total volume as a header row with an
+/// expand/collapse arrow. When expanded, individual sets render as compact
+/// mini-tiles with weight, reps, and completion status.
+class _ExerciseHistorySnippet extends ConsumerWidget {
+  final String exerciseId;
+
+  const _ExerciseHistorySnippet({required this.exerciseId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(exerciseHistoryProvider(exerciseId));
+
+    return historyAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (data) {
+        if (data.sessions.isEmpty) return const SizedBox.shrink();
+        return _CollapsibleSessionList(
+          sessions: data.sessions.take(5).toList(),
+        );
+      },
+    );
+  }
+}
+
+/// Stateful list of collapsible session tiles, one per past workout.
+class _CollapsibleSessionList extends StatefulWidget {
+  final List<ExerciseHistorySession> sessions;
+
+  const _CollapsibleSessionList({required this.sessions});
+
+  @override
+  State<_CollapsibleSessionList> createState() =>
+      _CollapsibleSessionListState();
+}
+
+class _CollapsibleSessionListState extends State<_CollapsibleSessionList> {
+  final Set<int> _expanded = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Recent',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            for (int i = 0; i < widget.sessions.length; i++) ...[
+              _buildSessionHeader(i, theme),
+              if (_expanded.contains(i)) ...[
+                const SizedBox(height: 4),
+                ...widget.sessions[i].sets.map(
+                  (s) => _buildMiniSetTile(s, theme),
+                ),
+              ],
+              if (i < widget.sessions.length - 1) const SizedBox(height: 2),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSessionHeader(int index, ThemeData theme) {
+    final session = widget.sessions[index];
+    final isExpanded = _expanded.contains(index);
+    final totalVolume = session.sets.fold<double>(
+      0,
+      (sum, s) => sum + s.totalWeight,
+    );
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(4),
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expanded.remove(index);
+          } else {
+            _expanded.add(index);
+          }
+        });
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(
+              isExpanded ? Icons.expand_less : Icons.expand_more,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              _formatDate(session.date),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '${totalVolume.toStringAsFixed(1)} kg',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniSetTile(WeightSet set, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, top: 2, bottom: 2),
+      child: Row(
+        children: [
+          Icon(
+            set.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 14,
+            color: set.isCompleted
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '${set.effectiveWeightKg} kg × ${set.effectiveReps} reps',
+            style: theme.textTheme.bodySmall,
+          ),
+          if (set.isCompleted) ...[
+            const Spacer(),
+            Text(
+              'done',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final day = days[date.weekday - 1];
+    return '$day ${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
   }
 }
 

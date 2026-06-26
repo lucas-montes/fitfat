@@ -159,23 +159,16 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
         title: activeAsync.when(
           loading: () => Text(l10n.activeWorkout),
           error: (e, _) => Text(l10n.activeWorkout),
           data: (workout) {
             if (workout == null) return Text(l10n.activeWorkout);
-            // Show workout name + live elapsed timer side by side
-            return Row(
-              children: [
-                Expanded(child: Text(workout.name)),
-                Text(
-                  _formatDuration(workout.duration),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            );
+            return Text(workout.name);
           },
         ),
       ),

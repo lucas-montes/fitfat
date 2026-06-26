@@ -50,10 +50,14 @@ class WeightSetTile extends StatelessWidget {
     final completed = set.isCompleted;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 4),
       child: Opacity(
         opacity: completed ? 0.6 : 1.0,
         child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 0,
+          ),
           leading: InkWell(
             onTap: onToggleComplete,
             borderRadius: BorderRadius.circular(20),
@@ -62,7 +66,10 @@ class WeightSetTile extends StatelessWidget {
               color: completed ? Colors.green : null,
             ),
           ),
-          title: Text('${set.effectiveReps} × ${set.effectiveWeightKg} kg'),
+          title: Text(
+            '${set.effectiveReps} × ${set.effectiveWeightKg} kg',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           subtitle: setSubtitle(
             completedTime: completed ? set.completedAt : null,
             notes: set.notes,
