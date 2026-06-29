@@ -80,7 +80,8 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
             .where((e) => e.id == set.exerciseId)
             .firstOrNull;
         return ExerciseSummary(
-          exerciseName: exercise?.name ?? set.exerciseId,
+          exerciseName:
+              exercise?.localizedName ?? exercise?.name ?? set.exerciseId,
           isWeight: true,
         );
       });
@@ -95,7 +96,8 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
             .where((e) => e.id == set.exerciseId)
             .firstOrNull;
         return ExerciseSummary(
-          exerciseName: exercise?.name ?? set.exerciseId,
+          exerciseName:
+              exercise?.localizedName ?? exercise?.name ?? set.exerciseId,
           isWeight: false,
         );
       });
@@ -158,29 +160,32 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
         const SizedBox(height: 24),
 
         // ── Stats cards (exercises, sets, volume) ──
-        Row(
-          children: [
-            Expanded(
-              child: StatCard(
-                label: l10n.exercises,
-                value: '${summaries.length}',
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: StatCard(
+                  label: l10n.exercises,
+                  value: '${summaries.length}',
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: StatCard(
-                label: l10n.setsLower,
-                value: '${summaries.fold<int>(0, (s, e) => s + e.totalSets)}',
+              const SizedBox(width: 12),
+              Expanded(
+                child: StatCard(
+                  label: l10n.setsLower,
+                  value: '${summaries.fold<int>(0, (s, e) => s + e.totalSets)}',
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: StatCard(
-                label: l10n.volume,
-                value: '${totalVolume.toStringAsFixed(0)} kg',
+              const SizedBox(width: 12),
+              Expanded(
+                child: StatCard(
+                  label: l10n.volume,
+                  value: '${totalVolume.toStringAsFixed(0)} kg',
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 24),
 

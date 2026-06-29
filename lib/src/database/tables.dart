@@ -32,6 +32,20 @@ class ExerciseBodyParts extends Table {
 }
 
 // ---------------------------------------------------------------------------
+// Exercise translations (localized name/description per locale)
+// ---------------------------------------------------------------------------
+
+class ExerciseTranslations extends Table {
+  TextColumn get exerciseId => text().references(Exercises, #id)();
+  TextColumn get locale => text()();
+  TextColumn get name => text()();
+  TextColumn get description => text()();
+
+  @override
+  Set<Column> get primaryKey => {exerciseId, locale};
+}
+
+// ---------------------------------------------------------------------------
 // Workouts (unified model — free-form or scheduled)
 // ---------------------------------------------------------------------------
 

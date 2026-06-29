@@ -20,6 +20,7 @@ final _log = logger('app_database');
   tables: [
     Exercises,
     ExerciseBodyParts,
+    ExerciseTranslations,
     Workouts,
     WeightSets,
     CardioSets,
@@ -46,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -191,6 +192,10 @@ class AppDatabase extends _$AppDatabase {
           "ALTER TABLE cardio_sets ADD COLUMN notes TEXT",
         );
       }
+      if (from < 14) {
+        // Add exercise_translations table
+        await m.createTable(exerciseTranslations);
+      }
     },
   );
 
@@ -316,6 +321,34 @@ class AppDatabase extends _$AppDatabase {
       update(cardioSets).replace(entry);
   Future<void> deleteCardioSetsByWorkout(String workoutId) =>
       (delete(cardioSets)..where((t) => t.workoutId.equals(workoutId))).go();
+
+  // ---------------------------------------------------------------------------
+  // Exercise translations
+  // ---------------------------------------------------------------------------
+
+  Future<List<ExerciseTranslation>> getTranslations(String locale) => (select(
+    exerciseTranslations,
+  )..where((t) => t.locale.equals(locale))).get();
+
+  Future<ExerciseTranslation?> getTranslation(
+    String exerciseId,
+    String locale,
+  ) =>
+      (select(exerciseTranslations)..where(
+            (t) => t.exerciseId.equals(exerciseId) & t.locale.equals(locale),
+          ))
+          .getSingleOrNull();
+
+  Future<void> insertTranslation(ExerciseTranslationsCompanion entry) =>
+      into(exerciseTranslations).insert(entry);
+
+  Future<void> upsertTranslations(
+    List<ExerciseTranslationsCompanion> entries,
+  ) => batch((b) {
+    for (final e in entries) {
+      b.insert(exerciseTranslations, e, mode: InsertMode.insertOrReplace);
+    }
+  });
 
   // ---------------------------------------------------------------------------
   // Exercise body parts

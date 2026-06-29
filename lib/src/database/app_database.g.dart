@@ -679,6 +679,329 @@ class ExerciseBodyPartsCompanion extends UpdateCompanion<ExerciseBodyPart> {
   }
 }
 
+class $ExerciseTranslationsTable extends ExerciseTranslations
+    with TableInfo<$ExerciseTranslationsTable, ExerciseTranslation> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExerciseTranslationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _exerciseIdMeta = const VerificationMeta(
+    'exerciseId',
+  );
+  @override
+  late final GeneratedColumn<String> exerciseId = GeneratedColumn<String>(
+    'exercise_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES exercises (id)',
+    ),
+  );
+  static const VerificationMeta _localeMeta = const VerificationMeta('locale');
+  @override
+  late final GeneratedColumn<String> locale = GeneratedColumn<String>(
+    'locale',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [exerciseId, locale, name, description];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'exercise_translations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExerciseTranslation> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('exercise_id')) {
+      context.handle(
+        _exerciseIdMeta,
+        exerciseId.isAcceptableOrUnknown(data['exercise_id']!, _exerciseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_exerciseIdMeta);
+    }
+    if (data.containsKey('locale')) {
+      context.handle(
+        _localeMeta,
+        locale.isAcceptableOrUnknown(data['locale']!, _localeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localeMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_descriptionMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {exerciseId, locale};
+  @override
+  ExerciseTranslation map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExerciseTranslation(
+      exerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exercise_id'],
+      )!,
+      locale: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+    );
+  }
+
+  @override
+  $ExerciseTranslationsTable createAlias(String alias) {
+    return $ExerciseTranslationsTable(attachedDatabase, alias);
+  }
+}
+
+class ExerciseTranslation extends DataClass
+    implements Insertable<ExerciseTranslation> {
+  final String exerciseId;
+  final String locale;
+  final String name;
+  final String description;
+  const ExerciseTranslation({
+    required this.exerciseId,
+    required this.locale,
+    required this.name,
+    required this.description,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['exercise_id'] = Variable<String>(exerciseId);
+    map['locale'] = Variable<String>(locale);
+    map['name'] = Variable<String>(name);
+    map['description'] = Variable<String>(description);
+    return map;
+  }
+
+  ExerciseTranslationsCompanion toCompanion(bool nullToAbsent) {
+    return ExerciseTranslationsCompanion(
+      exerciseId: Value(exerciseId),
+      locale: Value(locale),
+      name: Value(name),
+      description: Value(description),
+    );
+  }
+
+  factory ExerciseTranslation.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExerciseTranslation(
+      exerciseId: serializer.fromJson<String>(json['exerciseId']),
+      locale: serializer.fromJson<String>(json['locale']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String>(json['description']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'exerciseId': serializer.toJson<String>(exerciseId),
+      'locale': serializer.toJson<String>(locale),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String>(description),
+    };
+  }
+
+  ExerciseTranslation copyWith({
+    String? exerciseId,
+    String? locale,
+    String? name,
+    String? description,
+  }) => ExerciseTranslation(
+    exerciseId: exerciseId ?? this.exerciseId,
+    locale: locale ?? this.locale,
+    name: name ?? this.name,
+    description: description ?? this.description,
+  );
+  ExerciseTranslation copyWithCompanion(ExerciseTranslationsCompanion data) {
+    return ExerciseTranslation(
+      exerciseId: data.exerciseId.present
+          ? data.exerciseId.value
+          : this.exerciseId,
+      locale: data.locale.present ? data.locale.value : this.locale,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExerciseTranslation(')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('locale: $locale, ')
+          ..write('name: $name, ')
+          ..write('description: $description')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(exerciseId, locale, name, description);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExerciseTranslation &&
+          other.exerciseId == this.exerciseId &&
+          other.locale == this.locale &&
+          other.name == this.name &&
+          other.description == this.description);
+}
+
+class ExerciseTranslationsCompanion
+    extends UpdateCompanion<ExerciseTranslation> {
+  final Value<String> exerciseId;
+  final Value<String> locale;
+  final Value<String> name;
+  final Value<String> description;
+  final Value<int> rowid;
+  const ExerciseTranslationsCompanion({
+    this.exerciseId = const Value.absent(),
+    this.locale = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExerciseTranslationsCompanion.insert({
+    required String exerciseId,
+    required String locale,
+    required String name,
+    required String description,
+    this.rowid = const Value.absent(),
+  }) : exerciseId = Value(exerciseId),
+       locale = Value(locale),
+       name = Value(name),
+       description = Value(description);
+  static Insertable<ExerciseTranslation> custom({
+    Expression<String>? exerciseId,
+    Expression<String>? locale,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (exerciseId != null) 'exercise_id': exerciseId,
+      if (locale != null) 'locale': locale,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExerciseTranslationsCompanion copyWith({
+    Value<String>? exerciseId,
+    Value<String>? locale,
+    Value<String>? name,
+    Value<String>? description,
+    Value<int>? rowid,
+  }) {
+    return ExerciseTranslationsCompanion(
+      exerciseId: exerciseId ?? this.exerciseId,
+      locale: locale ?? this.locale,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (exerciseId.present) {
+      map['exercise_id'] = Variable<String>(exerciseId.value);
+    }
+    if (locale.present) {
+      map['locale'] = Variable<String>(locale.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExerciseTranslationsCompanion(')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('locale: $locale, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $WorkoutsTable extends Workouts
     with TableInfo<$WorkoutsTable, WorkoutRow> {
   @override
@@ -5447,6 +5770,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ExercisesTable exercises = $ExercisesTable(this);
   late final $ExerciseBodyPartsTable exerciseBodyParts =
       $ExerciseBodyPartsTable(this);
+  late final $ExerciseTranslationsTable exerciseTranslations =
+      $ExerciseTranslationsTable(this);
   late final $WorkoutsTable workouts = $WorkoutsTable(this);
   late final $WeightSetsTable weightSets = $WeightSetsTable(this);
   late final $CardioSetsTable cardioSets = $CardioSetsTable(this);
@@ -5471,6 +5796,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     exercises,
     exerciseBodyParts,
+    exerciseTranslations,
     workouts,
     weightSets,
     cardioSets,
@@ -5533,6 +5859,34 @@ final class $$ExercisesTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _exerciseBodyPartsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ExerciseTranslationsTable,
+    List<ExerciseTranslation>
+  >
+  _exerciseTranslationsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.exerciseTranslations,
+        aliasName: $_aliasNameGenerator(
+          db.exercises.id,
+          db.exerciseTranslations.exerciseId,
+        ),
+      );
+
+  $$ExerciseTranslationsTableProcessedTableManager
+  get exerciseTranslationsRefs {
+    final manager = $$ExerciseTranslationsTableTableManager(
+      $_db,
+      $_db.exerciseTranslations,
+    ).filter((f) => f.exerciseId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _exerciseTranslationsRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -5636,6 +5990,31 @@ class $$ExercisesTableFilterComposer
           }) => $$ExerciseBodyPartsTableFilterComposer(
             $db: $db,
             $table: $db.exerciseBodyParts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> exerciseTranslationsRefs(
+    Expression<bool> Function($$ExerciseTranslationsTableFilterComposer f) f,
+  ) {
+    final $$ExerciseTranslationsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.exerciseTranslations,
+      getReferencedColumn: (t) => t.exerciseId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExerciseTranslationsTableFilterComposer(
+            $db: $db,
+            $table: $db.exerciseTranslations,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5799,6 +6178,32 @@ class $$ExercisesTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> exerciseTranslationsRefs<T extends Object>(
+    Expression<T> Function($$ExerciseTranslationsTableAnnotationComposer a) f,
+  ) {
+    final $$ExerciseTranslationsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.exerciseTranslations,
+          getReferencedColumn: (t) => t.exerciseId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ExerciseTranslationsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.exerciseTranslations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> weightSetsRefs<T extends Object>(
     Expression<T> Function($$WeightSetsTableAnnotationComposer a) f,
   ) {
@@ -5865,6 +6270,7 @@ class $$ExercisesTableTableManager
           Exercise,
           PrefetchHooks Function({
             bool exerciseBodyPartsRefs,
+            bool exerciseTranslationsRefs,
             bool weightSetsRefs,
             bool cardioSetsRefs,
           })
@@ -5931,6 +6337,7 @@ class $$ExercisesTableTableManager
           prefetchHooksCallback:
               ({
                 exerciseBodyPartsRefs = false,
+                exerciseTranslationsRefs = false,
                 weightSetsRefs = false,
                 cardioSetsRefs = false,
               }) {
@@ -5938,6 +6345,7 @@ class $$ExercisesTableTableManager
                   db: db,
                   explicitlyWatchedTables: [
                     if (exerciseBodyPartsRefs) db.exerciseBodyParts,
+                    if (exerciseTranslationsRefs) db.exerciseTranslations,
                     if (weightSetsRefs) db.weightSets,
                     if (cardioSetsRefs) db.cardioSets,
                   ],
@@ -5959,6 +6367,27 @@ class $$ExercisesTableTableManager
                                 table,
                                 p0,
                               ).exerciseBodyPartsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.exerciseId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (exerciseTranslationsRefs)
+                        await $_getPrefetchedData<
+                          Exercise,
+                          $ExercisesTable,
+                          ExerciseTranslation
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ExercisesTableReferences
+                              ._exerciseTranslationsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ExercisesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).exerciseTranslationsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.exerciseId == item.id,
@@ -6029,6 +6458,7 @@ typedef $$ExercisesTableProcessedTableManager =
       Exercise,
       PrefetchHooks Function({
         bool exerciseBodyPartsRefs,
+        bool exerciseTranslationsRefs,
         bool weightSetsRefs,
         bool cardioSetsRefs,
       })
@@ -6309,6 +6739,330 @@ typedef $$ExerciseBodyPartsTableProcessedTableManager =
       $$ExerciseBodyPartsTableUpdateCompanionBuilder,
       (ExerciseBodyPart, $$ExerciseBodyPartsTableReferences),
       ExerciseBodyPart,
+      PrefetchHooks Function({bool exerciseId})
+    >;
+typedef $$ExerciseTranslationsTableCreateCompanionBuilder =
+    ExerciseTranslationsCompanion Function({
+      required String exerciseId,
+      required String locale,
+      required String name,
+      required String description,
+      Value<int> rowid,
+    });
+typedef $$ExerciseTranslationsTableUpdateCompanionBuilder =
+    ExerciseTranslationsCompanion Function({
+      Value<String> exerciseId,
+      Value<String> locale,
+      Value<String> name,
+      Value<String> description,
+      Value<int> rowid,
+    });
+
+final class $$ExerciseTranslationsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ExerciseTranslationsTable,
+          ExerciseTranslation
+        > {
+  $$ExerciseTranslationsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ExercisesTable _exerciseIdTable(_$AppDatabase db) =>
+      db.exercises.createAlias(
+        $_aliasNameGenerator(
+          db.exerciseTranslations.exerciseId,
+          db.exercises.id,
+        ),
+      );
+
+  $$ExercisesTableProcessedTableManager get exerciseId {
+    final $_column = $_itemColumn<String>('exercise_id')!;
+
+    final manager = $$ExercisesTableTableManager(
+      $_db,
+      $_db.exercises,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_exerciseIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ExerciseTranslationsTableFilterComposer
+    extends Composer<_$AppDatabase, $ExerciseTranslationsTable> {
+  $$ExerciseTranslationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get locale => $composableBuilder(
+    column: $table.locale,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ExercisesTableFilterComposer get exerciseId {
+    final $$ExercisesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableFilterComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExerciseTranslationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExerciseTranslationsTable> {
+  $$ExerciseTranslationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get locale => $composableBuilder(
+    column: $table.locale,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ExercisesTableOrderingComposer get exerciseId {
+    final $$ExercisesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableOrderingComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExerciseTranslationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExerciseTranslationsTable> {
+  $$ExerciseTranslationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get locale =>
+      $composableBuilder(column: $table.locale, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  $$ExercisesTableAnnotationComposer get exerciseId {
+    final $$ExercisesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.exerciseId,
+      referencedTable: $db.exercises,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExercisesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.exercises,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExerciseTranslationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExerciseTranslationsTable,
+          ExerciseTranslation,
+          $$ExerciseTranslationsTableFilterComposer,
+          $$ExerciseTranslationsTableOrderingComposer,
+          $$ExerciseTranslationsTableAnnotationComposer,
+          $$ExerciseTranslationsTableCreateCompanionBuilder,
+          $$ExerciseTranslationsTableUpdateCompanionBuilder,
+          (ExerciseTranslation, $$ExerciseTranslationsTableReferences),
+          ExerciseTranslation,
+          PrefetchHooks Function({bool exerciseId})
+        > {
+  $$ExerciseTranslationsTableTableManager(
+    _$AppDatabase db,
+    $ExerciseTranslationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExerciseTranslationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExerciseTranslationsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ExerciseTranslationsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> exerciseId = const Value.absent(),
+                Value<String> locale = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExerciseTranslationsCompanion(
+                exerciseId: exerciseId,
+                locale: locale,
+                name: name,
+                description: description,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String exerciseId,
+                required String locale,
+                required String name,
+                required String description,
+                Value<int> rowid = const Value.absent(),
+              }) => ExerciseTranslationsCompanion.insert(
+                exerciseId: exerciseId,
+                locale: locale,
+                name: name,
+                description: description,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ExerciseTranslationsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({exerciseId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (exerciseId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.exerciseId,
+                                referencedTable:
+                                    $$ExerciseTranslationsTableReferences
+                                        ._exerciseIdTable(db),
+                                referencedColumn:
+                                    $$ExerciseTranslationsTableReferences
+                                        ._exerciseIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ExerciseTranslationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExerciseTranslationsTable,
+      ExerciseTranslation,
+      $$ExerciseTranslationsTableFilterComposer,
+      $$ExerciseTranslationsTableOrderingComposer,
+      $$ExerciseTranslationsTableAnnotationComposer,
+      $$ExerciseTranslationsTableCreateCompanionBuilder,
+      $$ExerciseTranslationsTableUpdateCompanionBuilder,
+      (ExerciseTranslation, $$ExerciseTranslationsTableReferences),
+      ExerciseTranslation,
       PrefetchHooks Function({bool exerciseId})
     >;
 typedef $$WorkoutsTableCreateCompanionBuilder =
@@ -10085,6 +10839,8 @@ class $AppDatabaseManager {
       $$ExercisesTableTableManager(_db, _db.exercises);
   $$ExerciseBodyPartsTableTableManager get exerciseBodyParts =>
       $$ExerciseBodyPartsTableTableManager(_db, _db.exerciseBodyParts);
+  $$ExerciseTranslationsTableTableManager get exerciseTranslations =>
+      $$ExerciseTranslationsTableTableManager(_db, _db.exerciseTranslations);
   $$WorkoutsTableTableManager get workouts =>
       $$WorkoutsTableTableManager(_db, _db.workouts);
   $$WeightSetsTableTableManager get weightSets =>

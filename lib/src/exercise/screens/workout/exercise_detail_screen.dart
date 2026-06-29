@@ -9,8 +9,10 @@ import '../../providers/exercise_history.dart';
 import '../../providers/exercises.dart';
 import '../../providers/exercise_detail.dart';
 import '../../../models/workout.dart';
+import 'add_exercise_sheet.dart';
 import 'widgets/cardio_set_tile.dart';
-import 'widgets/exercise_set_form.dart';
+import 'widgets/free_form_exercise_form.dart';
+import 'widgets/planned_exercise_form.dart';
 import 'widgets/rest_elapsed_card.dart';
 import 'widgets/weight_set_tile.dart';
 
@@ -417,27 +419,41 @@ class _ExerciseWorkoutDetailScreenState
   // Widget building
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// Build a horizontal row of compact `ChoiceChip` tabs — one per exercise.
-  /// No icons or checkmarks; only the text label with highlight for selection.
-  /// Tapping a chip scrolls the PageView to the matching page.
+  /// Build a horizontal row of compact chips — one per exercise, plus a
+  /// trailing "+" pill to add a new exercise (free-form workouts only).
   Widget _buildExerciseChips(ExerciseDetailState state) {
     final exercises = ref.read(exerciseListProvider);
+    final isFreeform =
+        ref.read(activeWorkoutProvider).asData?.value?.isFreeform ?? true;
+    final chipCount = state.exerciseIds.length + (isFreeform ? 1 : 0);
 
     return SizedBox(
       height: 32,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: state.exerciseIds.length,
+        itemCount: chipCount,
         separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
+          // Trailing "+" icon to add a new exercise
+          if (isFreeform && index == state.exerciseIds.length) {
+            return InkWell(
+              borderRadius: BorderRadius.circular(4),
+              onTap: () => _openAddExercise(),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Icon(Icons.add, size: 16),
+              ),
+            );
+          }
+
           final exId = state.exerciseIds[index];
           final ex = exercises.where((e) => e.id == exId).firstOrNull;
 
           return FilterChip(
             selected: index == state.currentIndex,
             showCheckmark: false,
-            label: Text(ex?.name ?? exId),
+            label: Text(ex?.localizedName ?? ex?.name ?? exId),
             labelStyle: Theme.of(context).textTheme.labelMedium,
             visualDensity: VisualDensity.compact,
             onSelected: (_) {
@@ -450,6 +466,53 @@ class _ExerciseWorkoutDetailScreenState
           );
         },
       ),
+    );
+  }
+
+  /// Open the Add Exercise bottom sheet and navigate to the new exercise.
+  Future<void> _openAddExercise() async {
+    final exercise = await showModalBottomSheet<ExerciseDefinition>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const AddExerciseSheet(),
+    );
+    if (exercise != null && mounted) {
+      // Replace current screen so back goes to ActiveScreen, not to
+      // the previous exercise. The parent (ActiveScreen) refreshes on return.
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ExerciseWorkoutDetailScreen(
+            workoutId: widget.workoutId,
+            exerciseId: exercise.id,
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Pick the right add-set form variant based on workout type.
+  Widget _buildExerciseForm(ExerciseDefinition exercise) {
+    final isFreeform =
+        ref.read(activeWorkoutProvider).asData?.value?.isFreeform ?? true;
+
+    if (isFreeform) {
+      return FreeFormExerciseForm(
+        exercise: exercise,
+        repsController: _repsCtl,
+        weightController: _weightCtl,
+        durationController: _durationCtl,
+        notesController: _notesCtl,
+        onAddSet: () => _addSetFromForm(exercise),
+      );
+    }
+    return PlannedExerciseForm(
+      exercise: exercise,
+      repsController: _repsCtl,
+      weightController: _weightCtl,
+      durationController: _durationCtl,
+      notesController: _notesCtl,
+      onAddSet: () => _addSetFromForm(exercise),
     );
   }
 
@@ -483,15 +546,8 @@ class _ExerciseWorkoutDetailScreenState
           const SizedBox(height: 8),
         ],
 
-        // Inline add-set form
-        ExerciseSetForm(
-          exercise: exercise,
-          repsController: _repsCtl,
-          weightController: _weightCtl,
-          durationController: _durationCtl,
-          notesController: _notesCtl,
-          onAddSet: () => _addSetFromForm(exercise),
-        ),
+        // Inline add-set form (free-form or planned variant)
+        _buildExerciseForm(exercise),
         const SizedBox(height: 8),
 
         // Existing weight sets (most recent first, reversed in _filterForCurrentExercise)
@@ -563,7 +619,13 @@ class _ExerciseWorkoutDetailScreenState
     });
 
     return Scaffold(
-      appBar: AppBar(title: Text(currentExercise?.name ?? l10n.exercise)),
+      appBar: AppBar(
+        title: Text(
+          currentExercise?.localizedName ??
+              currentExercise?.name ??
+              l10n.exercise,
+        ),
+      ),
       body: _buildBody(state),
     );
   }
@@ -588,17 +650,21 @@ class _ExerciseWorkoutDetailScreenState
             const Divider(height: 1),
 
             Expanded(
-              child: PageView(
+              child: PageView.builder(
                 controller: _pageController,
+                itemCount: state.exerciseIds.length,
                 onPageChanged: (index) {
                   ref
                       .read(exerciseDetailProvider(_providerKey).notifier)
                       .selectExercise(index);
                 },
-                children: [
-                  for (final exId in state.exerciseIds)
-                    _buildExercisePage(exId, state),
-                ],
+                itemBuilder: (context, index) {
+                  final exId = state.exerciseIds[index];
+                  return _ExercisePage(
+                    key: ValueKey(exId),
+                    child: _buildExercisePage(exId, state),
+                  );
+                },
               ),
             ),
           ],
@@ -674,9 +740,7 @@ class _CollapsibleSessionListState extends State<_CollapsibleSessionList> {
               _buildSessionHeader(i, theme),
               if (_expanded.contains(i)) ...[
                 const SizedBox(height: 4),
-                ...widget.sessions[i].sets.map(
-                  (s) => _buildMiniSetTile(s, theme),
-                ),
+                ..._buildMiniTiles(widget.sessions[i].sets, theme),
               ],
               if (i < widget.sessions.length - 1) const SizedBox(height: 2),
             ],
@@ -734,41 +798,109 @@ class _CollapsibleSessionListState extends State<_CollapsibleSessionList> {
     );
   }
 
-  Widget _buildMiniSetTile(WeightSet set, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 24, top: 2, bottom: 2),
-      child: Row(
-        children: [
-          Icon(
-            set.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 14,
-            color: set.isCompleted
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '${set.effectiveWeightKg} kg × ${set.effectiveReps} reps',
-            style: theme.textTheme.bodySmall,
-          ),
-          if (set.isCompleted) ...[
-            const Spacer(),
-            Text(
-              'done',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.primary,
+  /// Build a list of mini-tiles for a session's sets, sorted most-recent-first
+  /// (reverse chronological order). Each tile shows completion time, rest
+  /// interval since the previous set, and the weight × reps detail.
+  List<Widget> _buildMiniTiles(List<WeightSet> sets, ThemeData theme) {
+    if (sets.isEmpty) return [];
+
+    // Sort most-recent-first by completedAt
+    final sorted = List<WeightSet>.from(sets)
+      ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
+
+    // Compute rest times from chronological order: the rest BEFORE each set
+    // is the gap after the immediately preceding set.
+    final chrono = List<WeightSet>.from(sets)
+      ..sort((a, b) => a.completedAt!.compareTo(b.completedAt!));
+    final restBefore = <String, Duration>{};
+    for (int i = 1; i < chrono.length; i++) {
+      restBefore[chrono[i].id] = chrono[i].completedAt!.difference(
+        chrono[i - 1].completedAt!,
+      );
+    }
+
+    return sorted.map((set) {
+      final time = set.completedAt;
+      final rest = restBefore[set.id];
+
+      return Padding(
+        padding: const EdgeInsets.only(left: 24, top: 2, bottom: 2),
+        child: Row(
+          children: [
+            Icon(
+              set.isCompleted
+                  ? Icons.check_circle
+                  : Icons.radio_button_unchecked,
+              size: 14,
+              color: set.isCompleted
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+            const SizedBox(width: 6),
+            // Completion time
+            if (time != null)
+              Text(
+                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            // Rest interval
+            if (rest != null) ...[
+              const SizedBox(width: 4),
+              Text(
+                '+${rest.inMinutes}:${(rest.inSeconds % 60).toString().padLeft(2, '0')}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '${set.effectiveWeightKg} kg × ${set.effectiveReps} reps',
+                style: theme.textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
-        ],
-      ),
-    );
+        ),
+      );
+    }).toList();
   }
 
   String _formatDate(DateTime date) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final day = days[date.weekday - 1];
     return '$day ${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Keep-alive page wrapper
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Wraps an exercise page with [AutomaticKeepAliveClientMixin] so pages
+/// scrolled outside the PageView's cache extent remain alive and are not
+/// disposed/rebuilt from scratch when the user swipes back.
+class _ExercisePage extends StatefulWidget {
+  final Widget child;
+
+  const _ExercisePage({super.key, required this.child});
+
+  @override
+  State<_ExercisePage> createState() => _ExercisePageState();
+}
+
+class _ExercisePageState extends State<_ExercisePage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
 

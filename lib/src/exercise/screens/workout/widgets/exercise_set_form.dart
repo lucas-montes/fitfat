@@ -3,16 +3,16 @@ import 'package:fitfat/l10n/app_localizations.dart';
 
 import '../../../../models/workout.dart';
 
-/// Inline add-set form for a given exercise.
+/// Compact inline add-set form for a given exercise.
 ///
-/// Shows:
-/// - Reps + Weight fields for weightlifting exercises
-/// - Duration field for cardio exercises
-/// - Optional notes field (collapsible — hidden by default, expand on tap)
-/// - "Add Set" button at the bottom
+/// Layout is a single horizontal row:
+///   `[Reps] [Weight] [Add Set]` for weightlifting
+///   `[Duration] [Add Set]` for cardio
 ///
-/// The form is empty by default — no pre-populated values. The user can
-/// tap an existing set tile to copy its values into these fields.
+/// Notes field is below, hidden by default — tap "Add notes" to reveal.
+///
+/// The form is empty by default. The user can tap an existing set tile to
+/// copy its values into these fields via the parent's controllers.
 class ExerciseSetForm extends StatefulWidget {
   final ExerciseDefinition exercise;
   final TextEditingController repsController;
@@ -48,23 +48,21 @@ class _ExerciseSetFormState extends State<ExerciseSetForm> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(l10n.addSet, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            if (isWeight) ...[
-              Row(
-                children: [
+            // ── Input row: fields + inline Add button ──
+            Row(
+              children: [
+                if (isWeight) ...[
                   Expanded(
                     child: TextField(
                       controller: widget.repsController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Reps',
-                        border: OutlineInputBorder(),
-                        isDense: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.reps,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
@@ -73,41 +71,52 @@ class _ExerciseSetFormState extends State<ExerciseSetForm> {
                     child: TextField(
                       controller: widget.weightController,
                       keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: l10n.weightKg,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  Expanded(
+                    child: TextField(
+                      controller: widget.durationController,
+                      keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Weight (kg)',
+                        labelText: 'Duration (min)',
                         border: OutlineInputBorder(),
-                        isDense: true,
                       ),
                     ),
                   ),
                 ],
-              ),
-            ] else ...[
-              TextField(
-                controller: widget.durationController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Duration (min)',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: widget.onAddSet,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    minimumSize: const Size(0, 48),
+                  ),
+                  child: Text(l10n.add),
                 ),
-              ),
-            ],
-            const SizedBox(height: 8),
+              ],
+            ),
+            const SizedBox(height: 4),
 
             // ── Collapsible notes field ──
-            if (_notesExpanded) ...[
-              TextField(
-                controller: widget.notesController,
-                maxLines: 1,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+            if (_notesExpanded)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: TextField(
+                  controller: widget.notesController,
+                  maxLines: 1,
+                  decoration: InputDecoration(
+                    labelText: l10n.quickLogNotes,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => setState(() {}),
                 ),
-                onChanged: (_) => setState(() {}),
-              ),
-            ] else
+              )
+            else
               InkWell(
                 onTap: () => setState(() => _notesExpanded = true),
                 borderRadius: BorderRadius.circular(4),
@@ -134,16 +143,6 @@ class _ExerciseSetFormState extends State<ExerciseSetForm> {
                   ),
                 ),
               ),
-            const SizedBox(height: 8),
-
-            // ── Add Set button ──
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: widget.onAddSet,
-                child: Text(l10n.addSet),
-              ),
-            ),
           ],
         ),
       ),

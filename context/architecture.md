@@ -28,6 +28,14 @@ Workout(scheduledDate?) ──< WeightSet / CardioSet
 - `workoutId` FK, `exerciseId` FK, `sortOrder`, `plannedDurationMinutes`, `actualDurationMinutes?`, `completedAt?`
 - Computed: `isCompleted`, `effectiveDurationMinutes`, `durationDelta`
 
+### ExerciseDefinition
+- `id`, `name`, `type`, `met`, `description?`, `imageUrl?`, `bodyParts`
+- **Translation support**: `localizedName?`, `localizedDescription?` — populated by `exerciseListProvider` from `exercise_translations` table based on device locale; fallback to `name`/`description`
+
+### ExerciseTranslation
+- `exerciseId` FK, `locale` (BCP 47), `name`, `description`
+- Composite primary key `(exerciseId, locale)`
+
 ## Schedule adherence
 
 One-table queries with no joins needed:
@@ -66,7 +74,8 @@ Free-form:
 - `weight_sets` — id, workout_id FK, exercise_id FK, sort_order, planned_*, actual_*, completed_at?
 - `cardio_sets` — id, workout_id FK, exercise_id FK, sort_order, planned_*, actual_*, completed_at?
 - `exercises` (updated) — added description, image_url; removed category
-- `exercise_body_parts` — new join table (exercise_id, body_part)
+- `exercise_body_parts` — join table (exercise_id, body_part)
+- `exercise_translations` (v14) — (exercise_id, locale, name, description) composite PK
 
 ## Status enums
 

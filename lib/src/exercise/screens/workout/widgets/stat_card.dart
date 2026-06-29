@@ -13,6 +13,7 @@ class StatCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             FittedBox(
               fit: BoxFit.scaleDown,

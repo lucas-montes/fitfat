@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,6 +28,12 @@ class ExerciseListNotifier extends Notifier<List<ExerciseDefinition>> {
       final db = ref.read(databaseProvider);
       final rows = await db.getAllExercises();
       if (rows.isEmpty) return;
+
+      // Load translations for the device locale (language part only, e.g. "fr")
+      final locale = Platform.localeName.split('_').first;
+      final translations = await db.getTranslations(locale);
+      final translationMap = {for (final t in translations) t.exerciseId: t};
+
       state = rows
           .map(
             (exercise) => ExerciseDefinition(
@@ -39,6 +46,8 @@ class ExerciseListNotifier extends Notifier<List<ExerciseDefinition>> {
               met: exercise.met,
               description: exercise.description,
               imageUrl: exercise.imageUrl,
+              localizedName: translationMap[exercise.id]?.name,
+              localizedDescription: translationMap[exercise.id]?.description,
             ),
           )
           .toList();

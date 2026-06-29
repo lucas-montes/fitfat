@@ -41,6 +41,12 @@ class ExerciseDefinition {
   final String? imageUrl;
   final List<BodyPart> bodyParts;
 
+  /// Localized name for the current app locale, if a translation exists.
+  final String? localizedName;
+
+  /// Localized description for the current app locale, if a translation exists.
+  final String? localizedDescription;
+
   const ExerciseDefinition({
     required this.id,
     required this.name,
@@ -49,6 +55,8 @@ class ExerciseDefinition {
     this.description = '',
     this.imageUrl,
     this.bodyParts = const [],
+    this.localizedName,
+    this.localizedDescription,
   });
 
   ExerciseDefinition copyWith({
@@ -59,7 +67,11 @@ class ExerciseDefinition {
     String? description,
     String? imageUrl,
     List<BodyPart>? bodyParts,
+    String? localizedName,
+    String? localizedDescription,
     bool clearImageUrl = false,
+    bool clearLocalizedName = false,
+    bool clearLocalizedDescription = false,
   }) {
     return ExerciseDefinition(
       id: id ?? this.id,
@@ -69,6 +81,48 @@ class ExerciseDefinition {
       description: description ?? this.description,
       imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
       bodyParts: bodyParts ?? this.bodyParts,
+      localizedName: clearLocalizedName
+          ? null
+          : (localizedName ?? this.localizedName),
+      localizedDescription: clearLocalizedDescription
+          ? null
+          : (localizedDescription ?? this.localizedDescription),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ExerciseTranslation
+// ---------------------------------------------------------------------------
+
+/// A localized name/description pair for an exercise in a specific locale.
+///
+/// Locale codes follow the IETF BCP 47 format (e.g. "en", "fr", "pt-BR").
+@immutable
+class ExerciseTranslation {
+  final String exerciseId;
+  final String locale;
+  final String name;
+  final String description;
+
+  const ExerciseTranslation({
+    required this.exerciseId,
+    required this.locale,
+    required this.name,
+    this.description = '',
+  });
+
+  ExerciseTranslation copyWith({
+    String? exerciseId,
+    String? locale,
+    String? name,
+    String? description,
+  }) {
+    return ExerciseTranslation(
+      exerciseId: exerciseId ?? this.exerciseId,
+      locale: locale ?? this.locale,
+      name: name ?? this.name,
+      description: description ?? this.description,
     );
   }
 }

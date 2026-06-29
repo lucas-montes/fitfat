@@ -78,4 +78,11 @@ abstract class WorkoutRepository {
   Future<List<model.WeightSet>> getCompletedWeightSetsByExercise(
     String exerciseId,
   );
+
+  // ---------------------------------------------------------------------------
+  // Exercise translations
+  // ---------------------------------------------------------------------------
+
+  /// Load all translations for [locale], keyed by exercise ID.
+  Future<Map<String, model.ExerciseTranslation>> getTranslations(String locale);
 }

@@ -137,7 +137,11 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         );
       }
     }
-    groups.sort((a, b) => a.exercise.name.compareTo(b.exercise.name));
+    groups.sort(
+      (a, b) => (a.exercise.localizedName ?? a.exercise.name).compareTo(
+        b.exercise.localizedName ?? b.exercise.name,
+      ),
+    );
     return groups;
   }
 
@@ -234,7 +238,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                             ? Icons.directions_run
                             : Icons.fitness_center,
                       ),
-                      title: Text(group.exercise.name),
+                      title: Text(
+                        group.exercise.localizedName ?? group.exercise.name,
+                      ),
                       subtitle: Text(_setCountLabel(l10n, group)),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () =>
@@ -268,15 +274,19 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               ],
 
               // Add Exercise — opens a bottom sheet to pick from the library
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _openAddExerciseSheet(workout.id),
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.addExercise),
+              // Only available in free-form workouts; planned workouts have
+              // a fixed exercise list determined at schedule time.
+              if (workout.isFreeform) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openAddExerciseSheet(workout.id),
+                    icon: const Icon(Icons.add),
+                    label: Text(l10n.addExercise),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
 
               // Complete Workout — marks the workout as done, goes to summary
               SizedBox(

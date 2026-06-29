@@ -23,7 +23,7 @@
 |-------------|---------|
 | `lib/src/models/workout.dart` | All core models: Workout, WeightSet, CardioSet, ExerciseDefinition, enums |
 | `lib/src/database/tables.dart` | Drift table definitions (13 tables) |
-| `lib/src/database/app_database.dart` | DB singleton, schema v12, migrations v1-v12, CRUD helpers |
+| `lib/src/database/app_database.dart` | DB singleton, schema v14, migrations v1-v14, CRUD helpers |
 | `lib/src/adapters/drift/workout_repository.dart` | DriftWorkoutRepository implements WorkoutRepository — CRUD for Workout, WeightSet, CardioSet |
 | `lib/src/adapters/interfaces/workout_repository.dart` | WorkoutRepository interface — abstract contract for workout data access |
 | `lib/src/adapters/drift/goals.dart` | DriftGoalRepository |

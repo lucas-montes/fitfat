@@ -31,10 +31,13 @@ class _AddExerciseSheetState extends ConsumerState<AddExerciseSheet> {
     final query = _searchController.text.trim().toLowerCase();
 
     final filtered = exercises.where((e) {
-      if (query.isNotEmpty && !e.name.toLowerCase().contains(query)) {
-        return false;
+      if (query.isEmpty) return true;
+      if (e.name.toLowerCase().contains(query)) return true;
+      if (e.localizedName != null &&
+          e.localizedName!.toLowerCase().contains(query)) {
+        return true;
       }
-      return true;
+      return false;
     }).toList();
 
     return Padding(
@@ -121,7 +124,9 @@ class _AddExerciseSheetState extends ConsumerState<AddExerciseSheet> {
                                   ? Icons.fitness_center
                                   : Icons.directions_run,
                             ),
-                            title: Text(exercise.name),
+                            title: Text(
+                              exercise.localizedName ?? exercise.name,
+                            ),
                             subtitle: Text(
                               isWeightlifting
                                   ? l10n.weightlifting

@@ -194,6 +194,26 @@ class DriftWorkoutRepository implements WorkoutRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // Exercise translations
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<Map<String, domain.ExerciseTranslation>> getTranslations(
+    String locale,
+  ) async {
+    final rows = await _db.getTranslations(locale);
+    return {
+      for (final row in rows)
+        row.exerciseId: domain.ExerciseTranslation(
+          exerciseId: row.exerciseId,
+          locale: row.locale,
+          name: row.name,
+          description: row.description,
+        ),
+    };
+  }
+
+  // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------
 
