@@ -27,14 +27,15 @@ Widget? setSubtitle({DateTime? completedTime, String? notes}) {
 // ---------------------------------------------------------------------------
 
 /// A single weight set row showing reps × weight, completion status,
-/// completion time, and notes. Supports tap-to-copy, edit, delete, and
-/// toggle-complete via the trailing popup menu.
+/// completion time, and notes. Supports tap-to-copy, edit, delete, toggle
+/// complete, and mark as failed PR attempt via the trailing popup menu.
 class WeightSetTile extends StatelessWidget {
   final WeightSet set;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onToggleComplete;
+  final VoidCallback? onToggleFailed;
 
   const WeightSetTile({
     super.key,
@@ -43,16 +44,18 @@ class WeightSetTile extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onToggleComplete,
+    this.onToggleFailed,
   });
 
   @override
   Widget build(BuildContext context) {
     final completed = set.isCompleted;
+    final failed = set.isFailed;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 4),
       child: Opacity(
-        opacity: completed ? 0.6 : 1.0,
+        opacity: completed && !failed ? 0.6 : 1.0,
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
@@ -62,13 +65,20 @@ class WeightSetTile extends StatelessWidget {
             onTap: onToggleComplete,
             borderRadius: BorderRadius.circular(20),
             child: Icon(
-              completed ? Icons.check_circle : Icons.check_circle_outline,
-              color: completed ? Colors.green : null,
+              failed
+                  ? Icons.cancel
+                  : (completed
+                        ? Icons.check_circle
+                        : Icons.check_circle_outline),
+              color: failed ? Colors.red : (completed ? Colors.green : null),
             ),
           ),
           title: Text(
             '${set.effectiveReps} × ${set.effectiveWeightKg} kg',
-            style: Theme.of(context).textTheme.titleSmall,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: failed ? Colors.red.shade700 : null,
+              decoration: failed ? TextDecoration.lineThrough : null,
+            ),
           ),
           subtitle: setSubtitle(
             completedTime: completed ? set.completedAt : null,
@@ -78,6 +88,7 @@ class WeightSetTile extends StatelessWidget {
             onSelected: (value) {
               if (value == 'edit') onEdit();
               if (value == 'toggle') onToggleComplete();
+              if (value == 'toggleFailed') onToggleFailed?.call();
               if (value == 'delete') onDelete();
             },
             itemBuilder: (_) => [
@@ -86,6 +97,12 @@ class WeightSetTile extends StatelessWidget {
                 value: 'toggle',
                 child: Text(completed ? 'Mark incomplete' : 'Mark complete'),
               ),
+              // Only show failed toggle for completed sets
+              if (completed)
+                PopupMenuItem(
+                  value: 'toggleFailed',
+                  child: Text(failed ? 'Unmark failed' : 'Mark as failed'),
+                ),
               const PopupMenuItem(value: 'delete', child: Text('Delete')),
             ],
           ),

@@ -5,7 +5,7 @@ A Flutter fitness tracking app with diet, exercise, and dashboard features.
 ## Architecture
 
 - **State management:** Riverpod (StateNotifierProvider with `AsyncValue`)
-- **Database:** Drift (SQLite), schema version 13
+- **Database:** Drift (SQLite), schema version 15
 - **Persistence:** SQLite for all permanent data, no SharedPreferences for exercise module
 - **Navigation:** GoRouter with `StatefulShellRoute` (3-tab layout) + top-level `/active-workout` route (full-screen, no bottom nav)
 

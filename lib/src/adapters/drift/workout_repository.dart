@@ -327,6 +327,7 @@ class DriftWorkoutRepository implements WorkoutRepository {
       actualWeightKg: Value(s.actualWeightKg),
       completedAt: Value(s.completedAt),
       notes: Value(s.notes),
+      isFailed: Value(s.isFailed),
     );
   }
 
@@ -343,6 +344,7 @@ class DriftWorkoutRepository implements WorkoutRepository {
       actualWeightKg: r.actualWeightKg,
       completedAt: r.completedAt,
       notes: r.notes,
+      isFailed: r.isFailed,
     );
   }
 
@@ -356,6 +358,7 @@ class DriftWorkoutRepository implements WorkoutRepository {
       actualDurationMinutes: Value(s.actualDurationMinutes),
       completedAt: Value(s.completedAt),
       notes: Value(s.notes),
+      isFailed: Value(s.isFailed),
     );
   }
 
@@ -369,6 +372,7 @@ class DriftWorkoutRepository implements WorkoutRepository {
       actualDurationMinutes: r.actualDurationMinutes,
       completedAt: r.completedAt,
       notes: r.notes,
+      isFailed: r.isFailed,
     );
   }
 }

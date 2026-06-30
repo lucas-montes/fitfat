@@ -170,6 +170,24 @@ class _ExerciseWorkoutDetailScreenState
     ref.read(exerciseDetailProvider(_providerKey).notifier).reload();
   }
 
+  /// Toggle the failed PR attempt marker on a weight set.
+  Future<void> _toggleWeightSetFailed(WeightSet set) async {
+    if (!set.isCompleted) return;
+    await ref
+        .read(activeWorkoutProvider.notifier)
+        .updateWeightSet(set.copyWith(isFailed: !set.isFailed));
+    ref.read(exerciseDetailProvider(_providerKey).notifier).reload();
+  }
+
+  /// Toggle the failed PR attempt marker on a cardio set.
+  Future<void> _toggleCardioSetFailed(CardioSet set) async {
+    if (!set.isCompleted) return;
+    await ref
+        .read(activeWorkoutProvider.notifier)
+        .updateCardioSet(set.copyWith(isFailed: !set.isFailed));
+    ref.read(exerciseDetailProvider(_providerKey).notifier).reload();
+  }
+
   /// Copy an existing weight set's values into the form (tap-to-populate).
   /// Uses effective values (actual ?? planned) so the user sees the actual
   /// performed values if they differ from the plan.
@@ -566,6 +584,7 @@ class _ExerciseWorkoutDetailScreenState
               onEdit: () => _editWeightSet(set),
               onDelete: () => _deleteSet(set.id),
               onToggleComplete: () => _toggleWeightSetCompletion(set),
+              onToggleFailed: () => _toggleWeightSetFailed(set),
             ),
           ),
         ],
@@ -586,6 +605,7 @@ class _ExerciseWorkoutDetailScreenState
               onEdit: () => _editCardioSet(set),
               onDelete: () => _deleteSet(set.id),
               onToggleComplete: () => _toggleCardioSetCompletion(set),
+              onToggleFailed: () => _toggleCardioSetFailed(set),
             ),
           ),
         ],

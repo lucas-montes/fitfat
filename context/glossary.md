@@ -10,6 +10,7 @@
 | **Scheduled workout** | A workout with a `scheduledDate`. `startedAt = null` = pending; `startedAt != null` = in progress. |
 | **Free-form workout** | A workout with `scheduledDate = null`, started immediately. |
 | **Effective values** | `actual ?? planned` — falls back to planned when actual is not yet recorded. |
+| **Failed set** | A completed set marked as a failed PR attempt (`isFailed = true`). Rendered with a red cross icon and strikethrough text. |
 
 ## Enums
 

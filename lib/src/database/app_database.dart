@@ -47,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -195,6 +195,15 @@ class AppDatabase extends _$AppDatabase {
       if (from < 14) {
         // Add exercise_translations table
         await m.createTable(exerciseTranslations);
+      }
+      if (from < 15) {
+        // Add isFailed column to weight_sets and cardio_sets for PR attempt tracking
+        await m.database.customStatement(
+          "ALTER TABLE weight_sets ADD COLUMN is_failed INTEGER NOT NULL DEFAULT 0",
+        );
+        await m.database.customStatement(
+          "ALTER TABLE cardio_sets ADD COLUMN is_failed INTEGER NOT NULL DEFAULT 0",
+        );
       }
     },
   );

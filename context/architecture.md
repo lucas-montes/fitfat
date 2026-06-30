@@ -71,11 +71,12 @@ Free-form:
 ## DB tables
 
 - `workouts` — id, name, scheduled_date?, started_at?, completed_at?, notes?, source
-- `weight_sets` — id, workout_id FK, exercise_id FK, sort_order, planned_*, actual_*, completed_at?
-- `cardio_sets` — id, workout_id FK, exercise_id FK, sort_order, planned_*, actual_*, completed_at?
+- `weight_sets` — id, workout_id FK, exercise_id FK, sort_order, planned_*, actual_*, completed_at?, is_failed (default false)
+- `cardio_sets` — id, workout_id FK, exercise_id FK, sort_order, planned_*, actual_*, completed_at?, is_failed (default false)
 - `exercises` (updated) — added description, image_url; removed category
 - `exercise_body_parts` — join table (exercise_id, body_part)
 - `exercise_translations` (v14) — (exercise_id, locale, name, description) composite PK
+- `weight_sets.is_failed` / `cardio_sets.is_failed` (v15) — PR attempt tracking marker
 
 ## Status enums
 

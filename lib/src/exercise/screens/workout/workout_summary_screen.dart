@@ -67,12 +67,16 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
     }
   }
 
-  /// Aggregate set data per-exercise: total sets, completed sets, volume.
+  /// Aggregate set data per-exercise: total sets, completed sets, volume,
+  /// total reps, and average rest time.
   ///
   /// Volume for weight sets = reps × weight. Volume for cardio = duration.
+  /// Rest time is the average gap between consecutive [completedAt] timestamps
+  /// of the same exercise (approximate when exercises are interleaved).
   List<ExerciseSummary> _buildExerciseSummaries() {
     final exercises = ref.read(exerciseListProvider);
     final Map<String, ExerciseSummary> groups = {};
+    final Map<String, List<DateTime>> completedAtMap = {};
 
     for (final set in _weightSets) {
       final summary = groups.putIfAbsent(set.exerciseId, () {
@@ -83,11 +87,26 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
           exerciseName:
               exercise?.localizedName ?? exercise?.name ?? set.exerciseId,
           isWeight: true,
+          exerciseId: set.exerciseId,
         );
       });
       summary.totalSets++;
       if (set.isCompleted) summary.completedSets++;
       summary.volume += set.effectiveReps * set.effectiveWeightKg;
+      summary.totalReps += set.effectiveReps;
+
+      // Planned-vs-actual tracking
+      summary.plannedVolume += set.plannedReps * set.plannedWeightKg;
+      if (set.isCompleted) {
+        summary.actualVolume +=
+            (set.actualReps ?? 0) * (set.actualWeightKg ?? 0.0);
+      }
+
+      if (set.completedAt != null) {
+        completedAtMap
+            .putIfAbsent(set.exerciseId, () => [])
+            .add(set.completedAt!);
+      }
     }
 
     for (final set in _cardioSets) {
@@ -99,11 +118,38 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
           exerciseName:
               exercise?.localizedName ?? exercise?.name ?? set.exerciseId,
           isWeight: false,
+          exerciseId: set.exerciseId,
         );
       });
       summary.totalSets++;
       if (set.isCompleted) summary.completedSets++;
       summary.volume += set.effectiveDurationMinutes.toDouble();
+
+      // Planned-vs-actual tracking
+      summary.plannedVolume += set.plannedDurationMinutes.toDouble();
+      if (set.isCompleted) {
+        summary.actualVolume += (set.actualDurationMinutes ?? 0).toDouble();
+      }
+
+      if (set.completedAt != null) {
+        completedAtMap
+            .putIfAbsent(set.exerciseId, () => [])
+            .add(set.completedAt!);
+      }
+    }
+
+    // Compute average rest per exercise from consecutive completedAt gaps.
+    for (final summary in groups.values) {
+      if (summary.exerciseId == null) continue;
+      final timestamps = completedAtMap[summary.exerciseId];
+      if (timestamps != null && timestamps.length >= 2) {
+        final sorted = List<DateTime>.from(timestamps)..sort();
+        final gaps = <double>[];
+        for (int i = 1; i < sorted.length; i++) {
+          gaps.add(sorted[i].difference(sorted[i - 1]).inSeconds.toDouble());
+        }
+        summary.avgRestSeconds = gaps.reduce((a, b) => a + b) / gaps.length;
+      }
     }
 
     return groups.values.toList()
@@ -201,19 +247,60 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                   s.isWeight ? Icons.fitness_center : Icons.directions_run,
                 ),
                 title: Text(s.exerciseName),
-                subtitle: Text(
-                  s.completedSets == s.totalSets
-                      ? '${l10n.setsCount(s.totalSets)} · ${l10n.done}'
-                      : '${s.completedSets}/${s.totalSets} ${l10n.setsLower}',
-                ),
-                trailing: s.volume > 0
-                    ? Text(
-                        '${s.volume.toStringAsFixed(0)} kg',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Sets line
+                    if (_workout!.isFreeform)
+                      Text(
+                        s.completedSets == s.totalSets
+                            ? '${l10n.setsCount(s.totalSets)} · ${l10n.done}'
+                            : '${s.completedSets}/${s.totalSets} ${l10n.setsLower}',
                       )
-                    : null,
+                    else
+                      Text(
+                        '${s.completedSets}/${s.totalSets} ${l10n.setsLower}',
+                      ),
+                    // Stats line (reps, avg rest)
+                    if (s.totalReps > 0 || s.avgRestSeconds != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          _formatExerciseStats(s, l10n),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                  ],
+                ),
+                // Volume trailing: show actual/planned for scheduled workouts
+                trailing: _workout!.isFreeform
+                    ? (s.volume > 0
+                          ? Text(
+                              '${s.volume.toStringAsFixed(0)} kg',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                            )
+                          : null)
+                    : (s.plannedVolume > 0
+                          ? Text(
+                              '${s.actualVolume.toStringAsFixed(0)}/${s.plannedVolume.toStringAsFixed(0)} kg',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                            )
+                          : null),
               ),
             ),
           ),
@@ -241,6 +328,18 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
       return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     }
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  /// Format the second line of stats for an exercise card.
+  String _formatExerciseStats(ExerciseSummary s, AppLocalizations l10n) {
+    final parts = <String>[];
+    if (s.totalReps > 0) {
+      parts.add('${s.totalReps} reps');
+    }
+    if (s.avgRestSeconds != null && s.avgRestSeconds! > 0) {
+      parts.add('~${s.avgRestSeconds!.toStringAsFixed(0)}s avg rest');
+    }
+    return parts.join(' · ');
   }
 }
 

@@ -1603,6 +1603,21 @@ class $WeightSetsTable extends WeightSets
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isFailedMeta = const VerificationMeta(
+    'isFailed',
+  );
+  @override
+  late final GeneratedColumn<bool> isFailed = GeneratedColumn<bool>(
+    'is_failed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_failed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1616,6 +1631,7 @@ class $WeightSetsTable extends WeightSets
     actualWeightKg,
     completedAt,
     notes,
+    isFailed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1719,6 +1735,12 @@ class $WeightSetsTable extends WeightSets
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('is_failed')) {
+      context.handle(
+        _isFailedMeta,
+        isFailed.isAcceptableOrUnknown(data['is_failed']!, _isFailedMeta),
+      );
+    }
     return context;
   }
 
@@ -1772,6 +1794,10 @@ class $WeightSetsTable extends WeightSets
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      isFailed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_failed'],
+      )!,
     );
   }
 
@@ -1793,6 +1819,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
   final double? actualWeightKg;
   final DateTime? completedAt;
   final String? notes;
+  final bool isFailed;
   const WeightSetRow({
     required this.id,
     required this.workoutId,
@@ -1805,6 +1832,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
     this.actualWeightKg,
     this.completedAt,
     this.notes,
+    required this.isFailed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1830,6 +1858,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    map['is_failed'] = Variable<bool>(isFailed);
     return map;
   }
 
@@ -1856,6 +1885,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      isFailed: Value(isFailed),
     );
   }
 
@@ -1876,6 +1906,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
       actualWeightKg: serializer.fromJson<double?>(json['actualWeightKg']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       notes: serializer.fromJson<String?>(json['notes']),
+      isFailed: serializer.fromJson<bool>(json['isFailed']),
     );
   }
   @override
@@ -1893,6 +1924,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
       'actualWeightKg': serializer.toJson<double?>(actualWeightKg),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'notes': serializer.toJson<String?>(notes),
+      'isFailed': serializer.toJson<bool>(isFailed),
     };
   }
 
@@ -1908,6 +1940,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
     Value<double?> actualWeightKg = const Value.absent(),
     Value<DateTime?> completedAt = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    bool? isFailed,
   }) => WeightSetRow(
     id: id ?? this.id,
     workoutId: workoutId ?? this.workoutId,
@@ -1924,6 +1957,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
         : this.actualWeightKg,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     notes: notes.present ? notes.value : this.notes,
+    isFailed: isFailed ?? this.isFailed,
   );
   WeightSetRow copyWithCompanion(WeightSetsCompanion data) {
     return WeightSetRow(
@@ -1952,6 +1986,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
           ? data.completedAt.value
           : this.completedAt,
       notes: data.notes.present ? data.notes.value : this.notes,
+      isFailed: data.isFailed.present ? data.isFailed.value : this.isFailed,
     );
   }
 
@@ -1968,7 +2003,8 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
           ..write('actualReps: $actualReps, ')
           ..write('actualWeightKg: $actualWeightKg, ')
           ..write('completedAt: $completedAt, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('isFailed: $isFailed')
           ..write(')'))
         .toString();
   }
@@ -1986,6 +2022,7 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
     actualWeightKg,
     completedAt,
     notes,
+    isFailed,
   );
   @override
   bool operator ==(Object other) =>
@@ -2001,7 +2038,8 @@ class WeightSetRow extends DataClass implements Insertable<WeightSetRow> {
           other.actualReps == this.actualReps &&
           other.actualWeightKg == this.actualWeightKg &&
           other.completedAt == this.completedAt &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.isFailed == this.isFailed);
 }
 
 class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
@@ -2016,6 +2054,7 @@ class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
   final Value<double?> actualWeightKg;
   final Value<DateTime?> completedAt;
   final Value<String?> notes;
+  final Value<bool> isFailed;
   final Value<int> rowid;
   const WeightSetsCompanion({
     this.id = const Value.absent(),
@@ -2029,6 +2068,7 @@ class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
     this.actualWeightKg = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isFailed = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WeightSetsCompanion.insert({
@@ -2043,6 +2083,7 @@ class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
     this.actualWeightKg = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isFailed = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        workoutId = Value(workoutId),
@@ -2062,6 +2103,7 @@ class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
     Expression<double>? actualWeightKg,
     Expression<DateTime>? completedAt,
     Expression<String>? notes,
+    Expression<bool>? isFailed,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2077,6 +2119,7 @@ class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
       if (actualWeightKg != null) 'actual_weight_kg': actualWeightKg,
       if (completedAt != null) 'completed_at': completedAt,
       if (notes != null) 'notes': notes,
+      if (isFailed != null) 'is_failed': isFailed,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2093,6 +2136,7 @@ class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
     Value<double?>? actualWeightKg,
     Value<DateTime?>? completedAt,
     Value<String?>? notes,
+    Value<bool>? isFailed,
     Value<int>? rowid,
   }) {
     return WeightSetsCompanion(
@@ -2107,6 +2151,7 @@ class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
       actualWeightKg: actualWeightKg ?? this.actualWeightKg,
       completedAt: completedAt ?? this.completedAt,
       notes: notes ?? this.notes,
+      isFailed: isFailed ?? this.isFailed,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2147,6 +2192,9 @@ class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (isFailed.present) {
+      map['is_failed'] = Variable<bool>(isFailed.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2167,6 +2215,7 @@ class WeightSetsCompanion extends UpdateCompanion<WeightSetRow> {
           ..write('actualWeightKg: $actualWeightKg, ')
           ..write('completedAt: $completedAt, ')
           ..write('notes: $notes, ')
+          ..write('isFailed: $isFailed, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2267,6 +2316,21 @@ class $CardioSetsTable extends CardioSets
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isFailedMeta = const VerificationMeta(
+    'isFailed',
+  );
+  @override
+  late final GeneratedColumn<bool> isFailed = GeneratedColumn<bool>(
+    'is_failed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_failed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2277,6 +2341,7 @@ class $CardioSetsTable extends CardioSets
     actualDurationMinutes,
     completedAt,
     notes,
+    isFailed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2354,6 +2419,12 @@ class $CardioSetsTable extends CardioSets
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('is_failed')) {
+      context.handle(
+        _isFailedMeta,
+        isFailed.isAcceptableOrUnknown(data['is_failed']!, _isFailedMeta),
+      );
+    }
     return context;
   }
 
@@ -2395,6 +2466,10 @@ class $CardioSetsTable extends CardioSets
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      isFailed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_failed'],
+      )!,
     );
   }
 
@@ -2413,6 +2488,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
   final int? actualDurationMinutes;
   final DateTime? completedAt;
   final String? notes;
+  final bool isFailed;
   const CardioSetRow({
     required this.id,
     required this.workoutId,
@@ -2422,6 +2498,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
     this.actualDurationMinutes,
     this.completedAt,
     this.notes,
+    required this.isFailed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2440,6 +2517,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    map['is_failed'] = Variable<bool>(isFailed);
     return map;
   }
 
@@ -2459,6 +2537,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      isFailed: Value(isFailed),
     );
   }
 
@@ -2480,6 +2559,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
       ),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       notes: serializer.fromJson<String?>(json['notes']),
+      isFailed: serializer.fromJson<bool>(json['isFailed']),
     );
   }
   @override
@@ -2494,6 +2574,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
       'actualDurationMinutes': serializer.toJson<int?>(actualDurationMinutes),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'notes': serializer.toJson<String?>(notes),
+      'isFailed': serializer.toJson<bool>(isFailed),
     };
   }
 
@@ -2506,6 +2587,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
     Value<int?> actualDurationMinutes = const Value.absent(),
     Value<DateTime?> completedAt = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    bool? isFailed,
   }) => CardioSetRow(
     id: id ?? this.id,
     workoutId: workoutId ?? this.workoutId,
@@ -2518,6 +2600,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
         : this.actualDurationMinutes,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     notes: notes.present ? notes.value : this.notes,
+    isFailed: isFailed ?? this.isFailed,
   );
   CardioSetRow copyWithCompanion(CardioSetsCompanion data) {
     return CardioSetRow(
@@ -2537,6 +2620,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
           ? data.completedAt.value
           : this.completedAt,
       notes: data.notes.present ? data.notes.value : this.notes,
+      isFailed: data.isFailed.present ? data.isFailed.value : this.isFailed,
     );
   }
 
@@ -2550,7 +2634,8 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
           ..write('plannedDurationMinutes: $plannedDurationMinutes, ')
           ..write('actualDurationMinutes: $actualDurationMinutes, ')
           ..write('completedAt: $completedAt, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('isFailed: $isFailed')
           ..write(')'))
         .toString();
   }
@@ -2565,6 +2650,7 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
     actualDurationMinutes,
     completedAt,
     notes,
+    isFailed,
   );
   @override
   bool operator ==(Object other) =>
@@ -2577,7 +2663,8 @@ class CardioSetRow extends DataClass implements Insertable<CardioSetRow> {
           other.plannedDurationMinutes == this.plannedDurationMinutes &&
           other.actualDurationMinutes == this.actualDurationMinutes &&
           other.completedAt == this.completedAt &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.isFailed == this.isFailed);
 }
 
 class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
@@ -2589,6 +2676,7 @@ class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
   final Value<int?> actualDurationMinutes;
   final Value<DateTime?> completedAt;
   final Value<String?> notes;
+  final Value<bool> isFailed;
   final Value<int> rowid;
   const CardioSetsCompanion({
     this.id = const Value.absent(),
@@ -2599,6 +2687,7 @@ class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
     this.actualDurationMinutes = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isFailed = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CardioSetsCompanion.insert({
@@ -2610,6 +2699,7 @@ class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
     this.actualDurationMinutes = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isFailed = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        workoutId = Value(workoutId),
@@ -2625,6 +2715,7 @@ class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
     Expression<int>? actualDurationMinutes,
     Expression<DateTime>? completedAt,
     Expression<String>? notes,
+    Expression<bool>? isFailed,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2638,6 +2729,7 @@ class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
         'actual_duration_minutes': actualDurationMinutes,
       if (completedAt != null) 'completed_at': completedAt,
       if (notes != null) 'notes': notes,
+      if (isFailed != null) 'is_failed': isFailed,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2651,6 +2743,7 @@ class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
     Value<int?>? actualDurationMinutes,
     Value<DateTime?>? completedAt,
     Value<String?>? notes,
+    Value<bool>? isFailed,
     Value<int>? rowid,
   }) {
     return CardioSetsCompanion(
@@ -2664,6 +2757,7 @@ class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
           actualDurationMinutes ?? this.actualDurationMinutes,
       completedAt: completedAt ?? this.completedAt,
       notes: notes ?? this.notes,
+      isFailed: isFailed ?? this.isFailed,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2699,6 +2793,9 @@ class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (isFailed.present) {
+      map['is_failed'] = Variable<bool>(isFailed.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2716,6 +2813,7 @@ class CardioSetsCompanion extends UpdateCompanion<CardioSetRow> {
           ..write('actualDurationMinutes: $actualDurationMinutes, ')
           ..write('completedAt: $completedAt, ')
           ..write('notes: $notes, ')
+          ..write('isFailed: $isFailed, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7516,6 +7614,7 @@ typedef $$WeightSetsTableCreateCompanionBuilder =
       Value<double?> actualWeightKg,
       Value<DateTime?> completedAt,
       Value<String?> notes,
+      Value<bool> isFailed,
       Value<int> rowid,
     });
 typedef $$WeightSetsTableUpdateCompanionBuilder =
@@ -7531,6 +7630,7 @@ typedef $$WeightSetsTableUpdateCompanionBuilder =
       Value<double?> actualWeightKg,
       Value<DateTime?> completedAt,
       Value<String?> notes,
+      Value<bool> isFailed,
       Value<int> rowid,
     });
 
@@ -7628,6 +7728,11 @@ class $$WeightSetsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isFailed => $composableBuilder(
+    column: $table.isFailed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7732,6 +7837,11 @@ class $$WeightSetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isFailed => $composableBuilder(
+    column: $table.isFailed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$WorkoutsTableOrderingComposer get workoutId {
     final $$WorkoutsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -7827,6 +7937,9 @@ class $$WeightSetsTableAnnotationComposer
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
+  GeneratedColumn<bool> get isFailed =>
+      $composableBuilder(column: $table.isFailed, builder: (column) => column);
+
   $$WorkoutsTableAnnotationComposer get workoutId {
     final $$WorkoutsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -7913,6 +8026,7 @@ class $$WeightSetsTableTableManager
                 Value<double?> actualWeightKg = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isFailed = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WeightSetsCompanion(
                 id: id,
@@ -7926,6 +8040,7 @@ class $$WeightSetsTableTableManager
                 actualWeightKg: actualWeightKg,
                 completedAt: completedAt,
                 notes: notes,
+                isFailed: isFailed,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7941,6 +8056,7 @@ class $$WeightSetsTableTableManager
                 Value<double?> actualWeightKg = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isFailed = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WeightSetsCompanion.insert(
                 id: id,
@@ -7954,6 +8070,7 @@ class $$WeightSetsTableTableManager
                 actualWeightKg: actualWeightKg,
                 completedAt: completedAt,
                 notes: notes,
+                isFailed: isFailed,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8046,6 +8163,7 @@ typedef $$CardioSetsTableCreateCompanionBuilder =
       Value<int?> actualDurationMinutes,
       Value<DateTime?> completedAt,
       Value<String?> notes,
+      Value<bool> isFailed,
       Value<int> rowid,
     });
 typedef $$CardioSetsTableUpdateCompanionBuilder =
@@ -8058,6 +8176,7 @@ typedef $$CardioSetsTableUpdateCompanionBuilder =
       Value<int?> actualDurationMinutes,
       Value<DateTime?> completedAt,
       Value<String?> notes,
+      Value<bool> isFailed,
       Value<int> rowid,
     });
 
@@ -8140,6 +8259,11 @@ class $$CardioSetsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isFailed => $composableBuilder(
+    column: $table.isFailed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8229,6 +8353,11 @@ class $$CardioSetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isFailed => $composableBuilder(
+    column: $table.isFailed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$WorkoutsTableOrderingComposer get workoutId {
     final $$WorkoutsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -8308,6 +8437,9 @@ class $$CardioSetsTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFailed =>
+      $composableBuilder(column: $table.isFailed, builder: (column) => column);
 
   $$WorkoutsTableAnnotationComposer get workoutId {
     final $$WorkoutsTableAnnotationComposer composer = $composerBuilder(
@@ -8392,6 +8524,7 @@ class $$CardioSetsTableTableManager
                 Value<int?> actualDurationMinutes = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isFailed = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CardioSetsCompanion(
                 id: id,
@@ -8402,6 +8535,7 @@ class $$CardioSetsTableTableManager
                 actualDurationMinutes: actualDurationMinutes,
                 completedAt: completedAt,
                 notes: notes,
+                isFailed: isFailed,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8414,6 +8548,7 @@ class $$CardioSetsTableTableManager
                 Value<int?> actualDurationMinutes = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> isFailed = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CardioSetsCompanion.insert(
                 id: id,
@@ -8424,6 +8559,7 @@ class $$CardioSetsTableTableManager
                 actualDurationMinutes: actualDurationMinutes,
                 completedAt: completedAt,
                 notes: notes,
+                isFailed: isFailed,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

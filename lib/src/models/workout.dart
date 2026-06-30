@@ -226,6 +226,7 @@ class WeightSet {
   final double? actualWeightKg;
   final DateTime? completedAt;
   final String? notes;
+  final bool isFailed;
 
   const WeightSet({
     required this.id,
@@ -239,6 +240,7 @@ class WeightSet {
     this.actualWeightKg,
     this.completedAt,
     this.notes,
+    this.isFailed = false,
   });
 
   bool get isCompleted => completedAt != null;
@@ -262,11 +264,13 @@ class WeightSet {
     double? actualWeightKg,
     DateTime? completedAt,
     String? notes,
+    bool? isFailed,
     bool clearPlannedRestSeconds = false,
     bool clearActualReps = false,
     bool clearActualWeightKg = false,
     bool clearCompletedAt = false,
     bool clearNotes = false,
+    bool clearIsFailed = false,
   }) {
     return WeightSet(
       id: id ?? this.id,
@@ -284,6 +288,7 @@ class WeightSet {
           : (actualWeightKg ?? this.actualWeightKg),
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
       notes: clearNotes ? null : (notes ?? this.notes),
+      isFailed: clearIsFailed ? false : (isFailed ?? this.isFailed),
     );
   }
 }
@@ -306,6 +311,7 @@ class CardioSet {
   final int? actualDurationMinutes;
   final DateTime? completedAt;
   final String? notes;
+  final bool isFailed;
 
   const CardioSet({
     required this.id,
@@ -316,6 +322,7 @@ class CardioSet {
     this.actualDurationMinutes,
     this.completedAt,
     this.notes,
+    this.isFailed = false,
   });
 
   bool get isCompleted => completedAt != null;
@@ -334,9 +341,11 @@ class CardioSet {
     int? actualDurationMinutes,
     DateTime? completedAt,
     String? notes,
+    bool? isFailed,
     bool clearActualDurationMinutes = false,
     bool clearCompletedAt = false,
     bool clearNotes = false,
+    bool clearIsFailed = false,
   }) {
     return CardioSet(
       id: id ?? this.id,
@@ -350,6 +359,7 @@ class CardioSet {
           : (actualDurationMinutes ?? this.actualDurationMinutes),
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
       notes: clearNotes ? null : (notes ?? this.notes),
+      isFailed: clearIsFailed ? false : (isFailed ?? this.isFailed),
     );
   }
 }

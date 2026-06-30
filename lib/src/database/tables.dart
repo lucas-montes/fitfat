@@ -80,6 +80,7 @@ class WeightSets extends Table {
   RealColumn get actualWeightKg => real().nullable()();
   DateTimeColumn get completedAt => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get isFailed => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -99,6 +100,7 @@ class CardioSets extends Table {
   IntColumn get actualDurationMinutes => integer().nullable()();
   DateTimeColumn get completedAt => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get isFailed => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};

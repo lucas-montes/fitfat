@@ -8,6 +8,7 @@
 | [plans/exercise-module-fixes.md](plans/exercise-module-fixes.md) | Completed fixes plan: foreground service, dashboard volume, exercise history |
 | [plans/training-tab-redesign.md](plans/training-tab-redesign.md) | Active: redesign Training tab with three-section layout and active workout screen |
 | [plans/exercise-module-refactor.md](plans/exercise-module-refactor.md) | Active: three-layer refactoring (interface, services, providers, widget extraction) |
+| [plans/workout-comparison-stats.md](plans/workout-comparison-stats.md) | Active: edit-set crash fix, per-exercise stats, planned-vs-accomplished display, PR attempt tracking (isFailed) |
 
 ## Architecture & overview
 
@@ -23,7 +24,7 @@
 |-------------|---------|
 | `lib/src/models/workout.dart` | All core models: Workout, WeightSet, CardioSet, ExerciseDefinition, enums |
 | `lib/src/database/tables.dart` | Drift table definitions (13 tables) |
-| `lib/src/database/app_database.dart` | DB singleton, schema v14, migrations v1-v14, CRUD helpers |
+| `lib/src/database/app_database.dart` | DB singleton, schema v15, migrations v1-v15, CRUD helpers |
 | `lib/src/adapters/drift/workout_repository.dart` | DriftWorkoutRepository implements WorkoutRepository — CRUD for Workout, WeightSet, CardioSet |
 | `lib/src/adapters/interfaces/workout_repository.dart` | WorkoutRepository interface — abstract contract for workout data access |
 | `lib/src/adapters/drift/goals.dart` | DriftGoalRepository |
