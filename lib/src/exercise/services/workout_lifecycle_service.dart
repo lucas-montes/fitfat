@@ -5,7 +5,6 @@ import '../../models/workout.dart' as domain;
 ///
 /// Handles:
 /// - `resume` — load the currently active workout
-/// - `startFreeform` — create and persist a new free-form workout
 /// - `startScheduled` — mark a scheduled workout as in-progress
 /// - `complete` — mark a workout as completed in the database
 /// - `cancel` — delete a workout entirely
@@ -19,22 +18,6 @@ class WorkoutLifecycleService {
 
   /// Load the currently active workout (startedAt NOT NULL, completedAt IS NULL).
   Future<domain.Workout?> resume() => _repo.getActive();
-
-  /// Create and persist a new free-form workout (no scheduled date).
-  ///
-  /// Returns the created [Workout] with [startedAt] set to now.
-  Future<domain.Workout> startFreeform({String? name}) async {
-    final workout = domain.Workout(
-      id: _generateId(),
-      name: name ?? 'Workout',
-      scheduledDate: null,
-      startedAt: DateTime.now(),
-      completedAt: null,
-      source: domain.WorkoutSource.manual,
-    );
-    await _repo.save(workout);
-    return workout;
-  }
 
   /// Start a previously scheduled workout by marking it as in-progress.
   ///
@@ -50,10 +33,4 @@ class WorkoutLifecycleService {
 
   /// Delete [workoutId] and all its sets from the database.
   Future<void> cancel(String workoutId) => _repo.delete(workoutId);
-
-  /// Generate a unique, time-based ID for workouts and sets.
-  /// Not cryptographically unique, but sufficient for local SQLite storage.
-  String _generateId() {
-    return 'w_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().microsecond}';
-  }
 }

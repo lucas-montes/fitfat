@@ -82,21 +82,6 @@ class ActiveWorkoutNotifier extends Notifier<AsyncValue<Workout?>> {
     }
   }
 
-  /// Start a free-form workout immediately with no scheduled date.
-  ///
-  /// Free-form workouts have `scheduledDate = null` and are started
-  /// the moment the user taps "Start" — no pre-planning needed.
-  Future<void> startFreeform({String? name}) async {
-    final workout = await _lifecycleService!.startFreeform(name: name);
-    state = AsyncValue.data(workout);
-    unawaited(
-      WorkoutForegroundService.instance.start(
-        workout.startedAt!,
-        workoutName: workout.name,
-      ),
-    );
-  }
-
   /// Start a previously scheduled workout by marking it as in-progress.
   ///
   /// Scheduled workouts exist in the DB with `startedAt = null`.
@@ -114,10 +99,8 @@ class ActiveWorkoutNotifier extends Notifier<AsyncValue<Workout?>> {
 
   /// Add a weight set to the active workout.
   ///
-  /// For free-form workouts, the caller passes `completedAt = DateTime.now()`
-  /// and `actualReps` / `actualWeightKg` matching the planned values, so the
-  /// set is auto-completed. For scheduled workouts, only planned values are set
-  /// and the user completes each set manually later.
+  /// Each set is added with planned values only; the user completes each set
+  /// manually later.
   ///
   /// When a set is created as completed, the foreground service is notified
   /// so the notification can show "Rest: mm:ss" since the last set.

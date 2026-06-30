@@ -10,14 +10,13 @@ import 'elapsed_timer_widget.dart';
 /// Displays one of three states:
 /// - Active workout with resume button + live elapsed timer
 /// - Today's scheduled workout with start button
-/// - Empty state with free-form start button
+/// - Empty state showing "No workout planned" text
 class TodayCard extends StatelessWidget {
   final AppLocalizations l10n;
   final Workout? activeWorkout;
   final Workout? todayWorkout;
   final VoidCallback onResumeActive;
   final void Function(String id) onStartScheduled;
-  final VoidCallback onStartFreeform;
 
   const TodayCard({
     super.key,
@@ -26,7 +25,6 @@ class TodayCard extends StatelessWidget {
     this.todayWorkout,
     required this.onResumeActive,
     required this.onStartScheduled,
-    required this.onStartFreeform,
   });
 
   @override
@@ -85,7 +83,7 @@ class TodayCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${l10n.today} · ${DateFormat('HH:mm').format(todayWorkout!.scheduledDate!)}',
+                          '${l10n.today} · ${DateFormat('HH:mm').format(todayWorkout!.scheduledDate)}',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: Theme.of(
@@ -123,15 +121,6 @@ class TodayCard extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: onStartFreeform,
-                  icon: const Icon(Icons.play_arrow),
-                  label: Text(l10n.startBlankSeance),
-                ),
               ),
             ],
           ],

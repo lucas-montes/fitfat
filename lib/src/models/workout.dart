@@ -131,21 +131,18 @@ class ExerciseTranslation {
 // Workout
 // ---------------------------------------------------------------------------
 
-/// A workout is the single model for all workout types:
+/// A workout — always scheduled/planned (no free-form mode).
 ///
-/// | `scheduledDate` | `startedAt` | Meaning         |
-/// |-----------------|-------------|-----------------|
-/// | null            | not null    | Free-form       |
-/// | set             | null        | Scheduled/pending |
-/// | set             | not null    | Scheduled, in progress or done |
-///
-/// `completedAt == null` → active or pending.
-/// `completedAt != null` → finished.
+/// | `startedAt` | `completedAt` | Meaning |
+/// |-------------|---------------|---------|
+/// | null        | null          | Pending |
+/// | not null    | null          | Active  |
+/// | not null    | not null      | Done    |
 @immutable
 class Workout {
   final String id;
   final String name;
-  final DateTime? scheduledDate;
+  final DateTime scheduledDate;
   final DateTime? startedAt;
   final DateTime? completedAt;
   final String? notes;
@@ -154,16 +151,14 @@ class Workout {
   const Workout({
     required this.id,
     required this.name,
-    this.scheduledDate,
+    required this.scheduledDate,
     this.startedAt,
     this.completedAt,
     this.notes,
     this.source = WorkoutSource.manual,
   });
 
-  bool get isScheduled => scheduledDate != null;
-  bool get isFreeform => scheduledDate == null;
-  bool get isPending => scheduledDate != null && startedAt == null;
+  bool get isPending => startedAt == null;
   bool get isActive => startedAt != null && completedAt == null;
   bool get isCompleted => completedAt != null;
 
@@ -185,7 +180,6 @@ class Workout {
     DateTime? completedAt,
     String? notes,
     WorkoutSource? source,
-    bool clearScheduledDate = false,
     bool clearStartedAt = false,
     bool clearCompletedAt = false,
     bool clearNotes = false,
@@ -193,9 +187,7 @@ class Workout {
     return Workout(
       id: id ?? this.id,
       name: name ?? this.name,
-      scheduledDate: clearScheduledDate
-          ? null
-          : (scheduledDate ?? this.scheduledDate),
+      scheduledDate: scheduledDate ?? this.scheduledDate,
       startedAt: clearStartedAt ? null : (startedAt ?? this.startedAt),
       completedAt: clearCompletedAt ? null : (completedAt ?? this.completedAt),
       notes: clearNotes ? null : (notes ?? this.notes),

@@ -47,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.open(super.executor);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -57,154 +57,15 @@ class AppDatabase extends _$AppDatabase {
       await _seedIngredients();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      if (from < 2) {
-        // Add new ingredient fields (nullable = safe for existing rows)
-        await m.addColumn(ingredients, ingredients.creatorId);
-        await m.addColumn(ingredients, ingredients.isArchived);
-        await m.addColumn(ingredients, ingredients.sodiumPer100g);
-        await m.addColumn(ingredients, ingredients.fiberPer100g);
-        await m.addColumn(ingredients, ingredients.sugarsPer100g);
-        await m.addColumn(ingredients, ingredients.saturatedFatPer100g);
-        await m.addColumn(ingredients, ingredients.cholesterolPer100g);
-        // Create junction table for composite ingredients
-        await m.createTable(ingredientComponents);
+      // Fresh start: drop all existing tables and recreate from scratch.
+      // Data loss is intentional — old schema versions are incompatible with
+      // the current clean-slate schema (v1).
+      for (final table in allTables) {
+        await m.deleteTable(table.actualTableName);
       }
-      if (from < 3) {
-        // Add creatorId column to exercises table
-        await m.addColumn(exercises, exercises.creatorId);
-        // Seed comprehensive exercise bundle
-        await _seedExercises();
-      }
-      if (from < 4) {
-        // Rename sex column to gender in user_profile table
-        await m.database.customStatement(
-          'ALTER TABLE user_profile RENAME COLUMN sex TO gender',
-        );
-      }
-      if (from < 5) {
-        // Add completedAt column to exercise_sets table
-        await m.database.customStatement(
-          'ALTER TABLE exercise_sets ADD COLUMN completed_at TEXT',
-        );
-      }
-      if (from < 6) {
-        // Make seances.completed_at non-nullable — fill any null values first
-        await m.database.customStatement(
-          'UPDATE seances SET completed_at = started_at WHERE completed_at IS NULL',
-        );
-      }
-      if (from < 7) {
-        // Remove weight_kg from user_profile
-        await m.database.customStatement(
-          'ALTER TABLE user_profile DROP COLUMN weight_kg',
-        );
-      }
-      if (from < 8) {
-        // Add type and met columns to exercises table
-        await m.database.customStatement(
-          "ALTER TABLE exercises ADD COLUMN type TEXT NOT NULL DEFAULT 'weightlifting'",
-        );
-        await m.database.customStatement(
-          'ALTER TABLE exercises ADD COLUMN met REAL NOT NULL DEFAULT 5.0',
-        );
-        await _seedExercises();
-      }
-      if (from < 9) {
-        // Create old workout model tables (replaced by v12 schema)
-        await m.database.customStatement(
-          'CREATE TABLE IF NOT EXISTS workouts (id TEXT PRIMARY KEY, name TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT, notes TEXT, source TEXT DEFAULT \'manual\', planned_workout_id TEXT, is_guided INTEGER DEFAULT 0)',
-        );
-        await m.database.customStatement(
-          'CREATE TABLE IF NOT EXISTS workout_entries (id TEXT PRIMARY KEY, sort_order INTEGER NOT NULL, exercise_id TEXT NOT NULL REFERENCES exercises(id), workout_id TEXT NOT NULL REFERENCES workouts(id), note TEXT, effort INTEGER)',
-        );
-        await m.database.customStatement(
-          'CREATE TABLE IF NOT EXISTS workout_sets (id TEXT PRIMARY KEY, entry_id TEXT NOT NULL REFERENCES workout_entries(id), reps INTEGER NOT NULL, weight_kg REAL NOT NULL, completed_at TEXT)',
-        );
-        await m.database.customStatement(
-          'CREATE TABLE IF NOT EXISTS cardio_details (id TEXT PRIMARY KEY, entry_id TEXT NOT NULL UNIQUE REFERENCES workout_entries(id), duration_minutes INTEGER NOT NULL)',
-        );
-      }
-      if (from < 10) {
-        // Create planning tables (replaced by v12 schema)
-        await m.database.customStatement(
-          'CREATE TABLE IF NOT EXISTS planned_workouts (id TEXT PRIMARY KEY, scheduled_date TEXT NOT NULL, name TEXT NOT NULL, notes TEXT, source TEXT DEFAULT \'manual\', template_id TEXT, is_completed INTEGER DEFAULT 0, completed_workout_id TEXT REFERENCES workouts(id))',
-        );
-        await m.database.customStatement(
-          'CREATE TABLE IF NOT EXISTS planned_entries (id TEXT PRIMARY KEY, planned_workout_id TEXT NOT NULL REFERENCES planned_workouts(id), exercise_id TEXT NOT NULL REFERENCES exercises(id), sort_order INTEGER NOT NULL, planned_reps INTEGER NOT NULL, planned_weight_kg REAL NOT NULL, planned_rest_seconds INTEGER, note TEXT, effort_target INTEGER)',
-        );
-        await m.database.customStatement(
-          'CREATE TABLE IF NOT EXISTS planned_cardio (id TEXT PRIMARY KEY, planned_entry_id TEXT NOT NULL UNIQUE REFERENCES planned_entries(id), planned_duration_minutes INTEGER NOT NULL)',
-        );
-      }
-      if (from < 11) {
-        // One-time data migration: copy old seances to old workout tables.
-        // This migration is now a no-op — v12 drops all old workout tables.
-        // The old migration files (migrate_seances.dart, seance_converter.dart)
-        // have been removed.
-      }
-      if (from < 12) {
-        // -----------------------------------------------------------------
-        // v12: Replace the entire workout/planning schema with unified
-        // Workouts + WeightSets + CardioSets.
-        // Clean slate — drop all old workout-related tables first.
-        // -----------------------------------------------------------------
-
-        // Drop old tables (child tables first to avoid FK issues)
-        await m.deleteTable('planned_cardio');
-        await m.deleteTable('planned_entries');
-        await m.deleteTable('planned_workouts');
-        await m.deleteTable('cardio_details');
-        await m.deleteTable('workout_sets');
-        await m.deleteTable('workout_entries');
-        await m.deleteTable('workouts');
-
-        // Also drop seance-era tables that are no longer needed
-        await m.deleteTable('exercise_sets');
-        await m.deleteTable('exercise_entries');
-        await m.deleteTable('seances');
-        await m.deleteTable('template_sets');
-        await m.deleteTable('template_exercises');
-        await m.deleteTable('templates');
-
-        // Create new tables
-        await m.createTable(exerciseBodyParts);
-        await m.createTable(workouts);
-        await m.createTable(weightSets);
-        await m.createTable(cardioSets);
-
-        // Update exercises table: add description, image_url; drop category
-        await m.database.customStatement(
-          "ALTER TABLE exercises ADD COLUMN description TEXT NOT NULL DEFAULT ''",
-        );
-        await m.database.customStatement(
-          'ALTER TABLE exercises ADD COLUMN image_url TEXT',
-        );
-        await m.database.customStatement(
-          'ALTER TABLE exercises DROP COLUMN category',
-        );
-      }
-      if (from < 13) {
-        // Add notes column to weight_sets and cardio_sets
-        await m.database.customStatement(
-          "ALTER TABLE weight_sets ADD COLUMN notes TEXT",
-        );
-        await m.database.customStatement(
-          "ALTER TABLE cardio_sets ADD COLUMN notes TEXT",
-        );
-      }
-      if (from < 14) {
-        // Add exercise_translations table
-        await m.createTable(exerciseTranslations);
-      }
-      if (from < 15) {
-        // Add isFailed column to weight_sets and cardio_sets for PR attempt tracking
-        await m.database.customStatement(
-          "ALTER TABLE weight_sets ADD COLUMN is_failed INTEGER NOT NULL DEFAULT 0",
-        );
-        await m.database.customStatement(
-          "ALTER TABLE cardio_sets ADD COLUMN is_failed INTEGER NOT NULL DEFAULT 0",
-        );
-      }
+      await m.createAll();
+      await _seedExercises();
+      await _seedIngredients();
     },
   );
 

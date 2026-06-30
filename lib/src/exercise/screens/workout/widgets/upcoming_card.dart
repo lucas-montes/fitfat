@@ -21,7 +21,7 @@ class UpcomingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = workout.scheduledDate!;
+    final date = workout.scheduledDate;
     final dayLabel = DateFormat('E').format(date);
     final dateLabel = DateFormat('MMM d').format(date);
 

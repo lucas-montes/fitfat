@@ -9,12 +9,11 @@ import '../../providers/active_workout.dart';
 import '../../providers/exercises.dart';
 import '../../services/providers.dart';
 import '../../../models/workout.dart';
-import 'add_exercise_sheet.dart';
 import 'exercise_detail_screen.dart';
 import 'widgets/exercise_group_info.dart';
 
 /// Full-screen active workout with elapsed timer, exercise list grouped from
-/// sets, an Add Exercise button, and Complete/Cancel actions.
+/// sets, and Complete/Cancel actions.
 ///
 /// This screen is shown at route `/active-workout` (outside the tab shell so
 /// there's no bottom nav bar). It can be reached by:
@@ -273,21 +272,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                 const SizedBox(height: 24),
               ],
 
-              // Add Exercise — opens a bottom sheet to pick from the library
-              // Only available in free-form workouts; planned workouts have
-              // a fixed exercise list determined at schedule time.
-              if (workout.isFreeform) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _openAddExerciseSheet(workout.id),
-                    icon: const Icon(Icons.add),
-                    label: Text(l10n.addExercise),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-
               // Complete Workout — marks the workout as done, goes to summary
               SizedBox(
                 width: double.infinity,
@@ -353,33 +337,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Future<void> _complete(String workoutId) async {
     await ref.read(activeWorkoutProvider.notifier).complete();
     if (context.mounted) context.go('/workout-summary/$workoutId');
-  }
-
-  /// Open the Add Exercise bottom sheet, then navigate to the detail screen.
-  ///
-  /// The flow:
-  /// 1. showModalBottomSheet → user picks an exercise
-  /// 2. Navigator.push → ExerciseWorkoutDetailScreen for that exercise
-  ///    (so they can immediately add their first set)
-  /// 3. On return, refresh the set list so the new exercise appears
-  Future<void> _openAddExerciseSheet(String workoutId) async {
-    final exercise = await showModalBottomSheet<ExerciseDefinition>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const AddExerciseSheet(),
-    );
-    if (exercise != null && mounted) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ExerciseWorkoutDetailScreen(
-            workoutId: workoutId,
-            exerciseId: exercise.id,
-          ),
-        ),
-      );
-      if (mounted) _loadSets(workoutId);
-    }
   }
 
   /// Cancel (delete) the workout and pop back.

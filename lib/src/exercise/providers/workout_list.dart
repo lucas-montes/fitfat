@@ -46,7 +46,7 @@ class WorkoutListNotifier extends Notifier<AsyncValue<List<Workout>>> {
     String name,
     List<WeightSet> weightSets,
     List<CardioSet> cardioSets, {
-    DateTime? scheduledDate,
+    required DateTime scheduledDate,
     WorkoutSource source = WorkoutSource.manual,
   }) async {
     final workout = Workout(

@@ -9,9 +9,7 @@ import '../../providers/exercise_history.dart';
 import '../../providers/exercises.dart';
 import '../../providers/exercise_detail.dart';
 import '../../../models/workout.dart';
-import 'add_exercise_sheet.dart';
 import 'widgets/cardio_set_tile.dart';
-import 'widgets/free_form_exercise_form.dart';
 import 'widgets/planned_exercise_form.dart';
 import 'widgets/rest_elapsed_card.dart';
 import 'widgets/weight_set_tile.dart';
@@ -205,14 +203,9 @@ class _ExerciseWorkoutDetailScreenState
 
   /// Add a new set from the inline form values.
   ///
-  /// Auto-completes the set (sets actualReps/actualWeightKg = planned and
-  /// completedAt = now) ONLY for free-form workouts. For scheduled workouts,
-  /// the set is saved with planned values only — the user completes it
-  /// manually by tapping the check icon.
+  /// Sets are saved with planned values only — the user completes them
+  /// manually by tapping the check icon on the tile.
   Future<void> _addSetFromForm(ExerciseDefinition exercise) async {
-    final isFreeform =
-        (ref.read(activeWorkoutProvider).asData?.value?.isFreeform) ?? false;
-
     if (exercise.type == ExerciseType.weightlifting) {
       final reps = int.tryParse(_repsCtl.text);
       final weight = double.tryParse(_weightCtl.text);
@@ -224,9 +217,6 @@ class _ExerciseWorkoutDetailScreenState
             exerciseId: exercise.id,
             plannedReps: reps,
             plannedWeightKg: weight,
-            actualReps: isFreeform ? reps : null,
-            actualWeightKg: isFreeform ? weight : null,
-            completedAt: isFreeform ? DateTime.now() : null,
             notes: _nullIfEmpty(_notesCtl.text),
             sortOrder: _nextSortOrder(
               ref.read(exerciseDetailProvider(_providerKey)),
@@ -241,8 +231,6 @@ class _ExerciseWorkoutDetailScreenState
             workoutId: widget.workoutId,
             exerciseId: exercise.id,
             plannedDurationMinutes: dur,
-            actualDurationMinutes: isFreeform ? dur : null,
-            completedAt: isFreeform ? DateTime.now() : null,
             notes: _nullIfEmpty(_notesCtl.text),
             sortOrder: _nextSortOrder(
               ref.read(exerciseDetailProvider(_providerKey)),
@@ -355,34 +343,18 @@ class _ExerciseWorkoutDetailScreenState
   // Widget building
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// Build a horizontal row of compact chips — one per exercise, plus a
-  /// trailing "+" pill to add a new exercise (free-form workouts only).
+  /// Build a horizontal row of compact chips — one per exercise.
   Widget _buildExerciseChips(ExerciseDetailState state) {
     final exercises = ref.read(exerciseListProvider);
-    final isFreeform =
-        ref.read(activeWorkoutProvider).asData?.value?.isFreeform ?? true;
-    final chipCount = state.exerciseIds.length + (isFreeform ? 1 : 0);
 
     return SizedBox(
       height: 32,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: chipCount,
+        itemCount: state.exerciseIds.length,
         separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
-          // Trailing "+" icon to add a new exercise
-          if (isFreeform && index == state.exerciseIds.length) {
-            return InkWell(
-              borderRadius: BorderRadius.circular(4),
-              onTap: () => _openAddExercise(),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Icon(Icons.add, size: 16),
-              ),
-            );
-          }
-
           final exId = state.exerciseIds[index];
           final ex = exercises.where((e) => e.id == exId).firstOrNull;
 
@@ -405,43 +377,8 @@ class _ExerciseWorkoutDetailScreenState
     );
   }
 
-  /// Open the Add Exercise bottom sheet and navigate to the new exercise.
-  Future<void> _openAddExercise() async {
-    final exercise = await showModalBottomSheet<ExerciseDefinition>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const AddExerciseSheet(),
-    );
-    if (exercise != null && mounted) {
-      // Replace current screen so back goes to ActiveScreen, not to
-      // the previous exercise. The parent (ActiveScreen) refreshes on return.
-      await Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ExerciseWorkoutDetailScreen(
-            workoutId: widget.workoutId,
-            exerciseId: exercise.id,
-          ),
-        ),
-      );
-    }
-  }
-
-  /// Pick the right add-set form variant based on workout type.
+  /// Always shows the planned form (all workouts are scheduled/planned).
   Widget _buildExerciseForm(ExerciseDefinition exercise) {
-    final isFreeform =
-        ref.read(activeWorkoutProvider).asData?.value?.isFreeform ?? true;
-
-    if (isFreeform) {
-      return FreeFormExerciseForm(
-        exercise: exercise,
-        repsController: _repsCtl,
-        weightController: _weightCtl,
-        durationController: _durationCtl,
-        notesController: _notesCtl,
-        onAddSet: () => _addSetFromForm(exercise),
-      );
-    }
     return PlannedExerciseForm(
       exercise: exercise,
       repsController: _repsCtl,

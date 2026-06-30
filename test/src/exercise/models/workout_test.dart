@@ -10,26 +10,6 @@ void main() {
   });
 
   group('Workout', () {
-    test('isFreeform returns true when scheduledDate is null', () {
-      final workout = Workout(
-        id: '1',
-        name: 'Quick Workout',
-        startedAt: DateTime.now(),
-      );
-      expect(workout.isFreeform, isTrue);
-      expect(workout.isScheduled, isFalse);
-    });
-
-    test('isScheduled returns true when scheduledDate is set', () {
-      final workout = Workout(
-        id: '1',
-        name: 'Push Day',
-        scheduledDate: DateTime.now(),
-      );
-      expect(workout.isScheduled, isTrue);
-      expect(workout.isFreeform, isFalse);
-    });
-
     test('isPending when scheduled but not started', () {
       final workout = Workout(
         id: '1',
@@ -45,6 +25,7 @@ void main() {
       final workout = Workout(
         id: '1',
         name: 'Workout',
+        scheduledDate: DateTime.now(),
         startedAt: DateTime.now(),
         completedAt: null,
       );
@@ -56,6 +37,7 @@ void main() {
       final workout = Workout(
         id: '1',
         name: 'Done',
+        scheduledDate: DateTime.now(),
         startedAt: DateTime.now(),
         completedAt: DateTime.now(),
       );
@@ -63,7 +45,11 @@ void main() {
     });
 
     test('duration returns zero for not started', () {
-      final workout = Workout(id: '1', name: 'Never started');
+      final workout = Workout(
+        id: '1',
+        name: 'Never started',
+        scheduledDate: DateTime.now(),
+      );
       expect(workout.duration, Duration.zero);
     });
 
@@ -72,6 +58,7 @@ void main() {
       final workout = Workout(
         id: '1',
         name: 'Active',
+        scheduledDate: now,
         startedAt: now.subtract(const Duration(minutes: 30)),
       );
       expect(workout.duration.inMinutes, greaterThanOrEqualTo(30));
@@ -83,6 +70,7 @@ void main() {
       final workout = Workout(
         id: '1',
         name: 'Done',
+        scheduledDate: start,
         startedAt: start,
         completedAt: end,
       );
@@ -104,18 +92,15 @@ void main() {
       expect(copy.scheduledDate, original.scheduledDate);
     });
 
-    test('copyWith clear flags work', () {
+    test('copyWith clearNotes works', () {
       final original = Workout(
         id: '1',
         name: 'Test',
         scheduledDate: DateTime(2026, 6, 17),
         notes: 'Some notes',
       );
-      final cleared = original.copyWith(
-        clearScheduledDate: true,
-        clearNotes: true,
-      );
-      expect(cleared.scheduledDate, isNull);
+      final cleared = original.copyWith(clearNotes: true);
+      expect(cleared.scheduledDate, original.scheduledDate);
       expect(cleared.notes, isNull);
       expect(cleared.name, 'Test');
     });

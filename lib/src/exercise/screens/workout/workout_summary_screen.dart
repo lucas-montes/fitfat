@@ -251,16 +251,7 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Sets line
-                    if (_workout!.isFreeform)
-                      Text(
-                        s.completedSets == s.totalSets
-                            ? '${l10n.setsCount(s.totalSets)} · ${l10n.done}'
-                            : '${s.completedSets}/${s.totalSets} ${l10n.setsLower}',
-                      )
-                    else
-                      Text(
-                        '${s.completedSets}/${s.totalSets} ${l10n.setsLower}',
-                      ),
+                    Text('${s.completedSets}/${s.totalSets} ${l10n.setsLower}'),
                     // Stats line (reps, avg rest)
                     if (s.totalReps > 0 || s.avgRestSeconds != null)
                       Padding(
@@ -277,30 +268,15 @@ class _WorkoutSummaryScreenState extends ConsumerState<WorkoutSummaryScreen> {
                       ),
                   ],
                 ),
-                // Volume trailing: show actual/planned for scheduled workouts
-                trailing: _workout!.isFreeform
-                    ? (s.volume > 0
-                          ? Text(
-                              '${s.volume.toStringAsFixed(0)} kg',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                            )
-                          : null)
-                    : (s.plannedVolume > 0
-                          ? Text(
-                              '${s.actualVolume.toStringAsFixed(0)}/${s.plannedVolume.toStringAsFixed(0)} kg',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                            )
-                          : null),
+                // Volume trailing: show actual/planned comparison
+                trailing: s.plannedVolume > 0
+                    ? Text(
+                        '${s.actualVolume.toStringAsFixed(0)}/${s.plannedVolume.toStringAsFixed(0)} kg',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      )
+                    : null,
               ),
             ),
           ),

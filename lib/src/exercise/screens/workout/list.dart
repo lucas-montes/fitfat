@@ -12,9 +12,11 @@ import 'widgets/today_card.dart';
 import 'widgets/upcoming_card.dart';
 
 /// Training tab showing three sections:
-///   1. Today's scheduled workout card (or free-form start prompt)
+///   1. Today's scheduled workout card
 ///   2. Upcoming scheduled workouts carousel
 ///   3. Completed workout history list
+///
+/// Includes a floating action button to create new scheduled workouts.
 class WorkoutListTab extends ConsumerWidget {
   const WorkoutListTab({super.key});
 
@@ -25,18 +27,25 @@ class WorkoutListTab extends ConsumerWidget {
     final historyAsync = ref.watch(workoutHistoryProvider);
     final activeAsync = ref.watch(activeWorkoutProvider);
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await ref.read(workoutListProvider.notifier).loadUpcoming();
-        await ref.read(workoutHistoryProvider.notifier).load();
-      },
-      child: _buildBody(
-        context,
-        ref,
-        l10n,
-        upcomingAsync,
-        historyAsync,
-        activeAsync,
+    return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'schedule_workout',
+        onPressed: () => context.push('/create-workout'),
+        child: const Icon(Icons.add),
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(workoutListProvider.notifier).loadUpcoming();
+          await ref.read(workoutHistoryProvider.notifier).load();
+        },
+        child: _buildBody(
+          context,
+          ref,
+          l10n,
+          upcomingAsync,
+          historyAsync,
+          activeAsync,
+        ),
       ),
     );
   }
@@ -88,10 +97,10 @@ class WorkoutListTab extends ConsumerWidget {
 
     // Split upcoming into today's workouts and later workouts
     final todayWorkouts = upcoming
-        .where((w) => w.scheduledDate != null && _isToday(w.scheduledDate!))
+        .where((w) => _isToday(w.scheduledDate))
         .toList();
     final upcomingLater = upcoming
-        .where((w) => w.scheduledDate == null || !_isToday(w.scheduledDate!))
+        .where((w) => !_isToday(w.scheduledDate))
         .toList();
 
     return ListView(
@@ -108,10 +117,6 @@ class WorkoutListTab extends ConsumerWidget {
           onResumeActive: () => context.push('/active-workout'),
           onStartScheduled: (id) async {
             await ref.read(activeWorkoutProvider.notifier).startScheduled(id);
-            if (context.mounted) context.push('/active-workout');
-          },
-          onStartFreeform: () async {
-            await ref.read(activeWorkoutProvider.notifier).startFreeform();
             if (context.mounted) context.push('/active-workout');
           },
         ),

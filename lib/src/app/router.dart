@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../diet/screens/main.dart';
 import '../exercise/screens/main.dart';
 import '../exercise/screens/workout/active_screen.dart';
+import '../exercise/screens/workout/create_workout_screen.dart';
 import '../exercise/screens/workout/workout_summary_screen.dart';
 import '../exercise/screens/workout/workout_history_detail_screen.dart';
 import '../dashboard/screens/main.dart';
@@ -99,6 +100,11 @@ final appRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/create-workout',
+      name: 'create-workout',
+      builder: (context, state) => const CreateWorkoutScreen(),
     ),
     GoRoute(
       path: '/active-workout',

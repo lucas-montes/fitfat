@@ -2,23 +2,23 @@
 
 ## Core concept
 
-A single **Workout** model handles all workout types. No Plan/Session split.
+A single **Workout** model for all planned/scheduled workouts.
 
 ```
-Workout(scheduledDate?) ──< WeightSet / CardioSet
+Workout(scheduledDate) ──< WeightSet / CardioSet
 ```
 
-| `scheduledDate` | `startedAt` | Meaning |
-|----------------|-------------|---------|
-| null | not null | Free-form workout |
-| set | null | Scheduled / pending (was "template") |
-| set | not null | Scheduled, in progress or done |
+| `startedAt` | `completedAt` | Meaning |
+|-------------|---------------|---------|
+| null        | null          | Pending (scheduled, not started) |
+| not null    | null          | Active (in progress) |
+| not null    | not null      | Done |
 
 ## Key models (defined in `lib/src/models/workout.dart`)
 
 ### Workout
-- `id`, `name`, `scheduledDate?`, `startedAt?`, `completedAt?`, `notes?`, `source`
-- Computed: `isScheduled`, `isFreeform`, `isPending`, `isActive`, `isCompleted`, `duration`
+- `id`, `name`, `scheduledDate`, `startedAt?`, `completedAt?`, `notes?`, `source`
+- Computed: `isPending`, `isActive`, `isCompleted`, `duration`
 
 ### WeightSet
 - `workoutId` FK, `exerciseId` FK, `sortOrder`, `plannedReps`, `plannedWeightKg`, `plannedRestSeconds?`, `actualReps?`, `actualWeightKg?`, `completedAt?`
@@ -61,22 +61,16 @@ Scheduled creation:
     → start() → startedAt=now
     → complete sets as you go
     → complete() → completedAt=now
-
-Free-form:
-  Workout(scheduledDate=null, startedAt=now)
-    + WeightSet/CardioSet with planned=actual values
-    → complete() → completedAt=now
 ```
 
 ## DB tables
 
-- `workouts` — id, name, scheduled_date?, started_at?, completed_at?, notes?, source
+- `workouts` — id, name, scheduled_date, started_at?, completed_at?, notes?, source
 - `weight_sets` — id, workout_id FK, exercise_id FK, sort_order, planned_*, actual_*, completed_at?, is_failed (default false)
 - `cardio_sets` — id, workout_id FK, exercise_id FK, sort_order, planned_*, actual_*, completed_at?, is_failed (default false)
-- `exercises` (updated) — added description, image_url; removed category
+- `exercises` — id, name, type, met, description, image_url?, creator_id
 - `exercise_body_parts` — join table (exercise_id, body_part)
-- `exercise_translations` (v14) — (exercise_id, locale, name, description) composite PK
-- `weight_sets.is_failed` / `cardio_sets.is_failed` (v15) — PR attempt tracking marker
+- `exercise_translations` — (exercise_id, locale, name, description) composite PK
 
 ## Status enums
 

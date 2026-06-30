@@ -46,14 +46,14 @@ class ExerciseTranslations extends Table {
 }
 
 // ---------------------------------------------------------------------------
-// Workouts (unified model — free-form or scheduled)
+// Workouts (scheduled — every workout has a date)
 // ---------------------------------------------------------------------------
 
 @DataClassName('WorkoutRow')
 class Workouts extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
-  DateTimeColumn get scheduledDate => dateTime().nullable()();
+  DateTimeColumn get scheduledDate => dateTime()();
   DateTimeColumn get startedAt => dateTime().nullable()();
   DateTimeColumn get completedAt => dateTime().nullable()();
   TextColumn get notes => text().nullable()();

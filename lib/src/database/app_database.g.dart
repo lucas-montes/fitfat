@@ -1034,9 +1034,9 @@ class $WorkoutsTable extends Workouts
       GeneratedColumn<DateTime>(
         'scheduled_date',
         aliasedName,
-        true,
+        false,
         type: DriftSqlType.dateTime,
-        requiredDuringInsert: false,
+        requiredDuringInsert: true,
       );
   static const VerificationMeta _startedAtMeta = const VerificationMeta(
     'startedAt',
@@ -1122,6 +1122,8 @@ class $WorkoutsTable extends Workouts
           _scheduledDateMeta,
         ),
       );
+    } else if (isInserting) {
+      context.missing(_scheduledDateMeta);
     }
     if (data.containsKey('started_at')) {
       context.handle(
@@ -1170,7 +1172,7 @@ class $WorkoutsTable extends Workouts
       scheduledDate: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}scheduled_date'],
-      ),
+      )!,
       startedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}started_at'],
@@ -1199,7 +1201,7 @@ class $WorkoutsTable extends Workouts
 class WorkoutRow extends DataClass implements Insertable<WorkoutRow> {
   final String id;
   final String name;
-  final DateTime? scheduledDate;
+  final DateTime scheduledDate;
   final DateTime? startedAt;
   final DateTime? completedAt;
   final String? notes;
@@ -1207,7 +1209,7 @@ class WorkoutRow extends DataClass implements Insertable<WorkoutRow> {
   const WorkoutRow({
     required this.id,
     required this.name,
-    this.scheduledDate,
+    required this.scheduledDate,
     this.startedAt,
     this.completedAt,
     this.notes,
@@ -1218,9 +1220,7 @@ class WorkoutRow extends DataClass implements Insertable<WorkoutRow> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
-    if (!nullToAbsent || scheduledDate != null) {
-      map['scheduled_date'] = Variable<DateTime>(scheduledDate);
-    }
+    map['scheduled_date'] = Variable<DateTime>(scheduledDate);
     if (!nullToAbsent || startedAt != null) {
       map['started_at'] = Variable<DateTime>(startedAt);
     }
@@ -1238,9 +1238,7 @@ class WorkoutRow extends DataClass implements Insertable<WorkoutRow> {
     return WorkoutsCompanion(
       id: Value(id),
       name: Value(name),
-      scheduledDate: scheduledDate == null && nullToAbsent
-          ? const Value.absent()
-          : Value(scheduledDate),
+      scheduledDate: Value(scheduledDate),
       startedAt: startedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(startedAt),
@@ -1262,7 +1260,7 @@ class WorkoutRow extends DataClass implements Insertable<WorkoutRow> {
     return WorkoutRow(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      scheduledDate: serializer.fromJson<DateTime?>(json['scheduledDate']),
+      scheduledDate: serializer.fromJson<DateTime>(json['scheduledDate']),
       startedAt: serializer.fromJson<DateTime?>(json['startedAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       notes: serializer.fromJson<String?>(json['notes']),
@@ -1275,7 +1273,7 @@ class WorkoutRow extends DataClass implements Insertable<WorkoutRow> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
-      'scheduledDate': serializer.toJson<DateTime?>(scheduledDate),
+      'scheduledDate': serializer.toJson<DateTime>(scheduledDate),
       'startedAt': serializer.toJson<DateTime?>(startedAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'notes': serializer.toJson<String?>(notes),
@@ -1286,7 +1284,7 @@ class WorkoutRow extends DataClass implements Insertable<WorkoutRow> {
   WorkoutRow copyWith({
     String? id,
     String? name,
-    Value<DateTime?> scheduledDate = const Value.absent(),
+    DateTime? scheduledDate,
     Value<DateTime?> startedAt = const Value.absent(),
     Value<DateTime?> completedAt = const Value.absent(),
     Value<String?> notes = const Value.absent(),
@@ -1294,9 +1292,7 @@ class WorkoutRow extends DataClass implements Insertable<WorkoutRow> {
   }) => WorkoutRow(
     id: id ?? this.id,
     name: name ?? this.name,
-    scheduledDate: scheduledDate.present
-        ? scheduledDate.value
-        : this.scheduledDate,
+    scheduledDate: scheduledDate ?? this.scheduledDate,
     startedAt: startedAt.present ? startedAt.value : this.startedAt,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     notes: notes.present ? notes.value : this.notes,
@@ -1358,7 +1354,7 @@ class WorkoutRow extends DataClass implements Insertable<WorkoutRow> {
 class WorkoutsCompanion extends UpdateCompanion<WorkoutRow> {
   final Value<String> id;
   final Value<String> name;
-  final Value<DateTime?> scheduledDate;
+  final Value<DateTime> scheduledDate;
   final Value<DateTime?> startedAt;
   final Value<DateTime?> completedAt;
   final Value<String?> notes;
@@ -1377,14 +1373,15 @@ class WorkoutsCompanion extends UpdateCompanion<WorkoutRow> {
   WorkoutsCompanion.insert({
     required String id,
     required String name,
-    this.scheduledDate = const Value.absent(),
+    required DateTime scheduledDate,
     this.startedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.notes = const Value.absent(),
     this.source = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       name = Value(name);
+       name = Value(name),
+       scheduledDate = Value(scheduledDate);
   static Insertable<WorkoutRow> custom({
     Expression<String>? id,
     Expression<String>? name,
@@ -1410,7 +1407,7 @@ class WorkoutsCompanion extends UpdateCompanion<WorkoutRow> {
   WorkoutsCompanion copyWith({
     Value<String>? id,
     Value<String>? name,
-    Value<DateTime?>? scheduledDate,
+    Value<DateTime>? scheduledDate,
     Value<DateTime?>? startedAt,
     Value<DateTime?>? completedAt,
     Value<String?>? notes,
@@ -7167,7 +7164,7 @@ typedef $$WorkoutsTableCreateCompanionBuilder =
     WorkoutsCompanion Function({
       required String id,
       required String name,
-      Value<DateTime?> scheduledDate,
+      required DateTime scheduledDate,
       Value<DateTime?> startedAt,
       Value<DateTime?> completedAt,
       Value<String?> notes,
@@ -7178,7 +7175,7 @@ typedef $$WorkoutsTableUpdateCompanionBuilder =
     WorkoutsCompanion Function({
       Value<String> id,
       Value<String> name,
-      Value<DateTime?> scheduledDate,
+      Value<DateTime> scheduledDate,
       Value<DateTime?> startedAt,
       Value<DateTime?> completedAt,
       Value<String?> notes,
@@ -7482,7 +7479,7 @@ class $$WorkoutsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
-                Value<DateTime?> scheduledDate = const Value.absent(),
+                Value<DateTime> scheduledDate = const Value.absent(),
                 Value<DateTime?> startedAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -7502,7 +7499,7 @@ class $$WorkoutsTableTableManager
               ({
                 required String id,
                 required String name,
-                Value<DateTime?> scheduledDate = const Value.absent(),
+                required DateTime scheduledDate,
                 Value<DateTime?> startedAt = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<String?> notes = const Value.absent(),

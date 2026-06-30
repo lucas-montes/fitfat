@@ -4,11 +4,19 @@
 
 | File | Description |
 |------|-------------|
-| [plans/exercise-module-rewrite.md](plans/exercise-module-rewrite.md) | Completed rewrite plan: unified Workout model, DB schema, tasks T01-T09 |
-| [plans/exercise-module-fixes.md](plans/exercise-module-fixes.md) | Completed fixes plan: foreground service, dashboard volume, exercise history |
-| [plans/training-tab-redesign.md](plans/training-tab-redesign.md) | Active: redesign Training tab with three-section layout and active workout screen |
-| [plans/exercise-module-refactor.md](plans/exercise-module-refactor.md) | Active: three-layer refactoring (interface, services, providers, widget extraction) |
-| [plans/workout-comparison-stats.md](plans/workout-comparison-stats.md) | Active: edit-set crash fix, per-exercise stats, planned-vs-accomplished display, PR attempt tracking (isFailed) |
+| [plans/exercise-module-rewrite.md](plans/exercise-module-rewrite.md) | ✅ Completed: unified Workout model, DB schema |
+| [plans/exercise-module-fixes.md](plans/exercise-module-fixes.md) | ✅ Completed: foreground service, dashboard volume, exercise history |
+| [plans/training-tab-redesign.md](plans/training-tab-redesign.md) | ✅ Completed: three-section layout, active workout screen, GoRouter route |
+| [plans/exercise-module-refactor.md](plans/exercise-module-refactor.md) | ✅ Completed: three-layer refactoring (interface, services, providers, widget extraction) |
+| [plans/workout-comparison-stats.md](plans/workout-comparison-stats.md) | ✅ Completed: edit-set crash fix, per-exercise stats, planned-vs-accomplished, PR tracking |
+| [plans/remove-freeform-workouts.md](plans/remove-freeform-workouts.md) | ✅ Completed: remove free-form mode, DB reset to v1, planned-only creation UI |
+| [plans/active-workout-exercise-management.md](plans/active-workout-exercise-management.md) | ✅ Completed: exercise/set management in active workout, add-exercise sheet, detail screen |
+| [plans/active-workout-ux-fixes.md](plans/active-workout-ux-fixes.md) | ✅ Completed: notification tap race, top card resume, inline add-set form, history ordering |
+| [plans/workout-ux-enhancements.md](plans/workout-ux-enhancements.md) | ✅ Completed: auto-complete, live timer, summary screen, history detail, swipe, rest timer |
+| [plans/active-workout-polish.md](plans/active-workout-polish.md) | ✅ Completed: rest timer fix, compact chips/notes/tiles, back nav, stat cards, history scroll, heatmap, history snippet, duplicate timer |
+| [plans/provider-init-bugfix.md](plans/provider-init-bugfix.md) | ✅ Completed: fix uninitialized provider crash on exercise add |
+| [plans/training-tab-blank-fix.md](plans/training-tab-blank-fix.md) | ✅ Completed: fix full-screen empty state, always show three-section layout |
+| [plans/workout-ux-round2.md](plans/workout-ux-round2.md) | ✅ Completed: history mini-tiles, compact form, free-form/planned forms, add-exercise pill, PageView perf, equal-height stat cards, exercise_translations table |
 
 ## Architecture & overview
 
@@ -24,7 +32,7 @@
 |-------------|---------|
 | `lib/src/models/workout.dart` | All core models: Workout, WeightSet, CardioSet, ExerciseDefinition, enums |
 | `lib/src/database/tables.dart` | Drift table definitions (13 tables) |
-| `lib/src/database/app_database.dart` | DB singleton, schema v15, migrations v1-v15, CRUD helpers |
+| `lib/src/database/app_database.dart` | DB singleton, schema v1 (no migrations, clean slate), CRUD helpers |
 | `lib/src/adapters/drift/workout_repository.dart` | DriftWorkoutRepository implements WorkoutRepository — CRUD for Workout, WeightSet, CardioSet |
 | `lib/src/adapters/interfaces/workout_repository.dart` | WorkoutRepository interface — abstract contract for workout data access |
 | `lib/src/adapters/drift/goals.dart` | DriftGoalRepository |
@@ -40,12 +48,14 @@
 | `lib/src/exercise/providers/exercise_detail.dart` | ExerciseDetailNotifier, exerciseDetailProvider — per-(workout,exercise) state for set management, rest timer, exercise navigation |
 | `lib/src/exercise/services/workout_services.dart` | WorkoutSessionService, ExerciseLibraryService, ProgressionService — pure Dart |
 | `lib/src/exercise/services/set_management_service.dart` | SetManagementService — loadSets, deriveExerciseIds, add/toggle/delete sets |
-| `lib/src/exercise/services/workout_lifecycle_service.dart` | WorkoutLifecycleService — resume, startFreeform, startScheduled, complete, cancel |
+| `lib/src/exercise/services/workout_lifecycle_service.dart` | WorkoutLifecycleService — resume, startScheduled, complete, cancel |
 | `lib/src/exercise/services/providers.dart` | Riverpod providers for all 5 services |
 | `lib/src/exercise/screens/main.dart` | Tab bar entry point (Training/Exercises/Stats) |
-| `lib/src/exercise/screens/workout/list.dart` | WorkoutListTab — three-section layout: today's workout card (TodayCard), upcoming carousel (UpcomingCard), and history list (HistoryItem) |
-| `lib/src/exercise/screens/workout/active_screen.dart` | ActiveWorkoutScreen — full-screen active workout with elapsed timer, exercise list grouped from sets (ExerciseGroupInfo), Add Exercise, Complete/Cancel |
-| `lib/src/exercise/screens/workout/add_exercise_sheet.dart` | AddExerciseSheet — searchable bottom sheet for picking exercises from the library |
+| `lib/src/exercise/screens/workout/list.dart` | WorkoutListTab — three-section layout: today's workout card (TodayCard), upcoming carousel (UpcomingCard), history list (HistoryItem), and a FAB to create new scheduled workouts |
+| `lib/src/exercise/screens/workout/active_screen.dart` | ActiveWorkoutScreen — full-screen active workout with elapsed timer, exercise list grouped from sets (ExerciseGroupInfo), and Complete/Cancel actions |
+| `lib/src/exercise/screens/workout/add_exercise_sheet.dart` | AddExerciseSheet — searchable bottom sheet for picking exercises from the library (single-select) |
+| `lib/src/exercise/screens/workout/multi_select_exercise_sheet.dart` | MultiSelectExerciseSheet — searchable bottom sheet for picking exercises (multi-select with checkboxes), used by creation UI |
+| `lib/src/exercise/screens/workout/create_workout_screen.dart` | CreateWorkoutScreen — form to create a scheduled workout: name, date, exercises with planned sets |
 | `lib/src/exercise/screens/workout/exercise_detail_screen.dart` | ExerciseWorkoutDetailScreen — per-exercise set management via ExerciseDetailNotifier; widgets: WeightSetTile, CardioSetTile, RestElapsedCard, ExerciseSetForm |
 | `lib/src/exercise/screens/workout/workout_summary_screen.dart` | WorkoutSummaryScreen — post-workout summary with duration, exercise summaries (ExerciseSummary), stat cards (StatCard); "Done" returns to Training tab |
 | `lib/src/exercise/screens/workout/workout_history_detail_screen.dart` | WorkoutHistoryDetailScreen — read-only view of a completed workout's exercises and sets, navigated from history list |
