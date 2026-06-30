@@ -333,99 +333,17 @@ class _ExerciseWorkoutDetailScreenState
     int initialDuration = 10,
     String? initialNotes,
   }) async {
-    final repsCtl = TextEditingController(text: initialReps.toString());
-    final weightCtl = isWeight
-        ? TextEditingController(text: initialWeight.toString())
-        : null;
-    final durationCtl = !isWeight
-        ? TextEditingController(text: initialDuration.toString())
-        : null;
-    final notesCtl = TextEditingController(text: initialNotes ?? '');
-
     final result = await showDialog<_FormResult>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isWeight) ...[
-                TextField(
-                  controller: repsCtl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Reps',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: weightCtl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Weight (kg)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ] else ...[
-                TextField(
-                  controller: durationCtl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Duration (min)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              TextField(
-                controller: notesCtl,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(ctx)!.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final reps = int.tryParse(repsCtl.text);
-              if (reps == null || reps <= 0) return;
-              if (isWeight) {
-                final weight = double.tryParse(weightCtl!.text);
-                if (weight == null || weight < 0) return;
-                Navigator.pop(
-                  ctx,
-                  _FormResult(reps, weight, _nullIfEmpty(notesCtl.text)),
-                );
-              } else {
-                final dur = int.tryParse(durationCtl!.text);
-                if (dur == null || dur <= 0) return;
-                Navigator.pop(
-                  ctx,
-                  _FormResult(dur, 0, _nullIfEmpty(notesCtl.text)),
-                );
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (_) => _EditSetDialog(
+        title: title,
+        isWeight: isWeight,
+        initialReps: initialReps,
+        initialWeight: initialWeight,
+        initialDuration: initialDuration,
+        initialNotes: initialNotes,
       ),
     );
-
-    repsCtl.dispose();
-    weightCtl?.dispose();
-    durationCtl?.dispose();
-    notesCtl.dispose();
-
     if (result == null) return null;
     return (result.intValue, result.doubleValue, result.notes);
   }
@@ -936,4 +854,143 @@ class _FormResult {
   final double doubleValue;
   final String? notes;
   const _FormResult(this.intValue, this.doubleValue, this.notes);
+}
+
+/// A dialog for editing a weight or cardio set's values.
+///
+/// Uses a [StatefulWidget] to properly manage [TextEditingController] lifecycle
+/// and avoid the "TextEditingController used after being disposed" error that
+/// can occur when controllers are created as local variables in a stateless
+/// dialog builder.
+class _EditSetDialog extends StatefulWidget {
+  final String title;
+  final bool isWeight;
+  final int initialReps;
+  final double initialWeight;
+  final int initialDuration;
+  final String? initialNotes;
+
+  const _EditSetDialog({
+    required this.title,
+    required this.isWeight,
+    this.initialReps = 10,
+    this.initialWeight = 20.0,
+    this.initialDuration = 10,
+    this.initialNotes,
+  });
+
+  @override
+  State<_EditSetDialog> createState() => _EditSetDialogState();
+}
+
+class _EditSetDialogState extends State<_EditSetDialog> {
+  late final TextEditingController _repsCtl;
+  late final TextEditingController? _weightCtl;
+  late final TextEditingController? _durationCtl;
+  late final TextEditingController _notesCtl;
+
+  @override
+  void initState() {
+    super.initState();
+    _repsCtl = TextEditingController(text: widget.initialReps.toString());
+    _weightCtl = widget.isWeight
+        ? TextEditingController(text: widget.initialWeight.toString())
+        : null;
+    _durationCtl = !widget.isWeight
+        ? TextEditingController(text: widget.initialDuration.toString())
+        : null;
+    _notesCtl = TextEditingController(text: widget.initialNotes ?? '');
+  }
+
+  @override
+  void dispose() {
+    _repsCtl.dispose();
+    _weightCtl?.dispose();
+    _durationCtl?.dispose();
+    _notesCtl.dispose();
+    super.dispose();
+  }
+
+  String? _nullIfEmpty(String value) =>
+      value.trim().isEmpty ? null : value.trim();
+
+  @override
+  Widget build(BuildContext context) {
+    final isWeight = widget.isWeight;
+    return AlertDialog(
+      title: Text(widget.title),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isWeight) ...[
+              TextField(
+                controller: _repsCtl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Reps',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _weightCtl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Weight (kg)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ] else ...[
+              TextField(
+                controller: _durationCtl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Duration (min)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notesCtl,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppLocalizations.of(context)!.cancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final reps = int.tryParse(_repsCtl.text);
+            if (reps == null || reps <= 0) return;
+            if (isWeight) {
+              final weight = double.tryParse(_weightCtl!.text);
+              if (weight == null || weight < 0) return;
+              Navigator.pop(
+                context,
+                _FormResult(reps, weight, _nullIfEmpty(_notesCtl.text)),
+              );
+            } else {
+              final dur = int.tryParse(_durationCtl!.text);
+              if (dur == null || dur <= 0) return;
+              Navigator.pop(
+                context,
+                _FormResult(dur, 0, _nullIfEmpty(_notesCtl.text)),
+              );
+            }
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
 }
