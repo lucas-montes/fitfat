@@ -17,8 +17,3 @@ flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
 https://drift.simonbinder.eu/dart_api/tables/
-
-
-for the ingredients database.
-we should have more info per ingredient/product so we can identify by country, region, supermarket, etc.
-this way we could let the user download a specific subset of products
