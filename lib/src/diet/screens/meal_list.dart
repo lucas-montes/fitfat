@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../models/meal_entry.dart';
 import '../../models/meal_ingredient.dart';
 import '../providers/meals.dart';
@@ -12,15 +13,16 @@ final class MealListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final mealsAsync = ref.watch(mealListProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Meals'),
+        title: Text(l10n.mealListAppBar),
         actions: [
           IconButton(
             icon: const Icon(Icons.restaurant_menu),
-            tooltip: 'Manage Ingredients',
+            tooltip: l10n.mealListManageBtn,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const IngredientListScreen()),
             ),
@@ -29,10 +31,10 @@ final class MealListScreen extends ConsumerWidget {
       ),
       body: mealsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
         data: (meals) => meals.isEmpty
-            ? const Center(child: Text('No meals yet. Tap + to add one.'))
-            : _buildMealList(context, ref, meals),
+            ? Center(child: Text(l10n.mealListEmpty))
+            : _buildMealList(context, ref, meals, l10n),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openForm(context, ref, null),
@@ -45,6 +47,7 @@ final class MealListScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<MealEntry> meals,
+    AppLocalizations l10n,
   ) {
     // Group meals by date (day only)
     final grouped = <DateTime, List<MealEntry>>{};
@@ -69,6 +72,7 @@ final class MealListScreen extends ConsumerWidget {
         return _DayGroup(
           date: date,
           meals: dayMeals,
+          l10n: l10n,
           onTap: (meal) => _openForm(context, ref, meal),
           onDelete: (meal) => _deleteMeal(ref, meal),
         );
@@ -96,12 +100,14 @@ final class MealListScreen extends ConsumerWidget {
 final class _DayGroup extends StatelessWidget {
   final DateTime date;
   final List<MealEntry> meals;
+  final AppLocalizations l10n;
   final void Function(MealEntry) onTap;
   final void Function(MealEntry) onDelete;
 
   const _DayGroup({
     required this.date,
     required this.meals,
+    required this.l10n,
     required this.onTap,
     required this.onDelete,
   });
@@ -130,7 +136,7 @@ final class _DayGroup extends StatelessWidget {
               Text(dateStr, style: theme.textTheme.titleMedium),
               const SizedBox(width: 8),
               Text(
-                '${totalCalories.toStringAsFixed(0)} kcal',
+                l10n.mealListCaloriesValue(totalCalories.toStringAsFixed(0)),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.primary,
                 ),
@@ -141,6 +147,7 @@ final class _DayGroup extends StatelessWidget {
         for (final meal in meals)
           _MealTile(
             meal: meal,
+            l10n: l10n,
             onTap: () => onTap(meal),
             onDelete: () => onDelete(meal),
           ),
@@ -152,11 +159,13 @@ final class _DayGroup extends StatelessWidget {
 
 final class _MealTile extends StatelessWidget {
   final MealEntry meal;
+  final AppLocalizations l10n;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const _MealTile({
     required this.meal,
+    required this.l10n,
     required this.onTap,
     required this.onDelete,
   });
@@ -175,16 +184,16 @@ final class _MealTile extends StatelessWidget {
       confirmDismiss: (_) => showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Delete meal?'),
-          content: Text('Remove "${meal.name}"?'),
+          title: Text(l10n.mealListDeleteTitle),
+          content: Text(l10n.mealListDeleteConfirm(meal.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.commonCancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete'),
+              child: Text(l10n.commonDelete),
             ),
           ],
         ),
@@ -193,13 +202,13 @@ final class _MealTile extends StatelessWidget {
       child: ExpansionTile(
         title: Text(meal.name),
         subtitle: Text(
-          '${meal.items.length} ingredient${meal.items.length == 1 ? '' : 's'}  ·  '
-          '${meal.totalCalories.toStringAsFixed(0)} kcal',
+          '${l10n.mealListIngredientCount(meal.items.length)}  ·  '
+          '${l10n.mealListCaloriesValue(meal.totalCalories.toStringAsFixed(0))}',
         ),
         leading: const Icon(Icons.restaurant),
         trailing: IconButton(icon: const Icon(Icons.edit), onPressed: onTap),
         children: meal.items
-            .map((item) => _IngredientItemTile(item: item))
+            .map((item) => _IngredientItemTile(item: item, l10n: l10n))
             .toList(),
       ),
     );
@@ -208,18 +217,21 @@ final class _MealTile extends StatelessWidget {
 
 final class _IngredientItemTile extends StatelessWidget {
   final MealIngredient item;
-  const _IngredientItemTile({required this.item});
+  final AppLocalizations l10n;
+  const _IngredientItemTile({required this.item, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(item.ingredientName),
       subtitle: Text(
-        '${item.grams.toStringAsFixed(0)}g  ·  '
-        '${item.calories.toStringAsFixed(0)} kcal  ·  '
-        'P ${item.protein.toStringAsFixed(1)}g  ·  '
-        'C ${item.carbs.toStringAsFixed(1)}g  ·  '
-        'F ${item.fat.toStringAsFixed(1)}g',
+        l10n.mealListMacroFormat(
+          item.grams.toStringAsFixed(0),
+          item.calories.toStringAsFixed(0),
+          item.protein.toStringAsFixed(1),
+          item.carbs.toStringAsFixed(1),
+          item.fat.toStringAsFixed(1),
+        ),
       ),
       dense: true,
       contentPadding: const EdgeInsets.only(left: 72, right: 16),

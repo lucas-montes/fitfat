@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/exercise_set.dart';
 import '../../models/workout_exercise.dart';
@@ -51,10 +52,11 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final exercisesAsync = ref.watch(exerciseListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New Workout')),
+      appBar: AppBar(title: Text(l10n.workoutFormTitle)),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -62,18 +64,19 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
           children: [
             TextFormField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Workout Name',
-                hintText: 'e.g. Morning Push',
+              decoration: InputDecoration(
+                labelText: l10n.workoutFormNameLabel,
+                hintText: l10n.workoutFormNameHint,
               ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? l10n.workoutFormNameRequired
+                  : null,
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Date'),
+              title: Text(l10n.workoutFormDate),
               subtitle: Text(
                 '${_date.day.toString().padLeft(2, '0')}.'
                 '${_date.month.toString().padLeft(2, '0')}.'
@@ -83,23 +86,28 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               onTap: _pickDate,
             ),
             const SizedBox(height: 16),
-            Text('Exercises', style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              l10n.workoutFormExercises,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 8),
             exercisesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Error: $e'),
+              error: (e, _) => Text(l10n.errorWithMessage('$e')),
               data: (exercises) => exercises.isEmpty
-                  ? const Text('No exercises available. Add some first.')
+                  ? Text(l10n.workoutFormNoExercises)
                   : Column(
                       children: exercises
-                          .map((ex) => _buildExerciseRow(ex))
+                          .map((ex) => _buildExerciseRow(ex, l10n))
                           .toList(),
                     ),
             ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _saving ? null : _save,
-              child: Text(_saving ? 'Saving…' : 'Save'),
+              child: Text(
+                _saving ? l10n.workoutFormSaving : l10n.workoutFormSave,
+              ),
             ),
           ],
         ),
@@ -107,7 +115,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     );
   }
 
-  Widget _buildExerciseRow(Exercise ex) {
+  Widget _buildExerciseRow(Exercise ex, AppLocalizations l10n) {
     final isSelected = _selected.containsKey(ex.id);
     final sets = _selected[ex.id];
 
@@ -154,7 +162,9 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  ex.isWeightlifting ? 'Weightlifting' : 'Cardio',
+                  ex.isWeightlifting
+                      ? l10n.exerciseTypeWeightlifting
+                      : l10n.exerciseTypeCardio,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -162,10 +172,10 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
             if (isSelected && sets != null) ...[
               const Divider(height: 8),
               for (var i = 0; i < sets.length; i++)
-                _buildSetRow(i, sets[i], ex),
+                _buildSetRow(i, sets[i], ex, l10n),
               TextButton.icon(
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add set'),
+                label: Text(l10n.workoutFormAddSet),
                 onPressed: () => setState(() {
                   _selected[ex.id]!.add(
                     _PlannedSetEntry(
@@ -183,7 +193,12 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     );
   }
 
-  Widget _buildSetRow(int index, _PlannedSetEntry entry, Exercise ex) {
+  Widget _buildSetRow(
+    int index,
+    _PlannedSetEntry entry,
+    Exercise ex,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(left: 40, top: 4, bottom: 4),
       child: Row(
@@ -197,10 +212,10 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
             Expanded(
               child: TextFormField(
                 initialValue: entry.reps.toString(),
-                decoration: const InputDecoration(
-                  labelText: 'Reps',
+                decoration: InputDecoration(
+                  labelText: l10n.workoutFormRepsLabel,
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 6,
                   ),
@@ -213,10 +228,10 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
             Expanded(
               child: TextFormField(
                 initialValue: entry.weightKg.toStringAsFixed(0),
-                decoration: const InputDecoration(
-                  labelText: 'kg',
+                decoration: InputDecoration(
+                  labelText: l10n.workoutFormWeightLabel,
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 6,
                   ),
@@ -229,10 +244,10 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
             Expanded(
               child: TextFormField(
                 initialValue: entry.durationMinutes.toString(),
-                decoration: const InputDecoration(
-                  labelText: 'min',
+                decoration: InputDecoration(
+                  labelText: l10n.workoutFormDurationLabel,
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 6,
                   ),
@@ -259,10 +274,11 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
     if (_selected.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select at least one exercise')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.workoutFormSelectExercise)));
       return;
     }
 
@@ -318,7 +334,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errorWithMessage('$e'))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

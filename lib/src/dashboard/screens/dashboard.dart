@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../providers/dashboard.dart';
 
 final class DashboardScreen extends ConsumerWidget {
@@ -8,12 +9,13 @@ final class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final caloriesAsync = ref.watch(todayCaloriesProvider);
     final latestAsync = ref.watch(latestWorkoutProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
+      appBar: AppBar(title: Text(l10n.dashboardAppBar)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -32,7 +34,7 @@ final class DashboardScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        "Today's Calories",
+                        l10n.dashboardTodayCalories,
                         style: theme.textTheme.titleMedium,
                       ),
                     ],
@@ -40,9 +42,9 @@ final class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   caloriesAsync.when(
                     loading: () => const CircularProgressIndicator(),
-                    error: (e, _) => Text('Error: $e'),
+                    error: (e, _) => Text(l10n.dashboardError('$e')),
                     data: (cal) => Text(
-                      '${cal.toStringAsFixed(0)} kcal',
+                      l10n.dashboardCaloriesValue(cal.toStringAsFixed(0)),
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,
@@ -70,7 +72,7 @@ final class DashboardScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Latest Workout',
+                        l10n.dashboardLatestWorkout,
                         style: theme.textTheme.titleMedium,
                       ),
                     ],
@@ -78,11 +80,11 @@ final class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   latestAsync.when(
                     loading: () => const CircularProgressIndicator(),
-                    error: (e, _) => Text('Error: $e'),
+                    error: (e, _) => Text(l10n.dashboardError('$e')),
                     data: (workout) {
                       if (workout == null) {
                         return Text(
-                          'No completed workouts yet.',
+                          l10n.dashboardNoWorkouts,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -111,7 +113,9 @@ final class DashboardScreen extends ConsumerWidget {
                           if (workout.duration > Duration.zero) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'Duration: ${workout.duration.inMinutes} min',
+                              l10n.dashboardDurationMin(
+                                workout.duration.inMinutes,
+                              ),
                               style: theme.textTheme.bodySmall,
                             ),
                           ],

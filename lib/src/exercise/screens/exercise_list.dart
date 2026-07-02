@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../providers/exercises.dart';
 import 'exercise_form.dart';
@@ -10,19 +11,21 @@ final class ExerciseListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final exercisesAsync = ref.watch(exerciseListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Exercises')),
+      appBar: AppBar(title: Text(l10n.exerciseListAppBar)),
       body: exercisesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
         data: (exercises) => exercises.isEmpty
-            ? const Center(child: Text('No exercises yet. Tap + to add one.'))
+            ? Center(child: Text(l10n.exerciseListEmpty))
             : ListView.builder(
                 itemCount: exercises.length,
                 itemBuilder: (_, i) => _ExerciseTile(
                   exercise: exercises[i],
+                  l10n: l10n,
                   onTap: () => _openForm(context, ref, exercises[i]),
                   onDelete: () => _deleteExercise(ref, exercises[i]),
                 ),
@@ -54,11 +57,13 @@ final class ExerciseListScreen extends ConsumerWidget {
 
 final class _ExerciseTile extends StatelessWidget {
   final Exercise exercise;
+  final AppLocalizations l10n;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const _ExerciseTile({
     required this.exercise,
+    required this.l10n,
     required this.onTap,
     required this.onDelete,
   });
@@ -77,16 +82,16 @@ final class _ExerciseTile extends StatelessWidget {
       confirmDismiss: (_) => showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Delete exercise?'),
-          content: Text('Remove "${exercise.name}"?'),
+          title: Text(l10n.exerciseListDeleteTitle),
+          content: Text(l10n.exerciseListDeleteConfirm(exercise.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.commonCancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete'),
+              child: Text(l10n.commonDelete),
             ),
           ],
         ),
@@ -99,7 +104,11 @@ final class _ExerciseTile extends StatelessWidget {
               : Icons.directions_run,
         ),
         title: Text(exercise.name),
-        subtitle: Text(exercise.isWeightlifting ? 'Weightlifting' : 'Cardio'),
+        subtitle: Text(
+          exercise.isWeightlifting
+              ? l10n.exerciseTypeWeightlifting
+              : l10n.exerciseTypeCardio,
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
       ),

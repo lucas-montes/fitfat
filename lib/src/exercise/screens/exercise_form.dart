@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../providers/exercises.dart';
 import '../repositories/exercise_repository.dart';
@@ -37,9 +38,12 @@ final class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Exercise' : 'New Exercise'),
+        title: Text(
+          _isEditing ? l10n.exerciseFormEditTitle : l10n.exerciseFormNewTitle,
+        ),
       ),
       body: Form(
         key: _formKey,
@@ -48,24 +52,30 @@ final class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
           children: [
             TextFormField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Exercise Name',
-                hintText: 'e.g. Bench Press',
+              decoration: InputDecoration(
+                labelText: l10n.exerciseFormNameLabel,
+                hintText: l10n.exerciseFormNameHint,
               ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? l10n.exerciseFormNameRequired
+                  : null,
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _exerciseType,
-              decoration: const InputDecoration(labelText: 'Type'),
-              items: const [
+              decoration: InputDecoration(
+                labelText: l10n.exerciseFormTypeLabel,
+              ),
+              items: [
                 DropdownMenuItem(
                   value: 'weightlifting',
-                  child: Text('Weightlifting'),
+                  child: Text(l10n.exerciseTypeWeightlifting),
                 ),
-                DropdownMenuItem(value: 'cardio', child: Text('Cardio')),
+                DropdownMenuItem(
+                  value: 'cardio',
+                  child: Text(l10n.exerciseTypeCardio),
+                ),
               ],
               onChanged: (v) {
                 if (v != null) setState(() => _exerciseType = v);
@@ -74,7 +84,9 @@ final class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _saving ? null : _save,
-              child: Text(_saving ? 'Saving…' : 'Save'),
+              child: Text(
+                _saving ? l10n.exerciseFormSaving : l10n.exerciseFormSave,
+              ),
             ),
           ],
         ),
@@ -101,9 +113,10 @@ final class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errorWithMessage('$e'))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

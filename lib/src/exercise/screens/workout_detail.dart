@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../models/exercise_set.dart';
 import '../../models/workout.dart';
 import '../providers/workouts.dart';
@@ -12,27 +13,29 @@ final class WorkoutDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final detailAsync = ref.watch(workoutDetailProvider(workoutId));
 
     return detailAsync.when(
       loading: () => Scaffold(
-        appBar: AppBar(title: const Text('Workout')),
+        appBar: AppBar(title: Text(l10n.workoutDetailAppBar)),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(title: const Text('Workout')),
-        body: Center(child: Text('Error: $e')),
+        appBar: AppBar(title: Text(l10n.workoutDetailAppBar)),
+        body: Center(child: Text(l10n.errorWithMessage('$e'))),
       ),
       data: (detail) {
         if (detail == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Workout')),
-            body: const Center(child: Text('Workout not found')),
+            appBar: AppBar(title: Text(l10n.workoutDetailAppBar)),
+            body: Center(child: Text(l10n.workoutDetailNotFound)),
           );
         }
         return _WorkoutDetailContent(
           detail: detail,
           workoutId: workoutId,
+          l10n: l10n,
           ref: ref,
         );
       },
@@ -43,11 +46,13 @@ final class WorkoutDetailScreen extends ConsumerWidget {
 final class _WorkoutDetailContent extends StatelessWidget {
   final WorkoutWithDetails detail;
   final String workoutId;
+  final AppLocalizations l10n;
   final WidgetRef ref;
 
   const _WorkoutDetailContent({
     required this.detail,
     required this.workoutId,
+    required this.l10n,
     required this.ref,
   });
 
@@ -62,10 +67,10 @@ final class _WorkoutDetailContent extends StatelessWidget {
         ? Colors.orange
         : Colors.grey;
     final statusLabel = w.isCompleted
-        ? 'Completed'
+        ? l10n.statusCompleted
         : w.isActive
-        ? 'Active'
-        : 'Pending';
+        ? l10n.statusActive
+        : l10n.statusPending;
 
     final dateStr =
         '${w.date.day.toString().padLeft(2, '0')}.'
@@ -80,13 +85,13 @@ final class _WorkoutDetailContent extends StatelessWidget {
             TextButton.icon(
               onPressed: () => _startWorkout(context, ref, w.id),
               icon: const Icon(Icons.play_arrow),
-              label: const Text('Start'),
+              label: Text(l10n.workoutDetailBtnStart),
             ),
           if (w.isActive)
             TextButton.icon(
               onPressed: () => _completeWorkout(context, ref, w.id),
               icon: const Icon(Icons.check),
-              label: const Text('Complete'),
+              label: Text(l10n.workoutDetailBtnComplete),
             ),
         ],
       ),
@@ -127,15 +132,17 @@ final class _WorkoutDetailContent extends StatelessWidget {
                   if (w.isActive && w.startedAt != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Started: ${w.startedAt!.hour.toString().padLeft(2, '0')}:'
-                      '${w.startedAt!.minute.toString().padLeft(2, '0')}',
+                      l10n.workoutDetailStartedAt(
+                        '${w.startedAt!.hour.toString().padLeft(2, '0')}:'
+                        '${w.startedAt!.minute.toString().padLeft(2, '0')}',
+                      ),
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
                   if (w.isCompleted && w.duration > Duration.zero) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Duration: ${w.duration.inMinutes} min',
+                      l10n.dashboardDurationMin(w.duration.inMinutes),
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
@@ -146,13 +153,18 @@ final class _WorkoutDetailContent extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Exercises
-          Text('Exercises', style: theme.textTheme.titleMedium),
+          Text(l10n.workoutDetailExercises, style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           if (detail.exercises.isEmpty)
-            const Text('No exercises in this workout.')
+            Text(l10n.workoutDetailNoExercises)
           else
             for (final block in detail.exercises)
-              _ExerciseBlockCard(block: block, workout: w, ref: ref),
+              _ExerciseBlockCard(
+                block: block,
+                workout: w,
+                l10n: l10n,
+                ref: ref,
+              ),
         ],
       ),
     );
@@ -182,11 +194,13 @@ final class _WorkoutDetailContent extends StatelessWidget {
 final class _ExerciseBlockCard extends StatelessWidget {
   final ExerciseBlock block;
   final Workout workout;
+  final AppLocalizations l10n;
   final WidgetRef ref;
 
   const _ExerciseBlockCard({
     required this.block,
     required this.workout,
+    required this.l10n,
     required this.ref,
   });
 
@@ -197,9 +211,7 @@ final class _ExerciseBlockCard extends StatelessWidget {
       child: ExpansionTile(
         title: Text(block.exercise.exerciseName),
         leading: const Icon(Icons.fitness_center),
-        subtitle: Text(
-          '${block.sets.length} set${block.sets.length == 1 ? '' : 's'}',
-        ),
+        subtitle: Text(l10n.workoutDetailSetCount(block.sets.length)),
         initiallyExpanded: true,
         children: [
           // Header row
@@ -207,15 +219,24 @@ final class _ExerciseBlockCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 24,
-                  child: Text('#', textAlign: TextAlign.center),
+                  child: Text(
+                    l10n.workoutDetailSetHeaderHash,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                const Expanded(
-                  child: Text('Planned', textAlign: TextAlign.center),
+                Expanded(
+                  child: Text(
+                    l10n.workoutDetailSetHeaderPlanned,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                const Expanded(
-                  child: Text('Actual', textAlign: TextAlign.center),
+                Expanded(
+                  child: Text(
+                    l10n.workoutDetailSetHeaderActual,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
@@ -225,6 +246,7 @@ final class _ExerciseBlockCard extends StatelessWidget {
             _SetRow(
               set: set,
               workout: workout,
+              l10n: l10n,
               workoutExerciseId: block.exercise.id,
               ref: ref,
             ),
@@ -238,12 +260,14 @@ final class _ExerciseBlockCard extends StatelessWidget {
 final class _SetRow extends StatelessWidget {
   final ExerciseSet set;
   final Workout workout;
+  final AppLocalizations l10n;
   final String workoutExerciseId;
   final WidgetRef ref;
 
   const _SetRow({
     required this.set,
     required this.workout,
+    required this.l10n,
     required this.workoutExerciseId,
     required this.ref,
   });
@@ -253,18 +277,26 @@ final class _SetRow extends StatelessWidget {
     final isEditable = !workout.isPending;
 
     final planned = set.reps != null
-        ? '${set.reps} × ${set.weightKg?.toStringAsFixed(0) ?? '?'} kg'
+        ? l10n.workoutDetailPlannedSetReps(
+            set.reps.toString(),
+            set.weightKg?.toStringAsFixed(0) ?? '?',
+          )
         : set.durationMinutes != null
-        ? '${set.durationMinutes} min'
-        : '—';
+        ? l10n.workoutDetailPlannedSetDuration(set.durationMinutes.toString())
+        : l10n.workoutDetailPlannedSetEmpty;
 
     final actual = set.actualReps != null
-        ? '${set.actualReps} × ${set.actualWeightKg?.toStringAsFixed(0) ?? '?'} kg'
+        ? l10n.workoutDetailActualSetReps(
+            set.actualReps.toString(),
+            set.actualWeightKg?.toStringAsFixed(0) ?? '?',
+          )
         : set.actualWeightKg != null
-        ? '${set.actualWeightKg!.toStringAsFixed(0)} kg'
+        ? l10n.workoutDetailActualSetWeight(
+            set.actualWeightKg!.toStringAsFixed(0),
+          )
         : set.durationMinutes != null && set.actualReps != null
-        ? '${set.actualReps} min'
-        : '—';
+        ? l10n.workoutDetailActualSetDuration(set.actualReps.toString())
+        : l10n.workoutDetailActualSetEmpty;
 
     return InkWell(
       onTap: isEditable ? () => _editActuals(context) : null,
@@ -313,7 +345,7 @@ final class _SetRow extends StatelessWidget {
   Future<void> _editActuals(BuildContext context) async {
     final result = await showDialog<_SetActuals>(
       context: context,
-      builder: (ctx) => _SetActualsDialog(set: set),
+      builder: (ctx) => _SetActualsDialog(set: set, l10n: l10n),
     );
     if (result == null) return;
 
@@ -345,7 +377,8 @@ final class _SetActuals {
 
 final class _SetActualsDialog extends StatefulWidget {
   final ExerciseSet set;
-  const _SetActualsDialog({required this.set});
+  final AppLocalizations l10n;
+  const _SetActualsDialog({required this.set, required this.l10n});
 
   @override
   State<_SetActualsDialog> createState() => _SetActualsDialogState();
@@ -388,12 +421,13 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = widget.l10n;
     final s = widget.set;
     final isWeightlifting = s.reps != null || s.weightKg != null;
     final isCardio = s.durationMinutes != null || s.distanceMeters != null;
 
     return AlertDialog(
-      title: Text('Set ${s.setNumber} — Actuals'),
+      title: Text(l10n.workoutDetailSetActualsTitle(s.setNumber)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -401,13 +435,15 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
             if (isWeightlifting) ...[
               TextField(
                 controller: _repsCtrl,
-                decoration: const InputDecoration(labelText: 'Actual Reps'),
+                decoration: InputDecoration(
+                  labelText: l10n.workoutDetailActualRepsLabel,
+                ),
                 keyboardType: TextInputType.number,
               ),
               TextField(
                 controller: _weightCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Actual Weight (kg)',
+                decoration: InputDecoration(
+                  labelText: l10n.workoutDetailActualWeightLabel,
                 ),
                 keyboardType: TextInputType.number,
               ),
@@ -415,12 +451,16 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
             if (isCardio) ...[
               TextField(
                 controller: _durationCtrl,
-                decoration: const InputDecoration(labelText: 'Duration (min)'),
+                decoration: InputDecoration(
+                  labelText: l10n.workoutDetailActualDurationLabel,
+                ),
                 keyboardType: TextInputType.number,
               ),
               TextField(
                 controller: _distanceCtrl,
-                decoration: const InputDecoration(labelText: 'Distance (m)'),
+                decoration: InputDecoration(
+                  labelText: l10n.workoutDetailActualDistanceLabel,
+                ),
                 keyboardType: TextInputType.number,
               ),
             ],
@@ -430,7 +470,7 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         TextButton(
           onPressed: () {
@@ -443,7 +483,7 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
               ),
             );
           },
-          child: const Text('Save'),
+          child: Text(l10n.commonSave),
         ),
       ],
     );

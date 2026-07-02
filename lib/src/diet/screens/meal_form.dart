@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../models/ingredient.dart';
 import '../../models/meal_entry.dart';
 import '../../models/meal_ingredient.dart';
@@ -52,10 +53,15 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final ingredientsAsync = ref.watch(ingredientListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Meal' : 'New Meal')),
+      appBar: AppBar(
+        title: Text(
+          _isEditing ? l10n.mealFormEditTitle : l10n.mealFormNewTitle,
+        ),
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -64,12 +70,13 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
             // Name
             TextFormField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Meal Name',
-                hintText: 'e.g. Breakfast',
+              decoration: InputDecoration(
+                labelText: l10n.mealFormNameLabel,
+                hintText: l10n.mealFormNameHint,
               ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? l10n.mealFormNameRequired
+                  : null,
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 16),
@@ -77,7 +84,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
             // Date & time
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Date & Time'),
+              title: Text(l10n.mealFormDateTime),
               subtitle: Text(
                 '${_eatenAt.day.toString().padLeft(2, '0')}.'
                 '${_eatenAt.month.toString().padLeft(2, '0')}.'
@@ -91,20 +98,26 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
             const SizedBox(height: 16),
 
             // Ingredient selection
-            Text('Ingredients', style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              l10n.mealFormIngredients,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 8),
 
             ingredientsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Error loading ingredients: $e'),
+              error: (e, _) => Text(
+                l10n.errorLoadingResource(l10n.mealFormIngredients, '$e'),
+              ),
               data: (ingredients) => ingredients.isEmpty
-                  ? const Text('No ingredients available. Add some first.')
+                  ? Text(l10n.mealFormNoIngredients)
                   : Column(
                       children: ingredients
                           .map(
                             (ing) => _IngredientRow(
                               ingredient: ing,
                               grams: _grams[ing.id] ?? 0,
+                              l10n: l10n,
                               onChanged: (g) => setState(() {
                                 if (g > 0) {
                                   _grams[ing.id] = g;
@@ -121,7 +134,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _saving ? null : _save,
-              child: Text(_saving ? 'Saving…' : 'Save'),
+              child: Text(_saving ? l10n.mealFormSaving : l10n.mealFormSave),
             ),
           ],
         ),
@@ -160,12 +173,13 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
 
     final selected = _grams.entries.where((e) => e.value > 0).toList();
     if (selected.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Add at least one ingredient with grams')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.mealFormAddIngredient)));
       return;
     }
 
@@ -206,7 +220,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errorWithMessage('$e'))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -214,8 +228,6 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
   }
 
   MealIngredient _buildItem(String mealId, String ingredientId, double grams) {
-    // Look up ingredient name/macros from the list
-    // We cache it here; a cleaner approach would pass ingredient data through
     return MealIngredient(
       id: const Uuid().v7(),
       mealId: mealId,
@@ -233,11 +245,13 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
 final class _IngredientRow extends StatelessWidget {
   final Ingredient ingredient;
   final double grams;
+  final AppLocalizations l10n;
   final void Function(double) onChanged;
 
   const _IngredientRow({
     required this.ingredient,
     required this.grams,
+    required this.l10n,
     required this.onChanged,
   });
 
@@ -269,10 +283,10 @@ final class _IngredientRow extends StatelessWidget {
               width: 80,
               child: TextFormField(
                 initialValue: isSelected ? grams.toStringAsFixed(0) : '',
-                decoration: const InputDecoration(
-                  labelText: 'g',
+                decoration: InputDecoration(
+                  labelText: l10n.mealFormGramsLabel,
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 8,
                   ),

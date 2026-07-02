@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 final class SettingsTab extends StatelessWidget {
   const SettingsTab({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: const Center(child: Text('Settings')),
+      appBar: AppBar(title: Text(l10n.settingsAppBar)),
+      body: Center(child: Text(l10n.settingsBody)),
     );
   }
 }

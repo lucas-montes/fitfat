@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../models/workout.dart';
 import '../providers/workouts.dart';
 import 'exercise_list.dart';
@@ -12,15 +13,16 @@ final class WorkoutListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final workoutsAsync = ref.watch(workoutListProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Workouts'),
+        title: Text(l10n.workoutListAppBar),
         actions: [
           IconButton(
             icon: const Icon(Icons.fitness_center),
-            tooltip: 'Manage Exercises',
+            tooltip: l10n.workoutListManageBtn,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ExerciseListScreen()),
             ),
@@ -29,13 +31,14 @@ final class WorkoutListScreen extends ConsumerWidget {
       ),
       body: workoutsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
         data: (workouts) => workouts.isEmpty
-            ? const Center(child: Text('No workouts yet. Tap + to add one.'))
+            ? Center(child: Text(l10n.workoutListEmpty))
             : ListView.builder(
                 itemCount: workouts.length,
                 itemBuilder: (_, i) => _WorkoutTile(
                   workout: workouts[i],
+                  l10n: l10n,
                   onTap: () => _openDetail(context, ref, workouts[i]),
                   onDelete: () => _deleteWorkout(ref, workouts[i]),
                 ),
@@ -76,11 +79,13 @@ final class WorkoutListScreen extends ConsumerWidget {
 
 final class _WorkoutTile extends StatelessWidget {
   final Workout workout;
+  final AppLocalizations l10n;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const _WorkoutTile({
     required this.workout,
+    required this.l10n,
     required this.onTap,
     required this.onDelete,
   });
@@ -95,10 +100,10 @@ final class _WorkoutTile extends StatelessWidget {
         ? Colors.orange
         : Colors.grey;
     final statusLabel = workout.isCompleted
-        ? 'Completed'
+        ? l10n.statusCompleted
         : workout.isActive
-        ? 'Active'
-        : 'Pending';
+        ? l10n.statusActive
+        : l10n.statusPending;
 
     final dateStr =
         '${workout.date.day.toString().padLeft(2, '0')}.'
@@ -117,16 +122,16 @@ final class _WorkoutTile extends StatelessWidget {
       confirmDismiss: (_) => showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Delete workout?'),
-          content: Text('Remove "${workout.name}"?'),
+          title: Text(l10n.workoutListDeleteTitle),
+          content: Text(l10n.workoutListDeleteConfirm(workout.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.commonCancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete'),
+              child: Text(l10n.commonDelete),
             ),
           ],
         ),

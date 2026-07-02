@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../models/ingredient.dart';
 import '../providers/ingredients.dart';
 import '../repositories/ingredient_repository.dart';
@@ -58,9 +59,14 @@ final class _IngredientFormScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Ingredient' : 'New Ingredient'),
+        title: Text(
+          _isEditing
+              ? l10n.ingredientFormEditTitle
+              : l10n.ingredientFormNewTitle,
+        ),
       ),
       body: Form(
         key: _formKey,
@@ -69,20 +75,21 @@ final class _IngredientFormScreenState
           children: [
             TextFormField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'e.g. Chicken Breast',
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormNameLabel,
+                hintText: l10n.ingredientFormNameHint,
               ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? l10n.ingredientFormNameRequired
+                  : null,
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _caloriesCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Calories (per 100g)',
-                suffixText: 'kcal',
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormCaloriesLabel,
+                suffixText: l10n.ingredientFormCaloriesSuffix,
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -90,14 +97,15 @@ final class _IngredientFormScreenState
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[\d.]+')),
               ],
-              validator: (v) => _validatePositive(v, 'Calories'),
+              validator: (v) =>
+                  _validatePositive(v, l10n.ingredientFormCaloriesLabel, l10n),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _proteinCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Protein (per 100g)',
-                suffixText: 'g',
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormProteinLabel,
+                suffixText: l10n.ingredientFormProteinSuffix,
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -105,14 +113,18 @@ final class _IngredientFormScreenState
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[\d.]+')),
               ],
-              validator: (v) => _validateNonNegative(v, 'Protein'),
+              validator: (v) => _validateNonNegative(
+                v,
+                l10n.ingredientFormProteinLabel,
+                l10n,
+              ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _carbsCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Carbs (per 100g)',
-                suffixText: 'g',
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormCarbsLabel,
+                suffixText: l10n.ingredientFormCarbsSuffix,
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -120,14 +132,15 @@ final class _IngredientFormScreenState
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[\d.]+')),
               ],
-              validator: (v) => _validateNonNegative(v, 'Carbs'),
+              validator: (v) =>
+                  _validateNonNegative(v, l10n.ingredientFormCarbsLabel, l10n),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _fatCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Fat (per 100g)',
-                suffixText: 'g',
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormFatLabel,
+                suffixText: l10n.ingredientFormFatSuffix,
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -135,12 +148,13 @@ final class _IngredientFormScreenState
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[\d.]+')),
               ],
-              validator: (v) => _validateNonNegative(v, 'Fat'),
+              validator: (v) =>
+                  _validateNonNegative(v, l10n.ingredientFormFatLabel, l10n),
             ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _saving ? null : _save,
-              child: Text(_saving ? 'Saving…' : 'Save'),
+              child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
             ),
           ],
         ),
@@ -186,26 +200,31 @@ final class _IngredientFormScreenState
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.errorWithMessage('$e'))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  String? _validatePositive(String? v, String label) {
-    if (v == null || v.isEmpty) return '$label is required';
+  String? _validatePositive(String? v, String label, AppLocalizations l10n) {
+    if (v == null || v.isEmpty) return l10n.ingredientFormFieldRequired(label);
     final value = double.tryParse(v);
-    if (value == null || value <= 0) return '$label must be positive';
+    if (value == null || value <= 0) {
+      return l10n.ingredientFormFieldPositive(label);
+    }
     return null;
   }
 
-  String? _validateNonNegative(String? v, String label) {
-    if (v == null || v.isEmpty) return '$label is required';
+  String? _validateNonNegative(String? v, String label, AppLocalizations l10n) {
+    if (v == null || v.isEmpty) return l10n.ingredientFormFieldRequired(label);
     final value = double.tryParse(v);
-    if (value == null || value < 0) return '$label cannot be negative';
+    if (value == null || value < 0) {
+      return l10n.ingredientFormFieldNonNegative(label);
+    }
     return null;
   }
 }

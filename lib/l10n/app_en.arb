@@ -1,0 +1,290 @@
+{
+  "@@locale": "en",
+  "@@last_modified": "2026-07-02",
+
+  "appTitle": "FitFat",
+
+  "tabDashboard": "Dashboard",
+  "tabExercise": "Exercise",
+  "tabDiet": "Diet",
+  "tabSettings": "Settings",
+
+  "dashboardAppBar": "Dashboard",
+  "dashboardTodayCalories": "Today's Calories",
+  "dashboardLatestWorkout": "Latest Workout",
+  "dashboardNoWorkouts": "No completed workouts yet.",
+  "dashboardDurationMin": "Duration: {minutes} min",
+  "@dashboardDurationMin": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "dashboardCaloriesValue": "{calories} kcal",
+  "@dashboardCaloriesValue": {
+    "placeholders": {
+      "calories": { "type": "String" }
+    }
+  },
+  "dashboardError": "Error: {message}",
+  "@dashboardError": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+
+  "exerciseListAppBar": "Exercises",
+  "exerciseListManageBtn": "Manage Exercises",
+  "exerciseListEmpty": "No exercises yet. Tap + to add one.",
+  "exerciseListDeleteTitle": "Delete exercise?",
+  "exerciseListDeleteConfirm": "Remove \"{name}\"?",
+  "@exerciseListDeleteConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "exerciseFormNewTitle": "New Exercise",
+  "exerciseFormEditTitle": "Edit Exercise",
+  "exerciseFormNameLabel": "Exercise Name",
+  "exerciseFormNameHint": "e.g. Bench Press",
+  "exerciseFormNameRequired": "Name is required",
+  "exerciseFormTypeLabel": "Type",
+  "exerciseFormSave": "Save",
+  "exerciseFormSaving": "Saving…",
+
+  "workoutListAppBar": "Workouts",
+  "workoutListManageBtn": "Manage Exercises",
+  "workoutListEmpty": "No workouts yet. Tap + to add one.",
+  "workoutListDeleteTitle": "Delete workout?",
+  "workoutListDeleteConfirm": "Remove \"{name}\"?",
+  "@workoutListDeleteConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "workoutFormTitle": "New Workout",
+  "workoutFormNameLabel": "Workout Name",
+  "workoutFormNameHint": "e.g. Morning Push",
+  "workoutFormNameRequired": "Name is required",
+  "workoutFormDate": "Date",
+  "workoutFormExercises": "Exercises",
+  "workoutFormNoExercises": "No exercises available. Add some first.",
+  "workoutFormSave": "Save",
+  "workoutFormSaving": "Saving…",
+  "workoutFormAddSet": "Add set",
+  "workoutFormRepsLabel": "Reps",
+  "workoutFormWeightLabel": "kg",
+  "workoutFormDurationLabel": "min",
+  "workoutFormSelectExercise": "Select at least one exercise",
+
+  "workoutDetailAppBar": "Workout",
+  "workoutDetailNotFound": "Workout not found",
+  "workoutDetailBtnStart": "Start",
+  "workoutDetailBtnComplete": "Complete",
+  "workoutDetailStartedAt": "Started: {time}",
+  "@workoutDetailStartedAt": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "workoutDetailExercises": "Exercises",
+  "workoutDetailNoExercises": "No exercises in this workout.",
+  "workoutDetailSetHeaderHash": "#",
+  "workoutDetailSetHeaderPlanned": "Planned",
+  "workoutDetailSetHeaderActual": "Actual",
+  "workoutDetailSetActualsTitle": "Set {number} — Actuals",
+  "@workoutDetailSetActualsTitle": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "workoutDetailActualRepsLabel": "Actual Reps",
+  "workoutDetailActualWeightLabel": "Actual Weight (kg)",
+  "workoutDetailActualDurationLabel": "Duration (min)",
+  "workoutDetailActualDistanceLabel": "Distance (m)",
+  "workoutDetailSetCount": "{count} set",
+  "workoutDetailSetCount_plural": "{count} sets",
+  "@workoutDetailSetCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "ingredientListAppBar": "Ingredients",
+  "ingredientListEmpty": "No ingredients yet. Tap + to add one.",
+  "ingredientListDeleteTitle": "Delete ingredient?",
+  "ingredientListDeleteConfirm": "Remove \"{name}\"?",
+  "@ingredientListDeleteConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "ingredientFormNewTitle": "New Ingredient",
+  "ingredientFormEditTitle": "Edit Ingredient",
+  "ingredientFormNameLabel": "Name",
+  "ingredientFormNameHint": "e.g. Chicken Breast",
+  "ingredientFormNameRequired": "Name is required",
+  "ingredientFormCaloriesLabel": "Calories (per 100g)",
+  "ingredientFormCaloriesSuffix": "kcal",
+  "ingredientFormProteinLabel": "Protein (per 100g)",
+  "ingredientFormProteinSuffix": "g",
+  "ingredientFormCarbsLabel": "Carbs (per 100g)",
+  "ingredientFormCarbsSuffix": "g",
+  "ingredientFormFatLabel": "Fat (per 100g)",
+  "ingredientFormFatSuffix": "g",
+  "ingredientFormFieldRequired": "{label} is required",
+  "@ingredientFormFieldRequired": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "ingredientFormFieldPositive": "{label} must be positive",
+  "@ingredientFormFieldPositive": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "ingredientFormFieldNonNegative": "{label} cannot be negative",
+  "@ingredientFormFieldNonNegative": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+
+  "mealListAppBar": "Meals",
+  "mealListManageBtn": "Manage Ingredients",
+  "mealListEmpty": "No meals yet. Tap + to add one.",
+  "mealListDeleteTitle": "Delete meal?",
+  "mealListDeleteConfirm": "Remove \"{name}\"?",
+  "@mealListDeleteConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "mealListIngredientCount": "{count} ingredient",
+  "mealListIngredientCount_plural": "{count} ingredients",
+  "@mealListIngredientCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mealListCaloriesValue": "{calories} kcal",
+  "@mealListCaloriesValue": {
+    "placeholders": {
+      "calories": { "type": "String" }
+    }
+  },
+  "mealListMacroFormat": "{grams}g  ·  {calories} kcal  ·  P {protein}g  ·  C {carbs}g  ·  F {fat}g",
+  "@mealListMacroFormat": {
+    "placeholders": {
+      "grams": { "type": "String" },
+      "calories": { "type": "String" },
+      "protein": { "type": "String" },
+      "carbs": { "type": "String" },
+      "fat": { "type": "String" }
+    }
+  },
+
+  "mealFormNewTitle": "New Meal",
+  "mealFormEditTitle": "Edit Meal",
+  "mealFormNameLabel": "Meal Name",
+  "mealFormNameHint": "e.g. Breakfast",
+  "mealFormNameRequired": "Name is required",
+  "mealFormDateTime": "Date & Time",
+  "mealFormIngredients": "Ingredients",
+  "mealFormNoIngredients": "No ingredients available. Add some first.",
+  "mealFormAddIngredient": "Add at least one ingredient with grams",
+  "mealFormGramsLabel": "g",
+  "mealFormSave": "Save",
+  "mealFormSaving": "Saving…",
+
+  "settingsAppBar": "Settings",
+  "settingsBody": "Settings",
+
+  "statusCompleted": "Completed",
+  "statusActive": "Active",
+  "statusPending": "Pending",
+
+  "exerciseTypeWeightlifting": "Weightlifting",
+  "exerciseTypeCardio": "Cardio",
+
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonSave": "Save",
+  "commonSaving": "Saving…",
+
+  "errorWithMessage": "Error: {message}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "errorLoadingResource": "Error loading {resource}: {message}",
+  "@errorLoadingResource": {
+    "placeholders": {
+      "resource": { "type": "String" },
+      "message": { "type": "String" }
+    }
+  },
+
+  "macroGrams": "{value}g",
+  "@macroGrams": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "macroKcal": "{value} kcal",
+  "@macroKcal": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+
+  "ingredientMacroRow": "{grams}g  ·  {calories} kcal  ·  P {protein}g  ·  C {carbs}g  ·  F {fat}g",
+  "@ingredientMacroRow": {
+    "placeholders": {
+      "grams": { "type": "String" },
+      "calories": { "type": "String" },
+      "protein": { "type": "String" },
+      "carbs": { "type": "String" },
+      "fat": { "type": "String" }
+    }
+  },
+
+  "workoutDetailPlannedSetReps": "{reps} × {weight} kg",
+  "@workoutDetailPlannedSetReps": {
+    "placeholders": {
+      "reps": { "type": "String" },
+      "weight": { "type": "String" }
+    }
+  },
+  "workoutDetailPlannedSetDuration": "{minutes} min",
+  "@workoutDetailPlannedSetDuration": {
+    "placeholders": {
+      "minutes": { "type": "String" }
+    }
+  },
+  "workoutDetailPlannedSetEmpty": "—",
+  "workoutDetailActualSetReps": "{reps} × {weight} kg",
+  "@workoutDetailActualSetReps": {
+    "placeholders": {
+      "reps": { "type": "String" },
+      "weight": { "type": "String" }
+    }
+  },
+  "workoutDetailActualSetWeight": "{weight} kg",
+  "@workoutDetailActualSetWeight": {
+    "placeholders": {
+      "weight": { "type": "String" }
+    }
+  },
+  "workoutDetailActualSetDuration": "{reps} min",
+  "@workoutDetailActualSetDuration": {
+    "placeholders": {
+      "reps": { "type": "String" }
+    }
+  },
+  "workoutDetailActualSetEmpty": "—"
+}

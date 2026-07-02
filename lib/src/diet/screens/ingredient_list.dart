@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../models/ingredient.dart';
 import '../providers/ingredients.dart';
 import 'ingredient_form.dart';
@@ -10,19 +11,21 @@ final class IngredientListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final ingredientsAsync = ref.watch(ingredientListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ingredients')),
+      appBar: AppBar(title: Text(l10n.ingredientListAppBar)),
       body: ingredientsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
         data: (ingredients) => ingredients.isEmpty
-            ? const Center(child: Text('No ingredients yet. Tap + to add one.'))
+            ? Center(child: Text(l10n.ingredientListEmpty))
             : ListView.builder(
                 itemCount: ingredients.length,
                 itemBuilder: (_, i) => _IngredientTile(
                   ingredient: ingredients[i],
+                  l10n: l10n,
                   onTap: () => _openForm(context, ref, ingredients[i]),
                   onDelete: () => _deleteIngredient(ref, ingredients[i]),
                 ),
@@ -56,11 +59,13 @@ final class IngredientListScreen extends ConsumerWidget {
 
 final class _IngredientTile extends StatelessWidget {
   final Ingredient ingredient;
+  final AppLocalizations l10n;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const _IngredientTile({
     required this.ingredient,
+    required this.l10n,
     required this.onTap,
     required this.onDelete,
   });
@@ -79,16 +84,16 @@ final class _IngredientTile extends StatelessWidget {
       confirmDismiss: (_) => showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Delete ingredient?'),
-          content: Text('Remove "${ingredient.name}"?'),
+          title: Text(l10n.ingredientListDeleteTitle),
+          content: Text(l10n.ingredientListDeleteConfirm(ingredient.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.commonCancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete'),
+              child: Text(l10n.commonDelete),
             ),
           ],
         ),
@@ -97,10 +102,13 @@ final class _IngredientTile extends StatelessWidget {
       child: ListTile(
         title: Text(ingredient.name),
         subtitle: Text(
-          '${ingredient.caloriesPer100g.toStringAsFixed(0)} kcal/100g  ·  '
-          'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g  ·  '
-          'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g  ·  '
-          'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
+          l10n.ingredientMacroRow(
+            ingredient.caloriesPer100g.toStringAsFixed(0),
+            ingredient.caloriesPer100g.toStringAsFixed(0),
+            ingredient.proteinPer100g.toStringAsFixed(1),
+            ingredient.carbsPer100g.toStringAsFixed(1),
+            ingredient.fatPer100g.toStringAsFixed(1),
+          ),
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
