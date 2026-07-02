@@ -4,7 +4,6 @@ import 'package:drift/drift.dart';
 // Diet tables
 // ---------------------------------------------------------------------------
 
-@DataClass()
 class Ingredients extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
@@ -18,7 +17,6 @@ class Ingredients extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DataClass()
 class Meals extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
@@ -29,7 +27,6 @@ class Meals extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DataClass()
 class MealIngredients extends Table {
   TextColumn get id => text()();
   TextColumn get mealId => text().references(Meals, #id)();
@@ -44,7 +41,6 @@ class MealIngredients extends Table {
 // Exercise tables
 // ---------------------------------------------------------------------------
 
-@DataClass()
 class Exercises extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
@@ -55,7 +51,6 @@ class Exercises extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DataClass()
 class Workouts extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
@@ -69,7 +64,6 @@ class Workouts extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DataClass()
 class WorkoutExercises extends Table {
   TextColumn get id => text()();
   TextColumn get workoutId => text().references(Workouts, #id)();
@@ -80,7 +74,6 @@ class WorkoutExercises extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DataClass()
 class ExerciseSets extends Table {
   TextColumn get id => text()();
   TextColumn get workoutExerciseId =>
