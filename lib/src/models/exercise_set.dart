@@ -5,8 +5,20 @@ final class ExerciseSet {
   final int setNumber;
   final int? reps;
   final double? weightKg;
+
+  /// Planned rest between sets in seconds (schema v5). Required at the form
+  /// level for every set; null only for legacy rows.
+  final int? restSeconds;
   final int? actualReps;
   final double? actualWeightKg;
+
+  /// Actual rest taken between sets in seconds (schema v5). Null until a rest
+  /// period for this set is started and finished/cancelled.
+  final int? actualRestSeconds;
+
+  /// Time the set's actuals were saved (schema v7). Stamped whenever set
+  /// actuals are recorded; null for planned-only sets.
+  final DateTime? completedAt;
   final int? durationMinutes;
   final double? distanceMeters;
   final String? notes;
@@ -17,8 +29,11 @@ final class ExerciseSet {
     required this.setNumber,
     this.reps,
     this.weightKg,
+    this.restSeconds,
     this.actualReps,
     this.actualWeightKg,
+    this.actualRestSeconds,
+    this.completedAt,
     this.durationMinutes,
     this.distanceMeters,
     this.notes,

@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../models/ingredient.dart';
 import '../../models/meal_entry.dart';
 import '../../models/meal_ingredient.dart';
+import '../../ui/date_formats.dart';
 import '../providers/ingredients.dart';
 import '../providers/meals.dart';
 import '../repositories/meal_repository.dart';
@@ -21,9 +22,13 @@ final class MealFormScreen extends ConsumerStatefulWidget {
 final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
+  late final TextEditingController _searchCtrl;
   late DateTime _eatenAt;
   late TimeOfDay _eatenTime;
   bool _saving = false;
+
+  /// Current name filter for the ingredient picker (empty = show all).
+  String _filter = '';
 
   /// Maps ingredient id → gram amount. A value > 0 means selected.
   late Map<String, double> _grams;
@@ -35,6 +40,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
     super.initState();
     final meal = widget.meal;
     _nameCtrl = TextEditingController(text: meal?.name ?? '');
+    _searchCtrl = TextEditingController();
     _eatenAt = meal?.eatenAt ?? DateTime.now();
     _eatenTime = TimeOfDay.fromDateTime(_eatenAt);
     _grams = {};
@@ -48,6 +54,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -86,11 +93,8 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.mealFormDateTime),
               subtitle: Text(
-                '${_eatenAt.day.toString().padLeft(2, '0')}.'
-                '${_eatenAt.month.toString().padLeft(2, '0')}.'
-                '${_eatenAt.year}  '
-                '${_eatenTime.hour.toString().padLeft(2, '0')}:'
-                '${_eatenTime.minute.toString().padLeft(2, '0')}',
+                '${DateFormats.formatDate(context, _eatenAt)}  '
+                '${DateFormats.formatTime(context, _eatenTime)}',
               ),
               trailing: const Icon(Icons.edit_calendar),
               onTap: _pickDateTime,
@@ -109,26 +113,49 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
               error: (e, _) => Text(
                 l10n.errorLoadingResource(l10n.mealFormIngredients, '$e'),
               ),
-              data: (ingredients) => ingredients.isEmpty
-                  ? Text(l10n.mealFormNoIngredients)
-                  : Column(
-                      children: ingredients
-                          .map(
-                            (ing) => _IngredientRow(
-                              ingredient: ing,
-                              grams: _grams[ing.id] ?? 0,
-                              l10n: l10n,
-                              onChanged: (g) => setState(() {
-                                if (g > 0) {
-                                  _grams[ing.id] = g;
-                                } else {
-                                  _grams.remove(ing.id);
-                                }
-                              }),
-                            ),
+              data: (ingredients) {
+                if (ingredients.isEmpty) {
+                  return Text(l10n.mealFormNoIngredients);
+                }
+                final query = _filter.trim().toLowerCase();
+                final visible = query.isEmpty
+                    ? ingredients
+                    : ingredients
+                          .where(
+                            (ing) => ing.name.toLowerCase().contains(query),
                           )
-                          .toList(),
+                          .toList();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _searchCtrl,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: l10n.commonSearch,
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: (v) => setState(() => _filter = v),
                     ),
+                    const SizedBox(height: 8),
+                    ...visible.map(
+                      (ing) => _IngredientRow(
+                        ingredient: ing,
+                        grams: _grams[ing.id] ?? 0,
+                        l10n: l10n,
+                        onChanged: (g) => setState(() {
+                          if (g > 0) {
+                            _grams[ing.id] = g;
+                          } else {
+                            _grams.remove(ing.id);
+                          }
+                        }),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 24),
@@ -189,9 +216,9 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
       final name = _nameCtrl.text.trim();
 
       if (_isEditing) {
-        // Rebuild items from scratch
+        // Rebuild items from scratch, linked to the existing meal id.
         final items = selected
-            .map((e) => _buildItem(widget.meal!.id, e.key, e.value))
+            .map((e) => _buildItem(e.key, e.value, mealId: widget.meal!.id))
             .toList();
         await repo.update(
           MealEntry(
@@ -203,19 +230,18 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
           ),
         );
       } else {
-        final items = selected
-            .map(
-              (e) => _buildItem(
-                '', // mealId will be assigned by newMeal
-                e.key,
-                e.value,
-              ),
-            )
-            .toList();
+        // New meal: newMeal() generates the meal id and stamps it onto
+        // every item, so no placeholder mealId is needed here.
+        final items = selected.map((e) => _buildItem(e.key, e.value)).toList();
         await repo.insert(newMeal(name: name, eatenAt: _eatenAt, items: items));
       }
 
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.commonSaved)));
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -227,7 +253,11 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
     }
   }
 
-  MealIngredient _buildItem(String mealId, String ingredientId, double grams) {
+  MealIngredient _buildItem(
+    String ingredientId,
+    double grams, {
+    String mealId = '',
+  }) {
     return MealIngredient(
       id: const Uuid().v7(),
       mealId: mealId,

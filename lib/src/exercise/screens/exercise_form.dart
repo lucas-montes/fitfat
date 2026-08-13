@@ -8,7 +8,11 @@ import '../repositories/exercise_repository.dart';
 
 final class ExerciseFormScreen extends ConsumerStatefulWidget {
   final Exercise? exercise;
-  const ExerciseFormScreen({super.key, this.exercise});
+
+  /// Optional prefill for a brand-new exercise (used by the workout form's
+  /// "create" row so the typed search query becomes the exercise name).
+  final String? initialName;
+  const ExerciseFormScreen({super.key, this.exercise, this.initialName});
 
   @override
   ConsumerState<ExerciseFormScreen> createState() => _ExerciseFormScreenState();
@@ -26,7 +30,9 @@ final class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
   void initState() {
     super.initState();
     final ex = widget.exercise;
-    _nameCtrl = TextEditingController(text: ex?.name ?? '');
+    _nameCtrl = TextEditingController(
+      text: ex?.name ?? widget.initialName ?? '',
+    );
     _exerciseType = ex?.exerciseType ?? 'weightlifting';
   }
 
@@ -106,11 +112,12 @@ final class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
         await repo.update(
           widget.exercise!.copyWith(name: name, exerciseType: _exerciseType),
         );
+        if (mounted) Navigator.of(context).pop(true);
       } else {
-        await repo.insert(newExercise(name: name, exerciseType: _exerciseType));
+        final created = newExercise(name: name, exerciseType: _exerciseType);
+        await repo.insert(created);
+        if (mounted) Navigator.of(context).pop(created);
       }
-
-      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;

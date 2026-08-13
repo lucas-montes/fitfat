@@ -130,6 +130,18 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get tabSettings;
 
+  /// No description provided for @tabPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get tabPlan;
+
+  /// No description provided for @tabNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get tabNotes;
+
   /// No description provided for @dashboardAppBar.
   ///
   /// In en, this message translates to:
@@ -154,6 +166,36 @@ abstract class AppLocalizations {
   /// **'No completed workouts yet.'**
   String get dashboardNoWorkouts;
 
+  /// No description provided for @dashboardWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to FitFat'**
+  String get dashboardWelcomeTitle;
+
+  /// No description provided for @dashboardWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Start by adding an ingredient, a meal, or a workout.'**
+  String get dashboardWelcomeBody;
+
+  /// No description provided for @dashboardWelcomeActionIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an ingredient'**
+  String get dashboardWelcomeActionIngredients;
+
+  /// No description provided for @dashboardWelcomeActionMeals.
+  ///
+  /// In en, this message translates to:
+  /// **'Log a meal'**
+  String get dashboardWelcomeActionMeals;
+
+  /// No description provided for @dashboardWelcomeActionWorkouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a workout'**
+  String get dashboardWelcomeActionWorkouts;
+
   /// No description provided for @dashboardDurationMin.
   ///
   /// In en, this message translates to:
@@ -172,6 +214,138 @@ abstract class AppLocalizations {
   /// **'Error: {message}'**
   String dashboardError(String message);
 
+  /// No description provided for @dashboardGreetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get dashboardGreetingMorning;
+
+  /// No description provided for @dashboardGreetingAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get dashboardGreetingAfternoon;
+
+  /// No description provided for @dashboardGreetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get dashboardGreetingEvening;
+
+  /// No description provided for @dashboardMacroProtein.
+  ///
+  /// In en, this message translates to:
+  /// **'Protein'**
+  String get dashboardMacroProtein;
+
+  /// No description provided for @dashboardMacroCarbs.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbs'**
+  String get dashboardMacroCarbs;
+
+  /// No description provided for @dashboardMacroFat.
+  ///
+  /// In en, this message translates to:
+  /// **'Fat'**
+  String get dashboardMacroFat;
+
+  /// No description provided for @dashboardContinueWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue workout'**
+  String get dashboardContinueWorkout;
+
+  /// No description provided for @dashboardOpenWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Open workout'**
+  String get dashboardOpenWorkout;
+
+  /// No description provided for @dashboardCalorieTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily calorie target'**
+  String get dashboardCalorieTarget;
+
+  /// No description provided for @dashboardRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'remaining'**
+  String get dashboardRemaining;
+
+  /// No description provided for @dashboardConsumedOfTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'{consumed} / {target} kcal'**
+  String dashboardConsumedOfTarget(String consumed, String target);
+
+  /// No description provided for @dashboardOverTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'{kcal} kcal over target'**
+  String dashboardOverTarget(String kcal);
+
+  /// No description provided for @dashboardMacroTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'Macro targets'**
+  String get dashboardMacroTargets;
+
+  /// No description provided for @dashboardMacroProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{consumed} / {target} g'**
+  String dashboardMacroProgress(String consumed, String target);
+
+  /// No description provided for @dashboardWeightTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight trend'**
+  String get dashboardWeightTrend;
+
+  /// No description provided for @dashboardWeeklyWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly workout'**
+  String get dashboardWeeklyWorkout;
+
+  /// No description provided for @dashboardVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get dashboardVolume;
+
+  /// No description provided for @dashboardVolumeKg.
+  ///
+  /// In en, this message translates to:
+  /// **'{volume} kg'**
+  String dashboardVolumeKg(String volume);
+
+  /// No description provided for @dashboardMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes'**
+  String get dashboardMinutes;
+
+  /// No description provided for @dashboardUpcomingTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming tasks'**
+  String get dashboardUpcomingTasks;
+
+  /// No description provided for @dashboardNoUpcomingTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming timed tasks.'**
+  String get dashboardNoUpcomingTasks;
+
+  /// No description provided for @dashboardSeeAllTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'See all {count} tasks'**
+  String dashboardSeeAllTasks(String count);
+
   /// No description provided for @exerciseListAppBar.
   ///
   /// In en, this message translates to:
@@ -184,23 +358,347 @@ abstract class AppLocalizations {
   /// **'Manage Exercises'**
   String get exerciseListManageBtn;
 
-  /// No description provided for @exerciseListEmpty.
+  /// No description provided for @exerciseListSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'No exercises yet. Tap + to add one.'**
-  String get exerciseListEmpty;
+  /// **'Search exercises'**
+  String get exerciseListSearchHint;
 
-  /// No description provided for @exerciseListDeleteTitle.
+  /// No description provided for @exerciseFilterType.
   ///
   /// In en, this message translates to:
-  /// **'Delete exercise?'**
-  String get exerciseListDeleteTitle;
+  /// **'Type'**
+  String get exerciseFilterType;
 
-  /// No description provided for @exerciseListDeleteConfirm.
+  /// No description provided for @exerciseFilterBodyPart.
   ///
   /// In en, this message translates to:
-  /// **'Remove \"{name}\"?'**
-  String exerciseListDeleteConfirm(String name);
+  /// **'Body part'**
+  String get exerciseFilterBodyPart;
+
+  /// No description provided for @exerciseFilterEquipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get exerciseFilterEquipment;
+
+  /// No description provided for @exerciseFilterMuscle.
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle'**
+  String get exerciseFilterMuscle;
+
+  /// No description provided for @exerciseFilterResults.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} exercises'**
+  String exerciseFilterResults(int count);
+
+  /// No description provided for @exerciseFilterClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get exerciseFilterClear;
+
+  /// No description provided for @exerciseFilterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get exerciseFilterApply;
+
+  /// No description provided for @exerciseFilterNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No exercises match'**
+  String get exerciseFilterNoResults;
+
+  /// No description provided for @exerciseFilterSearchOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Search options'**
+  String get exerciseFilterSearchOptions;
+
+  /// No description provided for @exerciseDetailTabHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get exerciseDetailTabHistory;
+
+  /// No description provided for @exerciseDetailTabDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get exerciseDetailTabDetails;
+
+  /// No description provided for @emptyExercisesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No exercises yet'**
+  String get emptyExercisesTitle;
+
+  /// No description provided for @emptyExercisesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create exercises to plan your workouts.'**
+  String get emptyExercisesBody;
+
+  /// No description provided for @emptyExercisesCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Add exercise'**
+  String get emptyExercisesCta;
+
+  /// No description provided for @activeWorkoutAddExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Exercise'**
+  String get activeWorkoutAddExercise;
+
+  /// No description provided for @activeWorkoutAddExerciseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search and add exercises to this workout'**
+  String get activeWorkoutAddExerciseTooltip;
+
+  /// No description provided for @activeWorkoutInThisWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'In This Workout'**
+  String get activeWorkoutInThisWorkout;
+
+  /// No description provided for @activeWorkoutAllExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'All Exercises'**
+  String get activeWorkoutAllExercises;
+
+  /// No description provided for @activeWorkoutSearchPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Type to search exercises'**
+  String get activeWorkoutSearchPrompt;
+
+  /// No description provided for @exerciseUsedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise in use'**
+  String get exerciseUsedTitle;
+
+  /// No description provided for @exerciseUsedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in {count} workout. Delete the workout first to remove this exercise.'**
+  String exerciseUsedBody(int count);
+
+  /// No description provided for @exerciseUsedBody_plural.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in {count} workouts. Delete the workouts first to remove this exercise.'**
+  String exerciseUsedBody_plural(Object count);
+
+  /// No description provided for @exerciseLockedEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in exercises can\'t be edited.'**
+  String get exerciseLockedEdit;
+
+  /// No description provided for @exerciseLockedDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in exercises can\'t be deleted.'**
+  String get exerciseLockedDelete;
+
+  /// No description provided for @exerciseDetailAppBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise'**
+  String get exerciseDetailAppBar;
+
+  /// No description provided for @exerciseDetailNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise not found.'**
+  String get exerciseDetailNotFound;
+
+  /// No description provided for @exerciseDetailType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get exerciseDetailType;
+
+  /// No description provided for @exerciseDetailBodyPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Body part'**
+  String get exerciseDetailBodyPart;
+
+  /// No description provided for @exerciseDetailEquipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get exerciseDetailEquipment;
+
+  /// No description provided for @exerciseDetailPrimaryMuscle.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary muscles'**
+  String get exerciseDetailPrimaryMuscle;
+
+  /// No description provided for @exerciseDetailSecondaryMuscle.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary muscles'**
+  String get exerciseDetailSecondaryMuscle;
+
+  /// No description provided for @exerciseDetailInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get exerciseDetailInstructions;
+
+  /// No description provided for @exerciseDetailTips.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips'**
+  String get exerciseDetailTips;
+
+  /// No description provided for @exerciseDetailFaqs.
+  ///
+  /// In en, this message translates to:
+  /// **'FAQs'**
+  String get exerciseDetailFaqs;
+
+  /// No description provided for @exerciseDetailKeywords.
+  ///
+  /// In en, this message translates to:
+  /// **'Keywords'**
+  String get exerciseDetailKeywords;
+
+  /// No description provided for @exerciseDetailHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get exerciseDetailHistory;
+
+  /// No description provided for @exerciseDetailHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet. Add this exercise to a workout to see your stats.'**
+  String get exerciseDetailHistoryEmpty;
+
+  /// No description provided for @exerciseDetailBestWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Best weight'**
+  String get exerciseDetailBestWeight;
+
+  /// No description provided for @exerciseDetailBestVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Best volume'**
+  String get exerciseDetailBestVolume;
+
+  /// No description provided for @exerciseDetailBestDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Best duration'**
+  String get exerciseDetailBestDuration;
+
+  /// No description provided for @exerciseDetailTotalWorkouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts'**
+  String get exerciseDetailTotalWorkouts;
+
+  /// No description provided for @exerciseDetailTotalSets.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets'**
+  String get exerciseDetailTotalSets;
+
+  /// No description provided for @exerciseDetailVolumeOverTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume over time'**
+  String get exerciseDetailVolumeOverTime;
+
+  /// No description provided for @exerciseDetailDurationOverTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration over time'**
+  String get exerciseDetailDurationOverTime;
+
+  /// No description provided for @exerciseDetailPlannedVsActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned vs actual'**
+  String get exerciseDetailPlannedVsActual;
+
+  /// No description provided for @exerciseDetailVolumeAdherence.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume adherence'**
+  String get exerciseDetailVolumeAdherence;
+
+  /// No description provided for @exerciseDetailSetsCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets completed'**
+  String get exerciseDetailSetsCompleted;
+
+  /// No description provided for @exerciseDetailAdherenceValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String exerciseDetailAdherenceValue(String percent);
+
+  /// No description provided for @exerciseDetailSetNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Set {number}'**
+  String exerciseDetailSetNumber(int number);
+
+  /// No description provided for @exerciseDetailSetCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get exerciseDetailSetCompleted;
+
+  /// No description provided for @exerciseDetailSetNotCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not completed'**
+  String get exerciseDetailSetNotCompleted;
+
+  /// No description provided for @exerciseDetailSetEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get exerciseDetailSetEmpty;
+
+  /// No description provided for @exerciseDetailRepsDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'{delta} reps'**
+  String exerciseDetailRepsDelta(String delta);
+
+  /// No description provided for @exerciseDetailWeightDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'{delta} kg'**
+  String exerciseDetailWeightDelta(String delta);
+
+  /// No description provided for @exerciseDetailSetRest.
+  ///
+  /// In en, this message translates to:
+  /// **'rest {rest}'**
+  String exerciseDetailSetRest(String rest);
+
+  /// No description provided for @exerciseDetailSetRestTook.
+  ///
+  /// In en, this message translates to:
+  /// **'(took {rest})'**
+  String exerciseDetailSetRestTook(String rest);
 
   /// No description provided for @exerciseFormNewTitle.
   ///
@@ -262,29 +760,47 @@ abstract class AppLocalizations {
   /// **'Manage Exercises'**
   String get workoutListManageBtn;
 
-  /// No description provided for @workoutListEmpty.
+  /// No description provided for @emptyWorkoutsTitle.
   ///
   /// In en, this message translates to:
-  /// **'No workouts yet. Tap + to add one.'**
-  String get workoutListEmpty;
+  /// **'No workouts yet'**
+  String get emptyWorkoutsTitle;
 
-  /// No description provided for @workoutListDeleteTitle.
+  /// No description provided for @emptyWorkoutsBody.
   ///
   /// In en, this message translates to:
-  /// **'Delete workout?'**
-  String get workoutListDeleteTitle;
+  /// **'Plan your first workout and start training.'**
+  String get emptyWorkoutsBody;
 
-  /// No description provided for @workoutListDeleteConfirm.
+  /// No description provided for @emptyWorkoutsCta.
   ///
   /// In en, this message translates to:
-  /// **'Remove \"{name}\"?'**
-  String workoutListDeleteConfirm(String name);
+  /// **'Add workout'**
+  String get emptyWorkoutsCta;
+
+  /// No description provided for @workoutDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout \"{name}\" deleted'**
+  String workoutDeleted(String name);
+
+  /// No description provided for @workoutDuplicated.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout \"{name}\" duplicated'**
+  String workoutDuplicated(String name);
 
   /// No description provided for @workoutFormTitle.
   ///
   /// In en, this message translates to:
   /// **'New Workout'**
   String get workoutFormTitle;
+
+  /// No description provided for @workoutFormEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Workout'**
+  String get workoutFormEditTitle;
 
   /// No description provided for @workoutFormNameLabel.
   ///
@@ -364,6 +880,36 @@ abstract class AppLocalizations {
   /// **'Select at least one exercise'**
   String get workoutFormSelectExercise;
 
+  /// No description provided for @workoutFormSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search exercises'**
+  String get workoutFormSearchHint;
+
+  /// No description provided for @workoutFormRestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest (min)'**
+  String get workoutFormRestLabel;
+
+  /// No description provided for @workoutFormSetIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete every added set with its values and rest time (or remove the empty set)'**
+  String get workoutFormSetIncomplete;
+
+  /// No description provided for @workoutFormRemoveExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove exercise'**
+  String get workoutFormRemoveExercise;
+
+  /// No description provided for @workoutFormCreateExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new exercise “{query}”'**
+  String workoutFormCreateExercise(Object query);
+
   /// No description provided for @workoutDetailAppBar.
   ///
   /// In en, this message translates to:
@@ -400,11 +946,17 @@ abstract class AppLocalizations {
   /// **'Exercises'**
   String get workoutDetailExercises;
 
-  /// No description provided for @workoutDetailNoExercises.
+  /// No description provided for @emptyWorkoutDetailTitle.
   ///
   /// In en, this message translates to:
-  /// **'No exercises in this workout.'**
-  String get workoutDetailNoExercises;
+  /// **'No exercises in this workout'**
+  String get emptyWorkoutDetailTitle;
+
+  /// No description provided for @emptyWorkoutDetailBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add exercises when creating a workout.'**
+  String get emptyWorkoutDetailBody;
 
   /// No description provided for @workoutDetailSetHeaderHash.
   ///
@@ -466,29 +1018,47 @@ abstract class AppLocalizations {
   /// **'{count} sets'**
   String workoutDetailSetCount_plural(Object count);
 
+  /// No description provided for @workoutStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout started'**
+  String get workoutStarted;
+
+  /// No description provided for @workoutCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout completed'**
+  String get workoutCompleted;
+
   /// No description provided for @ingredientListAppBar.
   ///
   /// In en, this message translates to:
   /// **'Ingredients'**
   String get ingredientListAppBar;
 
-  /// No description provided for @ingredientListEmpty.
+  /// No description provided for @emptyIngredientsTitle.
   ///
   /// In en, this message translates to:
-  /// **'No ingredients yet. Tap + to add one.'**
-  String get ingredientListEmpty;
+  /// **'No ingredients yet'**
+  String get emptyIngredientsTitle;
 
-  /// No description provided for @ingredientListDeleteTitle.
+  /// No description provided for @emptyIngredientsBody.
   ///
   /// In en, this message translates to:
-  /// **'Delete ingredient?'**
-  String get ingredientListDeleteTitle;
+  /// **'Add your first ingredient to start building meals.'**
+  String get emptyIngredientsBody;
 
-  /// No description provided for @ingredientListDeleteConfirm.
+  /// No description provided for @emptyIngredientsCta.
   ///
   /// In en, this message translates to:
-  /// **'Remove \"{name}\"?'**
-  String ingredientListDeleteConfirm(String name);
+  /// **'Add ingredient'**
+  String get emptyIngredientsCta;
+
+  /// No description provided for @ingredientArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredient \"{name}\" archived'**
+  String ingredientArchived(String name);
 
   /// No description provided for @ingredientFormNewTitle.
   ///
@@ -568,6 +1138,42 @@ abstract class AppLocalizations {
   /// **'g'**
   String get ingredientFormFatSuffix;
 
+  /// No description provided for @ingredientFormSodiumLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sodium (per 100g)'**
+  String get ingredientFormSodiumLabel;
+
+  /// No description provided for @ingredientFormSodiumSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'mg'**
+  String get ingredientFormSodiumSuffix;
+
+  /// No description provided for @ingredientFormFiberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiber (per 100g)'**
+  String get ingredientFormFiberLabel;
+
+  /// No description provided for @ingredientFormFiberSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'g'**
+  String get ingredientFormFiberSuffix;
+
+  /// No description provided for @ingredientFormSugarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sugar (per 100g)'**
+  String get ingredientFormSugarLabel;
+
+  /// No description provided for @ingredientFormSugarSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'g'**
+  String get ingredientFormSugarSuffix;
+
   /// No description provided for @ingredientFormFieldRequired.
   ///
   /// In en, this message translates to:
@@ -598,23 +1204,29 @@ abstract class AppLocalizations {
   /// **'Manage Ingredients'**
   String get mealListManageBtn;
 
-  /// No description provided for @mealListEmpty.
+  /// No description provided for @emptyMealsTitle.
   ///
   /// In en, this message translates to:
-  /// **'No meals yet. Tap + to add one.'**
-  String get mealListEmpty;
+  /// **'No meals yet'**
+  String get emptyMealsTitle;
 
-  /// No description provided for @mealListDeleteTitle.
+  /// No description provided for @emptyMealsBody.
   ///
   /// In en, this message translates to:
-  /// **'Delete meal?'**
-  String get mealListDeleteTitle;
+  /// **'Log your first meal to track calories and macros.'**
+  String get emptyMealsBody;
 
-  /// No description provided for @mealListDeleteConfirm.
+  /// No description provided for @emptyMealsCta.
   ///
   /// In en, this message translates to:
-  /// **'Remove \"{name}\"?'**
-  String mealListDeleteConfirm(String name);
+  /// **'Log a meal'**
+  String get emptyMealsCta;
+
+  /// No description provided for @mealDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal \"{name}\" deleted'**
+  String mealDeleted(String name);
 
   /// No description provided for @mealListIngredientCount.
   ///
@@ -718,17 +1330,533 @@ abstract class AppLocalizations {
   /// **'Saving…'**
   String get mealFormSaving;
 
+  /// No description provided for @plannerAppBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Plan'**
+  String get plannerAppBar;
+
+  /// No description provided for @plannerToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get plannerToday;
+
+  /// No description provided for @plannerPreviousDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous day'**
+  String get plannerPreviousDay;
+
+  /// No description provided for @plannerNextDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Next day'**
+  String get plannerNextDay;
+
+  /// No description provided for @plannerAnytime.
+  ///
+  /// In en, this message translates to:
+  /// **'Anytime'**
+  String get plannerAnytime;
+
+  /// No description provided for @plannerTimelineScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get plannerTimelineScheduled;
+
+  /// No description provided for @emptyPlannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks for this day'**
+  String get emptyPlannerTitle;
+
+  /// No description provided for @emptyPlannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a task to plan your routine.'**
+  String get emptyPlannerBody;
+
+  /// No description provided for @emptyPlannerCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Add task'**
+  String get emptyPlannerCta;
+
+  /// No description provided for @plannerTaskLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get plannerTaskLabel;
+
+  /// No description provided for @plannerTaskHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Morning run'**
+  String get plannerTaskHint;
+
+  /// No description provided for @plannerTaskRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Title is required'**
+  String get plannerTaskRequired;
+
+  /// No description provided for @plannerNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get plannerNotesLabel;
+
+  /// No description provided for @plannerWorkoutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout (optional)'**
+  String get plannerWorkoutLabel;
+
+  /// No description provided for @plannerWorkoutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a workout'**
+  String get plannerWorkoutHint;
+
+  /// No description provided for @plannerWorkoutNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No workout'**
+  String get plannerWorkoutNone;
+
+  /// No description provided for @plannerLinkedWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Open linked workout'**
+  String get plannerLinkedWorkout;
+
+  /// No description provided for @plannerDueDateNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get plannerDueDateNone;
+
+  /// No description provided for @plannerDueDateClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear due date'**
+  String get plannerDueDateClear;
+
+  /// No description provided for @plannerDueTimeNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No due time'**
+  String get plannerDueTimeNone;
+
+  /// No description provided for @plannerDueTimeClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear due time'**
+  String get plannerDueTimeClear;
+
+  /// No description provided for @plannerAddTask.
+  ///
+  /// In en, this message translates to:
+  /// **'New Task'**
+  String get plannerAddTask;
+
+  /// No description provided for @plannerEditTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Task'**
+  String get plannerEditTask;
+
+  /// No description provided for @plannerDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Task \"{title}\" deleted'**
+  String plannerDeleted(String title);
+
+  /// No description provided for @plannerCopyPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy from yesterday'**
+  String get plannerCopyPrevious;
+
+  /// No description provided for @plannerCopyConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy pending tasks?'**
+  String get plannerCopyConfirmTitle;
+
+  /// No description provided for @plannerCopyConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pending task from yesterday will be copied to today.'**
+  String plannerCopyConfirmBody(int count);
+
+  /// No description provided for @plannerCopyConfirmBody_plural.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pending tasks from yesterday will be copied to today.'**
+  String plannerCopyConfirmBody_plural(Object count);
+
+  /// No description provided for @plannerCopyNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending tasks from yesterday to copy.'**
+  String get plannerCopyNothing;
+
+  /// No description provided for @plannerCopyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied {count} task to today.'**
+  String plannerCopyDone(int count);
+
+  /// No description provided for @plannerCopyDone_plural.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied {count} tasks to today.'**
+  String plannerCopyDone_plural(Object count);
+
+  /// No description provided for @notesAppBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesAppBar;
+
+  /// No description provided for @notesEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes yet'**
+  String get notesEmptyTitle;
+
+  /// No description provided for @notesEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture anything on your mind — routines, recipes, lessons from a workout. Notes are private to this device.'**
+  String get notesEmptyBody;
+
+  /// No description provided for @notesFab.
+  ///
+  /// In en, this message translates to:
+  /// **'New note'**
+  String get notesFab;
+
+  /// No description provided for @notesEditorNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Note'**
+  String get notesEditorNewTitle;
+
+  /// No description provided for @notesEditorEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Note'**
+  String get notesEditorEditTitle;
+
+  /// No description provided for @notesTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get notesTitleLabel;
+
+  /// No description provided for @notesBodyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get notesBodyLabel;
+
+  /// No description provided for @notesTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Title is required'**
+  String get notesTitleRequired;
+
+  /// No description provided for @notesSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get notesSave;
+
+  /// No description provided for @notesEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get notesEditing;
+
+  /// No description provided for @notesDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note'**
+  String get notesDelete;
+
+  /// No description provided for @notesDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete note?'**
+  String get notesDeleteConfirmTitle;
+
+  /// No description provided for @notesDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” will be permanently deleted. This can’t be undone.'**
+  String notesDeleteConfirmBody(Object title);
+
   /// No description provided for @settingsAppBar.
   ///
   /// In en, this message translates to:
   /// **'Settings'**
   String get settingsAppBar;
 
-  /// No description provided for @settingsBody.
+  /// No description provided for @settingsProfile.
   ///
   /// In en, this message translates to:
-  /// **'Settings'**
-  String get settingsBody;
+  /// **'Profile'**
+  String get settingsProfile;
+
+  /// No description provided for @settingsAgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Age (years)'**
+  String get settingsAgeLabel;
+
+  /// No description provided for @settingsAgeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an age between 0 and 120'**
+  String get settingsAgeInvalid;
+
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// No description provided for @settingsThemeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get settingsThemeSystem;
+
+  /// No description provided for @settingsThemeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get settingsThemeLight;
+
+  /// No description provided for @settingsThemeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get settingsThemeDark;
+
+  /// No description provided for @settingsLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// No description provided for @settingsLangEn.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get settingsLangEn;
+
+  /// No description provided for @settingsLangFr.
+  ///
+  /// In en, this message translates to:
+  /// **'Français'**
+  String get settingsLangFr;
+
+  /// No description provided for @settingsLangEs.
+  ///
+  /// In en, this message translates to:
+  /// **'Español'**
+  String get settingsLangEs;
+
+  /// No description provided for @settingsBodyWeightGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Body weight goal'**
+  String get settingsBodyWeightGoal;
+
+  /// No description provided for @settingsGoalLose.
+  ///
+  /// In en, this message translates to:
+  /// **'Lose weight'**
+  String get settingsGoalLose;
+
+  /// No description provided for @settingsGoalMaintain.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintain weight'**
+  String get settingsGoalMaintain;
+
+  /// No description provided for @settingsGoalGain.
+  ///
+  /// In en, this message translates to:
+  /// **'Gain weight'**
+  String get settingsGoalGain;
+
+  /// No description provided for @settingsGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get settingsGender;
+
+  /// No description provided for @settingsGenderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get settingsGenderMale;
+
+  /// No description provided for @settingsGenderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get settingsGenderFemale;
+
+  /// No description provided for @settingsActivityLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity level'**
+  String get settingsActivityLevel;
+
+  /// No description provided for @settingsActivitySedentary.
+  ///
+  /// In en, this message translates to:
+  /// **'Sedentary'**
+  String get settingsActivitySedentary;
+
+  /// No description provided for @settingsActivityLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get settingsActivityLight;
+
+  /// No description provided for @settingsActivityModerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get settingsActivityModerate;
+
+  /// No description provided for @settingsActivityActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get settingsActivityActive;
+
+  /// No description provided for @settingsActivityVeryActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Very active'**
+  String get settingsActivityVeryActive;
+
+  /// No description provided for @settingsComputeActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Compute activity from workouts and steps'**
+  String get settingsComputeActivity;
+
+  /// No description provided for @settingsTrackBodyFat.
+  ///
+  /// In en, this message translates to:
+  /// **'Track body fat'**
+  String get settingsTrackBodyFat;
+
+  /// No description provided for @settingsBodyFatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Body fat (%)'**
+  String get settingsBodyFatLabel;
+
+  /// No description provided for @settingsBodyFatInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a body fat percentage between 0 and 70'**
+  String get settingsBodyFatInvalid;
+
+  /// No description provided for @settingsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsNotifications;
+
+  /// No description provided for @settingsPlannerNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Task reminders'**
+  String get settingsPlannerNotifications;
+
+  /// No description provided for @settingsPlannerNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify me about planner tasks with a due time.'**
+  String get settingsPlannerNotificationsSubtitle;
+
+  /// No description provided for @settingsRestAlarmSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest alarm sound'**
+  String get settingsRestAlarmSound;
+
+  /// No description provided for @settingsRestAlarmVibration.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest alarm vibration'**
+  String get settingsRestAlarmVibration;
+
+  /// No description provided for @settingsData.
+  ///
+  /// In en, this message translates to:
+  /// **'Data'**
+  String get settingsData;
+
+  /// No description provided for @settingsResetData.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all data'**
+  String get settingsResetData;
+
+  /// No description provided for @settingsResetDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Erase all workouts, meals, metrics, planner tasks and notes, and restore default settings.'**
+  String get settingsResetDataSubtitle;
+
+  /// No description provided for @settingsResetDataConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all data?'**
+  String get settingsResetDataConfirmTitle;
+
+  /// No description provided for @settingsResetDataConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes all of your data and resets your settings. This cannot be undone.'**
+  String get settingsResetDataConfirmBody;
+
+  /// No description provided for @settingsResetDataConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete everything'**
+  String get settingsResetDataConfirmAction;
+
+  /// No description provided for @settingsResetDataDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All data has been reset.'**
+  String get settingsResetDataDone;
+
+  /// No description provided for @taskReminderDueSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Due in 30 minutes'**
+  String get taskReminderDueSoon;
+
+  /// No description provided for @taskReminderDueNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Due now'**
+  String get taskReminderDueNow;
 
   /// No description provided for @statusCompleted.
   ///
@@ -766,23 +1894,47 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get commonCancel;
 
-  /// No description provided for @commonDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get commonDelete;
-
   /// No description provided for @commonSave.
   ///
   /// In en, this message translates to:
   /// **'Save'**
   String get commonSave;
 
+  /// No description provided for @commonSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get commonSaved;
+
+  /// No description provided for @commonEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get commonEdit;
+
+  /// No description provided for @commonUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get commonUndo;
+
+  /// No description provided for @commonOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get commonOk;
+
   /// No description provided for @commonSaving.
   ///
   /// In en, this message translates to:
   /// **'Saving…'**
   String get commonSaving;
+
+  /// No description provided for @commonSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get commonSearch;
 
   /// No description provided for @errorWithMessage.
   ///
@@ -820,6 +1972,24 @@ abstract class AppLocalizations {
     String fat,
   );
 
+  /// No description provided for @ingredientNutrientSodium.
+  ///
+  /// In en, this message translates to:
+  /// **'Na {value}mg'**
+  String ingredientNutrientSodium(String value);
+
+  /// No description provided for @ingredientNutrientFiber.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiber {value}g'**
+  String ingredientNutrientFiber(String value);
+
+  /// No description provided for @ingredientNutrientSugar.
+  ///
+  /// In en, this message translates to:
+  /// **'Sugar {value}g'**
+  String ingredientNutrientSugar(String value);
+
   /// No description provided for @workoutDetailPlannedSetReps.
   ///
   /// In en, this message translates to:
@@ -837,6 +2007,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'—'**
   String get workoutDetailPlannedSetEmpty;
+
+  /// No description provided for @workoutDetailPlannedSetRest.
+  ///
+  /// In en, this message translates to:
+  /// **'{planned} · rest {rest}'**
+  String workoutDetailPlannedSetRest(Object planned, Object rest);
 
   /// No description provided for @workoutDetailActualSetReps.
   ///
@@ -861,6 +2037,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'—'**
   String get workoutDetailActualSetEmpty;
+
+  /// No description provided for @bodyMetricsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Body Metrics'**
+  String get bodyMetricsTitle;
+
+  /// No description provided for @bodyMetricsAddWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Add weight'**
+  String get bodyMetricsAddWeight;
+
+  /// No description provided for @bodyMetricsAddHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Add height'**
+  String get bodyMetricsAddHeight;
+
+  /// No description provided for @bodyMetricsWeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight (kg)'**
+  String get bodyMetricsWeightLabel;
+
+  /// No description provided for @bodyMetricsHeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Height (cm)'**
+  String get bodyMetricsHeightLabel;
+
+  /// No description provided for @bodyMetricsDialogWeightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New weight entry'**
+  String get bodyMetricsDialogWeightTitle;
+
+  /// No description provided for @bodyMetricsDialogHeightTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New height entry'**
+  String get bodyMetricsDialogHeightTitle;
+
+  /// No description provided for @bodyMetricsValueRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value'**
+  String get bodyMetricsValueRequired;
+
+  /// No description provided for @bodyMetricsValuePositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Value must be greater than 0'**
+  String get bodyMetricsValuePositive;
+
+  /// No description provided for @bodyMetricsEmptyWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'No weight entries yet.'**
+  String get bodyMetricsEmptyWeight;
+
+  /// No description provided for @bodyMetricsEmptyHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'No height entries yet.'**
+  String get bodyMetricsEmptyHeight;
+
+  /// No description provided for @bodyMetricsLatestWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest: {value} kg'**
+  String bodyMetricsLatestWeight(String value);
+
+  /// No description provided for @bodyMetricsLatestHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest: {value} cm'**
+  String bodyMetricsLatestHeight(String value);
+
+  /// No description provided for @bodyMetricsValueKg.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} kg'**
+  String bodyMetricsValueKg(String value);
+
+  /// No description provided for @bodyMetricsValueCm.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} cm'**
+  String bodyMetricsValueCm(String value);
+
+  /// No description provided for @bodyMetricsGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal: {goal}'**
+  String bodyMetricsGoal(String goal);
+
+  /// No description provided for @restTimerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest timer'**
+  String get restTimerTitle;
+
+  /// No description provided for @restTimerCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel rest'**
+  String get restTimerCancel;
+
+  /// No description provided for @restTimerMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String restTimerMinutes(int minutes);
+
+  /// No description provided for @activeWorkoutElapsedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Elapsed'**
+  String get activeWorkoutElapsedLabel;
+
+  /// No description provided for @activeWorkoutRestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest'**
+  String get activeWorkoutRestLabel;
+
+  /// No description provided for @activeWorkoutResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get activeWorkoutResume;
+
+  /// No description provided for @restAlarmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest is over'**
+  String get restAlarmTitle;
+
+  /// No description provided for @restAlarmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your planned rest is complete.'**
+  String get restAlarmBody;
+
+  /// No description provided for @restAlarmBodyWithDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Your planned rest of {duration} is complete.'**
+  String restAlarmBodyWithDuration(String duration);
+
+  /// No description provided for @workoutSummaryAppBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get workoutSummaryAppBar;
+
+  /// No description provided for @workoutSummaryDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get workoutSummaryDone;
+
+  /// No description provided for @workoutSummaryDurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get workoutSummaryDurationLabel;
+
+  /// No description provided for @workoutSummaryAvgRest.
+  ///
+  /// In en, this message translates to:
+  /// **'Average rest'**
+  String get workoutSummaryAvgRest;
+
+  /// No description provided for @workoutSummaryVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get workoutSummaryVolume;
+
+  /// No description provided for @workoutSummaryMaxWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Max weight'**
+  String get workoutSummaryMaxWeight;
+
+  /// No description provided for @workoutSummaryTotalReps.
+  ///
+  /// In en, this message translates to:
+  /// **'Total reps'**
+  String get workoutSummaryTotalReps;
+
+  /// No description provided for @workoutSummaryTotalDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Total duration'**
+  String get workoutSummaryTotalDuration;
+
+  /// No description provided for @workoutSummaryTotalDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Total distance'**
+  String get workoutSummaryTotalDistance;
+
+  /// No description provided for @workoutSummaryValueKg.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} kg'**
+  String workoutSummaryValueKg(String value);
+
+  /// No description provided for @workoutSummaryDistanceValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} m'**
+  String workoutSummaryDistanceValue(String distance);
 }
 
 class _AppLocalizationsDelegate

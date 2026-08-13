@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/meal_entry.dart';
 import '../../models/meal_ingredient.dart';
+import '../../ui/date_formats.dart';
+import '../../ui/haptics.dart';
+import '../../ui/tokens.dart';
+import '../../ui/widgets/empty_state.dart';
 import '../providers/meals.dart';
 import 'ingredient_list.dart';
 import 'meal_form.dart' show MealFormScreen;
@@ -33,7 +39,13 @@ final class MealListScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
         data: (meals) => meals.isEmpty
-            ? Center(child: Text(l10n.mealListEmpty))
+            ? EmptyState(
+                icon: Icons.restaurant_outlined,
+                title: l10n.emptyMealsTitle,
+                description: l10n.emptyMealsBody,
+                ctaLabel: l10n.emptyMealsCta,
+                onCtaPressed: () => _openForm(context, ref, null),
+              )
             : _buildMealList(context, ref, meals, l10n),
       ),
       floatingActionButton: FloatingActionButton(
@@ -74,7 +86,7 @@ final class MealListScreen extends ConsumerWidget {
           meals: dayMeals,
           l10n: l10n,
           onTap: (meal) => _openForm(context, ref, meal),
-          onDelete: (meal) => _deleteMeal(ref, meal),
+          onDelete: (meal) => _deleteMeal(context, ref, meal),
         );
       },
     );
@@ -91,9 +103,30 @@ final class MealListScreen extends ConsumerWidget {
     if (saved == true) ref.invalidate(mealListProvider);
   }
 
-  Future<void> _deleteMeal(WidgetRef ref, MealEntry meal) async {
+  Future<void> _deleteMeal(
+    BuildContext context,
+    WidgetRef ref,
+    MealEntry meal,
+  ) async {
+    unawaited(Haptics.mediumImpact());
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
     await ref.read(mealRepositoryProvider).delete(meal.id);
     ref.invalidate(mealListProvider);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.mealDeleted(meal.name)),
+          action: SnackBarAction(
+            label: l10n.commonUndo,
+            onPressed: () async {
+              await ref.read(mealRepositoryProvider).restore(meal);
+              ref.invalidate(mealListProvider);
+            },
+          ),
+        ),
+      );
   }
 }
 
@@ -115,10 +148,7 @@ final class _DayGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateStr =
-        '${date.day.toString().padLeft(2, '0')}.'
-        '${date.month.toString().padLeft(2, '0')}.'
-        '${date.year}';
+    final dateStr = DateFormats.formatDate(context, date);
 
     // Calculate daily totals
     final totalCalories = meals.fold(
@@ -157,7 +187,11 @@ final class _DayGroup extends StatelessWidget {
   }
 }
 
-final class _MealTile extends StatelessWidget {
+/// One meal row: tapping the tile expands/collapses the ingredient breakdown;
+/// long-pressing opens the meal edit form; swiping (end-to-start) deletes with
+/// undo. The trailing is an animated chevron as the expansion affordance
+/// (active-workout-flow T02 — the edit affordance moved to long-press).
+final class _MealTile extends StatefulWidget {
   final MealEntry meal;
   final AppLocalizations l10n;
   final VoidCallback onTap;
@@ -171,7 +205,17 @@ final class _MealTile extends StatelessWidget {
   });
 
   @override
+  State<_MealTile> createState() => _MealTileState();
+}
+
+final class _MealTileState extends State<_MealTile> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final meal = widget.meal;
+    final l10n = widget.l10n;
+
     return Dismissible(
       key: ValueKey(meal.id),
       direction: DismissDirection.endToStart,
@@ -181,35 +225,31 @@ final class _MealTile extends StatelessWidget {
         padding: const EdgeInsets.only(right: 16),
         child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
       ),
-      confirmDismiss: (_) => showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(l10n.mealListDeleteTitle),
-          content: Text(l10n.mealListDeleteConfirm(meal.name)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(l10n.commonCancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(l10n.commonDelete),
-            ),
-          ],
+      onDismissed: (_) => widget.onDelete(),
+      child: GestureDetector(
+        // ExpansionTile has no onLongPress in Flutter 3.38.3; the outer
+        // long-press recognizer only wins after the hold deadline, so quick
+        // taps still expand/collapse while a hold opens the edit form.
+        onLongPress: widget.onTap,
+        child: ExpansionTile(
+          title: Text(meal.name),
+          subtitle: Text(
+            '${l10n.mealListIngredientCount(meal.items.length)}  ·  '
+            '${l10n.mealListCaloriesValue(meal.totalCalories.toStringAsFixed(0))}',
+          ),
+          leading: const Icon(Icons.restaurant),
+          trailing: AnimatedRotation(
+            turns: _expanded ? 0.5 : 0,
+            duration: FitFatTokens.motionNormal,
+            curve: Curves.easeOut,
+            child: const Icon(Icons.expand_more),
+          ),
+          onExpansionChanged: (expanded) =>
+              setState(() => _expanded = expanded),
+          children: meal.items
+              .map((item) => _IngredientItemTile(item: item, l10n: l10n))
+              .toList(),
         ),
-      ).then((r) => r ?? false),
-      onDismissed: (_) => onDelete(),
-      child: ExpansionTile(
-        title: Text(meal.name),
-        subtitle: Text(
-          '${l10n.mealListIngredientCount(meal.items.length)}  ·  '
-          '${l10n.mealListCaloriesValue(meal.totalCalories.toStringAsFixed(0))}',
-        ),
-        leading: const Icon(Icons.restaurant),
-        trailing: IconButton(icon: const Icon(Icons.edit), onPressed: onTap),
-        children: meal.items
-            .map((item) => _IngredientItemTile(item: item, l10n: l10n))
-            .toList(),
       ),
     );
   }

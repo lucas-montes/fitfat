@@ -6,6 +6,13 @@ final class Ingredient {
   final double proteinPer100g;
   final double carbsPer100g;
   final double fatPer100g;
+  // Optional extra nutriments per 100g (ingredient-only; not propagated to meals).
+  final double? sodiumPer100g; // mg
+  final double? fiberPer100g; // g
+  final double? sugarPer100g; // g
+  /// Soft-delete flag: archived ingredients are hidden from list and picker
+  /// but stay in the DB so past meals keep rendering name/macros.
+  final bool isArchived;
   final DateTime createdAt;
 
   const Ingredient({
@@ -15,8 +22,15 @@ final class Ingredient {
     required this.proteinPer100g,
     required this.carbsPer100g,
     required this.fatPer100g,
+    this.sodiumPer100g,
+    this.fiberPer100g,
+    this.sugarPer100g,
+    this.isArchived = false,
     required this.createdAt,
   });
+
+  /// Sentinel to distinguish "not passed" from "explicitly set to null".
+  static const _unset = Object();
 
   Ingredient copyWith({
     String? id,
@@ -25,6 +39,10 @@ final class Ingredient {
     double? proteinPer100g,
     double? carbsPer100g,
     double? fatPer100g,
+    Object? sodiumPer100g = _unset,
+    Object? fiberPer100g = _unset,
+    Object? sugarPer100g = _unset,
+    bool? isArchived,
     DateTime? createdAt,
   }) => Ingredient(
     id: id ?? this.id,
@@ -33,6 +51,16 @@ final class Ingredient {
     proteinPer100g: proteinPer100g ?? this.proteinPer100g,
     carbsPer100g: carbsPer100g ?? this.carbsPer100g,
     fatPer100g: fatPer100g ?? this.fatPer100g,
+    sodiumPer100g: identical(sodiumPer100g, _unset)
+        ? this.sodiumPer100g
+        : sodiumPer100g as double?,
+    fiberPer100g: identical(fiberPer100g, _unset)
+        ? this.fiberPer100g
+        : fiberPer100g as double?,
+    sugarPer100g: identical(sugarPer100g, _unset)
+        ? this.sugarPer100g
+        : sugarPer100g as double?,
+    isArchived: isArchived ?? this.isArchived,
     createdAt: createdAt ?? this.createdAt,
   );
 

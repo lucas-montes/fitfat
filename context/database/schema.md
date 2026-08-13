@@ -1,6 +1,6 @@
 # FitFat — Database Schema
 
-7 tables defined in `lib/src/database/tables.dart` with Drift `@DataClass`.
+9 tables defined in `lib/src/database/tables.dart`. Drift generates row classes, companions, and table info classes using default singularization (no `@DataClass` annotations).
 
 ## Diet tables
 
@@ -10,10 +10,14 @@
 |--------|------|-------|
 | id | TEXT PK | UUID v7 |
 | name | TEXT | |
-| calories_per_100g | REAL | |
-| protein_per_100g | REAL | |
-| carbs_per_100g | REAL | |
-| fat_per_100g | REAL | |
+| calories_per100g | REAL | |
+| protein_per100g | REAL | |
+| carbs_per100g | REAL | |
+| fat_per100g | REAL | |
+| sodium_per100g | REAL? | v3 — optional, mg per 100g |
+| fiber_per100g | REAL? | v3 — optional, g per 100g |
+| sugar_per100g | REAL? | v3 — optional, g per 100g |
+| is_archived | INTEGER (bool) | v4 — soft-delete flag, `0`/`1`, default `0` |
 | created_at | INTEGER | epoch milliseconds |
 
 ### meals
@@ -45,6 +49,17 @@ Many-to-many join between meals and ingredients with gram amounts.
 | id | TEXT PK | UUID v7 |
 | name | TEXT | |
 | exercise_type | TEXT | `'weightlifting'` or `'cardio'` |
+| is_locked | INTEGER (bool) | v8 — built-in catalog exercises (`1`), `NOT NULL DEFAULT 0`; locked rows block edit + delete in the UI |
+| body_part | TEXT? | v8 — catalog metadata |
+| equipment | TEXT? | v8 — catalog metadata |
+| primary_muscle | TEXT? | v8 — catalog metadata |
+| secondary_muscle | TEXT? | v8 — catalog metadata |
+| instructions | TEXT? | v8 — JSON `string[]` |
+| tips | TEXT? | v8 — JSON `string[]` |
+| faqs | TEXT? | v8 — structured JSON `[{"q","a"},…]` (raw text fallback when unparseable) |
+| keywords | TEXT? | v8 — JSON `string[]` |
+| image_path | TEXT? | v8 — bundled asset path |
+| video_path | TEXT? | v8 — bundled asset path |
 | created_at | INTEGER | epoch milliseconds |
 
 ### workouts
@@ -81,23 +96,63 @@ Individual sets within a workout exercise. Supports both weightlifting (reps/wei
 | set_number | INTEGER | 1-based |
 | reps | INTEGER? | planned reps (weightlifting) |
 | weight_kg | REAL? | planned weight (weightlifting) |
+| rest_seconds | INTEGER? | v5 — planned rest between sets in seconds; required at the form level, nullable in DB |
 | actual_reps | INTEGER? | actual reps (weightlifting) or actual duration in minutes (cardio) |
 | actual_weight_kg | REAL? | actual weight (weightlifting) |
+| actual_rest_seconds | INTEGER? | v5 — actual rest taken after the set in seconds; null until a rest period starts and ends/cancels |
+| completed_at | INTEGER? | v7 — epoch millis when the set's actuals were recorded (set done); null for planned-only sets |
 | duration_minutes | INTEGER? | planned duration (cardio) |
 | distance_meters | REAL? | planned distance (cardio) |
 | notes | TEXT? | |
+
+## Planner tables
+
+### planner_items
+
+Per-day planner tasks (daily todo list). Standalone table — no foreign keys.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | UUID v7 |
+| date | INTEGER | start-of-day epoch milliseconds (normalized `DateTime(y,m,d)`) |
+| title | TEXT | |
+| done | INTEGER | `0` or `1` |
+| sort_order | INTEGER | display order within the day |
+| due_date | INTEGER? | v3 — optional due date, epoch milliseconds |
+| due_time_minutes | INTEGER? | v8 — optional due time-of-day, minutes since midnight |
+| notes | TEXT? | v6 — optional free-text note |
+| created_at | INTEGER | epoch milliseconds |
+
+## Body metrics tables
+
+### body_metrics
+
+One row per day (keyed by start-of-day) holding optional weight and/or height. Added in v3.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | UUID v7 |
+| date | INTEGER | start-of-day epoch milliseconds |
+| weight_kg | REAL? | optional |
+| height_cm | REAL? | optional |
+| created_at | INTEGER | epoch milliseconds |
 
 ## Key patterns
 
 - All primary keys are UUID v7 strings (generated via the `uuid` package).
 - Timestamps are stored as epoch milliseconds (integers) and converted to `DateTime` in domain models.
 - `exercise_type` is stored as plain text rather than an enum to keep the schema simple.
-- The database uses Drift's `MigrateOnStartup` strategy (tables created automatically on first run).
+- Schema version is 8. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `onUpgrade` runs stepwise:
+  - v1 → v2: creates `planner_items`.
+  - v2 → v3: adds nullable `sodium_per100g`/`fiber_per100g`/`sugar_per100g` to `ingredients`, adds nullable `due_date` to `planner_items`, creates `body_metrics`, and deletes orphaned `meal_ingredients` rows (rows whose `meal_id` has no matching `meals` row — leftover from the pre-T02 new-meal bug). No data is dropped.
+  - v3 → v4: adds `is_archived` to `ingredients` (`NOT NULL DEFAULT 0` — ingredient soft-archive). No data is dropped.
+  - v4 → v5: adds nullable `rest_seconds` and `actual_rest_seconds` to `exercise_sets` (planned + actual rest per set). No data is dropped.
+  - v5 → v6: adds nullable `notes` to `planner_items` (free-text task notes, app-polish-batch T04). No data is dropped.
+  - v6 → v7: adds nullable `completed_at` to `exercise_sets` (set completion timestamp, app-polish-batch T08). No data is dropped.
+  - v7 → v8: adds the catalog metadata columns to `exercises` (`is_locked`, `body_part`, `equipment`, `primary_muscle`, `secondary_muscle`, `instructions`, `tips`, `faqs`, `keywords`, `image_path`, `video_path`) and `due_time_minutes` to `planner_items`. No data is dropped.
 
 ## Generated code
 
-Drift generates:
-- `tables.g.dart` — table info classes, data classes (row classes), companions
-- `app_database.g.dart` — the `$AppDatabase` base class with DAO methods
+Drift generates `app_database.g.dart` — table info classes, data classes (row classes), companions, and the `$AppDatabase` base class. All drift output is combined into this single part file (there is no `tables.g.dart`).
 
-Build command: `flutter pub run build_runner build`
+Build command: `flutter pub run build_runner build` (must run through `flutter pub`, not `dart run`, in the Nix environment).

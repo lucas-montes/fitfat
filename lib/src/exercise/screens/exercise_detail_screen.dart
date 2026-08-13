@@ -1,0 +1,1310 @@
+import 'dart:convert';
+
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_player/video_player.dart';
+
+import '../../../l10n/app_localizations.dart';
+import '../../models/exercise.dart';
+import '../../models/exercise_set.dart';
+import '../../notifications/rest_timer.dart';
+import '../../ui/date_formats.dart';
+import '../../ui/format.dart';
+import '../../ui/tokens.dart';
+import '../exercise_filter.dart';
+import '../providers/exercises.dart';
+import '../providers/workouts.dart';
+import '../repositories/workout_repository.dart';
+
+/// Exercise detail + full history (T09): media + metadata + instructions +
+/// tips/faqs/keywords, then history (best set/PR, volume-over-time chart,
+/// per-workout totals and planned-vs-actual metrics).
+final class ExerciseDetailScreen extends ConsumerWidget {
+  final String exerciseId;
+  const ExerciseDetailScreen({super.key, required this.exerciseId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final exerciseAsync = ref.watch(exerciseByIdProvider(exerciseId));
+    final historyAsync = ref.watch(exerciseHistoryProvider(exerciseId));
+
+    Widget statusScaffold(Widget body) => Scaffold(
+      appBar: AppBar(title: Text(l10n.exerciseDetailAppBar)),
+      body: body,
+    );
+
+    return exerciseAsync.when(
+      loading: () =>
+          statusScaffold(const Center(child: CircularProgressIndicator())),
+      error: (e, _) =>
+          statusScaffold(Center(child: Text(l10n.errorWithMessage('$e')))),
+      data: (exercise) {
+        if (exercise == null) {
+          return statusScaffold(
+            Center(child: Text(l10n.exerciseDetailNotFound)),
+          );
+        }
+        return historyAsync.when(
+          loading: () =>
+              statusScaffold(const Center(child: CircularProgressIndicator())),
+          error: (e, _) =>
+              statusScaffold(Center(child: Text(l10n.errorWithMessage('$e')))),
+          data: (history) => _DetailView(exercise: exercise, history: history),
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Layout
+// ---------------------------------------------------------------------------
+
+final class _DetailView extends StatelessWidget {
+  final Exercise exercise;
+  final List<ExerciseHistoryEntry> history;
+
+  const _DetailView({required this.exercise, required this.history});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final metrics = _HistoryMetrics.fromHistory(history);
+    final hasMedia = exercise.imagePath != null || exercise.videoPath != null;
+    // Media (220) + name block + fact chips; a smaller height when the
+    // exercise has no media so the collapsed header leaves no gap.
+    final expandedHeight = hasMedia ? 330.0 : 112.0;
+
+    return Scaffold(
+      body: DefaultTabController(
+        length: 2,
+        child: NestedScrollView(
+          headerSliverBuilder: (_, _) => [
+            SliverAppBar(
+              pinned: true,
+              expandedHeight: expandedHeight,
+              title: Text(exercise.name),
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.parallax,
+                background: _Header(exercise: exercise),
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: TabBar(
+                  tabs: [
+                    Tab(text: l10n.exerciseDetailTabHistory),
+                    Tab(text: l10n.exerciseDetailTabDetails),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          body: TabBarView(
+            children: [
+              _HistoryTab(history: history, metrics: metrics),
+              _DetailsTab(exercise: exercise),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pinned header: media, then name, then the quick-fact chips (type, body
+/// parts, equipment). Stays visible while the History/Details tabs scroll.
+final class _Header extends StatelessWidget {
+  final Exercise exercise;
+  const _Header({required this.exercise});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _MediaHeader(exercise: exercise),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FitFatTokens.spaceL,
+            FitFatTokens.spaceM,
+            FitFatTokens.spaceL,
+            FitFatTokens.spaceS,
+          ),
+          child: Text(
+            exercise.name,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL),
+          child: _FactChips(exercise: exercise),
+        ),
+        const SizedBox(height: FitFatTokens.spaceS),
+      ],
+    );
+  }
+}
+
+/// Type + body-part + equipment chips. Muscles live in the Details tab.
+final class _FactChips extends StatelessWidget {
+  final Exercise exercise;
+  const _FactChips({required this.exercise});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final typeLabel = exercise.isWeightlifting
+        ? l10n.exerciseTypeWeightlifting
+        : l10n.exerciseTypeCardio;
+    final bodyParts = splitTags(exercise.bodyPart);
+    final equipments = splitTags(
+      exercise.equipment,
+    ).map(canonicalEquipmentTag).toList();
+    if (bodyParts.isEmpty && equipments.isEmpty) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Chip(label: Text(typeLabel)),
+      );
+    }
+    return Wrap(
+      spacing: FitFatTokens.spaceS,
+      runSpacing: FitFatTokens.spaceS,
+      children: [
+        Chip(label: Text(typeLabel)),
+        for (final part in bodyParts) Chip(label: Text(part)),
+        for (final equipment in equipments) Chip(label: Text(equipment)),
+      ],
+    );
+  }
+}
+
+/// History tab (default): PR summary + volume/duration-over-time chart +
+/// per-workout cards.
+final class _HistoryTab extends StatelessWidget {
+  final List<ExerciseHistoryEntry> history;
+  final _HistoryMetrics metrics;
+
+  const _HistoryTab({required this.history, required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    if (history.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(FitFatTokens.spaceXl),
+        child: Center(
+          child: Text(
+            l10n.exerciseDetailHistoryEmpty,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      );
+    }
+    return ListView(
+      padding: const EdgeInsets.only(bottom: FitFatTokens.spaceXxl),
+      children: [
+        _HistorySummary(metrics: metrics),
+        if (metrics.chartSpots.isNotEmpty && metrics.chartSpots.length >= 2)
+          _HistoryChart(
+            title: metrics.usesWeight
+                ? l10n.exerciseDetailVolumeOverTime
+                : l10n.exerciseDetailDurationOverTime,
+            spots: metrics.chartSpots,
+            color: theme.colorScheme.primary,
+          ),
+        for (final entry in history) _WorkoutHistoryCard(entry: entry),
+      ],
+    );
+  }
+}
+
+/// Details tab: numbered instructions, tips, structured FAQs, muscle tags.
+final class _DetailsTab extends StatelessWidget {
+  final Exercise exercise;
+  const _DetailsTab({required this.exercise});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ListView(
+      padding: const EdgeInsets.only(bottom: FitFatTokens.spaceXxl),
+      children: [
+        if (exercise.instructions != null && exercise.instructions!.isNotEmpty)
+          _InstructionSection(
+            title: l10n.exerciseDetailInstructions,
+            items: exercise.instructions!,
+            numbered: true,
+          ),
+        if (exercise.tips != null && exercise.tips!.isNotEmpty)
+          _InstructionSection(
+            title: l10n.exerciseDetailTips,
+            items: exercise.tips!,
+            numbered: false,
+          ),
+        if (exercise.faqs != null && exercise.faqs!.trim().isNotEmpty)
+          _FaqSection(title: l10n.exerciseDetailFaqs, text: exercise.faqs!),
+        _MusclesSection(exercise: exercise),
+      ],
+    );
+  }
+}
+
+/// Renders `**bold**` Markdown segments as bold runs.
+final class _RichText extends StatelessWidget {
+  final String text;
+  final TextStyle? style;
+
+  const _RichText({required this.text, this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(_spans(), style: style);
+  }
+
+  TextSpan _spans() {
+    final boldStyle = style?.copyWith(fontWeight: FontWeight.bold);
+    final segments = text.split('**');
+    return TextSpan(
+      style: style,
+      children: [
+        for (var i = 0; i < segments.length; i++)
+          if (segments[i].isNotEmpty)
+            TextSpan(text: segments[i], style: i.isOdd ? boldStyle : null),
+      ],
+    );
+  }
+}
+
+/// Primary/secondary muscle chips (Details tab).
+final class _MusclesSection extends StatelessWidget {
+  final Exercise exercise;
+  const _MusclesSection({required this.exercise});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final primary = splitTags(exercise.primaryMuscle);
+    final secondary = splitTags(exercise.secondaryMuscle);
+    if (primary.isEmpty && secondary.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceL,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (primary.isNotEmpty) ...[
+            Text(
+              l10n.exerciseDetailPrimaryMuscle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: FitFatTokens.spaceS),
+            Wrap(
+              spacing: FitFatTokens.spaceS,
+              runSpacing: FitFatTokens.spaceS,
+              children: [
+                for (final muscle in primary) Chip(label: Text(muscle)),
+              ],
+            ),
+          ],
+          if (secondary.isNotEmpty) ...[
+            const SizedBox(height: FitFatTokens.spaceM),
+            Text(
+              l10n.exerciseDetailSecondaryMuscle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: FitFatTokens.spaceS),
+            Wrap(
+              spacing: FitFatTokens.spaceS,
+              runSpacing: FitFatTokens.spaceS,
+              children: [
+                for (final muscle in secondary) Chip(label: Text(muscle)),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Media header (image; video when a video asset is bundled — gracefully
+// falls back to the image since bundled videos are deferred/absent)
+// ---------------------------------------------------------------------------
+
+final class _MediaHeader extends StatefulWidget {
+  final Exercise exercise;
+  const _MediaHeader({required this.exercise});
+
+  @override
+  State<_MediaHeader> createState() => _MediaHeaderState();
+}
+
+final class _MediaHeaderState extends State<_MediaHeader> {
+  VideoPlayerController? _controller;
+  bool _videoFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    final path = widget.exercise.videoPath;
+    if (path == null) return;
+    final controller = VideoPlayerController.asset(path);
+    _controller = controller;
+    try {
+      await controller.initialize();
+      if (!mounted) return;
+      setState(() {});
+      await controller.play();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _videoFailed = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final exercise = widget.exercise;
+    final theme = Theme.of(context);
+    final imagePath = exercise.imagePath;
+
+    // Images render BoxFit.contain on a surface backdrop (no cropping);
+    // tapping the image opens a full-screen zoomable viewer.
+    final Widget? image = imagePath == null
+        ? null
+        : GestureDetector(
+            onTap: () => _openViewer(context),
+            child: Container(
+              height: 220,
+              width: double.infinity,
+              color: theme.colorScheme.surfaceContainerHighest,
+              alignment: Alignment.center,
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => _placeholder(theme),
+              ),
+            ),
+          );
+
+    final video = _controller != null && !_videoFailed
+        ? Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                height: 220,
+                width: double.infinity,
+                child: VideoPlayer(_controller!),
+              ),
+              _VideoPlayPauseButton(controller: _controller!),
+            ],
+          )
+        : null;
+
+    final Widget? child = video ?? image;
+    if (child == null) return const SizedBox.shrink();
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        bottom: Radius.circular(FitFatTokens.radiusL),
+      ),
+      child: child,
+    );
+  }
+
+  void _openViewer(BuildContext context) {
+    final imagePath = widget.exercise.imagePath;
+    if (imagePath == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _FullScreenImageViewer(
+          imagePath: imagePath,
+          exerciseName: widget.exercise.name,
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder(ThemeData theme) => Container(
+    height: 220,
+    color: theme.colorScheme.surfaceContainerHighest,
+    alignment: Alignment.center,
+    child: Icon(
+      widget.exercise.isWeightlifting
+          ? Icons.fitness_center
+          : Icons.directions_run,
+      size: 48,
+      color: theme.colorScheme.onSurfaceVariant,
+    ),
+  );
+}
+
+/// Full-screen, zoomable/panable image viewer opened by tapping the detail
+/// header image.
+final class _FullScreenImageViewer extends StatelessWidget {
+  final String imagePath;
+  final String exerciseName;
+
+  const _FullScreenImageViewer({
+    required this.imagePath,
+    required this.exerciseName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(exerciseName, style: const TextStyle(color: Colors.white)),
+      ),
+      body: InteractiveViewer(
+        minScale: 1,
+        maxScale: 6,
+        child: Center(
+          child: Image.asset(
+            imagePath,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => Icon(
+              Icons.broken_image_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+final class _VideoPlayPauseButton extends StatelessWidget {
+  final VideoPlayerController controller;
+  const _VideoPlayPauseButton({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final playing = value.isPlaying;
+        return IconButton(
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.black54,
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () => playing ? controller.pause() : controller.play(),
+          icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared bits
+// ---------------------------------------------------------------------------
+
+final class _InstructionSection extends StatelessWidget {
+  final String title;
+  final List<String> items;
+  final bool numbered;
+
+  const _InstructionSection({
+    required this.title,
+    required this.items,
+    required this.numbered,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceL,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: FitFatTokens.spaceS),
+          for (var i = 0; i < items.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: FitFatTokens.spaceS),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (numbered)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        right: FitFatTokens.spaceS,
+                        top: 2,
+                      ),
+                      child: Text(
+                        '${i + 1}.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    )
+                  else
+                    const Padding(
+                      padding: EdgeInsets.only(
+                        right: FitFatTokens.spaceS,
+                        top: 2,
+                      ),
+                      child: Text('•'),
+                    ),
+                  Expanded(
+                    child: _RichText(
+                      text: items[i],
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _FaqSection extends StatelessWidget {
+  final String title;
+  final String text;
+
+  const _FaqSection({required this.title, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final faqs = _parseFaqs(text);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceL,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: FitFatTokens.spaceS),
+          if (faqs.isEmpty)
+            _RichText(
+              text: text,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            )
+          else
+            for (final faq in faqs) ...[
+              _RichText(
+                text: faq.$1,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: FitFatTokens.spaceXs),
+              _RichText(
+                text: faq.$2,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: FitFatTokens.spaceM),
+            ],
+        ],
+      ),
+    );
+  }
+
+  /// Decodes the structured `[{"q":..,"a":..}, ...]` FAQ blob. Falls back to
+  /// an empty list (raw-text rendering) when it is not valid JSON.
+  static List<(String, String)> _parseFaqs(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return const [];
+      final faqs = <(String, String)>[];
+      for (final item in decoded) {
+        if (item is! Map<String, dynamic>) continue;
+        final q = item['q'];
+        final a = item['a'];
+        if (q is String &&
+            q.trim().isNotEmpty &&
+            a is String &&
+            a.trim().isNotEmpty) {
+          faqs.add((q.trim(), a.trim()));
+        }
+      }
+      return faqs;
+    } catch (_) {
+      return const [];
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// History metrics
+// ---------------------------------------------------------------------------
+
+final class _HistoryMetrics {
+  final double bestWeightKg;
+  final double bestVolumeKg;
+  final int bestDurationMinutes;
+  final int totalWorkouts;
+  final int totalSets;
+  final bool usesWeight;
+  final List<(DateTime, double)> chartSpots; // chronological
+
+  const _HistoryMetrics({
+    required this.bestWeightKg,
+    required this.bestVolumeKg,
+    required this.bestDurationMinutes,
+    required this.totalWorkouts,
+    required this.totalSets,
+    required this.usesWeight,
+    required this.chartSpots,
+  });
+
+  factory _HistoryMetrics.fromHistory(List<ExerciseHistoryEntry> history) {
+    var bestWeight = 0.0;
+    var bestVolume = 0.0;
+    var bestDuration = 0;
+    var totalSets = 0;
+    var usesWeight = false;
+
+    final byDate = [...history]
+      ..sort((a, b) => a.workout.date.compareTo(b.workout.date));
+
+    for (final entry in history) {
+      totalSets += entry.sets.length;
+      for (final set in entry.sets) {
+        if (set.weightKg != null || set.actualWeightKg != null) {
+          usesWeight = true;
+        }
+        if (set.effectiveWeightKg > bestWeight) {
+          bestWeight = set.effectiveWeightKg;
+        }
+        if (set.totalVolume > bestVolume) bestVolume = set.totalVolume;
+        if ((set.durationMinutes ?? 0) > bestDuration) {
+          bestDuration = set.durationMinutes!;
+        }
+      }
+    }
+
+    // Chronological spots with a consistent unit (volume for weighted
+    // exercises, otherwise duration).
+    final unitIsWeight = usesWeight;
+    final ordered = <(DateTime, double)>[];
+    for (final entry in byDate) {
+      var volume = 0.0;
+      var duration = 0;
+      for (final set in entry.sets) {
+        volume += set.totalVolume;
+        duration += set.durationMinutes ?? 0;
+      }
+      ordered.add((
+        entry.workout.date,
+        unitIsWeight ? volume : duration.toDouble(),
+      ));
+    }
+
+    return _HistoryMetrics(
+      bestWeightKg: bestWeight,
+      bestVolumeKg: bestVolume,
+      bestDurationMinutes: bestDuration,
+      totalWorkouts: history.length,
+      totalSets: totalSets,
+      usesWeight: usesWeight,
+      chartSpots: ordered,
+    );
+  }
+}
+
+final class _HistorySummary extends StatelessWidget {
+  final _HistoryMetrics metrics;
+
+  const _HistorySummary({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    final bestLabel = metrics.usesWeight
+        ? l10n.exerciseDetailBestWeight
+        : l10n.exerciseDetailBestDuration;
+    final bestValue = metrics.usesWeight
+        ? l10n.workoutSummaryValueKg(formatDecimal(metrics.bestWeightKg))
+        : l10n.workoutDetailPlannedSetDuration(
+            '${metrics.bestDurationMinutes}',
+          );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL),
+      child: Row(
+        children: [
+          Expanded(
+            child: _StatTile(label: bestLabel, value: bestValue, theme: theme),
+          ),
+          Expanded(
+            child: _StatTile(
+              label: l10n.exerciseDetailTotalWorkouts,
+              value: '${metrics.totalWorkouts}',
+              theme: theme,
+            ),
+          ),
+          Expanded(
+            child: _StatTile(
+              label: l10n.exerciseDetailTotalSets,
+              value: '${metrics.totalSets}',
+              theme: theme,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _StatTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final ThemeData theme;
+
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: FitFatTokens.spaceS),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _HistoryChart extends StatelessWidget {
+  final String title;
+  final List<(DateTime, double)> spots; // chronological, >= 2 points
+  final Color color;
+
+  const _HistoryChart({
+    required this.title,
+    required this.spots,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final values = spots.map((s) => s.$2).toList();
+    final minValue = values.reduce((a, b) => a < b ? a : b);
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final padding = maxValue == minValue ? 1.0 : (maxValue - minValue) * 0.2;
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceM,
+        FitFatTokens.spaceL,
+        0,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(FitFatTokens.spaceL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: FitFatTokens.spaceM),
+            SizedBox(
+              height: 160,
+              child: LineChart(
+                LineChartData(
+                  minY: minValue - padding,
+                  maxY: maxValue + padding,
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots
+                          .map(
+                            (s) => FlSpot(
+                              s.$1.millisecondsSinceEpoch.toDouble(),
+                              s.$2,
+                            ),
+                          )
+                          .toList(),
+                      isCurved: true,
+                      color: color,
+                      barWidth: 3,
+                      dotData: const FlDotData(show: true),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: color.withValues(alpha: 0.08),
+                      ),
+                    ),
+                  ],
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 28,
+                        getTitlesWidget: (value, meta) {
+                          final date = DateTime.fromMillisecondsSinceEpoch(
+                            value.toInt(),
+                          );
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              DateFormats.formatShortDate(context, date),
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  gridData: const FlGridData(show: false),
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipItems: (touchedSpots) => touchedSpots.map((s) {
+                        final date = DateTime.fromMillisecondsSinceEpoch(
+                          s.x.toInt(),
+                        );
+                        return LineTooltipItem(
+                          '${DateFormats.formatShortDate(context, date)}\n'
+                          '${s.y.toStringAsFixed(0)}',
+                          const TextStyle(color: Colors.white),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-workout history card
+// ---------------------------------------------------------------------------
+
+final class _WorkoutHistoryCard extends StatelessWidget {
+  final ExerciseHistoryEntry entry;
+
+  const _WorkoutHistoryCard({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final sets = entry.sets;
+
+    final usesWeight = sets.any(
+      (s) => s.weightKg != null || s.actualWeightKg != null,
+    );
+
+    var volume = 0.0;
+    var duration = 0;
+    for (final set in sets) {
+      volume += set.totalVolume;
+      duration += set.durationMinutes ?? 0;
+    }
+    final completed = sets.where((s) => s.isCompleted).length;
+
+    final plannedVolume = sets.fold(
+      0.0,
+      (sum, s) => sum + (s.reps ?? 0) * (s.weightKg ?? 0),
+    );
+    final effectiveVolume = sets.fold(
+      0.0,
+      (sum, s) => sum + (s.effectiveReps * s.effectiveWeightKg),
+    );
+    final adherence = plannedVolume > 0
+        ? ((effectiveVolume / plannedVolume) * 100).clamp(0, 999).toDouble()
+        : null;
+    final setsCompletedPct = sets.isEmpty
+        ? null
+        : ((completed / sets.length) * 100).round();
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceM,
+        FitFatTokens.spaceL,
+        0,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(FitFatTokens.spaceL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    entry.workout.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Text(
+                  DateFormats.formatShortDate(context, entry.workout.date),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: FitFatTokens.spaceS),
+            Wrap(
+              spacing: FitFatTokens.spaceM,
+              runSpacing: FitFatTokens.spaceS,
+              children: [
+                _InlineMetric(
+                  label: usesWeight
+                      ? l10n.workoutSummaryVolume
+                      : l10n.workoutSummaryTotalDuration,
+                  value: usesWeight
+                      ? l10n.workoutSummaryValueKg(formatDecimal(volume))
+                      : formatRestDuration(Duration(minutes: duration)),
+                ),
+                _InlineMetric(
+                  label: l10n.workoutSummaryTotalReps,
+                  value: '${sets.fold(0, (sum, s) => sum + s.effectiveReps)}',
+                ),
+                _InlineMetric(
+                  label: l10n.workoutSummaryTotalDistance,
+                  value: formatDecimal(
+                    sets.fold(0.0, (sum, s) => sum + (s.distanceMeters ?? 0)),
+                  ),
+                ),
+                _InlineMetric(
+                  label: l10n.exerciseDetailSetsCompleted,
+                  value: '$completed/${sets.length}',
+                ),
+              ],
+            ),
+            if (adherence != null) ...[
+              const SizedBox(height: FitFatTokens.spaceM),
+              Text(
+                l10n.exerciseDetailPlannedVsActual,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: FitFatTokens.spaceS),
+              _ProgressBar(
+                label: l10n.exerciseDetailVolumeAdherence,
+                value: adherence,
+                l10n: l10n,
+                color: theme.colorScheme.primary,
+              ),
+              if (setsCompletedPct != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: FitFatTokens.spaceS),
+                  child: _ProgressBar(
+                    label: l10n.exerciseDetailSetsCompleted,
+                    value: setsCompletedPct.toDouble(),
+                    l10n: l10n,
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ),
+            ],
+            const SizedBox(height: FitFatTokens.spaceM),
+            for (final set in sets)
+              _SetRow(set: set, usesWeight: usesWeight, l10n: l10n),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _InlineMetric extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InlineMetric({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+final class _ProgressBar extends StatelessWidget {
+  final String label;
+  final double value; // 0-100
+  final AppLocalizations l10n;
+  final Color color;
+
+  const _ProgressBar({
+    required this.label,
+    required this.value,
+    required this.l10n,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 120,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(FitFatTokens.radiusFull),
+            child: LinearProgressIndicator(
+              value: (value / 100).clamp(0.0, 1.0),
+              minHeight: 6,
+              color: color,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            ),
+          ),
+        ),
+        const SizedBox(width: FitFatTokens.spaceS),
+        Text(
+          l10n.exerciseDetailAdherenceValue(value.toStringAsFixed(0)),
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+final class _SetRow extends StatelessWidget {
+  final ExerciseSet set;
+  final bool usesWeight;
+  final AppLocalizations l10n;
+
+  const _SetRow({
+    required this.set,
+    required this.usesWeight,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final deltaColor = theme.colorScheme.onSurfaceVariant;
+
+    final planned = usesWeight
+        ? l10n.workoutDetailPlannedSetReps(
+            '${set.reps ?? 0}',
+            formatDecimal(set.weightKg ?? 0),
+          )
+        : l10n.workoutDetailPlannedSetDuration('${set.durationMinutes ?? 0}');
+    final actual = usesWeight
+        ? l10n.workoutDetailActualSetReps(
+            '${set.actualReps ?? set.reps ?? 0}',
+            formatDecimal(set.actualWeightKg ?? set.weightKg ?? 0),
+          )
+        : planned;
+    final delta = _deltaString();
+    final restLine = _restString();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: FitFatTokens.spaceXs),
+      child: Row(
+        children: [
+          Icon(
+            set.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 16,
+            color: set.isCompleted
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outline,
+          ),
+          const SizedBox(width: FitFatTokens.spaceS),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${l10n.exerciseDetailSetNumber(set.setNumber)}  '
+                  '·  $planned  →  $actual',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                if (delta != null)
+                  Text(
+                    delta,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: deltaColor,
+                    ),
+                  ),
+                if (restLine != null)
+                  Text(
+                    restLine,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _deltaString() {
+    final deltas = <String>[];
+    if (set.repsDelta != null) {
+      deltas.add(l10n.exerciseDetailRepsDelta(_signed(set.repsDelta!)));
+    }
+    if (set.weightDelta != null) {
+      deltas.add(l10n.exerciseDetailWeightDelta(_signed(set.weightDelta!)));
+    }
+    if (deltas.isEmpty) return null;
+    return deltas.join(' · ');
+  }
+
+  /// Planned rest and, when recorded, the actual rest taken — e.g.
+  /// `rest 1:30 · (took 1:45)`. Null when the set has no rest info at all.
+  String? _restString() {
+    final parts = <String>[];
+    final planned = set.restSeconds;
+    if (planned != null) {
+      parts.add(
+        l10n.exerciseDetailSetRest(
+          formatRestDuration(Duration(seconds: planned)),
+        ),
+      );
+    }
+    final took = set.actualRestSeconds;
+    if (took != null) {
+      parts.add(
+        l10n.exerciseDetailSetRestTook(
+          formatRestDuration(Duration(seconds: took)),
+        ),
+      );
+    }
+    if (parts.isEmpty) return null;
+    return parts.join(' · ');
+  }
+
+  String _signed(num value) => value > 0
+      ? '+${formatDecimal(value.toDouble())}'
+      : formatDecimal(value.toDouble());
+}

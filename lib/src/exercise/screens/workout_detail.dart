@@ -1,11 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise_set.dart';
 import '../../models/workout.dart';
+import '../../notifications/active_workout_notifier.dart';
+import '../../ui/date_formats.dart';
+import '../../ui/format.dart';
+import '../../ui/haptics.dart';
+import '../../ui/theme_extensions.dart';
+import '../../ui/widgets/empty_state.dart';
+import '../../ui/widgets/status_badge.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+import 'workout_form.dart';
 
 final class WorkoutDetailScreen extends ConsumerWidget {
   final String workoutId;
@@ -61,38 +72,29 @@ final class _WorkoutDetailContent extends StatelessWidget {
     final w = detail.workout;
     final theme = Theme.of(context);
 
-    final statusColor = w.isCompleted
-        ? Colors.green
-        : w.isActive
-        ? Colors.orange
-        : Colors.grey;
-    final statusLabel = w.isCompleted
-        ? l10n.statusCompleted
-        : w.isActive
-        ? l10n.statusActive
-        : l10n.statusPending;
+    // This detail is the pending/planning screen, so the status is always
+    // pending here.
+    final statusLabel = l10n.statusPending;
+    final statusColor = theme.colorScheme.outline;
 
-    final dateStr =
-        '${w.date.day.toString().padLeft(2, '0')}.'
-        '${w.date.month.toString().padLeft(2, '0')}.'
-        '${w.date.year}';
+    final dateStr = DateFormats.formatDate(context, w.date);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(w.name),
         actions: [
-          if (w.isPending)
+          if (w.isPending) ...[
+            IconButton(
+              icon: const Icon(Icons.edit),
+              tooltip: l10n.commonEdit,
+              onPressed: () => _editWorkout(context, ref, detail),
+            ),
             TextButton.icon(
               onPressed: () => _startWorkout(context, ref, w.id),
               icon: const Icon(Icons.play_arrow),
               label: Text(l10n.workoutDetailBtnStart),
             ),
-          if (w.isActive)
-            TextButton.icon(
-              onPressed: () => _completeWorkout(context, ref, w.id),
-              icon: const Icon(Icons.check),
-              label: Text(l10n.workoutDetailBtnComplete),
-            ),
+          ],
         ],
       ),
       body: ListView(
@@ -107,45 +109,11 @@ final class _WorkoutDetailContent extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          statusLabel,
-                          style: TextStyle(
-                            color: statusColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                      StatusBadge(label: statusLabel, color: statusColor),
                       const Spacer(),
                       Text(dateStr, style: theme.textTheme.bodySmall),
                     ],
                   ),
-                  if (w.isActive && w.startedAt != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.workoutDetailStartedAt(
-                        '${w.startedAt!.hour.toString().padLeft(2, '0')}:'
-                        '${w.startedAt!.minute.toString().padLeft(2, '0')}',
-                      ),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                  if (w.isCompleted && w.duration > Duration.zero) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.dashboardDurationMin(w.duration.inMinutes),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -156,7 +124,11 @@ final class _WorkoutDetailContent extends StatelessWidget {
           Text(l10n.workoutDetailExercises, style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           if (detail.exercises.isEmpty)
-            Text(l10n.workoutDetailNoExercises)
+            EmptyState(
+              icon: Icons.fitness_center,
+              title: l10n.emptyWorkoutDetailTitle,
+              description: l10n.emptyWorkoutDetailBody,
+            )
           else
             for (final block in detail.exercises)
               _ExerciseBlockCard(
@@ -175,19 +147,40 @@ final class _WorkoutDetailContent extends StatelessWidget {
     WidgetRef ref,
     String id,
   ) async {
+    final startedAt = DateTime.now();
+    await ref
+        .read(activeWorkoutNotifierProvider)
+        .startWorkoutNotification(
+          workoutName: detail.workout.name,
+          startedAt: startedAt,
+          l10n: l10n,
+        );
     await ref.read(workoutRepositoryProvider).start(id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.workoutStarted)));
+    }
     ref.invalidate(workoutDetailProvider(workoutId));
     ref.invalidate(workoutListProvider);
+    if (context.mounted) {
+      final router = GoRouter.of(context);
+      // Pop the planning detail pushed from the list.
+      Navigator.of(context).pop();
+      // Replace with the active view (no back to planning).
+      router.go('/active-workout');
+    }
   }
 
-  Future<void> _completeWorkout(
+  Future<void> _editWorkout(
     BuildContext context,
     WidgetRef ref,
-    String id,
+    WorkoutWithDetails detail,
   ) async {
-    await ref.read(workoutRepositoryProvider).complete(id);
-    ref.invalidate(workoutDetailProvider(workoutId));
-    ref.invalidate(workoutListProvider);
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => WorkoutFormScreen(initial: detail)),
+    );
+    if (saved == true) ref.invalidate(workoutDetailProvider(workoutId));
   }
 }
 
@@ -219,20 +212,22 @@ final class _ExerciseBlockCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                SizedBox(
-                  width: 24,
+                Expanded(
+                  flex: 2,
                   child: Text(
                     l10n.workoutDetailSetHeaderHash,
                     textAlign: TextAlign.center,
                   ),
                 ),
                 Expanded(
+                  flex: 5,
                   child: Text(
                     l10n.workoutDetailSetHeaderPlanned,
                     textAlign: TextAlign.center,
                   ),
                 ),
                 Expanded(
+                  flex: 5,
                   child: Text(
                     l10n.workoutDetailSetHeaderActual,
                     textAlign: TextAlign.center,
@@ -243,13 +238,7 @@ final class _ExerciseBlockCard extends StatelessWidget {
           ),
           const Divider(height: 8),
           for (final set in block.sets)
-            _SetRow(
-              set: set,
-              workout: workout,
-              l10n: l10n,
-              workoutExerciseId: block.exercise.id,
-              ref: ref,
-            ),
+            _SetRow(set: set, workout: workout, l10n: l10n, ref: ref),
           const SizedBox(height: 8),
         ],
       ),
@@ -261,25 +250,24 @@ final class _SetRow extends StatelessWidget {
   final ExerciseSet set;
   final Workout workout;
   final AppLocalizations l10n;
-  final String workoutExerciseId;
   final WidgetRef ref;
 
   const _SetRow({
     required this.set,
     required this.workout,
     required this.l10n,
-    required this.workoutExerciseId,
     required this.ref,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isEditable = !workout.isPending;
 
     final planned = set.reps != null
         ? l10n.workoutDetailPlannedSetReps(
             set.reps.toString(),
-            set.weightKg?.toStringAsFixed(0) ?? '?',
+            set.weightKg == null ? '?' : formatDecimal(set.weightKg!),
           )
         : set.durationMinutes != null
         ? l10n.workoutDetailPlannedSetDuration(set.durationMinutes.toString())
@@ -288,12 +276,12 @@ final class _SetRow extends StatelessWidget {
     final actual = set.actualReps != null
         ? l10n.workoutDetailActualSetReps(
             set.actualReps.toString(),
-            set.actualWeightKg?.toStringAsFixed(0) ?? '?',
+            set.actualWeightKg == null
+                ? '?'
+                : formatDecimal(set.actualWeightKg!),
           )
         : set.actualWeightKg != null
-        ? l10n.workoutDetailActualSetWeight(
-            set.actualWeightKg!.toStringAsFixed(0),
-          )
+        ? l10n.workoutDetailActualSetWeight(formatDecimal(set.actualWeightKg!))
         : set.durationMinutes != null && set.actualReps != null
         ? l10n.workoutDetailActualSetDuration(set.actualReps.toString())
         : l10n.workoutDetailActualSetEmpty;
@@ -304,20 +292,23 @@ final class _SetRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: Row(
           children: [
-            SizedBox(
-              width: 24,
+            Expanded(
+              flex: 2,
               child: Text(
                 '${set.setNumber}',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: theme.textTheme.bodySmall,
               ),
             ),
             Expanded(
+              flex: 5,
               child: Text(
                 planned,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: set.isCompleted ? Colors.grey : null,
+                  color: set.isCompleted
+                      ? theme.colorScheme.onSurfaceVariant
+                      : null,
                   decoration: set.isCompleted
                       ? TextDecoration.lineThrough
                       : null,
@@ -325,17 +316,27 @@ final class _SetRow extends StatelessWidget {
               ),
             ),
             Expanded(
+              flex: 5,
               child: Text(
                 actual,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontWeight: set.isCompleted ? FontWeight.w600 : null,
-                  color: set.isCompleted ? Colors.green : null,
+                  color: set.isCompleted
+                      ? theme.extension<FitFatColors>()!.success
+                      : null,
                 ),
               ),
             ),
             if (isEditable)
-              const Icon(Icons.edit, size: 16, color: Colors.grey),
+              Tooltip(
+                message: l10n.commonEdit,
+                child: Icon(
+                  Icons.edit,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
           ],
         ),
       ),
@@ -358,7 +359,8 @@ final class _SetRow extends StatelessWidget {
           durationMinutes: result.durationMinutes,
           distanceMeters: result.distanceMeters,
         );
-    ref.invalidate(workoutDetailProvider(workoutExerciseId));
+    unawaited(Haptics.lightImpact());
+    ref.invalidate(workoutDetailProvider(workout.id));
   }
 }
 

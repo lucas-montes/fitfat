@@ -8,11 +8,18 @@
   "tabExercise": "Exercise",
   "tabDiet": "Diet",
   "tabSettings": "Settings",
+  "tabPlan": "Plan",
+  "tabNotes": "Notes",
 
   "dashboardAppBar": "Dashboard",
   "dashboardTodayCalories": "Today's Calories",
   "dashboardLatestWorkout": "Latest Workout",
   "dashboardNoWorkouts": "No completed workouts yet.",
+  "dashboardWelcomeTitle": "Welcome to FitFat",
+  "dashboardWelcomeBody": "Start by adding an ingredient, a meal, or a workout.",
+  "dashboardWelcomeActionIngredients": "Add an ingredient",
+  "dashboardWelcomeActionMeals": "Log a meal",
+  "dashboardWelcomeActionWorkouts": "Add a workout",
   "dashboardDurationMin": "Duration: {minutes} min",
   "@dashboardDurationMin": {
     "placeholders": {
@@ -31,15 +38,156 @@
       "message": { "type": "String" }
     }
   },
+  "dashboardGreetingMorning": "Good morning",
+  "dashboardGreetingAfternoon": "Good afternoon",
+  "dashboardGreetingEvening": "Good evening",
+  "dashboardMacroProtein": "Protein",
+  "dashboardMacroCarbs": "Carbs",
+  "dashboardMacroFat": "Fat",
+  "dashboardContinueWorkout": "Continue workout",
+  "dashboardOpenWorkout": "Open workout",
+  "dashboardCalorieTarget": "Daily calorie target",
+  "dashboardRemaining": "remaining",
+  "dashboardConsumedOfTarget": "{consumed} / {target} kcal",
+  "@dashboardConsumedOfTarget": {
+    "placeholders": {
+      "consumed": { "type": "String" },
+      "target": { "type": "String" }
+    }
+  },
+  "dashboardOverTarget": "{kcal} kcal over target",
+  "@dashboardOverTarget": {
+    "placeholders": {
+      "kcal": { "type": "String" }
+    }
+  },
+  "dashboardMacroTargets": "Macro targets",
+  "dashboardMacroProgress": "{consumed} / {target} g",
+  "@dashboardMacroProgress": {
+    "placeholders": {
+      "consumed": { "type": "String" },
+      "target": { "type": "String" }
+    }
+  },
+  "dashboardWeightTrend": "Weight trend",
+  "dashboardWeeklyWorkout": "Weekly workout",
+  "dashboardVolume": "Volume",
+  "dashboardVolumeKg": "{volume} kg",
+  "@dashboardVolumeKg": {
+    "placeholders": {
+      "volume": { "type": "String" }
+    }
+  },
+  "dashboardMinutes": "Minutes",
+  "dashboardUpcomingTasks": "Upcoming tasks",
+  "dashboardNoUpcomingTasks": "No upcoming timed tasks.",
+  "dashboardSeeAllTasks": "See all {count} tasks",
+  "@dashboardSeeAllTasks": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
 
   "exerciseListAppBar": "Exercises",
   "exerciseListManageBtn": "Manage Exercises",
-  "exerciseListEmpty": "No exercises yet. Tap + to add one.",
-  "exerciseListDeleteTitle": "Delete exercise?",
-  "exerciseListDeleteConfirm": "Remove \"{name}\"?",
-  "@exerciseListDeleteConfirm": {
+  "exerciseListSearchHint": "Search exercises",
+  "exerciseFilterType": "Type",
+  "exerciseFilterBodyPart": "Body part",
+  "exerciseFilterEquipment": "Equipment",
+  "exerciseFilterMuscle": "Muscle",
+  "exerciseFilterResults": "{count} exercises",
+  "@exerciseFilterResults": {
     "placeholders": {
-      "name": { "type": "String" }
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exerciseFilterClear": "Clear",
+  "exerciseFilterApply": "Apply",
+  "exerciseFilterNoResults": "No exercises match",
+  "exerciseFilterSearchOptions": "Search options",
+  "exerciseDetailTabHistory": "History",
+  "exerciseDetailTabDetails": "Details",
+  "emptyExercisesTitle": "No exercises yet",
+  "emptyExercisesBody": "Create exercises to plan your workouts.",
+  "emptyExercisesCta": "Add exercise",
+  "activeWorkoutAddExercise": "Add Exercise",
+  "activeWorkoutAddExerciseTooltip": "Search and add exercises to this workout",
+  "activeWorkoutInThisWorkout": "In This Workout",
+  "activeWorkoutAllExercises": "All Exercises",
+  "activeWorkoutSearchPrompt": "Type to search exercises",
+
+  "exerciseUsedTitle": "Exercise in use",
+  "exerciseUsedBody": "Used in {count} workout. Delete the workout first to remove this exercise.",
+  "exerciseUsedBody_plural": "Used in {count} workouts. Delete the workouts first to remove this exercise.",
+  "@exerciseUsedBody": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "exerciseLockedEdit": "Built-in exercises can't be edited.",
+  "exerciseLockedDelete": "Built-in exercises can't be deleted.",
+  "exerciseDetailAppBar": "Exercise",
+  "exerciseDetailNotFound": "Exercise not found.",
+  "exerciseDetailType": "Type",
+  "exerciseDetailBodyPart": "Body part",
+  "exerciseDetailEquipment": "Equipment",
+  "exerciseDetailPrimaryMuscle": "Primary muscles",
+  "exerciseDetailSecondaryMuscle": "Secondary muscles",
+  "exerciseDetailInstructions": "Instructions",
+  "exerciseDetailTips": "Tips",
+  "exerciseDetailFaqs": "FAQs",
+  "exerciseDetailKeywords": "Keywords",
+  "exerciseDetailHistory": "History",
+  "exerciseDetailHistoryEmpty": "No history yet. Add this exercise to a workout to see your stats.",
+  "exerciseDetailBestWeight": "Best weight",
+  "exerciseDetailBestVolume": "Best volume",
+  "exerciseDetailBestDuration": "Best duration",
+  "exerciseDetailTotalWorkouts": "Workouts",
+  "exerciseDetailTotalSets": "Sets",
+  "exerciseDetailVolumeOverTime": "Volume over time",
+  "exerciseDetailDurationOverTime": "Duration over time",
+  "exerciseDetailPlannedVsActual": "Planned vs actual",
+  "exerciseDetailVolumeAdherence": "Volume adherence",
+  "exerciseDetailSetsCompleted": "Sets completed",
+  "exerciseDetailAdherenceValue": "{percent}%",
+  "@exerciseDetailAdherenceValue": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
+  "exerciseDetailSetNumber": "Set {number}",
+  "@exerciseDetailSetNumber": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "exerciseDetailSetCompleted": "Completed",
+  "exerciseDetailSetNotCompleted": "Not completed",
+  "exerciseDetailSetEmpty": "—",
+  "exerciseDetailRepsDelta": "{delta} reps",
+  "@exerciseDetailRepsDelta": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "exerciseDetailWeightDelta": "{delta} kg",
+  "@exerciseDetailWeightDelta": {
+    "placeholders": {
+      "delta": { "type": "String" }
+    }
+  },
+  "exerciseDetailSetRest": "rest {rest}",
+  "@exerciseDetailSetRest": {
+    "placeholders": {
+      "rest": { "type": "String" }
+    }
+  },
+  "exerciseDetailSetRestTook": "(took {rest})",
+  "@exerciseDetailSetRestTook": {
+    "placeholders": {
+      "rest": { "type": "String" }
     }
   },
 
@@ -54,16 +202,24 @@
 
   "workoutListAppBar": "Workouts",
   "workoutListManageBtn": "Manage Exercises",
-  "workoutListEmpty": "No workouts yet. Tap + to add one.",
-  "workoutListDeleteTitle": "Delete workout?",
-  "workoutListDeleteConfirm": "Remove \"{name}\"?",
-  "@workoutListDeleteConfirm": {
+  "emptyWorkoutsTitle": "No workouts yet",
+  "emptyWorkoutsBody": "Plan your first workout and start training.",
+  "emptyWorkoutsCta": "Add workout",
+  "workoutDeleted": "Workout \"{name}\" deleted",
+  "@workoutDeleted": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "workoutDuplicated": "Workout \"{name}\" duplicated",
+  "@workoutDuplicated": {
     "placeholders": {
       "name": { "type": "String" }
     }
   },
 
   "workoutFormTitle": "New Workout",
+  "workoutFormEditTitle": "Edit Workout",
   "workoutFormNameLabel": "Workout Name",
   "workoutFormNameHint": "e.g. Morning Push",
   "workoutFormNameRequired": "Name is required",
@@ -77,6 +233,11 @@
   "workoutFormWeightLabel": "kg",
   "workoutFormDurationLabel": "min",
   "workoutFormSelectExercise": "Select at least one exercise",
+  "workoutFormSearchHint": "Search exercises",
+  "workoutFormRestLabel": "Rest (min)",
+  "workoutFormSetIncomplete": "Complete every added set with its values and rest time (or remove the empty set)",
+  "workoutFormRemoveExercise": "Remove exercise",
+  "workoutFormCreateExercise": "Create new exercise “{query}”",
 
   "workoutDetailAppBar": "Workout",
   "workoutDetailNotFound": "Workout not found",
@@ -89,7 +250,8 @@
     }
   },
   "workoutDetailExercises": "Exercises",
-  "workoutDetailNoExercises": "No exercises in this workout.",
+  "emptyWorkoutDetailTitle": "No exercises in this workout",
+  "emptyWorkoutDetailBody": "Add exercises when creating a workout.",
   "workoutDetailSetHeaderHash": "#",
   "workoutDetailSetHeaderPlanned": "Planned",
   "workoutDetailSetHeaderActual": "Actual",
@@ -110,12 +272,15 @@
       "count": { "type": "int" }
     }
   },
+  "workoutStarted": "Workout started",
+  "workoutCompleted": "Workout completed",
 
   "ingredientListAppBar": "Ingredients",
-  "ingredientListEmpty": "No ingredients yet. Tap + to add one.",
-  "ingredientListDeleteTitle": "Delete ingredient?",
-  "ingredientListDeleteConfirm": "Remove \"{name}\"?",
-  "@ingredientListDeleteConfirm": {
+  "emptyIngredientsTitle": "No ingredients yet",
+  "emptyIngredientsBody": "Add your first ingredient to start building meals.",
+  "emptyIngredientsCta": "Add ingredient",
+  "ingredientArchived": "Ingredient \"{name}\" archived",
+  "@ingredientArchived": {
     "placeholders": {
       "name": { "type": "String" }
     }
@@ -134,6 +299,12 @@
   "ingredientFormCarbsSuffix": "g",
   "ingredientFormFatLabel": "Fat (per 100g)",
   "ingredientFormFatSuffix": "g",
+  "ingredientFormSodiumLabel": "Sodium (per 100g)",
+  "ingredientFormSodiumSuffix": "mg",
+  "ingredientFormFiberLabel": "Fiber (per 100g)",
+  "ingredientFormFiberSuffix": "g",
+  "ingredientFormSugarLabel": "Sugar (per 100g)",
+  "ingredientFormSugarSuffix": "g",
   "ingredientFormFieldRequired": "{label} is required",
   "@ingredientFormFieldRequired": {
     "placeholders": {
@@ -155,10 +326,11 @@
 
   "mealListAppBar": "Meals",
   "mealListManageBtn": "Manage Ingredients",
-  "mealListEmpty": "No meals yet. Tap + to add one.",
-  "mealListDeleteTitle": "Delete meal?",
-  "mealListDeleteConfirm": "Remove \"{name}\"?",
-  "@mealListDeleteConfirm": {
+  "emptyMealsTitle": "No meals yet",
+  "emptyMealsBody": "Log your first meal to track calories and macros.",
+  "emptyMealsCta": "Log a meal",
+  "mealDeleted": "Meal \"{name}\" deleted",
+  "@mealDeleted": {
     "placeholders": {
       "name": { "type": "String" }
     }
@@ -200,8 +372,112 @@
   "mealFormSave": "Save",
   "mealFormSaving": "Saving…",
 
+  "plannerAppBar": "Daily Plan",
+  "plannerToday": "Today",
+  "plannerPreviousDay": "Previous day",
+  "plannerNextDay": "Next day",
+  "plannerAnytime": "Anytime",
+  "plannerTimelineScheduled": "Scheduled",
+  "emptyPlannerTitle": "No tasks for this day",
+  "emptyPlannerBody": "Add a task to plan your routine.",
+  "emptyPlannerCta": "Add task",
+  "plannerTaskLabel": "Task",
+  "plannerTaskHint": "e.g. Morning run",
+  "plannerTaskRequired": "Title is required",
+  "plannerNotesLabel": "Notes",
+  "plannerWorkoutLabel": "Workout (optional)",
+  "plannerWorkoutHint": "Link a workout",
+  "plannerWorkoutNone": "No workout",
+  "plannerLinkedWorkout": "Open linked workout",
+  "plannerDueDateNone": "No due date",
+  "plannerDueDateClear": "Clear due date",
+  "plannerDueTimeNone": "No due time",
+  "plannerDueTimeClear": "Clear due time",
+  "plannerAddTask": "New Task",
+  "plannerEditTask": "Edit Task",
+  "plannerDeleted": "Task \"{title}\" deleted",
+  "@plannerDeleted": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "plannerCopyPrevious": "Copy from yesterday",
+  "plannerCopyConfirmTitle": "Copy pending tasks?",
+  "plannerCopyConfirmBody": "{count} pending task from yesterday will be copied to today.",
+  "plannerCopyConfirmBody_plural": "{count} pending tasks from yesterday will be copied to today.",
+  "@plannerCopyConfirmBody": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "plannerCopyNothing": "No pending tasks from yesterday to copy.",
+  "plannerCopyDone": "Copied {count} task to today.",
+  "plannerCopyDone_plural": "Copied {count} tasks to today.",
+  "@plannerCopyDone": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "notesAppBar": "Notes",
+  "notesEmptyTitle": "No notes yet",
+  "notesEmptyBody": "Capture anything on your mind — routines, recipes, lessons from a workout. Notes are private to this device.",
+  "notesFab": "New note",
+  "notesEditorNewTitle": "New Note",
+  "notesEditorEditTitle": "Edit Note",
+  "notesTitleLabel": "Title",
+  "notesBodyLabel": "Note",
+  "notesTitleRequired": "Title is required",
+  "notesSave": "Save",
+  "notesEditing": "Saving…",
+  "notesDelete": "Delete note",
+  "notesDeleteConfirmTitle": "Delete note?",
+  "notesDeleteConfirmBody": "“{title}” will be permanently deleted. This can’t be undone.",
+
   "settingsAppBar": "Settings",
-  "settingsBody": "Settings",
+  "settingsProfile": "Profile",
+  "settingsAgeLabel": "Age (years)",
+  "settingsAgeInvalid": "Enter an age between 0 and 120",
+  "settingsAppearance": "Appearance",
+  "settingsThemeSystem": "System",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsLanguage": "Language",
+  "settingsLangEn": "English",
+  "settingsLangFr": "Français",
+  "settingsLangEs": "Español",
+  "settingsBodyWeightGoal": "Body weight goal",
+  "settingsGoalLose": "Lose weight",
+  "settingsGoalMaintain": "Maintain weight",
+  "settingsGoalGain": "Gain weight",
+  "settingsGender": "Gender",
+  "settingsGenderMale": "Male",
+  "settingsGenderFemale": "Female",
+  "settingsActivityLevel": "Activity level",
+  "settingsActivitySedentary": "Sedentary",
+  "settingsActivityLight": "Light",
+  "settingsActivityModerate": "Moderate",
+  "settingsActivityActive": "Active",
+  "settingsActivityVeryActive": "Very active",
+  "settingsComputeActivity": "Compute activity from workouts and steps",
+  "settingsTrackBodyFat": "Track body fat",
+  "settingsBodyFatLabel": "Body fat (%)",
+  "settingsBodyFatInvalid": "Enter a body fat percentage between 0 and 70",
+  "settingsNotifications": "Notifications",
+  "settingsPlannerNotifications": "Task reminders",
+  "settingsPlannerNotificationsSubtitle": "Notify me about planner tasks with a due time.",
+  "settingsRestAlarmSound": "Rest alarm sound",
+  "settingsRestAlarmVibration": "Rest alarm vibration",
+  "settingsData": "Data",
+  "settingsResetData": "Reset all data",
+  "settingsResetDataSubtitle": "Erase all workouts, meals, metrics, planner tasks and notes, and restore default settings.",
+  "settingsResetDataConfirmTitle": "Reset all data?",
+  "settingsResetDataConfirmBody": "This permanently deletes all of your data and resets your settings. This cannot be undone.",
+  "settingsResetDataConfirmAction": "Delete everything",
+  "settingsResetDataDone": "All data has been reset.",
+
+  "taskReminderDueSoon": "Due in 30 minutes",
+  "taskReminderDueNow": "Due now",
 
   "statusCompleted": "Completed",
   "statusActive": "Active",
@@ -211,9 +487,13 @@
   "exerciseTypeCardio": "Cardio",
 
   "commonCancel": "Cancel",
-  "commonDelete": "Delete",
   "commonSave": "Save",
+  "commonSaved": "Saved",
+  "commonEdit": "Edit",
+  "commonUndo": "Undo",
+  "commonOk": "OK",
   "commonSaving": "Saving…",
+  "commonSearch": "Search",
 
   "errorWithMessage": "Error: {message}",
   "@errorWithMessage": {
@@ -253,6 +533,25 @@
     }
   },
 
+  "ingredientNutrientSodium": "Na {value}mg",
+  "@ingredientNutrientSodium": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "ingredientNutrientFiber": "Fiber {value}g",
+  "@ingredientNutrientFiber": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "ingredientNutrientSugar": "Sugar {value}g",
+  "@ingredientNutrientSugar": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+
   "workoutDetailPlannedSetReps": "{reps} × {weight} kg",
   "@workoutDetailPlannedSetReps": {
     "placeholders": {
@@ -267,6 +566,7 @@
     }
   },
   "workoutDetailPlannedSetEmpty": "—",
+  "workoutDetailPlannedSetRest": "{planned} · rest {rest}",
   "workoutDetailActualSetReps": "{reps} × {weight} kg",
   "@workoutDetailActualSetReps": {
     "placeholders": {
@@ -286,5 +586,89 @@
       "reps": { "type": "String" }
     }
   },
-  "workoutDetailActualSetEmpty": "—"
+  "workoutDetailActualSetEmpty": "—",
+
+  "bodyMetricsTitle": "Body Metrics",
+  "bodyMetricsAddWeight": "Add weight",
+  "bodyMetricsAddHeight": "Add height",
+  "bodyMetricsWeightLabel": "Weight (kg)",
+  "bodyMetricsHeightLabel": "Height (cm)",
+  "bodyMetricsDialogWeightTitle": "New weight entry",
+  "bodyMetricsDialogHeightTitle": "New height entry",
+  "bodyMetricsValueRequired": "Enter a value",
+  "bodyMetricsValuePositive": "Value must be greater than 0",
+  "bodyMetricsEmptyWeight": "No weight entries yet.",
+  "bodyMetricsEmptyHeight": "No height entries yet.",
+  "bodyMetricsLatestWeight": "Latest: {value} kg",
+  "@bodyMetricsLatestWeight": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "bodyMetricsLatestHeight": "Latest: {value} cm",
+  "@bodyMetricsLatestHeight": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "bodyMetricsValueKg": "{value} kg",
+  "@bodyMetricsValueKg": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "bodyMetricsValueCm": "{value} cm",
+  "@bodyMetricsValueCm": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "bodyMetricsGoal": "Goal: {goal}",
+  "@bodyMetricsGoal": {
+    "placeholders": {
+      "goal": { "type": "String" }
+    }
+  },
+
+  "restTimerTitle": "Rest timer",
+  "restTimerCancel": "Cancel rest",
+  "restTimerMinutes": "{minutes} min",
+  "@restTimerMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "activeWorkoutElapsedLabel": "Elapsed",
+  "activeWorkoutRestLabel": "Rest",
+  "activeWorkoutResume": "Resume",
+  "restAlarmTitle": "Rest is over",
+  "restAlarmBody": "Your planned rest is complete.",
+  "restAlarmBodyWithDuration": "Your planned rest of {duration} is complete.",
+  "@restAlarmBodyWithDuration": {
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+
+  "workoutSummaryAppBar": "Summary",
+  "workoutSummaryDone": "Done",
+  "workoutSummaryDurationLabel": "Duration",
+  "workoutSummaryAvgRest": "Average rest",
+  "workoutSummaryVolume": "Volume",
+  "workoutSummaryMaxWeight": "Max weight",
+  "workoutSummaryTotalReps": "Total reps",
+  "workoutSummaryTotalDuration": "Total duration",
+  "workoutSummaryTotalDistance": "Total distance",
+  "workoutSummaryValueKg": "{value} kg",
+  "@workoutSummaryValueKg": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "workoutSummaryDistanceValue": "{distance} m",
+  "@workoutSummaryDistanceValue": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  }
 }

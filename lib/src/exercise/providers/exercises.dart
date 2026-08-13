@@ -19,3 +19,11 @@ final exerciseRepositoryProvider = Provider<ExerciseRepository>((ref) {
 final exerciseListProvider = FutureProvider<List<Exercise>>((ref) async {
   return ref.watch(exerciseRepositoryProvider).getAll();
 });
+
+/// Loads a single exercise by id; resolves to `null` when it doesn't exist.
+final exerciseByIdProvider = FutureProvider.family<Exercise?, String>((
+  ref,
+  id,
+) async {
+  return ref.watch(exerciseRepositoryProvider).getById(id);
+});

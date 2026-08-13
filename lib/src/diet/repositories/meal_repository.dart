@@ -123,6 +123,11 @@ final class MealRepository {
     });
   }
 
+  /// Re-inserts a previously deleted [meal] with all its items and their
+  /// original ids — the undo path for delete. Shares the create path so the
+  /// create and restore flows stay consistent.
+  Future<void> restore(MealEntry meal) => insert(meal);
+
   MealEntry _toDomain(db.Meal row, List<MealIngredient> items) => MealEntry(
     id: row.id,
     name: row.name,
@@ -133,14 +138,34 @@ final class MealRepository {
 }
 
 /// Creates a new [MealEntry] with a fresh UUID v7 and the current timestamp.
+///
+/// The generated meal id is stamped onto every item so the inserted
+/// `meal_ingredients` rows reference the real meal (fixes the pre-T02
+/// empty-meal_id bug where items kept `mealId: ''` and never loaded back).
 MealEntry newMeal({
   required String name,
   required DateTime eatenAt,
   required List<MealIngredient> items,
-}) => MealEntry(
-  id: const Uuid().v7(),
-  name: name,
-  eatenAt: eatenAt,
-  createdAt: DateTime.now(),
-  items: items,
-);
+}) {
+  final id = const Uuid().v7();
+  return MealEntry(
+    id: id,
+    name: name,
+    eatenAt: eatenAt,
+    createdAt: DateTime.now(),
+    items: [
+      for (final item in items)
+        MealIngredient(
+          id: item.id,
+          mealId: id,
+          ingredientId: item.ingredientId,
+          ingredientName: item.ingredientName,
+          grams: item.grams,
+          caloriesPer100g: item.caloriesPer100g,
+          proteinPer100g: item.proteinPer100g,
+          carbsPer100g: item.carbsPer100g,
+          fatPer100g: item.fatPer100g,
+        ),
+    ],
+  );
+}

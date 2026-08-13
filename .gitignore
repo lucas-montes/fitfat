@@ -61,3 +61,10 @@ result
 maia.json
 context/tmp
 .android
+data
+
+# Exercise catalog build outputs (regenerate via tool/build_catalog.dart +
+# tool/prepare_media.sh from the git-ignored data/ source). Kept out of git per
+# user decision 2026-08-10.
+/assets/exercises.db
+/assets/exercises/

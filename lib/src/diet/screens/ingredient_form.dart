@@ -24,6 +24,9 @@ final class _IngredientFormScreenState
   late final TextEditingController _proteinCtrl;
   late final TextEditingController _carbsCtrl;
   late final TextEditingController _fatCtrl;
+  late final TextEditingController _sodiumCtrl;
+  late final TextEditingController _fiberCtrl;
+  late final TextEditingController _sugarCtrl;
   bool _saving = false;
 
   bool get _isEditing => widget.ingredient != null;
@@ -45,6 +48,15 @@ final class _IngredientFormScreenState
     _fatCtrl = TextEditingController(
       text: ing?.fatPer100g.toStringAsFixed(1) ?? '',
     );
+    _sodiumCtrl = TextEditingController(
+      text: ing?.sodiumPer100g?.toStringAsFixed(1) ?? '',
+    );
+    _fiberCtrl = TextEditingController(
+      text: ing?.fiberPer100g?.toStringAsFixed(1) ?? '',
+    );
+    _sugarCtrl = TextEditingController(
+      text: ing?.sugarPer100g?.toStringAsFixed(1) ?? '',
+    );
   }
 
   @override
@@ -54,6 +66,9 @@ final class _IngredientFormScreenState
     _proteinCtrl.dispose();
     _carbsCtrl.dispose();
     _fatCtrl.dispose();
+    _sodiumCtrl.dispose();
+    _fiberCtrl.dispose();
+    _sugarCtrl.dispose();
     super.dispose();
   }
 
@@ -151,6 +166,63 @@ final class _IngredientFormScreenState
               validator: (v) =>
                   _validateNonNegative(v, l10n.ingredientFormFatLabel, l10n),
             ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _sodiumCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormSodiumLabel,
+                suffixText: l10n.ingredientFormSodiumSuffix,
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d.]+')),
+              ],
+              validator: (v) => _validateOptionalNonNegative(
+                v,
+                l10n.ingredientFormSodiumLabel,
+                l10n,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _fiberCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormFiberLabel,
+                suffixText: l10n.ingredientFormFiberSuffix,
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d.]+')),
+              ],
+              validator: (v) => _validateOptionalNonNegative(
+                v,
+                l10n.ingredientFormFiberLabel,
+                l10n,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _sugarCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormSugarLabel,
+                suffixText: l10n.ingredientFormSugarSuffix,
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d.]+')),
+              ],
+              validator: (v) => _validateOptionalNonNegative(
+                v,
+                l10n.ingredientFormSugarLabel,
+                l10n,
+              ),
+            ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _saving ? null : _save,
@@ -172,6 +244,9 @@ final class _IngredientFormScreenState
       final protein = double.parse(_proteinCtrl.text);
       final carbs = double.parse(_carbsCtrl.text);
       final fat = double.parse(_fatCtrl.text);
+      final sodium = _parseOptional(_sodiumCtrl.text);
+      final fiber = _parseOptional(_fiberCtrl.text);
+      final sugar = _parseOptional(_sugarCtrl.text);
 
       final repo = ref.read(ingredientRepositoryProvider);
 
@@ -183,6 +258,9 @@ final class _IngredientFormScreenState
             proteinPer100g: protein,
             carbsPer100g: carbs,
             fatPer100g: fat,
+            sodiumPer100g: sodium,
+            fiberPer100g: fiber,
+            sugarPer100g: sugar,
           ),
         );
       } else {
@@ -193,6 +271,9 @@ final class _IngredientFormScreenState
             proteinPer100g: protein,
             carbsPer100g: carbs,
             fatPer100g: fat,
+            sodiumPer100g: sodium,
+            fiberPer100g: fiber,
+            sugarPer100g: sugar,
           ),
         );
       }
@@ -226,5 +307,27 @@ final class _IngredientFormScreenState
       return l10n.ingredientFormFieldNonNegative(label);
     }
     return null;
+  }
+
+  /// Validates an optional numeric field: blank is allowed, non-blank must
+  /// parse to a non-negative number.
+  String? _validateOptionalNonNegative(
+    String? v,
+    String label,
+    AppLocalizations l10n,
+  ) {
+    if (v == null || v.trim().isEmpty) return null;
+    final value = double.tryParse(v);
+    if (value == null || value < 0) {
+      return l10n.ingredientFormFieldNonNegative(label);
+    }
+    return null;
+  }
+
+  /// Parses an optional numeric input; blank/whitespace maps to null.
+  double? _parseOptional(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return null;
+    return double.parse(trimmed);
   }
 }
