@@ -1,3 +1,5 @@
+import 'planner_recurrence.dart';
+
 /// Plain domain model for a daily planner task.
 final class PlannerItem {
   final String id;
@@ -11,6 +13,9 @@ final class PlannerItem {
   dueTimeMinutes; // optional due time-of-day (schema v8), minutes since midnight
   final String? notes; // optional free-text note
   final String? workoutId; // optional linked workout (schema v11)
+  final List<String>? tags; // optional free-form labels (schema v12)
+  final PlannerRecurrence? recurrence; // optional repeat rule (schema v13)
+  final String? seriesId; // groups occurrences of one recurring series
   final DateTime createdAt;
 
   const PlannerItem({
@@ -23,6 +28,9 @@ final class PlannerItem {
     this.dueTimeMinutes,
     this.notes,
     this.workoutId,
+    this.tags,
+    this.recurrence,
+    this.seriesId,
     required this.createdAt,
   });
 
@@ -39,6 +47,9 @@ final class PlannerItem {
     Object? dueTimeMinutes = _unset,
     Object? notes = _unset,
     Object? workoutId = _unset,
+    Object? tags = _unset,
+    Object? recurrence = _unset,
+    Object? seriesId = _unset,
     DateTime? createdAt,
   }) => PlannerItem(
     id: id ?? this.id,
@@ -54,6 +65,11 @@ final class PlannerItem {
     workoutId: identical(workoutId, _unset)
         ? this.workoutId
         : workoutId as String?,
+    tags: identical(tags, _unset) ? this.tags : tags as List<String>?,
+    recurrence: identical(recurrence, _unset)
+        ? this.recurrence
+        : recurrence as PlannerRecurrence?,
+    seriesId: identical(seriesId, _unset) ? this.seriesId : seriesId as String?,
     createdAt: createdAt ?? this.createdAt,
   );
 }

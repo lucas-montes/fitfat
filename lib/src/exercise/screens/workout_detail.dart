@@ -6,16 +6,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise_set.dart';
-import '../../models/workout.dart';
 import '../../notifications/active_workout_notifier.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
-import '../../ui/haptics.dart';
-import '../../ui/theme_extensions.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+import '../../notifications/rest_timer.dart';
 import 'workout_form.dart';
 
 final class WorkoutDetailScreen extends ConsumerWidget {
@@ -131,12 +129,7 @@ final class _WorkoutDetailContent extends StatelessWidget {
             )
           else
             for (final block in detail.exercises)
-              _ExerciseBlockCard(
-                block: block,
-                workout: w,
-                l10n: l10n,
-                ref: ref,
-              ),
+              _ExerciseBlockCard(block: block, l10n: l10n),
         ],
       ),
     );
@@ -186,16 +179,9 @@ final class _WorkoutDetailContent extends StatelessWidget {
 
 final class _ExerciseBlockCard extends StatelessWidget {
   final ExerciseBlock block;
-  final Workout workout;
   final AppLocalizations l10n;
-  final WidgetRef ref;
 
-  const _ExerciseBlockCard({
-    required this.block,
-    required this.workout,
-    required this.l10n,
-    required this.ref,
-  });
+  const _ExerciseBlockCard({required this.block, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +193,7 @@ final class _ExerciseBlockCard extends StatelessWidget {
         subtitle: Text(l10n.workoutDetailSetCount(block.sets.length)),
         initiallyExpanded: true,
         children: [
-          // Header row
+          // Header row (planned only — this is the planning screen)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -220,16 +206,9 @@ final class _ExerciseBlockCard extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  flex: 5,
+                  flex: 8,
                   child: Text(
                     l10n.workoutDetailSetHeaderPlanned,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                Expanded(
-                  flex: 5,
-                  child: Text(
-                    l10n.workoutDetailSetHeaderActual,
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -237,8 +216,7 @@ final class _ExerciseBlockCard extends StatelessWidget {
             ),
           ),
           const Divider(height: 8),
-          for (final set in block.sets)
-            _SetRow(set: set, workout: workout, l10n: l10n, ref: ref),
+          for (final set in block.sets) _SetRow(set: set, l10n: l10n),
           const SizedBox(height: 8),
         ],
       ),
@@ -248,23 +226,15 @@ final class _ExerciseBlockCard extends StatelessWidget {
 
 final class _SetRow extends StatelessWidget {
   final ExerciseSet set;
-  final Workout workout;
   final AppLocalizations l10n;
-  final WidgetRef ref;
 
-  const _SetRow({
-    required this.set,
-    required this.workout,
-    required this.l10n,
-    required this.ref,
-  });
+  const _SetRow({required this.set, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isEditable = !workout.isPending;
 
-    final planned = set.reps != null
+    final plannedBase = set.reps != null
         ? l10n.workoutDetailPlannedSetReps(
             set.reps.toString(),
             set.weightKg == null ? '?' : formatDecimal(set.weightKg!),
@@ -273,221 +243,28 @@ final class _SetRow extends StatelessWidget {
         ? l10n.workoutDetailPlannedSetDuration(set.durationMinutes.toString())
         : l10n.workoutDetailPlannedSetEmpty;
 
-    final actual = set.actualReps != null
-        ? l10n.workoutDetailActualSetReps(
-            set.actualReps.toString(),
-            set.actualWeightKg == null
-                ? '?'
-                : formatDecimal(set.actualWeightKg!),
+    final planned = set.restSeconds != null
+        ? l10n.workoutDetailPlannedSetRest(
+            plannedBase,
+            formatRestDuration(Duration(seconds: set.restSeconds!)),
           )
-        : set.actualWeightKg != null
-        ? l10n.workoutDetailActualSetWeight(formatDecimal(set.actualWeightKg!))
-        : set.durationMinutes != null && set.actualReps != null
-        ? l10n.workoutDetailActualSetDuration(set.actualReps.toString())
-        : l10n.workoutDetailActualSetEmpty;
+        : plannedBase;
 
-    return InkWell(
-      onTap: isEditable ? () => _editActuals(context) : null,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: Text(
-                '${set.setNumber}',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall,
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              '${set.setNumber}',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall,
             ),
-            Expanded(
-              flex: 5,
-              child: Text(
-                planned,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: set.isCompleted
-                      ? theme.colorScheme.onSurfaceVariant
-                      : null,
-                  decoration: set.isCompleted
-                      ? TextDecoration.lineThrough
-                      : null,
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 5,
-              child: Text(
-                actual,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: set.isCompleted ? FontWeight.w600 : null,
-                  color: set.isCompleted
-                      ? theme.extension<FitFatColors>()!.success
-                      : null,
-                ),
-              ),
-            ),
-            if (isEditable)
-              Tooltip(
-                message: l10n.commonEdit,
-                child: Icon(
-                  Icons.edit,
-                  size: 16,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-          ],
-        ),
+          ),
+          Expanded(flex: 8, child: Text(planned, textAlign: TextAlign.center)),
+        ],
       ),
-    );
-  }
-
-  Future<void> _editActuals(BuildContext context) async {
-    final result = await showDialog<_SetActuals>(
-      context: context,
-      builder: (ctx) => _SetActualsDialog(set: set, l10n: l10n),
-    );
-    if (result == null) return;
-
-    await ref
-        .read(workoutRepositoryProvider)
-        .updateSetActuals(
-          setId: set.id,
-          actualReps: result.reps,
-          actualWeightKg: result.weightKg,
-          durationMinutes: result.durationMinutes,
-          distanceMeters: result.distanceMeters,
-        );
-    unawaited(Haptics.lightImpact());
-    ref.invalidate(workoutDetailProvider(workout.id));
-  }
-}
-
-final class _SetActuals {
-  final int? reps;
-  final double? weightKg;
-  final int? durationMinutes;
-  final double? distanceMeters;
-  const _SetActuals({
-    this.reps,
-    this.weightKg,
-    this.durationMinutes,
-    this.distanceMeters,
-  });
-}
-
-final class _SetActualsDialog extends StatefulWidget {
-  final ExerciseSet set;
-  final AppLocalizations l10n;
-  const _SetActualsDialog({required this.set, required this.l10n});
-
-  @override
-  State<_SetActualsDialog> createState() => _SetActualsDialogState();
-}
-
-final class _SetActualsDialogState extends State<_SetActualsDialog> {
-  late final TextEditingController _repsCtrl;
-  late final TextEditingController _weightCtrl;
-  late final TextEditingController _durationCtrl;
-  late final TextEditingController _distanceCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    final s = widget.set;
-    _repsCtrl = TextEditingController(
-      text: (s.actualReps ?? s.reps)?.toString() ?? '',
-    );
-    _weightCtrl = TextEditingController(
-      text: (s.actualWeightKg ?? s.weightKg)?.toStringAsFixed(1) ?? '',
-    );
-    _durationCtrl = TextEditingController(
-      text:
-          (s.actualWeightKg != null ? s.durationMinutes : null)?.toString() ??
-          '',
-    );
-    _distanceCtrl = TextEditingController(
-      text: s.distanceMeters?.toStringAsFixed(0) ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _repsCtrl.dispose();
-    _weightCtrl.dispose();
-    _durationCtrl.dispose();
-    _distanceCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = widget.l10n;
-    final s = widget.set;
-    final isWeightlifting = s.reps != null || s.weightKg != null;
-    final isCardio = s.durationMinutes != null || s.distanceMeters != null;
-
-    return AlertDialog(
-      title: Text(l10n.workoutDetailSetActualsTitle(s.setNumber)),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isWeightlifting) ...[
-              TextField(
-                controller: _repsCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualRepsLabel,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: _weightCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualWeightLabel,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-            if (isCardio) ...[
-              TextField(
-                controller: _durationCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualDurationLabel,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: _distanceCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualDistanceLabel,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.commonCancel),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop(
-              _SetActuals(
-                reps: int.tryParse(_repsCtrl.text),
-                weightKg: double.tryParse(_weightCtrl.text),
-                durationMinutes: int.tryParse(_durationCtrl.text),
-                distanceMeters: double.tryParse(_distanceCtrl.text),
-              ),
-            );
-          },
-          child: Text(l10n.commonSave),
-        ),
-      ],
     );
   }
 }

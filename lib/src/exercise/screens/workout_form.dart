@@ -11,7 +11,7 @@ import '../../ui/date_formats.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
-import 'exercise_form.dart';
+import 'exercise_picker_sheet.dart';
 
 /// A planned set entry used in the form before saving.
 /// Null fields = unset; the form starts with an empty entry and each field
@@ -36,26 +36,17 @@ final class WorkoutFormScreen extends ConsumerStatefulWidget {
 final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
-  late final TextEditingController _searchCtrl;
   late DateTime _date;
   bool _saving = false;
 
-  /// Debounce timer for the search field so filtering (and the lazy result
-  /// list rebuild) only runs after the user pauses typing.
-  Timer? _searchDebounce;
-
-  /// Current name filter for the exercise picker (empty = show all). Updated
-  /// after the debounce delay so keystrokes never rebuild thousands of rows.
-  String _filter = '';
-
-  /// Selected exercise ids → planned set configs.
-  final Map<String, List<_PlannedSetEntry>> _selected = {};
+  /// Selected exercise ids → planned set configs. Order is preserved (Dart
+  /// Maps keep insertion order) and is user-reorderable via the drag handle.
+  Map<String, List<_PlannedSetEntry>> _selected = {};
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController();
-    _searchCtrl = TextEditingController();
     final initial = widget.initial;
     if (initial != null) {
       _nameCtrl.text = initial.workout.name;
@@ -77,9 +68,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
     _nameCtrl.dispose();
-    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -95,6 +84,15 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               ? l10n.workoutFormEditTitle
               : l10n.workoutFormTitle,
         ),
+        actions: [
+          FilledButton(
+            onPressed: _saving ? null : _save,
+            child: Text(
+              _saving ? l10n.workoutFormSaving : l10n.workoutFormSave,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -126,76 +124,43 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: _openExercisePicker,
+              icon: const Icon(Icons.add),
+              label: Text(l10n.workoutFormAddExercise),
+            ),
+            const SizedBox(height: 8),
             exercisesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text(l10n.errorWithMessage('$e')),
               data: (exercises) {
-                if (exercises.isEmpty) {
+                if (exercises.isEmpty && _selected.isEmpty) {
                   return Text(l10n.workoutFormNoExercises);
                 }
-                // Search-first: nothing is listed until the user types.
-                final query = _filter.trim().toLowerCase();
-                final visible = query.isEmpty
-                    ? const <Exercise>[]
-                    : exercises
-                          .where((ex) => ex.name.toLowerCase().contains(query))
-                          .toList();
-                const maxResults = 50;
                 final byId = {for (final ex in exercises) ex.id: ex};
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                final ordered = _selected.entries
+                    .where((e) => byId[e.key] != null)
+                    .toList();
+                if (ordered.isEmpty) {
+                  return Text(l10n.workoutFormNoExercises);
+                }
+                return ReorderableListView(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  buildDefaultDragHandles: false,
+                  onReorder: _reorderExercises,
                   children: [
-                    TextField(
-                      controller: _searchCtrl,
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search),
-                        hintText: l10n.workoutFormSearchHint,
-                        isDense: true,
-                        border: const OutlineInputBorder(),
+                    for (var i = 0; i < ordered.length; i++)
+                      _buildSelectedExerciseRow(
+                        ordered[i].key,
+                        byId[ordered[i].key]!,
+                        ordered[i].value,
+                        i,
+                        l10n,
                       ),
-                      onChanged: (v) {
-                        _searchDebounce?.cancel();
-                        _searchDebounce = Timer(
-                          const Duration(milliseconds: 250),
-                          () {
-                            if (mounted) setState(() => _filter = v);
-                          },
-                        );
-                      },
-                    ),
-                    if (query.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      _buildCreateExerciseRow(l10n),
-                      // Lazy, height-bounded result list (capped) so a broad
-                      // query never builds thousands of tiles per keystroke.
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 320),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: visible.length > maxResults
-                              ? maxResults
-                              : visible.length,
-                          itemBuilder: (_, i) =>
-                              _buildSearchResultRow(visible[i], l10n),
-                        ),
-                      ),
-                    ],
-                    if (_selected.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      for (final entry in _selected.entries)
-                        if (byId[entry.key] case final ex?)
-                          _buildSelectedExerciseRow(ex, entry.value, l10n),
-                    ],
                   ],
                 );
               },
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: Text(
-                _saving ? l10n.workoutFormSaving : l10n.workoutFormSave,
-              ),
             ),
           ],
         ),
@@ -203,90 +168,43 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     );
   }
 
-  /// Create-new row: opens the exercise form prefilled with the current search
-  /// query; on save the created exercise is reloaded and auto-selected.
-  Widget _buildCreateExerciseRow(AppLocalizations l10n) {
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.add),
-      title: Text(l10n.workoutFormCreateExercise(_filter.trim())),
-      trailing: const Icon(Icons.add_circle),
-      onTap: _createExercise,
-    );
-  }
-
-  Future<void> _createExercise() async {
-    final created = await Navigator.of(context).push<Exercise>(
-      MaterialPageRoute(
-        builder: (_) => ExerciseFormScreen(initialName: _filter.trim()),
-      ),
-    );
-    if (created == null || !mounted) return;
-    ref.invalidate(exerciseListProvider);
-    final reloaded = await ref.read(exerciseListProvider.future);
-    if (!mounted) return;
-    Exercise? match;
-    for (final ex in reloaded) {
-      if (ex.id == created.id) {
-        match = ex;
-        break;
-      }
-    }
+  void _reorderExercises(int oldIndex, int newIndex) {
     setState(() {
-      _filter = '';
-      _searchCtrl.clear();
-      if (match != null) _selected[match.id] = [];
+      final ids = _selected.keys.toList();
+      if (oldIndex < newIndex) newIndex -= 1;
+      final moved = ids.removeAt(oldIndex);
+      ids.insert(newIndex, moved);
+      _selected = {for (final id in ids) id: _selected[id]!};
     });
   }
 
-  /// Search result row: tapping adds the exercise to the selection; an added
-  /// row is marked with a check and is not tappable again.
-  Widget _buildSearchResultRow(Exercise ex, AppLocalizations l10n) {
-    final isSelected = _selected.containsKey(ex.id);
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        ex.isWeightlifting ? Icons.fitness_center : Icons.directions_run,
-        size: 20,
-      ),
-      title: Text(ex.name),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            ex.isWeightlifting
-                ? l10n.exerciseTypeWeightlifting
-                : l10n.exerciseTypeCardio,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            isSelected ? Icons.check_circle : Icons.add_circle_outline,
-            size: 20,
-            color: isSelected ? Theme.of(context).colorScheme.primary : null,
-          ),
-        ],
-      ),
-      onTap: isSelected
-          ? null
-          : () => setState(() {
-              // Selecting an exercise creates no sets; each set is added
-              // explicitly via "Add set".
-              _selected[ex.id] = [];
-            }),
+  Future<void> _openExercisePicker() async {
+    final picked = await showExercisePickerSheet(
+      context,
+      initialSelected: {..._selected.keys},
     );
+    if (picked == null || !mounted) return;
+    setState(() {
+      // Drop exercises the user deselected; keep existing sets for ones that
+      // remain; add empty set lists for newly chosen exercises.
+      _selected.removeWhere((id, _) => !picked.contains(id));
+      for (final id in picked) {
+        _selected.putIfAbsent(id, () => []);
+      }
+    });
   }
 
-  /// One chosen exercise: header row (name, type, remove action), per-set
-  /// editors, and an "Add set" button.
+  /// One chosen exercise: drag handle, name, remove action, per-set editors,
+  /// and an "Add set" button. [exerciseId] + [index] power the reorder handle.
   Widget _buildSelectedExerciseRow(
+    String exerciseId,
     Exercise ex,
     List<_PlannedSetEntry> sets,
+    int index,
     AppLocalizations l10n,
   ) {
     return Card(
+      key: Key(exerciseId),
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(8),
@@ -295,6 +213,10 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
           children: [
             Row(
               children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(Icons.drag_handle, size: 20),
+                ),
                 Icon(
                   ex.isWeightlifting
                       ? Icons.fitness_center
@@ -317,7 +239,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
             ),
             const Divider(height: 8),
             for (var i = 0; i < sets.length; i++)
-              _buildSetRow(i, sets[i], ex, l10n),
+              _buildSetRow(i, sets[i], sets, ex, l10n),
             TextButton.icon(
               icon: const Icon(Icons.add, size: 18),
               label: Text(l10n.workoutFormAddSet),
@@ -334,35 +256,24 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
   Widget _buildSetRow(
     int index,
     _PlannedSetEntry entry,
+    List<_PlannedSetEntry> sets,
     Exercise ex,
     AppLocalizations l10n,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(left: 40, top: 4, bottom: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           SizedBox(
             width: 24,
-            child: Text('${index + 1}.', textAlign: TextAlign.right),
+            child: Text(
+              '${index + 1}.',
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
           const SizedBox(width: 8),
           if (ex.isWeightlifting) ...[
-            Expanded(
-              child: TextFormField(
-                initialValue: entry.reps?.toString() ?? '',
-                decoration: InputDecoration(
-                  labelText: l10n.workoutFormRepsLabel,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (v) => entry.reps = int.tryParse(v),
-              ),
-            ),
-            const SizedBox(width: 8),
             Expanded(
               child: TextFormField(
                 initialValue: entry.weightKg?.toStringAsFixed(0) ?? '',
@@ -376,6 +287,22 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                 ),
                 keyboardType: TextInputType.number,
                 onChanged: (v) => entry.weightKg = double.tryParse(v),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                initialValue: entry.reps?.toString() ?? '',
+                decoration: InputDecoration(
+                  labelText: l10n.workoutFormRepsLabel,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                onChanged: (v) => entry.reps = int.tryParse(v),
               ),
             ),
           ] else ...[
@@ -414,6 +341,14 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               ),
               onChanged: (v) => entry.restSeconds = _parseRestSeconds(v),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 20),
+            tooltip: l10n.workoutFormRemoveSet,
+            onPressed: () => setState(() {
+              sets.removeAt(index);
+              if (sets.isEmpty) _selected.remove(ex.id);
+            }),
           ),
         ],
       ),
@@ -489,6 +424,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
       for (final entry in _selected.entries) {
         final exId = entry.key;
         final plannedSets = entry.value;
+        if (plannedSets.isEmpty) continue;
         final we = newWorkoutExercise(
           workoutId: workout.id,
           exerciseId: exId,

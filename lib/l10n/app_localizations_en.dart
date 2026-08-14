@@ -416,6 +416,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workoutFormExercises => 'Exercises';
 
   @override
+  String get workoutFormAddExercise => 'Add exercise';
+
+  @override
+  String get workoutFormRemoveSet => 'Remove set';
+
+  @override
+  String get workoutFormReorderExercises => 'Reorder exercises';
+
+  @override
   String get workoutFormNoExercises =>
       'No exercises available. Add some first.';
 
@@ -737,6 +746,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plannerTaskRequired => 'Title is required';
 
   @override
+  String get plannerTagsLabel => 'Tags';
+
+  @override
+  String get plannerTagsHint => 'Add a tag, then press + (e.g. Work, Errand)';
+
+  @override
+  String get plannerTagsAdd => 'Add tag';
+
+  @override
   String get plannerNotesLabel => 'Notes';
 
   @override
@@ -802,6 +820,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String plannerCopyDone_plural(Object count) {
     return 'Copied $count tasks to today.';
   }
+
+  @override
+  String get plannerRepeatLabel => 'Repeat';
+
+  @override
+  String get plannerRepeatNone => 'Does not repeat';
+
+  @override
+  String get plannerRepeatDaily => 'Daily';
+
+  @override
+  String get plannerRepeatWeekly => 'Weekly';
+
+  @override
+  String get plannerRepeatInterval => 'Every N days';
+
+  @override
+  String get plannerRepeatMonthly => 'Monthly';
+
+  @override
+  String get plannerRepeatWeekdays => 'Repeat on';
+
+  @override
+  String get plannerRepeatEvery => 'Every';
+
+  @override
+  String get plannerRepeatDays => 'days';
+
+  @override
+  String get plannerRepeatMonthDay => 'Day of month';
+
+  @override
+  String get plannerRepeatEnds => 'Ends';
+
+  @override
+  String get plannerRepeatEndsNever => 'Never';
+
+  @override
+  String get plannerRepeatEndsOnDate => 'On date';
+
+  @override
+  String get plannerRepeatEndsAfter => 'After';
+
+  @override
+  String get plannerRepeatOccurrences => 'occurrences';
 
   @override
   String get notesAppBar => 'Notes';

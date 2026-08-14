@@ -29,7 +29,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -97,6 +97,15 @@ final class AppDatabase extends _$AppDatabase {
       if (from < 11) {
         // v11: planner workout linking.
         await m.addColumn(plannerItems, plannerItems.workoutId);
+      }
+      if (from < 12) {
+        // v12: free-form planner task tags (JSON string[]).
+        await m.addColumn(plannerItems, plannerItems.tags);
+      }
+      if (from < 13) {
+        // v13: recurring task rule + series grouping.
+        await m.addColumn(plannerItems, plannerItems.recurrence);
+        await m.addColumn(plannerItems, plannerItems.seriesId);
       }
     },
   );

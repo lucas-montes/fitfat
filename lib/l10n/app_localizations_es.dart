@@ -420,6 +420,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get workoutFormExercises => 'Ejercicios';
 
   @override
+  String get workoutFormAddExercise => 'Añadir ejercicio';
+
+  @override
+  String get workoutFormRemoveSet => 'Eliminar serie';
+
+  @override
+  String get workoutFormReorderExercises => 'Reordenar ejercicios';
+
+  @override
   String get workoutFormNoExercises =>
       'No hay ejercicios disponibles. Añada algunos primero.';
 
@@ -744,6 +753,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get plannerTaskRequired => 'El título es obligatorio';
 
   @override
+  String get plannerTagsLabel => 'Etiquetas';
+
+  @override
+  String get plannerTagsHint =>
+      'Añade una etiqueta y pulsa + (p. ej. Trabajo, Recado)';
+
+  @override
+  String get plannerTagsAdd => 'Añadir etiqueta';
+
+  @override
   String get plannerNotesLabel => 'Notas';
 
   @override
@@ -810,6 +829,51 @@ class AppLocalizationsEs extends AppLocalizations {
   String plannerCopyDone_plural(Object count) {
     return '$count tareas copiadas hoy.';
   }
+
+  @override
+  String get plannerRepeatLabel => 'Repetir';
+
+  @override
+  String get plannerRepeatNone => 'No se repite';
+
+  @override
+  String get plannerRepeatDaily => 'Diariamente';
+
+  @override
+  String get plannerRepeatWeekly => 'Semanalmente';
+
+  @override
+  String get plannerRepeatInterval => 'Cada N días';
+
+  @override
+  String get plannerRepeatMonthly => 'Mensualmente';
+
+  @override
+  String get plannerRepeatWeekdays => 'Repetir el';
+
+  @override
+  String get plannerRepeatEvery => 'Cada';
+
+  @override
+  String get plannerRepeatDays => 'días';
+
+  @override
+  String get plannerRepeatMonthDay => 'Día del mes';
+
+  @override
+  String get plannerRepeatEnds => 'Termina';
+
+  @override
+  String get plannerRepeatEndsNever => 'Nunca';
+
+  @override
+  String get plannerRepeatEndsOnDate => 'En la fecha';
+
+  @override
+  String get plannerRepeatEndsAfter => 'Después de';
+
+  @override
+  String get plannerRepeatOccurrences => 'veces';
 
   @override
   String get notesAppBar => 'Notas';

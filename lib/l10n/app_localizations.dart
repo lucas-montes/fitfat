@@ -832,6 +832,24 @@ abstract class AppLocalizations {
   /// **'Exercises'**
   String get workoutFormExercises;
 
+  /// No description provided for @workoutFormAddExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Add exercise'**
+  String get workoutFormAddExercise;
+
+  /// No description provided for @workoutFormRemoveSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove set'**
+  String get workoutFormRemoveSet;
+
+  /// No description provided for @workoutFormReorderExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder exercises'**
+  String get workoutFormReorderExercises;
+
   /// No description provided for @workoutFormNoExercises.
   ///
   /// In en, this message translates to:
@@ -1402,6 +1420,24 @@ abstract class AppLocalizations {
   /// **'Title is required'**
   String get plannerTaskRequired;
 
+  /// No description provided for @plannerTagsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get plannerTagsLabel;
+
+  /// No description provided for @plannerTagsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a tag, then press + (e.g. Work, Errand)'**
+  String get plannerTagsHint;
+
+  /// No description provided for @plannerTagsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tag'**
+  String get plannerTagsAdd;
+
   /// No description provided for @plannerNotesLabel.
   ///
   /// In en, this message translates to:
@@ -1515,6 +1551,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied {count} tasks to today.'**
   String plannerCopyDone_plural(Object count);
+
+  /// No description provided for @plannerRepeatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get plannerRepeatLabel;
+
+  /// No description provided for @plannerRepeatNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Does not repeat'**
+  String get plannerRepeatNone;
+
+  /// No description provided for @plannerRepeatDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get plannerRepeatDaily;
+
+  /// No description provided for @plannerRepeatWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get plannerRepeatWeekly;
+
+  /// No description provided for @plannerRepeatInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Every N days'**
+  String get plannerRepeatInterval;
+
+  /// No description provided for @plannerRepeatMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get plannerRepeatMonthly;
+
+  /// No description provided for @plannerRepeatWeekdays.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat on'**
+  String get plannerRepeatWeekdays;
+
+  /// No description provided for @plannerRepeatEvery.
+  ///
+  /// In en, this message translates to:
+  /// **'Every'**
+  String get plannerRepeatEvery;
+
+  /// No description provided for @plannerRepeatDays.
+  ///
+  /// In en, this message translates to:
+  /// **'days'**
+  String get plannerRepeatDays;
+
+  /// No description provided for @plannerRepeatMonthDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day of month'**
+  String get plannerRepeatMonthDay;
+
+  /// No description provided for @plannerRepeatEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get plannerRepeatEnds;
+
+  /// No description provided for @plannerRepeatEndsNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get plannerRepeatEndsNever;
+
+  /// No description provided for @plannerRepeatEndsOnDate.
+  ///
+  /// In en, this message translates to:
+  /// **'On date'**
+  String get plannerRepeatEndsOnDate;
+
+  /// No description provided for @plannerRepeatEndsAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get plannerRepeatEndsAfter;
+
+  /// No description provided for @plannerRepeatOccurrences.
+  ///
+  /// In en, this message translates to:
+  /// **'occurrences'**
+  String get plannerRepeatOccurrences;
 
   /// No description provided for @notesAppBar.
   ///

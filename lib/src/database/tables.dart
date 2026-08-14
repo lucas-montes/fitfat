@@ -145,6 +145,12 @@ class PlannerItems extends Table {
   TextColumn? get notes => text().nullable()();
   // Optional linked workout (v11).
   TextColumn? get workoutId => text().nullable()();
+  // Optional free-form tags as a JSON string[] (v12).
+  TextColumn? get tags => text().nullable()();
+  // Optional repeat rule as a JSON object (v13).
+  TextColumn? get recurrence => text().nullable()();
+  // Groups occurrences of one recurring series (v13).
+  TextColumn? get seriesId => text().nullable()();
   IntColumn get createdAt => integer()();
 
   @override

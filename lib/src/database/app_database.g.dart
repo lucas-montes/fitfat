@@ -4014,6 +4014,37 @@ class $PlannerItemsTable extends PlannerItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
+  @override
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+    'tags',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _recurrenceMeta = const VerificationMeta(
+    'recurrence',
+  );
+  @override
+  late final GeneratedColumn<String> recurrence = GeneratedColumn<String>(
+    'recurrence',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _seriesIdMeta = const VerificationMeta(
+    'seriesId',
+  );
+  @override
+  late final GeneratedColumn<String> seriesId = GeneratedColumn<String>(
+    'series_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4036,6 +4067,9 @@ class $PlannerItemsTable extends PlannerItems
     dueTimeMinutes,
     notes,
     workoutId,
+    tags,
+    recurrence,
+    seriesId,
     createdAt,
   ];
   @override
@@ -4114,6 +4148,24 @@ class $PlannerItemsTable extends PlannerItems
         workoutId.isAcceptableOrUnknown(data['workout_id']!, _workoutIdMeta),
       );
     }
+    if (data.containsKey('tags')) {
+      context.handle(
+        _tagsMeta,
+        tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
+      );
+    }
+    if (data.containsKey('recurrence')) {
+      context.handle(
+        _recurrenceMeta,
+        recurrence.isAcceptableOrUnknown(data['recurrence']!, _recurrenceMeta),
+      );
+    }
+    if (data.containsKey('series_id')) {
+      context.handle(
+        _seriesIdMeta,
+        seriesId.isAcceptableOrUnknown(data['series_id']!, _seriesIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4167,6 +4219,18 @@ class $PlannerItemsTable extends PlannerItems
         DriftSqlType.string,
         data['${effectivePrefix}workout_id'],
       ),
+      tags: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags'],
+      ),
+      recurrence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recurrence'],
+      ),
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -4190,6 +4254,9 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
   final int? dueTimeMinutes;
   final String? notes;
   final String? workoutId;
+  final String? tags;
+  final String? recurrence;
+  final String? seriesId;
   final int createdAt;
   const PlannerItem({
     required this.id,
@@ -4201,6 +4268,9 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     this.dueTimeMinutes,
     this.notes,
     this.workoutId,
+    this.tags,
+    this.recurrence,
+    this.seriesId,
     required this.createdAt,
   });
   @override
@@ -4222,6 +4292,15 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     }
     if (!nullToAbsent || workoutId != null) {
       map['workout_id'] = Variable<String>(workoutId);
+    }
+    if (!nullToAbsent || tags != null) {
+      map['tags'] = Variable<String>(tags);
+    }
+    if (!nullToAbsent || recurrence != null) {
+      map['recurrence'] = Variable<String>(recurrence);
+    }
+    if (!nullToAbsent || seriesId != null) {
+      map['series_id'] = Variable<String>(seriesId);
     }
     map['created_at'] = Variable<int>(createdAt);
     return map;
@@ -4246,6 +4325,13 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       workoutId: workoutId == null && nullToAbsent
           ? const Value.absent()
           : Value(workoutId),
+      tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
+      recurrence: recurrence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recurrence),
+      seriesId: seriesId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seriesId),
       createdAt: Value(createdAt),
     );
   }
@@ -4265,6 +4351,9 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       dueTimeMinutes: serializer.fromJson<int?>(json['dueTimeMinutes']),
       notes: serializer.fromJson<String?>(json['notes']),
       workoutId: serializer.fromJson<String?>(json['workoutId']),
+      tags: serializer.fromJson<String?>(json['tags']),
+      recurrence: serializer.fromJson<String?>(json['recurrence']),
+      seriesId: serializer.fromJson<String?>(json['seriesId']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
   }
@@ -4281,6 +4370,9 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       'dueTimeMinutes': serializer.toJson<int?>(dueTimeMinutes),
       'notes': serializer.toJson<String?>(notes),
       'workoutId': serializer.toJson<String?>(workoutId),
+      'tags': serializer.toJson<String?>(tags),
+      'recurrence': serializer.toJson<String?>(recurrence),
+      'seriesId': serializer.toJson<String?>(seriesId),
       'createdAt': serializer.toJson<int>(createdAt),
     };
   }
@@ -4295,6 +4387,9 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     Value<int?> dueTimeMinutes = const Value.absent(),
     Value<String?> notes = const Value.absent(),
     Value<String?> workoutId = const Value.absent(),
+    Value<String?> tags = const Value.absent(),
+    Value<String?> recurrence = const Value.absent(),
+    Value<String?> seriesId = const Value.absent(),
     int? createdAt,
   }) => PlannerItem(
     id: id ?? this.id,
@@ -4308,6 +4403,9 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
         : this.dueTimeMinutes,
     notes: notes.present ? notes.value : this.notes,
     workoutId: workoutId.present ? workoutId.value : this.workoutId,
+    tags: tags.present ? tags.value : this.tags,
+    recurrence: recurrence.present ? recurrence.value : this.recurrence,
+    seriesId: seriesId.present ? seriesId.value : this.seriesId,
     createdAt: createdAt ?? this.createdAt,
   );
   PlannerItem copyWithCompanion(PlannerItemsCompanion data) {
@@ -4323,6 +4421,11 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
           : this.dueTimeMinutes,
       notes: data.notes.present ? data.notes.value : this.notes,
       workoutId: data.workoutId.present ? data.workoutId.value : this.workoutId,
+      tags: data.tags.present ? data.tags.value : this.tags,
+      recurrence: data.recurrence.present
+          ? data.recurrence.value
+          : this.recurrence,
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -4339,6 +4442,9 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
           ..write('dueTimeMinutes: $dueTimeMinutes, ')
           ..write('notes: $notes, ')
           ..write('workoutId: $workoutId, ')
+          ..write('tags: $tags, ')
+          ..write('recurrence: $recurrence, ')
+          ..write('seriesId: $seriesId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -4355,6 +4461,9 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     dueTimeMinutes,
     notes,
     workoutId,
+    tags,
+    recurrence,
+    seriesId,
     createdAt,
   );
   @override
@@ -4370,6 +4479,9 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
           other.dueTimeMinutes == this.dueTimeMinutes &&
           other.notes == this.notes &&
           other.workoutId == this.workoutId &&
+          other.tags == this.tags &&
+          other.recurrence == this.recurrence &&
+          other.seriesId == this.seriesId &&
           other.createdAt == this.createdAt);
 }
 
@@ -4383,6 +4495,9 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
   final Value<int?> dueTimeMinutes;
   final Value<String?> notes;
   final Value<String?> workoutId;
+  final Value<String?> tags;
+  final Value<String?> recurrence;
+  final Value<String?> seriesId;
   final Value<int> createdAt;
   final Value<int> rowid;
   const PlannerItemsCompanion({
@@ -4395,6 +4510,9 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     this.dueTimeMinutes = const Value.absent(),
     this.notes = const Value.absent(),
     this.workoutId = const Value.absent(),
+    this.tags = const Value.absent(),
+    this.recurrence = const Value.absent(),
+    this.seriesId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -4408,6 +4526,9 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     this.dueTimeMinutes = const Value.absent(),
     this.notes = const Value.absent(),
     this.workoutId = const Value.absent(),
+    this.tags = const Value.absent(),
+    this.recurrence = const Value.absent(),
+    this.seriesId = const Value.absent(),
     required int createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -4426,6 +4547,9 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     Expression<int>? dueTimeMinutes,
     Expression<String>? notes,
     Expression<String>? workoutId,
+    Expression<String>? tags,
+    Expression<String>? recurrence,
+    Expression<String>? seriesId,
     Expression<int>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -4439,6 +4563,9 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
       if (dueTimeMinutes != null) 'due_time_minutes': dueTimeMinutes,
       if (notes != null) 'notes': notes,
       if (workoutId != null) 'workout_id': workoutId,
+      if (tags != null) 'tags': tags,
+      if (recurrence != null) 'recurrence': recurrence,
+      if (seriesId != null) 'series_id': seriesId,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -4454,6 +4581,9 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     Value<int?>? dueTimeMinutes,
     Value<String?>? notes,
     Value<String?>? workoutId,
+    Value<String?>? tags,
+    Value<String?>? recurrence,
+    Value<String?>? seriesId,
     Value<int>? createdAt,
     Value<int>? rowid,
   }) {
@@ -4467,6 +4597,9 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
       dueTimeMinutes: dueTimeMinutes ?? this.dueTimeMinutes,
       notes: notes ?? this.notes,
       workoutId: workoutId ?? this.workoutId,
+      tags: tags ?? this.tags,
+      recurrence: recurrence ?? this.recurrence,
+      seriesId: seriesId ?? this.seriesId,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -4502,6 +4635,15 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     if (workoutId.present) {
       map['workout_id'] = Variable<String>(workoutId.value);
     }
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
+    }
+    if (recurrence.present) {
+      map['recurrence'] = Variable<String>(recurrence.value);
+    }
+    if (seriesId.present) {
+      map['series_id'] = Variable<String>(seriesId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -4523,6 +4665,9 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
           ..write('dueTimeMinutes: $dueTimeMinutes, ')
           ..write('notes: $notes, ')
           ..write('workoutId: $workoutId, ')
+          ..write('tags: $tags, ')
+          ..write('recurrence: $recurrence, ')
+          ..write('seriesId: $seriesId, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -8320,6 +8465,9 @@ typedef $$PlannerItemsTableCreateCompanionBuilder =
       Value<int?> dueTimeMinutes,
       Value<String?> notes,
       Value<String?> workoutId,
+      Value<String?> tags,
+      Value<String?> recurrence,
+      Value<String?> seriesId,
       required int createdAt,
       Value<int> rowid,
     });
@@ -8334,6 +8482,9 @@ typedef $$PlannerItemsTableUpdateCompanionBuilder =
       Value<int?> dueTimeMinutes,
       Value<String?> notes,
       Value<String?> workoutId,
+      Value<String?> tags,
+      Value<String?> recurrence,
+      Value<String?> seriesId,
       Value<int> createdAt,
       Value<int> rowid,
     });
@@ -8389,6 +8540,21 @@ class $$PlannerItemsTableFilterComposer
 
   ColumnFilters<String> get workoutId => $composableBuilder(
     column: $table.workoutId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tags => $composableBuilder(
+    column: $table.tags,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recurrence => $composableBuilder(
+    column: $table.recurrence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get seriesId => $composableBuilder(
+    column: $table.seriesId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8452,6 +8618,21 @@ class $$PlannerItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get tags => $composableBuilder(
+    column: $table.tags,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recurrence => $composableBuilder(
+    column: $table.recurrence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get seriesId => $composableBuilder(
+    column: $table.seriesId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -8495,6 +8676,17 @@ class $$PlannerItemsTableAnnotationComposer
 
   GeneratedColumn<String> get workoutId =>
       $composableBuilder(column: $table.workoutId, builder: (column) => column);
+
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
+
+  GeneratedColumn<String> get recurrence => $composableBuilder(
+    column: $table.recurrence,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get seriesId =>
+      $composableBuilder(column: $table.seriesId, builder: (column) => column);
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -8540,6 +8732,9 @@ class $$PlannerItemsTableTableManager
                 Value<int?> dueTimeMinutes = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> workoutId = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
+                Value<String?> recurrence = const Value.absent(),
+                Value<String?> seriesId = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PlannerItemsCompanion(
@@ -8552,6 +8747,9 @@ class $$PlannerItemsTableTableManager
                 dueTimeMinutes: dueTimeMinutes,
                 notes: notes,
                 workoutId: workoutId,
+                tags: tags,
+                recurrence: recurrence,
+                seriesId: seriesId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -8566,6 +8764,9 @@ class $$PlannerItemsTableTableManager
                 Value<int?> dueTimeMinutes = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> workoutId = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
+                Value<String?> recurrence = const Value.absent(),
+                Value<String?> seriesId = const Value.absent(),
                 required int createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => PlannerItemsCompanion.insert(
@@ -8578,6 +8779,9 @@ class $$PlannerItemsTableTableManager
                 dueTimeMinutes: dueTimeMinutes,
                 notes: notes,
                 workoutId: workoutId,
+                tags: tags,
+                recurrence: recurrence,
+                seriesId: seriesId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

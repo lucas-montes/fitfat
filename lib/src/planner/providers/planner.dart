@@ -18,6 +18,8 @@ final plannerRepositoryProvider = Provider<PlannerRepository>((ref) {
 
 final plannerItemsProvider = FutureProvider.family<List<PlannerItem>, DateTime>(
   (ref, day) async {
-    return ref.watch(plannerRepositoryProvider).getByDay(day);
+    final repo = ref.watch(plannerRepositoryProvider);
+    await repo.materializeForDay(day);
+    return repo.getByDay(day);
   },
 );

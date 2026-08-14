@@ -11,6 +11,7 @@ import '../../models/planner_item.dart';
 import '../../notifications/task_reminders.dart';
 import '../../settings/providers/settings.dart';
 import '../../ui/haptics.dart';
+import '../../ui/tag_colors.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/planner.dart';
@@ -171,7 +172,9 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       initialDueDate: _selectedDay,
     );
     if (result == null || !mounted) return;
-    final (title, dueDate, dueTimeMinutes, notes, workoutId) = result;
+    final (title, dueDate, dueTimeMinutes, notes, workoutId, tags, recurrence) =
+        result;
+    final repo = ref.read(plannerRepositoryProvider);
     final current =
         ref.read(plannerItemsProvider(_selectedDay)).value ??
         const <PlannerItem>[];
@@ -189,8 +192,16 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       dueTimeMinutes: dueTimeMinutes,
       notes: notes,
       workoutId: workoutId,
+      tags: tags,
+      recurrence: recurrence,
     );
-    await ref.read(plannerRepositoryProvider).insert(item);
+    await repo.insert(item);
+    // A recurring task stores one anchor (seriesId == its own id) that
+    // generates the rest; seed future occurrences so they appear immediately.
+    if (recurrence != null) {
+      await repo.update(item.copyWith(seriesId: item.id));
+      await repo.materializeUpTo(_selectedDay.add(const Duration(days: 90)));
+    }
     await _syncReminder(item);
     ref.invalidate(plannerItemsProvider(_selectedDay));
   }
@@ -205,17 +216,37 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       initialDueTimeMinutes: item.dueTimeMinutes,
       initialNotes: item.notes,
       initialWorkoutId: item.workoutId,
+      initialTags: item.tags,
     );
     if (result == null || !mounted) return;
-    final (title, dueDate, dueTimeMinutes, notes, workoutId) = result;
+    final (title, dueDate, dueTimeMinutes, notes, workoutId, tags, recurrence) =
+        result;
+    final repo = ref.read(plannerRepositoryProvider);
+    final wasAnchor = item.recurrence != null;
+    final isAnchor = recurrence != null;
+    // Anchor keeps its existing series id (or adopts its own id); a task that
+    // gains a rule starts a fresh series. Turning the rule off detaches it; a
+    // plain occurrence stays linked to its original series.
+    final seriesId = isAnchor
+        ? (wasAnchor ? (item.seriesId ?? item.id) : item.id)
+        : (wasAnchor ? null : item.seriesId);
     final updated = item.copyWith(
       title: title,
       dueDate: dueDate,
       dueTimeMinutes: dueTimeMinutes,
       notes: notes,
       workoutId: workoutId,
+      tags: tags,
+      recurrence: recurrence,
+      seriesId: seriesId,
     );
-    await ref.read(plannerRepositoryProvider).update(updated);
+    await repo.update(updated);
+    // Editing the anchor re-generates future occurrences from the (possibly
+    // changed) rule; the anchor's past/own row is untouched.
+    if (isAnchor) {
+      await repo.deleteFutureOccurrences(seriesId!, DateTime.now());
+      await repo.materializeUpTo(_selectedDay.add(const Duration(days: 90)));
+    }
     // Cancel first so a removed/cleared due time also drops the old reminders;
     // scheduling replaces in place when the time still exists.
     await _cancelReminder(item.id);
@@ -443,17 +474,29 @@ final class _DayPage extends ConsumerWidget {
               ),
             ),
           );
-          for (var i = 0; i < timed.length; i++) {
+          for (final timedItem in timed) {
+            final timeText = MaterialLocalizations.of(context).formatTimeOfDay(
+              TimeOfDay(
+                hour: timedItem.dueTimeMinutes! ~/ 60,
+                minute: timedItem.dueTimeMinutes! % 60,
+              ),
+            );
             children.add(
-              _TimelineRow(
-                key: ValueKey(timed[i].id),
-                item: timed[i],
-                l10n: l10n,
-                isLast: i == timed.length - 1,
-                onToggleDone: () => onToggleDone(timed[i]),
-                onEdit: () => onEdit(timed[i]),
-                onDelete: () => onDelete(timed[i]),
-                onOpenWorkout: () => onOpenWorkout(timed[i]),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                child: _TimelineItemCard(
+                  key: ValueKey(timedItem.id),
+                  item: timedItem,
+                  l10n: l10n,
+                  timeLabel: timeText,
+                  onToggleDone: () => onToggleDone(timedItem),
+                  onEdit: () => onEdit(timedItem),
+                  onDelete: () => onDelete(timedItem),
+                  onOpenWorkout: () => onOpenWorkout(timedItem),
+                ),
               ),
             );
           }
@@ -515,9 +558,14 @@ final class _DayNavHeader extends StatelessWidget {
   }
 }
 
+/// A planner task card used for both Scheduled and Anytime groups. Layout is
+/// identical for both: the done `Checkbox` is on the left, the title beside
+/// it, and the time pill (scheduled only) plus the linked-workout icon sit in
+/// a small meta row underneath the title.
 final class _TimelineItemCard extends StatelessWidget {
   final PlannerItem item;
   final AppLocalizations l10n;
+  final String? timeLabel;
   final VoidCallback onToggleDone;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -527,6 +575,7 @@ final class _TimelineItemCard extends StatelessWidget {
     super.key,
     required this.item,
     required this.l10n,
+    this.timeLabel,
     required this.onToggleDone,
     required this.onEdit,
     required this.onDelete,
@@ -538,6 +587,80 @@ final class _TimelineItemCard extends StatelessWidget {
     final theme = Theme.of(context);
     final notes = item.notes;
     final hasNotes = notes != null && notes.isNotEmpty;
+    final hasWorkout = item.workoutId != null;
+
+    final timePill = timeLabel != null
+        ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.schedule,
+                  size: 12,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  timeLabel!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: 11,
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          )
+        : null;
+
+    // Meta row shown under the title: time pill (scheduled) + linked-workout
+    // icon + tag chips. All intentionally small; wraps on narrow screens.
+    final metaChildren = <Widget>[];
+    if (timePill != null) metaChildren.add(timePill);
+    if (hasWorkout) {
+      metaChildren.add(
+        IconButton(
+          icon: const Icon(Icons.fitness_center, size: 16),
+          tooltip: l10n.plannerLinkedWorkout,
+          onPressed: onOpenWorkout,
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(maxWidth: 24, maxHeight: 24),
+        ),
+      );
+    }
+    if (item.recurrence != null || item.seriesId != null) {
+      metaChildren.add(
+        Icon(Icons.repeat, size: 14, color: theme.colorScheme.onSurfaceVariant),
+      );
+    }
+    if (item.tags != null) {
+      for (final tag in item.tags!) {
+        final (bg, fg) = TagColors.forTag(tag);
+        metaChildren.add(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              tag,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: 11,
+                color: fg,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
     return Dismissible(
       key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
@@ -550,124 +673,54 @@ final class _TimelineItemCard extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       child: Card(
         margin: EdgeInsets.zero,
-        child: ListTile(
-          leading: Checkbox(value: item.done, onChanged: (_) => onToggleDone()),
-          title: Text(
-            item.title,
-            style: item.done
-                ? TextStyle(
-                    decoration: TextDecoration.lineThrough,
-                    color: theme.colorScheme.outline,
-                  )
-                : null,
-          ),
-          subtitle: hasNotes
-              ? Text(
-                  notes,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Checkbox(value: item.done, onChanged: (_) => onToggleDone()),
+              Expanded(
+                child: InkWell(
+                  onTap: onEdit,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: item.done
+                            ? TextStyle(
+                                decoration: TextDecoration.lineThrough,
+                                color: theme.colorScheme.outline,
+                              )
+                            : null,
+                      ),
+                      if (hasNotes)
+                        Text(
+                          notes,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      if (metaChildren.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: metaChildren,
+                          ),
+                        ),
+                    ],
                   ),
-                )
-              : null,
-          trailing: item.workoutId != null
-              ? IconButton(
-                  icon: const Icon(Icons.fitness_center),
-                  tooltip: l10n.plannerLinkedWorkout,
-                  onPressed: onOpenWorkout,
-                )
-              : null,
-          onTap: onEdit,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-/// One timed task on the timeline: a left time label, a node dot + connector
-/// line down to the next task, and the task card to the right.
-final class _TimelineRow extends StatelessWidget {
-  final PlannerItem item;
-  final AppLocalizations l10n;
-  final bool isLast;
-  final VoidCallback onToggleDone;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-  final VoidCallback onOpenWorkout;
-
-  const _TimelineRow({
-    super.key,
-    required this.item,
-    required this.l10n,
-    required this.isLast,
-    required this.onToggleDone,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onOpenWorkout,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final materialL10n = MaterialLocalizations.of(context);
-    final timeText = materialL10n.formatTimeOfDay(
-      TimeOfDay(
-        hour: item.dueTimeMinutes! ~/ 60,
-        minute: item.dueTimeMinutes! % 60,
-      ),
-    );
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 56,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 14, right: 8),
-              child: Text(
-                timeText,
-                textAlign: TextAlign.right,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 24,
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(width: 2, color: theme.dividerColor),
-                  ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _TimelineItemCard(
-                item: item,
-                l10n: l10n,
-                onToggleDone: onToggleDone,
-                onEdit: onEdit,
-                onDelete: onDelete,
-                onOpenWorkout: onOpenWorkout,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
