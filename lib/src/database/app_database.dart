@@ -9,7 +9,7 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(
+  @DriftDatabase(
   tables: [
     Ingredients,
     Meals,
@@ -21,6 +21,10 @@ part 'app_database.g.dart';
     PlannerItems,
     BodyMetrics,
     Notes,
+    Accounts,
+    Transactions,
+    Receipts,
+    FxRates,
   ],
 )
 final class AppDatabase extends _$AppDatabase {
@@ -29,7 +33,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -106,6 +110,13 @@ final class AppDatabase extends _$AppDatabase {
         // v13: recurring task rule + series grouping.
         await m.addColumn(plannerItems, plannerItems.recurrence);
         await m.addColumn(plannerItems, plannerItems.seriesId);
+      }
+      if (from < 14) {
+        // v14: budget section — accounts, transactions, receipts, fx_rates.
+        await m.createTable(accounts);
+        await m.createTable(transactions);
+        await m.createTable(receipts);
+        await m.createTable(fxRates);
       }
     },
   );

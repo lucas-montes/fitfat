@@ -6,6 +6,196 @@ import 'app_localizations.dart';
 
 /// The translations for English (`en`).
 class AppLocalizationsEn extends AppLocalizations {
+
+  @override
+  String get accountDelete => "Delete account";
+  @override
+  String accountDeleteBlockedBody(int count) => "This account is used by $count transaction(s) and cannot be deleted.";
+  @override
+  String get accountDeleteBlockedTitle => "Account Delete Blocked Title";
+  @override
+  @override
+  String accountDeleteConfirmBody(String name) => "Deleting account '$name' will also delete its transactions and receipts.";
+  @override
+  String get accountDeleteConfirmTitle => "Account Delete Confirm Title";
+  @override
+  String get accountFormEditTitle => "Account Form Edit Title";
+  @override
+  String get accountFormNameLabel => "Account Form Name Label";
+  @override
+  String get accountFormNameRequired => "Account Form Name Required";
+  @override
+  String get accountFormNewTitle => "Account Form New Title";
+  @override
+  String get accountFormNoteLabel => "Account Form Note Label";
+  @override
+  String get accountFormOpeningLabel => "Account Form Opening Label";
+  @override
+  String get accountFormTypeLabel => "Account Form Type Label";
+  @override
+  String accountOpeningLabel(Object value) => "Opening balance: $value";
+  @override
+  String get accountReceipts => "Account Receipts";
+  @override
+  String get accountTransactions => "Account Transactions";
+  @override
+  String get accountTransactionsTitle => "Transactions";
+  @override
+  String get accountTypeBank => "Account Type Bank";
+  @override
+  String get accountTypeCash => "Account Type Cash";
+  @override
+  String get accountTypeCredit => "Account Type Credit";
+  @override
+  String get accountTypeInvestment => "Account Type Investment";
+  @override
+  String get accountTypeOther => "Account Type Other";
+  @override
+  String get accountTypeSavings => "Account Type Savings";
+  @override
+  String get budgetAddAccount => "Add account";
+  @override
+  String get budgetAppBar => "Budget";
+  @override
+  String get budgetEmptyAccounts => "No accounts yet. Add one to start tracking.";
+  @override
+  String get budgetFabAccount => "Budget Fab Account";
+  @override
+  String get budgetFabExpense => "Budget Fab Expense";
+  @override
+  String get budgetFabIncome => "Budget Fab Income";
+  @override
+  String get budgetFabTransfer => "Budget Fab Transfer";
+  @override
+  String get budgetMonthExpense => "Budget Month Expense";
+  @override
+  String get budgetMonthIncome => "Budget Month Income";
+  @override
+  String get budgetNoReceipts => "Budget No Receipts";
+  @override
+  String get budgetNoTransactions => "Budget No Transactions";
+  @override
+  String budgetPendingReceipts(int count) => "$count receipt(s) awaiting review";
+  @override
+  String get budgetRecentTransactions => "Budget Recent Transactions";
+  @override
+  String get budgetTotalBalance => "Total balance";
+  @override
+  String get budgetViewAll => "Budget View All";
+  @override
+  String get commonDelete => "Common Delete";
+  @override
+  String get commonRetry => "Retry";
+  @override
+  String get plannerViewDay => "Day view";
+  @override
+  String get plannerViewMonth => "Month view";
+  @override
+  String get receiptAppBar => "Receipt App Bar";
+  @override
+  String get receiptCapture => "Capture receipt";
+  @override
+  String get receiptCreateDraft => "Receipt Create Draft";
+  @override
+  String get receiptDeleteConfirmBody => "Receipt Delete Confirm Body";
+  @override
+  String get receiptDeleteConfirmTitle => "Receipt Delete Confirm Title";
+  @override
+  String get receiptEmptyBody => "Receipt Empty Body";
+  @override
+  String get receiptListAppBar => "Receipt List App Bar";
+  @override
+  String get receiptNotFound => "Receipt Not Found";
+  @override
+  String get receiptNotParsed => "Receipt Not Parsed";
+  @override
+  String get receiptParseStarted => "Receipt Parse Started";
+  @override
+  String get receiptParsed => "Receipt Parsed";
+  @override
+  String get receiptParsedData => "Receipt Parsed Data";
+  @override
+  String get receiptPickGallery => "Receipt Pick Gallery";
+  @override
+  String get receiptReviewDraft => "Receipt Review Draft";
+  @override
+  String receiptStatusLabel(String status) => "$status";
+  @override
+  String receiptStatusShort(String status) => "$status";
+  @override
+  String get receiptTakePhoto => "Receipt Take Photo";
+  @override
+  String get receiptUpload => "Receipt Upload";
+  @override
+  String get receiptUploadStarted => "Uploading receipt…";
+  @override
+  String get settingsBaseCurrency => "Base currency";
+  @override
+  String get settingsCurrencyBudget => "Settings Currency Budget";
+  @override
+  String get settingsFxRates => "Settings Fx Rates";
+  @override
+  String get settingsFxRatesEmpty => "Settings Fx Rates Empty";
+  @override
+  String get settingsFxRefresh => "Settings Fx Refresh";
+  @override
+  String get settingsFxRefreshed => "Settings Fx Refreshed";
+  @override
+  String get settingsRateEdit => "Settings Rate Edit";
+  @override
+  String settingsRateRow(String target, Object rate, String base) => "$base → $target: $rate";
+  @override
+  String get tabBudget => "Budget";
+  @override
+  String get transactionAccountLabel => "Account";
+  @override
+  String get transactionAccountRequired => "An account is required.";
+  @override
+  String get transactionAmountInvalid => "Transaction Amount Invalid";
+  @override
+  String get transactionAmountLabel => "Amount";
+  @override
+  String get transactionAmountPositive => "Amount must be greater than zero.";
+  @override
+  String get transactionCategoryLabel => "Transaction Category Label";
+  @override
+  String transactionConvertedLabel(String amount) => "≈ $amount in base currency";
+  @override
+  String get transactionCurrencyLabel => "Currency";
+  @override
+  String get transactionDateLabel => "Date";
+  @override
+  String get transactionDraft => "Transaction Draft";
+  @override
+  String get transactionDraftBadge => "Draft";
+  @override
+  String get transactionDraftHint => "Transaction Draft Hint";
+  @override
+  String get transactionFormEditTitle => "Edit transaction";
+  @override
+  String get transactionFormNewExpenseTitle => "New expense";
+  @override
+  String get transactionFormNewIncomeTitle => "New income";
+  @override
+  String get transactionFormTransferTitle => "Transfer";
+  @override
+  String get transactionHasReceipt => "Transaction Has Receipt";
+  @override
+  String get transactionListAppBar => "Transaction List App Bar";
+  @override
+  String get transactionNoteLabel => "Note";
+  @override
+  String get transactionToAccountLabel => "To account";
+  @override
+  String get transactionTransferAccountsRequired => "Both accounts are required for a transfer.";
+  @override
+  String get transactionTransferSameAccount => "Transfer needs two different accounts.";
+  @override
+  String get transactionTypeExpense => "Transaction Type Expense";
+  @override
+  String get transactionTypeIncome => "Transaction Type Income";
+  @override
+  String get transactionTypeTransfer => "Transaction Type Transfer";
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override

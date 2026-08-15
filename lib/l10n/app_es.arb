@@ -315,6 +315,8 @@
   "plannerToday": "Hoy",
   "plannerPreviousDay": "Día anterior",
   "plannerNextDay": "Día siguiente",
+  "plannerViewMonth": "Vista mensual",
+  "plannerViewDay": "Vista diaria",
   "plannerAnytime": "En cualquier momento",
   "plannerTimelineScheduled": "Programado",
   "emptyPlannerTitle": "No hay tareas para este día",
@@ -556,5 +558,587 @@
     "placeholders": {
       "distance": { "type": "String" }
     }
+  },
+  "settingsRateRow": "{base} → {target}: {rate}",
+  "@settingsRateRow": {
+  "description": "settingsRateRow",
+  "placeholders": {
+    "target": {
+      "type": "String"
+    },
+    "rate": {
+      "type": "num"
+    },
+    "base": {
+      "type": "String"
+    }
   }
+},
+  "accountDeleteBlockedBody": "Esta cuenta es usada por {count} transacción(es) y no puede eliminarse.",
+  "@accountDeleteBlockedBody": {
+  "description": "accountDeleteBlockedBody",
+  "placeholders": {
+    "count": {
+      "type": "int"
+    }
+  }
+},
+  "accountDeleteBlockedTitle": "Account Delete Blocked Title",
+  "@accountDeleteBlockedTitle": {
+  "description": "accountDeleteBlockedTitle"
+},
+  "accountDeleteConfirmBody": "Eliminar la cuenta '{name}' también eliminará sus transacciones y recibos.",
+  "@accountDeleteConfirmBody": {
+  "description": "accountDeleteConfirmBody",
+  "placeholders": {
+    "name": {
+      "type": "String"
+    }
+  }
+},
+  "accountDeleteConfirmTitle": "Account Delete Confirm Title",
+  "@accountDeleteConfirmTitle": {
+  "description": "accountDeleteConfirmTitle"
+},
+  "accountFormEditTitle": "Account Form Edit Title",
+  "@accountFormEditTitle": {
+  "description": "accountFormEditTitle"
+},
+  "accountFormNameLabel": "Account Form Name Label",
+  "@accountFormNameLabel": {
+  "description": "accountFormNameLabel"
+},
+  "accountFormNameRequired": "Account Form Name Required",
+  "@accountFormNameRequired": {
+  "description": "accountFormNameRequired"
+},
+  "accountFormNewTitle": "Account Form New Title",
+  "@accountFormNewTitle": {
+  "description": "accountFormNewTitle"
+},
+  "accountFormNoteLabel": "Account Form Note Label",
+  "@accountFormNoteLabel": {
+  "description": "accountFormNoteLabel"
+},
+  "accountFormOpeningLabel": "Account Form Opening Label",
+  "@accountFormOpeningLabel": {
+  "description": "accountFormOpeningLabel"
+},
+  "accountFormTypeLabel": "Account Form Type Label",
+  "@accountFormTypeLabel": {
+  "description": "accountFormTypeLabel"
+},
+  "accountOpeningLabel": "Saldo inicial: {value}",
+  "@accountOpeningLabel": {
+  "description": "accountOpeningLabel",
+  "placeholders": {
+    "value": {
+      "type": "String"
+    }
+  }
+},
+  "accountReceipts": "Account Receipts",
+  "@accountReceipts": {
+  "description": "accountReceipts"
+},
+  "accountTransactions": "Account Transactions",
+  "@accountTransactions": {
+  "description": "accountTransactions"
+},
+  "accountTypeBank": "Account Type Bank",
+  "@accountTypeBank": {
+  "description": "accountTypeBank"
+},
+  "accountTypeCash": "Account Type Cash",
+  "@accountTypeCash": {
+  "description": "accountTypeCash"
+},
+  "accountTypeCredit": "Account Type Credit",
+  "@accountTypeCredit": {
+  "description": "accountTypeCredit"
+},
+  "accountTypeInvestment": "Account Type Investment",
+  "@accountTypeInvestment": {
+  "description": "accountTypeInvestment"
+},
+  "accountTypeOther": "Account Type Other",
+  "@accountTypeOther": {
+  "description": "accountTypeOther"
+},
+  "accountTypeSavings": "Account Type Savings",
+  "@accountTypeSavings": {
+  "description": "accountTypeSavings"
+},
+  "budgetAccounts": "Budget Accounts",
+  "@budgetAccounts": {
+  "description": "budgetAccounts"
+},
+  "budgetAdd": "Budget Add",
+  "@budgetAdd": {
+  "description": "budgetAdd"
+},
+  "budgetEmptyBody": "Budget Empty Body",
+  "@budgetEmptyBody": {
+  "description": "budgetEmptyBody"
+},
+  "budgetEmptyTitle": "Budget Empty Title",
+  "@budgetEmptyTitle": {
+  "description": "budgetEmptyTitle"
+},
+  "budgetFabAccount": "Budget Fab Account",
+  "@budgetFabAccount": {
+  "description": "budgetFabAccount"
+},
+  "budgetFabExpense": "Budget Fab Expense",
+  "@budgetFabExpense": {
+  "description": "budgetFabExpense"
+},
+  "budgetFabIncome": "Budget Fab Income",
+  "@budgetFabIncome": {
+  "description": "budgetFabIncome"
+},
+  "budgetFabTransfer": "Budget Fab Transfer",
+  "@budgetFabTransfer": {
+  "description": "budgetFabTransfer"
+},
+  "budgetMonthExpense": "Budget Month Expense",
+  "@budgetMonthExpense": {
+  "description": "budgetMonthExpense"
+},
+  "budgetMonthIncome": "Budget Month Income",
+  "@budgetMonthIncome": {
+  "description": "budgetMonthIncome"
+},
+  "budgetNoReceipts": "Budget No Receipts",
+  "@budgetNoReceipts": {
+  "description": "budgetNoReceipts"
+},
+  "budgetNoTransactions": "Budget No Transactions",
+  "@budgetNoTransactions": {
+  "description": "budgetNoTransactions"
+},
+  "budgetPendingReceipts": "{count} recibo(s) pendiente(s)",
+  "@budgetPendingReceipts": {
+  "description": "budgetPendingReceipts",
+  "placeholders": {
+    "count": {
+      "type": "int"
+    }
+  }
+},
+  "budgetRecentTransactions": "Budget Recent Transactions",
+  "@budgetRecentTransactions": {
+  "description": "budgetRecentTransactions"
+},
+  "budgetThisMonth": "Budget This Month",
+  "@budgetThisMonth": {
+  "description": "budgetThisMonth"
+},
+  "budgetViewAll": "Budget View All",
+  "@budgetViewAll": {
+  "description": "budgetViewAll"
+},
+  "commonDelete": "Common Delete",
+  "@commonDelete": {
+  "description": "commonDelete"
+},
+  "receiptAppBar": "Receipt App Bar",
+  "@receiptAppBar": {
+  "description": "receiptAppBar"
+},
+  "receiptCreateDraft": "Receipt Create Draft",
+  "@receiptCreateDraft": {
+  "description": "receiptCreateDraft"
+},
+  "receiptDeleteConfirmBody": "Receipt Delete Confirm Body",
+  "@receiptDeleteConfirmBody": {
+  "description": "receiptDeleteConfirmBody"
+},
+  "receiptDeleteConfirmTitle": "Receipt Delete Confirm Title",
+  "@receiptDeleteConfirmTitle": {
+  "description": "receiptDeleteConfirmTitle"
+},
+  "receiptEmptyBody": "Receipt Empty Body",
+  "@receiptEmptyBody": {
+  "description": "receiptEmptyBody"
+},
+  "receiptListAppBar": "Receipt List App Bar",
+  "@receiptListAppBar": {
+  "description": "receiptListAppBar"
+},
+  "receiptNotFound": "Receipt Not Found",
+  "@receiptNotFound": {
+  "description": "receiptNotFound"
+},
+  "receiptNotParsed": "Receipt Not Parsed",
+  "@receiptNotParsed": {
+  "description": "receiptNotParsed"
+},
+  "receiptParseStarted": "Receipt Parse Started",
+  "@receiptParseStarted": {
+  "description": "receiptParseStarted"
+},
+  "receiptParsed": "Receipt Parsed",
+  "@receiptParsed": {
+  "description": "receiptParsed"
+},
+  "receiptParsedData": "Receipt Parsed Data",
+  "@receiptParsedData": {
+  "description": "receiptParsedData"
+},
+  "receiptPickGallery": "Receipt Pick Gallery",
+  "@receiptPickGallery": {
+  "description": "receiptPickGallery"
+},
+  "receiptReviewDraft": "Receipt Review Draft",
+  "@receiptReviewDraft": {
+  "description": "receiptReviewDraft"
+},
+  "receiptStatusLabel": "{status}",
+  "@receiptStatusLabel": {
+  "description": "receiptStatusLabel",
+  "placeholders": {
+    "status": {
+      "type": "String"
+    }
+  }
+},
+  "receiptStatusShort": "{status}",
+  "@receiptStatusShort": {
+  "description": "receiptStatusShort",
+  "placeholders": {
+    "status": {
+      "type": "String"
+    }
+  }
+},
+  "receiptTakePhoto": "Receipt Take Photo",
+  "@receiptTakePhoto": {
+  "description": "receiptTakePhoto"
+},
+  "receiptUpload": "Receipt Upload",
+  "@receiptUpload": {
+  "description": "receiptUpload"
+},
+  "settingsCurrencyBudget": "Settings Currency Budget",
+  "@settingsCurrencyBudget": {
+  "description": "settingsCurrencyBudget"
+},
+  "settingsFxRates": "Settings Fx Rates",
+  "@settingsFxRates": {
+  "description": "settingsFxRates"
+},
+  "settingsFxRatesEmpty": "Settings Fx Rates Empty",
+  "@settingsFxRatesEmpty": {
+  "description": "settingsFxRatesEmpty"
+},
+  "settingsFxRefresh": "Settings Fx Refresh",
+  "@settingsFxRefresh": {
+  "description": "settingsFxRefresh"
+},
+  "settingsFxRefreshed": "Settings Fx Refreshed",
+  "@settingsFxRefreshed": {
+  "description": "settingsFxRefreshed"
+},
+  "settingsRateEdit": "Settings Rate Edit",
+  "@settingsRateEdit": {
+  "description": "settingsRateEdit"
+},
+  "transactionAmountInvalid": "Transaction Amount Invalid",
+  "@transactionAmountInvalid": {
+  "description": "transactionAmountInvalid"
+},
+  "transactionCategoryLabel": "Transaction Category Label",
+  "@transactionCategoryLabel": {
+  "description": "transactionCategoryLabel"
+},
+  "transactionConvertedLabel": "≈ {amount} en moneda base",
+  "@transactionConvertedLabel": {
+  "description": "transactionConvertedLabel",
+  "placeholders": {
+    "amount": {
+      "type": "String"
+    }
+  }
+},
+  "transactionDraft": "Transaction Draft",
+  "@transactionDraft": {
+  "description": "transactionDraft"
+},
+  "transactionDraftHint": "Transaction Draft Hint",
+  "@transactionDraftHint": {
+  "description": "transactionDraftHint"
+},
+  "transactionHasReceipt": "Transaction Has Receipt",
+  "@transactionHasReceipt": {
+  "description": "transactionHasReceipt"
+},
+  "transactionListAppBar": "Transaction List App Bar",
+  "@transactionListAppBar": {
+  "description": "transactionListAppBar"
+},
+  "transactionTypeExpense": "Transaction Type Expense",
+  "@transactionTypeExpense": {
+  "description": "transactionTypeExpense"
+},
+  "transactionTypeIncome": "Transaction Type Income",
+  "@transactionTypeIncome": {
+  "description": "transactionTypeIncome"
+},
+  "transactionTypeTransfer": "Transaction Type Transfer",
+  "@transactionTypeTransfer": {
+  "description": "transactionTypeTransfer"
+},
+  "budgetAppBar": "Presupuesto",
+  "@budgetAppBar": {
+  "description": "budgetAppBar"
+},
+  "budgetSubtitle": "Cuentas, transacciones y recibos",
+  "@budgetSubtitle": {
+  "description": "budgetSubtitle"
+},
+  "budgetTotalBalance": "Saldo total",
+  "@budgetTotalBalance": {
+  "description": "budgetTotalBalance"
+},
+  "budgetNetWorth": "Patrimonio neto",
+  "@budgetNetWorth": {
+  "description": "budgetNetWorth"
+},
+  "budgetIncomeLabel": "Ingresos",
+  "@budgetIncomeLabel": {
+  "description": "budgetIncomeLabel"
+},
+  "budgetExpenseLabel": "Gastos",
+  "@budgetExpenseLabel": {
+  "description": "budgetExpenseLabel"
+},
+  "budgetEmptyAccounts": "Aún no hay cuentas. Agrega una para empezar.",
+  "@budgetEmptyAccounts": {
+  "description": "budgetEmptyAccounts"
+},
+  "budgetAddAccount": "Agregar cuenta",
+  "@budgetAddAccount": {
+  "description": "budgetAddAccount"
+},
+  "accountFormTitleNew": "Nueva cuenta",
+  "@accountFormTitleNew": {
+  "description": "accountFormTitleNew"
+},
+  "accountFormTitleEdit": "Editar cuenta",
+  "@accountFormTitleEdit": {
+  "description": "accountFormTitleEdit"
+},
+  "accountNameLabel": "Nombre",
+  "@accountNameLabel": {
+  "description": "accountNameLabel"
+},
+  "accountTypeLabel": "Tipo",
+  "@accountTypeLabel": {
+  "description": "accountTypeLabel"
+},
+  "accountCurrencyLabel": "Moneda",
+  "@accountCurrencyLabel": {
+  "description": "accountCurrencyLabel"
+},
+  "accountInitialBalanceLabel": "Saldo inicial",
+  "@accountInitialBalanceLabel": {
+  "description": "accountInitialBalanceLabel"
+},
+  "accountSave": "Guardar",
+  "@accountSave": {
+  "description": "accountSave"
+},
+  "accountDetailTitle": "Cuenta",
+  "@accountDetailTitle": {
+  "description": "accountDetailTitle"
+},
+  "accountDelete": "Eliminar cuenta",
+  "@accountDelete": {
+  "description": "accountDelete"
+},
+  "accountTransactionsTitle": "Transacciones",
+  "@accountTransactionsTitle": {
+  "description": "accountTransactionsTitle"
+},
+  "accountBalanceLabel": "Saldo",
+  "@accountBalanceLabel": {
+  "description": "accountBalanceLabel"
+},
+  "accountEdit": "Editar",
+  "@accountEdit": {
+  "description": "accountEdit"
+},
+  "transactionFormNewExpenseTitle": "Nuevo gasto",
+  "@transactionFormNewExpenseTitle": {
+  "description": "transactionFormNewExpenseTitle"
+},
+  "transactionFormNewIncomeTitle": "Nuevo ingreso",
+  "@transactionFormNewIncomeTitle": {
+  "description": "transactionFormNewIncomeTitle"
+},
+  "transactionFormTransferTitle": "Transferencia",
+  "@transactionFormTransferTitle": {
+  "description": "transactionFormTransferTitle"
+},
+  "transactionFormEditTitle": "Editar transacción",
+  "@transactionFormEditTitle": {
+  "description": "transactionFormEditTitle"
+},
+  "transactionTypeLabel": "Tipo",
+  "@transactionTypeLabel": {
+  "description": "transactionTypeLabel"
+},
+  "transactionAmountLabel": "Monto",
+  "@transactionAmountLabel": {
+  "description": "transactionAmountLabel"
+},
+  "transactionCurrencyLabel": "Moneda",
+  "@transactionCurrencyLabel": {
+  "description": "transactionCurrencyLabel"
+},
+  "transactionDateLabel": "Fecha",
+  "@transactionDateLabel": {
+  "description": "transactionDateLabel"
+},
+  "transactionNoteLabel": "Nota",
+  "@transactionNoteLabel": {
+  "description": "transactionNoteLabel"
+},
+  "transactionAccountLabel": "Cuenta",
+  "@transactionAccountLabel": {
+  "description": "transactionAccountLabel"
+},
+  "transactionToAccountLabel": "A la cuenta",
+  "@transactionToAccountLabel": {
+  "description": "transactionToAccountLabel"
+},
+  "transactionReceiptLabel": "Recibo",
+  "@transactionReceiptLabel": {
+  "description": "transactionReceiptLabel"
+},
+  "transactionSave": "Guardar",
+  "@transactionSave": {
+  "description": "transactionSave"
+},
+  "transactionDelete": "Eliminar",
+  "@transactionDelete": {
+  "description": "transactionDelete"
+},
+  "transactionDraftBadge": "Borrador",
+  "@transactionDraftBadge": {
+  "description": "transactionDraftBadge"
+},
+  "transactionConfirmDraft": "Confirmar",
+  "@transactionConfirmDraft": {
+  "description": "transactionConfirmDraft"
+},
+  "transactionTransferSameAccount": "La transferencia requiere dos cuentas distintas.",
+  "@transactionTransferSameAccount": {
+  "description": "transactionTransferSameAccount"
+},
+  "transactionAccountRequired": "Se requiere una cuenta.",
+  "@transactionAccountRequired": {
+  "description": "transactionAccountRequired"
+},
+  "transactionTransferAccountsRequired": "Ambas cuentas son requeridas para una transferencia.",
+  "@transactionTransferAccountsRequired": {
+  "description": "transactionTransferAccountsRequired"
+},
+  "transactionAmountPositive": "El monto debe ser mayor que cero.",
+  "@transactionAmountPositive": {
+  "description": "transactionAmountPositive"
+},
+  "receiptListTitle": "Recibos",
+  "@receiptListTitle": {
+  "description": "receiptListTitle"
+},
+  "receiptCapture": "Capturar recibo",
+  "@receiptCapture": {
+  "description": "receiptCapture"
+},
+  "receiptCaptureStandalone": "Recibo independiente",
+  "@receiptCaptureStandalone": {
+  "description": "receiptCaptureStandalone"
+},
+  "receiptUploadStarted": "Enviando recibo…",
+  "@receiptUploadStarted": {
+  "description": "receiptUploadStarted"
+},
+  "receiptUploadSuccess": "Recibo enviado",
+  "@receiptUploadSuccess": {
+  "description": "receiptUploadSuccess"
+},
+  "receiptUploadError": "Error al enviar el recibo",
+  "@receiptUploadError": {
+  "description": "receiptUploadError"
+},
+  "receiptViewTitle": "Recibo",
+  "@receiptViewTitle": {
+  "description": "receiptViewTitle"
+},
+  "receiptStatusLocal": "Local",
+  "@receiptStatusLocal": {
+  "description": "receiptStatusLocal"
+},
+  "receiptStatusUploading": "Enviando",
+  "@receiptStatusUploading": {
+  "description": "receiptStatusUploading"
+},
+  "receiptStatusUploaded": "Enviado",
+  "@receiptStatusUploaded": {
+  "description": "receiptStatusUploaded"
+},
+  "receiptStatusError": "Error",
+  "@receiptStatusError": {
+  "description": "receiptStatusError"
+},
+  "receiptAttach": "Adjuntar a la transacción",
+  "@receiptAttach": {
+  "description": "receiptAttach"
+},
+  "receiptChooseSource": "Elegir origen",
+  "@receiptChooseSource": {
+  "description": "receiptChooseSource"
+},
+  "receiptFromCamera": "Cámara",
+  "@receiptFromCamera": {
+  "description": "receiptFromCamera"
+},
+  "receiptFromGallery": "Galería",
+  "@receiptFromGallery": {
+  "description": "receiptFromGallery"
+},
+  "commonRetry": "Reintentar",
+  "@commonRetry": {
+  "description": "commonRetry"
+},
+  "settingsBaseCurrency": "Moneda base",
+  "@settingsBaseCurrency": {
+  "description": "settingsBaseCurrency"
+},
+  "settingsCategoryFx": "Tipos de cambio",
+  "@settingsCategoryFx": {
+  "description": "settingsCategoryFx"
+},
+  "settingsRefreshRates": "Actualizar tasas",
+  "@settingsRefreshRates": {
+  "description": "settingsRefreshRates"
+},
+  "settingsEditRate": "Editar tasa",
+  "@settingsEditRate": {
+  "description": "settingsEditRate"
+},
+  "settingsRateBase": "Por 1 {base}",
+  "@settingsRateBase": {
+  "description": "settingsRateBase"
+},
+  "settingsRateInvalid": "Ingrese una tasa positiva.",
+  "@settingsRateInvalid": {
+  "description": "settingsRateInvalid"
+},
+  "tabBudget": "Presupuesto",
+  "@tabBudget": {
+  "description": "tabBudget"
+}
 }

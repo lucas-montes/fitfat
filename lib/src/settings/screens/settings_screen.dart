@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../budget/providers/fx_rates.dart';
+import '../../budget/providers/services.dart';
 import '../../models/activity_level.dart';
 import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
@@ -401,6 +403,17 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 24),
 
           // -----------------------------------------------------------------
+          // Currency & Budget
+          // -----------------------------------------------------------------
+          Text(
+            l10n.settingsCurrencyBudget,
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          _CurrencySection(),
+          const SizedBox(height: 24),
+
+          // -----------------------------------------------------------------
           // Data
           // -----------------------------------------------------------------
           Text(l10n.settingsData, style: theme.textTheme.titleMedium),
@@ -467,5 +480,146 @@ final class _ActivitySegmentedButton extends StatelessWidget {
         onChanged(selection.first);
       },
     );
+  }
+}
+
+const _currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'CHF', 'AUD'];
+
+/// Settings section: choose the base currency and view/edit the cached FX
+/// rates used to convert transactions to the base currency. Rates can be
+/// refreshed from the (mock) remote FX service.
+final class _CurrencySection extends ConsumerWidget {
+  const _CurrencySection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final settings = ref.watch(settingsProvider);
+    final base = settings.baseCurrency;
+    final ratesAsync = ref.watch(fxRatesProvider);
+
+    final currencyOptions = {base, ..._currencies}.toList()..sort();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<String>(
+          key: ValueKey(base),
+          initialValue: base,
+          decoration: InputDecoration(
+            labelText: l10n.settingsBaseCurrency,
+          ),
+          items: currencyOptions
+              .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+              .toList(),
+          onChanged: (v) {
+            if (v != null) ref.read(settingsProvider.notifier).setBaseCurrency(v);
+          },
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              l10n.settingsFxRates,
+              style: theme.textTheme.bodyMedium,
+            ),
+            TextButton.icon(
+              onPressed: () => _refreshRates(context, ref, base),
+              icon: const Icon(Icons.refresh),
+              label: Text(l10n.settingsFxRefresh),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ratesAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Text(l10n.errorWithMessage('$e')),
+          data: (rates) {
+            if (rates.isEmpty) {
+              return Text(l10n.settingsFxRatesEmpty);
+            }
+            return Column(
+              children: rates.entries.map((e) {
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.settingsRateRow(e.key, e.value, base)),
+                  trailing: IconButton(
+                    tooltip: l10n.settingsRateEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => _editRate(context, ref, base, e.key, e.value),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _refreshRates(
+    BuildContext context,
+    WidgetRef ref,
+    String base,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final fetched = await ref.read(remoteFxProvider).fetchRates(base);
+      await ref.read(fxRepositoryProvider).replaceAll(base, fetched);
+      ref.invalidate(fxRatesProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.settingsFxRefreshed)),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
+        );
+      }
+    }
+  }
+
+  Future<void> _editRate(
+    BuildContext context,
+    WidgetRef ref,
+    String base,
+    String code,
+    double current,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: current.toString());
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.settingsRateEdit),
+        content: TextFormField(
+          controller: controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: l10n.settingsRateRow(code, 0, base),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.commonSave),
+          ),
+        ],
+      ),
+    );
+    if (saved != true || !context.mounted) return;
+    final value = double.tryParse(controller.text.trim());
+    if (value == null) return;
+    await ref.read(fxRepositoryProvider).setRate(code, value, base);
+    ref.invalidate(fxRatesProvider);
   }
 }

@@ -5,6 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../budget/screens/account_detail_screen.dart';
+import '../budget/screens/account_form.dart';
+import '../budget/screens/receipt_list_screen.dart';
+import '../budget/screens/receipt_viewer_screen.dart';
+import '../budget/screens/transaction_form.dart';
+import '../budget/screens/transaction_list_screen.dart';
+import '../budget/tabs/budget_tab.dart';
 import '../exercise/providers/workouts.dart';
 import '../exercise/screens/active_workout_screen.dart';
 import '../exercise/screens/workout_summary_screen.dart';
@@ -52,6 +59,46 @@ final GoRouter appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(path: '/notes', builder: (_, _) => const NotesTab()),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/budget', builder: (_, _) => const BudgetTab()),
+            GoRoute(
+              path: '/budget/account/:id',
+              builder: (_, state) {
+                final id = state.pathParameters['id']!;
+                // 'new' is the create route; otherwise it's an account id.
+                if (id == 'new') {
+                  return const AccountFormScreen();
+                }
+                return AccountDetailScreen(accountId: id);
+              },
+            ),
+            GoRoute(
+              path: '/budget/transaction/:id',
+              builder: (_, state) {
+                final id = state.pathParameters['id']!;
+                if (id == 'new') {
+                  final type = state.uri.queryParameters['type'];
+                  return TransactionFormScreen(initialType: type);
+                }
+                return TransactionFormScreen(transactionId: id);
+              },
+            ),
+            GoRoute(
+              path: '/budget/transactions',
+              builder: (_, _) => const TransactionListScreen(),
+            ),
+            GoRoute(
+              path: '/budget/receipts',
+              builder: (_, _) => const ReceiptListScreen(),
+            ),
+            GoRoute(
+              path: '/budget/receipt/:id',
+              builder: (_, state) =>
+                  ReceiptViewerScreen(receiptId: state.pathParameters['id']!),
+            ),
           ],
         ),
       ],
@@ -138,6 +185,11 @@ final class _ShellWithNavBar extends ConsumerWidget {
                 icon: Icon(Icons.note_alt_outlined),
                 selectedIcon: Icon(Icons.note_alt),
                 label: l10n.tabNotes,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.account_balance_wallet_outlined),
+                selectedIcon: Icon(Icons.account_balance_wallet),
+                label: l10n.tabBudget,
               ),
             ],
           ),

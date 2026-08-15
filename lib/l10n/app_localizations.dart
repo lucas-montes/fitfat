@@ -142,6 +142,187 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get tabNotes;
 
+  /// accountDelete
+  String get accountDelete;
+  String accountDeleteBlockedBody(int count);
+  /// accountDeleteBlockedTitle
+  String get accountDeleteBlockedTitle;
+  String accountDeleteConfirmBody(String name);
+  /// accountDeleteConfirmTitle
+  String get accountDeleteConfirmTitle;
+  /// accountFormEditTitle
+  String get accountFormEditTitle;
+  /// accountFormNameLabel
+  String get accountFormNameLabel;
+  /// accountFormNameRequired
+  String get accountFormNameRequired;
+  /// accountFormNewTitle
+  String get accountFormNewTitle;
+  /// accountFormNoteLabel
+  String get accountFormNoteLabel;
+  /// accountFormOpeningLabel
+  String get accountFormOpeningLabel;
+  /// accountFormTypeLabel
+  String get accountFormTypeLabel;
+  String accountOpeningLabel(Object value);
+  /// accountReceipts
+  String get accountReceipts;
+  /// accountTransactions
+  String get accountTransactions;
+  /// accountTransactionsTitle
+  String get accountTransactionsTitle;
+  /// accountTypeBank
+  String get accountTypeBank;
+  /// accountTypeCash
+  String get accountTypeCash;
+  /// accountTypeCredit
+  String get accountTypeCredit;
+  /// accountTypeInvestment
+  String get accountTypeInvestment;
+  /// accountTypeOther
+  String get accountTypeOther;
+  /// accountTypeSavings
+  String get accountTypeSavings;
+  /// budgetAddAccount
+  String get budgetAddAccount;
+  /// budgetAppBar
+  String get budgetAppBar;
+  /// budgetEmptyAccounts
+  String get budgetEmptyAccounts;
+  /// budgetFabAccount
+  String get budgetFabAccount;
+  /// budgetFabExpense
+  String get budgetFabExpense;
+  /// budgetFabIncome
+  String get budgetFabIncome;
+  /// budgetFabTransfer
+  String get budgetFabTransfer;
+  /// budgetMonthExpense
+  String get budgetMonthExpense;
+  /// budgetMonthIncome
+  String get budgetMonthIncome;
+  /// budgetNoReceipts
+  String get budgetNoReceipts;
+  /// budgetNoTransactions
+  String get budgetNoTransactions;
+  String budgetPendingReceipts(int count);
+  /// budgetRecentTransactions
+  String get budgetRecentTransactions;
+  /// budgetTotalBalance
+  String get budgetTotalBalance;
+  /// budgetViewAll
+  String get budgetViewAll;
+  /// commonDelete
+  String get commonDelete;
+  /// commonRetry
+  String get commonRetry;
+  /// plannerViewDay
+  String get plannerViewDay;
+  /// plannerViewMonth
+  String get plannerViewMonth;
+  /// receiptAppBar
+  String get receiptAppBar;
+  /// receiptCapture
+  String get receiptCapture;
+  /// receiptCreateDraft
+  String get receiptCreateDraft;
+  /// receiptDeleteConfirmBody
+  String get receiptDeleteConfirmBody;
+  /// receiptDeleteConfirmTitle
+  String get receiptDeleteConfirmTitle;
+  /// receiptEmptyBody
+  String get receiptEmptyBody;
+  /// receiptListAppBar
+  String get receiptListAppBar;
+  /// receiptNotFound
+  String get receiptNotFound;
+  /// receiptNotParsed
+  String get receiptNotParsed;
+  /// receiptParseStarted
+  String get receiptParseStarted;
+  /// receiptParsed
+  String get receiptParsed;
+  /// receiptParsedData
+  String get receiptParsedData;
+  /// receiptPickGallery
+  String get receiptPickGallery;
+  /// receiptReviewDraft
+  String get receiptReviewDraft;
+  String receiptStatusLabel(String status);
+  String receiptStatusShort(String status);
+  /// receiptTakePhoto
+  String get receiptTakePhoto;
+  /// receiptUpload
+  String get receiptUpload;
+  /// receiptUploadStarted
+  String get receiptUploadStarted;
+  /// settingsBaseCurrency
+  String get settingsBaseCurrency;
+  /// settingsCurrencyBudget
+  String get settingsCurrencyBudget;
+  /// settingsFxRates
+  String get settingsFxRates;
+  /// settingsFxRatesEmpty
+  String get settingsFxRatesEmpty;
+  /// settingsFxRefresh
+  String get settingsFxRefresh;
+  /// settingsFxRefreshed
+  String get settingsFxRefreshed;
+  /// settingsRateEdit
+  String get settingsRateEdit;
+  String settingsRateRow(String target, Object rate, String base);
+  /// tabBudget
+  String get tabBudget;
+  /// transactionAccountLabel
+  String get transactionAccountLabel;
+  /// transactionAccountRequired
+  String get transactionAccountRequired;
+  /// transactionAmountInvalid
+  String get transactionAmountInvalid;
+  /// transactionAmountLabel
+  String get transactionAmountLabel;
+  /// transactionAmountPositive
+  String get transactionAmountPositive;
+  /// transactionCategoryLabel
+  String get transactionCategoryLabel;
+  String transactionConvertedLabel(String amount);
+  /// transactionCurrencyLabel
+  String get transactionCurrencyLabel;
+  /// transactionDateLabel
+  String get transactionDateLabel;
+  /// transactionDraft
+  String get transactionDraft;
+  /// transactionDraftBadge
+  String get transactionDraftBadge;
+  /// transactionDraftHint
+  String get transactionDraftHint;
+  /// transactionFormEditTitle
+  String get transactionFormEditTitle;
+  /// transactionFormNewExpenseTitle
+  String get transactionFormNewExpenseTitle;
+  /// transactionFormNewIncomeTitle
+  String get transactionFormNewIncomeTitle;
+  /// transactionFormTransferTitle
+  String get transactionFormTransferTitle;
+  /// transactionHasReceipt
+  String get transactionHasReceipt;
+  /// transactionListAppBar
+  String get transactionListAppBar;
+  /// transactionNoteLabel
+  String get transactionNoteLabel;
+  /// transactionToAccountLabel
+  String get transactionToAccountLabel;
+  /// transactionTransferAccountsRequired
+  String get transactionTransferAccountsRequired;
+  /// transactionTransferSameAccount
+  String get transactionTransferSameAccount;
+  /// transactionTypeExpense
+  String get transactionTypeExpense;
+  /// transactionTypeIncome
+  String get transactionTypeIncome;
+  /// transactionTypeTransfer
+  String get transactionTypeTransfer;
+
   /// No description provided for @dashboardAppBar.
   ///
   /// In en, this message translates to:

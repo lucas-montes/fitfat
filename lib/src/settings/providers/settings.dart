@@ -35,6 +35,8 @@ final class SettingsState {
   final bool restAlarmSound; // rest alarm plays a sound (default on)
   final bool restAlarmVibration; // rest alarm vibrates (default on)
 
+  final String baseCurrency; // ISO-4217-ish code, default 'USD'
+
   const SettingsState({
     this.themeMode = ThemeMode.system,
     this.locale,
@@ -48,6 +50,7 @@ final class SettingsState {
     this.plannerNotifications = true,
     this.restAlarmSound = true,
     this.restAlarmVibration = true,
+    this.baseCurrency = 'USD',
   });
 
   SettingsState copyWith({
@@ -68,6 +71,7 @@ final class SettingsState {
     bool? plannerNotifications,
     bool? restAlarmSound,
     bool? restAlarmVibration,
+    String? baseCurrency,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     locale: locale ?? this.locale,
@@ -87,6 +91,7 @@ final class SettingsState {
     plannerNotifications: plannerNotifications ?? this.plannerNotifications,
     restAlarmSound: restAlarmSound ?? this.restAlarmSound,
     restAlarmVibration: restAlarmVibration ?? this.restAlarmVibration,
+    baseCurrency: baseCurrency ?? this.baseCurrency,
   );
 }
 
@@ -103,6 +108,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _plannerNotificationsKey = 'settings_planner_notifications';
   static const _restAlarmSoundKey = 'settings_rest_alarm_sound';
   static const _restAlarmVibrationKey = 'settings_rest_alarm_vibration';
+  static const _baseCurrencyKey = 'settings_base_currency';
 
   @override
   SettingsState build() {
@@ -119,10 +125,11 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       computeActivity: prefs.getBool(_computeActivityKey) ?? false,
       trackBodyFat: prefs.getBool(_trackBodyFatKey) ?? false,
       bodyFatPercent: prefs.getDouble(_bodyFatPercentKey),
-      plannerNotifications: prefs.getBool(_plannerNotificationsKey) ?? true,
-      restAlarmSound: prefs.getBool(_restAlarmSoundKey) ?? true,
-      restAlarmVibration: prefs.getBool(_restAlarmVibrationKey) ?? true,
-    );
+       plannerNotifications: prefs.getBool(_plannerNotificationsKey) ?? true,
+       restAlarmSound: prefs.getBool(_restAlarmSoundKey) ?? true,
+       restAlarmVibration: prefs.getBool(_restAlarmVibrationKey) ?? true,
+       baseCurrency: prefs.getString(_baseCurrencyKey) ?? 'USD',
+     );
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -231,6 +238,15 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setBool(_restAlarmVibrationKey, enabled);
     state = state.copyWith(restAlarmVibration: enabled);
+  }
+
+  Future<void> setBaseCurrency(String code) async {
+    final normalized = code.trim().toUpperCase();
+    if (normalized.isEmpty) return;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_baseCurrencyKey, normalized);
+    state = state.copyWith(baseCurrency: normalized);
   }
 
   ThemeMode _themeModeFromName(String? name) => ThemeMode.values.firstWhere(
