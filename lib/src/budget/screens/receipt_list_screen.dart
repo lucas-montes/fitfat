@@ -58,7 +58,7 @@ final class ReceiptListScreen extends ConsumerWidget {
             itemCount: receipts.length,
             itemBuilder: (context, i) {
               final r = receipts[i];
-              return _ReceiptCard(receipt: r, onTap: () => context.go('/budget/receipt/${r.id}'));
+              return _ReceiptCard(receipt: r, onTap: () => context.push('/budget/receipt/${r.id}'));
             },
           );
         },

@@ -145,7 +145,7 @@ final class AccountDetailScreen extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          onTap: () => context.go('/budget/transaction/${txn.id}'),
+          onTap: () => context.push('/budget/transaction/${txn.id}'),
         ),
       );
     }).toList();
@@ -165,7 +165,7 @@ final class AccountDetailScreen extends ConsumerWidget {
           title: Text(l10n.receiptStatusLabel(r.status.name)),
           subtitle: r.parsed ? Text(l10n.receiptParsed) : null,
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.go('/budget/receipt/${r.id}'),
+          onTap: () => context.push('/budget/receipt/${r.id}'),
         ),
       );
     }).toList();

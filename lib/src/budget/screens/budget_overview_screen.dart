@@ -34,7 +34,7 @@ class BudgetScreen extends ConsumerWidget {
               title: Text(l10n.budgetFabExpense),
               onTap: () {
                 Navigator.of(sheet).pop();
-                context.go('/budget/transaction/new?type=expense');
+                context.push('/budget/transaction/new?type=expense');
               },
             ),
             ListTile(
@@ -42,7 +42,7 @@ class BudgetScreen extends ConsumerWidget {
               title: Text(l10n.budgetFabIncome),
               onTap: () {
                 Navigator.of(sheet).pop();
-                context.go('/budget/transaction/new?type=income');
+                context.push('/budget/transaction/new?type=income');
               },
             ),
             ListTile(
@@ -50,7 +50,7 @@ class BudgetScreen extends ConsumerWidget {
               title: Text(l10n.budgetFabTransfer),
               onTap: () {
                 Navigator.of(sheet).pop();
-                context.go('/budget/transaction/new?type=transfer');
+                context.push('/budget/transaction/new?type=transfer');
               },
             ),
             ListTile(
@@ -58,7 +58,7 @@ class BudgetScreen extends ConsumerWidget {
               title: Text(l10n.budgetFabAccount),
               onTap: () {
                 Navigator.of(sheet).pop();
-                context.go('/budget/account/new');
+                context.push('/budget/account/new');
               },
             ),
           ],
@@ -115,7 +115,7 @@ class BudgetScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: InkWell(
-                  onTap: () => context.go('/budget/receipts'),
+                  onTap: () => context.push('/budget/receipts'),
                   child: Chip(
                     avatar: const Icon(Icons.receipt_long_outlined, size: 18),
                     label: Text(l10n.budgetPendingReceipts(pendingReceipts)),
@@ -133,7 +133,7 @@ class BudgetScreen extends ConsumerWidget {
                     leading: const Icon(Icons.account_balance_wallet_outlined),
                     title: Text(a.name),
                     trailing: Text(bf.formatMoney(a.balance, base)),
-                    onTap: () => context.go('/budget/account/${a.id}'),
+                    onTap: () => context.push('/budget/account/${a.id}'),
                   ),
                 ),
               const SizedBox(height: 16),
@@ -143,7 +143,7 @@ class BudgetScreen extends ConsumerWidget {
                   Text(l10n.budgetRecentTransactions,
                       style: Theme.of(context).textTheme.titleMedium),
                   TextButton(
-                    onPressed: () => context.go('/budget/transactions'),
+                    onPressed: () => context.push('/budget/transactions'),
                     child: Text(l10n.budgetViewAll),
                   ),
                 ],
@@ -255,7 +255,7 @@ class _EmptyAccounts extends StatelessWidget {
             Text(l10n.budgetEmptyAccounts),
             const SizedBox(height: 8),
             FilledButton.icon(
-              onPressed: () => context.go('/budget/account/new'),
+              onPressed: () => context.push('/budget/account/new'),
               icon: const Icon(Icons.add),
               label: Text(l10n.budgetAddAccount),
             ),
@@ -296,7 +296,7 @@ class _TransactionTile extends StatelessWidget {
           Text(bf.formatMoney(t.amountBase, base)),
         ],
       ),
-      onTap: () => context.go('/budget/transaction/${t.id}'),
+      onTap: () => context.push('/budget/transaction/${t.id}'),
     );
   }
 }
