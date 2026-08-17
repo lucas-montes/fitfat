@@ -33,7 +33,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -117,6 +117,29 @@ final class AppDatabase extends _$AppDatabase {
         await m.createTable(transactions);
         await m.createTable(receipts);
         await m.createTable(fxRates);
+      }
+      if (from < 15) {
+        // v15: planner task start/end time (replaces the single due time).
+        // Existing due_time_minutes is carried over into start_time_minutes.
+        await m.addColumn(plannerItems, plannerItems.startTimeMinutes);
+        await m.addColumn(plannerItems, plannerItems.endTimeMinutes);
+        await m.database.customStatement(
+          'UPDATE planner_items SET start_time_minutes = due_time_minutes '
+          'WHERE due_time_minutes IS NOT NULL',
+        );
+      }
+      if (from < 16) {
+        // v16: logged cardio actuals. Exercise sets used to overwrite the
+        // planned duration/distance columns when a cardio set was saved, which
+        // made it impossible to tell "done" from "planned". Old rows had their
+        // effective value (planned if never logged) in those columns, so carry
+        // them into the new actual columns to preserve existing data.
+        await m.addColumn(exerciseSets, exerciseSets.actualDurationMinutes);
+        await m.addColumn(exerciseSets, exerciseSets.actualDistanceMeters);
+        await m.database.customStatement(
+          'UPDATE exercise_sets SET actual_duration_minutes = duration_minutes, '
+          'actual_distance_meters = distance_meters',
+        );
       }
     },
   );

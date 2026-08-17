@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -8,8 +9,10 @@ import '../../models/exercise.dart';
 import '../../models/exercise_set.dart';
 import '../../models/workout_exercise.dart';
 import '../../ui/date_formats.dart';
+import '../../ui/tokens.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
+import '../../dashboard/providers/dashboard.dart';
 import '../repositories/workout_repository.dart';
 import 'exercise_picker_sheet.dart';
 
@@ -178,6 +181,16 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     });
   }
 
+  /// Reorders the planned sets within an exercise (drag the set chip handle).
+  void _reorderSets(String exerciseId, int oldIndex, int newIndex) {
+    setState(() {
+      final sets = _selected[exerciseId]!;
+      if (oldIndex < newIndex) newIndex -= 1;
+      final moved = sets.removeAt(oldIndex);
+      sets.insert(newIndex, moved);
+    });
+  }
+
   Future<void> _openExercisePicker() async {
     final picked = await showExercisePickerSheet(
       context,
@@ -238,8 +251,17 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               ],
             ),
             const Divider(height: 8),
-            for (var i = 0; i < sets.length; i++)
-              _buildSetRow(i, sets[i], sets, ex, l10n),
+            ReorderableListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              onReorder: (oldIndex, newIndex) =>
+                  _reorderSets(ex.id, oldIndex, newIndex),
+              children: [
+                for (var i = 0; i < sets.length; i++)
+                  _buildSetRow(i, sets[i], sets, ex, l10n),
+              ],
+            ),
             TextButton.icon(
               icon: const Icon(Icons.add, size: 18),
               label: Text(l10n.workoutFormAddSet),
@@ -260,19 +282,24 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     Exercise ex,
     AppLocalizations l10n,
   ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+    return Container(
+      key: ObjectKey(entry),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
+      ),
       child: Row(
         children: [
-          SizedBox(
-            width: 24,
-            child: Text(
-              '${index + 1}.',
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodySmall,
+          ReorderableDragStartListener(
+            index: index,
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Icon(Icons.drag_handle, size: 20),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           if (ex.isWeightlifting) ...[
             Expanded(
               child: TextFormField(
@@ -379,9 +406,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
     if (_selected.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.workoutFormSelectExercise)));
+      showTopBanner(context, message: l10n.workoutFormSelectExercise);
       return;
     }
 
@@ -412,9 +437,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               : (plan.durationMinutes ?? 0) > 0;
           if (!baseOk || (plan.restSeconds ?? 0) <= 0) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.workoutFormSetIncomplete)),
-              );
+              showTopBanner(context, message: l10n.workoutFormSetIncomplete);
             }
             return;
           }
@@ -463,18 +486,15 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
           setGroups: setGroups,
         );
       }
+      invalidateDashboard(ref);
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.commonSaved)));
+      showTopBanner(context, message: l10n.commonSaved);
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.errorWithMessage('$e'))));
+      showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

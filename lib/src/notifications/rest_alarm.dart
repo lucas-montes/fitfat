@@ -1,11 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/timezone.dart' as tz;
 
-import '../settings/providers/settings.dart';
 import 'notification_plugin.dart';
-import 'rest_timer.dart';
 
 /// Android channel for the one-shot rest alarm fired when the planned rest
 /// between sets elapses. Channel name/description are system-level Android
@@ -36,23 +32,22 @@ int _stableHash(String value) {
   return hash;
 }
 
-/// Cached result of whether exact alarm scheduling is supported.
-/// Checked once at first schedule call to avoid repeated try-catch overhead.
-bool? _exactAlarmsSupported;
-
 /// Schedules and cancels the one-shot rest alarm for a set's rest period.
 /// Shares the single app [FlutterLocalNotificationsPlugin] so the tap handler
 /// stays unique; sound/vibration come from settings per schedule call.
 final class RestAlarmScheduler {
-  RestAlarmScheduler(this._plugin, this._prefs);
+  RestAlarmScheduler(this._plugin);
 
   final FlutterLocalNotificationsPlugin _plugin;
-  final SharedPreferences _prefs;
 
   /// Schedules an alarm at [fireAt] (wall-clock, local zone) for [setId].
-  /// Exact scheduling is preferred so the rest alarm fires on time; on
-  /// platforms/versions without the exact-alarm permission it falls back to
-  /// inexact (best-effort) instead of throwing.
+  ///
+  /// NOTE: this one-shot alarm is intentionally a no-op. The "rest is over"
+  /// popup is now driven by [ActiveWorkoutTaskHandler] (which ticks every
+  /// second with a wake lock while the workout foreground service runs), so
+  /// the alert fires within ~1s of the planned rest instead of being delayed
+  /// by Android Doze / inexact alarms. Keeping this method avoids churn at the
+  /// call site in [RestTimerNotifier.startRest].
   Future<void> schedule({
     required String setId,
     required DateTime fireAt,
@@ -60,68 +55,7 @@ final class RestAlarmScheduler {
     required bool vibrate,
     required int plannedSeconds,
   }) async {
-    final title = _prefs.getString(restAlarmTitleKey) ?? 'Rest is over';
-    final bodyTemplate =
-        _prefs.getString('rest_alarm_body_with_duration') ??
-        _prefs.getString(restAlarmBodyKey) ??
-        'Your planned rest is complete.';
-    final durationStr = formatRestDuration(Duration(seconds: plannedSeconds));
-    final body = bodyTemplate.replaceAll('{duration}', durationStr);
-
-    final details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        restAlarmChannelId,
-        restAlarmChannelName,
-        channelDescription: restAlarmChannelDescription,
-        importance: Importance.high,
-        priority: Priority.high,
-        playSound: sound,
-        enableVibration: vibrate,
-      ),
-      iOS: const DarwinNotificationDetails(),
-    );
-
-    final tzFireAt = tz.TZDateTime.from(fireAt, tz.local);
-
-    // Use cached result if available, otherwise try exact first and cache result
-    final useExact = _exactAlarmsSupported ?? true;
-    final mode = useExact
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
-
-    try {
-      await _plugin.zonedSchedule(
-        notificationId(setId),
-        title,
-        body,
-        tzFireAt,
-        details,
-        androidScheduleMode: mode,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        payload: restAlarmPayload,
-      );
-      // If exact worked, cache success
-      if (useExact) _exactAlarmsSupported = true;
-    } catch (_) {
-      // Exact scheduling not permitted — cache failure and retry with inexact
-      if (useExact) {
-        _exactAlarmsSupported = false;
-        await _plugin.zonedSchedule(
-          notificationId(setId),
-          title,
-          body,
-          tzFireAt,
-          details,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          payload: restAlarmPayload,
-        );
-      } else {
-        rethrow;
-      }
-    }
+    // The foreground task handler posts the popup; nothing to schedule here.
   }
 
   /// Cancels the alarm for [setId] (rest replaced, cancelled, or workout
@@ -137,8 +71,5 @@ final class RestAlarmScheduler {
 }
 
 final restAlarmSchedulerProvider = Provider<RestAlarmScheduler>((ref) {
-  return RestAlarmScheduler(
-    ref.watch(flutterLocalNotificationsProvider),
-    ref.watch(sharedPreferencesProvider),
-  );
+  return RestAlarmScheduler(ref.watch(flutterLocalNotificationsProvider));
 });

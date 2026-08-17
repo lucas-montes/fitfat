@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -407,9 +408,7 @@ final class _WeightTrendCard extends ConsumerWidget {
     await ref.read(bodyMetricsRepositoryProvider).upsert(day, weightKg: value);
     _invalidate(ref);
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.commonSaved)));
+      showTopBanner(context, message: l10n.commonSaved);
     }
   }
 
@@ -426,9 +425,7 @@ final class _WeightTrendCard extends ConsumerWidget {
     await ref.read(bodyMetricsRepositoryProvider).upsert(day, heightCm: value);
     _invalidate(ref);
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.commonSaved)));
+      showTopBanner(context, message: l10n.commonSaved);
     }
   }
 
@@ -841,7 +838,7 @@ final class _TaskRow extends StatelessWidget {
   const _TaskRow({required this.task, required this.today});
 
   String _timeLabel(BuildContext context) {
-    final minutes = task.dueTimeMinutes!;
+    final minutes = task.startTimeMinutes!;
     final time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
     return DateFormats.formatTime(context, time);
   }
@@ -849,7 +846,7 @@ final class _TaskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dueDay = task.dueDate!;
+    final dueDay = task.day;
     final isToday =
         dueDay.year == today.year &&
         dueDay.month == today.month &&

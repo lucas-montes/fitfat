@@ -3252,6 +3252,27 @@ class $ExerciseSetsTable extends ExerciseSets
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actualDurationMinutesMeta =
+      const VerificationMeta('actualDurationMinutes');
+  @override
+  late final GeneratedColumn<int> actualDurationMinutes = GeneratedColumn<int>(
+    'actual_duration_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actualDistanceMetersMeta =
+      const VerificationMeta('actualDistanceMeters');
+  @override
+  late final GeneratedColumn<double> actualDistanceMeters =
+      GeneratedColumn<double>(
+        'actual_distance_meters',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -3275,6 +3296,8 @@ class $ExerciseSetsTable extends ExerciseSets
     completedAt,
     durationMinutes,
     distanceMeters,
+    actualDurationMinutes,
+    actualDistanceMeters,
     notes,
   ];
   @override
@@ -3385,6 +3408,24 @@ class $ExerciseSetsTable extends ExerciseSets
         ),
       );
     }
+    if (data.containsKey('actual_duration_minutes')) {
+      context.handle(
+        _actualDurationMinutesMeta,
+        actualDurationMinutes.isAcceptableOrUnknown(
+          data['actual_duration_minutes']!,
+          _actualDurationMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actual_distance_meters')) {
+      context.handle(
+        _actualDistanceMetersMeta,
+        actualDistanceMeters.isAcceptableOrUnknown(
+          data['actual_distance_meters']!,
+          _actualDistanceMetersMeta,
+        ),
+      );
+    }
     if (data.containsKey('notes')) {
       context.handle(
         _notesMeta,
@@ -3448,6 +3489,14 @@ class $ExerciseSetsTable extends ExerciseSets
         DriftSqlType.double,
         data['${effectivePrefix}distance_meters'],
       ),
+      actualDurationMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}actual_duration_minutes'],
+      ),
+      actualDistanceMeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}actual_distance_meters'],
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -3474,6 +3523,8 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
   final int? completedAt;
   final int? durationMinutes;
   final double? distanceMeters;
+  final int? actualDurationMinutes;
+  final double? actualDistanceMeters;
   final String? notes;
   const ExerciseSet({
     required this.id,
@@ -3488,6 +3539,8 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
     this.completedAt,
     this.durationMinutes,
     this.distanceMeters,
+    this.actualDurationMinutes,
+    this.actualDistanceMeters,
     this.notes,
   });
   @override
@@ -3522,6 +3575,12 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
     }
     if (!nullToAbsent || distanceMeters != null) {
       map['distance_meters'] = Variable<double>(distanceMeters);
+    }
+    if (!nullToAbsent || actualDurationMinutes != null) {
+      map['actual_duration_minutes'] = Variable<int>(actualDurationMinutes);
+    }
+    if (!nullToAbsent || actualDistanceMeters != null) {
+      map['actual_distance_meters'] = Variable<double>(actualDistanceMeters);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -3559,6 +3618,12 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
       distanceMeters: distanceMeters == null && nullToAbsent
           ? const Value.absent()
           : Value(distanceMeters),
+      actualDurationMinutes: actualDurationMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actualDurationMinutes),
+      actualDistanceMeters: actualDistanceMeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actualDistanceMeters),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -3583,6 +3648,12 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
       completedAt: serializer.fromJson<int?>(json['completedAt']),
       durationMinutes: serializer.fromJson<int?>(json['durationMinutes']),
       distanceMeters: serializer.fromJson<double?>(json['distanceMeters']),
+      actualDurationMinutes: serializer.fromJson<int?>(
+        json['actualDurationMinutes'],
+      ),
+      actualDistanceMeters: serializer.fromJson<double?>(
+        json['actualDistanceMeters'],
+      ),
       notes: serializer.fromJson<String?>(json['notes']),
     );
   }
@@ -3602,6 +3673,8 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
       'completedAt': serializer.toJson<int?>(completedAt),
       'durationMinutes': serializer.toJson<int?>(durationMinutes),
       'distanceMeters': serializer.toJson<double?>(distanceMeters),
+      'actualDurationMinutes': serializer.toJson<int?>(actualDurationMinutes),
+      'actualDistanceMeters': serializer.toJson<double?>(actualDistanceMeters),
       'notes': serializer.toJson<String?>(notes),
     };
   }
@@ -3619,6 +3692,8 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
     Value<int?> completedAt = const Value.absent(),
     Value<int?> durationMinutes = const Value.absent(),
     Value<double?> distanceMeters = const Value.absent(),
+    Value<int?> actualDurationMinutes = const Value.absent(),
+    Value<double?> actualDistanceMeters = const Value.absent(),
     Value<String?> notes = const Value.absent(),
   }) => ExerciseSet(
     id: id ?? this.id,
@@ -3641,6 +3716,12 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
     distanceMeters: distanceMeters.present
         ? distanceMeters.value
         : this.distanceMeters,
+    actualDurationMinutes: actualDurationMinutes.present
+        ? actualDurationMinutes.value
+        : this.actualDurationMinutes,
+    actualDistanceMeters: actualDistanceMeters.present
+        ? actualDistanceMeters.value
+        : this.actualDistanceMeters,
     notes: notes.present ? notes.value : this.notes,
   );
   ExerciseSet copyWithCompanion(ExerciseSetsCompanion data) {
@@ -3673,6 +3754,12 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
       distanceMeters: data.distanceMeters.present
           ? data.distanceMeters.value
           : this.distanceMeters,
+      actualDurationMinutes: data.actualDurationMinutes.present
+          ? data.actualDurationMinutes.value
+          : this.actualDurationMinutes,
+      actualDistanceMeters: data.actualDistanceMeters.present
+          ? data.actualDistanceMeters.value
+          : this.actualDistanceMeters,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
@@ -3692,6 +3779,8 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
           ..write('completedAt: $completedAt, ')
           ..write('durationMinutes: $durationMinutes, ')
           ..write('distanceMeters: $distanceMeters, ')
+          ..write('actualDurationMinutes: $actualDurationMinutes, ')
+          ..write('actualDistanceMeters: $actualDistanceMeters, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
@@ -3711,6 +3800,8 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
     completedAt,
     durationMinutes,
     distanceMeters,
+    actualDurationMinutes,
+    actualDistanceMeters,
     notes,
   );
   @override
@@ -3729,6 +3820,8 @@ class ExerciseSet extends DataClass implements Insertable<ExerciseSet> {
           other.completedAt == this.completedAt &&
           other.durationMinutes == this.durationMinutes &&
           other.distanceMeters == this.distanceMeters &&
+          other.actualDurationMinutes == this.actualDurationMinutes &&
+          other.actualDistanceMeters == this.actualDistanceMeters &&
           other.notes == this.notes);
 }
 
@@ -3745,6 +3838,8 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
   final Value<int?> completedAt;
   final Value<int?> durationMinutes;
   final Value<double?> distanceMeters;
+  final Value<int?> actualDurationMinutes;
+  final Value<double?> actualDistanceMeters;
   final Value<String?> notes;
   final Value<int> rowid;
   const ExerciseSetsCompanion({
@@ -3760,6 +3855,8 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
     this.completedAt = const Value.absent(),
     this.durationMinutes = const Value.absent(),
     this.distanceMeters = const Value.absent(),
+    this.actualDurationMinutes = const Value.absent(),
+    this.actualDistanceMeters = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -3776,6 +3873,8 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
     this.completedAt = const Value.absent(),
     this.durationMinutes = const Value.absent(),
     this.distanceMeters = const Value.absent(),
+    this.actualDurationMinutes = const Value.absent(),
+    this.actualDistanceMeters = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -3794,6 +3893,8 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
     Expression<int>? completedAt,
     Expression<int>? durationMinutes,
     Expression<double>? distanceMeters,
+    Expression<int>? actualDurationMinutes,
+    Expression<double>? actualDistanceMeters,
     Expression<String>? notes,
     Expression<int>? rowid,
   }) {
@@ -3810,6 +3911,10 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
       if (completedAt != null) 'completed_at': completedAt,
       if (durationMinutes != null) 'duration_minutes': durationMinutes,
       if (distanceMeters != null) 'distance_meters': distanceMeters,
+      if (actualDurationMinutes != null)
+        'actual_duration_minutes': actualDurationMinutes,
+      if (actualDistanceMeters != null)
+        'actual_distance_meters': actualDistanceMeters,
       if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3828,6 +3933,8 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
     Value<int?>? completedAt,
     Value<int?>? durationMinutes,
     Value<double?>? distanceMeters,
+    Value<int?>? actualDurationMinutes,
+    Value<double?>? actualDistanceMeters,
     Value<String?>? notes,
     Value<int>? rowid,
   }) {
@@ -3844,6 +3951,9 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
       completedAt: completedAt ?? this.completedAt,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       distanceMeters: distanceMeters ?? this.distanceMeters,
+      actualDurationMinutes:
+          actualDurationMinutes ?? this.actualDurationMinutes,
+      actualDistanceMeters: actualDistanceMeters ?? this.actualDistanceMeters,
       notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
     );
@@ -3888,6 +3998,16 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
     if (distanceMeters.present) {
       map['distance_meters'] = Variable<double>(distanceMeters.value);
     }
+    if (actualDurationMinutes.present) {
+      map['actual_duration_minutes'] = Variable<int>(
+        actualDurationMinutes.value,
+      );
+    }
+    if (actualDistanceMeters.present) {
+      map['actual_distance_meters'] = Variable<double>(
+        actualDistanceMeters.value,
+      );
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -3912,6 +4032,8 @@ class ExerciseSetsCompanion extends UpdateCompanion<ExerciseSet> {
           ..write('completedAt: $completedAt, ')
           ..write('durationMinutes: $durationMinutes, ')
           ..write('distanceMeters: $distanceMeters, ')
+          ..write('actualDurationMinutes: $actualDurationMinutes, ')
+          ..write('actualDistanceMeters: $actualDistanceMeters, ')
           ..write('notes: $notes, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -3994,6 +4116,28 @@ class $PlannerItemsTable extends PlannerItems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _startTimeMinutesMeta = const VerificationMeta(
+    'startTimeMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> startTimeMinutes = GeneratedColumn<int>(
+    'start_time_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _endTimeMinutesMeta = const VerificationMeta(
+    'endTimeMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> endTimeMinutes = GeneratedColumn<int>(
+    'end_time_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -4065,6 +4209,8 @@ class $PlannerItemsTable extends PlannerItems
     sortOrder,
     dueDate,
     dueTimeMinutes,
+    startTimeMinutes,
+    endTimeMinutes,
     notes,
     workoutId,
     tags,
@@ -4133,6 +4279,24 @@ class $PlannerItemsTable extends PlannerItems
         dueTimeMinutes.isAcceptableOrUnknown(
           data['due_time_minutes']!,
           _dueTimeMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('start_time_minutes')) {
+      context.handle(
+        _startTimeMinutesMeta,
+        startTimeMinutes.isAcceptableOrUnknown(
+          data['start_time_minutes']!,
+          _startTimeMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('end_time_minutes')) {
+      context.handle(
+        _endTimeMinutesMeta,
+        endTimeMinutes.isAcceptableOrUnknown(
+          data['end_time_minutes']!,
+          _endTimeMinutesMeta,
         ),
       );
     }
@@ -4211,6 +4375,14 @@ class $PlannerItemsTable extends PlannerItems
         DriftSqlType.int,
         data['${effectivePrefix}due_time_minutes'],
       ),
+      startTimeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}start_time_minutes'],
+      ),
+      endTimeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}end_time_minutes'],
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -4252,6 +4424,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
   final int sortOrder;
   final int? dueDate;
   final int? dueTimeMinutes;
+  final int? startTimeMinutes;
+  final int? endTimeMinutes;
   final String? notes;
   final String? workoutId;
   final String? tags;
@@ -4266,6 +4440,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     required this.sortOrder,
     this.dueDate,
     this.dueTimeMinutes,
+    this.startTimeMinutes,
+    this.endTimeMinutes,
     this.notes,
     this.workoutId,
     this.tags,
@@ -4286,6 +4462,12 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     }
     if (!nullToAbsent || dueTimeMinutes != null) {
       map['due_time_minutes'] = Variable<int>(dueTimeMinutes);
+    }
+    if (!nullToAbsent || startTimeMinutes != null) {
+      map['start_time_minutes'] = Variable<int>(startTimeMinutes);
+    }
+    if (!nullToAbsent || endTimeMinutes != null) {
+      map['end_time_minutes'] = Variable<int>(endTimeMinutes);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -4319,6 +4501,12 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       dueTimeMinutes: dueTimeMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(dueTimeMinutes),
+      startTimeMinutes: startTimeMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startTimeMinutes),
+      endTimeMinutes: endTimeMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endTimeMinutes),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -4349,6 +4537,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       dueDate: serializer.fromJson<int?>(json['dueDate']),
       dueTimeMinutes: serializer.fromJson<int?>(json['dueTimeMinutes']),
+      startTimeMinutes: serializer.fromJson<int?>(json['startTimeMinutes']),
+      endTimeMinutes: serializer.fromJson<int?>(json['endTimeMinutes']),
       notes: serializer.fromJson<String?>(json['notes']),
       workoutId: serializer.fromJson<String?>(json['workoutId']),
       tags: serializer.fromJson<String?>(json['tags']),
@@ -4368,6 +4558,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       'sortOrder': serializer.toJson<int>(sortOrder),
       'dueDate': serializer.toJson<int?>(dueDate),
       'dueTimeMinutes': serializer.toJson<int?>(dueTimeMinutes),
+      'startTimeMinutes': serializer.toJson<int?>(startTimeMinutes),
+      'endTimeMinutes': serializer.toJson<int?>(endTimeMinutes),
       'notes': serializer.toJson<String?>(notes),
       'workoutId': serializer.toJson<String?>(workoutId),
       'tags': serializer.toJson<String?>(tags),
@@ -4385,6 +4577,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     int? sortOrder,
     Value<int?> dueDate = const Value.absent(),
     Value<int?> dueTimeMinutes = const Value.absent(),
+    Value<int?> startTimeMinutes = const Value.absent(),
+    Value<int?> endTimeMinutes = const Value.absent(),
     Value<String?> notes = const Value.absent(),
     Value<String?> workoutId = const Value.absent(),
     Value<String?> tags = const Value.absent(),
@@ -4401,6 +4595,12 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     dueTimeMinutes: dueTimeMinutes.present
         ? dueTimeMinutes.value
         : this.dueTimeMinutes,
+    startTimeMinutes: startTimeMinutes.present
+        ? startTimeMinutes.value
+        : this.startTimeMinutes,
+    endTimeMinutes: endTimeMinutes.present
+        ? endTimeMinutes.value
+        : this.endTimeMinutes,
     notes: notes.present ? notes.value : this.notes,
     workoutId: workoutId.present ? workoutId.value : this.workoutId,
     tags: tags.present ? tags.value : this.tags,
@@ -4419,6 +4619,12 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       dueTimeMinutes: data.dueTimeMinutes.present
           ? data.dueTimeMinutes.value
           : this.dueTimeMinutes,
+      startTimeMinutes: data.startTimeMinutes.present
+          ? data.startTimeMinutes.value
+          : this.startTimeMinutes,
+      endTimeMinutes: data.endTimeMinutes.present
+          ? data.endTimeMinutes.value
+          : this.endTimeMinutes,
       notes: data.notes.present ? data.notes.value : this.notes,
       workoutId: data.workoutId.present ? data.workoutId.value : this.workoutId,
       tags: data.tags.present ? data.tags.value : this.tags,
@@ -4440,6 +4646,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
           ..write('sortOrder: $sortOrder, ')
           ..write('dueDate: $dueDate, ')
           ..write('dueTimeMinutes: $dueTimeMinutes, ')
+          ..write('startTimeMinutes: $startTimeMinutes, ')
+          ..write('endTimeMinutes: $endTimeMinutes, ')
           ..write('notes: $notes, ')
           ..write('workoutId: $workoutId, ')
           ..write('tags: $tags, ')
@@ -4459,6 +4667,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     sortOrder,
     dueDate,
     dueTimeMinutes,
+    startTimeMinutes,
+    endTimeMinutes,
     notes,
     workoutId,
     tags,
@@ -4477,6 +4687,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
           other.sortOrder == this.sortOrder &&
           other.dueDate == this.dueDate &&
           other.dueTimeMinutes == this.dueTimeMinutes &&
+          other.startTimeMinutes == this.startTimeMinutes &&
+          other.endTimeMinutes == this.endTimeMinutes &&
           other.notes == this.notes &&
           other.workoutId == this.workoutId &&
           other.tags == this.tags &&
@@ -4493,6 +4705,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
   final Value<int> sortOrder;
   final Value<int?> dueDate;
   final Value<int?> dueTimeMinutes;
+  final Value<int?> startTimeMinutes;
+  final Value<int?> endTimeMinutes;
   final Value<String?> notes;
   final Value<String?> workoutId;
   final Value<String?> tags;
@@ -4508,6 +4722,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     this.sortOrder = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.dueTimeMinutes = const Value.absent(),
+    this.startTimeMinutes = const Value.absent(),
+    this.endTimeMinutes = const Value.absent(),
     this.notes = const Value.absent(),
     this.workoutId = const Value.absent(),
     this.tags = const Value.absent(),
@@ -4524,6 +4740,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     required int sortOrder,
     this.dueDate = const Value.absent(),
     this.dueTimeMinutes = const Value.absent(),
+    this.startTimeMinutes = const Value.absent(),
+    this.endTimeMinutes = const Value.absent(),
     this.notes = const Value.absent(),
     this.workoutId = const Value.absent(),
     this.tags = const Value.absent(),
@@ -4545,6 +4763,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     Expression<int>? sortOrder,
     Expression<int>? dueDate,
     Expression<int>? dueTimeMinutes,
+    Expression<int>? startTimeMinutes,
+    Expression<int>? endTimeMinutes,
     Expression<String>? notes,
     Expression<String>? workoutId,
     Expression<String>? tags,
@@ -4561,6 +4781,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
       if (sortOrder != null) 'sort_order': sortOrder,
       if (dueDate != null) 'due_date': dueDate,
       if (dueTimeMinutes != null) 'due_time_minutes': dueTimeMinutes,
+      if (startTimeMinutes != null) 'start_time_minutes': startTimeMinutes,
+      if (endTimeMinutes != null) 'end_time_minutes': endTimeMinutes,
       if (notes != null) 'notes': notes,
       if (workoutId != null) 'workout_id': workoutId,
       if (tags != null) 'tags': tags,
@@ -4579,6 +4801,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     Value<int>? sortOrder,
     Value<int?>? dueDate,
     Value<int?>? dueTimeMinutes,
+    Value<int?>? startTimeMinutes,
+    Value<int?>? endTimeMinutes,
     Value<String?>? notes,
     Value<String?>? workoutId,
     Value<String?>? tags,
@@ -4595,6 +4819,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
       sortOrder: sortOrder ?? this.sortOrder,
       dueDate: dueDate ?? this.dueDate,
       dueTimeMinutes: dueTimeMinutes ?? this.dueTimeMinutes,
+      startTimeMinutes: startTimeMinutes ?? this.startTimeMinutes,
+      endTimeMinutes: endTimeMinutes ?? this.endTimeMinutes,
       notes: notes ?? this.notes,
       workoutId: workoutId ?? this.workoutId,
       tags: tags ?? this.tags,
@@ -4628,6 +4854,12 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     }
     if (dueTimeMinutes.present) {
       map['due_time_minutes'] = Variable<int>(dueTimeMinutes.value);
+    }
+    if (startTimeMinutes.present) {
+      map['start_time_minutes'] = Variable<int>(startTimeMinutes.value);
+    }
+    if (endTimeMinutes.present) {
+      map['end_time_minutes'] = Variable<int>(endTimeMinutes.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -4663,6 +4895,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
           ..write('sortOrder: $sortOrder, ')
           ..write('dueDate: $dueDate, ')
           ..write('dueTimeMinutes: $dueTimeMinutes, ')
+          ..write('startTimeMinutes: $startTimeMinutes, ')
+          ..write('endTimeMinutes: $endTimeMinutes, ')
           ..write('notes: $notes, ')
           ..write('workoutId: $workoutId, ')
           ..write('tags: $tags, ')
@@ -10054,6 +10288,8 @@ typedef $$ExerciseSetsTableCreateCompanionBuilder =
       Value<int?> completedAt,
       Value<int?> durationMinutes,
       Value<double?> distanceMeters,
+      Value<int?> actualDurationMinutes,
+      Value<double?> actualDistanceMeters,
       Value<String?> notes,
       Value<int> rowid,
     });
@@ -10071,6 +10307,8 @@ typedef $$ExerciseSetsTableUpdateCompanionBuilder =
       Value<int?> completedAt,
       Value<int?> durationMinutes,
       Value<double?> distanceMeters,
+      Value<int?> actualDurationMinutes,
+      Value<double?> actualDistanceMeters,
       Value<String?> notes,
       Value<int> rowid,
     });
@@ -10163,6 +10401,16 @@ class $$ExerciseSetsTableFilterComposer
 
   ColumnFilters<double> get distanceMeters => $composableBuilder(
     column: $table.distanceMeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get actualDurationMinutes => $composableBuilder(
+    column: $table.actualDurationMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get actualDistanceMeters => $composableBuilder(
+    column: $table.actualDistanceMeters,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10259,6 +10507,16 @@ class $$ExerciseSetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get actualDurationMinutes => $composableBuilder(
+    column: $table.actualDurationMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get actualDistanceMeters => $composableBuilder(
+    column: $table.actualDistanceMeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -10344,6 +10602,16 @@ class $$ExerciseSetsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get actualDurationMinutes => $composableBuilder(
+    column: $table.actualDurationMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get actualDistanceMeters => $composableBuilder(
+    column: $table.actualDistanceMeters,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
@@ -10411,6 +10679,8 @@ class $$ExerciseSetsTableTableManager
                 Value<int?> completedAt = const Value.absent(),
                 Value<int?> durationMinutes = const Value.absent(),
                 Value<double?> distanceMeters = const Value.absent(),
+                Value<int?> actualDurationMinutes = const Value.absent(),
+                Value<double?> actualDistanceMeters = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExerciseSetsCompanion(
@@ -10426,6 +10696,8 @@ class $$ExerciseSetsTableTableManager
                 completedAt: completedAt,
                 durationMinutes: durationMinutes,
                 distanceMeters: distanceMeters,
+                actualDurationMinutes: actualDurationMinutes,
+                actualDistanceMeters: actualDistanceMeters,
                 notes: notes,
                 rowid: rowid,
               ),
@@ -10443,6 +10715,8 @@ class $$ExerciseSetsTableTableManager
                 Value<int?> completedAt = const Value.absent(),
                 Value<int?> durationMinutes = const Value.absent(),
                 Value<double?> distanceMeters = const Value.absent(),
+                Value<int?> actualDurationMinutes = const Value.absent(),
+                Value<double?> actualDistanceMeters = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExerciseSetsCompanion.insert(
@@ -10458,6 +10732,8 @@ class $$ExerciseSetsTableTableManager
                 completedAt: completedAt,
                 durationMinutes: durationMinutes,
                 distanceMeters: distanceMeters,
+                actualDurationMinutes: actualDurationMinutes,
+                actualDistanceMeters: actualDistanceMeters,
                 notes: notes,
                 rowid: rowid,
               ),
@@ -10537,6 +10813,8 @@ typedef $$PlannerItemsTableCreateCompanionBuilder =
       required int sortOrder,
       Value<int?> dueDate,
       Value<int?> dueTimeMinutes,
+      Value<int?> startTimeMinutes,
+      Value<int?> endTimeMinutes,
       Value<String?> notes,
       Value<String?> workoutId,
       Value<String?> tags,
@@ -10554,6 +10832,8 @@ typedef $$PlannerItemsTableUpdateCompanionBuilder =
       Value<int> sortOrder,
       Value<int?> dueDate,
       Value<int?> dueTimeMinutes,
+      Value<int?> startTimeMinutes,
+      Value<int?> endTimeMinutes,
       Value<String?> notes,
       Value<String?> workoutId,
       Value<String?> tags,
@@ -10604,6 +10884,16 @@ class $$PlannerItemsTableFilterComposer
 
   ColumnFilters<int> get dueTimeMinutes => $composableBuilder(
     column: $table.dueTimeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startTimeMinutes => $composableBuilder(
+    column: $table.startTimeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get endTimeMinutes => $composableBuilder(
+    column: $table.endTimeMinutes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10682,6 +10972,16 @@ class $$PlannerItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get startTimeMinutes => $composableBuilder(
+    column: $table.startTimeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get endTimeMinutes => $composableBuilder(
+    column: $table.endTimeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -10745,6 +11045,16 @@ class $$PlannerItemsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get startTimeMinutes => $composableBuilder(
+    column: $table.startTimeMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get endTimeMinutes => $composableBuilder(
+    column: $table.endTimeMinutes,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
@@ -10804,6 +11114,8 @@ class $$PlannerItemsTableTableManager
                 Value<int> sortOrder = const Value.absent(),
                 Value<int?> dueDate = const Value.absent(),
                 Value<int?> dueTimeMinutes = const Value.absent(),
+                Value<int?> startTimeMinutes = const Value.absent(),
+                Value<int?> endTimeMinutes = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> workoutId = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
@@ -10819,6 +11131,8 @@ class $$PlannerItemsTableTableManager
                 sortOrder: sortOrder,
                 dueDate: dueDate,
                 dueTimeMinutes: dueTimeMinutes,
+                startTimeMinutes: startTimeMinutes,
+                endTimeMinutes: endTimeMinutes,
                 notes: notes,
                 workoutId: workoutId,
                 tags: tags,
@@ -10836,6 +11150,8 @@ class $$PlannerItemsTableTableManager
                 required int sortOrder,
                 Value<int?> dueDate = const Value.absent(),
                 Value<int?> dueTimeMinutes = const Value.absent(),
+                Value<int?> startTimeMinutes = const Value.absent(),
+                Value<int?> endTimeMinutes = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> workoutId = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
@@ -10851,6 +11167,8 @@ class $$PlannerItemsTableTableManager
                 sortOrder: sortOrder,
                 dueDate: dueDate,
                 dueTimeMinutes: dueTimeMinutes,
+                startTimeMinutes: startTimeMinutes,
+                endTimeMinutes: endTimeMinutes,
                 notes: notes,
                 workoutId: workoutId,
                 tags: tags,

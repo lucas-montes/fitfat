@@ -1,129 +1,208 @@
+import 'package:fitfat/src/models/planner_recurrence.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:fitfat/src/models/planner_recurrence.dart';
-
 void main() {
-  final start = DateTime(2026, 1, 1); // Thursday
+  group('PlannerRecurrence.isOccurrenceOn / occurrenceIndex', () {
+    final start = DateTime(2026, 8, 10); // a Monday
 
-  group('daily', () {
-    final r = PlannerRecurrence(type: PlannerRecurrenceType.daily);
-    test('anchor day is occurrence 0', () {
-      expect(r.isOccurrenceOn(start, start), isTrue);
-      expect(r.occurrenceIndex(start, start), 0);
-    });
-    test('next days increment by one', () {
-      expect(r.occurrenceIndex(start, start.add(const Duration(days: 3))), 3);
+    test('daily with no end fires every day, anchor index 0', () {
+      final rule = PlannerRecurrence(type: PlannerRecurrenceType.daily);
+      expect(rule.occurrenceIndex(start, start), 0);
+      expect(rule.isOccurrenceOn(start, start), isTrue);
+      expect(rule.isOccurrenceOn(start, start.add(const Duration(days: 3))), isTrue);
       expect(
-        r.isOccurrenceOn(start, start.add(const Duration(days: 3))),
-        isTrue,
-      );
-    });
-    test('past day is not an occurrence', () {
-      expect(
-        r.isOccurrenceOn(start, start.subtract(const Duration(days: 1))),
+        rule.isOccurrenceOn(start, start.subtract(const Duration(days: 1))),
         isFalse,
       );
     });
-  });
 
-  group('interval', () {
-    final r = PlannerRecurrence(
-      type: PlannerRecurrenceType.interval,
-      intervalDays: 3,
-    );
-    test('multiple of step is an occurrence', () {
-      final d = start.add(const Duration(days: 6));
-      expect(r.isOccurrenceOn(start, d), isTrue);
-      expect(r.occurrenceIndex(start, d), 2);
-    });
-    test('non-multiple of step is not an occurrence', () {
-      expect(
-        r.isOccurrenceOn(start, start.add(const Duration(days: 1))),
-        isFalse,
-      );
-      expect(
-        r.isOccurrenceOn(start, start.add(const Duration(days: 4))),
-        isFalse,
-      );
-    });
-  });
-
-  group('weekly', () {
-    final r = PlannerRecurrence(
-      type: PlannerRecurrenceType.weekly,
-      weekdays: {1}, // Mondays
-    );
-    test('matching weekday counts occurrences', () {
-      // Jan 1 2026 is a Thursday; first Monday after is Jan 5 (index 0).
-      final monday = DateTime(2026, 1, 5);
-      expect(r.isOccurrenceOn(start, monday), isTrue);
-      expect(r.occurrenceIndex(start, monday), 0);
-      expect(r.occurrenceIndex(start, DateTime(2026, 1, 12)), 1);
-    });
-    test('non-matching weekday is not an occurrence', () {
-      expect(r.isOccurrenceOn(start, DateTime(2026, 1, 6)), isFalse);
-    });
-  });
-
-  group('monthly', () {
-    final r = PlannerRecurrence(
-      type: PlannerRecurrenceType.monthly,
-      monthDay: 15,
-    );
-    test('same day-of-month each month', () {
-      expect(r.occurrenceIndex(start, DateTime(2026, 2, 15)), 1);
-      expect(r.occurrenceIndex(start, DateTime(2026, 3, 15)), 2);
-    });
-    test('different day-of-month is not an occurrence', () {
-      expect(r.isOccurrenceOn(start, DateTime(2026, 2, 16)), isFalse);
-    });
-    test('defaults to start day-of-month when monthDay is null', () {
-      final def = PlannerRecurrence(type: PlannerRecurrenceType.monthly);
-      expect(def.occurrenceIndex(start, DateTime(2026, 4, 1)), 3);
-      expect(def.isOccurrenceOn(start, DateTime(2026, 2, 28)), isFalse);
-    });
-  });
-
-  group('end conditions', () {
-    test('count caps occurrences', () {
-      final r = PlannerRecurrence(type: PlannerRecurrenceType.daily, count: 2);
-      expect(r.isOccurrenceOn(start, start), isTrue);
-      expect(
-        r.isOccurrenceOn(start, start.add(const Duration(days: 1))),
-        isTrue,
-      );
-      expect(
-        r.isOccurrenceOn(start, start.add(const Duration(days: 2))),
-        isFalse,
-      );
-    });
-    test('endDate is inclusive', () {
-      final end = start.add(const Duration(days: 2));
-      final r = PlannerRecurrence(
+    test('daily respects count (inclusive of anchor)', () {
+      final rule = PlannerRecurrence(
         type: PlannerRecurrenceType.daily,
-        endDate: end,
+        count: 2,
       );
-      expect(r.isOccurrenceOn(start, end), isTrue);
+      expect(rule.isOccurrenceOn(start, start), isTrue); // index 0
       expect(
-        r.isOccurrenceOn(start, end.add(const Duration(days: 1))),
+        rule.isOccurrenceOn(start, start.add(const Duration(days: 1))),
+        isTrue,
+      ); // index 1
+      expect(
+        rule.isOccurrenceOn(start, start.add(const Duration(days: 2))),
+        isFalse,
+      ); // index 2 >= count
+    });
+
+    test('daily respects endDate (inclusive)', () {
+      final rule = PlannerRecurrence(
+        type: PlannerRecurrenceType.daily,
+        endDate: DateTime(2026, 8, 11),
+      );
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 8, 11)), isTrue);
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 8, 12)), isFalse);
+    });
+
+    test('weekly fires on selected weekdays only', () {
+      final rule = PlannerRecurrence(
+        type: PlannerRecurrenceType.weekly,
+        weekdays: {DateTime.wednesday, DateTime.friday},
+      );
+      // Anchor is Monday, not a selected weekday.
+      expect(rule.isOccurrenceOn(start, start), isFalse);
+      final wed = DateTime(2026, 8, 12); // Wednesday
+      final fri = DateTime(2026, 8, 14); // Friday
+      final nextWed = DateTime(2026, 8, 19);
+      expect(rule.occurrenceIndex(start, wed), 0);
+      expect(rule.occurrenceIndex(start, fri), 1);
+      expect(rule.occurrenceIndex(start, nextWed), 2);
+      expect(rule.isOccurrenceOn(start, wed), isTrue);
+      expect(rule.isOccurrenceOn(start, fri), isTrue);
+      expect(rule.isOccurrenceOn(start, nextWed), isTrue);
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 8, 11)), isFalse); // Tue
+    });
+
+    test('weekly respects count', () {
+      final rule = PlannerRecurrence(
+        type: PlannerRecurrenceType.weekly,
+        weekdays: {DateTime.wednesday, DateTime.friday},
+        count: 2,
+      );
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 8, 19)), isFalse); // idx 2
+    });
+
+    test('weekly respects endDate', () {
+      final rule = PlannerRecurrence(
+        type: PlannerRecurrenceType.weekly,
+        weekdays: {DateTime.wednesday, DateTime.friday},
+        endDate: DateTime(2026, 8, 14),
+      );
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 8, 19)), isFalse);
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 8, 14)), isTrue);
+    });
+
+    test('interval fires every N days', () {
+      final rule = PlannerRecurrence(
+        type: PlannerRecurrenceType.interval,
+        intervalDays: 2,
+      );
+      expect(rule.occurrenceIndex(start, start.add(const Duration(days: 2))), 1);
+      expect(
+        rule.isOccurrenceOn(start, start.add(const Duration(days: 1))),
+        isFalse,
+      );
+      expect(
+        rule.isOccurrenceOn(start, start.add(const Duration(days: 4))),
+        isTrue,
+      );
+    });
+
+    test('interval respects count', () {
+      final rule = PlannerRecurrence(
+        type: PlannerRecurrenceType.interval,
+        intervalDays: 2,
+        count: 2,
+      );
+      expect(
+        rule.isOccurrenceOn(start, start.add(const Duration(days: 4))),
+        isFalse,
+      ); // index 2
+    });
+
+    test('interval respects endDate', () {
+      final rule = PlannerRecurrence(
+        type: PlannerRecurrenceType.interval,
+        intervalDays: 2,
+        endDate: DateTime(2026, 8, 13),
+      );
+      expect(
+        rule.isOccurrenceOn(start, start.add(const Duration(days: 4))),
         isFalse,
       );
     });
-  });
 
-  group('json round-trip', () {
-    test('preserves fields', () {
-      final r = PlannerRecurrence(
-        type: PlannerRecurrenceType.weekly,
-        weekdays: {1, 3, 5},
-        endDate: DateTime(2026, 6, 1),
-        count: 10,
+    test('monthly fires on the given month day', () {
+      final rule = PlannerRecurrence(
+        type: PlannerRecurrenceType.monthly,
+        monthDay: 15,
       );
-      final decoded = PlannerRecurrence.fromJson(r.toJson());
-      expect(decoded.type, r.type);
-      expect(decoded.weekdays, r.weekdays);
-      expect(decoded.endDate, r.endDate);
-      expect(decoded.count, r.count);
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 8, 15)), isTrue);
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 9, 15)), isTrue);
+      expect(rule.occurrenceIndex(start, DateTime(2026, 9, 15)), 1);
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 8, 14)), isFalse);
+    });
+
+    test('monthly falls back to anchor day when monthDay is null', () {
+      final rule = PlannerRecurrence(type: PlannerRecurrenceType.monthly);
+      expect(rule.isOccurrenceOn(start, DateTime(2026, 9, 10)), isTrue);
+      expect(rule.occurrenceIndex(start, DateTime(2026, 9, 10)), 1);
+    });
+
+    test('monthly respects count and endDate', () {
+      final countRule = PlannerRecurrence(
+        type: PlannerRecurrenceType.monthly,
+        monthDay: 15,
+        count: 1,
+      );
+      expect(countRule.isOccurrenceOn(start, DateTime(2026, 9, 15)), isFalse);
+      final endRule = PlannerRecurrence(
+        type: PlannerRecurrenceType.monthly,
+        monthDay: 15,
+        endDate: DateTime(2026, 8, 31),
+      );
+      expect(endRule.isOccurrenceOn(start, DateTime(2026, 9, 15)), isFalse);
+    });
+
+    test('isValid guards required sub-fields', () {
+      expect(
+        PlannerRecurrence(
+          type: PlannerRecurrenceType.weekly,
+        ).isValid,
+        isFalse,
+      );
+      expect(
+        PlannerRecurrence(
+          type: PlannerRecurrenceType.weekly,
+          weekdays: {1},
+        ).isValid,
+        isTrue,
+      );
+      expect(
+        PlannerRecurrence(type: PlannerRecurrenceType.interval).isValid,
+        isFalse,
+      );
+      expect(
+        PlannerRecurrence(
+          type: PlannerRecurrenceType.interval,
+          intervalDays: 2,
+        ).isValid,
+        isTrue,
+      );
+      expect(
+        PlannerRecurrence(type: PlannerRecurrenceType.monthly).isValid,
+        isFalse,
+      );
+      expect(
+        PlannerRecurrence(
+          type: PlannerRecurrenceType.monthly,
+          monthDay: 31,
+        ).isValid,
+        isTrue,
+      );
+    });
+
+    test('round-trips through JSON', () {
+      final rule = PlannerRecurrence(
+        type: PlannerRecurrenceType.weekly,
+        weekdays: {2, 4},
+        endDate: DateTime(2026, 9, 1),
+        count: 5,
+        excludedDates: {DateTime(2026, 8, 14).millisecondsSinceEpoch},
+      );
+      final decoded = PlannerRecurrence.fromJson(rule.toJson());
+      expect(decoded.type, rule.type);
+      expect(decoded.weekdays, rule.weekdays);
+      expect(decoded.endDate, rule.endDate);
+      expect(decoded.count, rule.count);
+      expect(decoded.excludedDates, rule.excludedDates);
     });
   });
 }

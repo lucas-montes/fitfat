@@ -21,25 +21,23 @@ final class PlannerRepository {
     return rows.map(_toDomain).toList();
   }
 
-  /// Pending tasks with a due time, due on or after [from] (inclusive),
-  /// ordered by due date then due time. Used by the dashboard's upcoming
-  /// timed-tasks card.
-  Future<List<PlannerItem>> getUpcomingWithDueTime(DateTime from) async {
+  /// Pending tasks with a start time, on or after [from] (inclusive), ordered
+  /// by day then start time. Used by the dashboard's upcoming timed-tasks card.
+  Future<List<PlannerItem>> getUpcomingWithStartTime(DateTime from) async {
     final fromStart = _startOfDay(from);
     final rows =
         await (_database.select(_database.plannerItems)
               ..where(
                 (t) =>
                     t.done.equals(0) &
-                    t.dueTimeMinutes.isNotNull() &
-                    t.dueDate.isNotNull() &
-                    t.dueDate.isBiggerOrEqualValue(
+                    t.startTimeMinutes.isNotNull() &
+                    t.date.isBiggerOrEqualValue(
                       fromStart.millisecondsSinceEpoch,
                     ),
               )
               ..orderBy([
-                (t) => OrderingTerm(expression: t.dueDate),
-                (t) => OrderingTerm(expression: t.dueTimeMinutes),
+                (t) => OrderingTerm(expression: t.date),
+                (t) => OrderingTerm(expression: t.startTimeMinutes),
               ]))
             .get();
     return rows.map(_toDomain).toList();
@@ -56,7 +54,8 @@ final class PlannerRepository {
             done: item.done ? 1 : 0,
             sortOrder: item.sortOrder,
             dueDate: Value(item.dueDate?.millisecondsSinceEpoch),
-            dueTimeMinutes: Value(item.dueTimeMinutes),
+            startTimeMinutes: Value(item.startTimeMinutes),
+            endTimeMinutes: Value(item.endTimeMinutes),
             notes: Value(item.notes),
             workoutId: Value(item.workoutId),
             tags: Value(_encode(item.tags)),
@@ -75,7 +74,8 @@ final class PlannerRepository {
         title: Value(item.title),
         done: Value(item.done ? 1 : 0),
         dueDate: Value(item.dueDate?.millisecondsSinceEpoch),
-        dueTimeMinutes: Value(item.dueTimeMinutes),
+        startTimeMinutes: Value(item.startTimeMinutes),
+        endTimeMinutes: Value(item.endTimeMinutes),
         notes: Value(item.notes),
         workoutId: Value(item.workoutId),
         tags: Value(_encode(item.tags)),
@@ -130,7 +130,8 @@ final class PlannerRepository {
                 done: 0,
                 sortOrder: row.sortOrder,
                 dueDate: Value(row.dueDate),
-                dueTimeMinutes: Value(row.dueTimeMinutes),
+                startTimeMinutes: Value(row.startTimeMinutes),
+                endTimeMinutes: Value(row.endTimeMinutes),
                 notes: Value(row.notes),
                 workoutId: Value(row.workoutId),
                 tags: Value(row.tags),
@@ -153,7 +154,8 @@ final class PlannerRepository {
     dueDate: row.dueDate == null
         ? null
         : DateTime.fromMillisecondsSinceEpoch(row.dueDate!),
-    dueTimeMinutes: row.dueTimeMinutes,
+    startTimeMinutes: row.startTimeMinutes,
+    endTimeMinutes: row.endTimeMinutes,
     notes: row.notes,
     workoutId: row.workoutId,
     tags: _decode(row.tags),
@@ -221,31 +223,35 @@ final class PlannerRepository {
   }
 
   Future<void> _materializeDay(List<PlannerItem> anchors, DateTime d) async {
+    final dMillis = d.millisecondsSinceEpoch;
     for (final anchor in anchors) {
       final rule = anchor.recurrence;
       if (rule == null || anchor.seriesId == null) continue;
+      // Respect explicitly deleted occurrences so they are not regenerated.
+      if (rule.excludedDates?.contains(dMillis) ?? false) continue;
       if (!rule.isOccurrenceOn(anchor.day, d)) continue;
       final existing =
           await (_database.select(_database.plannerItems)..where(
                 (t) =>
-                    t.date.equals(d.millisecondsSinceEpoch) &
+                    t.date.equals(dMillis) &
                     t.seriesId.equals(anchor.seriesId!),
               ))
-              .get();
+          .get();
       if (existing.isNotEmpty) continue;
       await _database
           .into(_database.plannerItems)
           .insert(
             db.PlannerItemsCompanion.insert(
               id: const Uuid().v7(),
-              date: d.millisecondsSinceEpoch,
+              date: dMillis,
               title: anchor.title,
               done: 0,
               sortOrder: anchor.sortOrder,
               dueDate: Value(
-                anchor.dueDate == null ? null : d.millisecondsSinceEpoch,
+                anchor.dueDate == null ? null : dMillis,
               ),
-              dueTimeMinutes: Value(anchor.dueTimeMinutes),
+              startTimeMinutes: Value(anchor.startTimeMinutes),
+              endTimeMinutes: Value(anchor.endTimeMinutes),
               notes: Value(anchor.notes),
               workoutId: Value(anchor.workoutId),
               tags: Value(_encode(anchor.tags)),
@@ -254,6 +260,64 @@ final class PlannerRepository {
             ),
           );
     }
+  }
+
+  /// Loads a single planner item by id (used to read/update the anchor of a
+  /// recurring series, whose id equals its `seriesId`).
+  Future<PlannerItem?> getById(String id) async {
+    final row = await (_database.select(_database.plannerItems)
+          ..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    return row == null ? null : _toDomain(row);
+  }
+
+  /// All occurrences (anchor + generated) of a recurring series.
+  Future<List<PlannerItem>> getBySeriesId(String seriesId) async {
+    final rows = await (_database.select(_database.plannerItems)
+          ..where((t) => t.seriesId.equals(seriesId)))
+        .get();
+    return rows.map(_toDomain).toList();
+  }
+
+  /// Deletes one generated occurrence of a series and records its day as an
+  /// excluded date on the anchor, so the materializer won't recreate it.
+  Future<void> deleteOccurrence({
+    required String id,
+    required String seriesId,
+    required DateTime day,
+  }) async {
+    await (_database.delete(
+      _database.plannerItems,
+    )..where((t) => t.id.equals(id))).go();
+    await _setExclusion(seriesId, day, add: true);
+  }
+
+  /// Re-adds a previously deleted occurrence by clearing its excluded date.
+  Future<void> removeExclusion(String seriesId, DateTime day) async {
+    await _setExclusion(seriesId, day, add: false);
+  }
+
+  Future<void> _setExclusion(String seriesId, DateTime day, {required bool add}) async {
+    final anchor = await getById(seriesId);
+    if (anchor == null) return;
+    final rule = anchor.recurrence;
+    if (rule == null) return;
+    final set = <int>{...(rule.excludedDates ?? const {})};
+    if (add) {
+      set.add(_startOfDay(day).millisecondsSinceEpoch);
+    } else {
+      set.remove(_startOfDay(day).millisecondsSinceEpoch);
+    }
+    final updatedRule = PlannerRecurrence(
+      type: rule.type,
+      weekdays: rule.weekdays,
+      intervalDays: rule.intervalDays,
+      monthDay: rule.monthDay,
+      endDate: rule.endDate,
+      count: rule.count,
+      excludedDates: set.isEmpty ? null : set,
+    );
+    await update(anchor.copyWith(recurrence: updatedRule));
   }
 
   /// Deletes every task in a series (anchor + all occurrences).
@@ -319,7 +383,8 @@ PlannerItem newPlannerItem({
   required String title,
   int sortOrder = 0,
   DateTime? dueDate,
-  int? dueTimeMinutes,
+  int? startTimeMinutes,
+  int? endTimeMinutes,
   String? notes,
   String? workoutId,
   List<String>? tags,
@@ -332,7 +397,8 @@ PlannerItem newPlannerItem({
   done: false,
   sortOrder: sortOrder,
   dueDate: dueDate,
-  dueTimeMinutes: dueTimeMinutes,
+  startTimeMinutes: startTimeMinutes,
+  endTimeMinutes: endTimeMinutes,
   notes: notes,
   workoutId: workoutId,
   tags: tags,

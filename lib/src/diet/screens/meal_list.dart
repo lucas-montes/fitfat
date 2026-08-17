@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -11,6 +12,7 @@ import '../../ui/haptics.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/meals.dart';
+import '../../dashboard/providers/dashboard.dart';
 import 'ingredient_list.dart';
 import 'meal_form.dart' show MealFormScreen;
 
@@ -109,24 +111,22 @@ final class MealListScreen extends ConsumerWidget {
     MealEntry meal,
   ) async {
     unawaited(Haptics.mediumImpact());
-    final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
     await ref.read(mealRepositoryProvider).delete(meal.id);
     ref.invalidate(mealListProvider);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.mealDeleted(meal.name)),
-          action: SnackBarAction(
-            label: l10n.commonUndo,
-            onPressed: () async {
-              await ref.read(mealRepositoryProvider).restore(meal);
-              ref.invalidate(mealListProvider);
-            },
-          ),
-        ),
+    invalidateDashboard(ref);
+    if (context.mounted) {
+      showTopBanner(
+        context,
+        message: l10n.mealDeleted(meal.name),
+        actionLabel: l10n.commonUndo,
+        onAction: () async {
+          await ref.read(mealRepositoryProvider).restore(meal);
+          ref.invalidate(mealListProvider);
+          invalidateDashboard(ref);
+        },
       );
+    }
   }
 }
 

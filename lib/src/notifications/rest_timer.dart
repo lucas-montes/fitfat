@@ -13,6 +13,11 @@ const restStartedAtKey = 'rest_started_at';
 const restSetIdKey = 'rest_set_id';
 const restPlannedSecondsKey = 'rest_planned_seconds';
 
+/// Prefs flag (bool) set true by the foreground task handler once it has fired
+/// the "rest is over" popup, so the popup is shown exactly once per rest.
+/// Cleared when a rest starts or is cancelled.
+const restNotifiedKey = 'rest_notified';
+
 final class RestTimerState {
   final DateTime? startedAt;
   final String? setId;
@@ -75,6 +80,8 @@ final class RestTimerNotifier extends Notifier<RestTimerState> {
       setId: setId,
       plannedSeconds: setId != null ? duration.inSeconds : null,
     );
+    // Allow the foreground handler to fire its "rest is over" popup again.
+    await prefs.setBool(restNotifiedKey, false);
 
     // Schedule the one-shot rest alarm (sound/vibration from settings) to
     // fire when the planned rest elapses.
@@ -102,6 +109,7 @@ final class RestTimerNotifier extends Notifier<RestTimerState> {
     await prefs.remove(restStartedAtKey);
     await prefs.remove(restSetIdKey);
     await prefs.remove(restPlannedSecondsKey);
+    await prefs.remove(restNotifiedKey);
     state = const RestTimerState();
   }
 

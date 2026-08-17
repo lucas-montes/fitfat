@@ -10,6 +10,9 @@ final class PlannerRecurrence {
   final int? monthDay; // 1..31 — monthly only
   final DateTime? endDate; // inclusive last occurrence day
   final int? count; // max total occurrences (including the anchor)
+  // Start-of-day epoch millis of occurrences the user deleted; the materializer
+  // skips these so a deleted occurrence of a series is not regenerated.
+  final Set<int>? excludedDates;
 
   const PlannerRecurrence({
     required this.type,
@@ -18,6 +21,7 @@ final class PlannerRecurrence {
     this.monthDay,
     this.endDate,
     this.count,
+    this.excludedDates,
   });
 
   Map<String, dynamic> toJson() => {
@@ -27,10 +31,13 @@ final class PlannerRecurrence {
     if (monthDay != null) 'monthDay': monthDay,
     if (endDate != null) 'endDate': endDate!.millisecondsSinceEpoch,
     if (count != null) 'count': count,
+    if (excludedDates != null)
+      'excludedDates': [...excludedDates!]..sort(),
   };
 
   factory PlannerRecurrence.fromJson(Map<String, dynamic> json) {
     final endDate = json['endDate'];
+    final excluded = json['excludedDates'];
     return PlannerRecurrence(
       type: PlannerRecurrenceType.values.byName(json['type'] as String),
       weekdays: json['weekdays'] is List
@@ -42,6 +49,9 @@ final class PlannerRecurrence {
           ? DateTime.fromMillisecondsSinceEpoch(endDate)
           : null,
       count: json['count'] as int?,
+      excludedDates: excluded is List
+          ? {...excluded.cast<num>().map((e) => e.toInt())}
+          : null,
     );
   }
 

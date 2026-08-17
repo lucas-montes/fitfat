@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,6 +11,7 @@ import '../../models/exercise_set.dart';
 import '../../models/workout.dart';
 import '../../notifications/active_workout_notifier.dart';
 import '../../notifications/rest_timer.dart';
+import '../../dashboard/providers/dashboard.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
 import '../../ui/haptics.dart';
@@ -21,6 +23,11 @@ import '../exercise_filter.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+
+/// Guards against a second "Complete" tap racing the first (the teardown of
+/// the foreground notification service used to throw and abort completion).
+/// Module-level because the active-workout route is a single instance.
+bool _completingWorkout = false;
 
 /// The single dedicated view for a running workout (active-workout-flow T04).
 /// Lives on the top-level `/active-workout` GoRouter route, outside the shell,
@@ -129,7 +136,7 @@ Widget _activeWorkoutBackButton(BuildContext context) {
   );
 }
 
-final class _ActiveWorkoutContent extends StatelessWidget {
+final class _ActiveWorkoutContent extends StatefulWidget {
   final Workout workout;
   final WorkoutWithDetails detail;
   final DateTime now;
@@ -145,100 +152,185 @@ final class _ActiveWorkoutContent extends StatelessWidget {
   });
 
   @override
+  State<_ActiveWorkoutContent> createState() => _ActiveWorkoutContentState();
+}
+
+final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
+  // Vertical pager over exercises: one exercise per swipe (one at a time).
+  final PageController _pageController = PageController();
+  int _page = 0;
+
+  Workout get _workout => widget.workout;
+  WorkoutWithDetails get _detail => widget.detail;
+  AppLocalizations get _l10n => widget.l10n;
+  WidgetRef get _ref => widget.ref;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_ActiveWorkoutContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Clamp the page when exercises are added/removed (e.g. add-exercise).
+    final count = _detail.exercises.length;
+    if (count == 0) {
+      _page = 0;
+    } else if (_page >= count) {
+      _page = count - 1;
+      _pageController.jumpToPage(_page);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final statusColors = theme.extension<FitFatColors>()!;
+    final l10n = _l10n;
+    final workout = _workout;
+    final detail = _detail;
     final elapsed = workout.startedAt == null
         ? Duration.zero
-        : now.difference(workout.startedAt!);
+        : widget.now.difference(workout.startedAt!);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(workout.name),
         leading: _activeWorkoutBackButton(context),
         actions: [
+          IconButton(
+            tooltip: l10n.activeWorkoutAddExerciseTooltip,
+            icon: const Icon(Icons.add),
+            onPressed: () => _showAddExerciseSheet(context),
+          ),
           TextButton.icon(
-            onPressed: () => _completeWorkout(context, ref, workout.id),
+            onPressed: () => _completeWorkout(context, _ref, workout.id),
             icon: const Icon(Icons.check),
             label: Text(l10n.workoutDetailBtnComplete),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Header: active badge + live elapsed time.
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      StatusBadge(
-                        label: l10n.statusActive,
-                        color: statusColors.warning,
-                      ),
-                      const Spacer(),
-                      Text(
-                        formatRestDuration(elapsed),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        StatusBadge(
+                          label: l10n.statusActive,
+                          color: statusColors.warning,
                         ),
+                        const Spacer(),
+                        Text(
+                          formatRestDuration(elapsed),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (workout.startedAt != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.workoutDetailStartedAt(
+                          DateFormats.formatTime(
+                            context,
+                            TimeOfDay.fromDateTime(workout.startedAt!),
+                          ),
+                        ),
+                        style: theme.textTheme.bodySmall,
                       ),
                     ],
-                  ),
-                  if (workout.startedAt != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.workoutDetailStartedAt(
-                        DateFormats.formatTime(
-                          context,
-                          TimeOfDay.fromDateTime(workout.startedAt!),
-                        ),
-                      ),
-                      style: theme.textTheme.bodySmall,
-                    ),
                   ],
-                ],
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          const _RestStrip(),
-          const SizedBox(height: 16),
-
-          // Exercises
-          Text(l10n.workoutDetailExercises, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: _RestStrip(),
+          ),
           if (detail.exercises.isEmpty)
-            EmptyState(
-              icon: Icons.fitness_center,
-              title: l10n.emptyWorkoutDetailTitle,
-              description: l10n.emptyWorkoutDetailBody,
-            )
-          else
-            for (final block in detail.exercises)
-              _ExerciseBlockCard(
-                block: block,
-                workout: workout,
-                l10n: l10n,
-                ref: ref,
+            Expanded(
+              child: EmptyState(
+                icon: Icons.fitness_center,
+                title: l10n.emptyWorkoutDetailTitle,
+                description: l10n.emptyWorkoutDetailBody,
               ),
-          const SizedBox(height: 16),
-          // Add Exercise button
-          FilledButton.icon(
-            onPressed: () => _showAddExerciseSheet(context),
-            icon: const Icon(Icons.add),
-            label: Text(l10n.activeWorkoutAddExercise),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+            )
+          else ...[
+            const SizedBox(height: 8),
+            _buildPagerBar(theme),
+            const SizedBox(height: 4),
+            // Horizontal pager: swipe left/right to move between exercises.
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.horizontal,
+                onPageChanged: (i) => setState(() => _page = i),
+                itemCount: detail.exercises.length,
+                itemBuilder: (_, i) => _ExercisePage(
+                  block: detail.exercises[i],
+                  workout: workout,
+                  l10n: l10n,
+                  ref: _ref,
+                ),
+              ),
             ),
-          ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildPagerBar(ThemeData theme) {
+    final l10n = _l10n;
+    final count = _detail.exercises.length;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          tooltip: l10n.activeWorkoutPrevExercise,
+          icon: const Icon(Icons.keyboard_arrow_left),
+          onPressed: _page > 0
+              ? () => _pageController.previousPage(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOut,
+                  )
+              : null,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            '${_page + 1} / $count',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: l10n.activeWorkoutNextExercise,
+          icon: const Icon(Icons.keyboard_arrow_right),
+          onPressed: _page < count - 1
+              ? () => _pageController.nextPage(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOut,
+                  )
+              : null,
+        ),
+      ],
     );
   }
 
@@ -247,21 +339,37 @@ final class _ActiveWorkoutContent extends StatelessWidget {
     WidgetRef ref,
     String id,
   ) async {
-    // Run independent operations in parallel to reduce completion latency
-    await Future.wait([
-      ref.read(restTimerProvider.notifier).cancelRest(),
-      ref.read(activeWorkoutNotifierProvider).stopWorkoutNotification(),
-      ref.read(workoutRepositoryProvider).complete(id),
-    ]);
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.workoutCompleted)));
+    // Ignore a second tap while the first completion is in flight.
+    if (_completingWorkout) return;
+    _completingWorkout = true;
+    try {
+      // Persist completion first so the workout is stopped even if the
+      // best-effort notification teardown below fails.
+      await ref.read(workoutRepositoryProvider).complete(id);
+      ref.invalidate(workoutDetailProvider(id));
+      ref.invalidate(workoutListProvider);
+      invalidateDashboard(ref);
+      if (context.mounted) {
+        showTopBanner(context, message: _l10n.workoutCompleted);
+        // Redirect to the completed workout's summary (T07). Done before the
+        // foreground-service teardown so stopping the service can't race the
+        // navigation and leave the user on a still-"active" screen.
+        context.go('/workout-summary/$id');
+      }
+    } finally {
+      _completingWorkout = false;
+      // Best-effort teardown after navigation, so a throw here can never block
+      // completion. These are intentionally fire-and-forget.
+      unawaited(
+        ref.read(restTimerProvider.notifier).cancelRest().catchError((_) {}),
+      );
+      unawaited(
+        ref
+            .read(activeWorkoutNotifierProvider)
+            .stopWorkoutNotification()
+            .catchError((_) {}),
+      );
     }
-    ref.invalidate(workoutDetailProvider(id));
-    ref.invalidate(workoutListProvider);
-    // Redirect to the completed workout's summary (T07).
-    if (context.mounted) context.go('/workout-summary/$id');
   }
 
   Future<void> _showAddExerciseSheet(BuildContext context) async {
@@ -271,13 +379,13 @@ final class _ActiveWorkoutContent extends StatelessWidget {
       isScrollControlled: true,
       builder: (ctx) => _ActiveWorkoutExerciseSearchSheet(
         l10n: l10n,
-        ref: ref,
-        workoutId: workout.id,
-        currentExercises: detail.exercises.map((b) => b.exercise.id).toSet(),
+        ref: _ref,
+        workoutId: _workout.id,
+        currentExercises: _detail.exercises.map((b) => b.exercise.id).toSet(),
       ),
     );
     // Invalidate to refresh the workout detail if exercises were added
-    ref.invalidate(workoutDetailProvider(workout.id));
+    _ref.invalidate(workoutDetailProvider(_workout.id));
   }
 }
 
@@ -352,13 +460,16 @@ final class _RestStripState extends ConsumerState<_RestStrip> {
   }
 }
 
-final class _ExerciseBlockCard extends StatelessWidget {
+/// One exercise occupying a full vertical pager page: header plus a
+/// scrollable list of its sets. Only a single exercise is shown at a time —
+/// swipe up/down in the pager (or the ↑/↓ buttons) to move between them.
+final class _ExercisePage extends StatelessWidget {
   final ExerciseBlock block;
   final Workout workout;
   final AppLocalizations l10n;
   final WidgetRef ref;
 
-  const _ExerciseBlockCard({
+  const _ExercisePage({
     required this.block,
     required this.workout,
     required this.l10n,
@@ -367,47 +478,57 @@ final class _ExerciseBlockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ExpansionTile(
-        title: Text(block.exercise.exerciseName),
-        leading: const Icon(Icons.fitness_center),
-        subtitle: Text(l10n.workoutDetailSetCount(block.sets.length)),
-        initiallyExpanded: true,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    l10n.workoutDetailSetHeaderHash,
-                    textAlign: TextAlign.center,
-                  ),
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: SizedBox.expand(
+        child: Card(
+          margin: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.fitness_center, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            block.exercise.exerciseName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.workoutDetailSetCount(block.sets.length),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  flex: 5,
-                  child: Text(
-                    l10n.workoutDetailSetHeaderPlanned,
-                    textAlign: TextAlign.center,
-                  ),
+              ),
+              const Divider(height: 8),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  children: [
+                    for (final set in block.sets)
+                      _SetRow(set: set, workout: workout, l10n: l10n, ref: ref),
+                  ],
                 ),
-                Expanded(
-                  flex: 5,
-                  child: Text(
-                    l10n.workoutDetailSetHeaderActual,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const Divider(height: 8),
-          for (final set in block.sets)
-            _SetRow(set: set, workout: workout, l10n: l10n, ref: ref),
-          const SizedBox(height: 8),
-        ],
+        ),
       ),
     );
   }
@@ -448,86 +569,102 @@ final class _SetRow extends StatelessWidget {
       );
     }
 
-    final actual = set.actualReps != null
-        ? l10n.workoutDetailActualSetReps(
-            set.actualReps.toString(),
-            set.actualWeightKg == null
-                ? '?'
-                : formatDecimal(set.actualWeightKg!),
-          )
-        : set.actualWeightKg != null
-        ? l10n.workoutDetailActualSetWeight(formatDecimal(set.actualWeightKg!))
-        : set.durationMinutes != null && set.actualReps != null
-        ? l10n.workoutDetailActualSetDuration(set.actualReps.toString())
+    var actual = set.actualReps != null || set.actualWeightKg != null
+        ? (set.actualReps != null
+            ? l10n.workoutDetailActualSetReps(
+                set.actualReps.toString(),
+                set.actualWeightKg == null
+                    ? '?'
+                    : formatDecimal(set.actualWeightKg!),
+              )
+            : l10n.workoutDetailActualSetWeight(
+                formatDecimal(set.actualWeightKg!),
+              ))
+        : set.actualDurationMinutes != null || set.actualDistanceMeters != null
+        ? [
+            if (set.actualDurationMinutes != null)
+              l10n.workoutDetailActualSetDuration(
+                set.actualDurationMinutes.toString(),
+              ),
+            if (set.actualDistanceMeters != null)
+              l10n.workoutDetailActualSetDistance(
+                formatDecimal(set.actualDistanceMeters!),
+              ),
+          ].join(' · ')
         : l10n.workoutDetailActualSetEmpty;
+    // "Time done": the HH:mm the set's actuals were saved.
+    if (set.completedAt != null) {
+      actual = l10n.workoutDetailActualSetTime(
+        actual,
+        DateFormats.formatTime(
+          context,
+          TimeOfDay.fromDateTime(set.completedAt!),
+        ),
+      );
+    }
 
     return InkWell(
       onTap: isEditable ? () => _editActuals(context) : null,
+      borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(
-              flex: 2,
+            // Set number
+            SizedBox(
+              width: 28,
               child: Text(
                 '${set.setNumber}',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
+            // Planned
             Expanded(
               flex: 5,
               child: Text(
                 planned,
-                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: set.isCompleted
                       ? theme.colorScheme.onSurfaceVariant
                       : null,
-                  decoration: set.isCompleted
-                      ? TextDecoration.lineThrough
+                  decoration: set.isCompleted ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(
+                Icons.arrow_forward,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            // Actual
+            Expanded(
+              flex: 5,
+              child: Text(
+                actual,
+                style: TextStyle(
+                  fontWeight: set.isCompleted ? FontWeight.w600 : null,
+                  color: set.isCompleted
+                      ? theme.extension<FitFatColors>()!.success
                       : null,
                 ),
               ),
             ),
-            Expanded(
-              flex: 5,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    actual,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: set.isCompleted ? FontWeight.w600 : null,
-                      color: set.isCompleted
-                          ? theme.extension<FitFatColors>()!.success
-                          : null,
-                    ),
-                  ),
-                  // v7: completion time (HH:mm, locale-aware) stamped when
-                  // actuals were saved; shown only for completed sets.
-                  if (set.completedAt != null)
-                    Text(
-                      DateFormats.formatTime(
-                        context,
-                        TimeOfDay.fromDateTime(set.completedAt!),
-                      ),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (isEditable)
-              Tooltip(
-                message: l10n.commonEdit,
+            // Completed indicator (tap the row to edit — no pencil needed).
+            // The saved HH:mm is shown inline in the actual line above.
+            if (set.completedAt != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
                 child: Icon(
-                  Icons.edit,
-                  size: 16,
-                  color: theme.colorScheme.onSurfaceVariant,
+                  Icons.check_circle,
+                  size: 18,
+                  color: theme.extension<FitFatColors>()!.success,
                 ),
               ),
           ],
@@ -549,8 +686,8 @@ final class _SetRow extends StatelessWidget {
           setId: set.id,
           actualReps: result.reps,
           actualWeightKg: result.weightKg,
-          durationMinutes: result.durationMinutes,
-          distanceMeters: result.distanceMeters,
+          actualDurationMinutes: result.actualDurationMinutes,
+          actualDistanceMeters: result.actualDistanceMeters,
         );
     unawaited(Haptics.lightImpact());
     // T05: auto-start the rest timer with this set's planned rest, unless it
@@ -558,8 +695,8 @@ final class _SetRow extends StatelessWidget {
     final savedActuals =
         result.reps != null ||
         result.weightKg != null ||
-        result.durationMinutes != null ||
-        result.distanceMeters != null;
+        result.actualDurationMinutes != null ||
+        result.actualDistanceMeters != null;
     final detail = ref.read(workoutDetailProvider(workout.id)).value;
     final hasOtherIncomplete =
         detail != null &&
@@ -579,13 +716,13 @@ final class _SetRow extends StatelessWidget {
 final class _SetActuals {
   final int? reps;
   final double? weightKg;
-  final int? durationMinutes;
-  final double? distanceMeters;
+  final int? actualDurationMinutes;
+  final double? actualDistanceMeters;
   const _SetActuals({
     this.reps,
     this.weightKg,
-    this.durationMinutes,
-    this.distanceMeters,
+    this.actualDurationMinutes,
+    this.actualDistanceMeters,
   });
 }
 
@@ -615,12 +752,10 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
       text: (s.actualWeightKg ?? s.weightKg)?.toStringAsFixed(1) ?? '',
     );
     _durationCtrl = TextEditingController(
-      text:
-          (s.actualWeightKg != null ? s.durationMinutes : null)?.toString() ??
-          '',
+      text: s.actualDurationMinutes?.toString() ?? '',
     );
     _distanceCtrl = TextEditingController(
-      text: s.distanceMeters?.toStringAsFixed(0) ?? '',
+      text: s.actualDistanceMeters?.toStringAsFixed(0) ?? '',
     );
   }
 
@@ -692,8 +827,8 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
               _SetActuals(
                 reps: int.tryParse(_repsCtrl.text),
                 weightKg: double.tryParse(_weightCtrl.text),
-                durationMinutes: int.tryParse(_durationCtrl.text),
-                distanceMeters: double.tryParse(_distanceCtrl.text),
+                actualDurationMinutes: int.tryParse(_durationCtrl.text),
+                actualDistanceMeters: double.tryParse(_distanceCtrl.text),
               ),
             );
           },
@@ -1018,9 +1153,7 @@ final class _ActiveWorkoutExerciseSearchSheetState
     );
     if (context.mounted) {
       setState(() => _addedIds.add(exercise.id));
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('${exercise.name} added')));
+      showTopBanner(context, message: '${exercise.name} added');
     }
   }
 }
@@ -1079,7 +1212,6 @@ final class _FilterOptionsSheetState extends State<_FilterOptionsSheet> {
                     prefixIcon: const Icon(Icons.search),
                     hintText: l10n.exerciseFilterSearchOptions,
                     isDense: true,
-                    border: const OutlineInputBorder(),
                   ),
                   onChanged: (v) => setState(() => _search = v),
                 ),

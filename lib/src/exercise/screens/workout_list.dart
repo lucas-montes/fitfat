@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,6 +13,7 @@ import '../../ui/theme_extensions.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../providers/workouts.dart';
+import '../../dashboard/providers/dashboard.dart';
 import 'exercise_list.dart';
 import 'workout_detail.dart';
 import 'workout_form.dart';
@@ -139,14 +141,13 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
     Workout workout,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
     await ref
         .read(workoutRepositoryProvider)
         .copyWorkout(sourceWorkoutId: workout.id);
     ref.invalidate(workoutListProvider);
-    messenger.showSnackBar(
-      SnackBar(content: Text(l10n.workoutDuplicated(workout.name))),
-    );
+    if (context.mounted) {
+      showTopBanner(context, message: l10n.workoutDuplicated(workout.name));
+    }
   }
 
   Future<void> _deleteWorkout(
@@ -155,7 +156,6 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
     Workout workout,
   ) async {
     unawaited(Haptics.mediumImpact());
-    final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
     // Remove the tile synchronously so the Dismissible is gone from the tree
     // before the async delete + provider refresh finishes.
@@ -164,20 +164,19 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
         .read(workoutRepositoryProvider)
         .deleteWithSnapshot(workout.id);
     ref.invalidate(workoutListProvider);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.workoutDeleted(workout.name)),
-          action: SnackBarAction(
-            label: l10n.commonUndo,
-            onPressed: () async {
-              await ref.read(workoutRepositoryProvider).restore(snapshot);
-              ref.invalidate(workoutListProvider);
-            },
-          ),
-        ),
+    invalidateDashboard(ref);
+    if (context.mounted) {
+      showTopBanner(
+        context,
+        message: l10n.workoutDeleted(workout.name),
+        actionLabel: l10n.commonUndo,
+        onAction: () async {
+          await ref.read(workoutRepositoryProvider).restore(snapshot);
+          ref.invalidate(workoutListProvider);
+          invalidateDashboard(ref);
+        },
       );
+    }
   }
 }
 

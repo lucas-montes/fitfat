@@ -12,6 +12,35 @@ import '../../planner/repositories/planner_repository.dart';
 typedef TodayMacros = ({double protein, double carbs, double fat});
 
 // ---------------------------------------------------------------------------
+// Dashboard refresh signal
+// ---------------------------------------------------------------------------
+// The dashboard lives inside a `StatefulShellRoute.indexedStack`, so its widget
+// is kept alive and never rebuilds when the user switches tabs. Its data
+// providers are `FutureProvider`s that cache their result, so mutations made on
+// other tabs (planner, diet, workouts) would otherwise never be reflected.
+// Any code that changes data shown on the dashboard calls `invalidateDashboard`
+// (which bumps this counter); every dashboard data provider watches it and
+// therefore recomputes.
+
+final class DashboardRefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
+
+final dashboardRefreshProvider = NotifierProvider<
+  DashboardRefreshNotifier,
+  int
+>(DashboardRefreshNotifier.new);
+
+/// Forces every dashboard data provider to recompute on its next read. Call
+/// this after any mutation that affects dashboard content (planner tasks,
+/// meals, workouts, body metrics, ...).
+void invalidateDashboard(WidgetRef ref) =>
+    ref.read(dashboardRefreshProvider.notifier).bump();
+
+// ---------------------------------------------------------------------------
 // Repository providers (local to dashboard domain)
 // ---------------------------------------------------------------------------
 
@@ -32,6 +61,7 @@ final _plannerRepositoryProvider = Provider<PlannerRepository>((ref) {
 // ---------------------------------------------------------------------------
 
 final todayCaloriesProvider = FutureProvider<double>((ref) async {
+  ref.watch(dashboardRefreshProvider);
   final meals = await ref.watch(_mealRepositoryProvider).getAll();
   final now = DateTime.now();
   final todayStart = DateTime(now.year, now.month, now.day);
@@ -49,6 +79,7 @@ final todayCaloriesProvider = FutureProvider<double>((ref) async {
 // ---------------------------------------------------------------------------
 
 final todayMacrosProvider = FutureProvider<TodayMacros>((ref) async {
+  ref.watch(dashboardRefreshProvider);
   final meals = await ref.watch(_mealRepositoryProvider).getAll();
   final now = DateTime.now();
   final todayStart = DateTime(now.year, now.month, now.day);
@@ -76,6 +107,7 @@ final todayMacrosProvider = FutureProvider<TodayMacros>((ref) async {
 // ---------------------------------------------------------------------------
 
 final latestWorkoutProvider = FutureProvider<Workout?>((ref) async {
+  ref.watch(dashboardRefreshProvider);
   final workouts = await ref.watch(_workoutRepositoryProvider).getAll();
   final completed = workouts.where((w) => w.isCompleted).toList();
   if (completed.isEmpty) return null;
@@ -92,6 +124,7 @@ typedef WeeklyWorkoutStats = ({double totalVolumeKg, int totalMinutes});
 final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
   ref,
 ) async {
+  ref.watch(dashboardRefreshProvider);
   final workouts = await ref.watch(_workoutRepositoryProvider).getAll();
   final now = DateTime.now();
   final weekStart = DateTime(now.year, now.month, now.day - 6);
@@ -120,12 +153,15 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
 });
 
 // ---------------------------------------------------------------------------
-// Upcoming timed tasks (pending, due today or later, with a due time)
+// Upcoming timed tasks (pending, today or later, with a start time)
 // ---------------------------------------------------------------------------
 
 final upcomingTimedTasksProvider = FutureProvider<List<PlannerItem>>((
   ref,
 ) async {
+  ref.watch(dashboardRefreshProvider);
   final today = DateTime.now();
-  return ref.watch(_plannerRepositoryProvider).getUpcomingWithDueTime(today);
+  return ref
+      .watch(_plannerRepositoryProvider)
+      .getUpcomingWithStartTime(today);
 });

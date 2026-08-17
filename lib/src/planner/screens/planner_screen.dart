@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../dashboard/providers/dashboard.dart';
 import '../../exercise/screens/workout_detail.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../models/planner_item.dart';
@@ -25,12 +27,15 @@ final class PlannerScreen extends ConsumerStatefulWidget {
   ConsumerState<PlannerScreen> createState() => _PlannerScreenState();
 }
 
+enum _PlannerViewMode { day, month }
+
 final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   /// Fixed anchor for the infinite day pager; all real days are after it.
   static final DateTime _anchorDate = DateTime(2000);
 
   late DateTime _selectedDay;
   late final PageController _pageController;
+  _PlannerViewMode _viewMode = _PlannerViewMode.day;
 
   @override
   void initState() {
@@ -75,6 +80,19 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
 
   void _goToday() => _animateToDay(_startOfDay(DateTime.now()));
 
+  void _toggleViewMode() {
+    setState(() {
+      _viewMode = _viewMode == _PlannerViewMode.day
+          ? _PlannerViewMode.month
+          : _PlannerViewMode.day;
+    });
+    // When returning to the day pager, snap it to the selected day so the
+    // two views stay in sync.
+    if (_viewMode == _PlannerViewMode.day) {
+      _pageController.jumpToPage(_dayIndex(_selectedDay));
+    }
+  }
+
   /// Schedules reminders for [item] (no-op when the app-wide toggle is off or
   /// the item is untimed/past-due). Called after any mutation that creates or
   /// re-times a task.
@@ -84,7 +102,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final scheduler = ref.read(taskReminderSchedulerProvider);
     // Prompt for the notification permission only when the task actually gets
     // a reminder (user-initiated flow), never on bulk startup reschedules.
-    if (item.dueDate != null && item.dueTimeMinutes != null) {
+    if (item.startTimeMinutes != null) {
       await scheduler.requestPermissions();
     }
     await scheduler.scheduleForItem(
@@ -119,44 +137,85 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         title: Text(l10n.plannerAppBar),
         actions: [
           IconButton(
+            icon: Icon(
+              _viewMode == _PlannerViewMode.day
+                  ? Icons.calendar_month
+                  : Icons.view_agenda,
+            ),
+            tooltip: _viewMode == _PlannerViewMode.day
+                ? l10n.plannerViewMonth
+                : l10n.plannerViewDay,
+            onPressed: _toggleViewMode,
+          ),
+          IconButton(
             icon: const Icon(Icons.copy_all),
             tooltip: l10n.plannerCopyPrevious,
             onPressed: _copyFromPreviousDay,
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _DayNavHeader(
-            selectedDay: _selectedDay,
-            isToday: _isToday,
-            onPrevious: _previousDay,
-            onNext: _nextDay,
-            onToday: _goToday,
-          ),
-          const Divider(height: 1),
-          Expanded(
-            // Infinite horizontal pager: page index = whole-day offset from
-            // `_anchorDate`. Each `_DayPage` watches its own day's items so
-            // adjacent days load independently of the selected day.
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) => setState(() {
-                _selectedDay = _dayFromIndex(index);
-              }),
-              itemBuilder: (context, index) => _DayPage(
-                day: _dayFromIndex(index),
-                l10n: l10n,
-                onAddItem: _addItem,
-                onToggleDone: _toggleDone,
-                onEdit: _editItem,
-                onDelete: _deleteItem,
-                onOpenWorkout: _openWorkout,
-              ),
+      body: _viewMode == _PlannerViewMode.day
+          ? Column(
+              children: [
+                _DayNavHeader(
+                  selectedDay: _selectedDay,
+                  isToday: _isToday,
+                  onPrevious: _previousDay,
+                  onNext: _nextDay,
+                  onToday: _goToday,
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  // Infinite horizontal pager: page index = whole-day offset from
+                  // `_anchorDate`. Each `_DayPage` watches its own day's items so
+                  // adjacent days load independently of the selected day.
+                  // Swiping the body is disabled so a horizontal drag on a task
+                  // card triggers its swipe-to-delete instead of changing the day;
+                  // day changes happen from the header (buttons + swipe gesture).
+                  child: PageView.builder(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (index) => setState(() {
+                      _selectedDay = _dayFromIndex(index);
+                    }),
+                    itemBuilder: (context, index) => _DayPage(
+                      day: _dayFromIndex(index),
+                      l10n: l10n,
+                      onAddItem: _addItem,
+                      onToggleDone: _toggleDone,
+                      onEdit: _editItem,
+                      onDelete: _deleteItem,
+                      onOpenWorkout: _openWorkout,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              children: [
+                CalendarDatePicker(
+                  key: ValueKey(_selectedDay),
+                  initialDate: _selectedDay,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2035),
+                  currentDate: _startOfDay(DateTime.now()),
+                  onDateChanged: (day) =>
+                      setState(() => _selectedDay = _startOfDay(day)),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: _DayPage(
+                    day: _selectedDay,
+                    l10n: l10n,
+                    onAddItem: _addItem,
+                    onToggleDone: _toggleDone,
+                    onEdit: _editItem,
+                    onDelete: _deleteItem,
+                    onOpenWorkout: _openWorkout,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addItem,
         child: const Icon(Icons.add),
@@ -172,8 +231,16 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       initialDueDate: _selectedDay,
     );
     if (result == null || !mounted) return;
-    final (title, dueDate, dueTimeMinutes, notes, workoutId, tags, recurrence) =
-        result;
+    final (
+      title,
+      dueDate,
+      startTimeMinutes,
+      endTimeMinutes,
+      notes,
+      workoutId,
+      tags,
+      recurrence,
+    ) = result;
     final repo = ref.read(plannerRepositoryProvider);
     final current =
         ref.read(plannerItemsProvider(_selectedDay)).value ??
@@ -189,7 +256,8 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       title: title,
       sortOrder: nextSortOrder,
       dueDate: dueDate,
-      dueTimeMinutes: dueTimeMinutes,
+      startTimeMinutes: startTimeMinutes,
+      endTimeMinutes: endTimeMinutes,
       notes: notes,
       workoutId: workoutId,
       tags: tags,
@@ -197,13 +265,24 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     );
     await repo.insert(item);
     // A recurring task stores one anchor (seriesId == its own id) that
-    // generates the rest; seed future occurrences so they appear immediately.
+    // generates the rest.
     if (recurrence != null) {
       await repo.update(item.copyWith(seriesId: item.id));
-      await repo.materializeUpTo(_selectedDay.add(const Duration(days: 90)));
     }
     await _syncReminder(item);
     ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
+    // Best-effort eager materialization of future occurrences; the per-day
+    // provider also materializes lazily on view, so a failure here can't block
+    // the UI (this is what previously made new recurring tasks "appear only
+    // after a restart").
+    if (recurrence != null) {
+      unawaited(
+        repo
+            .materializeUpTo(_selectedDay.add(const Duration(days: 90)))
+            .catchError((_) {}),
+      );
+    }
   }
 
   Future<void> _editItem(PlannerItem item) async {
@@ -213,14 +292,23 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       dialogTitle: l10n.plannerEditTask,
       initialTitle: item.title,
       initialDueDate: item.dueDate,
-      initialDueTimeMinutes: item.dueTimeMinutes,
+      initialStartTimeMinutes: item.startTimeMinutes,
+      initialEndTimeMinutes: item.endTimeMinutes,
       initialNotes: item.notes,
       initialWorkoutId: item.workoutId,
       initialTags: item.tags,
     );
     if (result == null || !mounted) return;
-    final (title, dueDate, dueTimeMinutes, notes, workoutId, tags, recurrence) =
-        result;
+    final (
+      title,
+      dueDate,
+      startTimeMinutes,
+      endTimeMinutes,
+      notes,
+      workoutId,
+      tags,
+      recurrence,
+    ) = result;
     final repo = ref.read(plannerRepositoryProvider);
     final wasAnchor = item.recurrence != null;
     final isAnchor = recurrence != null;
@@ -233,7 +321,8 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final updated = item.copyWith(
       title: title,
       dueDate: dueDate,
-      dueTimeMinutes: dueTimeMinutes,
+      startTimeMinutes: startTimeMinutes,
+      endTimeMinutes: endTimeMinutes,
       notes: notes,
       workoutId: workoutId,
       tags: tags,
@@ -241,17 +330,23 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       seriesId: seriesId,
     );
     await repo.update(updated);
-    // Editing the anchor re-generates future occurrences from the (possibly
-    // changed) rule; the anchor's past/own row is untouched.
-    if (isAnchor) {
-      await repo.deleteFutureOccurrences(seriesId!, DateTime.now());
-      await repo.materializeUpTo(_selectedDay.add(const Duration(days: 90)));
-    }
     // Cancel first so a removed/cleared due time also drops the old reminders;
     // scheduling replaces in place when the time still exists.
     await _cancelReminder(item.id);
     await _syncReminder(updated);
     ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
+    // Editing the anchor re-generates future occurrences from the (possibly
+    // changed) rule; the anchor's past/own row is untouched. Best-effort:
+    // the per-day provider also materializes lazily on view.
+    if (isAnchor) {
+      await repo.deleteFutureOccurrences(seriesId!, DateTime.now());
+      unawaited(
+        repo
+            .materializeUpTo(updated.day.add(const Duration(days: 90)))
+            .catchError((_) {}),
+      );
+    }
   }
 
   /// Opens the workout linked to a planner item (fitness badge on a tile).
@@ -264,11 +359,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         .getWithDetails(id);
     if (!mounted) return;
     if (details == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.plannerLinkedWorkout),
-        ),
-      );
+      showTopBanner(context, message: AppLocalizations.of(context)!.plannerLinkedWorkout);
       return;
     }
     final workout = details.workout;
@@ -284,6 +375,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       );
     }
     ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
   }
 
   Future<void> _toggleDone(PlannerItem item) async {
@@ -297,44 +389,77 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       await _syncReminder(updated);
     }
     ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
   }
 
   Future<void> _deleteItem(PlannerItem item) async {
     unawaited(Haptics.mediumImpact());
-    final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context)!;
-    await ref.read(plannerRepositoryProvider).delete(item.id);
-    await _cancelReminder(item.id);
-    ref.invalidate(plannerItemsProvider(_selectedDay));
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.plannerDeleted(item.title)),
-          action: SnackBarAction(
-            label: l10n.commonUndo,
-            onPressed: () async {
-              await ref.read(plannerRepositoryProvider).restore(item);
-              await _syncReminder(item);
-              ref.invalidate(plannerItemsProvider(_selectedDay));
-            },
-          ),
-        ),
+    final repo = ref.read(plannerRepositoryProvider);
+    final overlay = Overlay.of(context);
+    final wasAnchor = item.seriesId == item.id;
+
+    if (wasAnchor && item.seriesId != null) {
+      // Deleting the anchor removes the whole series (anchor + occurrences).
+      final occurrences = await repo.getBySeriesId(item.seriesId!);
+      for (final it in occurrences) {
+        await _cancelReminder(it.id);
+      }
+      await repo.deleteSeries(item.seriesId!);
+    } else if (item.seriesId != null) {
+      // Deleting one generated occurrence: drop it and exclude its day on the
+      // anchor so the materializer does not regenerate it.
+      await _cancelReminder(item.id);
+      await repo.deleteOccurrence(
+        id: item.id,
+        seriesId: item.seriesId!,
+        day: item.day,
       );
+    } else {
+      await _cancelReminder(item.id);
+      await repo.delete(item.id);
+    }
+    ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
+    showTopBannerOverlay(
+      overlay,
+      message: l10n.plannerDeleted(item.title),
+      actionLabel: l10n.commonUndo,
+      onAction: () async {
+              if (wasAnchor && item.seriesId != null) {
+                await repo.restore(item);
+                await repo.materializeUpTo(
+                  item.day.add(const Duration(days: 90)),
+                );
+                final restored = await repo.getBySeriesId(item.seriesId!);
+                for (final it in restored) {
+                  await _syncReminder(it);
+                }
+              } else if (item.seriesId != null) {
+                await repo.restore(item);
+                await repo.removeExclusion(item.seriesId!, item.day);
+                await _syncReminder(item);
+              } else {
+                await repo.restore(item);
+                await _syncReminder(item);
+              }
+              ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
+            },
+    );
   }
 
   Future<void> _copyFromPreviousDay() async {
     final l10n = AppLocalizations.of(context)!;
     final repo = ref.read(plannerRepositoryProvider);
+    final overlay = Overlay.of(context);
     final yesterday = _selectedDay.subtract(const Duration(days: 1));
     final previousItems = await repo.getByDay(yesterday);
     final pendingCount = previousItems.where((e) => !e.done).length;
     if (!mounted) return;
 
     if (pendingCount == 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.plannerCopyNothing)));
+      showTopBanner(context, message: l10n.plannerCopyNothing);
       return;
     }
 
@@ -363,14 +488,12 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     // carried a due time (past-due ones are skipped by the scheduler).
     final copiedItems = await repo.getByDay(_selectedDay);
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
     for (final it in copiedItems) {
       await _syncReminder(it);
     }
-    messenger.showSnackBar(
-      SnackBar(content: Text(l10n.plannerCopyDone(copied))),
-    );
+    showTopBannerOverlay(overlay, message: l10n.plannerCopyDone(copied));
     ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
   }
 }
 
@@ -417,17 +540,17 @@ final class _DayPage extends ConsumerWidget {
           );
         }
 
-        // Untimed tasks pin to the top "Anytime" group; timed tasks flow down
-        // the timeline in due-time order.
+        // Untimed tasks (no start time) pin to the top "Anytime" group; timed
+        // tasks flow down the timeline in start-time order.
         final untimed = <PlannerItem>[
           for (final it in items)
-            if (it.dueTimeMinutes == null) it,
+            if (it.startTimeMinutes == null) it,
         ];
         final timed = <PlannerItem>[
           for (final it in items)
-            if (it.dueTimeMinutes != null) it,
+            if (it.startTimeMinutes != null) it,
         ];
-        timed.sort((a, b) => a.dueTimeMinutes!.compareTo(b.dueTimeMinutes!));
+        timed.sort((a, b) => a.startTimeMinutes!.compareTo(b.startTimeMinutes!));
 
         final children = <Widget>[];
         if (untimed.isNotEmpty) {
@@ -475,12 +598,21 @@ final class _DayPage extends ConsumerWidget {
             ),
           );
           for (final timedItem in timed) {
-            final timeText = MaterialLocalizations.of(context).formatTimeOfDay(
+            final fmt = MaterialLocalizations.of(context).formatTimeOfDay;
+            final startText = fmt(
               TimeOfDay(
-                hour: timedItem.dueTimeMinutes! ~/ 60,
-                minute: timedItem.dueTimeMinutes! % 60,
+                hour: timedItem.startTimeMinutes! ~/ 60,
+                minute: timedItem.startTimeMinutes! % 60,
               ),
             );
+            final timeText = timedItem.endTimeMinutes == null
+                ? startText
+                : '$startText – ${fmt(
+                    TimeOfDay(
+                      hour: timedItem.endTimeMinutes! ~/ 60,
+                      minute: timedItem.endTimeMinutes! % 60,
+                    ),
+                  )}';
             children.add(
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -526,33 +658,46 @@ final class _DayNavHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final materialL10n = MaterialLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            tooltip: l10n.plannerPreviousDay,
-            onPressed: onPrevious,
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                materialL10n.formatMediumDate(selectedDay),
-                style: Theme.of(context).textTheme.titleMedium,
+    // Swiping horizontally on the header changes the day (right = previous,
+    // left = next) without affecting the task list body below.
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity;
+        if (velocity == null) return;
+        if (velocity < 0) {
+          onNext();
+        } else if (velocity > 0) {
+          onPrevious();
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              tooltip: l10n.plannerPreviousDay,
+              onPressed: onPrevious,
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  materialL10n.formatMediumDate(selectedDay),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            tooltip: l10n.plannerNextDay,
-            onPressed: onNext,
-          ),
-          TextButton(
-            onPressed: isToday ? null : onToday,
-            child: Text(l10n.plannerToday),
-          ),
-        ],
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              tooltip: l10n.plannerNextDay,
+              onPressed: onNext,
+            ),
+            TextButton(
+              onPressed: isToday ? null : onToday,
+              child: Text(l10n.plannerToday),
+            ),
+          ],
+        ),
       ),
     );
   }

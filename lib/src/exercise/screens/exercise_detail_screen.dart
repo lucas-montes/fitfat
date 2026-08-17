@@ -737,8 +737,8 @@ final class _HistoryMetrics {
           bestWeight = set.effectiveWeightKg;
         }
         if (set.totalVolume > bestVolume) bestVolume = set.totalVolume;
-        if ((set.durationMinutes ?? 0) > bestDuration) {
-          bestDuration = set.durationMinutes!;
+        if (set.effectiveDurationMinutes > bestDuration) {
+          bestDuration = set.effectiveDurationMinutes;
         }
       }
     }
@@ -752,7 +752,7 @@ final class _HistoryMetrics {
       var duration = 0;
       for (final set in entry.sets) {
         volume += set.totalVolume;
-        duration += set.durationMinutes ?? 0;
+        duration += set.effectiveDurationMinutes;
       }
       ordered.add((
         entry.workout.date,
@@ -996,7 +996,7 @@ final class _WorkoutHistoryCard extends StatelessWidget {
     var duration = 0;
     for (final set in sets) {
       volume += set.totalVolume;
-      duration += set.durationMinutes ?? 0;
+      duration += set.effectiveDurationMinutes;
     }
     final completed = sets.where((s) => s.isCompleted).length;
 
@@ -1065,7 +1065,10 @@ final class _WorkoutHistoryCard extends StatelessWidget {
                 _InlineMetric(
                   label: l10n.workoutSummaryTotalDistance,
                   value: formatDecimal(
-                    sets.fold(0.0, (sum, s) => sum + (s.distanceMeters ?? 0)),
+                    sets.fold(
+                      0.0,
+                      (sum, s) => sum + s.effectiveDistanceMeters,
+                    ),
                   ),
                 ),
                 _InlineMetric(

@@ -9,8 +9,7 @@ void main() {
     final now = DateTime(2026, 8, 11, 10, 0);
 
     PlannerItem item({
-      DateTime? dueDate,
-      int? dueTimeMinutes,
+      int? startTimeMinutes,
       bool done = false,
     }) => PlannerItem(
       id: 'task-1',
@@ -18,14 +17,13 @@ void main() {
       title: 'Morning run',
       done: done,
       sortOrder: 0,
-      dueDate: dueDate,
-      dueTimeMinutes: dueTimeMinutes,
+      startTimeMinutes: startTimeMinutes,
       createdAt: DateTime(2026, 8, 10, 8, 0),
     );
 
-    test('schedules due + 30-min pre-reminder for a future timed task', () {
+    test('schedules start + 30-min pre-reminder for a future timed task', () {
       final times = plannerReminderTimes(
-        item(dueDate: DateTime(2026, 8, 11), dueTimeMinutes: 15 * 60),
+        item(startTimeMinutes: 15 * 60),
         now: now,
       );
       expect(times, hasLength(2));
@@ -33,25 +31,14 @@ void main() {
       expect(times.first, DateTime(2026, 8, 11, 14, 30));
     });
 
-    test('returns empty when there is no due date or due time', () {
-      expect(
-        plannerReminderTimes(item(dueDate: DateTime(2026, 8, 11)), now: now),
-        isEmpty,
-      );
-      expect(
-        plannerReminderTimes(item(dueTimeMinutes: 15 * 60), now: now),
-        isEmpty,
-      );
+    test('returns empty when there is no start time', () {
+      expect(plannerReminderTimes(item(), now: now), isEmpty);
     });
 
     test('never schedules for a done task', () {
       expect(
         plannerReminderTimes(
-          item(
-            dueDate: DateTime(2026, 8, 11),
-            dueTimeMinutes: 15 * 60,
-            done: true,
-          ),
+          item(startTimeMinutes: 15 * 60, done: true),
           now: now,
         ),
         isEmpty,
@@ -60,17 +47,14 @@ void main() {
 
     test('never schedules a past-due task', () {
       expect(
-        plannerReminderTimes(
-          item(dueDate: DateTime(2026, 8, 11), dueTimeMinutes: 9 * 60),
-          now: now,
-        ),
+        plannerReminderTimes(item(startTimeMinutes: 9 * 60), now: now),
         isEmpty,
       );
     });
 
-    test('schedules only the due time when the pre-reminder would be past', () {
+    test('schedules only the start time when the pre-reminder would be past', () {
       final times = plannerReminderTimes(
-        item(dueDate: DateTime(2026, 8, 11), dueTimeMinutes: 10 * 60 + 15),
+        item(startTimeMinutes: 10 * 60 + 15),
         now: now,
       );
       expect(times, hasLength(1));

@@ -16,11 +16,20 @@ final class ExerciseSet {
   /// period for this set is started and finished/cancelled.
   final int? actualRestSeconds;
 
-  /// Time the set's actuals were saved (schema v7). Stamped whenever set
+  /// Time the set's actuals were saved (schema v7), stamped whenever set
   /// actuals are recorded; null for planned-only sets.
   final DateTime? completedAt;
+
+  /// Planned cardio duration/distance (schema v5). Kept as planned values;
+  /// logged cardio actuals are stored in [actualDurationMinutes] /
+  /// [actualDistanceMeters] so planned vs done stay distinguishable.
   final int? durationMinutes;
   final double? distanceMeters;
+
+  /// Logged cardio duration/distance (schema v16). Null until the set's
+  /// actuals are saved. A cardio set with these set is completed.
+  final int? actualDurationMinutes;
+  final double? actualDistanceMeters;
   final String? notes;
 
   const ExerciseSet({
@@ -36,24 +45,24 @@ final class ExerciseSet {
     this.completedAt,
     this.durationMinutes,
     this.distanceMeters,
+    this.actualDurationMinutes,
+    this.actualDistanceMeters,
     this.notes,
   });
 
-  int get effectiveReps => actualReps ?? reps ?? 0;
-  double get effectiveWeightKg => actualWeightKg ?? weightKg ?? 0;
-  int get effectiveDurationMinutes =>
-      actualDurationMinutes ?? durationMinutes ?? 0;
-
-  int? get actualDurationMinutes {
-    // For weightlifting sets, duration is not logged via actuals.
-    // For cardio, the actual duration is stored in actualReps as minutes.
-    // This simplifies the model: cardio uses actualReps for duration.
-    return null;
-  }
+  /// Actual values only. A set without logged actuals contributes 0, never its
+  /// planned values — unlogged sets count as "not done at all".
+  int get effectiveReps => actualReps ?? 0;
+  double get effectiveWeightKg => actualWeightKg ?? 0;
+  int get effectiveDurationMinutes => actualDurationMinutes ?? 0;
+  double get effectiveDistanceMeters => actualDistanceMeters ?? 0;
 
   double get totalVolume => effectiveReps * effectiveWeightKg;
 
-  bool get isCompleted => actualReps != null || actualDurationMinutes != null;
+  bool get isCompleted =>
+      actualReps != null ||
+      actualDurationMinutes != null ||
+      actualDistanceMeters != null;
 
   int? get repsDelta =>
       (actualReps != null && reps != null) ? actualReps! - reps! : null;

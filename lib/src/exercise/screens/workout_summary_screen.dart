@@ -273,7 +273,8 @@ final class _MetricRow extends StatelessWidget {
 }
 
 /// Per-exercise summary metrics computed from the logged sets. All values are
-/// derived from real data (effective = actual when saved, else planned).
+/// derived from actual data only: a set with no logged actuals contributes 0
+/// (it was not done at all), never its planned values.
 final class _ExerciseMetrics {
   /// Mean rest in seconds: recorded actual rest, falling back to the planned
   /// rest for sets where no actual rest was recorded. Null when the exercise
@@ -315,11 +316,10 @@ final class _ExerciseMetrics {
         maxWeightKg = set.effectiveWeightKg;
       }
       totalReps += set.effectiveReps;
-      // Cardio actuals overwrite the duration/distance columns on save, so the
-      // columns already hold the effective values (actual if saved, else
-      // planned) to sum directly.
-      totalDurationMinutes += set.durationMinutes ?? 0;
-      totalDistanceMeters += set.distanceMeters ?? 0;
+      // Cardio actuals are stored in dedicated actual columns; summing the
+      // effective (actual-only) values means unlogged sets contribute 0.
+      totalDurationMinutes += set.effectiveDurationMinutes;
+      totalDistanceMeters += set.effectiveDistanceMeters;
     }
 
     return _ExerciseMetrics(

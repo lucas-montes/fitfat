@@ -118,7 +118,6 @@ final class _ExercisePickerContentState
                   prefixIcon: const Icon(Icons.search),
                   hintText: l10n.workoutFormSearchHint,
                   isDense: true,
-                  border: const OutlineInputBorder(),
                 ),
                 onChanged: _onSearchChanged,
               ),

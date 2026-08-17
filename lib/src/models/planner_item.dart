@@ -8,9 +8,11 @@ final class PlannerItem {
   final bool done;
   final int sortOrder;
   final DateTime?
-  dueDate; // optional due date; data + display only (no reminders)
+  dueDate; // optional separate due date; data + display only (no reminders)
   final int?
-  dueTimeMinutes; // optional due time-of-day (schema v8), minutes since midnight
+  startTimeMinutes; // optional start time-of-day (schema v15), minutes since midnight
+  final int?
+  endTimeMinutes; // optional end time-of-day (schema v15); null = open-ended
   final String? notes; // optional free-text note
   final String? workoutId; // optional linked workout (schema v11)
   final List<String>? tags; // optional free-form labels (schema v12)
@@ -25,7 +27,8 @@ final class PlannerItem {
     required this.done,
     required this.sortOrder,
     this.dueDate,
-    this.dueTimeMinutes,
+    this.startTimeMinutes,
+    this.endTimeMinutes,
     this.notes,
     this.workoutId,
     this.tags,
@@ -44,7 +47,8 @@ final class PlannerItem {
     bool? done,
     int? sortOrder,
     Object? dueDate = _unset,
-    Object? dueTimeMinutes = _unset,
+    Object? startTimeMinutes = _unset,
+    Object? endTimeMinutes = _unset,
     Object? notes = _unset,
     Object? workoutId = _unset,
     Object? tags = _unset,
@@ -58,9 +62,12 @@ final class PlannerItem {
     done: done ?? this.done,
     sortOrder: sortOrder ?? this.sortOrder,
     dueDate: identical(dueDate, _unset) ? this.dueDate : dueDate as DateTime?,
-    dueTimeMinutes: identical(dueTimeMinutes, _unset)
-        ? this.dueTimeMinutes
-        : dueTimeMinutes as int?,
+    startTimeMinutes: identical(startTimeMinutes, _unset)
+        ? this.startTimeMinutes
+        : startTimeMinutes as int?,
+    endTimeMinutes: identical(endTimeMinutes, _unset)
+        ? this.endTimeMinutes
+        : endTimeMinutes as int?,
     notes: identical(notes, _unset) ? this.notes : notes as String?,
     workoutId: identical(workoutId, _unset)
         ? this.workoutId

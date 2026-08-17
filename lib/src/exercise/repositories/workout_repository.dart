@@ -248,10 +248,17 @@ final class WorkoutRepository {
     required String setId,
     int? actualReps,
     double? actualWeightKg,
-    int? durationMinutes,
-    double? distanceMeters,
+    int? actualDurationMinutes,
+    double? actualDistanceMeters,
     String? notes,
   }) async {
+    // Cardio actuals map to the dedicated actual columns; the planned
+    // duration/distance columns are kept intact.
+    final hasActual =
+        actualReps != null ||
+        actualWeightKg != null ||
+        actualDurationMinutes != null ||
+        actualDistanceMeters != null;
     await (_database.update(
       _database.exerciseSets,
     )..where((t) => t.id.equals(setId))).write(
@@ -262,13 +269,16 @@ final class WorkoutRepository {
         actualWeightKg: actualWeightKg != null
             ? Value(actualWeightKg)
             : const Value.absent(),
-        durationMinutes: durationMinutes != null
-            ? Value(durationMinutes)
+        actualDurationMinutes: actualDurationMinutes != null
+            ? Value(actualDurationMinutes)
             : const Value.absent(),
-        distanceMeters: distanceMeters != null
-            ? Value(distanceMeters)
+        actualDistanceMeters: actualDistanceMeters != null
+            ? Value(actualDistanceMeters)
             : const Value.absent(),
         notes: notes != null ? Value(notes) : const Value.absent(),
+        completedAt: hasActual
+            ? Value(DateTime.now().millisecondsSinceEpoch)
+            : const Value.absent(),
       ),
     );
   }
@@ -331,6 +341,8 @@ final class WorkoutRepository {
         : null,
     durationMinutes: s.durationMinutes,
     distanceMeters: s.distanceMeters,
+    actualDurationMinutes: s.actualDurationMinutes,
+    actualDistanceMeters: s.actualDistanceMeters,
     notes: s.notes,
   );
 
@@ -461,6 +473,8 @@ final class WorkoutRepository {
                 completedAt: Value(s.completedAt),
                 durationMinutes: Value(s.durationMinutes),
                 distanceMeters: Value(s.distanceMeters),
+                actualDurationMinutes: Value(s.actualDurationMinutes),
+                actualDistanceMeters: Value(s.actualDistanceMeters),
                 notes: Value(s.notes),
               ),
             );

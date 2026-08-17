@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -9,6 +10,7 @@ import '../../models/meal_ingredient.dart';
 import '../../ui/date_formats.dart';
 import '../providers/ingredients.dart';
 import '../providers/meals.dart';
+import '../../dashboard/providers/dashboard.dart';
 import '../repositories/meal_repository.dart';
 
 final class MealFormScreen extends ConsumerStatefulWidget {
@@ -134,7 +136,6 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
                         prefixIcon: const Icon(Icons.search),
                         hintText: l10n.commonSearch,
                         isDense: true,
-                        border: const OutlineInputBorder(),
                       ),
                       onChanged: (v) => setState(() => _filter = v),
                     ),
@@ -204,9 +205,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
 
     final selected = _grams.entries.where((e) => e.value > 0).toList();
     if (selected.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.mealFormAddIngredient)));
+      showTopBanner(context, message: l10n.mealFormAddIngredient);
       return;
     }
 
@@ -235,18 +234,15 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
         final items = selected.map((e) => _buildItem(e.key, e.value)).toList();
         await repo.insert(newMeal(name: name, eatenAt: _eatenAt, items: items));
       }
+      invalidateDashboard(ref);
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.commonSaved)));
+      showTopBanner(context, message: l10n.commonSaved);
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.errorWithMessage('$e'))));
+      showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

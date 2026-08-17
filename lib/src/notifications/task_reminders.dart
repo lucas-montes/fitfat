@@ -44,19 +44,20 @@ int _stableHash(String value) {
 }
 
 /// The absolute local wall-clock instants at which reminders for [item]
-/// should fire — `[pre-reminder, due-time]` when both are in the future,
-/// `[due-time]` when only the due time is (the 30-min pre-reminder would fall
-/// in the past), or empty when the task is done, has no due date/time, or is
-/// already past due (past-due tasks never schedule).
+/// should fire — `[pre-reminder, start-time]` when both are in the future,
+/// `[start-time]` when only the start time is (the 30-min pre-reminder would
+/// fall in the past), or empty when the task is done, has no start time, or is
+/// already past due (past-due tasks never schedule). The reminder anchors to
+/// the task's own day plus its start time-of-day.
 List<DateTime> plannerReminderTimes(PlannerItem item, {DateTime? now}) {
-  final due = item.dueDate;
-  final minutes = item.dueTimeMinutes;
-  if (due == null || minutes == null || item.done) return const [];
+  final minutes = item.startTimeMinutes;
+  if (minutes == null || item.done) return const [];
 
+  final day = item.day;
   final dueAt = DateTime(
-    due.year,
-    due.month,
-    due.day,
+    day.year,
+    day.month,
+    day.day,
     minutes ~/ 60,
     minutes % 60,
   );
@@ -193,7 +194,7 @@ final class TaskReminderScheduler {
     required String dueNowText,
   }) async {
     await cancelAll();
-    final items = await repository.getUpcomingWithDueTime(DateTime.now());
+    final items = await repository.getUpcomingWithStartTime(DateTime.now());
     for (final item in items) {
       await scheduleForItem(
         item,

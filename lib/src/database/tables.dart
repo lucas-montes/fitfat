@@ -121,6 +121,10 @@ class ExerciseSets extends Table {
   IntColumn? get completedAt => integer().nullable()();
   IntColumn? get durationMinutes => integer().nullable()();
   RealColumn? get distanceMeters => real().nullable()();
+  // Logged cardio actuals (v16). Kept separate from the planned
+  // duration/distance columns so unlogged sets stay "not done".
+  IntColumn? get actualDurationMinutes => integer().nullable()();
+  RealColumn? get actualDistanceMeters => real().nullable()();
   TextColumn? get notes => text().nullable()();
 
   @override
@@ -140,7 +144,12 @@ class PlannerItems extends Table {
   IntColumn? get dueDate =>
       integer().nullable()(); // optional due date, epoch milliseconds
   // Optional due time-of-day (v8), minutes since midnight. Null = no time.
+  // Retained for already-stored data; new tasks use start/end time below.
   IntColumn? get dueTimeMinutes => integer().nullable()();
+  // Optional start time-of-day (v15), minutes since midnight. Null = no time.
+  IntColumn? get startTimeMinutes => integer().nullable()();
+  // Optional end time-of-day (v15), minutes since midnight. Null = open-ended.
+  IntColumn? get endTimeMinutes => integer().nullable()();
   // Optional free-text note (v6).
   TextColumn? get notes => text().nullable()();
   // Optional linked workout (v11).

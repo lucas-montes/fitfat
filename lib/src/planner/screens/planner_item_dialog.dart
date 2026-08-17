@@ -7,17 +7,17 @@ import '../../models/planner_recurrence.dart';
 import '../providers/planner.dart';
 
 /// Shows a bottom-sheet to enter (or edit) a planner task title, optional due
-/// date, optional due time (only meaningful with a due date), optional note,
-/// optional linked workout, optional free-form tags, and an optional repeat
-/// rule. Returns a
-/// `(title, dueDate, dueTimeMinutes, notes, workoutId, tags, recurrence)`
-/// record, or `null` if cancelled. The trimmed title is guaranteed non-empty;
-/// an empty note or empty tag list becomes null; the due time is minutes since
-/// midnight.
+/// date, optional start time and optional end time (both minutes since
+/// midnight, on the task's day), optional note, optional linked workout,
+/// optional free-form tags, and an optional repeat rule. Returns a
+/// `(title, dueDate, startTimeMinutes, endTimeMinutes, notes, workoutId, tags,
+/// recurrence)` record, or `null` if cancelled. The trimmed title is guaranteed
+/// non-empty; an empty note or empty tag list becomes null.
 Future<
   (
     String,
     DateTime?,
+    int?,
     int?,
     String?,
     String?,
@@ -30,7 +30,8 @@ showPlannerItemDialog(
   required String dialogTitle,
   String? initialTitle,
   DateTime? initialDueDate,
-  int? initialDueTimeMinutes,
+  int? initialStartTimeMinutes,
+  int? initialEndTimeMinutes,
   String? initialNotes,
   String? initialWorkoutId,
   List<String>? initialTags,
@@ -40,6 +41,7 @@ showPlannerItemDialog(
     (
       String,
       DateTime?,
+      int?,
       int?,
       String?,
       String?,
@@ -54,7 +56,8 @@ showPlannerItemDialog(
       dialogTitle: dialogTitle,
       initialTitle: initialTitle,
       initialDueDate: initialDueDate,
-      initialDueTimeMinutes: initialDueTimeMinutes,
+      initialStartTimeMinutes: initialStartTimeMinutes,
+      initialEndTimeMinutes: initialEndTimeMinutes,
       initialNotes: initialNotes,
       initialWorkoutId: initialWorkoutId,
       initialTags: initialTags,
@@ -69,7 +72,8 @@ final class _PlannerItemSheet extends ConsumerStatefulWidget {
   final String dialogTitle;
   final String? initialTitle;
   final DateTime? initialDueDate;
-  final int? initialDueTimeMinutes;
+  final int? initialStartTimeMinutes;
+  final int? initialEndTimeMinutes;
   final String? initialNotes;
   final String? initialWorkoutId;
   final List<String>? initialTags;
@@ -79,7 +83,8 @@ final class _PlannerItemSheet extends ConsumerStatefulWidget {
     required this.dialogTitle,
     this.initialTitle,
     this.initialDueDate,
-    this.initialDueTimeMinutes,
+    this.initialStartTimeMinutes,
+    this.initialEndTimeMinutes,
     this.initialNotes,
     this.initialWorkoutId,
     this.initialTags,
@@ -98,7 +103,8 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
   late final TextEditingController _monthDayController;
   late final TextEditingController _countController;
   late DateTime? _dueDate;
-  late int? _dueTimeMinutes;
+  late int? _startTimeMinutes;
+  late int? _endTimeMinutes;
   String? _errorText;
   String? _selectedWorkoutId;
   final List<String> _tags = [];
@@ -108,7 +114,6 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
   final Set<int> _weekdays = {};
   _EndsChoice _endsChoice = _EndsChoice.never;
   DateTime? _endDate;
-  late final MaterialLocalizations _materialL10n;
 
   @override
   void initState() {
@@ -117,7 +122,8 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
     _notesController = TextEditingController(text: widget.initialNotes ?? '');
     _tagController = TextEditingController();
     _dueDate = widget.initialDueDate;
-    _dueTimeMinutes = widget.initialDueTimeMinutes;
+    _startTimeMinutes = widget.initialStartTimeMinutes;
+    _endTimeMinutes = widget.initialEndTimeMinutes;
     _selectedWorkoutId = widget.initialWorkoutId;
     _tags.addAll(widget.initialTags ?? const []);
     _intervalDaysController = TextEditingController();
@@ -184,9 +190,17 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
     final intervalDays = type == PlannerRecurrenceType.interval
         ? int.tryParse(_intervalDaysController.text)
         : null;
+    if (type == PlannerRecurrenceType.interval &&
+        (intervalDays == null || intervalDays < 1)) {
+      return null;
+    }
     final monthDay = type == PlannerRecurrenceType.monthly
         ? int.tryParse(_monthDayController.text)
         : null;
+    if (type == PlannerRecurrenceType.monthly &&
+        (monthDay == null || monthDay < 1 || monthDay > 31)) {
+      return null;
+    }
     final count = _endsChoice == _EndsChoice.after
         ? int.tryParse(_countController.text)
         : null;
@@ -207,16 +221,22 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
       setState(() => _errorText = l10n.plannerTaskRequired);
       return;
     }
+    final recurrence = _buildRecurrence();
+    if (_repeatType != null && recurrence == null) {
+      setState(() => _errorText = l10n.plannerRepeatInvalid);
+      return;
+    }
     final notes = _notesController.text.trim();
     final tags = _tags.isEmpty ? null : List<String>.from(_tags);
     Navigator.of(context).pop((
       title,
       _dueDate,
-      _dueTimeMinutes,
+      _startTimeMinutes,
+      _endTimeMinutes,
       notes.isEmpty ? null : notes,
       _selectedWorkoutId,
       tags,
-      _buildRecurrence(),
+      recurrence,
     ));
   }
 
@@ -240,25 +260,39 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
     if (date != null && mounted) setState(() => _endDate = date);
   }
 
-  Future<void> _pickDueTime() async {
-    final initial = _dueTimeMinutes == null
+  Future<void> _pickStartTime() async {
+    final initial = _startTimeMinutes == null
         ? TimeOfDay.now()
         : TimeOfDay(
-            hour: _dueTimeMinutes! ~/ 60,
-            minute: _dueTimeMinutes! % 60,
+            hour: _startTimeMinutes! ~/ 60,
+            minute: _startTimeMinutes! % 60,
           );
     final time = await showTimePicker(context: context, initialTime: initial);
     if (time != null && mounted) {
-      setState(() => _dueTimeMinutes = time.hour * 60 + time.minute);
+      setState(() => _startTimeMinutes = time.hour * 60 + time.minute);
+    }
+  }
+
+  Future<void> _pickEndTime() async {
+    final initial = _endTimeMinutes == null
+        ? TimeOfDay.now()
+        : TimeOfDay(
+            hour: _endTimeMinutes! ~/ 60,
+            minute: _endTimeMinutes! % 60,
+          );
+    final time = await showTimePicker(context: context, initialTime: initial);
+    if (time != null && mounted) {
+      setState(() => _endTimeMinutes = time.hour * 60 + time.minute);
     }
   }
 
   void _clearDueDate() => setState(() {
     _dueDate = null;
-    _dueTimeMinutes = null;
   });
 
-  void _clearDueTime() => setState(() => _dueTimeMinutes = null);
+  void _clearStartTime() => setState(() => _startTimeMinutes = null);
+
+  void _clearEndTime() => setState(() => _endTimeMinutes = null);
 
   Widget _buildWorkoutField(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -300,6 +334,7 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
 
   Widget _buildRepeatField(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final materialL10n = MaterialLocalizations.of(context);
     final repeatOptions = <(PlannerRecurrenceType?, String)>[
       (null, l10n.plannerRepeatNone),
       (PlannerRecurrenceType.daily, l10n.plannerRepeatDaily),
@@ -334,7 +369,7 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
             children: [
               for (var w = 1; w <= 7; w++)
                 FilterChip(
-                  label: Text(_materialL10n.narrowWeekdays[w % 7]),
+                  label: Text(materialL10n.narrowWeekdays[w % 7]),
                   selected: _weekdays.contains(w),
                   onSelected: (selected) => setState(
                     () => selected ? _weekdays.add(w) : _weekdays.remove(w),
@@ -401,7 +436,7 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
               title: Text(
                 _endDate == null
                     ? l10n.plannerRepeatEndsOnDate
-                    : _materialL10n.formatMediumDate(_endDate!),
+                    : materialL10n.formatMediumDate(_endDate!),
               ),
               trailing: _endDate != null
                   ? IconButton(
@@ -437,7 +472,7 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    _materialL10n = MaterialLocalizations.of(context);
+    final materialL10n = MaterialLocalizations.of(context);
     final theme = Theme.of(context);
     final isEdit = widget.initialTitle != null;
     return Padding(
@@ -497,7 +532,6 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
                       controller: _notesController,
                       maxLines: 3,
                       decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
                         hintText: l10n.plannerTaskHint,
                       ),
                     ),
@@ -568,7 +602,7 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
                 title: Text(
                   _dueDate == null
                       ? l10n.plannerDueDateNone
-                      : _materialL10n.formatMediumDate(_dueDate!),
+                      : materialL10n.formatMediumDate(_dueDate!),
                 ),
                 trailing: _dueDate != null
                     ? IconButton(
@@ -580,26 +614,48 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
                 onTap: _pickDueDate,
               ),
               ListTile(
-                leading: const Icon(Icons.alarm_outlined),
+                leading: const Icon(Icons.schedule_outlined),
                 title: Text(
-                  _dueTimeMinutes == null
-                      ? l10n.plannerDueTimeNone
-                      : _materialL10n.formatTimeOfDay(
+                  _startTimeMinutes == null
+                      ? l10n.plannerStartTimeNone
+                      : materialL10n.formatTimeOfDay(
                           TimeOfDay(
-                            hour: _dueTimeMinutes! ~/ 60,
-                            minute: _dueTimeMinutes! % 60,
+                            hour: _startTimeMinutes! ~/ 60,
+                            minute: _startTimeMinutes! % 60,
                           ),
                         ),
                 ),
-                enabled: _dueDate != null,
-                trailing: _dueTimeMinutes != null
+                subtitle: Text(l10n.plannerStartTimeLabel),
+                trailing: _startTimeMinutes != null
                     ? IconButton(
                         icon: const Icon(Icons.close),
-                        tooltip: l10n.plannerDueTimeClear,
-                        onPressed: _clearDueTime,
+                        tooltip: l10n.plannerStartTimeClear,
+                        onPressed: _clearStartTime,
                       )
                     : null,
-                onTap: _dueDate == null ? null : _pickDueTime,
+                onTap: _pickStartTime,
+              ),
+              ListTile(
+                leading: const Icon(Icons.schedule_outlined),
+                title: Text(
+                  _endTimeMinutes == null
+                      ? l10n.plannerEndTimeNone
+                      : materialL10n.formatTimeOfDay(
+                          TimeOfDay(
+                            hour: _endTimeMinutes! ~/ 60,
+                            minute: _endTimeMinutes! % 60,
+                          ),
+                        ),
+                ),
+                subtitle: Text(l10n.plannerEndTimeLabel),
+                trailing: _endTimeMinutes != null
+                    ? IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: l10n.plannerEndTimeClear,
+                        onPressed: _clearEndTime,
+                      )
+                    : null,
+                onTap: _pickEndTime,
               ),
               Row(
                 children: [

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,7 @@ import '../../models/exercise_set.dart';
 import '../../notifications/active_workout_notifier.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
+import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../providers/workouts.dart';
@@ -150,9 +152,7 @@ final class _WorkoutDetailContent extends StatelessWidget {
         );
     await ref.read(workoutRepositoryProvider).start(id);
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.workoutStarted)));
+      showTopBanner(context, message: l10n.workoutStarted);
     }
     ref.invalidate(workoutDetailProvider(workoutId));
     ref.invalidate(workoutListProvider);
@@ -193,42 +193,28 @@ final class _ExerciseBlockCard extends StatelessWidget {
         subtitle: Text(l10n.workoutDetailSetCount(block.sets.length)),
         initiallyExpanded: true,
         children: [
-          // Header row (planned only — this is the planning screen)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    l10n.workoutDetailSetHeaderHash,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                Expanded(
-                  flex: 8,
-                  child: Text(
-                    l10n.workoutDetailSetHeaderPlanned,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                for (final set in block.sets) _SetChip(set: set, l10n: l10n),
               ],
             ),
           ),
-          const Divider(height: 8),
-          for (final set in block.sets) _SetRow(set: set, l10n: l10n),
-          const SizedBox(height: 8),
         ],
       ),
     );
   }
 }
 
-final class _SetRow extends StatelessWidget {
+/// One planned set as a compact chip (planned-only, planning screen).
+final class _SetChip extends StatelessWidget {
   final ExerciseSet set;
   final AppLocalizations l10n;
 
-  const _SetRow({required this.set, required this.l10n});
+  const _SetChip({required this.set, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -243,27 +229,22 @@ final class _SetRow extends StatelessWidget {
         ? l10n.workoutDetailPlannedSetDuration(set.durationMinutes.toString())
         : l10n.workoutDetailPlannedSetEmpty;
 
-    final planned = set.restSeconds != null
-        ? l10n.workoutDetailPlannedSetRest(
+    final label = set.restSeconds != null
+        ? l10n.workoutDetailSetChipRest(
             plannedBase,
             formatRestDuration(Duration(seconds: set.restSeconds!)),
           )
         : plannedBase;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              '${set.setNumber}',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall,
-            ),
-          ),
-          Expanded(flex: 8, child: Text(planned, textAlign: TextAlign.center)),
-        ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.bodyMedium,
       ),
     );
   }
