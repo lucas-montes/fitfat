@@ -21,52 +21,6 @@ class BudgetTab extends StatelessWidget {
 class BudgetScreen extends ConsumerWidget {
   const BudgetScreen({super.key});
 
-  void _showAddMenu(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      builder: (sheet) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.add_card_outlined),
-              title: Text(l10n.budgetFabExpense),
-              onTap: () {
-                Navigator.of(sheet).pop();
-                context.push('/budget/transaction/new?type=expense');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.attach_money_outlined),
-              title: Text(l10n.budgetFabIncome),
-              onTap: () {
-                Navigator.of(sheet).pop();
-                context.push('/budget/transaction/new?type=income');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.swap_horiz_outlined),
-              title: Text(l10n.budgetFabTransfer),
-              onTap: () {
-                Navigator.of(sheet).pop();
-                context.push('/budget/transaction/new?type=transfer');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet_outlined),
-              title: Text(l10n.budgetFabAccount),
-              onTap: () {
-                Navigator.of(sheet).pop();
-                context.push('/budget/account/new');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
@@ -77,8 +31,8 @@ class BudgetScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.budgetAppBar)),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddMenu(context),
-        tooltip: l10n.budgetAddAccount,
+        onPressed: () => context.push('/budget/transaction/new'),
+        tooltip: l10n.budgetAddTransaction,
         child: const Icon(Icons.add),
       ),
       body: overviewAsync.when(
@@ -122,8 +76,17 @@ class BudgetScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              Text(l10n.accountTransactionsTitle,
-                  style: Theme.of(context).textTheme.titleMedium),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(l10n.budgetAccounts,
+                      style: Theme.of(context).textTheme.titleMedium),
+                  TextButton(
+                    onPressed: () => context.push('/budget/account/new'),
+                    child: Text(l10n.budgetAddAccount),
+                  ),
+                ],
+              ),
               const SizedBox(height: 8),
               if (overview.accounts.isEmpty)
                 _EmptyAccounts(l10n: l10n)

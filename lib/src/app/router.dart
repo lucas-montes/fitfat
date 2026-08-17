@@ -76,12 +76,21 @@ final GoRouter appRouter = GoRouter(
               },
             ),
             GoRoute(
+              path: '/budget/account/:id/edit',
+              builder: (_, state) =>
+                  AccountFormScreen(accountId: state.pathParameters['id']!),
+            ),
+            GoRoute(
               path: '/budget/transaction/:id',
               builder: (_, state) {
                 final id = state.pathParameters['id']!;
                 if (id == 'new') {
                   final type = state.uri.queryParameters['type'];
-                  return TransactionFormScreen(initialType: type);
+                  final account = state.uri.queryParameters['account'];
+                  return TransactionFormScreen(
+                    initialType: type,
+                    initialAccountId: account,
+                  );
                 }
                 return TransactionFormScreen(transactionId: id);
               },

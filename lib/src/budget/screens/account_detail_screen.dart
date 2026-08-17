@@ -44,10 +44,18 @@ final class AccountDetailScreen extends ConsumerWidget {
             IconButton(
               tooltip: l10n.commonEdit,
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => context.push('/budget/account/$accountId'),
+              onPressed: () => context.push('/budget/account/$accountId/edit'),
             ),
         ],
       ),
+      floatingActionButton: account == null
+          ? null
+          : FloatingActionButton(
+              onPressed: () =>
+                  context.push('/budget/transaction/new?account=$accountId'),
+              tooltip: l10n.budgetAddTransaction,
+              child: const Icon(Icons.add),
+            ),
       body: account == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(

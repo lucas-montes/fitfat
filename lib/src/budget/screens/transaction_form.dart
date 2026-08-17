@@ -36,8 +36,14 @@ const _commonCurrencies = [
 final class TransactionFormScreen extends ConsumerStatefulWidget {
   final String? transactionId;
   final String? initialType;
+  final String? initialAccountId;
 
-  const TransactionFormScreen({super.key, this.transactionId, this.initialType});
+  const TransactionFormScreen({
+    super.key,
+    this.transactionId,
+    this.initialType,
+    this.initialAccountId,
+  });
 
   @override
   ConsumerState<TransactionFormScreen> createState() =>
@@ -69,6 +75,7 @@ final class _TransactionFormScreenState
     super.initState();
     _type = TransactionType.fromName(widget.initialType);
     _currency = ref.read(settingsProvider).baseCurrency;
+    _accountId = widget.initialAccountId;
     if (_isEditing) _loadExisting();
   }
 

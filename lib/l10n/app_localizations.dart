@@ -142,187 +142,6 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get tabNotes;
 
-  /// accountDelete
-  String get accountDelete;
-  String accountDeleteBlockedBody(int count);
-  /// accountDeleteBlockedTitle
-  String get accountDeleteBlockedTitle;
-  String accountDeleteConfirmBody(String name);
-  /// accountDeleteConfirmTitle
-  String get accountDeleteConfirmTitle;
-  /// accountFormEditTitle
-  String get accountFormEditTitle;
-  /// accountFormNameLabel
-  String get accountFormNameLabel;
-  /// accountFormNameRequired
-  String get accountFormNameRequired;
-  /// accountFormNewTitle
-  String get accountFormNewTitle;
-  /// accountFormNoteLabel
-  String get accountFormNoteLabel;
-  /// accountFormOpeningLabel
-  String get accountFormOpeningLabel;
-  /// accountFormTypeLabel
-  String get accountFormTypeLabel;
-  String accountOpeningLabel(Object value);
-  /// accountReceipts
-  String get accountReceipts;
-  /// accountTransactions
-  String get accountTransactions;
-  /// accountTransactionsTitle
-  String get accountTransactionsTitle;
-  /// accountTypeBank
-  String get accountTypeBank;
-  /// accountTypeCash
-  String get accountTypeCash;
-  /// accountTypeCredit
-  String get accountTypeCredit;
-  /// accountTypeInvestment
-  String get accountTypeInvestment;
-  /// accountTypeOther
-  String get accountTypeOther;
-  /// accountTypeSavings
-  String get accountTypeSavings;
-  /// budgetAddAccount
-  String get budgetAddAccount;
-  /// budgetAppBar
-  String get budgetAppBar;
-  /// budgetEmptyAccounts
-  String get budgetEmptyAccounts;
-  /// budgetFabAccount
-  String get budgetFabAccount;
-  /// budgetFabExpense
-  String get budgetFabExpense;
-  /// budgetFabIncome
-  String get budgetFabIncome;
-  /// budgetFabTransfer
-  String get budgetFabTransfer;
-  /// budgetMonthExpense
-  String get budgetMonthExpense;
-  /// budgetMonthIncome
-  String get budgetMonthIncome;
-  /// budgetNoReceipts
-  String get budgetNoReceipts;
-  /// budgetNoTransactions
-  String get budgetNoTransactions;
-  String budgetPendingReceipts(int count);
-  /// budgetRecentTransactions
-  String get budgetRecentTransactions;
-  /// budgetTotalBalance
-  String get budgetTotalBalance;
-  /// budgetViewAll
-  String get budgetViewAll;
-  /// commonDelete
-  String get commonDelete;
-  /// commonRetry
-  String get commonRetry;
-  /// plannerViewDay
-  String get plannerViewDay;
-  /// plannerViewMonth
-  String get plannerViewMonth;
-  /// receiptAppBar
-  String get receiptAppBar;
-  /// receiptCapture
-  String get receiptCapture;
-  /// receiptCreateDraft
-  String get receiptCreateDraft;
-  /// receiptDeleteConfirmBody
-  String get receiptDeleteConfirmBody;
-  /// receiptDeleteConfirmTitle
-  String get receiptDeleteConfirmTitle;
-  /// receiptEmptyBody
-  String get receiptEmptyBody;
-  /// receiptListAppBar
-  String get receiptListAppBar;
-  /// receiptNotFound
-  String get receiptNotFound;
-  /// receiptNotParsed
-  String get receiptNotParsed;
-  /// receiptParseStarted
-  String get receiptParseStarted;
-  /// receiptParsed
-  String get receiptParsed;
-  /// receiptParsedData
-  String get receiptParsedData;
-  /// receiptPickGallery
-  String get receiptPickGallery;
-  /// receiptReviewDraft
-  String get receiptReviewDraft;
-  String receiptStatusLabel(String status);
-  String receiptStatusShort(String status);
-  /// receiptTakePhoto
-  String get receiptTakePhoto;
-  /// receiptUpload
-  String get receiptUpload;
-  /// receiptUploadStarted
-  String get receiptUploadStarted;
-  /// settingsBaseCurrency
-  String get settingsBaseCurrency;
-  /// settingsCurrencyBudget
-  String get settingsCurrencyBudget;
-  /// settingsFxRates
-  String get settingsFxRates;
-  /// settingsFxRatesEmpty
-  String get settingsFxRatesEmpty;
-  /// settingsFxRefresh
-  String get settingsFxRefresh;
-  /// settingsFxRefreshed
-  String get settingsFxRefreshed;
-  /// settingsRateEdit
-  String get settingsRateEdit;
-  String settingsRateRow(String target, Object rate, String base);
-  /// tabBudget
-  String get tabBudget;
-  /// transactionAccountLabel
-  String get transactionAccountLabel;
-  /// transactionAccountRequired
-  String get transactionAccountRequired;
-  /// transactionAmountInvalid
-  String get transactionAmountInvalid;
-  /// transactionAmountLabel
-  String get transactionAmountLabel;
-  /// transactionAmountPositive
-  String get transactionAmountPositive;
-  /// transactionCategoryLabel
-  String get transactionCategoryLabel;
-  String transactionConvertedLabel(String amount);
-  /// transactionCurrencyLabel
-  String get transactionCurrencyLabel;
-  /// transactionDateLabel
-  String get transactionDateLabel;
-  /// transactionDraft
-  String get transactionDraft;
-  /// transactionDraftBadge
-  String get transactionDraftBadge;
-  /// transactionDraftHint
-  String get transactionDraftHint;
-  /// transactionFormEditTitle
-  String get transactionFormEditTitle;
-  /// transactionFormNewExpenseTitle
-  String get transactionFormNewExpenseTitle;
-  /// transactionFormNewIncomeTitle
-  String get transactionFormNewIncomeTitle;
-  /// transactionFormTransferTitle
-  String get transactionFormTransferTitle;
-  /// transactionHasReceipt
-  String get transactionHasReceipt;
-  /// transactionListAppBar
-  String get transactionListAppBar;
-  /// transactionNoteLabel
-  String get transactionNoteLabel;
-  /// transactionToAccountLabel
-  String get transactionToAccountLabel;
-  /// transactionTransferAccountsRequired
-  String get transactionTransferAccountsRequired;
-  /// transactionTransferSameAccount
-  String get transactionTransferSameAccount;
-  /// transactionTypeExpense
-  String get transactionTypeExpense;
-  /// transactionTypeIncome
-  String get transactionTypeIncome;
-  /// transactionTypeTransfer
-  String get transactionTypeTransfer;
-
   /// No description provided for @dashboardAppBar.
   ///
   /// In en, this message translates to:
@@ -640,6 +459,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search and add exercises to this workout'**
   String get activeWorkoutAddExerciseTooltip;
+
+  /// No description provided for @activeWorkoutPrevExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous exercise'**
+  String get activeWorkoutPrevExercise;
+
+  /// No description provided for @activeWorkoutNextExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Next exercise'**
+  String get activeWorkoutNextExercise;
 
   /// No description provided for @activeWorkoutInThisWorkout.
   ///
@@ -1157,23 +988,17 @@ abstract class AppLocalizations {
   /// **'Add exercises when creating a workout.'**
   String get emptyWorkoutDetailBody;
 
-  /// No description provided for @workoutDetailSetHeaderHash.
-  ///
-  /// In en, this message translates to:
-  /// **'#'**
-  String get workoutDetailSetHeaderHash;
-
-  /// No description provided for @workoutDetailSetHeaderPlanned.
-  ///
-  /// In en, this message translates to:
-  /// **'Planned'**
-  String get workoutDetailSetHeaderPlanned;
-
   /// No description provided for @workoutDetailSetHeaderActual.
   ///
   /// In en, this message translates to:
   /// **'Actual'**
   String get workoutDetailSetHeaderActual;
+
+  /// No description provided for @workoutDetailSetChipRest.
+  ///
+  /// In en, this message translates to:
+  /// **'{planned} · {rest}'**
+  String workoutDetailSetChipRest(String planned, String rest);
 
   /// No description provided for @workoutDetailSetActualsTitle.
   ///
@@ -1553,6 +1378,18 @@ abstract class AppLocalizations {
   /// **'Next day'**
   String get plannerNextDay;
 
+  /// No description provided for @plannerViewMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month view'**
+  String get plannerViewMonth;
+
+  /// No description provided for @plannerViewDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day view'**
+  String get plannerViewDay;
+
   /// No description provided for @plannerAnytime.
   ///
   /// In en, this message translates to:
@@ -1672,6 +1509,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear due time'**
   String get plannerDueTimeClear;
+
+  /// No description provided for @plannerStartTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get plannerStartTimeLabel;
+
+  /// No description provided for @plannerEndTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get plannerEndTimeLabel;
+
+  /// No description provided for @plannerStartTimeNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No start time'**
+  String get plannerStartTimeNone;
+
+  /// No description provided for @plannerEndTimeNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No end time'**
+  String get plannerEndTimeNone;
+
+  /// No description provided for @plannerStartTimeClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear start time'**
+  String get plannerStartTimeClear;
+
+  /// No description provided for @plannerEndTimeClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear end time'**
+  String get plannerEndTimeClear;
+
+  /// No description provided for @plannerRepeatInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the repeat settings'**
+  String get plannerRepeatInvalid;
 
   /// No description provided for @plannerAddTask.
   ///
@@ -2339,6 +2218,18 @@ abstract class AppLocalizations {
   /// **'{reps} min'**
   String workoutDetailActualSetDuration(String reps);
 
+  /// No description provided for @workoutDetailActualSetDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} m'**
+  String workoutDetailActualSetDistance(String distance);
+
+  /// No description provided for @workoutDetailActualSetTime.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} · {time}'**
+  String workoutDetailActualSetTime(String value, String time);
+
   /// No description provided for @workoutDetailActualSetEmpty.
   ///
   /// In en, this message translates to:
@@ -2560,6 +2451,828 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{distance} m'**
   String workoutSummaryDistanceValue(String distance);
+
+  /// settingsRateRow
+  ///
+  /// In en, this message translates to:
+  /// **'{base} → {target}: {rate}'**
+  String settingsRateRow(String target, num rate, String base);
+
+  /// accountDeleteBlockedBody
+  ///
+  /// In en, this message translates to:
+  /// **'This account is used by {count} transaction(s) and cannot be deleted.'**
+  String accountDeleteBlockedBody(int count);
+
+  /// accountDeleteBlockedTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Account in use'**
+  String get accountDeleteBlockedTitle;
+
+  /// accountDeleteConfirmBody
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting account \'{name}\' will also delete its transactions and receipts.'**
+  String accountDeleteConfirmBody(String name);
+
+  /// accountDeleteConfirmTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account?'**
+  String get accountDeleteConfirmTitle;
+
+  /// accountFormEditTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Edit account'**
+  String get accountFormEditTitle;
+
+  /// accountFormNameLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get accountFormNameLabel;
+
+  /// accountFormNameRequired
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name'**
+  String get accountFormNameRequired;
+
+  /// accountFormNewTitle
+  ///
+  /// In en, this message translates to:
+  /// **'New account'**
+  String get accountFormNewTitle;
+
+  /// accountFormOpeningHelper
+  ///
+  /// In en, this message translates to:
+  /// **'How much was already in this account when you started tracking it. Leave 0 if you are not sure.'**
+  String get accountFormOpeningHelper;
+
+  /// accountFormIntro
+  ///
+  /// In en, this message translates to:
+  /// **'Track a wallet, bank account, or card.'**
+  String get accountFormIntro;
+
+  /// accountFormNoteLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Account Form Note Label'**
+  String get accountFormNoteLabel;
+
+  /// accountFormOpeningLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Starting balance'**
+  String get accountFormOpeningLabel;
+
+  /// accountFormTypeLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get accountFormTypeLabel;
+
+  /// accountOpeningLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Starting balance: {value}'**
+  String accountOpeningLabel(String value);
+
+  /// accountReceipts
+  ///
+  /// In en, this message translates to:
+  /// **'Receipts'**
+  String get accountReceipts;
+
+  /// accountTransactions
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get accountTransactions;
+
+  /// accountTypeBank
+  ///
+  /// In en, this message translates to:
+  /// **'Bank account'**
+  String get accountTypeBank;
+
+  /// accountTypeCash
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get accountTypeCash;
+
+  /// accountTypeCredit
+  ///
+  /// In en, this message translates to:
+  /// **'Credit card'**
+  String get accountTypeCredit;
+
+  /// accountTypeInvestment
+  ///
+  /// In en, this message translates to:
+  /// **'Investment'**
+  String get accountTypeInvestment;
+
+  /// accountTypeOther
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get accountTypeOther;
+
+  /// accountTypeSavings
+  ///
+  /// In en, this message translates to:
+  /// **'Savings'**
+  String get accountTypeSavings;
+
+  /// budgetAccounts
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get budgetAccounts;
+
+  /// budgetAdd
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Add'**
+  String get budgetAdd;
+
+  /// budgetEmptyBody
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Empty Body'**
+  String get budgetEmptyBody;
+
+  /// budgetEmptyTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Empty Title'**
+  String get budgetEmptyTitle;
+
+  /// budgetFabAccount
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Fab Account'**
+  String get budgetFabAccount;
+
+  /// budgetFabExpense
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Fab Expense'**
+  String get budgetFabExpense;
+
+  /// budgetFabIncome
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Fab Income'**
+  String get budgetFabIncome;
+
+  /// budgetFabTransfer
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Fab Transfer'**
+  String get budgetFabTransfer;
+
+  /// budgetMonthExpense
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses this month'**
+  String get budgetMonthExpense;
+
+  /// budgetMonthIncome
+  ///
+  /// In en, this message translates to:
+  /// **'Income this month'**
+  String get budgetMonthIncome;
+
+  /// budgetNoReceipts
+  ///
+  /// In en, this message translates to:
+  /// **'No receipts yet'**
+  String get budgetNoReceipts;
+
+  /// budgetNoTransactions
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions yet'**
+  String get budgetNoTransactions;
+
+  /// budgetPendingReceipts
+  ///
+  /// In en, this message translates to:
+  /// **'{count} receipt(s) awaiting review'**
+  String budgetPendingReceipts(int count);
+
+  /// budgetRecentTransactions
+  ///
+  /// In en, this message translates to:
+  /// **'Recent transactions'**
+  String get budgetRecentTransactions;
+
+  /// budgetThisMonth
+  ///
+  /// In en, this message translates to:
+  /// **'Budget This Month'**
+  String get budgetThisMonth;
+
+  /// budgetViewAll
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get budgetViewAll;
+
+  /// commonDelete
+  ///
+  /// In en, this message translates to:
+  /// **'Common Delete'**
+  String get commonDelete;
+
+  /// receiptAppBar
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get receiptAppBar;
+
+  /// receiptCreateDraft
+  ///
+  /// In en, this message translates to:
+  /// **'Create draft'**
+  String get receiptCreateDraft;
+
+  /// receiptDeleteConfirmBody
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this receipt?'**
+  String get receiptDeleteConfirmBody;
+
+  /// receiptDeleteConfirmTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Delete receipt?'**
+  String get receiptDeleteConfirmTitle;
+
+  /// receiptEmptyBody
+  ///
+  /// In en, this message translates to:
+  /// **'No receipts yet. Take a photo of a receipt to start tracking.'**
+  String get receiptEmptyBody;
+
+  /// receiptListAppBar
+  ///
+  /// In en, this message translates to:
+  /// **'Receipts'**
+  String get receiptListAppBar;
+
+  /// receiptNotFound
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt not found'**
+  String get receiptNotFound;
+
+  /// receiptNotParsed
+  ///
+  /// In en, this message translates to:
+  /// **'Not parsed yet'**
+  String get receiptNotParsed;
+
+  /// receiptParseStarted
+  ///
+  /// In en, this message translates to:
+  /// **'Parsing receipt…'**
+  String get receiptParseStarted;
+
+  /// receiptParsed
+  ///
+  /// In en, this message translates to:
+  /// **'Parsed'**
+  String get receiptParsed;
+
+  /// receiptParsedData
+  ///
+  /// In en, this message translates to:
+  /// **'Parsed data'**
+  String get receiptParsedData;
+
+  /// receiptPickGallery
+  ///
+  /// In en, this message translates to:
+  /// **'From gallery'**
+  String get receiptPickGallery;
+
+  /// receiptReviewDraft
+  ///
+  /// In en, this message translates to:
+  /// **'Review draft'**
+  String get receiptReviewDraft;
+
+  /// receiptStatusLabel
+  ///
+  /// In en, this message translates to:
+  /// **'{status}'**
+  String receiptStatusLabel(String status);
+
+  /// receiptStatusShort
+  ///
+  /// In en, this message translates to:
+  /// **'{status}'**
+  String receiptStatusShort(String status);
+
+  /// receiptTakePhoto
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get receiptTakePhoto;
+
+  /// receiptUpload
+  ///
+  /// In en, this message translates to:
+  /// **'Upload'**
+  String get receiptUpload;
+
+  /// settingsCurrencyBudget
+  ///
+  /// In en, this message translates to:
+  /// **'Budget currency'**
+  String get settingsCurrencyBudget;
+
+  /// settingsFxRates
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rates'**
+  String get settingsFxRates;
+
+  /// settingsFxRatesEmpty
+  ///
+  /// In en, this message translates to:
+  /// **'No exchange rates configured'**
+  String get settingsFxRatesEmpty;
+
+  /// settingsFxRefresh
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh rates'**
+  String get settingsFxRefresh;
+
+  /// settingsFxRefreshed
+  ///
+  /// In en, this message translates to:
+  /// **'Rates refreshed'**
+  String get settingsFxRefreshed;
+
+  /// settingsRateEdit
+  ///
+  /// In en, this message translates to:
+  /// **'Edit rate'**
+  String get settingsRateEdit;
+
+  /// transactionAmountInvalid
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid amount'**
+  String get transactionAmountInvalid;
+
+  /// transactionCategoryLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get transactionCategoryLabel;
+
+  /// transactionConvertedLabel
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {amount} in base currency'**
+  String transactionConvertedLabel(String amount);
+
+  /// transactionDraft
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get transactionDraft;
+
+  /// transactionDraftHint
+  ///
+  /// In en, this message translates to:
+  /// **'Draft from a scanned receipt — check the details before saving'**
+  String get transactionDraftHint;
+
+  /// transactionHasReceipt
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt attached'**
+  String get transactionHasReceipt;
+
+  /// transactionListAppBar
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get transactionListAppBar;
+
+  /// transactionTypeExpense
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get transactionTypeExpense;
+
+  /// transactionTypeIncome
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get transactionTypeIncome;
+
+  /// transactionTypeTransfer
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer'**
+  String get transactionTypeTransfer;
+
+  /// budgetAppBar
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get budgetAppBar;
+
+  /// budgetSubtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts, transactions and receipts'**
+  String get budgetSubtitle;
+
+  /// budgetTotalBalance
+  ///
+  /// In en, this message translates to:
+  /// **'Total balance'**
+  String get budgetTotalBalance;
+
+  /// budgetNetWorth
+  ///
+  /// In en, this message translates to:
+  /// **'Net worth'**
+  String get budgetNetWorth;
+
+  /// budgetIncomeLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get budgetIncomeLabel;
+
+  /// budgetExpenseLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get budgetExpenseLabel;
+
+  /// budgetEmptyAccounts
+  ///
+  /// In en, this message translates to:
+  /// **'No accounts yet. Add one to start tracking.'**
+  String get budgetEmptyAccounts;
+
+  /// budgetAddAccount
+  ///
+  /// In en, this message translates to:
+  /// **'Add account'**
+  String get budgetAddAccount;
+
+  /// budgetAddTransaction
+  ///
+  /// In en, this message translates to:
+  /// **'Add transaction'**
+  String get budgetAddTransaction;
+
+  /// accountFormTitleNew
+  ///
+  /// In en, this message translates to:
+  /// **'New account'**
+  String get accountFormTitleNew;
+
+  /// accountFormTitleEdit
+  ///
+  /// In en, this message translates to:
+  /// **'Edit account'**
+  String get accountFormTitleEdit;
+
+  /// accountNameLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get accountNameLabel;
+
+  /// accountTypeLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get accountTypeLabel;
+
+  /// accountCurrencyLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get accountCurrencyLabel;
+
+  /// accountInitialBalanceLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Initial balance'**
+  String get accountInitialBalanceLabel;
+
+  /// accountSave
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get accountSave;
+
+  /// accountDetailTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountDetailTitle;
+
+  /// accountDelete
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get accountDelete;
+
+  /// accountTransactionsTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get accountTransactionsTitle;
+
+  /// accountBalanceLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get accountBalanceLabel;
+
+  /// accountEdit
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get accountEdit;
+
+  /// transactionFormNewExpenseTitle
+  ///
+  /// In en, this message translates to:
+  /// **'New expense'**
+  String get transactionFormNewExpenseTitle;
+
+  /// transactionFormNewIncomeTitle
+  ///
+  /// In en, this message translates to:
+  /// **'New income'**
+  String get transactionFormNewIncomeTitle;
+
+  /// transactionFormTransferTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer'**
+  String get transactionFormTransferTitle;
+
+  /// transactionFormEditTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Edit transaction'**
+  String get transactionFormEditTitle;
+
+  /// transactionTypeLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get transactionTypeLabel;
+
+  /// transactionAmountLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get transactionAmountLabel;
+
+  /// transactionCurrencyLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get transactionCurrencyLabel;
+
+  /// transactionDateLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get transactionDateLabel;
+
+  /// transactionNoteLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get transactionNoteLabel;
+
+  /// transactionAccountLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get transactionAccountLabel;
+
+  /// transactionToAccountLabel
+  ///
+  /// In en, this message translates to:
+  /// **'To account'**
+  String get transactionToAccountLabel;
+
+  /// transactionReceiptLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get transactionReceiptLabel;
+
+  /// transactionSave
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get transactionSave;
+
+  /// transactionDelete
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get transactionDelete;
+
+  /// transactionDraftBadge
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get transactionDraftBadge;
+
+  /// transactionConfirmDraft
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get transactionConfirmDraft;
+
+  /// transactionTransferSameAccount
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer needs two different accounts.'**
+  String get transactionTransferSameAccount;
+
+  /// transactionAccountRequired
+  ///
+  /// In en, this message translates to:
+  /// **'An account is required.'**
+  String get transactionAccountRequired;
+
+  /// transactionTransferAccountsRequired
+  ///
+  /// In en, this message translates to:
+  /// **'Both accounts are required for a transfer.'**
+  String get transactionTransferAccountsRequired;
+
+  /// transactionAmountPositive
+  ///
+  /// In en, this message translates to:
+  /// **'Amount must be greater than zero.'**
+  String get transactionAmountPositive;
+
+  /// receiptListTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Receipts'**
+  String get receiptListTitle;
+
+  /// receiptCapture
+  ///
+  /// In en, this message translates to:
+  /// **'Capture receipt'**
+  String get receiptCapture;
+
+  /// receiptCaptureStandalone
+  ///
+  /// In en, this message translates to:
+  /// **'Standalone receipt'**
+  String get receiptCaptureStandalone;
+
+  /// receiptUploadStarted
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading receipt…'**
+  String get receiptUploadStarted;
+
+  /// receiptUploadSuccess
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt uploaded'**
+  String get receiptUploadSuccess;
+
+  /// receiptUploadError
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to upload receipt'**
+  String get receiptUploadError;
+
+  /// receiptViewTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get receiptViewTitle;
+
+  /// receiptStatusLocal
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get receiptStatusLocal;
+
+  /// receiptStatusUploading
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get receiptStatusUploading;
+
+  /// receiptStatusUploaded
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded'**
+  String get receiptStatusUploaded;
+
+  /// receiptStatusError
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get receiptStatusError;
+
+  /// receiptAttach
+  ///
+  /// In en, this message translates to:
+  /// **'Attach to transaction'**
+  String get receiptAttach;
+
+  /// receiptChooseSource
+  ///
+  /// In en, this message translates to:
+  /// **'Choose source'**
+  String get receiptChooseSource;
+
+  /// receiptFromCamera
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get receiptFromCamera;
+
+  /// receiptFromGallery
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get receiptFromGallery;
+
+  /// commonRetry
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get commonRetry;
+
+  /// settingsBaseCurrency
+  ///
+  /// In en, this message translates to:
+  /// **'Base currency'**
+  String get settingsBaseCurrency;
+
+  /// settingsCategoryFx
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rates'**
+  String get settingsCategoryFx;
+
+  /// settingsRefreshRates
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh rates'**
+  String get settingsRefreshRates;
+
+  /// settingsEditRate
+  ///
+  /// In en, this message translates to:
+  /// **'Edit rate'**
+  String get settingsEditRate;
+
+  /// settingsRateBase
+  ///
+  /// In en, this message translates to:
+  /// **'Per 1 {base}'**
+  String settingsRateBase(Object base);
+
+  /// settingsRateInvalid
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a positive rate.'**
+  String get settingsRateInvalid;
+
+  /// tabBudget
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get tabBudget;
 }
 
 class _AppLocalizationsDelegate

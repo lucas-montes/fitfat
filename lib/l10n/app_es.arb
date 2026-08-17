@@ -104,6 +104,8 @@
   "emptyExercisesCta": "Añadir ejercicio",
   "activeWorkoutAddExercise": "Añadir ejercicio",
   "activeWorkoutAddExerciseTooltip": "Buscar y añadir ejercicios a este entrenamiento",
+  "activeWorkoutPrevExercise": "Ejercicio anterior",
+  "activeWorkoutNextExercise": "Ejercicio siguiente",
   "activeWorkoutInThisWorkout": "En este entrenamiento",
   "activeWorkoutAllExercises": "Todos los ejercicios",
   "activeWorkoutSearchPrompt": "Escribe para buscar ejercicios",
@@ -240,9 +242,14 @@
   "workoutDetailExercises": "Ejercicios",
   "emptyWorkoutDetailTitle": "Este entrenamiento no tiene ejercicios",
   "emptyWorkoutDetailBody": "Añade ejercicios al crear un entrenamiento.",
-  "workoutDetailSetHeaderHash": "#",
-  "workoutDetailSetHeaderPlanned": "Planificado",
   "workoutDetailSetHeaderActual": "Real",
+  "workoutDetailSetChipRest": "{planned} · {rest}",
+  "@workoutDetailSetChipRest": {
+    "placeholders": {
+      "planned": { "type": "String" },
+      "rest": { "type": "String" }
+    }
+  },
   "workoutDetailSetActualsTitle": "Serie {number} — Real",
   "workoutDetailActualRepsLabel": "Repeticiones reales",
   "workoutDetailActualWeightLabel": "Peso real (kg)",
@@ -337,6 +344,13 @@
   "plannerDueDateClear": "Borrar fecha límite",
   "plannerDueTimeNone": "Sin hora",
   "plannerDueTimeClear": "Borrar hora",
+  "plannerStartTimeLabel": "Hora de inicio",
+  "plannerEndTimeLabel": "Hora de fin",
+  "plannerStartTimeNone": "Sin hora de inicio",
+  "plannerEndTimeNone": "Sin hora de fin",
+  "plannerStartTimeClear": "Borrar hora de inicio",
+  "plannerEndTimeClear": "Borrar hora de fin",
+  "plannerRepeatInvalid": "Revisa la configuración de repetición",
   "plannerAddTask": "Nueva tarea",
   "plannerEditTask": "Editar tarea",
   "plannerDeleted": "Tarea «{title}» eliminada",
@@ -474,6 +488,8 @@
   "workoutDetailActualSetReps": "{reps} × {weight} kg",
   "workoutDetailActualSetWeight": "{weight} kg",
   "workoutDetailActualSetDuration": "{reps} min",
+  "workoutDetailActualSetDistance": "{distance} m",
+  "workoutDetailActualSetTime": "{value} · {time}",
   "workoutDetailActualSetEmpty": "—",
 
   "bodyMetricsTitle": "Medidas corporales",
@@ -583,7 +599,7 @@
     }
   }
 },
-  "accountDeleteBlockedTitle": "Account Delete Blocked Title",
+  "accountDeleteBlockedTitle": "Cuenta en uso",
   "@accountDeleteBlockedTitle": {
   "description": "accountDeleteBlockedTitle"
 },
@@ -596,35 +612,44 @@
     }
   }
 },
-  "accountDeleteConfirmTitle": "Account Delete Confirm Title",
+  "accountDeleteConfirmTitle": "¿Eliminar la cuenta?",
   "@accountDeleteConfirmTitle": {
   "description": "accountDeleteConfirmTitle"
 },
-  "accountFormEditTitle": "Account Form Edit Title",
+  "accountFormEditTitle": "Editar cuenta",
   "@accountFormEditTitle": {
   "description": "accountFormEditTitle"
 },
-  "accountFormNameLabel": "Account Form Name Label",
+  "accountFormNameLabel": "Nombre",
   "@accountFormNameLabel": {
   "description": "accountFormNameLabel"
 },
-  "accountFormNameRequired": "Account Form Name Required",
+  "accountFormNameRequired": "Escribe un nombre",
   "@accountFormNameRequired": {
   "description": "accountFormNameRequired"
 },
-  "accountFormNewTitle": "Account Form New Title",
+  "accountFormNewTitle": "Nueva cuenta",
   "@accountFormNewTitle": {
   "description": "accountFormNewTitle"
 },
+  "accountFormOpeningHelper": "Importe ya presente en esta cuenta cuando empezaste a registrarla. Deja 0 si no estás seguro.",
+  "@accountFormOpeningHelper": {
+    "description": "accountFormOpeningHelper"
+  },
+  "accountFormIntro": "Registra una cartera, una cuenta bancaria o una tarjeta.",
+  "@accountFormIntro": {
+    "description": "accountFormIntro"
+  },
+
   "accountFormNoteLabel": "Account Form Note Label",
   "@accountFormNoteLabel": {
   "description": "accountFormNoteLabel"
 },
-  "accountFormOpeningLabel": "Account Form Opening Label",
+  "accountFormOpeningLabel": "Saldo inicial",
   "@accountFormOpeningLabel": {
   "description": "accountFormOpeningLabel"
 },
-  "accountFormTypeLabel": "Account Form Type Label",
+  "accountFormTypeLabel": "Tipo",
   "@accountFormTypeLabel": {
   "description": "accountFormTypeLabel"
 },
@@ -637,39 +662,39 @@
     }
   }
 },
-  "accountReceipts": "Account Receipts",
+  "accountReceipts": "Recibos",
   "@accountReceipts": {
   "description": "accountReceipts"
 },
-  "accountTransactions": "Account Transactions",
+  "accountTransactions": "Transacciones",
   "@accountTransactions": {
   "description": "accountTransactions"
 },
-  "accountTypeBank": "Account Type Bank",
+  "accountTypeBank": "Cuenta bancaria",
   "@accountTypeBank": {
   "description": "accountTypeBank"
 },
-  "accountTypeCash": "Account Type Cash",
+  "accountTypeCash": "Efectivo",
   "@accountTypeCash": {
   "description": "accountTypeCash"
 },
-  "accountTypeCredit": "Account Type Credit",
+  "accountTypeCredit": "Tarjeta de crédito",
   "@accountTypeCredit": {
   "description": "accountTypeCredit"
 },
-  "accountTypeInvestment": "Account Type Investment",
+  "accountTypeInvestment": "Inversión",
   "@accountTypeInvestment": {
   "description": "accountTypeInvestment"
 },
-  "accountTypeOther": "Account Type Other",
+  "accountTypeOther": "Otro",
   "@accountTypeOther": {
   "description": "accountTypeOther"
 },
-  "accountTypeSavings": "Account Type Savings",
+  "accountTypeSavings": "Ahorros",
   "@accountTypeSavings": {
   "description": "accountTypeSavings"
 },
-  "budgetAccounts": "Budget Accounts",
+  "budgetAccounts": "Cuentas",
   "@budgetAccounts": {
   "description": "budgetAccounts"
 },
@@ -701,19 +726,19 @@
   "@budgetFabTransfer": {
   "description": "budgetFabTransfer"
 },
-  "budgetMonthExpense": "Budget Month Expense",
+  "budgetMonthExpense": "Gastos del mes",
   "@budgetMonthExpense": {
   "description": "budgetMonthExpense"
 },
-  "budgetMonthIncome": "Budget Month Income",
+  "budgetMonthIncome": "Ingresos del mes",
   "@budgetMonthIncome": {
   "description": "budgetMonthIncome"
 },
-  "budgetNoReceipts": "Budget No Receipts",
+  "budgetNoReceipts": "Aún no hay recibos",
   "@budgetNoReceipts": {
   "description": "budgetNoReceipts"
 },
-  "budgetNoTransactions": "Budget No Transactions",
+  "budgetNoTransactions": "Aún no hay transacciones",
   "@budgetNoTransactions": {
   "description": "budgetNoTransactions"
 },
@@ -726,7 +751,7 @@
     }
   }
 },
-  "budgetRecentTransactions": "Budget Recent Transactions",
+  "budgetRecentTransactions": "Transacciones recientes",
   "@budgetRecentTransactions": {
   "description": "budgetRecentTransactions"
 },
@@ -734,7 +759,7 @@
   "@budgetThisMonth": {
   "description": "budgetThisMonth"
 },
-  "budgetViewAll": "Budget View All",
+  "budgetViewAll": "Ver todo",
   "@budgetViewAll": {
   "description": "budgetViewAll"
 },
@@ -742,55 +767,55 @@
   "@commonDelete": {
   "description": "commonDelete"
 },
-  "receiptAppBar": "Receipt App Bar",
+  "receiptAppBar": "Recibo",
   "@receiptAppBar": {
   "description": "receiptAppBar"
 },
-  "receiptCreateDraft": "Receipt Create Draft",
+  "receiptCreateDraft": "Crear borrador",
   "@receiptCreateDraft": {
   "description": "receiptCreateDraft"
 },
-  "receiptDeleteConfirmBody": "Receipt Delete Confirm Body",
+  "receiptDeleteConfirmBody": "¿Eliminar este recibo?",
   "@receiptDeleteConfirmBody": {
   "description": "receiptDeleteConfirmBody"
 },
-  "receiptDeleteConfirmTitle": "Receipt Delete Confirm Title",
+  "receiptDeleteConfirmTitle": "¿Eliminar el recibo?",
   "@receiptDeleteConfirmTitle": {
   "description": "receiptDeleteConfirmTitle"
 },
-  "receiptEmptyBody": "Receipt Empty Body",
+  "receiptEmptyBody": "Aún no hay recibos. Toma una foto de un recibo para empezar a registrar.",
   "@receiptEmptyBody": {
   "description": "receiptEmptyBody"
 },
-  "receiptListAppBar": "Receipt List App Bar",
+  "receiptListAppBar": "Recibos",
   "@receiptListAppBar": {
   "description": "receiptListAppBar"
 },
-  "receiptNotFound": "Receipt Not Found",
+  "receiptNotFound": "Recibo no encontrado",
   "@receiptNotFound": {
   "description": "receiptNotFound"
 },
-  "receiptNotParsed": "Receipt Not Parsed",
+  "receiptNotParsed": "Aún sin analizar",
   "@receiptNotParsed": {
   "description": "receiptNotParsed"
 },
-  "receiptParseStarted": "Receipt Parse Started",
+  "receiptParseStarted": "Analizando recibo…",
   "@receiptParseStarted": {
   "description": "receiptParseStarted"
 },
-  "receiptParsed": "Receipt Parsed",
+  "receiptParsed": "Analizado",
   "@receiptParsed": {
   "description": "receiptParsed"
 },
-  "receiptParsedData": "Receipt Parsed Data",
+  "receiptParsedData": "Datos analizados",
   "@receiptParsedData": {
   "description": "receiptParsedData"
 },
-  "receiptPickGallery": "Receipt Pick Gallery",
+  "receiptPickGallery": "Desde la galería",
   "@receiptPickGallery": {
   "description": "receiptPickGallery"
 },
-  "receiptReviewDraft": "Receipt Review Draft",
+  "receiptReviewDraft": "Revisar borrador",
   "@receiptReviewDraft": {
   "description": "receiptReviewDraft"
 },
@@ -812,43 +837,43 @@
     }
   }
 },
-  "receiptTakePhoto": "Receipt Take Photo",
+  "receiptTakePhoto": "Tomar foto",
   "@receiptTakePhoto": {
   "description": "receiptTakePhoto"
 },
-  "receiptUpload": "Receipt Upload",
+  "receiptUpload": "Subir",
   "@receiptUpload": {
   "description": "receiptUpload"
 },
-  "settingsCurrencyBudget": "Settings Currency Budget",
+  "settingsCurrencyBudget": "Moneda del presupuesto",
   "@settingsCurrencyBudget": {
   "description": "settingsCurrencyBudget"
 },
-  "settingsFxRates": "Settings Fx Rates",
+  "settingsFxRates": "Tasas de cambio",
   "@settingsFxRates": {
   "description": "settingsFxRates"
 },
-  "settingsFxRatesEmpty": "Settings Fx Rates Empty",
+  "settingsFxRatesEmpty": "No hay tasas de cambio configuradas",
   "@settingsFxRatesEmpty": {
   "description": "settingsFxRatesEmpty"
 },
-  "settingsFxRefresh": "Settings Fx Refresh",
+  "settingsFxRefresh": "Actualizar tasas",
   "@settingsFxRefresh": {
   "description": "settingsFxRefresh"
 },
-  "settingsFxRefreshed": "Settings Fx Refreshed",
+  "settingsFxRefreshed": "Tasas actualizadas",
   "@settingsFxRefreshed": {
   "description": "settingsFxRefreshed"
 },
-  "settingsRateEdit": "Settings Rate Edit",
+  "settingsRateEdit": "Editar tasa",
   "@settingsRateEdit": {
   "description": "settingsRateEdit"
 },
-  "transactionAmountInvalid": "Transaction Amount Invalid",
+  "transactionAmountInvalid": "Escribe un importe válido",
   "@transactionAmountInvalid": {
   "description": "transactionAmountInvalid"
 },
-  "transactionCategoryLabel": "Transaction Category Label",
+  "transactionCategoryLabel": "Categoría",
   "@transactionCategoryLabel": {
   "description": "transactionCategoryLabel"
 },
@@ -861,31 +886,31 @@
     }
   }
 },
-  "transactionDraft": "Transaction Draft",
+  "transactionDraft": "Borrador",
   "@transactionDraft": {
   "description": "transactionDraft"
 },
-  "transactionDraftHint": "Transaction Draft Hint",
+  "transactionDraftHint": "Borrador de un recibo escaneado: revisa los datos antes de guardar",
   "@transactionDraftHint": {
   "description": "transactionDraftHint"
 },
-  "transactionHasReceipt": "Transaction Has Receipt",
+  "transactionHasReceipt": "Recibo adjunto",
   "@transactionHasReceipt": {
   "description": "transactionHasReceipt"
 },
-  "transactionListAppBar": "Transaction List App Bar",
+  "transactionListAppBar": "Transacciones",
   "@transactionListAppBar": {
   "description": "transactionListAppBar"
 },
-  "transactionTypeExpense": "Transaction Type Expense",
+  "transactionTypeExpense": "Gasto",
   "@transactionTypeExpense": {
   "description": "transactionTypeExpense"
 },
-  "transactionTypeIncome": "Transaction Type Income",
+  "transactionTypeIncome": "Ingreso",
   "@transactionTypeIncome": {
   "description": "transactionTypeIncome"
 },
-  "transactionTypeTransfer": "Transaction Type Transfer",
+  "transactionTypeTransfer": "Transferencia",
   "@transactionTypeTransfer": {
   "description": "transactionTypeTransfer"
 },
@@ -919,8 +944,12 @@
 },
   "budgetAddAccount": "Agregar cuenta",
   "@budgetAddAccount": {
-  "description": "budgetAddAccount"
-},
+    "description": "budgetAddAccount"
+  },
+  "budgetAddTransaction": "Agregar transacción",
+  "@budgetAddTransaction": {
+    "description": "budgetAddTransaction"
+  },
   "accountFormTitleNew": "Nueva cuenta",
   "@accountFormTitleNew": {
   "description": "accountFormTitleNew"

@@ -6,196 +6,6 @@ import 'app_localizations.dart';
 
 /// The translations for French (`fr`).
 class AppLocalizationsFr extends AppLocalizations {
-
-  @override
-  String get accountDelete => "Supprimer le compte";
-  @override
-  String accountDeleteBlockedBody(int count) => "Ce compte est utilisé par $count transaction(s) et ne peut pas être supprimé.";
-  @override
-  String get accountDeleteBlockedTitle => "Account Delete Blocked Title";
-  @override
-  @override
-  String accountDeleteConfirmBody(String name) => "Supprimer le compte '$name' supprimera aussi ses transactions et reçus.";
-  @override
-  String get accountDeleteConfirmTitle => "Account Delete Confirm Title";
-  @override
-  String get accountFormEditTitle => "Account Form Edit Title";
-  @override
-  String get accountFormNameLabel => "Account Form Name Label";
-  @override
-  String get accountFormNameRequired => "Account Form Name Required";
-  @override
-  String get accountFormNewTitle => "Account Form New Title";
-  @override
-  String get accountFormNoteLabel => "Account Form Note Label";
-  @override
-  String get accountFormOpeningLabel => "Account Form Opening Label";
-  @override
-  String get accountFormTypeLabel => "Account Form Type Label";
-  @override
-  String accountOpeningLabel(Object value) => "Solde d'ouverture : $value";
-  @override
-  String get accountReceipts => "Account Receipts";
-  @override
-  String get accountTransactions => "Account Transactions";
-  @override
-  String get accountTransactionsTitle => "Transactions";
-  @override
-  String get accountTypeBank => "Account Type Bank";
-  @override
-  String get accountTypeCash => "Account Type Cash";
-  @override
-  String get accountTypeCredit => "Account Type Credit";
-  @override
-  String get accountTypeInvestment => "Account Type Investment";
-  @override
-  String get accountTypeOther => "Account Type Other";
-  @override
-  String get accountTypeSavings => "Account Type Savings";
-  @override
-  String get budgetAddAccount => "Ajouter un compte";
-  @override
-  String get budgetAppBar => "Budget";
-  @override
-  String get budgetEmptyAccounts => "Aucun compte pour le moment. Ajoutez-en un.";
-  @override
-  String get budgetFabAccount => "Budget Fab Account";
-  @override
-  String get budgetFabExpense => "Budget Fab Expense";
-  @override
-  String get budgetFabIncome => "Budget Fab Income";
-  @override
-  String get budgetFabTransfer => "Budget Fab Transfer";
-  @override
-  String get budgetMonthExpense => "Budget Month Expense";
-  @override
-  String get budgetMonthIncome => "Budget Month Income";
-  @override
-  String get budgetNoReceipts => "Budget No Receipts";
-  @override
-  String get budgetNoTransactions => "Budget No Transactions";
-  @override
-  String budgetPendingReceipts(int count) => "$count reçu(s) en attente";
-  @override
-  String get budgetRecentTransactions => "Budget Recent Transactions";
-  @override
-  String get budgetTotalBalance => "Solde total";
-  @override
-  String get budgetViewAll => "Budget View All";
-  @override
-  String get commonDelete => "Common Delete";
-  @override
-  String get commonRetry => "Réessayer";
-  @override
-  String get plannerViewDay => "Vue jour";
-  @override
-  String get plannerViewMonth => "Vue mois";
-  @override
-  String get receiptAppBar => "Receipt App Bar";
-  @override
-  String get receiptCapture => "Capturer un reçu";
-  @override
-  String get receiptCreateDraft => "Receipt Create Draft";
-  @override
-  String get receiptDeleteConfirmBody => "Receipt Delete Confirm Body";
-  @override
-  String get receiptDeleteConfirmTitle => "Receipt Delete Confirm Title";
-  @override
-  String get receiptEmptyBody => "Receipt Empty Body";
-  @override
-  String get receiptListAppBar => "Receipt List App Bar";
-  @override
-  String get receiptNotFound => "Receipt Not Found";
-  @override
-  String get receiptNotParsed => "Receipt Not Parsed";
-  @override
-  String get receiptParseStarted => "Receipt Parse Started";
-  @override
-  String get receiptParsed => "Receipt Parsed";
-  @override
-  String get receiptParsedData => "Receipt Parsed Data";
-  @override
-  String get receiptPickGallery => "Receipt Pick Gallery";
-  @override
-  String get receiptReviewDraft => "Receipt Review Draft";
-  @override
-  String receiptStatusLabel(String status) => "$status";
-  @override
-  String receiptStatusShort(String status) => "$status";
-  @override
-  String get receiptTakePhoto => "Receipt Take Photo";
-  @override
-  String get receiptUpload => "Receipt Upload";
-  @override
-  String get receiptUploadStarted => "Envoi du reçu…";
-  @override
-  String get settingsBaseCurrency => "Devise de base";
-  @override
-  String get settingsCurrencyBudget => "Settings Currency Budget";
-  @override
-  String get settingsFxRates => "Settings Fx Rates";
-  @override
-  String get settingsFxRatesEmpty => "Settings Fx Rates Empty";
-  @override
-  String get settingsFxRefresh => "Settings Fx Refresh";
-  @override
-  String get settingsFxRefreshed => "Settings Fx Refreshed";
-  @override
-  String get settingsRateEdit => "Settings Rate Edit";
-  @override
-  String settingsRateRow(String target, Object rate, String base) => "$base → $target : $rate";
-  @override
-  String get tabBudget => "Budget";
-  @override
-  String get transactionAccountLabel => "Compte";
-  @override
-  String get transactionAccountRequired => "Un compte est requis.";
-  @override
-  String get transactionAmountInvalid => "Transaction Amount Invalid";
-  @override
-  String get transactionAmountLabel => "Montant";
-  @override
-  String get transactionAmountPositive => "Le montant doit être supérieur à zéro.";
-  @override
-  String get transactionCategoryLabel => "Transaction Category Label";
-  @override
-  String transactionConvertedLabel(String amount) => "≈ $amount en devise de base";
-  @override
-  String get transactionCurrencyLabel => "Devise";
-  @override
-  String get transactionDateLabel => "Date";
-  @override
-  String get transactionDraft => "Transaction Draft";
-  @override
-  String get transactionDraftBadge => "Brouillon";
-  @override
-  String get transactionDraftHint => "Transaction Draft Hint";
-  @override
-  String get transactionFormEditTitle => "Modifier la transaction";
-  @override
-  String get transactionFormNewExpenseTitle => "Nouvelle dépense";
-  @override
-  String get transactionFormNewIncomeTitle => "Nouveau revenu";
-  @override
-  String get transactionFormTransferTitle => "Transfert";
-  @override
-  String get transactionHasReceipt => "Transaction Has Receipt";
-  @override
-  String get transactionListAppBar => "Transaction List App Bar";
-  @override
-  String get transactionNoteLabel => "Note";
-  @override
-  String get transactionToAccountLabel => "Vers le compte";
-  @override
-  String get transactionTransferAccountsRequired => "Les deux comptes sont requis pour un transfert.";
-  @override
-  String get transactionTransferSameAccount => "Le transfert nécessite deux comptes différents.";
-  @override
-  String get transactionTypeExpense => "Transaction Type Expense";
-  @override
-  String get transactionTypeIncome => "Transaction Type Income";
-  @override
-  String get transactionTypeTransfer => "Transaction Type Transfer";
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
@@ -398,6 +208,12 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get activeWorkoutAddExerciseTooltip =>
       'Rechercher et ajouter des exercices à cet entraînement';
+
+  @override
+  String get activeWorkoutPrevExercise => 'Exercice précédent';
+
+  @override
+  String get activeWorkoutNextExercise => 'Exercice suivant';
 
   @override
   String get activeWorkoutInThisWorkout => 'Dans cet entraînement';
@@ -689,13 +505,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ajoutez des exercices lors de la création d\'une séance.';
 
   @override
-  String get workoutDetailSetHeaderHash => '#';
-
-  @override
-  String get workoutDetailSetHeaderPlanned => 'Prévu';
-
-  @override
   String get workoutDetailSetHeaderActual => 'Réel';
+
+  @override
+  String workoutDetailSetChipRest(String planned, String rest) {
+    return '$planned · $rest';
+  }
 
   @override
   String workoutDetailSetActualsTitle(int number) {
@@ -918,6 +733,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plannerNextDay => 'Jour suivant';
 
   @override
+  String get plannerViewMonth => 'Vue mois';
+
+  @override
+  String get plannerViewDay => 'Vue jour';
+
+  @override
   String get plannerAnytime => 'À tout moment';
 
   @override
@@ -978,6 +799,27 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get plannerDueTimeClear => 'Effacer l\'heure';
+
+  @override
+  String get plannerStartTimeLabel => 'Heure de début';
+
+  @override
+  String get plannerEndTimeLabel => 'Heure de fin';
+
+  @override
+  String get plannerStartTimeNone => 'Aucune heure de début';
+
+  @override
+  String get plannerEndTimeNone => 'Aucune heure de fin';
+
+  @override
+  String get plannerStartTimeClear => 'Effacer l\'heure de début';
+
+  @override
+  String get plannerEndTimeClear => 'Effacer l\'heure de fin';
+
+  @override
+  String get plannerRepeatInvalid => 'Vérifiez les paramètres de répétition';
 
   @override
   String get plannerAddTask => 'Nouvelle tâche';
@@ -1364,6 +1206,16 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String workoutDetailActualSetDistance(String distance) {
+    return '$distance m';
+  }
+
+  @override
+  String workoutDetailActualSetTime(String value, String time) {
+    return '$value · $time';
+  }
+
+  @override
   String get workoutDetailActualSetEmpty => '—';
 
   @override
@@ -1493,4 +1345,441 @@ class AppLocalizationsFr extends AppLocalizations {
   String workoutSummaryDistanceValue(String distance) {
     return '$distance m';
   }
+
+  @override
+  String settingsRateRow(String target, num rate, String base) {
+    return '$base → $target : $rate';
+  }
+
+  @override
+  String accountDeleteBlockedBody(int count) {
+    return 'Ce compte est utilisé par $count transaction(s) et ne peut pas être supprimé.';
+  }
+
+  @override
+  String get accountDeleteBlockedTitle => 'Compte utilisé';
+
+  @override
+  String accountDeleteConfirmBody(String name) {
+    return 'Supprimer le compte \'$name\' supprimera aussi ses transactions et reçus.';
+  }
+
+  @override
+  String get accountDeleteConfirmTitle => 'Supprimer le compte ?';
+
+  @override
+  String get accountFormEditTitle => 'Modifier le compte';
+
+  @override
+  String get accountFormNameLabel => 'Nom';
+
+  @override
+  String get accountFormNameRequired => 'Saisissez un nom';
+
+  @override
+  String get accountFormNewTitle => 'Nouveau compte';
+
+  @override
+  String get accountFormOpeningHelper =>
+      'Montant déjà présent sur ce compte au début du suivi. Laissez 0 si vous n\'êtes pas sûr.';
+
+  @override
+  String get accountFormIntro =>
+      'Suivez un portefeuille, un compte bancaire ou une carte.';
+
+  @override
+  String get accountFormNoteLabel => 'Account Form Note Label';
+
+  @override
+  String get accountFormOpeningLabel => 'Solde initial';
+
+  @override
+  String get accountFormTypeLabel => 'Type';
+
+  @override
+  String accountOpeningLabel(String value) {
+    return 'Solde initial : $value';
+  }
+
+  @override
+  String get accountReceipts => 'Reçus';
+
+  @override
+  String get accountTransactions => 'Transactions';
+
+  @override
+  String get accountTypeBank => 'Compte bancaire';
+
+  @override
+  String get accountTypeCash => 'Espèces';
+
+  @override
+  String get accountTypeCredit => 'Carte de crédit';
+
+  @override
+  String get accountTypeInvestment => 'Placement';
+
+  @override
+  String get accountTypeOther => 'Autre';
+
+  @override
+  String get accountTypeSavings => 'Épargne';
+
+  @override
+  String get budgetAccounts => 'Comptes';
+
+  @override
+  String get budgetAdd => 'Budget Add';
+
+  @override
+  String get budgetEmptyBody => 'Budget Empty Body';
+
+  @override
+  String get budgetEmptyTitle => 'Budget Empty Title';
+
+  @override
+  String get budgetFabAccount => 'Budget Fab Account';
+
+  @override
+  String get budgetFabExpense => 'Budget Fab Expense';
+
+  @override
+  String get budgetFabIncome => 'Budget Fab Income';
+
+  @override
+  String get budgetFabTransfer => 'Budget Fab Transfer';
+
+  @override
+  String get budgetMonthExpense => 'Dépenses du mois';
+
+  @override
+  String get budgetMonthIncome => 'Revenus du mois';
+
+  @override
+  String get budgetNoReceipts => 'Aucun reçu pour l\'instant';
+
+  @override
+  String get budgetNoTransactions => 'Aucune transaction pour l\'instant';
+
+  @override
+  String budgetPendingReceipts(int count) {
+    return '$count reçu(s) en attente';
+  }
+
+  @override
+  String get budgetRecentTransactions => 'Transactions récentes';
+
+  @override
+  String get budgetThisMonth => 'Budget This Month';
+
+  @override
+  String get budgetViewAll => 'Tout voir';
+
+  @override
+  String get commonDelete => 'Common Delete';
+
+  @override
+  String get receiptAppBar => 'Reçu';
+
+  @override
+  String get receiptCreateDraft => 'Créer un brouillon';
+
+  @override
+  String get receiptDeleteConfirmBody => 'Supprimer ce reçu ?';
+
+  @override
+  String get receiptDeleteConfirmTitle => 'Supprimer le reçu ?';
+
+  @override
+  String get receiptEmptyBody =>
+      'Aucun reçu pour l\'instant. Photographiez un reçu pour commencer à suivre vos dépenses.';
+
+  @override
+  String get receiptListAppBar => 'Reçus';
+
+  @override
+  String get receiptNotFound => 'Reçu introuvable';
+
+  @override
+  String get receiptNotParsed => 'Pas encore analysé';
+
+  @override
+  String get receiptParseStarted => 'Analyse du reçu…';
+
+  @override
+  String get receiptParsed => 'Analysé';
+
+  @override
+  String get receiptParsedData => 'Données analysées';
+
+  @override
+  String get receiptPickGallery => 'Depuis la galerie';
+
+  @override
+  String get receiptReviewDraft => 'Vérifier le brouillon';
+
+  @override
+  String receiptStatusLabel(String status) {
+    return '$status';
+  }
+
+  @override
+  String receiptStatusShort(String status) {
+    return '$status';
+  }
+
+  @override
+  String get receiptTakePhoto => 'Prendre une photo';
+
+  @override
+  String get receiptUpload => 'Téléverser';
+
+  @override
+  String get settingsCurrencyBudget => 'Devise du budget';
+
+  @override
+  String get settingsFxRates => 'Taux de change';
+
+  @override
+  String get settingsFxRatesEmpty => 'Aucun taux de change configuré';
+
+  @override
+  String get settingsFxRefresh => 'Actualiser les taux';
+
+  @override
+  String get settingsFxRefreshed => 'Taux actualisés';
+
+  @override
+  String get settingsRateEdit => 'Modifier le taux';
+
+  @override
+  String get transactionAmountInvalid => 'Saisissez un montant valide';
+
+  @override
+  String get transactionCategoryLabel => 'Catégorie';
+
+  @override
+  String transactionConvertedLabel(String amount) {
+    return '≈ $amount en devise de base';
+  }
+
+  @override
+  String get transactionDraft => 'Brouillon';
+
+  @override
+  String get transactionDraftHint =>
+      'Brouillon issu d\'un reçu scanné — vérifiez les détails avant d\'enregistrer';
+
+  @override
+  String get transactionHasReceipt => 'Reçu joint';
+
+  @override
+  String get transactionListAppBar => 'Transactions';
+
+  @override
+  String get transactionTypeExpense => 'Dépense';
+
+  @override
+  String get transactionTypeIncome => 'Revenu';
+
+  @override
+  String get transactionTypeTransfer => 'Virement';
+
+  @override
+  String get budgetAppBar => 'Budget';
+
+  @override
+  String get budgetSubtitle => 'Comptes, transactions et reçus';
+
+  @override
+  String get budgetTotalBalance => 'Solde total';
+
+  @override
+  String get budgetNetWorth => 'Valeur nette';
+
+  @override
+  String get budgetIncomeLabel => 'Revenus';
+
+  @override
+  String get budgetExpenseLabel => 'Dépenses';
+
+  @override
+  String get budgetEmptyAccounts =>
+      'Aucun compte pour le moment. Ajoutez-en un.';
+
+  @override
+  String get budgetAddAccount => 'Ajouter un compte';
+
+  @override
+  String get budgetAddTransaction => 'Ajouter une transaction';
+
+  @override
+  String get accountFormTitleNew => 'Nouveau compte';
+
+  @override
+  String get accountFormTitleEdit => 'Modifier le compte';
+
+  @override
+  String get accountNameLabel => 'Nom';
+
+  @override
+  String get accountTypeLabel => 'Type';
+
+  @override
+  String get accountCurrencyLabel => 'Devise';
+
+  @override
+  String get accountInitialBalanceLabel => 'Solde initial';
+
+  @override
+  String get accountSave => 'Enregistrer';
+
+  @override
+  String get accountDetailTitle => 'Compte';
+
+  @override
+  String get accountDelete => 'Supprimer le compte';
+
+  @override
+  String get accountTransactionsTitle => 'Transactions';
+
+  @override
+  String get accountBalanceLabel => 'Solde';
+
+  @override
+  String get accountEdit => 'Modifier';
+
+  @override
+  String get transactionFormNewExpenseTitle => 'Nouvelle dépense';
+
+  @override
+  String get transactionFormNewIncomeTitle => 'Nouveau revenu';
+
+  @override
+  String get transactionFormTransferTitle => 'Transfert';
+
+  @override
+  String get transactionFormEditTitle => 'Modifier la transaction';
+
+  @override
+  String get transactionTypeLabel => 'Type';
+
+  @override
+  String get transactionAmountLabel => 'Montant';
+
+  @override
+  String get transactionCurrencyLabel => 'Devise';
+
+  @override
+  String get transactionDateLabel => 'Date';
+
+  @override
+  String get transactionNoteLabel => 'Note';
+
+  @override
+  String get transactionAccountLabel => 'Compte';
+
+  @override
+  String get transactionToAccountLabel => 'Vers le compte';
+
+  @override
+  String get transactionReceiptLabel => 'Reçu';
+
+  @override
+  String get transactionSave => 'Enregistrer';
+
+  @override
+  String get transactionDelete => 'Supprimer';
+
+  @override
+  String get transactionDraftBadge => 'Brouillon';
+
+  @override
+  String get transactionConfirmDraft => 'Confirmer';
+
+  @override
+  String get transactionTransferSameAccount =>
+      'Le transfert nécessite deux comptes différents.';
+
+  @override
+  String get transactionAccountRequired => 'Un compte est requis.';
+
+  @override
+  String get transactionTransferAccountsRequired =>
+      'Les deux comptes sont requis pour un transfert.';
+
+  @override
+  String get transactionAmountPositive =>
+      'Le montant doit être supérieur à zéro.';
+
+  @override
+  String get receiptListTitle => 'Reçus';
+
+  @override
+  String get receiptCapture => 'Capturer un reçu';
+
+  @override
+  String get receiptCaptureStandalone => 'Reçu indépendant';
+
+  @override
+  String get receiptUploadStarted => 'Envoi du reçu…';
+
+  @override
+  String get receiptUploadSuccess => 'Reçu envoyé';
+
+  @override
+  String get receiptUploadError => 'Échec de l\'envoi du reçu';
+
+  @override
+  String get receiptViewTitle => 'Reçu';
+
+  @override
+  String get receiptStatusLocal => 'Local';
+
+  @override
+  String get receiptStatusUploading => 'Envoi';
+
+  @override
+  String get receiptStatusUploaded => 'Envoyé';
+
+  @override
+  String get receiptStatusError => 'Erreur';
+
+  @override
+  String get receiptAttach => 'Joindre à la transaction';
+
+  @override
+  String get receiptChooseSource => 'Choisir la source';
+
+  @override
+  String get receiptFromCamera => 'Appareil photo';
+
+  @override
+  String get receiptFromGallery => 'Galerie';
+
+  @override
+  String get commonRetry => 'Réessayer';
+
+  @override
+  String get settingsBaseCurrency => 'Devise de base';
+
+  @override
+  String get settingsCategoryFx => 'Taux de change';
+
+  @override
+  String get settingsRefreshRates => 'Actualiser les taux';
+
+  @override
+  String get settingsEditRate => 'Modifier le taux';
+
+  @override
+  String settingsRateBase(Object base) {
+    return 'Par 1 $base';
+  }
+
+  @override
+  String get settingsRateInvalid => 'Saisissez un taux positif.';
+
+  @override
+  String get tabBudget => 'Budget';
 }

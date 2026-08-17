@@ -104,6 +104,8 @@
   "emptyExercisesCta": "Ajouter un exercice",
   "activeWorkoutAddExercise": "Ajouter un exercice",
   "activeWorkoutAddExerciseTooltip": "Rechercher et ajouter des exercices à cet entraînement",
+  "activeWorkoutPrevExercise": "Exercice précédent",
+  "activeWorkoutNextExercise": "Exercice suivant",
   "activeWorkoutInThisWorkout": "Dans cet entraînement",
   "activeWorkoutAllExercises": "Tous les exercices",
   "activeWorkoutSearchPrompt": "Tapez pour rechercher des exercices",
@@ -240,9 +242,14 @@
   "workoutDetailExercises": "Exercices",
   "emptyWorkoutDetailTitle": "Aucun exercice dans cette séance",
   "emptyWorkoutDetailBody": "Ajoutez des exercices lors de la création d'une séance.",
-  "workoutDetailSetHeaderHash": "#",
-  "workoutDetailSetHeaderPlanned": "Prévu",
   "workoutDetailSetHeaderActual": "Réel",
+  "workoutDetailSetChipRest": "{planned} · {rest}",
+  "@workoutDetailSetChipRest": {
+    "placeholders": {
+      "planned": { "type": "String" },
+      "rest": { "type": "String" }
+    }
+  },
   "workoutDetailSetActualsTitle": "Série {number} — Réel",
   "workoutDetailActualRepsLabel": "Répétitions réelles",
   "workoutDetailActualWeightLabel": "Charge réelle (kg)",
@@ -337,6 +344,13 @@
   "plannerDueDateClear": "Effacer la date limite",
   "plannerDueTimeNone": "Aucune heure",
   "plannerDueTimeClear": "Effacer l'heure",
+  "plannerStartTimeLabel": "Heure de début",
+  "plannerEndTimeLabel": "Heure de fin",
+  "plannerStartTimeNone": "Aucune heure de début",
+  "plannerEndTimeNone": "Aucune heure de fin",
+  "plannerStartTimeClear": "Effacer l'heure de début",
+  "plannerEndTimeClear": "Effacer l'heure de fin",
+  "plannerRepeatInvalid": "Vérifiez les paramètres de répétition",
   "plannerAddTask": "Nouvelle tâche",
   "plannerEditTask": "Modifier la tâche",
   "plannerDeleted": "Tâche « {title} » supprimée",
@@ -474,6 +488,8 @@
   "workoutDetailActualSetReps": "{reps} × {weight} kg",
   "workoutDetailActualSetWeight": "{weight} kg",
   "workoutDetailActualSetDuration": "{reps} min",
+  "workoutDetailActualSetDistance": "{distance} m",
+  "workoutDetailActualSetTime": "{value} · {time}",
   "workoutDetailActualSetEmpty": "—",
 
   "bodyMetricsTitle": "Mensurations",
@@ -583,7 +599,7 @@
     }
   }
 },
-  "accountDeleteBlockedTitle": "Account Delete Blocked Title",
+  "accountDeleteBlockedTitle": "Compte utilisé",
   "@accountDeleteBlockedTitle": {
   "description": "accountDeleteBlockedTitle"
 },
@@ -596,39 +612,48 @@
     }
   }
 },
-  "accountDeleteConfirmTitle": "Account Delete Confirm Title",
+  "accountDeleteConfirmTitle": "Supprimer le compte ?",
   "@accountDeleteConfirmTitle": {
   "description": "accountDeleteConfirmTitle"
 },
-  "accountFormEditTitle": "Account Form Edit Title",
+  "accountFormEditTitle": "Modifier le compte",
   "@accountFormEditTitle": {
   "description": "accountFormEditTitle"
 },
-  "accountFormNameLabel": "Account Form Name Label",
+  "accountFormNameLabel": "Nom",
   "@accountFormNameLabel": {
   "description": "accountFormNameLabel"
 },
-  "accountFormNameRequired": "Account Form Name Required",
+  "accountFormNameRequired": "Saisissez un nom",
   "@accountFormNameRequired": {
   "description": "accountFormNameRequired"
 },
-  "accountFormNewTitle": "Account Form New Title",
+  "accountFormNewTitle": "Nouveau compte",
   "@accountFormNewTitle": {
   "description": "accountFormNewTitle"
 },
+  "accountFormOpeningHelper": "Montant déjà présent sur ce compte au début du suivi. Laissez 0 si vous n'êtes pas sûr.",
+  "@accountFormOpeningHelper": {
+    "description": "accountFormOpeningHelper"
+  },
+  "accountFormIntro": "Suivez un portefeuille, un compte bancaire ou une carte.",
+  "@accountFormIntro": {
+    "description": "accountFormIntro"
+  },
+
   "accountFormNoteLabel": "Account Form Note Label",
   "@accountFormNoteLabel": {
   "description": "accountFormNoteLabel"
 },
-  "accountFormOpeningLabel": "Account Form Opening Label",
+  "accountFormOpeningLabel": "Solde initial",
   "@accountFormOpeningLabel": {
   "description": "accountFormOpeningLabel"
 },
-  "accountFormTypeLabel": "Account Form Type Label",
+  "accountFormTypeLabel": "Type",
   "@accountFormTypeLabel": {
   "description": "accountFormTypeLabel"
 },
-  "accountOpeningLabel": "Solde d'ouverture : {value}",
+  "accountOpeningLabel": "Solde initial : {value}",
   "@accountOpeningLabel": {
   "description": "accountOpeningLabel",
   "placeholders": {
@@ -637,39 +662,39 @@
     }
   }
 },
-  "accountReceipts": "Account Receipts",
+  "accountReceipts": "Reçus",
   "@accountReceipts": {
   "description": "accountReceipts"
 },
-  "accountTransactions": "Account Transactions",
+  "accountTransactions": "Transactions",
   "@accountTransactions": {
   "description": "accountTransactions"
 },
-  "accountTypeBank": "Account Type Bank",
+  "accountTypeBank": "Compte bancaire",
   "@accountTypeBank": {
   "description": "accountTypeBank"
 },
-  "accountTypeCash": "Account Type Cash",
+  "accountTypeCash": "Espèces",
   "@accountTypeCash": {
   "description": "accountTypeCash"
 },
-  "accountTypeCredit": "Account Type Credit",
+  "accountTypeCredit": "Carte de crédit",
   "@accountTypeCredit": {
   "description": "accountTypeCredit"
 },
-  "accountTypeInvestment": "Account Type Investment",
+  "accountTypeInvestment": "Placement",
   "@accountTypeInvestment": {
   "description": "accountTypeInvestment"
 },
-  "accountTypeOther": "Account Type Other",
+  "accountTypeOther": "Autre",
   "@accountTypeOther": {
   "description": "accountTypeOther"
 },
-  "accountTypeSavings": "Account Type Savings",
+  "accountTypeSavings": "Épargne",
   "@accountTypeSavings": {
   "description": "accountTypeSavings"
 },
-  "budgetAccounts": "Budget Accounts",
+  "budgetAccounts": "Comptes",
   "@budgetAccounts": {
   "description": "budgetAccounts"
 },
@@ -701,19 +726,19 @@
   "@budgetFabTransfer": {
   "description": "budgetFabTransfer"
 },
-  "budgetMonthExpense": "Budget Month Expense",
+  "budgetMonthExpense": "Dépenses du mois",
   "@budgetMonthExpense": {
   "description": "budgetMonthExpense"
 },
-  "budgetMonthIncome": "Budget Month Income",
+  "budgetMonthIncome": "Revenus du mois",
   "@budgetMonthIncome": {
   "description": "budgetMonthIncome"
 },
-  "budgetNoReceipts": "Budget No Receipts",
+  "budgetNoReceipts": "Aucun reçu pour l'instant",
   "@budgetNoReceipts": {
   "description": "budgetNoReceipts"
 },
-  "budgetNoTransactions": "Budget No Transactions",
+  "budgetNoTransactions": "Aucune transaction pour l'instant",
   "@budgetNoTransactions": {
   "description": "budgetNoTransactions"
 },
@@ -726,7 +751,7 @@
     }
   }
 },
-  "budgetRecentTransactions": "Budget Recent Transactions",
+  "budgetRecentTransactions": "Transactions récentes",
   "@budgetRecentTransactions": {
   "description": "budgetRecentTransactions"
 },
@@ -734,7 +759,7 @@
   "@budgetThisMonth": {
   "description": "budgetThisMonth"
 },
-  "budgetViewAll": "Budget View All",
+  "budgetViewAll": "Tout voir",
   "@budgetViewAll": {
   "description": "budgetViewAll"
 },
@@ -742,55 +767,55 @@
   "@commonDelete": {
   "description": "commonDelete"
 },
-  "receiptAppBar": "Receipt App Bar",
+  "receiptAppBar": "Reçu",
   "@receiptAppBar": {
   "description": "receiptAppBar"
 },
-  "receiptCreateDraft": "Receipt Create Draft",
+  "receiptCreateDraft": "Créer un brouillon",
   "@receiptCreateDraft": {
   "description": "receiptCreateDraft"
 },
-  "receiptDeleteConfirmBody": "Receipt Delete Confirm Body",
+  "receiptDeleteConfirmBody": "Supprimer ce reçu ?",
   "@receiptDeleteConfirmBody": {
   "description": "receiptDeleteConfirmBody"
 },
-  "receiptDeleteConfirmTitle": "Receipt Delete Confirm Title",
+  "receiptDeleteConfirmTitle": "Supprimer le reçu ?",
   "@receiptDeleteConfirmTitle": {
   "description": "receiptDeleteConfirmTitle"
 },
-  "receiptEmptyBody": "Receipt Empty Body",
+  "receiptEmptyBody": "Aucun reçu pour l'instant. Photographiez un reçu pour commencer à suivre vos dépenses.",
   "@receiptEmptyBody": {
   "description": "receiptEmptyBody"
 },
-  "receiptListAppBar": "Receipt List App Bar",
+  "receiptListAppBar": "Reçus",
   "@receiptListAppBar": {
   "description": "receiptListAppBar"
 },
-  "receiptNotFound": "Receipt Not Found",
+  "receiptNotFound": "Reçu introuvable",
   "@receiptNotFound": {
   "description": "receiptNotFound"
 },
-  "receiptNotParsed": "Receipt Not Parsed",
+  "receiptNotParsed": "Pas encore analysé",
   "@receiptNotParsed": {
   "description": "receiptNotParsed"
 },
-  "receiptParseStarted": "Receipt Parse Started",
+  "receiptParseStarted": "Analyse du reçu…",
   "@receiptParseStarted": {
   "description": "receiptParseStarted"
 },
-  "receiptParsed": "Receipt Parsed",
+  "receiptParsed": "Analysé",
   "@receiptParsed": {
   "description": "receiptParsed"
 },
-  "receiptParsedData": "Receipt Parsed Data",
+  "receiptParsedData": "Données analysées",
   "@receiptParsedData": {
   "description": "receiptParsedData"
 },
-  "receiptPickGallery": "Receipt Pick Gallery",
+  "receiptPickGallery": "Depuis la galerie",
   "@receiptPickGallery": {
   "description": "receiptPickGallery"
 },
-  "receiptReviewDraft": "Receipt Review Draft",
+  "receiptReviewDraft": "Vérifier le brouillon",
   "@receiptReviewDraft": {
   "description": "receiptReviewDraft"
 },
@@ -812,43 +837,43 @@
     }
   }
 },
-  "receiptTakePhoto": "Receipt Take Photo",
+  "receiptTakePhoto": "Prendre une photo",
   "@receiptTakePhoto": {
   "description": "receiptTakePhoto"
 },
-  "receiptUpload": "Receipt Upload",
+  "receiptUpload": "Téléverser",
   "@receiptUpload": {
   "description": "receiptUpload"
 },
-  "settingsCurrencyBudget": "Settings Currency Budget",
+  "settingsCurrencyBudget": "Devise du budget",
   "@settingsCurrencyBudget": {
   "description": "settingsCurrencyBudget"
 },
-  "settingsFxRates": "Settings Fx Rates",
+  "settingsFxRates": "Taux de change",
   "@settingsFxRates": {
   "description": "settingsFxRates"
 },
-  "settingsFxRatesEmpty": "Settings Fx Rates Empty",
+  "settingsFxRatesEmpty": "Aucun taux de change configuré",
   "@settingsFxRatesEmpty": {
   "description": "settingsFxRatesEmpty"
 },
-  "settingsFxRefresh": "Settings Fx Refresh",
+  "settingsFxRefresh": "Actualiser les taux",
   "@settingsFxRefresh": {
   "description": "settingsFxRefresh"
 },
-  "settingsFxRefreshed": "Settings Fx Refreshed",
+  "settingsFxRefreshed": "Taux actualisés",
   "@settingsFxRefreshed": {
   "description": "settingsFxRefreshed"
 },
-  "settingsRateEdit": "Settings Rate Edit",
+  "settingsRateEdit": "Modifier le taux",
   "@settingsRateEdit": {
   "description": "settingsRateEdit"
 },
-  "transactionAmountInvalid": "Transaction Amount Invalid",
+  "transactionAmountInvalid": "Saisissez un montant valide",
   "@transactionAmountInvalid": {
   "description": "transactionAmountInvalid"
 },
-  "transactionCategoryLabel": "Transaction Category Label",
+  "transactionCategoryLabel": "Catégorie",
   "@transactionCategoryLabel": {
   "description": "transactionCategoryLabel"
 },
@@ -861,31 +886,31 @@
     }
   }
 },
-  "transactionDraft": "Transaction Draft",
+  "transactionDraft": "Brouillon",
   "@transactionDraft": {
   "description": "transactionDraft"
 },
-  "transactionDraftHint": "Transaction Draft Hint",
+  "transactionDraftHint": "Brouillon issu d'un reçu scanné — vérifiez les détails avant d'enregistrer",
   "@transactionDraftHint": {
   "description": "transactionDraftHint"
 },
-  "transactionHasReceipt": "Transaction Has Receipt",
+  "transactionHasReceipt": "Reçu joint",
   "@transactionHasReceipt": {
   "description": "transactionHasReceipt"
 },
-  "transactionListAppBar": "Transaction List App Bar",
+  "transactionListAppBar": "Transactions",
   "@transactionListAppBar": {
   "description": "transactionListAppBar"
 },
-  "transactionTypeExpense": "Transaction Type Expense",
+  "transactionTypeExpense": "Dépense",
   "@transactionTypeExpense": {
   "description": "transactionTypeExpense"
 },
-  "transactionTypeIncome": "Transaction Type Income",
+  "transactionTypeIncome": "Revenu",
   "@transactionTypeIncome": {
   "description": "transactionTypeIncome"
 },
-  "transactionTypeTransfer": "Transaction Type Transfer",
+  "transactionTypeTransfer": "Virement",
   "@transactionTypeTransfer": {
   "description": "transactionTypeTransfer"
 },
@@ -919,8 +944,12 @@
 },
   "budgetAddAccount": "Ajouter un compte",
   "@budgetAddAccount": {
-  "description": "budgetAddAccount"
-},
+    "description": "budgetAddAccount"
+  },
+  "budgetAddTransaction": "Ajouter une transaction",
+  "@budgetAddTransaction": {
+    "description": "budgetAddTransaction"
+  },
   "accountFormTitleNew": "Nouveau compte",
   "@accountFormTitleNew": {
   "description": "accountFormTitleNew"

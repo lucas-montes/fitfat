@@ -23,7 +23,6 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _openingCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController();
   AccountType _type = AccountType.cash;
   bool _saving = false;
   Account? _existing;
@@ -44,7 +43,6 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     _existing = acc;
     _nameCtrl.text = acc.name;
     _openingCtrl.text = acc.openingBalance.toString();
-    _noteCtrl.text = acc.note ?? '';
     _type = acc.type;
     setState(() {});
   }
@@ -53,7 +51,6 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _openingCtrl.dispose();
-    _noteCtrl.dispose();
     super.dispose();
   }
 
@@ -64,15 +61,12 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       final repo = ref.read(accountRepositoryProvider);
       final name = _nameCtrl.text.trim();
       final opening = double.tryParse(_openingCtrl.text.trim()) ?? 0.0;
-      final note = _noteCtrl.text.trim();
       if (_isEditing) {
         await repo.update(
           _existing!.copyWith(
             name: name,
             type: _type,
             openingBalance: opening,
-            note: note,
-            clearNote: note.isEmpty,
           ),
         );
       } else {
@@ -81,7 +75,6 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             name: name,
             type: _type,
             openingBalance: opening,
-            note: note.isEmpty ? null : note,
           ),
         );
       }
@@ -178,6 +171,13 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Text(
+              l10n.accountFormIntro,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _nameCtrl,
               autofocus: true,
@@ -207,14 +207,10 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               controller: _openingCtrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: '${l10n.accountFormOpeningLabel} ($base)',
+                labelText: l10n.accountFormOpeningLabel,
+                suffixText: base,
+                helperText: l10n.accountFormOpeningHelper,
               ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _noteCtrl,
-              maxLines: 3,
-              decoration: InputDecoration(labelText: l10n.accountFormNoteLabel),
             ),
             const SizedBox(height: 24),
             FilledButton(
