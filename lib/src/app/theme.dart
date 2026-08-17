@@ -107,13 +107,6 @@ final class FitFatTheme {
         backgroundColor: scheme.surfaceContainerHigh,
         shape: RoundedRectangleBorder(borderRadius: radiusL),
       ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        insetPadding: const EdgeInsets.all(FitFatTokens.spaceL),
-        shape: RoundedRectangleBorder(borderRadius: radius),
-        backgroundColor: scheme.inverseSurface,
-        contentTextStyle: TextStyle(color: scheme.onInverseSurface),
-      ),
       expansionTileTheme: ExpansionTileThemeData(
         shape: const Border(),
         collapsedShape: const Border(),

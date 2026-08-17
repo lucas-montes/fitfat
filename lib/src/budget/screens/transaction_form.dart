@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
@@ -159,14 +160,10 @@ final class _TransactionFormScreenState
           if (mounted) ref.invalidate(receiptListProvider);
         } catch (_) {}
       }();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.receiptUploadStarted)),
-      );
+      showTopBanner(context, message: l10n.receiptUploadStarted);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
-        );
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
     }
   }
@@ -177,28 +174,20 @@ final class _TransactionFormScreenState
     final base = ref.read(settingsProvider).baseCurrency;
     final amount = double.tryParse(_amountCtrl.text) ?? 0.0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.transactionAmountPositive)),
-      );
+      showTopBanner(context, message: l10n.transactionAmountPositive);
       return;
     }
     if (_type != TransactionType.transfer && _accountId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.transactionAccountRequired)),
-      );
+      showTopBanner(context, message: l10n.transactionAccountRequired);
       return;
     }
     if (_type == TransactionType.transfer) {
       if (_accountId == null || _toAccountId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.transactionTransferAccountsRequired)),
-        );
+        showTopBanner(context, message: l10n.transactionTransferAccountsRequired);
         return;
       }
       if (_accountId == _toAccountId) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.transactionTransferSameAccount)),
-        );
+        showTopBanner(context, message: l10n.transactionTransferSameAccount);
         return;
       }
     }
@@ -261,9 +250,7 @@ final class _TransactionFormScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
-        );
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

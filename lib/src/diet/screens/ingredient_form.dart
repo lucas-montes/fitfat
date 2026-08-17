@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -282,9 +283,7 @@ final class _IngredientFormScreenState
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.errorWithMessage('$e'))));
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

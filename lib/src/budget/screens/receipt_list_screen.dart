@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -121,15 +122,11 @@ final class ReceiptListScreen extends ConsumerWidget {
       }();
       if (context.mounted) {
         ref.invalidate(receiptListProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.receiptUploadStarted)),
-        );
+        showTopBanner(context, message: l10n.receiptUploadStarted);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
-        );
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
     }
   }

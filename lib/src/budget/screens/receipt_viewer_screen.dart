@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -121,15 +122,11 @@ final class ReceiptViewerScreen extends ConsumerWidget {
       if (context.mounted) {
         ref.invalidate(receiptByIdProvider(receipt.id));
         ref.invalidate(receiptListProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.receiptParseStarted)),
-        );
+        showTopBanner(context, message: l10n.receiptParseStarted);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
-        );
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
     }
   }
@@ -141,9 +138,7 @@ final class ReceiptViewerScreen extends ConsumerWidget {
   ) async {
     final l10n = AppLocalizations.of(context)!;
     if (receipt.parsedJson == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.receiptNotParsed)),
-      );
+      showTopBanner(context, message: l10n.receiptNotParsed);
       return;
     }
     final json = jsonDecode(receipt.parsedJson!) as Map<String, dynamic>;

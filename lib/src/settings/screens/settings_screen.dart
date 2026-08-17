@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -138,9 +139,7 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!await _confirmReset()) return;
     await resetAllData(ref);
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(l10n.settingsResetDataDone)));
+    showTopBanner(context, message: l10n.settingsResetDataDone);
   }
 
   @override
@@ -570,15 +569,11 @@ final class _CurrencySection extends ConsumerWidget {
       await ref.read(fxRepositoryProvider).replaceAll(base, fetched);
       ref.invalidate(fxRatesProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.settingsFxRefreshed)),
-        );
+        showTopBanner(context, message: l10n.settingsFxRefreshed);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
-        );
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -69,24 +70,20 @@ final class IngredientListScreen extends ConsumerWidget {
   ) async {
     unawaited(Haptics.mediumImpact());
     final l10n = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
     final repo = ref.read(ingredientRepositoryProvider);
     await repo.archive(ingredient.id);
     ref.invalidate(ingredientListProvider);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.ingredientArchived(ingredient.name)),
-          action: SnackBarAction(
-            label: l10n.commonUndo,
-            onPressed: () async {
-              await repo.restore(ingredient.id);
-              ref.invalidate(ingredientListProvider);
-            },
-          ),
-        ),
+    if (context.mounted) {
+      showTopBanner(
+        context,
+        message: l10n.ingredientArchived(ingredient.name),
+        actionLabel: l10n.commonUndo,
+        onAction: () async {
+          await repo.restore(ingredient.id);
+          ref.invalidate(ingredientListProvider);
+        },
       );
+    }
   }
 }
 

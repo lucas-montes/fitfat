@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -92,9 +93,7 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
   void _openEdit(BuildContext context, Exercise exercise) {
     if (exercise.isLocked) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(l10n.exerciseLockedEdit)));
+      showTopBanner(context, message: l10n.exerciseLockedEdit);
       return;
     }
     _openForm(context, null, exercise);
@@ -116,9 +115,7 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
   Future<bool> _confirmDelete(Exercise exercise) async {
     if (exercise.isLocked) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(l10n.exerciseLockedDelete)));
+      showTopBanner(context, message: l10n.exerciseLockedDelete);
       return false;
     }
     final count = await ref
@@ -197,7 +194,6 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                     prefixIcon: const Icon(Icons.search),
                     hintText: l10n.exerciseListSearchHint,
                     isDense: true,
-                    border: const OutlineInputBorder(),
                     suffixIcon: _query.isEmpty
                         ? null
                         : IconButton(
@@ -418,7 +414,6 @@ final class _FilterOptionsSheetState extends State<_FilterOptionsSheet> {
                     prefixIcon: const Icon(Icons.search),
                     hintText: l10n.exerciseFilterSearchOptions,
                     isDense: true,
-                    border: const OutlineInputBorder(),
                   ),
                   onChanged: (v) => setState(() => _search = v),
                 ),
