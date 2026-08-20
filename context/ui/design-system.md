@@ -3,6 +3,18 @@
 The app-wide design system lives in `lib/src/ui/` and is wired through `lib/src/app/theme.dart`.
 Established in plan `ui-ux-improvements` T01 (polished Material 3, teal seed kept).
 
+## AppBar action budget (appbar-declutter Phase A)
+
+Rule: **≤1 always-visible action + one `PopupMenuButton` (⋮ More) per screen.**
+Create actions live in a `FAB`; search opens a dedicated search route. The appbar
+must never become a dumping ground — when a second always-visible action is
+needed, it moves into the ⋮ More menu instead.
+
+- Planner: 1 visible icon (view toggle) + ⋮ More (copy previous day).
+- Dashboard: single gear; Meals: manage-ingredients; Budget/Notes/Experiments/
+  Exercise: title only.
+- Follow this budget on new screens and when adding actions to existing ones.
+
 ## Layout
 
 ```

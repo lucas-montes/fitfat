@@ -424,6 +424,7 @@
     }
   },
   "plannerCopyPrevious": "Copy from yesterday",
+  "plannerMoreActions": "More actions",
   "plannerCopyConfirmTitle": "Copy pending tasks?",
   "plannerCopyConfirmBody": "{count} pending task from yesterday will be copied to today.",
   "plannerCopyConfirmBody_plural": "{count} pending tasks from yesterday will be copied to today.",

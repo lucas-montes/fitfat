@@ -1606,6 +1606,12 @@ abstract class AppLocalizations {
   /// **'Copy from yesterday'**
   String get plannerCopyPrevious;
 
+  /// No description provided for @plannerMoreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get plannerMoreActions;
+
   /// No description provided for @plannerCopyConfirmTitle.
   ///
   /// In en, this message translates to:

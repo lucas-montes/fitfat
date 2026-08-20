@@ -29,6 +29,8 @@ final class PlannerScreen extends ConsumerStatefulWidget {
 
 enum _PlannerViewMode { day, month }
 
+enum _PlannerMenuAction { copyPreviousDay }
+
 final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   /// Fixed anchor for the infinite day pager; all real days are after it.
   static final DateTime _anchorDate = DateTime(2000);
@@ -147,10 +149,24 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 : l10n.plannerViewDay,
             onPressed: _toggleViewMode,
           ),
-          IconButton(
-            icon: const Icon(Icons.copy_all),
-            tooltip: l10n.plannerCopyPrevious,
-            onPressed: _copyFromPreviousDay,
+          PopupMenuButton<_PlannerMenuAction>(
+            tooltip: l10n.plannerMoreActions,
+            onSelected: (action) {
+              switch (action) {
+                case _PlannerMenuAction.copyPreviousDay:
+                  _copyFromPreviousDay();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: _PlannerMenuAction.copyPreviousDay,
+                child: ListTile(
+                  leading: const Icon(Icons.copy_all),
+                  title: Text(l10n.plannerCopyPrevious),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),

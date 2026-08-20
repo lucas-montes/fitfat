@@ -851,6 +851,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plannerCopyPrevious => 'Copier depuis hier';
 
   @override
+  String get plannerMoreActions => 'Plus d\'actions';
+
+  @override
   String get plannerCopyConfirmTitle => 'Copier les tâches en attente ?';
 
   @override

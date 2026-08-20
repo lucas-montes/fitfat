@@ -359,6 +359,7 @@
     }
   },
   "plannerCopyPrevious": "Copier depuis hier",
+  "plannerMoreActions": "Plus d'actions",
   "plannerCopyConfirmTitle": "Copier les tâches en attente ?",
   "plannerCopyConfirmBody": "{count} tâche en attente d'hier sera copiée aujourd'hui.",
   "plannerCopyConfirmBody_plural": "{count} tâches en attente d'hier seront copiées aujourd'hui.",
