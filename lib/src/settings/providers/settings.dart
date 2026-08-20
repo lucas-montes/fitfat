@@ -56,6 +56,7 @@ final class SettingsState {
   SettingsState copyWith({
     ThemeMode? themeMode,
     Locale? locale,
+    bool clearLocale = false,
     int? age,
     bool clearAge = false,
     BodyWeightGoal? bodyWeightGoal,
@@ -74,7 +75,7 @@ final class SettingsState {
     String? baseCurrency,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
-    locale: locale ?? this.locale,
+    locale: clearLocale ? null : (locale ?? this.locale),
     age: clearAge ? null : (age ?? this.age),
     bodyWeightGoal: clearBodyWeightGoal
         ? null
@@ -125,11 +126,11 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       computeActivity: prefs.getBool(_computeActivityKey) ?? false,
       trackBodyFat: prefs.getBool(_trackBodyFatKey) ?? false,
       bodyFatPercent: prefs.getDouble(_bodyFatPercentKey),
-       plannerNotifications: prefs.getBool(_plannerNotificationsKey) ?? true,
-       restAlarmSound: prefs.getBool(_restAlarmSoundKey) ?? true,
-       restAlarmVibration: prefs.getBool(_restAlarmVibrationKey) ?? true,
-       baseCurrency: prefs.getString(_baseCurrencyKey) ?? 'USD',
-     );
+      plannerNotifications: prefs.getBool(_plannerNotificationsKey) ?? true,
+      restAlarmSound: prefs.getBool(_restAlarmSoundKey) ?? true,
+      restAlarmVibration: prefs.getBool(_restAlarmVibrationKey) ?? true,
+      baseCurrency: prefs.getString(_baseCurrencyKey) ?? 'USD',
+    );
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -144,6 +145,11 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setString(_localeKey, locale.languageCode);
     state = state.copyWith(locale: locale);
+  }
+
+  Future<void> setLocaleToSystem() async {
+    await ref.read(sharedPreferencesProvider).remove(_localeKey);
+    state = state.copyWith(locale: null, clearLocale: true);
   }
 
   Future<void> setAge(int? age) async {

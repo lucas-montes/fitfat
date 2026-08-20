@@ -30,21 +30,25 @@ App-level settings (theme mode, language, profile age, body-weight goal) persist
 | trackBodyFat | bool | false | persisted as `settings_track_body_fat`; enables the body-fat input + Katch-McArdle |
 | bodyFatPercent | double? | null | persisted as `settings_body_fat_percent` |
 | plannerNotifications | bool | true | persisted as `settings_planner_notifications`; app-wide task-reminder toggle (T11) |
+| restAlarmSound | bool | true | persisted as `settings_rest_alarm_sound`; rest alarm plays a sound |
+| restAlarmVibration | bool | true | persisted as `settings_rest_alarm_vibration`; rest alarm vibrates |
+| baseCurrency | String | 'USD' | persisted as `settings_base_currency`; budget base currency (uppercase ISO-4217-ish) |
 
 `SettingsNotifier` (`extends Notifier<SettingsState>`):
 
 - `build()` reads the keys from prefs synchronously.
-- `setThemeMode(ThemeMode)` / `setLocale(Locale)` / `setAge(int?)` / `setBodyWeightGoal(BodyWeightGoal?)` / `setGender(Gender?)` / `setActivityLevel(ActivityLevel?)` / `setComputeActivity(bool)` / `setTrackBodyFat(bool)` / `setBodyFatPercent(double?)` / `setPlannerNotifications(bool)` — persist first, then update state (apply immediately). Nullable setters remove the key when null (blank clears age/body-fat; there is no UI to clear the goal — once set it is always one of the three, default null = no badge).
+- `setThemeMode(ThemeMode)` / `setLocale(Locale)` / `setLocaleToSystem()` / `setAge(int?)` / `setBodyWeightGoal(BodyWeightGoal?)` / `setGender(Gender?)` / `setActivityLevel(ActivityLevel?)` / `setComputeActivity(bool)` / `setTrackBodyFat(bool)` / `setBodyFatPercent(double?)` / `setPlannerNotifications(bool)` / `setRestAlarmSound(bool)` / `setRestAlarmVibration(bool)` / `setBaseCurrency(String)` — persist first, then update state (apply immediately). Nullable setters remove the key when null (blank clears age/body-fat; there is no UI to clear the goal — once set it is always one of the three, default null = no badge). `setLocaleToSystem()` removes `settings_locale` so `state.locale` becomes null (device default); `SettingsState.copyWith` supports `clearLocale` for this.
 
 ## Settings screen
 
-`SettingsScreen` (`ConsumerStatefulWidget`) — `ListView` with five sections:
+`SettingsScreen` (`ConsumerStatefulWidget`) — **hub** (settings-rework, 2026-08-17) of five `ListTile`s
+that push dedicated sub-screens via `MaterialPageRoute`:
 
-- **Profile** — `TextFormField` for age (numeric, validated 0–120; blank clears; saved via check icon or keyboard done); `SegmentedButton<Gender>` (Male / Female); an activity-source `SwitchListTile` (`settingsComputeActivity`) that switches between the static `SegmentedButton<ActivityLevel>` (sedentary…very active) and computed-from-workouts+steps mode; a body-fat `SwitchListTile` (`settingsTrackBodyFat`) that reveals a body-fat `TextFormField` (%) when on. These feed the dashboard calorie target (see [dashboard/dashboard.md](../dashboard/dashboard.md)).
-- **Body weight goal** — `SegmentedButton<BodyWeightGoal>`: Lose weight / Maintain weight / Gain weight. Uses `emptySelectionAllowed: true` + an empty guard (same pattern as Language) because the goal can start unset; once set it is always one of the three (no explicit clear UI).
-- **Notifications** — `SwitchListTile` (`settingsPlannerNotifications` + `settingsPlannerNotificationsSubtitle`): app-wide task-reminder toggle. Turning off calls `TaskReminderScheduler.cancelAll()`; turning back on calls `reschedulePending(repository)` (l10n-resolved) — see [notifications/notifications.md](../notifications/notifications.md).
-- **Appearance** — `SegmentedButton<ThemeMode>`: System / Light / Dark.
-- **Language** — `SegmentedButton<Locale>`: en / fr / es. `emptySelectionAllowed: true` + empty guard because `selected` can start empty (device default); no "System" option to revert after choosing (per plan).
+- **Profile** (`_ProfileScreen`) — `TextFormField` for age (numeric, validated 0–120; blank clears; saved via check icon or keyboard done); `SegmentedButton<Gender>` (Male / Female); an activity-source `SwitchListTile` (`settingsComputeActivity`) that switches between the static `SegmentedButton<ActivityLevel>` (sedentary…very active) and computed-from-workouts+steps mode; a body-fat `SwitchListTile` (`settingsTrackBodyFat`) that reveals a body-fat `TextFormField` (%) when on; **Body weight goal** `SegmentedButton<BodyWeightGoal>` (Lose / Maintain / Gain, `emptySelectionAllowed` + empty guard). These feed the dashboard calorie target (see [dashboard/dashboard.md](../dashboard/dashboard.md)).
+- **Notifications** (`_NotificationsScreen`) — `SwitchListTile` (`settingsPlannerNotifications` + `settingsPlannerNotificationsSubtitle`): app-wide task-reminder toggle (off → `TaskReminderScheduler.cancelAll()`; on → `reschedulePending(repository)`); rest alarm `SwitchListTile`s for sound + vibration (see [notifications/notifications.md](../notifications/notifications.md)).
+- **Appearance & Language** (`_AppearanceLanguageScreen`) — `SegmentedButton<ThemeMode>` (System / Light / Dark) + a **four-segment language selector with a System default** (`settingsLangSystem`, icon `Icons.language`): System / English / Français / Español. System is the default empty state and calls `setLocaleToSystem()`; the others persist via `settings_locale`.
+- **Budget & Currency** (`_BudgetCurrencyScreen`) — base-currency dropdown + cached FX-rate list with refresh/edit (see [budget/../architecture.md](../architecture.md)).
+- **Data** (`_DataScreen`) — destructive reset-all `ListTile` with its confirm dialog.
 
 ## Wiring
 

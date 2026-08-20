@@ -225,6 +225,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get activeWorkoutSearchPrompt => 'Escribe para buscar ejercicios';
 
   @override
+  String get activeWorkoutExerciseNotes => 'Notas';
+
+  @override
+  String get activeWorkoutExerciseNotesDialogTitle =>
+      'Notas sobre el ejercicio';
+
+  @override
+  String get activeWorkoutExerciseNotesHint =>
+      'Anota qué repetir o cambiar la próxima vez (series, peso, dificultad)…';
+
+  @override
   String get exerciseUsedTitle => 'Ejercicio en uso';
 
   @override
@@ -400,11 +411,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String workoutDuplicated(String name) {
-    return 'Entrenamiento «$name» duplicado';
-  }
-
-  @override
   String get workoutFormTitle => 'Nuevo entrenamiento';
 
   @override
@@ -539,12 +545,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String workoutDetailSetCount_plural(Object count) {
     return '$count series';
   }
-
-  @override
-  String get workoutStarted => 'Entrenamiento iniciado';
-
-  @override
-  String get workoutCompleted => 'Entrenamiento completado';
 
   @override
   String get ingredientListAppBar => 'Ingredientes';
@@ -828,6 +828,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get plannerEditTask => 'Editar tarea';
 
   @override
+  String get plannerEditScopeTitle => 'Alcance de edición';
+
+  @override
+  String get plannerDeleteScopeTitle => 'Alcance de eliminación';
+
+  @override
+  String get plannerScopeBody => 'Esta tarea se repite. ¿Cómo desea proceder?';
+
+  @override
+  String get plannerScopeThis => 'Solo esta';
+
+  @override
+  String get plannerScopeFollowing => 'Esta y todas las siguientes';
+
+  @override
   String plannerDeleted(String title) {
     return 'Tarea «$title» eliminada';
   }
@@ -846,20 +861,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String plannerCopyConfirmBody_plural(Object count) {
     return '$count tareas pendientes de ayer se copiarán hoy.';
-  }
-
-  @override
-  String get plannerCopyNothing =>
-      'No hay tareas pendientes de ayer para copiar.';
-
-  @override
-  String plannerCopyDone(int count) {
-    return '$count tarea copiada hoy.';
-  }
-
-  @override
-  String plannerCopyDone_plural(Object count) {
-    return '$count tareas copiadas hoy.';
   }
 
   @override
@@ -989,6 +990,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsLangEs => 'Español';
 
   @override
+  String get settingsLangSystem => 'Sistema';
+
+  @override
+  String get settingsProfileSubtitle => 'Edad, sexo, actividad y objetivos';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Recordatorios de tareas y alarma de descanso';
+
+  @override
+  String get settingsAppearanceLanguage => 'Apariencia e idioma';
+
+  @override
+  String get settingsAppearanceLanguageSubtitle =>
+      'Tema e idioma de la aplicación';
+
+  @override
+  String get settingsCurrencyBudgetSubtitle => 'Moneda base y tipos de cambio';
+
+  @override
   String get settingsBodyWeightGoal => 'Objetivo de peso';
 
   @override
@@ -1078,9 +1099,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsResetDataConfirmAction => 'Eliminar todo';
 
   @override
-  String get settingsResetDataDone => 'Todos los datos se han restablecido.';
-
-  @override
   String get taskReminderDueSoon => 'Vence en 30 minutos';
 
   @override
@@ -1106,9 +1124,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get commonSave => 'Guardar';
-
-  @override
-  String get commonSaved => 'Guardado';
 
   @override
   String get commonEdit => 'Editar';
@@ -1501,9 +1516,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get receiptNotParsed => 'Aún sin analizar';
 
   @override
-  String get receiptParseStarted => 'Analizando recibo…';
-
-  @override
   String get receiptParsed => 'Analizado';
 
   @override
@@ -1542,9 +1554,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsFxRefresh => 'Actualizar tasas';
-
-  @override
-  String get settingsFxRefreshed => 'Tasas actualizadas';
 
   @override
   String get settingsRateEdit => 'Editar tasa';
@@ -1718,9 +1727,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get receiptCaptureStandalone => 'Recibo independiente';
 
   @override
-  String get receiptUploadStarted => 'Enviando recibo…';
-
-  @override
   String get receiptUploadSuccess => 'Recibo enviado';
 
   @override
@@ -1778,4 +1784,195 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tabBudget => 'Presupuesto';
+
+  @override
+  String get tabExperiments => 'Experimentos';
+
+  @override
+  String get experimentsAppBar => 'Experimentos';
+
+  @override
+  String get experimentsFab => 'Nuevo experimento';
+
+  @override
+  String get experimentsEmptyTitle => 'Aún no hay experimentos';
+
+  @override
+  String get experimentsEmptyBody =>
+      'Crea un experimento para hacer seguimiento de un hábito, un cambio de dieta o un protocolo de entrenamiento con controles diarios.';
+
+  @override
+  String get experimentsNoEndDate => 'Sin fecha de fin';
+
+  @override
+  String experimentDaysElapsed(int days) {
+    return '$days días transcurridos';
+  }
+
+  @override
+  String get experimentStatusPlanned => 'Planificado';
+
+  @override
+  String get experimentStatusActive => 'Activo';
+
+  @override
+  String get experimentStatusDone => 'Completado';
+
+  @override
+  String get experimentStatusAborted => 'Abortado';
+
+  @override
+  String get experimentCategoryWorkout => 'Entrenamiento';
+
+  @override
+  String get experimentCategoryDiet => 'Dieta';
+
+  @override
+  String get experimentCategoryBody => 'Cuerpo';
+
+  @override
+  String get experimentCategorySteps => 'Pasos';
+
+  @override
+  String get experimentFormTitleNew => 'Nuevo experimento';
+
+  @override
+  String get experimentFormTitleEdit => 'Editar experimento';
+
+  @override
+  String get experimentFormNameLabel => 'Nombre';
+
+  @override
+  String get experimentFormNameHint =>
+      'p. ej. bloque de hipertrofia de 8 semanas';
+
+  @override
+  String get experimentFormPurposeLabel => 'Hipótesis / propósito';
+
+  @override
+  String get experimentFormPurposeHint => '¿Qué estás probando?';
+
+  @override
+  String get experimentFormStartLabel => 'Fecha de inicio';
+
+  @override
+  String get experimentFormEndLabel => 'Fecha de fin';
+
+  @override
+  String get experimentFormStatusLabel => 'Estado';
+
+  @override
+  String get experimentFormCategoriesLabel => 'Datos a registrar';
+
+  @override
+  String get experimentFormReminderLabel => 'Recordatorio de control diario';
+
+  @override
+  String get experimentFormReminderSubtitle =>
+      'Una notificación abre este experimento para una valoración rápida.';
+
+  @override
+  String get experimentFormReminderTimeLabel => 'Hora del recordatorio';
+
+  @override
+  String get experimentFormDelete => 'Eliminar';
+
+  @override
+  String get experimentFormDeleteConfirmTitle => '¿Eliminar el experimento?';
+
+  @override
+  String get experimentFormDeleteConfirmBody =>
+      'Esto también elimina los controles del experimento.';
+
+  @override
+  String get experimentFormNameRequired => 'Ponle un nombre al experimento.';
+
+  @override
+  String get experimentFormInvalidDates =>
+      'La fecha de fin debe ser igual o posterior a la de inicio.';
+
+  @override
+  String get experimentDetailCheckin => 'Control diario';
+
+  @override
+  String get experimentDetailCheckinToday =>
+      'Ya has hecho el control de hoy. Puedes actualizarlo.';
+
+  @override
+  String get experimentDetailCheckinDialogTitle => 'Control diario';
+
+  @override
+  String get experimentDetailCheckinRatingLabel => 'Valoración';
+
+  @override
+  String get experimentDetailCheckinRatingHint =>
+      '1 = mal día, 5 = excelente día';
+
+  @override
+  String get experimentDetailCheckinNoteLabel => 'Nota (opcional)';
+
+  @override
+  String get experimentDetailCheckinNoteHint => '¿Cómo te ha ido?';
+
+  @override
+  String get experimentDetailProgressTitle => 'Progreso';
+
+  @override
+  String get experimentDetailCheckinsTitle => 'Controles';
+
+  @override
+  String get experimentDetailTrackedTitle => 'Datos registrados';
+
+  @override
+  String get experimentDetailBaselineTitle => 'Línea base de 14 días';
+
+  @override
+  String get experimentDetailNoData => 'Aún no hay datos para este período.';
+
+  @override
+  String get experimentDetailMarkDone => 'Marcar como completado';
+
+  @override
+  String get experimentDetailAbort => 'Abortar';
+
+  @override
+  String experimentDetailCheckinCount(int count) {
+    return '$count controles';
+  }
+
+  @override
+  String experimentRatingOf5(int rating) {
+    return '$rating/5';
+  }
+
+  @override
+  String get experimentChartWorkout => 'Volumen de entrenamiento (kg)';
+
+  @override
+  String get experimentChartDiet => 'Calorías (kcal)';
+
+  @override
+  String get experimentChartDietProtein => 'Proteína (g)';
+
+  @override
+  String get experimentChartWeight => 'Peso (kg)';
+
+  @override
+  String get experimentChartSteps => 'Pasos';
+
+  @override
+  String experimentReminderTitle(String experiment) {
+    return 'Control de $experiment';
+  }
+
+  @override
+  String get experimentReminderBody => 'Valora tu día para este experimento.';
+
+  @override
+  String experimentReminderScheduled(String time) {
+    return 'Recordatorio diario fijado a las $time.';
+  }
+
+  @override
+  String get experimentReminderCancelled => 'Recordatorio diario desactivado.';
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'rest_alarm.dart';
 import 'task_reminders.dart';
+import '../experiments/notifications/experiment_reminder.dart';
 
 /// Single shared [FlutterLocalNotificationsPlugin] used by every notification
 /// source (planner reminders, rest alarms). Having one instance means one tap
@@ -20,6 +21,7 @@ Future<void> initializeNotifications({
   required FlutterLocalNotificationsPlugin plugin,
   required void Function() onTapPlan,
   required void Function() onTapActiveWorkout,
+  required void Function() onTapExperiments,
 }) async {
   await plugin.initialize(
     const InitializationSettings(
@@ -32,6 +34,8 @@ Future<void> initializeNotifications({
           onTapPlan();
         case restAlarmPayload:
           onTapActiveWorkout();
+        case experimentReminderPayload:
+          onTapExperiments();
       }
     },
   );
@@ -42,6 +46,8 @@ Future<void> initializeNotifications({
         onTapPlan();
       case restAlarmPayload:
         onTapActiveWorkout();
+      case experimentReminderPayload:
+        onTapExperiments();
     }
   }
 }

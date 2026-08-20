@@ -77,6 +77,27 @@ final class _ExercisePickerContentState
     if (match != null && mounted) setState(() => _selected.add(match!.id));
   }
 
+  /// 48×48 exercise thumbnail; falls back to the type icon when there is no
+  /// image or the asset fails to load (mirrors the active-workout search tile).
+  Widget _buildThumbnail(Exercise exercise) {
+    if (exercise.imagePath != null) {
+      return Image.asset(
+        exercise.imagePath!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stack) => _typeIcon(exercise),
+      );
+    }
+    return _typeIcon(exercise);
+  }
+
+  Widget _typeIcon(Exercise exercise) {
+    final theme = Theme.of(context);
+    final icon = exercise.isWeightlifting
+        ? Icons.fitness_center
+        : Icons.directions_run;
+    return Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 28);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -149,11 +170,10 @@ final class _ExercisePickerContentState
                         ),
                       for (final ex in visible)
                         ListTile(
-                          leading: Icon(
-                            ex.isWeightlifting
-                                ? Icons.fitness_center
-                                : Icons.directions_run,
-                            size: 20,
+                          leading: SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: _buildThumbnail(ex),
                           ),
                           title: Text(ex.name),
                           trailing: _selected.contains(ex.id)

@@ -285,8 +285,48 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     }
   }
 
+  /// Asks the user whether a recurring-task change applies to this occurrence
+  /// only or to this and all following ones. Returns 'this' / 'following' /
+  /// null (cancelled).
+  Future<String?> _confirmScope({
+    required String title,
+    required String body,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('this'),
+            child: Text(l10n.plannerScopeThis),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop('following'),
+            child: Text(l10n.plannerScopeFollowing),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _editItem(PlannerItem item) async {
     final l10n = AppLocalizations.of(context)!;
+    final isGenerated = item.seriesId != null && item.seriesId != item.id;
+    String? scope = 'this';
+    if (isGenerated) {
+      scope = await _confirmScope(
+        title: l10n.plannerEditScopeTitle,
+        body: l10n.plannerScopeBody,
+      );
+      if (scope == null || !mounted) return;
+    }
     final result = await showPlannerItemDialog(
       context,
       dialogTitle: l10n.plannerEditTask,
@@ -310,6 +350,21 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       recurrence,
     ) = result;
     final repo = ref.read(plannerRepositoryProvider);
+
+    if (scope == 'following') {
+      await _editFollowing(
+        item,
+        title: title,
+        dueDate: dueDate,
+        startTimeMinutes: startTimeMinutes,
+        endTimeMinutes: endTimeMinutes,
+        notes: notes,
+        workoutId: workoutId,
+        tags: tags,
+      );
+      return;
+    }
+
     final wasAnchor = item.recurrence != null;
     final isAnchor = recurrence != null;
     // Anchor keeps its existing series id (or adopts its own id); a task that
@@ -349,6 +404,58 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     }
   }
 
+  /// "Edit → this and all following": applies the edited non-rule fields to the
+  /// series anchor, updates every existing future occurrence (from the target's
+  /// day on), and re-materializes any missing future days. Reminders for the
+  /// whole series are re-synced since times may have changed.
+  Future<void> _editFollowing(
+    PlannerItem item, {
+    required String title,
+    DateTime? dueDate,
+    int? startTimeMinutes,
+    int? endTimeMinutes,
+    String? notes,
+    String? workoutId,
+    List<String>? tags,
+  }) async {
+    final repo = ref.read(plannerRepositoryProvider);
+    final seriesId = item.seriesId!;
+    final anchor = await repo.getById(seriesId);
+    if (anchor == null || anchor.recurrence == null || !mounted) return;
+    final updatedAnchor = anchor.copyWith(
+      title: title,
+      dueDate: dueDate,
+      startTimeMinutes: startTimeMinutes,
+      endTimeMinutes: endTimeMinutes,
+      notes: notes,
+      workoutId: workoutId,
+      tags: tags,
+    );
+    await repo.update(updatedAnchor);
+    await repo.updateFutureOccurrences(
+      seriesId,
+      from: item.day,
+      title: title,
+      startTimeMinutes: startTimeMinutes,
+      endTimeMinutes: endTimeMinutes,
+      notes: notes,
+      workoutId: workoutId,
+      tags: tags,
+    );
+    final all = await repo.getBySeriesId(seriesId);
+    for (final it in all) {
+      await _cancelReminder(it.id);
+      await _syncReminder(it);
+    }
+    ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
+    unawaited(
+      repo
+          .materializeUpTo(updatedAnchor.day.add(const Duration(days: 90)))
+          .catchError((_) {}),
+    );
+  }
+
   /// Opens the workout linked to a planner item (fitness badge on a tile).
   /// Routes by the workout's status the same way the workout/dashboard lists do.
   Future<void> _openWorkout(PlannerItem item) async {
@@ -359,7 +466,10 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         .getWithDetails(id);
     if (!mounted) return;
     if (details == null) {
-      showTopBanner(context, message: AppLocalizations.of(context)!.plannerLinkedWorkout);
+      showTopBanner(
+        context,
+        message: AppLocalizations.of(context)!.plannerLinkedWorkout,
+      );
       return;
     }
     final workout = details.workout;
@@ -398,6 +508,17 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final repo = ref.read(plannerRepositoryProvider);
     final overlay = Overlay.of(context);
     final wasAnchor = item.seriesId == item.id;
+    final isGenerated = item.seriesId != null && !wasAnchor;
+
+    String? scope = 'this';
+    DateTime? previousEndDate;
+    if (isGenerated) {
+      scope = await _confirmScope(
+        title: l10n.plannerDeleteScopeTitle,
+        body: l10n.plannerScopeBody,
+      );
+      if (scope == null || !mounted) return;
+    }
 
     if (wasAnchor && item.seriesId != null) {
       // Deleting the anchor removes the whole series (anchor + occurrences).
@@ -406,6 +527,18 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         await _cancelReminder(it.id);
       }
       await repo.deleteSeries(item.seriesId!);
+    } else if (scope == 'following') {
+      // Deleting this occurrence and all following ones: drop the rows and
+      // halt regeneration by shortening the anchor's rule. Remember the
+      // previous endDate so Undo can restore it.
+      final all = await repo.getBySeriesId(item.seriesId!);
+      for (final it in all) {
+        await _cancelReminder(it.id);
+      }
+      previousEndDate = await repo.stopSeriesOnOrAfter(
+        item.seriesId!,
+        item.day,
+      );
     } else if (item.seriesId != null) {
       // Deleting one generated occurrence: drop it and exclude its day on the
       // anchor so the materializer does not regenerate it.
@@ -426,40 +559,45 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       message: l10n.plannerDeleted(item.title),
       actionLabel: l10n.commonUndo,
       onAction: () async {
-              if (wasAnchor && item.seriesId != null) {
-                await repo.restore(item);
-                await repo.materializeUpTo(
-                  item.day.add(const Duration(days: 90)),
-                );
-                final restored = await repo.getBySeriesId(item.seriesId!);
-                for (final it in restored) {
-                  await _syncReminder(it);
-                }
-              } else if (item.seriesId != null) {
-                await repo.restore(item);
-                await repo.removeExclusion(item.seriesId!, item.day);
-                await _syncReminder(item);
-              } else {
-                await repo.restore(item);
-                await _syncReminder(item);
-              }
-              ref.invalidate(plannerItemsProvider(_selectedDay));
-    invalidateDashboard(ref);
-            },
+        if (wasAnchor && item.seriesId != null) {
+          await repo.restore(item);
+          await repo.materializeUpTo(item.day.add(const Duration(days: 90)));
+          final restored = await repo.getBySeriesId(item.seriesId!);
+          for (final it in restored) {
+            await _syncReminder(it);
+          }
+        } else if (scope == 'following') {
+          // Undo a "this and all following" delete: restore the previous end
+          // date and re-materialize the deleted future occurrences.
+          await repo.restoreSeriesEndDate(item.seriesId!, previousEndDate);
+          await repo.materializeUpTo(item.day.add(const Duration(days: 90)));
+          final restored = await repo.getBySeriesId(item.seriesId!);
+          for (final it in restored) {
+            await _syncReminder(it);
+          }
+        } else if (item.seriesId != null) {
+          await repo.restore(item);
+          await repo.removeExclusion(item.seriesId!, item.day);
+          await _syncReminder(item);
+        } else {
+          await repo.restore(item);
+          await _syncReminder(item);
+        }
+        ref.invalidate(plannerItemsProvider(_selectedDay));
+        invalidateDashboard(ref);
+      },
     );
   }
 
   Future<void> _copyFromPreviousDay() async {
     final l10n = AppLocalizations.of(context)!;
     final repo = ref.read(plannerRepositoryProvider);
-    final overlay = Overlay.of(context);
     final yesterday = _selectedDay.subtract(const Duration(days: 1));
     final previousItems = await repo.getByDay(yesterday);
     final pendingCount = previousItems.where((e) => !e.done).length;
     if (!mounted) return;
 
     if (pendingCount == 0) {
-      showTopBanner(context, message: l10n.plannerCopyNothing);
       return;
     }
 
@@ -482,7 +620,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    final copied = await repo.copyFromPreviousDay(_selectedDay);
+    await repo.copyFromPreviousDay(_selectedDay);
     if (!mounted) return;
     // The copied tasks got fresh ids; re-schedule reminders for the ones that
     // carried a due time (past-due ones are skipped by the scheduler).
@@ -491,7 +629,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     for (final it in copiedItems) {
       await _syncReminder(it);
     }
-    showTopBannerOverlay(overlay, message: l10n.plannerCopyDone(copied));
     ref.invalidate(plannerItemsProvider(_selectedDay));
     invalidateDashboard(ref);
   }
@@ -550,7 +687,9 @@ final class _DayPage extends ConsumerWidget {
           for (final it in items)
             if (it.startTimeMinutes != null) it,
         ];
-        timed.sort((a, b) => a.startTimeMinutes!.compareTo(b.startTimeMinutes!));
+        timed.sort(
+          (a, b) => a.startTimeMinutes!.compareTo(b.startTimeMinutes!),
+        );
 
         final children = <Widget>[];
         if (untimed.isNotEmpty) {
@@ -607,12 +746,7 @@ final class _DayPage extends ConsumerWidget {
             );
             final timeText = timedItem.endTimeMinutes == null
                 ? startText
-                : '$startText – ${fmt(
-                    TimeOfDay(
-                      hour: timedItem.endTimeMinutes! ~/ 60,
-                      minute: timedItem.endTimeMinutes! % 60,
-                    ),
-                  )}';
+                : '$startText – ${fmt(TimeOfDay(hour: timedItem.endTimeMinutes! ~/ 60, minute: timedItem.endTimeMinutes! % 60))}';
             children.add(
               Padding(
                 padding: const EdgeInsets.symmetric(

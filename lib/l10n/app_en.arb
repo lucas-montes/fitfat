@@ -119,6 +119,9 @@
   "activeWorkoutInThisWorkout": "In This Workout",
   "activeWorkoutAllExercises": "All Exercises",
   "activeWorkoutSearchPrompt": "Type to search exercises",
+  "activeWorkoutExerciseNotes": "Notes",
+  "activeWorkoutExerciseNotesDialogTitle": "Exercise notes",
+  "activeWorkoutExerciseNotesHint": "Note what to repeat or change next time (sets, weight, difficulty)…",
 
   "exerciseUsedTitle": "Exercise in use",
   "exerciseUsedBody": "Used in {count} workout. Delete the workout first to remove this exercise.",
@@ -213,12 +216,6 @@
       "name": { "type": "String" }
     }
   },
-  "workoutDuplicated": "Workout \"{name}\" duplicated",
-  "@workoutDuplicated": {
-    "placeholders": {
-      "name": { "type": "String" }
-    }
-  },
 
   "workoutFormTitle": "New Workout",
   "workoutFormEditTitle": "Edit Workout",
@@ -282,8 +279,6 @@
       "count": { "type": "int" }
     }
   },
-  "workoutStarted": "Workout started",
-  "workoutCompleted": "Workout completed",
 
   "ingredientListAppBar": "Ingredients",
   "emptyIngredientsTitle": "No ingredients yet",
@@ -417,6 +412,11 @@
   "plannerRepeatInvalid": "Check the repeat settings",
   "plannerAddTask": "New Task",
   "plannerEditTask": "Edit Task",
+  "plannerEditScopeTitle": "Edit scope",
+  "plannerDeleteScopeTitle": "Delete scope",
+  "plannerScopeBody": "This task repeats. How would you like to proceed?",
+  "plannerScopeThis": "This one only",
+  "plannerScopeFollowing": "This and all following ones",
   "plannerDeleted": "Task \"{title}\" deleted",
   "@plannerDeleted": {
     "placeholders": {
@@ -428,14 +428,6 @@
   "plannerCopyConfirmBody": "{count} pending task from yesterday will be copied to today.",
   "plannerCopyConfirmBody_plural": "{count} pending tasks from yesterday will be copied to today.",
   "@plannerCopyConfirmBody": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "plannerCopyNothing": "No pending tasks from yesterday to copy.",
-  "plannerCopyDone": "Copied {count} task to today.",
-  "plannerCopyDone_plural": "Copied {count} tasks to today.",
-  "@plannerCopyDone": {
     "placeholders": {
       "count": { "type": "int" }
     }
@@ -484,6 +476,12 @@
   "settingsLangEn": "English",
   "settingsLangFr": "Français",
   "settingsLangEs": "Español",
+  "settingsLangSystem": "System",
+  "settingsProfileSubtitle": "Age, gender, activity and goals",
+  "settingsNotificationsSubtitle": "Task reminders and rest alarm",
+  "settingsAppearanceLanguage": "Appearance & Language",
+  "settingsAppearanceLanguageSubtitle": "Theme and app language",
+  "settingsCurrencyBudgetSubtitle": "Base currency and exchange rates",
   "settingsBodyWeightGoal": "Body weight goal",
   "settingsGoalLose": "Lose weight",
   "settingsGoalMaintain": "Maintain weight",
@@ -512,7 +510,6 @@
   "settingsResetDataConfirmTitle": "Reset all data?",
   "settingsResetDataConfirmBody": "This permanently deletes all of your data and resets your settings. This cannot be undone.",
   "settingsResetDataConfirmAction": "Delete everything",
-  "settingsResetDataDone": "All data has been reset.",
 
   "taskReminderDueSoon": "Due in 30 minutes",
   "taskReminderDueNow": "Due now",
@@ -526,7 +523,6 @@
 
   "commonCancel": "Cancel",
   "commonSave": "Save",
-  "commonSaved": "Saved",
   "commonEdit": "Edit",
   "commonUndo": "Undo",
   "commonOk": "OK",
@@ -946,10 +942,6 @@
   "@receiptNotParsed": {
   "description": "receiptNotParsed"
 },
-  "receiptParseStarted": "Parsing receipt…",
-  "@receiptParseStarted": {
-  "description": "receiptParseStarted"
-},
   "receiptParsed": "Parsed",
   "@receiptParsed": {
   "description": "receiptParsed"
@@ -1007,10 +999,6 @@
   "settingsFxRefresh": "Refresh rates",
   "@settingsFxRefresh": {
   "description": "settingsFxRefresh"
-},
-  "settingsFxRefreshed": "Rates refreshed",
-  "@settingsFxRefreshed": {
-  "description": "settingsFxRefreshed"
 },
   "settingsRateEdit": "Edit rate",
   "@settingsRateEdit": {
@@ -1237,10 +1225,6 @@
   "@receiptCaptureStandalone": {
   "description": "receiptCaptureStandalone"
 },
-  "receiptUploadStarted": "Uploading receipt…",
-  "@receiptUploadStarted": {
-  "description": "receiptUploadStarted"
-},
   "receiptUploadSuccess": "Receipt uploaded",
   "@receiptUploadSuccess": {
   "description": "receiptUploadSuccess"
@@ -1316,5 +1300,97 @@
   "tabBudget": "Budget",
   "@tabBudget": {
   "description": "tabBudget"
-}
+},
+  "tabExperiments": "Experiments",
+  "@tabExperiments": {
+  "description": "tabExperiments"
+},
+
+  "experimentsAppBar": "Experiments",
+  "experimentsFab": "New experiment",
+  "experimentsEmptyTitle": "No experiments yet",
+  "experimentsEmptyBody": "Create an experiment to track a habit, diet change, or training protocol with daily check-ins.",
+  "experimentsNoEndDate": "Open-ended",
+  "experimentDaysElapsed": "{days} days elapsed",
+  "@experimentDaysElapsed": {
+    "description": "experimentDaysElapsed",
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "experimentStatusPlanned": "Planned",
+  "experimentStatusActive": "Active",
+  "experimentStatusDone": "Done",
+  "experimentStatusAborted": "Aborted",
+  "experimentCategoryWorkout": "Workout",
+  "experimentCategoryDiet": "Diet",
+  "experimentCategoryBody": "Body",
+  "experimentCategorySteps": "Steps",
+  "experimentFormTitleNew": "New experiment",
+  "experimentFormTitleEdit": "Edit experiment",
+  "experimentFormNameLabel": "Name",
+  "experimentFormNameHint": "e.g. 8-week hypertrophy block",
+  "experimentFormPurposeLabel": "Hypothesis / purpose",
+  "experimentFormPurposeHint": "What are you testing?",
+  "experimentFormStartLabel": "Start date",
+  "experimentFormEndLabel": "End date",
+  "experimentFormStatusLabel": "Status",
+  "experimentFormCategoriesLabel": "Tracked data",
+  "experimentFormReminderLabel": "Daily check-in reminder",
+  "experimentFormReminderSubtitle": "A notification opens this experiment for a quick rating.",
+  "experimentFormReminderTimeLabel": "Reminder time",
+  "experimentFormDelete": "Delete",
+  "experimentFormDeleteConfirmTitle": "Delete experiment?",
+  "experimentFormDeleteConfirmBody": "This also removes the experiment's check-ins.",
+  "experimentFormNameRequired": "Give the experiment a name.",
+  "experimentFormInvalidDates": "The end date must be on or after the start date.",
+  "experimentDetailCheckin": "Check in",
+  "experimentDetailCheckinToday": "You already checked in today. You can update it.",
+  "experimentDetailCheckinDialogTitle": "Daily check-in",
+  "experimentDetailCheckinRatingLabel": "Rating",
+  "experimentDetailCheckinRatingHint": "1 = rough day, 5 = excellent day",
+  "experimentDetailCheckinNoteLabel": "Note (optional)",
+  "experimentDetailCheckinNoteHint": "How did it go?",
+  "experimentDetailProgressTitle": "Progress",
+  "experimentDetailCheckinsTitle": "Check-ins",
+  "experimentDetailTrackedTitle": "Tracked data",
+  "experimentDetailBaselineTitle": "14-day baseline",
+  "experimentDetailNoData": "No data for this period yet.",
+  "experimentDetailMarkDone": "Mark done",
+  "experimentDetailAbort": "Abort",
+  "experimentDetailCheckinCount": "{count} check-ins",
+  "@experimentDetailCheckinCount": {
+    "description": "experimentDetailCheckinCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "experimentRatingOf5": "{rating}/5",
+  "@experimentRatingOf5": {
+    "description": "experimentRatingOf5",
+    "placeholders": {
+      "rating": { "type": "int" }
+    }
+  },
+  "experimentChartWorkout": "Workout volume (kg)",
+  "experimentChartDiet": "Calories (kcal)",
+  "experimentChartDietProtein": "Protein (g)",
+  "experimentChartWeight": "Weight (kg)",
+  "experimentChartSteps": "Steps",
+  "experimentReminderTitle": "Check in on {experiment}",
+  "@experimentReminderTitle": {
+    "description": "experimentReminderTitle",
+    "placeholders": {
+      "experiment": { "type": "String" }
+    }
+  },
+  "experimentReminderBody": "Rate your day for this experiment.",
+  "experimentReminderScheduled": "Daily reminder set for {time}.",
+  "@experimentReminderScheduled": {
+    "description": "experimentReminderScheduled",
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "experimentReminderCancelled": "Daily reminder disabled."
 }

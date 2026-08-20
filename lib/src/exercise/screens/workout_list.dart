@@ -140,14 +140,10 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
     WidgetRef ref,
     Workout workout,
   ) async {
-    final l10n = AppLocalizations.of(context)!;
     await ref
         .read(workoutRepositoryProvider)
         .copyWorkout(sourceWorkoutId: workout.id);
     ref.invalidate(workoutListProvider);
-    if (context.mounted) {
-      showTopBanner(context, message: l10n.workoutDuplicated(workout.name));
-    }
   }
 
   Future<void> _deleteWorkout(

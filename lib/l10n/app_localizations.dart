@@ -490,6 +490,24 @@ abstract class AppLocalizations {
   /// **'Type to search exercises'**
   String get activeWorkoutSearchPrompt;
 
+  /// No description provided for @activeWorkoutExerciseNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get activeWorkoutExerciseNotes;
+
+  /// No description provided for @activeWorkoutExerciseNotesDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise notes'**
+  String get activeWorkoutExerciseNotesDialogTitle;
+
+  /// No description provided for @activeWorkoutExerciseNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Note what to repeat or change next time (sets, weight, difficulty)…'**
+  String get activeWorkoutExerciseNotesHint;
+
   /// No description provided for @exerciseUsedTitle.
   ///
   /// In en, this message translates to:
@@ -796,12 +814,6 @@ abstract class AppLocalizations {
   /// **'Workout \"{name}\" deleted'**
   String workoutDeleted(String name);
 
-  /// No description provided for @workoutDuplicated.
-  ///
-  /// In en, this message translates to:
-  /// **'Workout \"{name}\" duplicated'**
-  String workoutDuplicated(String name);
-
   /// No description provided for @workoutFormTitle.
   ///
   /// In en, this message translates to:
@@ -1041,18 +1053,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} sets'**
   String workoutDetailSetCount_plural(Object count);
-
-  /// No description provided for @workoutStarted.
-  ///
-  /// In en, this message translates to:
-  /// **'Workout started'**
-  String get workoutStarted;
-
-  /// No description provided for @workoutCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Workout completed'**
-  String get workoutCompleted;
 
   /// No description provided for @ingredientListAppBar.
   ///
@@ -1564,6 +1564,36 @@ abstract class AppLocalizations {
   /// **'Edit Task'**
   String get plannerEditTask;
 
+  /// No description provided for @plannerEditScopeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit scope'**
+  String get plannerEditScopeTitle;
+
+  /// No description provided for @plannerDeleteScopeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete scope'**
+  String get plannerDeleteScopeTitle;
+
+  /// No description provided for @plannerScopeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This task repeats. How would you like to proceed?'**
+  String get plannerScopeBody;
+
+  /// No description provided for @plannerScopeThis.
+  ///
+  /// In en, this message translates to:
+  /// **'This one only'**
+  String get plannerScopeThis;
+
+  /// No description provided for @plannerScopeFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'This and all following ones'**
+  String get plannerScopeFollowing;
+
   /// No description provided for @plannerDeleted.
   ///
   /// In en, this message translates to:
@@ -1593,24 +1623,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} pending tasks from yesterday will be copied to today.'**
   String plannerCopyConfirmBody_plural(Object count);
-
-  /// No description provided for @plannerCopyNothing.
-  ///
-  /// In en, this message translates to:
-  /// **'No pending tasks from yesterday to copy.'**
-  String get plannerCopyNothing;
-
-  /// No description provided for @plannerCopyDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Copied {count} task to today.'**
-  String plannerCopyDone(int count);
-
-  /// No description provided for @plannerCopyDone_plural.
-  ///
-  /// In en, this message translates to:
-  /// **'Copied {count} tasks to today.'**
-  String plannerCopyDone_plural(Object count);
 
   /// No description provided for @plannerRepeatLabel.
   ///
@@ -1858,6 +1870,42 @@ abstract class AppLocalizations {
   /// **'Español'**
   String get settingsLangEs;
 
+  /// No description provided for @settingsLangSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get settingsLangSystem;
+
+  /// No description provided for @settingsProfileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Age, gender, activity and goals'**
+  String get settingsProfileSubtitle;
+
+  /// No description provided for @settingsNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task reminders and rest alarm'**
+  String get settingsNotificationsSubtitle;
+
+  /// No description provided for @settingsAppearanceLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance & Language'**
+  String get settingsAppearanceLanguage;
+
+  /// No description provided for @settingsAppearanceLanguageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme and app language'**
+  String get settingsAppearanceLanguageSubtitle;
+
+  /// No description provided for @settingsCurrencyBudgetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Base currency and exchange rates'**
+  String get settingsCurrencyBudgetSubtitle;
+
   /// No description provided for @settingsBodyWeightGoal.
   ///
   /// In en, this message translates to:
@@ -2026,12 +2074,6 @@ abstract class AppLocalizations {
   /// **'Delete everything'**
   String get settingsResetDataConfirmAction;
 
-  /// No description provided for @settingsResetDataDone.
-  ///
-  /// In en, this message translates to:
-  /// **'All data has been reset.'**
-  String get settingsResetDataDone;
-
   /// No description provided for @taskReminderDueSoon.
   ///
   /// In en, this message translates to:
@@ -2085,12 +2127,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get commonSave;
-
-  /// No description provided for @commonSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved'**
-  String get commonSaved;
 
   /// No description provided for @commonEdit.
   ///
@@ -2740,12 +2776,6 @@ abstract class AppLocalizations {
   /// **'Not parsed yet'**
   String get receiptNotParsed;
 
-  /// receiptParseStarted
-  ///
-  /// In en, this message translates to:
-  /// **'Parsing receipt…'**
-  String get receiptParseStarted;
-
   /// receiptParsed
   ///
   /// In en, this message translates to:
@@ -2817,12 +2847,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh rates'**
   String get settingsFxRefresh;
-
-  /// settingsFxRefreshed
-  ///
-  /// In en, this message translates to:
-  /// **'Rates refreshed'**
-  String get settingsFxRefreshed;
 
   /// settingsRateEdit
   ///
@@ -3154,12 +3178,6 @@ abstract class AppLocalizations {
   /// **'Standalone receipt'**
   String get receiptCaptureStandalone;
 
-  /// receiptUploadStarted
-  ///
-  /// In en, this message translates to:
-  /// **'Uploading receipt…'**
-  String get receiptUploadStarted;
-
   /// receiptUploadSuccess
   ///
   /// In en, this message translates to:
@@ -3273,6 +3291,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Budget'**
   String get tabBudget;
+
+  /// tabExperiments
+  ///
+  /// In en, this message translates to:
+  /// **'Experiments'**
+  String get tabExperiments;
+
+  /// No description provided for @experimentsAppBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Experiments'**
+  String get experimentsAppBar;
+
+  /// No description provided for @experimentsFab.
+  ///
+  /// In en, this message translates to:
+  /// **'New experiment'**
+  String get experimentsFab;
+
+  /// No description provided for @experimentsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No experiments yet'**
+  String get experimentsEmptyTitle;
+
+  /// No description provided for @experimentsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an experiment to track a habit, diet change, or training protocol with daily check-ins.'**
+  String get experimentsEmptyBody;
+
+  /// No description provided for @experimentsNoEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-ended'**
+  String get experimentsNoEndDate;
+
+  /// experimentDaysElapsed
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days elapsed'**
+  String experimentDaysElapsed(int days);
+
+  /// No description provided for @experimentStatusPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get experimentStatusPlanned;
+
+  /// No description provided for @experimentStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get experimentStatusActive;
+
+  /// No description provided for @experimentStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get experimentStatusDone;
+
+  /// No description provided for @experimentStatusAborted.
+  ///
+  /// In en, this message translates to:
+  /// **'Aborted'**
+  String get experimentStatusAborted;
+
+  /// No description provided for @experimentCategoryWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout'**
+  String get experimentCategoryWorkout;
+
+  /// No description provided for @experimentCategoryDiet.
+  ///
+  /// In en, this message translates to:
+  /// **'Diet'**
+  String get experimentCategoryDiet;
+
+  /// No description provided for @experimentCategoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Body'**
+  String get experimentCategoryBody;
+
+  /// No description provided for @experimentCategorySteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get experimentCategorySteps;
+
+  /// No description provided for @experimentFormTitleNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New experiment'**
+  String get experimentFormTitleNew;
+
+  /// No description provided for @experimentFormTitleEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit experiment'**
+  String get experimentFormTitleEdit;
+
+  /// No description provided for @experimentFormNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get experimentFormNameLabel;
+
+  /// No description provided for @experimentFormNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 8-week hypertrophy block'**
+  String get experimentFormNameHint;
+
+  /// No description provided for @experimentFormPurposeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hypothesis / purpose'**
+  String get experimentFormPurposeLabel;
+
+  /// No description provided for @experimentFormPurposeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What are you testing?'**
+  String get experimentFormPurposeHint;
+
+  /// No description provided for @experimentFormStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get experimentFormStartLabel;
+
+  /// No description provided for @experimentFormEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get experimentFormEndLabel;
+
+  /// No description provided for @experimentFormStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get experimentFormStatusLabel;
+
+  /// No description provided for @experimentFormCategoriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked data'**
+  String get experimentFormCategoriesLabel;
+
+  /// No description provided for @experimentFormReminderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily check-in reminder'**
+  String get experimentFormReminderLabel;
+
+  /// No description provided for @experimentFormReminderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A notification opens this experiment for a quick rating.'**
+  String get experimentFormReminderSubtitle;
+
+  /// No description provided for @experimentFormReminderTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder time'**
+  String get experimentFormReminderTimeLabel;
+
+  /// No description provided for @experimentFormDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get experimentFormDelete;
+
+  /// No description provided for @experimentFormDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete experiment?'**
+  String get experimentFormDeleteConfirmTitle;
+
+  /// No description provided for @experimentFormDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This also removes the experiment\'s check-ins.'**
+  String get experimentFormDeleteConfirmBody;
+
+  /// No description provided for @experimentFormNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the experiment a name.'**
+  String get experimentFormNameRequired;
+
+  /// No description provided for @experimentFormInvalidDates.
+  ///
+  /// In en, this message translates to:
+  /// **'The end date must be on or after the start date.'**
+  String get experimentFormInvalidDates;
+
+  /// No description provided for @experimentDetailCheckin.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get experimentDetailCheckin;
+
+  /// No description provided for @experimentDetailCheckinToday.
+  ///
+  /// In en, this message translates to:
+  /// **'You already checked in today. You can update it.'**
+  String get experimentDetailCheckinToday;
+
+  /// No description provided for @experimentDetailCheckinDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily check-in'**
+  String get experimentDetailCheckinDialogTitle;
+
+  /// No description provided for @experimentDetailCheckinRatingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get experimentDetailCheckinRatingLabel;
+
+  /// No description provided for @experimentDetailCheckinRatingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'1 = rough day, 5 = excellent day'**
+  String get experimentDetailCheckinRatingHint;
+
+  /// No description provided for @experimentDetailCheckinNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get experimentDetailCheckinNoteLabel;
+
+  /// No description provided for @experimentDetailCheckinNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'How did it go?'**
+  String get experimentDetailCheckinNoteHint;
+
+  /// No description provided for @experimentDetailProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get experimentDetailProgressTitle;
+
+  /// No description provided for @experimentDetailCheckinsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-ins'**
+  String get experimentDetailCheckinsTitle;
+
+  /// No description provided for @experimentDetailTrackedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked data'**
+  String get experimentDetailTrackedTitle;
+
+  /// No description provided for @experimentDetailBaselineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'14-day baseline'**
+  String get experimentDetailBaselineTitle;
+
+  /// No description provided for @experimentDetailNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data for this period yet.'**
+  String get experimentDetailNoData;
+
+  /// No description provided for @experimentDetailMarkDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark done'**
+  String get experimentDetailMarkDone;
+
+  /// No description provided for @experimentDetailAbort.
+  ///
+  /// In en, this message translates to:
+  /// **'Abort'**
+  String get experimentDetailAbort;
+
+  /// experimentDetailCheckinCount
+  ///
+  /// In en, this message translates to:
+  /// **'{count} check-ins'**
+  String experimentDetailCheckinCount(int count);
+
+  /// experimentRatingOf5
+  ///
+  /// In en, this message translates to:
+  /// **'{rating}/5'**
+  String experimentRatingOf5(int rating);
+
+  /// No description provided for @experimentChartWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout volume (kg)'**
+  String get experimentChartWorkout;
+
+  /// No description provided for @experimentChartDiet.
+  ///
+  /// In en, this message translates to:
+  /// **'Calories (kcal)'**
+  String get experimentChartDiet;
+
+  /// No description provided for @experimentChartDietProtein.
+  ///
+  /// In en, this message translates to:
+  /// **'Protein (g)'**
+  String get experimentChartDietProtein;
+
+  /// No description provided for @experimentChartWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight (kg)'**
+  String get experimentChartWeight;
+
+  /// No description provided for @experimentChartSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get experimentChartSteps;
+
+  /// experimentReminderTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Check in on {experiment}'**
+  String experimentReminderTitle(String experiment);
+
+  /// No description provided for @experimentReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate your day for this experiment.'**
+  String get experimentReminderBody;
+
+  /// experimentReminderScheduled
+  ///
+  /// In en, this message translates to:
+  /// **'Daily reminder set for {time}.'**
+  String experimentReminderScheduled(String time);
+
+  /// No description provided for @experimentReminderCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily reminder disabled.'**
+  String get experimentReminderCancelled;
 }
 
 class _AppLocalizationsDelegate

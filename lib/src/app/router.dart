@@ -24,6 +24,7 @@ import '../ui/widgets/status_badge.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/diet_tab.dart';
 import 'tabs/exercise_tab.dart';
+import 'tabs/experiments_tab.dart';
 import 'tabs/notes_tab.dart';
 import 'tabs/plan_tab.dart';
 
@@ -107,6 +108,14 @@ final GoRouter appRouter = GoRouter(
               path: '/budget/receipt/:id',
               builder: (_, state) =>
                   ReceiptViewerScreen(receiptId: state.pathParameters['id']!),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/experiments',
+              builder: (_, _) => const ExperimentsTab(),
             ),
           ],
         ),
@@ -199,6 +208,11 @@ final class _ShellWithNavBar extends ConsumerWidget {
                 icon: Icon(Icons.account_balance_wallet_outlined),
                 selectedIcon: Icon(Icons.account_balance_wallet),
                 label: l10n.tabBudget,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.science_outlined),
+                selectedIcon: Icon(Icons.science),
+                label: l10n.tabExperiments,
               ),
             ],
           ),

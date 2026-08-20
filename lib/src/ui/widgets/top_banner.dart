@@ -9,14 +9,14 @@ import '../tokens.dart';
 OverlayEntry? _currentBanner;
 
 /// Shows a compact top-anchored banner that auto-dismisses after
-/// [displayDuration] (default 3s) and replaces any previously shown banner.
+/// [displayDuration] (default 2s) and replaces any previously shown banner.
 ///
 /// An optional [actionLabel]/[onAction] renders a tappable button (e.g. "Undo")
 /// that runs [onAction] and then dismisses.
 void showTopBanner(
   BuildContext context, {
   required String message,
-  Duration displayDuration = const Duration(seconds: 3),
+  Duration displayDuration = const Duration(seconds: 2),
   String? actionLabel,
   VoidCallback? onAction,
 }) {
@@ -37,7 +37,7 @@ void showTopBanner(
 void showTopBannerOverlay(
   OverlayState overlay, {
   required String message,
-  Duration displayDuration = const Duration(seconds: 3),
+  Duration displayDuration = const Duration(seconds: 2),
   String? actionLabel,
   VoidCallback? onAction,
 }) {
@@ -124,7 +124,9 @@ class _TopBannerWidgetState extends State<_TopBannerWidget>
       child: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: FitFatTokens.kContentMaxWidth),
+            constraints: const BoxConstraints(
+              maxWidth: FitFatTokens.kContentMaxWidth,
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: FitFatTokens.spaceL,
@@ -155,7 +157,8 @@ class _TopBannerWidgetState extends State<_TopBannerWidget>
                             ),
                           ),
                         ),
-                        if (widget.actionLabel != null && widget.onAction != null)
+                        if (widget.actionLabel != null &&
+                            widget.onAction != null)
                           TextButton(
                             onPressed: () {
                               widget.onAction?.call();

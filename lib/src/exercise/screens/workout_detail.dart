@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -151,9 +150,6 @@ final class _WorkoutDetailContent extends StatelessWidget {
           l10n: l10n,
         );
     await ref.read(workoutRepositoryProvider).start(id);
-    if (context.mounted) {
-      showTopBanner(context, message: l10n.workoutStarted);
-    }
     ref.invalidate(workoutDetailProvider(workoutId));
     ref.invalidate(workoutListProvider);
     if (context.mounted) {
@@ -195,11 +191,13 @@ final class _ExerciseBlockCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (final set in block.sets) _SetChip(set: set, l10n: l10n),
+                for (final set in block.sets) ...[
+                  _SetChip(set: set, l10n: l10n),
+                  if (set != block.sets.last) const SizedBox(height: 8),
+                ],
               ],
             ),
           ),
@@ -242,10 +240,7 @@ final class _SetChip extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
       ),
-      child: Text(
-        label,
-        style: theme.textTheme.bodyMedium,
-      ),
+      child: Text(label, style: theme.textTheme.bodyMedium),
     );
   }
 }

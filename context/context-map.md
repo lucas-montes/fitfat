@@ -24,5 +24,7 @@
 | Dashboard | [dashboard/dashboard.md](dashboard/dashboard.md) | Dashboard: greeting header, calorie progress ring (consumed vs target), macro-targets progress, weight trend (Add weight/height), weekly workout volume/minutes, upcoming timed tasks, latest workout card, welcome hub |
 | Body | [body/body-metrics.md](body/body-metrics.md) | Body metrics: weight/height table, model, repository, providers, dashboard card |
 | Settings | [settings/settings.md](settings/settings.md) | App settings: theme mode, language, calorie profile (age/gender/activity/body-fat), body-weight goal, task-reminder toggle; shared_preferences storage |
-| Notifications | [notifications/notifications.md](notifications/notifications.md) | Active-workout rest timer + ongoing foreground notification + planner task reminders (due-time + 30-min pre-reminder, Settings toggle, tap → Plan) |
+| Notifications | [notifications/notifications.md](notifications/notifications.md) | Active-workout rest timer + ongoing foreground notification + planner task reminders (due-time + 30-min pre-reminder, Settings toggle, tap → Plan) + experiment check-in reminders (daily, tap → Experiments) |
 | Planner | [planner/planner.md](planner/planner.md) | Daily planner: table, model, repository, providers, screens; optional due date + due time with reminders |
+| Experiments | [experiments/experiments.md](experiments/experiments.md) | Experiments tab (v18): models, repository, providers, list/form/detail screens, daily check-in reminder, per-category charts vs 14-day baseline |
+| Network | [network/network.md](network/network.md) | Decoupled HTTP layer (Phase E): ApiClient (`HttpApiClient`/`MockApiClient`) + `apiClientProvider`; FX endpoint seam `FX_API_BASE_URL` behind `FxRateRemoteService` |

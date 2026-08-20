@@ -133,6 +133,7 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
       plugin: ref.read(flutterLocalNotificationsProvider),
       onTapPlan: () => appRouter.go('/plan'),
       onTapActiveWorkout: () => appRouter.go('/active-workout'),
+      onTapExperiments: () => appRouter.go('/experiments'),
     );
     // Cache the localized rest-alarm text for the scheduler (it schedules from
     // contexts without `AppLocalizations`, e.g. the rest-timer notifier).

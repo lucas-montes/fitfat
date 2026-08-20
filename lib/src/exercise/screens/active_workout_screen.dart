@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
@@ -44,26 +44,29 @@ final class ActiveWorkoutScreen extends ConsumerStatefulWidget {
       _ActiveWorkoutScreenState();
 }
 
-final class _ActiveWorkoutScreenState
-    extends ConsumerState<ActiveWorkoutScreen> {
-  Timer? _ticker;
-  DateTime _now = DateTime.now();
-
+final class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    // 1 s ticker for the live elapsed time. No-op while no workout is active
-    // (the provider watch rebuilds and swaps the body out).
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (ref.read(activeWorkoutProvider) == null) return;
-      setState(() => _now = DateTime.now());
-    });
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
-    _ticker?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        ref.read(activeWorkoutProvider) != null) {
+      // Recompute + refresh the ongoing notification on foreground resume so it
+      // is current at interaction points even if the background tick stalled
+      // while the process was backgrounded (notification-timers T03).
+      unawaited(refreshActiveWorkoutNotification());
+    }
   }
 
   @override
@@ -109,7 +112,6 @@ final class _ActiveWorkoutScreenState
         return _ActiveWorkoutContent(
           workout: activeWorkout,
           detail: detail,
-          now: _now,
           l10n: l10n,
           ref: ref,
         );
@@ -139,14 +141,12 @@ Widget _activeWorkoutBackButton(BuildContext context) {
 final class _ActiveWorkoutContent extends StatefulWidget {
   final Workout workout;
   final WorkoutWithDetails detail;
-  final DateTime now;
   final AppLocalizations l10n;
   final WidgetRef ref;
 
   const _ActiveWorkoutContent({
     required this.workout,
     required this.detail,
-    required this.now,
     required this.l10n,
     required this.ref,
   });
@@ -191,9 +191,6 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
     final l10n = _l10n;
     final workout = _workout;
     final detail = _detail;
-    final elapsed = workout.startedAt == null
-        ? Duration.zero
-        : widget.now.difference(workout.startedAt!);
 
     return Scaffold(
       appBar: AppBar(
@@ -231,13 +228,7 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
                           color: statusColors.warning,
                         ),
                         const Spacer(),
-                        Text(
-                          formatRestDuration(elapsed),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
+                        _ElapsedText(workout: workout),
                       ],
                     ),
                     if (workout.startedAt != null) ...[
@@ -285,7 +276,6 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
                   block: detail.exercises[i],
                   workout: workout,
                   l10n: l10n,
-                  ref: _ref,
                 ),
               ),
             ),
@@ -306,9 +296,9 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
           icon: const Icon(Icons.keyboard_arrow_left),
           onPressed: _page > 0
               ? () => _pageController.previousPage(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOut,
-                  )
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                )
               : null,
         ),
         Padding(
@@ -325,9 +315,9 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
           icon: const Icon(Icons.keyboard_arrow_right),
           onPressed: _page < count - 1
               ? () => _pageController.nextPage(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOut,
-                  )
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                )
               : null,
         ),
       ],
@@ -350,7 +340,6 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
       ref.invalidate(workoutListProvider);
       invalidateDashboard(ref);
       if (context.mounted) {
-        showTopBanner(context, message: _l10n.workoutCompleted);
         // Redirect to the completed workout's summary (T07). Done before the
         // foreground-service teardown so stopping the service can't race the
         // navigation and leave the user on a still-"active" screen.
@@ -394,6 +383,54 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
 /// rest keeps running past the planned duration until the next set is logged
 /// or the workout completes; the strip highlights once the planned rest has
 /// been reached.
+/// Live elapsed-time text for the active-header card. Owns its own 1 s ticker
+/// so the per-second rebuild is scoped to this leaf widget and never rebuilds
+/// the page/tree (performance T01).
+final class _ElapsedText extends StatefulWidget {
+  final Workout workout;
+
+  const _ElapsedText({required this.workout});
+
+  @override
+  State<_ElapsedText> createState() => _ElapsedTextState();
+}
+
+final class _ElapsedTextState extends State<_ElapsedText> {
+  Timer? _ticker;
+  DateTime _now = DateTime.now();
+
+  Workout get _workout => widget.workout;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final elapsed = _workout.startedAt == null
+        ? Duration.zero
+        : _now.difference(_workout.startedAt!);
+    return Text(
+      formatRestDuration(elapsed),
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+  }
+}
+
 final class _RestStrip extends ConsumerStatefulWidget {
   const _RestStrip();
 
@@ -460,25 +497,31 @@ final class _RestStripState extends ConsumerState<_RestStrip> {
   }
 }
 
-/// One exercise occupying a full vertical pager page: header plus a
-/// scrollable list of its sets. Only a single exercise is shown at a time —
-/// swipe up/down in the pager (or the ↑/↓ buttons) to move between them.
-final class _ExercisePage extends StatelessWidget {
+/// One exercise occupying a full vertical pager page: header (name, note
+/// affordance, fact chips, compact media), a collapsible history section, and
+/// a scrollable list of its sets with a completion progress bar. Only a single
+/// exercise is shown at a time — swipe up/down in the pager (or the ↑/↓
+/// buttons) to move between them.
+final class _ExercisePage extends ConsumerWidget {
   final ExerciseBlock block;
   final Workout workout;
   final AppLocalizations l10n;
-  final WidgetRef ref;
 
   const _ExercisePage({
     required this.block,
     required this.workout,
     required this.l10n,
-    required this.ref,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final exercise = ref
+        .watch(exerciseByIdProvider(block.exercise.exerciseId))
+        .value;
+    final completedSets = block.sets.where((s) => s.isCompleted).length;
+    final note = block.exercise.notes;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: SizedBox.expand(
@@ -487,32 +530,81 @@ final class _ExercisePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (exercise != null &&
+                  (exercise.imagePath != null || exercise.videoPath != null))
+                _CompactMedia(exercise: exercise),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.fitness_center, size: 20),
-                        const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            block.exercise.exerciseName,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                block.exercise.exerciseName,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                l10n.workoutDetailSetCount(block.sets.length),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+                        IconButton(
+                          tooltip: l10n.activeWorkoutExerciseNotes,
+                          icon: Icon(
+                            note == null || note.trim().isEmpty
+                                ? Icons.add_comment_outlined
+                                : Icons.comment,
+                          ),
+                          onPressed: () => _editNote(context, ref),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.workoutDetailSetCount(block.sets.length),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    if (note != null && note.trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(
+                          FitFatTokens.radiusM,
+                        ),
+                        onTap: () => _editNote(context, ref),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.comment, size: 16),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  note.trim(),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
+                    if (exercise != null) ...[
+                      const SizedBox(height: 8),
+                      _CardFactChips(exercise: exercise, l10n: l10n),
+                    ],
                   ],
                 ),
               ),
@@ -521,6 +613,14 @@ final class _ExercisePage extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.only(bottom: 8),
                   children: [
+                    _SetsProgressBar(
+                      completed: completedSets,
+                      total: block.sets.length,
+                    ),
+                    _ExerciseHistorySection(
+                      exerciseId: block.exercise.exerciseId,
+                      l10n: l10n,
+                    ),
                     for (final set in block.sets)
                       _SetRow(set: set, workout: workout, l10n: l10n, ref: ref),
                   ],
@@ -531,6 +631,22 @@ final class _ExercisePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _editNote(BuildContext context, WidgetRef ref) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) =>
+          _NoteDialog(initialText: block.exercise.notes, l10n: l10n),
+    );
+    if (result == null || !context.mounted) return;
+    await ref
+        .read(workoutRepositoryProvider)
+        .updateExerciseNotes(
+          workoutExerciseId: block.exercise.id,
+          notes: result.isEmpty ? null : result,
+        );
+    ref.invalidate(workoutDetailProvider(workout.id));
   }
 }
 
@@ -552,7 +668,64 @@ final class _SetRow extends StatelessWidget {
     final theme = Theme.of(context);
     // On the active screen sets are always editable (the workout is running).
     final isEditable = !workout.isPending;
+    final status = _setProgress(set);
+    final (icon, color) = _statusVisuals(theme, status);
 
+    final planned = _plannedString(context);
+    final actual = _actualString(context);
+
+    return InkWell(
+      onTap: isEditable ? () => _editActuals(context) : null,
+      borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
+      child: Ink(
+        // Subtle tint by completion status; pending rows stay un-tinted.
+        color: status == _SetProgress.pending
+            ? null
+            : color.withValues(alpha: 0.06),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Leading status icon (progress-driven; no number column).
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(icon, size: 18, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Planned, small/muted subtext (no strikethrough).
+                  Text(
+                    planned,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  // Actual, prominent headline in the status color.
+                  Text(
+                    actual,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: status == _SetProgress.pending
+                          ? FontWeight.w500
+                          : FontWeight.w600,
+                      color: status == _SetProgress.pending
+                          ? theme.colorScheme.onSurface
+                          : color,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _plannedString(BuildContext context) {
     var planned = set.reps != null
         ? l10n.workoutDetailPlannedSetReps(
             set.reps.toString(),
@@ -568,18 +741,21 @@ final class _SetRow extends StatelessWidget {
         formatRestDuration(Duration(seconds: restSeconds)),
       );
     }
+    return planned;
+  }
 
+  String _actualString(BuildContext context) {
     var actual = set.actualReps != null || set.actualWeightKg != null
         ? (set.actualReps != null
-            ? l10n.workoutDetailActualSetReps(
-                set.actualReps.toString(),
-                set.actualWeightKg == null
-                    ? '?'
-                    : formatDecimal(set.actualWeightKg!),
-              )
-            : l10n.workoutDetailActualSetWeight(
-                formatDecimal(set.actualWeightKg!),
-              ))
+              ? l10n.workoutDetailActualSetReps(
+                  set.actualReps.toString(),
+                  set.actualWeightKg == null
+                      ? '?'
+                      : formatDecimal(set.actualWeightKg!),
+                )
+              : l10n.workoutDetailActualSetWeight(
+                  formatDecimal(set.actualWeightKg!),
+                ))
         : set.actualDurationMinutes != null || set.actualDistanceMeters != null
         ? [
             if (set.actualDurationMinutes != null)
@@ -602,75 +778,7 @@ final class _SetRow extends StatelessWidget {
         ),
       );
     }
-
-    return InkWell(
-      onTap: isEditable ? () => _editActuals(context) : null,
-      borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Set number
-            SizedBox(
-              width: 28,
-              child: Text(
-                '${set.setNumber}',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Planned
-            Expanded(
-              flex: 5,
-              child: Text(
-                planned,
-                style: TextStyle(
-                  color: set.isCompleted
-                      ? theme.colorScheme.onSurfaceVariant
-                      : null,
-                  decoration: set.isCompleted ? TextDecoration.lineThrough : null,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Icon(
-                Icons.arrow_forward,
-                size: 16,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            // Actual
-            Expanded(
-              flex: 5,
-              child: Text(
-                actual,
-                style: TextStyle(
-                  fontWeight: set.isCompleted ? FontWeight.w600 : null,
-                  color: set.isCompleted
-                      ? theme.extension<FitFatColors>()!.success
-                      : null,
-                ),
-              ),
-            ),
-            // Completed indicator (tap the row to edit — no pencil needed).
-            // The saved HH:mm is shown inline in the actual line above.
-            if (set.completedAt != null)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Icon(
-                  Icons.check_circle,
-                  size: 18,
-                  color: theme.extension<FitFatColors>()!.success,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
+    return actual;
   }
 
   Future<void> _editActuals(BuildContext context) async {
@@ -690,6 +798,9 @@ final class _SetRow extends StatelessWidget {
           actualDistanceMeters: result.actualDistanceMeters,
         );
     unawaited(Haptics.lightImpact());
+    // Push the notification text so a set-save is reflected immediately even if
+    // the background tick stalls (notification-timers T02).
+    unawaited(refreshActiveWorkoutNotification());
     // T05: auto-start the rest timer with this set's planned rest, unless it
     // was the last incomplete set or has no planned rest.
     final savedActuals =
@@ -863,12 +974,18 @@ final class _ActiveWorkoutExerciseSearchSheet extends ConsumerStatefulWidget {
 final class _ActiveWorkoutExerciseSearchSheetState
     extends ConsumerState<_ActiveWorkoutExerciseSearchSheet> {
   final TextEditingController _searchCtrl = TextEditingController();
+  Timer? _debounce;
   String _query = '';
   final Set<String> _types = {};
   final Set<String> _bodyParts = {};
   final Set<String> _equipments = {};
   final Set<String> _muscles = {};
   late final Set<String> _addedIds;
+
+  // Memoized filter options (perf T02): `exerciseFilterOptions` scans the
+  // whole exercise catalog, so recompute only when the list instance changes.
+  ExerciseFilterOptions? _cachedOptions;
+  List<Exercise>? _cachedOptionsFor;
 
   @override
   void initState() {
@@ -878,8 +995,17 @@ final class _ActiveWorkoutExerciseSearchSheetState
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  ExerciseFilterOptions _optionsFor(List<Exercise> exercises) {
+    if (_cachedOptions == null || !identical(_cachedOptionsFor, exercises)) {
+      _cachedOptions = exerciseFilterOptions(exercises);
+      _cachedOptionsFor = exercises;
+    }
+    return _cachedOptions!;
   }
 
   @override
@@ -947,7 +1073,13 @@ final class _ActiveWorkoutExerciseSearchSheetState
                         )
                       : null,
                 ),
-                onChanged: (v) => setState(() => _query = v),
+                onChanged: (v) {
+                  _debounce?.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 250), () {
+                    if (!mounted) return;
+                    setState(() => _query = v);
+                  });
+                },
                 autofocus: true,
               ),
             ),
@@ -958,7 +1090,7 @@ final class _ActiveWorkoutExerciseSearchSheetState
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(child: Text('Error: $e')),
                 data: (exercises) {
-                  final options = exerciseFilterOptions(exercises);
+                  final options = _optionsFor(exercises);
                   final hasFilters =
                       _query.trim().isNotEmpty ||
                       _types.isNotEmpty ||
@@ -1153,7 +1285,6 @@ final class _ActiveWorkoutExerciseSearchSheetState
     );
     if (context.mounted) {
       setState(() => _addedIds.add(exercise.id));
-      showTopBanner(context, message: '${exercise.name} added');
     }
   }
 }
@@ -1341,6 +1472,481 @@ final class _SectionHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Exercise-card header bits (notes, fact chips, compact media, history,
+// sets progress)
+// ---------------------------------------------------------------------------
+
+/// Per-set completion status used for the leading icon, the actual-line color,
+/// and the row tint. `pending` = unlogged, `partial` = 0 < logged < planned,
+/// `done` = logged >= planned, `failed` = logged at zero.
+enum _SetProgress { pending, partial, done, failed }
+
+/// Colors/icon per [SetProgress.status]. Neutral for pending; success/warning/
+/// error otherwise (uses `FitFatColors` + `colorScheme.error`).
+(IconData, Color) _statusVisuals(ThemeData theme, _SetProgress status) {
+  final statusColors = theme.extension<FitFatColors>()!;
+  return switch (status) {
+    _SetProgress.pending => (
+      Icons.radio_button_unchecked,
+      theme.colorScheme.outline,
+    ),
+    _SetProgress.partial => (Icons.timelapse, statusColors.warning),
+    _SetProgress.done => (Icons.check_circle, statusColors.success),
+    _SetProgress.failed => (Icons.cancel, theme.colorScheme.error),
+  };
+}
+
+/// Progress classification for one set (planned vs logged actuals).
+///
+/// Weightlifting compares reps (weight is informational in the dialog);
+/// cardio compares duration/distance against their planned values.
+/// "Failed" = the set was logged but at zero every actual value.
+_SetProgress _setProgress(ExerciseSet set) {
+  if (!set.isCompleted) return _SetProgress.pending;
+  final reps = set.reps;
+  final weightKg = set.weightKg;
+  if (reps != null || weightKg != null) {
+    final actualReps = set.actualReps;
+    if (actualReps == null || actualReps == 0) return _SetProgress.failed;
+    if (reps != null && actualReps < reps) return _SetProgress.partial;
+    return _SetProgress.done;
+  }
+  final actualDuration = set.actualDurationMinutes;
+  final actualDistance = set.actualDistanceMeters;
+  final loggedZero =
+      (actualDuration == null || actualDuration == 0) &&
+      (actualDistance == null || actualDistance == 0);
+  if (loggedZero) return _SetProgress.failed;
+  if (set.durationMinutes != null &&
+      actualDuration != null &&
+      actualDuration < set.durationMinutes!) {
+    return _SetProgress.partial;
+  }
+  if (set.distanceMeters != null &&
+      actualDistance != null &&
+      actualDistance < set.distanceMeters!) {
+    return _SetProgress.partial;
+  }
+  return _SetProgress.done;
+}
+
+/// Per-exercise completion bar: `completed/total` sets.
+final class _SetsProgressBar extends StatelessWidget {
+  final int completed;
+  final int total;
+
+  const _SetsProgressBar({required this.completed, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final statusColors = theme.extension<FitFatColors>()!;
+    final ratio = total == 0 ? 0.0 : completed / total;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(FitFatTokens.radiusFull),
+              child: LinearProgressIndicator(
+                value: ratio,
+                minHeight: 6,
+                color: statusColors.success,
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$completed/$total',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Collapsible history for one exercise (past sessions via
+/// `exerciseHistoryProvider`). Hidden entirely while loading/error/empty.
+final class _ExerciseHistorySection extends ConsumerWidget {
+  final String exerciseId;
+  final AppLocalizations l10n;
+
+  const _ExerciseHistorySection({required this.exerciseId, required this.l10n});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(exerciseHistoryProvider(exerciseId));
+    return historyAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (history) {
+        if (history.isEmpty) return const SizedBox.shrink();
+        return ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          title: Text(l10n.exerciseDetailTabHistory),
+          leading: const Icon(Icons.history),
+          children: [
+            for (final entry in history)
+              _ExerciseHistoryRow(entry: entry, l10n: l10n),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Compact per-workout history row: name + date, then volume (or duration for
+/// cardio) + completed/total sets.
+final class _ExerciseHistoryRow extends StatelessWidget {
+  final ExerciseHistoryEntry entry;
+  final AppLocalizations l10n;
+
+  const _ExerciseHistoryRow({required this.entry, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sets = entry.sets;
+    final usesWeight = sets.any(
+      (s) => s.weightKg != null || s.actualWeightKg != null,
+    );
+    var volume = 0.0;
+    var duration = 0;
+    for (final set in sets) {
+      volume += set.totalVolume;
+      duration += set.effectiveDurationMinutes;
+    }
+    final completed = sets.where((s) => s.isCompleted).length;
+    final primary = usesWeight
+        ? l10n.workoutSummaryValueKg(formatDecimal(volume))
+        : formatRestDuration(Duration(minutes: duration));
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.workout.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  DateFormats.formatShortDate(context, entry.workout.date),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(primary, style: theme.textTheme.titleSmall),
+              Text(
+                '$completed/${sets.length}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact metadata pills (type/body-part/equipment) under the card title.
+final class _CardFactChips extends StatelessWidget {
+  final Exercise exercise;
+  final AppLocalizations l10n;
+
+  const _CardFactChips({required this.exercise, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final typeLabel = exercise.isWeightlifting
+        ? l10n.exerciseTypeWeightlifting
+        : l10n.exerciseTypeCardio;
+    final bodyParts = splitTags(exercise.bodyPart);
+    final equipments = splitTags(
+      exercise.equipment,
+    ).map(canonicalEquipmentTag).toList();
+    final labels = [typeLabel, ...bodyParts, ...equipments];
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [for (final label in labels) _CardFactChip(label: label)],
+    );
+  }
+}
+
+final class _CardFactChip extends StatelessWidget {
+  final String label;
+
+  const _CardFactChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusFull),
+      ),
+      child: Text(label, style: theme.textTheme.labelSmall),
+    );
+  }
+}
+
+/// Compact media strip at the top of the exercise card: the bundled thumbnail
+/// (tap → full-screen zoomable viewer) or, when a bundled video asset
+/// initializes, an inline video with a play/pause overlay. Graceful fallbacks.
+final class _CompactMedia extends StatefulWidget {
+  final Exercise exercise;
+
+  const _CompactMedia({required this.exercise});
+
+  @override
+  State<_CompactMedia> createState() => _CompactMediaState();
+}
+
+final class _CompactMediaState extends State<_CompactMedia> {
+  static const double _height = 110;
+
+  VideoPlayerController? _controller;
+  bool _videoFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final path = widget.exercise.videoPath;
+    if (path == null) return;
+    final controller = VideoPlayerController.asset(path);
+    _controller = controller;
+    controller
+        .initialize()
+        .then((_) {
+          if (!mounted) return;
+          setState(() {});
+        })
+        .catchError((_) {
+          if (!mounted) return;
+          setState(() => _videoFailed = true);
+        });
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final exercise = widget.exercise;
+
+    final Widget? image = exercise.imagePath == null
+        ? null
+        : GestureDetector(
+            onTap: () => _openViewer(context),
+            child: Container(
+              height: _height,
+              width: double.infinity,
+              color: theme.colorScheme.surfaceContainerHighest,
+              alignment: Alignment.center,
+              child: Image.asset(
+                exercise.imagePath!,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => _placeholder(theme),
+              ),
+            ),
+          );
+
+    final Widget? video = _controller != null && !_videoFailed
+        ? Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                height: _height,
+                width: double.infinity,
+                child: VideoPlayer(_controller!),
+              ),
+              _CardVideoPlayPause(controller: _controller!),
+            ],
+          )
+        : null;
+
+    final child = video ?? image;
+    if (child == null) return const SizedBox.shrink();
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(FitFatTokens.radiusL),
+      ),
+      child: child,
+    );
+  }
+
+  void _openViewer(BuildContext context) {
+    final imagePath = widget.exercise.imagePath;
+    if (imagePath == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _CardImageViewer(
+          imagePath: imagePath,
+          exerciseName: widget.exercise.name,
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder(ThemeData theme) => Container(
+    height: _height,
+    color: theme.colorScheme.surfaceContainerHighest,
+    alignment: Alignment.center,
+    child: Icon(
+      widget.exercise.isWeightlifting
+          ? Icons.fitness_center
+          : Icons.directions_run,
+      size: 40,
+      color: theme.colorScheme.onSurfaceVariant,
+    ),
+  );
+}
+
+/// Play/pause overlay for the compact video strip.
+final class _CardVideoPlayPause extends StatelessWidget {
+  final VideoPlayerController controller;
+
+  const _CardVideoPlayPause({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final playing = value.isPlaying;
+        return IconButton(
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.black54,
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () => playing ? controller.pause() : controller.play(),
+          icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+        );
+      },
+    );
+  }
+}
+
+/// Full-screen, zoomable/panable image viewer for the compact strip.
+final class _CardImageViewer extends StatelessWidget {
+  final String imagePath;
+  final String exerciseName;
+
+  const _CardImageViewer({required this.imagePath, required this.exerciseName});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(exerciseName, style: const TextStyle(color: Colors.white)),
+      ),
+      body: InteractiveViewer(
+        minScale: 1,
+        maxScale: 6,
+        child: Center(
+          child: Image.asset(
+            imagePath,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => Icon(
+              Icons.broken_image_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Exercise-level note editor (multiline). Returns the trimmed text, or an
+/// empty string is not possible (Save pops null when empty via trim, the
+/// caller maps empty → null).
+final class _NoteDialog extends StatefulWidget {
+  final String? initialText;
+  final AppLocalizations l10n;
+
+  const _NoteDialog({required this.initialText, required this.l10n});
+
+  @override
+  State<_NoteDialog> createState() => _NoteDialogState();
+}
+
+final class _NoteDialogState extends State<_NoteDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialText ?? '',
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    return AlertDialog(
+      title: Text(l10n.activeWorkoutExerciseNotesDialogTitle),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLines: 4,
+        minLines: 2,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(
+          hintText: l10n.activeWorkoutExerciseNotesHint,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.commonCancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+          child: Text(l10n.commonSave),
+        ),
+      ],
     );
   }
 }

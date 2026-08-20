@@ -114,15 +114,12 @@ final class ReceiptViewerScreen extends ConsumerWidget {
     );
     rates[base] = 1.0;
     try {
-      await ref.read(budgetSyncServiceProvider).uploadAndParse(
-            receipt.id,
-            baseCurrency: base,
-            ratesToBase: rates,
-          );
+      await ref
+          .read(budgetSyncServiceProvider)
+          .uploadAndParse(receipt.id, baseCurrency: base, ratesToBase: rates);
       if (context.mounted) {
         ref.invalidate(receiptByIdProvider(receipt.id));
         ref.invalidate(receiptListProvider);
-        showTopBanner(context, message: l10n.receiptParseStarted);
       }
     } catch (e) {
       if (context.mounted) {
@@ -147,7 +144,9 @@ final class ReceiptViewerScreen extends ConsumerWidget {
       ref.read(fxRatesProvider).value ?? {},
     );
     rates[base] = 1.0;
-    final total = (json['total'] is num) ? (json['total'] as num).toDouble() : 0.0;
+    final total = (json['total'] is num)
+        ? (json['total'] as num).toDouble()
+        : 0.0;
     final currency = (json['currency'] as String?) ?? base;
     final (amountBase, rateUsed) = convertToBase(total, currency, base, rates);
     final txn = newTransaction(
@@ -164,9 +163,9 @@ final class ReceiptViewerScreen extends ConsumerWidget {
       isDraft: true,
     );
     await ref.read(transactionRepositoryProvider).insert(txn);
-    await ref.read(receiptRepositoryProvider).update(
-          receipt.copyWith(transactionId: txn.id),
-        );
+    await ref
+        .read(receiptRepositoryProvider)
+        .update(receipt.copyWith(transactionId: txn.id));
     if (context.mounted) {
       ref.invalidate(receiptByIdProvider(receipt.id));
       context.push('/budget/transaction/${txn.id}');

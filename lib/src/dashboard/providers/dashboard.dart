@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../database/database_provider.dart';
 import '../../diet/repositories/meal_repository.dart';
-import '../../exercise/providers/workouts.dart';
 import '../../exercise/repositories/workout_repository.dart';
 import '../../models/planner_item.dart';
 import '../../models/workout.dart';
@@ -29,10 +28,10 @@ final class DashboardRefreshNotifier extends Notifier<int> {
   void bump() => state++;
 }
 
-final dashboardRefreshProvider = NotifierProvider<
-  DashboardRefreshNotifier,
-  int
->(DashboardRefreshNotifier.new);
+final dashboardRefreshProvider =
+    NotifierProvider<DashboardRefreshNotifier, int>(
+      DashboardRefreshNotifier.new,
+    );
 
 /// Forces every dashboard data provider to recompute on its next read. Call
 /// this after any mutation that affects dashboard content (planner tasks,
@@ -125,31 +124,15 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
   ref,
 ) async {
   ref.watch(dashboardRefreshProvider);
-  final workouts = await ref.watch(_workoutRepositoryProvider).getAll();
   final now = DateTime.now();
   final weekStart = DateTime(now.year, now.month, now.day - 6);
 
-  var volumeKg = 0.0;
-  var minutes = 0;
-  for (final workout in workouts) {
-    if (!workout.isCompleted) continue;
-    final day = DateTime(
-      workout.completedAt!.year,
-      workout.completedAt!.month,
-      workout.completedAt!.day,
-    );
-    if (day.isBefore(weekStart)) continue;
-
-    final detail = await ref.watch(workoutDetailProvider(workout.id).future);
-    if (detail == null) continue;
-    for (final block in detail.exercises) {
-      for (final set in block.sets) {
-        volumeKg += set.totalVolume;
-      }
-    }
-    minutes += workout.duration.inMinutes;
-  }
-  return (totalVolumeKg: volumeKg, totalMinutes: minutes);
+  // Bulk aggregate — no per-workout `workoutDetailProvider` resolution
+  // (perf T03).
+  final stats = await ref
+      .watch(_workoutRepositoryProvider)
+      .getVolumeAndMinutesSince(weekStart);
+  return (totalVolumeKg: stats.volumeKg, totalMinutes: stats.minutes);
 });
 
 // ---------------------------------------------------------------------------
@@ -161,7 +144,5 @@ final upcomingTimedTasksProvider = FutureProvider<List<PlannerItem>>((
 ) async {
   ref.watch(dashboardRefreshProvider);
   final today = DateTime.now();
-  return ref
-      .watch(_plannerRepositoryProvider)
-      .getUpcomingWithStartTime(today);
+  return ref.watch(_plannerRepositoryProvider).getUpcomingWithStartTime(today);
 });

@@ -102,6 +102,7 @@ final class WorkoutRepository {
                 workoutId: we.workoutId,
                 exerciseId: we.exerciseId,
                 sortOrder: we.sortOrder,
+                notes: Value(we.notes),
               ),
             );
         if (i < setGroups.length) {
@@ -158,6 +159,7 @@ final class WorkoutRepository {
                 workoutId: we.workoutId,
                 exerciseId: we.exerciseId,
                 sortOrder: we.sortOrder,
+                notes: Value(we.notes),
               ),
             );
         if (i < setGroups.length) {
@@ -196,6 +198,21 @@ final class WorkoutRepository {
       db.WorkoutsCompanion(
         name: Value(name),
         date: Value(date.millisecondsSinceEpoch),
+      ),
+    );
+  }
+
+  /// Sets (or clears, with null) the free-text note on one workout exercise.
+  Future<void> updateExerciseNotes({
+    required String workoutExerciseId,
+    String? notes,
+  }) async {
+    final trimmed = notes?.trim();
+    await (_database.update(
+      _database.workoutExercises,
+    )..where((t) => t.id.equals(workoutExerciseId))).write(
+      db.WorkoutExercisesCompanion(
+        notes: Value(trimmed == null || trimmed.isEmpty ? null : trimmed),
       ),
     );
   }
@@ -302,14 +319,26 @@ final class WorkoutRepository {
     )..where((t) => t.id.isIn(exerciseIds))).get();
     final exerciseNameMap = {for (final ex in exercises) ex.id: ex.name};
 
+    // Load every set for the block in one bulk query, grouped in memory
+    // (perf T03 — was one query per workout_exercise).
+    final weIds = weRows.map((r) => r.id).toList();
+    final setRows =
+        await (_database.select(_database.exerciseSets)
+              ..where((t) => t.workoutExerciseId.isIn(weIds))
+              ..orderBy([
+                (t) => OrderingTerm(expression: t.workoutExerciseId),
+                (t) => OrderingTerm(expression: t.setNumber),
+              ]))
+            .get();
+    final setsByWe = <String, List<ExerciseSet>>{};
+    for (final row in setRows) {
+      setsByWe
+          .putIfAbsent(row.workoutExerciseId, () => [])
+          .add(_toSetDomain(row));
+    }
+
     final blocks = <ExerciseBlock>[];
     for (final we in weRows) {
-      final sets =
-          await (_database.select(_database.exerciseSets)
-                ..where((t) => t.workoutExerciseId.equals(we.id))
-                ..orderBy([(t) => OrderingTerm(expression: t.setNumber)]))
-              .get();
-
       blocks.add(
         ExerciseBlock(
           exercise: WorkoutExercise(
@@ -318,8 +347,9 @@ final class WorkoutRepository {
             exerciseId: we.exerciseId,
             exerciseName: exerciseNameMap[we.exerciseId] ?? '',
             sortOrder: we.sortOrder,
+            notes: we.notes,
           ),
-          sets: sets.map(_toSetDomain).toList(),
+          sets: setsByWe[we.id] ?? const [],
         ),
       );
     }
@@ -362,24 +392,135 @@ final class WorkoutRepository {
     )..where((t) => t.id.isIn(workoutIds))).get();
     final workoutMap = {for (final row in workoutRows) row.id: _toDomain(row)};
 
+    // Load every set across all of the exercise's workout_exercises in one
+    // bulk query, grouped in memory (perf T03 — was one query per entry).
+    final weIds = weRows.map((r) => r.id).toList();
+    final setRows =
+        await (_database.select(_database.exerciseSets)
+              ..where((t) => t.workoutExerciseId.isIn(weIds))
+              ..orderBy([
+                (t) => OrderingTerm(expression: t.workoutExerciseId),
+                (t) => OrderingTerm(expression: t.setNumber),
+              ]))
+            .get();
+    final setsByWe = <String, List<ExerciseSet>>{};
+    for (final row in setRows) {
+      setsByWe
+          .putIfAbsent(row.workoutExerciseId, () => [])
+          .add(_toSetDomain(row));
+    }
+
     final entries = <ExerciseHistoryEntry>[];
     for (final we in weRows) {
       final workout = workoutMap[we.workoutId];
       if (workout == null) continue;
-      final setRows =
-          await (_database.select(_database.exerciseSets)
-                ..where((t) => t.workoutExerciseId.equals(we.id))
-                ..orderBy([(t) => OrderingTerm(expression: t.setNumber)]))
-              .get();
       entries.add(
         ExerciseHistoryEntry(
           workout: workout,
-          sets: setRows.map(_toSetDomain).toList(),
+          sets: setsByWe[we.id] ?? const [],
         ),
       );
     }
     entries.sort((a, b) => b.workout.date.compareTo(a.workout.date));
     return entries;
+  }
+
+  /// Total lifted volume (kg) and total minutes across completed workouts
+  /// completed on/after [fromDay] (start-of-day). Exactly two queries (a
+  /// workouts→workout_exercises→exercise_sets join for volume, a workouts
+  /// scan for duration) regardless of the number of workouts — the dashboard's
+  /// weekly stats used to resolve `workoutDetailProvider` per workout
+  /// (perf T03).
+  Future<({double volumeKg, int minutes})> getVolumeAndMinutesSince(
+    DateTime fromDay,
+  ) async {
+    final fromMillis = fromDay.millisecondsSinceEpoch;
+
+    final joined =
+        await (_database.select(_database.exerciseSets).join([
+              innerJoin(
+                _database.workoutExercises,
+                _database.workoutExercises.id.equalsExp(
+                  _database.exerciseSets.workoutExerciseId,
+                ),
+              ),
+              innerJoin(
+                _database.workouts,
+                _database.workouts.id.equalsExp(
+                  _database.workoutExercises.workoutId,
+                ),
+              ),
+            ])..where(
+              _database.workouts.completedAt.isBiggerOrEqualValue(fromMillis),
+            ))
+            .get();
+
+    var volumeKg = 0.0;
+    for (final row in joined) {
+      final set = row.readTable(_database.exerciseSets);
+      volumeKg += (set.actualReps ?? 0) * (set.actualWeightKg ?? 0);
+    }
+
+    final workoutRows = await (_database.select(
+      _database.workouts,
+    )..where((t) => t.completedAt.isBiggerOrEqualValue(fromMillis))).get();
+    var minutes = 0;
+    for (final row in workoutRows) {
+      minutes += _toDomain(row).duration.inMinutes;
+    }
+
+    return (volumeKg: volumeKg, minutes: minutes);
+  }
+
+  /// Completed-workout volume (kg) per day, oldest first, for workouts
+  /// completed on or after [fromDay]. Used by experiments charts.
+  Future<List<({DateTime day, double volumeKg})>> getDailyVolumes(
+    DateTime fromDay,
+  ) async {
+    final fromMillis = fromDay.millisecondsSinceEpoch;
+
+    final joined =
+        await (_database.select(_database.exerciseSets).join([
+              innerJoin(
+                _database.workoutExercises,
+                _database.workoutExercises.id.equalsExp(
+                  _database.exerciseSets.workoutExerciseId,
+                ),
+              ),
+              innerJoin(
+                _database.workouts,
+                _database.workouts.id.equalsExp(
+                  _database.workoutExercises.workoutId,
+                ),
+              ),
+            ])..where(
+              _database.workouts.completedAt.isBiggerOrEqualValue(fromMillis),
+            ))
+            .get();
+
+    final totals = <String, double>{};
+    for (final row in joined) {
+      final set = row.readTable(_database.exerciseSets);
+      final setVolume = (set.actualReps ?? 0) * (set.actualWeightKg ?? 0);
+      if (setVolume == 0) continue;
+      final workout = row.readTable(_database.workouts);
+      final day = _startOfDay(
+        DateTime.fromMillisecondsSinceEpoch(workout.completedAt!),
+      );
+      final key = day.millisecondsSinceEpoch.toString();
+      totals[key] = (totals[key] ?? 0) + setVolume;
+    }
+
+    final entries = totals.entries.toList()
+      ..sort((a, b) => int.parse(a.key).compareTo(int.parse(b.key)));
+    return entries
+        .map(
+          (e) => (
+            day: DateTime.fromMillisecondsSinceEpoch(int.parse(e.key)),
+            volumeKg: e.value,
+          ),
+        )
+        .toList();
   }
 
   /// Deletes a workout and all its rows (exercise_sets → workout_exercises →
@@ -453,6 +594,7 @@ final class WorkoutRepository {
                 workoutId: we.workoutId,
                 exerciseId: we.exerciseId,
                 sortOrder: we.sortOrder,
+                notes: Value(we.notes),
               ),
             );
       }
@@ -587,6 +729,7 @@ final class WorkoutRepository {
         exerciseId: block.exercise.exerciseId,
         exerciseName: block.exercise.exerciseName,
         sortOrder: block.exercise.sortOrder,
+        notes: block.exercise.notes,
       );
       newExercises.add(newWe);
 
@@ -649,12 +792,14 @@ WorkoutExercise newWorkoutExercise({
   required String exerciseId,
   required String exerciseName,
   required int sortOrder,
+  String? notes,
 }) => WorkoutExercise(
   id: const Uuid().v7(),
   workoutId: workoutId,
   exerciseId: exerciseId,
   exerciseName: exerciseName,
   sortOrder: sortOrder,
+  notes: notes,
 );
 
 /// Creates a new planned [ExerciseSet] with a fresh UUID v7.
@@ -676,3 +821,5 @@ ExerciseSet newPlannedSet({
   durationMinutes: durationMinutes,
   distanceMeters: distanceMeters,
 );
+
+DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);

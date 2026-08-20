@@ -5,6 +5,7 @@ final class WorkoutExercise {
   final String exerciseId;
   final String exerciseName;
   final int sortOrder;
+  final String? notes; // exercise-level free-text note (schema v17)
 
   const WorkoutExercise({
     required this.id,
@@ -12,5 +13,6 @@ final class WorkoutExercise {
     required this.exerciseId,
     required this.exerciseName,
     required this.sortOrder,
+    this.notes,
   });
 }

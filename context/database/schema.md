@@ -1,6 +1,6 @@
 # FitFat — Database Schema
 
-9 tables defined in `lib/src/database/tables.dart`. Drift generates row classes, companions, and table info classes using default singularization (no `@DataClass` annotations).
+16 tables defined in `lib/src/database/tables.dart`. Drift generates row classes, companions, and table info classes using default singularization (no `@DataClass` annotations).
 
 ## Diet tables
 
@@ -84,6 +84,7 @@ Links exercises to workouts with ordering.
 | workout_id | TEXT FK → workouts | |
 | exercise_id | TEXT FK → exercises | |
 | sort_order | INTEGER | display order within workout |
+| notes | TEXT? | v17 — exercise-level free-text note (active-workout card) |
 
 ### exercise_sets
 
@@ -137,12 +138,45 @@ One row per day (keyed by start-of-day) holding optional weight and/or height. A
 | height_cm | REAL? | optional |
 | created_at | INTEGER | epoch milliseconds |
 
+## Experiments tables (v18)
+
+### experiments
+
+One row per self-tracking experiment. Added in v18.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | UUID v7 |
+| name | TEXT | |
+| purpose | TEXT? | hypothesis / stated purpose |
+| start_date | INTEGER | start-of-day epoch milliseconds (inclusive baseline start) |
+| end_date | INTEGER? | null = open-ended |
+| status | TEXT | `'planned' \| 'active' \| 'done' \| 'aborted'` (plain text, like `exercise_type`) |
+| categories | TEXT | JSON `string[]` of linked categories: `workout \| diet \| body \| steps` |
+| reminder_enabled | INTEGER (bool) | `NOT NULL DEFAULT 1` |
+| reminder_time_minutes | INTEGER | minutes from midnight, `NOT NULL DEFAULT 1200` (20:00) |
+| created_at | INTEGER | epoch milliseconds |
+
+### experiment_checkins
+
+Daily check-ins (rating 1–5 + optional note); one per experiment per day (unique constraint on `(experiment_id, day)`).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | UUID v7 |
+| experiment_id | TEXT FK → experiments | |
+| day | INTEGER | start-of-day epoch milliseconds |
+| rating | INTEGER | 1..5 scale |
+| note | TEXT? | optional |
+| created_at | INTEGER | epoch milliseconds |
+| UNIQUE(experiment_id, day) | | one check-in per experiment per day; repo `upsertCheckin` replaces in place |
+
 ## Key patterns
 
 - All primary keys are UUID v7 strings (generated via the `uuid` package).
 - Timestamps are stored as epoch milliseconds (integers) and converted to `DateTime` in domain models.
 - `exercise_type` is stored as plain text rather than an enum to keep the schema simple.
-- Schema version is 8. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `onUpgrade` runs stepwise:
+- Schema version is 18. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `onUpgrade` runs stepwise:
   - v1 → v2: creates `planner_items`.
   - v2 → v3: adds nullable `sodium_per100g`/`fiber_per100g`/`sugar_per100g` to `ingredients`, adds nullable `due_date` to `planner_items`, creates `body_metrics`, and deletes orphaned `meal_ingredients` rows (rows whose `meal_id` has no matching `meals` row — leftover from the pre-T02 new-meal bug). No data is dropped.
   - v3 → v4: adds `is_archived` to `ingredients` (`NOT NULL DEFAULT 0` — ingredient soft-archive). No data is dropped.
@@ -150,6 +184,16 @@ One row per day (keyed by start-of-day) holding optional weight and/or height. A
   - v5 → v6: adds nullable `notes` to `planner_items` (free-text task notes, app-polish-batch T04). No data is dropped.
   - v6 → v7: adds nullable `completed_at` to `exercise_sets` (set completion timestamp, app-polish-batch T08). No data is dropped.
   - v7 → v8: adds the catalog metadata columns to `exercises` (`is_locked`, `body_part`, `equipment`, `primary_muscle`, `secondary_muscle`, `instructions`, `tips`, `faqs`, `keywords`, `image_path`, `video_path`) and `due_time_minutes` to `planner_items`. No data is dropped.
+  - v8 → v9: creates the free-form `notes` table (Notes tab). No data is dropped.
+  - v9 → v10: adds the exercise canonicalization fields to `exercises` (`similar_to`, `tags`, `is_canonical`). No data is dropped.
+  - v10 → v11: adds nullable `workout_id` to `planner_items` (planner workout linking). No data is dropped.
+  - v11 → v12: adds nullable `tags` (JSON `string[]`) to `planner_items`. No data is dropped.
+  - v12 → v13: adds `recurrence` (rule JSON) and `series_id` to `planner_items` (recurring tasks). No data is dropped.
+  - v13 → v14: creates the budget tables — `accounts`, `transactions`, `receipts`, `fx_rates`. No data is dropped.
+  - v14 → v15: adds `start_time_minutes`/`end_time_minutes` to `planner_items` (replaces the single due time); carries existing `due_time_minutes` into `start_time_minutes`. No data is dropped.
+  - v15 → v16: adds nullable `actual_duration_minutes`/`actual_distance_meters` to `exercise_sets` (logged cardio actuals); carries existing effective duration/distance into the new actual columns. No data is dropped.
+  - v16 → v17: adds nullable `notes` to `workout_exercises` (exercise-level note, active-workout redo T01). No data is dropped.
+  - v17 → v18: creates the `experiments` + `experiment_checkins` tables (experiments tab). New tables only — no existing-table changes. No data is dropped.
 
 ## Generated code
 

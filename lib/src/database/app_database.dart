@@ -9,7 +9,7 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
-  @DriftDatabase(
+@DriftDatabase(
   tables: [
     Ingredients,
     Meals,
@@ -25,6 +25,8 @@ part 'app_database.g.dart';
     Transactions,
     Receipts,
     FxRates,
+    Experiments,
+    ExperimentCheckins,
   ],
 )
 final class AppDatabase extends _$AppDatabase {
@@ -33,7 +35,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -140,6 +142,15 @@ final class AppDatabase extends _$AppDatabase {
           'UPDATE exercise_sets SET actual_duration_minutes = duration_minutes, '
           'actual_distance_meters = distance_meters',
         );
+      }
+      if (from < 17) {
+        // v17: exercise-level free-text note on workout_exercises.
+        await m.addColumn(workoutExercises, workoutExercises.notes);
+      }
+      if (from < 18) {
+        // v18: experiments + daily check-ins.
+        await m.createTable(experiments);
+        await m.createTable(experimentCheckins);
       }
     },
   );

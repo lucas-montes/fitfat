@@ -96,6 +96,8 @@ class WorkoutExercises extends Table {
   TextColumn get workoutId => text().references(Workouts, #id)();
   TextColumn get exerciseId => text().references(Exercises, #id)();
   IntColumn get sortOrder => integer()();
+  // Exercise-level free-text note (v17).
+  TextColumn? get notes => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -277,4 +279,51 @@ class BodyMetrics extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Experiments tables (v18)
+// ---------------------------------------------------------------------------
+
+class Experiments extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  // Optional hypothesis / stated purpose of the experiment.
+  TextColumn? get purpose => text().nullable()();
+  // Start-of-day epoch milliseconds (inclusive baseline start).
+  IntColumn get startDate => integer()();
+  // Null = open-ended.
+  IntColumn? get endDate => integer().nullable()();
+  // 'planned' | 'active' | 'done' | 'aborted'.
+  TextColumn get status => text()();
+  // JSON string[] of linked categories: workout | diet | body | steps.
+  TextColumn get categories => text()();
+  BoolColumn get reminderEnabled =>
+      boolean().withDefault(const Constant(true))();
+  // Daily check-in reminder time as minutes-from-midnight (default 20:00).
+  IntColumn get reminderTimeMinutes =>
+      integer().withDefault(const Constant(1200))();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ExperimentCheckins extends Table {
+  TextColumn get id => text()();
+  TextColumn get experimentId => text().references(Experiments, #id)();
+  // Start-of-day epoch milliseconds — one check-in per experiment per day.
+  IntColumn get day => integer()();
+  // 1..5 wellbeing/rating scale.
+  IntColumn get rating => integer()();
+  TextColumn? get note => text().nullable()();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {experimentId, day},
+  ];
 }

@@ -14,7 +14,9 @@ MaterialApp.router
      │    ├─ StatefulShellBranch: /exercise   → ExerciseTab
      │    ├─ StatefulShellBranch: /diet       → DietTab
      │    ├─ StatefulShellBranch: /plan       → PlanTab → PlannerScreen
-     │    └─ StatefulShellBranch: /settings   → SettingsTab
+     │    ├─ StatefulShellBranch: /notes      → NotesTab → NotesScreen
+     │    ├─ StatefulShellBranch: /budget     → BudgetTab → BudgetScreen
+     │    └─ StatefulShellBranch: /experiments → ExperimentsTab → ExperimentsScreen
      └─ GoRoute: /active-workout → ActiveWorkoutScreen   (outside the shell)
      └─ GoRoute: /workout-summary/:id → WorkoutSummaryScreen   (outside the shell)
 ```
@@ -38,7 +40,7 @@ Bottom navigation uses Material 3 `NavigationBar`. Tab state is preserved when s
 | `lib/src/app/router.dart` | GoRouter config + `_ShellWithNavBar` |
 | `lib/src/app/theme.dart` | Tuned light + dark themes, component themes, registers `FitFatColors` |
 | `lib/src/ui/` | Design system: `tokens.dart`, `theme_extensions.dart`, `widgets/` (StatusBadge, EmptyState, MetricCard) |
-| `lib/src/app/tabs/*.dart` | Tab screens (Dashboard, Exercise, Diet, Plan, Settings) |
+| `lib/src/app/tabs/*.dart` | Tab screens (Dashboard, Exercise, Diet, Plan, Notes, Budget, Experiments) |
 
 ### GoRouter shell behavior
 
@@ -71,12 +73,26 @@ ingredients ──┐
 exercises  ──┐
               ├── workout_exercises ── workouts
               │         └── exercise_sets
-              └── (direct FK to workout_exercises)
 planner_items (standalone — daily planner tasks, no FKs)
+notes         (standalone — free-form Notes tab, no FKs)
+accounts ── transactions ── receipts, fx_rates (budget section)
 body_metrics  (standalone — one row per day: weight/height, no FKs)
+experiments ── experiment_checkins (experiments tab: one check-in per day)
 ```
 
-9 tables total. See [database/schema.md](database/schema.md) for full column definitions.
+16 tables total. See [database/schema.md](database/schema.md) for full column definitions.
+
+### Data access
+
+Hot read paths avoid per-item query loops (perf 2026-08-17):
+`WorkoutRepository._getExerciseBlocks` / `getExerciseHistory` load all sets with a
+single `workoutExerciseId.isIn(...)` bulk query and group in memory, and the
+dashboard's `weeklyWorkoutStatsProvider` calls `getVolumeAndMinutesSince(weekStart)`
+(exactly two queries: a workouts→workout_exercises→exercise_sets join for volume,
+plus a workouts scan for duration) instead of resolving `workoutDetailProvider` per
+completed workout. The experiments tab reuses these: `WorkoutRepository.getDailyVolumes(from)` for the
+workout chart, `mealListProvider`/`bodyMetricsProvider` for diet/body aggregation, and
+`HealthConnectSteps.getDailySteps(from, to)` (best-effort) for the steps chart.
 
 ### Delete semantics (T05+)
 
@@ -95,6 +111,19 @@ body_metrics  (standalone — one row per day: weight/height, no FKs)
 ### Domain models
 
 Separate plain Dart classes in `lib/src/models/` mirror the database rows. Repositories convert between Drift-generated rows and domain models.
+
+---
+
+## Network (Phase E)
+
+Small decoupled HTTP layer in `lib/src/network/`: `ApiClient` (abstract,
+`getJson`/`postJson`/`putJson`/`deleteJson`), `HttpApiClient` (production,
+`package:http`, 15 s timeout, User-Agent, base URL), `MockApiClient` (scripted,
+for tests), and an overridable `apiClientProvider`. `remoteFxProvider`
+(`lib/src/budget/providers/services.dart`) now serves `FxRateRemoteService`
+(real) behind the compile-time `FX_API_BASE_URL` seam — empty until an endpoint
+is chosen → refresh surfaces a clear error banner; `MockRemoteFxService` is kept
+for tests. See [network/network.md](network/network.md).
 
 ---
 

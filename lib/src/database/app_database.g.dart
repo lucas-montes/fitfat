@@ -2850,8 +2850,23 @@ class $WorkoutExercisesTable extends WorkoutExercises
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
-  List<GeneratedColumn> get $columns => [id, workoutId, exerciseId, sortOrder];
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workoutId,
+    exerciseId,
+    sortOrder,
+    notes,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2893,6 +2908,12 @@ class $WorkoutExercisesTable extends WorkoutExercises
     } else if (isInserting) {
       context.missing(_sortOrderMeta);
     }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
     return context;
   }
 
@@ -2918,6 +2939,10 @@ class $WorkoutExercisesTable extends WorkoutExercises
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
       )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
     );
   }
 
@@ -2932,11 +2957,13 @@ class WorkoutExercise extends DataClass implements Insertable<WorkoutExercise> {
   final String workoutId;
   final String exerciseId;
   final int sortOrder;
+  final String? notes;
   const WorkoutExercise({
     required this.id,
     required this.workoutId,
     required this.exerciseId,
     required this.sortOrder,
+    this.notes,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2945,6 +2972,9 @@ class WorkoutExercise extends DataClass implements Insertable<WorkoutExercise> {
     map['workout_id'] = Variable<String>(workoutId);
     map['exercise_id'] = Variable<String>(exerciseId);
     map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
     return map;
   }
 
@@ -2954,6 +2984,9 @@ class WorkoutExercise extends DataClass implements Insertable<WorkoutExercise> {
       workoutId: Value(workoutId),
       exerciseId: Value(exerciseId),
       sortOrder: Value(sortOrder),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
     );
   }
 
@@ -2967,6 +3000,7 @@ class WorkoutExercise extends DataClass implements Insertable<WorkoutExercise> {
       workoutId: serializer.fromJson<String>(json['workoutId']),
       exerciseId: serializer.fromJson<String>(json['exerciseId']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      notes: serializer.fromJson<String?>(json['notes']),
     );
   }
   @override
@@ -2977,6 +3011,7 @@ class WorkoutExercise extends DataClass implements Insertable<WorkoutExercise> {
       'workoutId': serializer.toJson<String>(workoutId),
       'exerciseId': serializer.toJson<String>(exerciseId),
       'sortOrder': serializer.toJson<int>(sortOrder),
+      'notes': serializer.toJson<String?>(notes),
     };
   }
 
@@ -2985,11 +3020,13 @@ class WorkoutExercise extends DataClass implements Insertable<WorkoutExercise> {
     String? workoutId,
     String? exerciseId,
     int? sortOrder,
+    Value<String?> notes = const Value.absent(),
   }) => WorkoutExercise(
     id: id ?? this.id,
     workoutId: workoutId ?? this.workoutId,
     exerciseId: exerciseId ?? this.exerciseId,
     sortOrder: sortOrder ?? this.sortOrder,
+    notes: notes.present ? notes.value : this.notes,
   );
   WorkoutExercise copyWithCompanion(WorkoutExercisesCompanion data) {
     return WorkoutExercise(
@@ -2999,6 +3036,7 @@ class WorkoutExercise extends DataClass implements Insertable<WorkoutExercise> {
           ? data.exerciseId.value
           : this.exerciseId,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
 
@@ -3008,13 +3046,14 @@ class WorkoutExercise extends DataClass implements Insertable<WorkoutExercise> {
           ..write('id: $id, ')
           ..write('workoutId: $workoutId, ')
           ..write('exerciseId: $exerciseId, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('notes: $notes')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, workoutId, exerciseId, sortOrder);
+  int get hashCode => Object.hash(id, workoutId, exerciseId, sortOrder, notes);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3022,7 +3061,8 @@ class WorkoutExercise extends DataClass implements Insertable<WorkoutExercise> {
           other.id == this.id &&
           other.workoutId == this.workoutId &&
           other.exerciseId == this.exerciseId &&
-          other.sortOrder == this.sortOrder);
+          other.sortOrder == this.sortOrder &&
+          other.notes == this.notes);
 }
 
 class WorkoutExercisesCompanion extends UpdateCompanion<WorkoutExercise> {
@@ -3030,12 +3070,14 @@ class WorkoutExercisesCompanion extends UpdateCompanion<WorkoutExercise> {
   final Value<String> workoutId;
   final Value<String> exerciseId;
   final Value<int> sortOrder;
+  final Value<String?> notes;
   final Value<int> rowid;
   const WorkoutExercisesCompanion({
     this.id = const Value.absent(),
     this.workoutId = const Value.absent(),
     this.exerciseId = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WorkoutExercisesCompanion.insert({
@@ -3043,6 +3085,7 @@ class WorkoutExercisesCompanion extends UpdateCompanion<WorkoutExercise> {
     required String workoutId,
     required String exerciseId,
     required int sortOrder,
+    this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        workoutId = Value(workoutId),
@@ -3053,6 +3096,7 @@ class WorkoutExercisesCompanion extends UpdateCompanion<WorkoutExercise> {
     Expression<String>? workoutId,
     Expression<String>? exerciseId,
     Expression<int>? sortOrder,
+    Expression<String>? notes,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3060,6 +3104,7 @@ class WorkoutExercisesCompanion extends UpdateCompanion<WorkoutExercise> {
       if (workoutId != null) 'workout_id': workoutId,
       if (exerciseId != null) 'exercise_id': exerciseId,
       if (sortOrder != null) 'sort_order': sortOrder,
+      if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3069,6 +3114,7 @@ class WorkoutExercisesCompanion extends UpdateCompanion<WorkoutExercise> {
     Value<String>? workoutId,
     Value<String>? exerciseId,
     Value<int>? sortOrder,
+    Value<String?>? notes,
     Value<int>? rowid,
   }) {
     return WorkoutExercisesCompanion(
@@ -3076,6 +3122,7 @@ class WorkoutExercisesCompanion extends UpdateCompanion<WorkoutExercise> {
       workoutId: workoutId ?? this.workoutId,
       exerciseId: exerciseId ?? this.exerciseId,
       sortOrder: sortOrder ?? this.sortOrder,
+      notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3095,6 +3142,9 @@ class WorkoutExercisesCompanion extends UpdateCompanion<WorkoutExercise> {
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3108,6 +3158,7 @@ class WorkoutExercisesCompanion extends UpdateCompanion<WorkoutExercise> {
           ..write('workoutId: $workoutId, ')
           ..write('exerciseId: $exerciseId, ')
           ..write('sortOrder: $sortOrder, ')
+          ..write('notes: $notes, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7686,6 +7737,1041 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
   }
 }
 
+class $ExperimentsTable extends Experiments
+    with TableInfo<$ExperimentsTable, Experiment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExperimentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _purposeMeta = const VerificationMeta(
+    'purpose',
+  );
+  @override
+  late final GeneratedColumn<String> purpose = GeneratedColumn<String>(
+    'purpose',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<int> startDate = GeneratedColumn<int>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endDateMeta = const VerificationMeta(
+    'endDate',
+  );
+  @override
+  late final GeneratedColumn<int> endDate = GeneratedColumn<int>(
+    'end_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoriesMeta = const VerificationMeta(
+    'categories',
+  );
+  @override
+  late final GeneratedColumn<String> categories = GeneratedColumn<String>(
+    'categories',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reminderEnabledMeta = const VerificationMeta(
+    'reminderEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> reminderEnabled = GeneratedColumn<bool>(
+    'reminder_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("reminder_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _reminderTimeMinutesMeta =
+      const VerificationMeta('reminderTimeMinutes');
+  @override
+  late final GeneratedColumn<int> reminderTimeMinutes = GeneratedColumn<int>(
+    'reminder_time_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1200),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    purpose,
+    startDate,
+    endDate,
+    status,
+    categories,
+    reminderEnabled,
+    reminderTimeMinutes,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'experiments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Experiment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('purpose')) {
+      context.handle(
+        _purposeMeta,
+        purpose.isAcceptableOrUnknown(data['purpose']!, _purposeMeta),
+      );
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(
+        _endDateMeta,
+        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('categories')) {
+      context.handle(
+        _categoriesMeta,
+        categories.isAcceptableOrUnknown(data['categories']!, _categoriesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoriesMeta);
+    }
+    if (data.containsKey('reminder_enabled')) {
+      context.handle(
+        _reminderEnabledMeta,
+        reminderEnabled.isAcceptableOrUnknown(
+          data['reminder_enabled']!,
+          _reminderEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_time_minutes')) {
+      context.handle(
+        _reminderTimeMinutesMeta,
+        reminderTimeMinutes.isAcceptableOrUnknown(
+          data['reminder_time_minutes']!,
+          _reminderTimeMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Experiment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Experiment(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      purpose: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}purpose'],
+      ),
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}start_date'],
+      )!,
+      endDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}end_date'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      categories: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}categories'],
+      )!,
+      reminderEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}reminder_enabled'],
+      )!,
+      reminderTimeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_time_minutes'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ExperimentsTable createAlias(String alias) {
+    return $ExperimentsTable(attachedDatabase, alias);
+  }
+}
+
+class Experiment extends DataClass implements Insertable<Experiment> {
+  final String id;
+  final String name;
+  final String? purpose;
+  final int startDate;
+  final int? endDate;
+  final String status;
+  final String categories;
+  final bool reminderEnabled;
+  final int reminderTimeMinutes;
+  final int createdAt;
+  const Experiment({
+    required this.id,
+    required this.name,
+    this.purpose,
+    required this.startDate,
+    this.endDate,
+    required this.status,
+    required this.categories,
+    required this.reminderEnabled,
+    required this.reminderTimeMinutes,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || purpose != null) {
+      map['purpose'] = Variable<String>(purpose);
+    }
+    map['start_date'] = Variable<int>(startDate);
+    if (!nullToAbsent || endDate != null) {
+      map['end_date'] = Variable<int>(endDate);
+    }
+    map['status'] = Variable<String>(status);
+    map['categories'] = Variable<String>(categories);
+    map['reminder_enabled'] = Variable<bool>(reminderEnabled);
+    map['reminder_time_minutes'] = Variable<int>(reminderTimeMinutes);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  ExperimentsCompanion toCompanion(bool nullToAbsent) {
+    return ExperimentsCompanion(
+      id: Value(id),
+      name: Value(name),
+      purpose: purpose == null && nullToAbsent
+          ? const Value.absent()
+          : Value(purpose),
+      startDate: Value(startDate),
+      endDate: endDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endDate),
+      status: Value(status),
+      categories: Value(categories),
+      reminderEnabled: Value(reminderEnabled),
+      reminderTimeMinutes: Value(reminderTimeMinutes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Experiment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Experiment(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      purpose: serializer.fromJson<String?>(json['purpose']),
+      startDate: serializer.fromJson<int>(json['startDate']),
+      endDate: serializer.fromJson<int?>(json['endDate']),
+      status: serializer.fromJson<String>(json['status']),
+      categories: serializer.fromJson<String>(json['categories']),
+      reminderEnabled: serializer.fromJson<bool>(json['reminderEnabled']),
+      reminderTimeMinutes: serializer.fromJson<int>(
+        json['reminderTimeMinutes'],
+      ),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'purpose': serializer.toJson<String?>(purpose),
+      'startDate': serializer.toJson<int>(startDate),
+      'endDate': serializer.toJson<int?>(endDate),
+      'status': serializer.toJson<String>(status),
+      'categories': serializer.toJson<String>(categories),
+      'reminderEnabled': serializer.toJson<bool>(reminderEnabled),
+      'reminderTimeMinutes': serializer.toJson<int>(reminderTimeMinutes),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  Experiment copyWith({
+    String? id,
+    String? name,
+    Value<String?> purpose = const Value.absent(),
+    int? startDate,
+    Value<int?> endDate = const Value.absent(),
+    String? status,
+    String? categories,
+    bool? reminderEnabled,
+    int? reminderTimeMinutes,
+    int? createdAt,
+  }) => Experiment(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    purpose: purpose.present ? purpose.value : this.purpose,
+    startDate: startDate ?? this.startDate,
+    endDate: endDate.present ? endDate.value : this.endDate,
+    status: status ?? this.status,
+    categories: categories ?? this.categories,
+    reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+    reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Experiment copyWithCompanion(ExperimentsCompanion data) {
+    return Experiment(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      purpose: data.purpose.present ? data.purpose.value : this.purpose,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      status: data.status.present ? data.status.value : this.status,
+      categories: data.categories.present
+          ? data.categories.value
+          : this.categories,
+      reminderEnabled: data.reminderEnabled.present
+          ? data.reminderEnabled.value
+          : this.reminderEnabled,
+      reminderTimeMinutes: data.reminderTimeMinutes.present
+          ? data.reminderTimeMinutes.value
+          : this.reminderTimeMinutes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Experiment(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('purpose: $purpose, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('status: $status, ')
+          ..write('categories: $categories, ')
+          ..write('reminderEnabled: $reminderEnabled, ')
+          ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    purpose,
+    startDate,
+    endDate,
+    status,
+    categories,
+    reminderEnabled,
+    reminderTimeMinutes,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Experiment &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.purpose == this.purpose &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.status == this.status &&
+          other.categories == this.categories &&
+          other.reminderEnabled == this.reminderEnabled &&
+          other.reminderTimeMinutes == this.reminderTimeMinutes &&
+          other.createdAt == this.createdAt);
+}
+
+class ExperimentsCompanion extends UpdateCompanion<Experiment> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String?> purpose;
+  final Value<int> startDate;
+  final Value<int?> endDate;
+  final Value<String> status;
+  final Value<String> categories;
+  final Value<bool> reminderEnabled;
+  final Value<int> reminderTimeMinutes;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const ExperimentsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.purpose = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.status = const Value.absent(),
+    this.categories = const Value.absent(),
+    this.reminderEnabled = const Value.absent(),
+    this.reminderTimeMinutes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExperimentsCompanion.insert({
+    required String id,
+    required String name,
+    this.purpose = const Value.absent(),
+    required int startDate,
+    this.endDate = const Value.absent(),
+    required String status,
+    required String categories,
+    this.reminderEnabled = const Value.absent(),
+    this.reminderTimeMinutes = const Value.absent(),
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       startDate = Value(startDate),
+       status = Value(status),
+       categories = Value(categories),
+       createdAt = Value(createdAt);
+  static Insertable<Experiment> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? purpose,
+    Expression<int>? startDate,
+    Expression<int>? endDate,
+    Expression<String>? status,
+    Expression<String>? categories,
+    Expression<bool>? reminderEnabled,
+    Expression<int>? reminderTimeMinutes,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (purpose != null) 'purpose': purpose,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (status != null) 'status': status,
+      if (categories != null) 'categories': categories,
+      if (reminderEnabled != null) 'reminder_enabled': reminderEnabled,
+      if (reminderTimeMinutes != null)
+        'reminder_time_minutes': reminderTimeMinutes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExperimentsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String?>? purpose,
+    Value<int>? startDate,
+    Value<int?>? endDate,
+    Value<String>? status,
+    Value<String>? categories,
+    Value<bool>? reminderEnabled,
+    Value<int>? reminderTimeMinutes,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ExperimentsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      purpose: purpose ?? this.purpose,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      status: status ?? this.status,
+      categories: categories ?? this.categories,
+      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (purpose.present) {
+      map['purpose'] = Variable<String>(purpose.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<int>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<int>(endDate.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (categories.present) {
+      map['categories'] = Variable<String>(categories.value);
+    }
+    if (reminderEnabled.present) {
+      map['reminder_enabled'] = Variable<bool>(reminderEnabled.value);
+    }
+    if (reminderTimeMinutes.present) {
+      map['reminder_time_minutes'] = Variable<int>(reminderTimeMinutes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExperimentsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('purpose: $purpose, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('status: $status, ')
+          ..write('categories: $categories, ')
+          ..write('reminderEnabled: $reminderEnabled, ')
+          ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ExperimentCheckinsTable extends ExperimentCheckins
+    with TableInfo<$ExperimentCheckinsTable, ExperimentCheckin> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExperimentCheckinsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _experimentIdMeta = const VerificationMeta(
+    'experimentId',
+  );
+  @override
+  late final GeneratedColumn<String> experimentId = GeneratedColumn<String>(
+    'experiment_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES experiments (id)',
+    ),
+  );
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<int> day = GeneratedColumn<int>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ratingMeta = const VerificationMeta('rating');
+  @override
+  late final GeneratedColumn<int> rating = GeneratedColumn<int>(
+    'rating',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    experimentId,
+    day,
+    rating,
+    note,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'experiment_checkins';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExperimentCheckin> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('experiment_id')) {
+      context.handle(
+        _experimentIdMeta,
+        experimentId.isAcceptableOrUnknown(
+          data['experiment_id']!,
+          _experimentIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_experimentIdMeta);
+    }
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('rating')) {
+      context.handle(
+        _ratingMeta,
+        rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ratingMeta);
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {experimentId, day},
+  ];
+  @override
+  ExperimentCheckin map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExperimentCheckin(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      experimentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}experiment_id'],
+      )!,
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}day'],
+      )!,
+      rating: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rating'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ExperimentCheckinsTable createAlias(String alias) {
+    return $ExperimentCheckinsTable(attachedDatabase, alias);
+  }
+}
+
+class ExperimentCheckin extends DataClass
+    implements Insertable<ExperimentCheckin> {
+  final String id;
+  final String experimentId;
+  final int day;
+  final int rating;
+  final String? note;
+  final int createdAt;
+  const ExperimentCheckin({
+    required this.id,
+    required this.experimentId,
+    required this.day,
+    required this.rating,
+    this.note,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['experiment_id'] = Variable<String>(experimentId);
+    map['day'] = Variable<int>(day);
+    map['rating'] = Variable<int>(rating);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  ExperimentCheckinsCompanion toCompanion(bool nullToAbsent) {
+    return ExperimentCheckinsCompanion(
+      id: Value(id),
+      experimentId: Value(experimentId),
+      day: Value(day),
+      rating: Value(rating),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ExperimentCheckin.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExperimentCheckin(
+      id: serializer.fromJson<String>(json['id']),
+      experimentId: serializer.fromJson<String>(json['experimentId']),
+      day: serializer.fromJson<int>(json['day']),
+      rating: serializer.fromJson<int>(json['rating']),
+      note: serializer.fromJson<String?>(json['note']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'experimentId': serializer.toJson<String>(experimentId),
+      'day': serializer.toJson<int>(day),
+      'rating': serializer.toJson<int>(rating),
+      'note': serializer.toJson<String?>(note),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  ExperimentCheckin copyWith({
+    String? id,
+    String? experimentId,
+    int? day,
+    int? rating,
+    Value<String?> note = const Value.absent(),
+    int? createdAt,
+  }) => ExperimentCheckin(
+    id: id ?? this.id,
+    experimentId: experimentId ?? this.experimentId,
+    day: day ?? this.day,
+    rating: rating ?? this.rating,
+    note: note.present ? note.value : this.note,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ExperimentCheckin copyWithCompanion(ExperimentCheckinsCompanion data) {
+    return ExperimentCheckin(
+      id: data.id.present ? data.id.value : this.id,
+      experimentId: data.experimentId.present
+          ? data.experimentId.value
+          : this.experimentId,
+      day: data.day.present ? data.day.value : this.day,
+      rating: data.rating.present ? data.rating.value : this.rating,
+      note: data.note.present ? data.note.value : this.note,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExperimentCheckin(')
+          ..write('id: $id, ')
+          ..write('experimentId: $experimentId, ')
+          ..write('day: $day, ')
+          ..write('rating: $rating, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, experimentId, day, rating, note, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExperimentCheckin &&
+          other.id == this.id &&
+          other.experimentId == this.experimentId &&
+          other.day == this.day &&
+          other.rating == this.rating &&
+          other.note == this.note &&
+          other.createdAt == this.createdAt);
+}
+
+class ExperimentCheckinsCompanion extends UpdateCompanion<ExperimentCheckin> {
+  final Value<String> id;
+  final Value<String> experimentId;
+  final Value<int> day;
+  final Value<int> rating;
+  final Value<String?> note;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const ExperimentCheckinsCompanion({
+    this.id = const Value.absent(),
+    this.experimentId = const Value.absent(),
+    this.day = const Value.absent(),
+    this.rating = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExperimentCheckinsCompanion.insert({
+    required String id,
+    required String experimentId,
+    required int day,
+    required int rating,
+    this.note = const Value.absent(),
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       experimentId = Value(experimentId),
+       day = Value(day),
+       rating = Value(rating),
+       createdAt = Value(createdAt);
+  static Insertable<ExperimentCheckin> custom({
+    Expression<String>? id,
+    Expression<String>? experimentId,
+    Expression<int>? day,
+    Expression<int>? rating,
+    Expression<String>? note,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (experimentId != null) 'experiment_id': experimentId,
+      if (day != null) 'day': day,
+      if (rating != null) 'rating': rating,
+      if (note != null) 'note': note,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExperimentCheckinsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? experimentId,
+    Value<int>? day,
+    Value<int>? rating,
+    Value<String?>? note,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ExperimentCheckinsCompanion(
+      id: id ?? this.id,
+      experimentId: experimentId ?? this.experimentId,
+      day: day ?? this.day,
+      rating: rating ?? this.rating,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (experimentId.present) {
+      map['experiment_id'] = Variable<String>(experimentId.value);
+    }
+    if (day.present) {
+      map['day'] = Variable<int>(day.value);
+    }
+    if (rating.present) {
+      map['rating'] = Variable<int>(rating.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExperimentCheckinsCompanion(')
+          ..write('id: $id, ')
+          ..write('experimentId: $experimentId, ')
+          ..write('day: $day, ')
+          ..write('rating: $rating, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7707,6 +8793,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ReceiptsTable receipts = $ReceiptsTable(this);
   late final $TransactionsTable transactions = $TransactionsTable(this);
   late final $FxRatesTable fxRates = $FxRatesTable(this);
+  late final $ExperimentsTable experiments = $ExperimentsTable(this);
+  late final $ExperimentCheckinsTable experimentCheckins =
+      $ExperimentCheckinsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7726,6 +8815,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     receipts,
     transactions,
     fxRates,
+    experiments,
+    experimentCheckins,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -9773,6 +10864,7 @@ typedef $$WorkoutExercisesTableCreateCompanionBuilder =
       required String workoutId,
       required String exerciseId,
       required int sortOrder,
+      Value<String?> notes,
       Value<int> rowid,
     });
 typedef $$WorkoutExercisesTableUpdateCompanionBuilder =
@@ -9781,6 +10873,7 @@ typedef $$WorkoutExercisesTableUpdateCompanionBuilder =
       Value<String> workoutId,
       Value<String> exerciseId,
       Value<int> sortOrder,
+      Value<String?> notes,
       Value<int> rowid,
     });
 
@@ -9869,6 +10962,11 @@ class $$WorkoutExercisesTableFilterComposer
 
   ColumnFilters<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9963,6 +11061,11 @@ class $$WorkoutExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$WorkoutsTableOrderingComposer get workoutId {
     final $$WorkoutsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -10024,6 +11127,9 @@ class $$WorkoutExercisesTableAnnotationComposer
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   $$WorkoutsTableAnnotationComposer get workoutId {
     final $$WorkoutsTableAnnotationComposer composer = $composerBuilder(
@@ -10135,12 +11241,14 @@ class $$WorkoutExercisesTableTableManager
                 Value<String> workoutId = const Value.absent(),
                 Value<String> exerciseId = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WorkoutExercisesCompanion(
                 id: id,
                 workoutId: workoutId,
                 exerciseId: exerciseId,
                 sortOrder: sortOrder,
+                notes: notes,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10149,12 +11257,14 @@ class $$WorkoutExercisesTableTableManager
                 required String workoutId,
                 required String exerciseId,
                 required int sortOrder,
+                Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WorkoutExercisesCompanion.insert(
                 id: id,
                 workoutId: workoutId,
                 exerciseId: exerciseId,
                 sortOrder: sortOrder,
+                notes: notes,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -13247,6 +14357,776 @@ typedef $$FxRatesTableProcessedTableManager =
       FxRate,
       PrefetchHooks Function()
     >;
+typedef $$ExperimentsTableCreateCompanionBuilder =
+    ExperimentsCompanion Function({
+      required String id,
+      required String name,
+      Value<String?> purpose,
+      required int startDate,
+      Value<int?> endDate,
+      required String status,
+      required String categories,
+      Value<bool> reminderEnabled,
+      Value<int> reminderTimeMinutes,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$ExperimentsTableUpdateCompanionBuilder =
+    ExperimentsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String?> purpose,
+      Value<int> startDate,
+      Value<int?> endDate,
+      Value<String> status,
+      Value<String> categories,
+      Value<bool> reminderEnabled,
+      Value<int> reminderTimeMinutes,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$ExperimentsTableReferences
+    extends BaseReferences<_$AppDatabase, $ExperimentsTable, Experiment> {
+  $$ExperimentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$ExperimentCheckinsTable, List<ExperimentCheckin>>
+  _experimentCheckinsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.experimentCheckins,
+        aliasName: $_aliasNameGenerator(
+          db.experiments.id,
+          db.experimentCheckins.experimentId,
+        ),
+      );
+
+  $$ExperimentCheckinsTableProcessedTableManager get experimentCheckinsRefs {
+    final manager = $$ExperimentCheckinsTableTableManager(
+      $_db,
+      $_db.experimentCheckins,
+    ).filter((f) => f.experimentId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _experimentCheckinsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ExperimentsTableFilterComposer
+    extends Composer<_$AppDatabase, $ExperimentsTable> {
+  $$ExperimentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get purpose => $composableBuilder(
+    column: $table.purpose,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get categories => $composableBuilder(
+    column: $table.categories,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get reminderEnabled => $composableBuilder(
+    column: $table.reminderEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderTimeMinutes => $composableBuilder(
+    column: $table.reminderTimeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> experimentCheckinsRefs(
+    Expression<bool> Function($$ExperimentCheckinsTableFilterComposer f) f,
+  ) {
+    final $$ExperimentCheckinsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.experimentCheckins,
+      getReferencedColumn: (t) => t.experimentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExperimentCheckinsTableFilterComposer(
+            $db: $db,
+            $table: $db.experimentCheckins,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ExperimentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExperimentsTable> {
+  $$ExperimentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get purpose => $composableBuilder(
+    column: $table.purpose,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get categories => $composableBuilder(
+    column: $table.categories,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get reminderEnabled => $composableBuilder(
+    column: $table.reminderEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reminderTimeMinutes => $composableBuilder(
+    column: $table.reminderTimeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExperimentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExperimentsTable> {
+  $$ExperimentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get purpose =>
+      $composableBuilder(column: $table.purpose, builder: (column) => column);
+
+  GeneratedColumn<int> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<int> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get categories => $composableBuilder(
+    column: $table.categories,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get reminderEnabled => $composableBuilder(
+    column: $table.reminderEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reminderTimeMinutes => $composableBuilder(
+    column: $table.reminderTimeMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> experimentCheckinsRefs<T extends Object>(
+    Expression<T> Function($$ExperimentCheckinsTableAnnotationComposer a) f,
+  ) {
+    final $$ExperimentCheckinsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.experimentCheckins,
+          getReferencedColumn: (t) => t.experimentId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ExperimentCheckinsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.experimentCheckins,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ExperimentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExperimentsTable,
+          Experiment,
+          $$ExperimentsTableFilterComposer,
+          $$ExperimentsTableOrderingComposer,
+          $$ExperimentsTableAnnotationComposer,
+          $$ExperimentsTableCreateCompanionBuilder,
+          $$ExperimentsTableUpdateCompanionBuilder,
+          (Experiment, $$ExperimentsTableReferences),
+          Experiment,
+          PrefetchHooks Function({bool experimentCheckinsRefs})
+        > {
+  $$ExperimentsTableTableManager(_$AppDatabase db, $ExperimentsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExperimentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExperimentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExperimentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> purpose = const Value.absent(),
+                Value<int> startDate = const Value.absent(),
+                Value<int?> endDate = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> categories = const Value.absent(),
+                Value<bool> reminderEnabled = const Value.absent(),
+                Value<int> reminderTimeMinutes = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExperimentsCompanion(
+                id: id,
+                name: name,
+                purpose: purpose,
+                startDate: startDate,
+                endDate: endDate,
+                status: status,
+                categories: categories,
+                reminderEnabled: reminderEnabled,
+                reminderTimeMinutes: reminderTimeMinutes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<String?> purpose = const Value.absent(),
+                required int startDate,
+                Value<int?> endDate = const Value.absent(),
+                required String status,
+                required String categories,
+                Value<bool> reminderEnabled = const Value.absent(),
+                Value<int> reminderTimeMinutes = const Value.absent(),
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ExperimentsCompanion.insert(
+                id: id,
+                name: name,
+                purpose: purpose,
+                startDate: startDate,
+                endDate: endDate,
+                status: status,
+                categories: categories,
+                reminderEnabled: reminderEnabled,
+                reminderTimeMinutes: reminderTimeMinutes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ExperimentsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({experimentCheckinsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (experimentCheckinsRefs) db.experimentCheckins,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (experimentCheckinsRefs)
+                    await $_getPrefetchedData<
+                      Experiment,
+                      $ExperimentsTable,
+                      ExperimentCheckin
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ExperimentsTableReferences
+                          ._experimentCheckinsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$ExperimentsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).experimentCheckinsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.experimentId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ExperimentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExperimentsTable,
+      Experiment,
+      $$ExperimentsTableFilterComposer,
+      $$ExperimentsTableOrderingComposer,
+      $$ExperimentsTableAnnotationComposer,
+      $$ExperimentsTableCreateCompanionBuilder,
+      $$ExperimentsTableUpdateCompanionBuilder,
+      (Experiment, $$ExperimentsTableReferences),
+      Experiment,
+      PrefetchHooks Function({bool experimentCheckinsRefs})
+    >;
+typedef $$ExperimentCheckinsTableCreateCompanionBuilder =
+    ExperimentCheckinsCompanion Function({
+      required String id,
+      required String experimentId,
+      required int day,
+      required int rating,
+      Value<String?> note,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$ExperimentCheckinsTableUpdateCompanionBuilder =
+    ExperimentCheckinsCompanion Function({
+      Value<String> id,
+      Value<String> experimentId,
+      Value<int> day,
+      Value<int> rating,
+      Value<String?> note,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$ExperimentCheckinsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ExperimentCheckinsTable,
+          ExperimentCheckin
+        > {
+  $$ExperimentCheckinsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ExperimentsTable _experimentIdTable(_$AppDatabase db) =>
+      db.experiments.createAlias(
+        $_aliasNameGenerator(
+          db.experimentCheckins.experimentId,
+          db.experiments.id,
+        ),
+      );
+
+  $$ExperimentsTableProcessedTableManager get experimentId {
+    final $_column = $_itemColumn<String>('experiment_id')!;
+
+    final manager = $$ExperimentsTableTableManager(
+      $_db,
+      $_db.experiments,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_experimentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ExperimentCheckinsTableFilterComposer
+    extends Composer<_$AppDatabase, $ExperimentCheckinsTable> {
+  $$ExperimentCheckinsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ExperimentsTableFilterComposer get experimentId {
+    final $$ExperimentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.experimentId,
+      referencedTable: $db.experiments,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExperimentsTableFilterComposer(
+            $db: $db,
+            $table: $db.experiments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExperimentCheckinsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExperimentCheckinsTable> {
+  $$ExperimentCheckinsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ExperimentsTableOrderingComposer get experimentId {
+    final $$ExperimentsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.experimentId,
+      referencedTable: $db.experiments,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExperimentsTableOrderingComposer(
+            $db: $db,
+            $table: $db.experiments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExperimentCheckinsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExperimentCheckinsTable> {
+  $$ExperimentCheckinsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<int> get rating =>
+      $composableBuilder(column: $table.rating, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$ExperimentsTableAnnotationComposer get experimentId {
+    final $$ExperimentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.experimentId,
+      referencedTable: $db.experiments,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExperimentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.experiments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExperimentCheckinsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExperimentCheckinsTable,
+          ExperimentCheckin,
+          $$ExperimentCheckinsTableFilterComposer,
+          $$ExperimentCheckinsTableOrderingComposer,
+          $$ExperimentCheckinsTableAnnotationComposer,
+          $$ExperimentCheckinsTableCreateCompanionBuilder,
+          $$ExperimentCheckinsTableUpdateCompanionBuilder,
+          (ExperimentCheckin, $$ExperimentCheckinsTableReferences),
+          ExperimentCheckin,
+          PrefetchHooks Function({bool experimentId})
+        > {
+  $$ExperimentCheckinsTableTableManager(
+    _$AppDatabase db,
+    $ExperimentCheckinsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExperimentCheckinsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExperimentCheckinsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExperimentCheckinsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> experimentId = const Value.absent(),
+                Value<int> day = const Value.absent(),
+                Value<int> rating = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExperimentCheckinsCompanion(
+                id: id,
+                experimentId: experimentId,
+                day: day,
+                rating: rating,
+                note: note,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String experimentId,
+                required int day,
+                required int rating,
+                Value<String?> note = const Value.absent(),
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ExperimentCheckinsCompanion.insert(
+                id: id,
+                experimentId: experimentId,
+                day: day,
+                rating: rating,
+                note: note,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ExperimentCheckinsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({experimentId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (experimentId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.experimentId,
+                                referencedTable:
+                                    $$ExperimentCheckinsTableReferences
+                                        ._experimentIdTable(db),
+                                referencedColumn:
+                                    $$ExperimentCheckinsTableReferences
+                                        ._experimentIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ExperimentCheckinsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExperimentCheckinsTable,
+      ExperimentCheckin,
+      $$ExperimentCheckinsTableFilterComposer,
+      $$ExperimentCheckinsTableOrderingComposer,
+      $$ExperimentCheckinsTableAnnotationComposer,
+      $$ExperimentCheckinsTableCreateCompanionBuilder,
+      $$ExperimentCheckinsTableUpdateCompanionBuilder,
+      (ExperimentCheckin, $$ExperimentCheckinsTableReferences),
+      ExperimentCheckin,
+      PrefetchHooks Function({bool experimentId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -13279,4 +15159,8 @@ class $AppDatabaseManager {
       $$TransactionsTableTableManager(_db, _db.transactions);
   $$FxRatesTableTableManager get fxRates =>
       $$FxRatesTableTableManager(_db, _db.fxRates);
+  $$ExperimentsTableTableManager get experiments =>
+      $$ExperimentsTableTableManager(_db, _db.experiments);
+  $$ExperimentCheckinsTableTableManager get experimentCheckins =>
+      $$ExperimentCheckinsTableTableManager(_db, _db.experimentCheckins);
 }

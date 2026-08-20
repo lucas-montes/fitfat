@@ -45,6 +45,41 @@ final class HealthConnectSteps {
       return 0;
     }
   }
+
+  /// Daily step totals between [from] (inclusive) and [to] (inclusive),
+  /// oldest first. Best-effort: returns an empty list when steps are
+  /// unavailable, denied, or the range spans too far back for the platform.
+  Future<List<({DateTime day, int steps})>> getDailySteps(
+    DateTime from,
+    DateTime to,
+  ) async {
+    if (!Platform.isAndroid) return const [];
+    try {
+      await _health.configure();
+      await Permission.activityRecognition.request();
+      final authorized =
+          await _health.hasPermissions([HealthDataType.STEPS]) ?? false;
+      if (!authorized) return const [];
+
+      final fromDay = DateTime(from.year, from.month, from.day);
+      final toDay = DateTime(
+        to.year,
+        to.month,
+        to.day,
+      ).add(const Duration(days: 1));
+      final days = <({DateTime day, int steps})>[];
+      var cursor = fromDay;
+      while (!cursor.isAfter(toDay)) {
+        final dayEnd = cursor.add(const Duration(days: 1));
+        final steps = await _health.getTotalStepsInInterval(cursor, dayEnd);
+        days.add((day: cursor, steps: steps ?? 0));
+        cursor = dayEnd;
+      }
+      return days;
+    } catch (_) {
+      return const [];
+    }
+  }
 }
 
 final healthConnectStepsProvider = Provider<HealthConnectSteps>(

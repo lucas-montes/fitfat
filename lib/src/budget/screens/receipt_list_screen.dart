@@ -41,10 +41,7 @@ final class ReceiptListScreen extends ConsumerWidget {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(
-                  l10n.receiptEmptyBody,
-                  textAlign: TextAlign.center,
-                ),
+                child: Text(l10n.receiptEmptyBody, textAlign: TextAlign.center),
               ),
             );
           }
@@ -59,7 +56,10 @@ final class ReceiptListScreen extends ConsumerWidget {
             itemCount: receipts.length,
             itemBuilder: (context, i) {
               final r = receipts[i];
-              return _ReceiptCard(receipt: r, onTap: () => context.push('/budget/receipt/${r.id}'));
+              return _ReceiptCard(
+                receipt: r,
+                onTap: () => context.push('/budget/receipt/${r.id}'),
+              );
             },
           );
         },
@@ -99,9 +99,9 @@ final class ReceiptListScreen extends ConsumerWidget {
       await receiptsDir.create(recursive: true);
       final ext = p.extension(picked.path);
       final name = '${const Uuid().v7()}$ext';
-      final saved = await File(picked.path).copy(
-        p.join(receiptsDir.path, name),
-      );
+      final saved = await File(
+        picked.path,
+      ).copy(p.join(receiptsDir.path, name));
       final receipt = newReceipt(localPath: saved.path);
       await ref.read(receiptRepositoryProvider).insert(receipt);
 
@@ -112,7 +112,9 @@ final class ReceiptListScreen extends ConsumerWidget {
       rates[base] = 1.0;
       () async {
         try {
-          await ref.read(budgetSyncServiceProvider).uploadAndParse(
+          await ref
+              .read(budgetSyncServiceProvider)
+              .uploadAndParse(
                 receipt.id,
                 baseCurrency: base,
                 ratesToBase: rates,
@@ -122,7 +124,6 @@ final class ReceiptListScreen extends ConsumerWidget {
       }();
       if (context.mounted) {
         ref.invalidate(receiptListProvider);
-        showTopBanner(context, message: l10n.receiptUploadStarted);
       }
     } catch (e) {
       if (context.mounted) {

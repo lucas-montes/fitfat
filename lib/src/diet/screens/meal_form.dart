@@ -237,12 +237,11 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
       invalidateDashboard(ref);
 
       if (mounted) {
-      showTopBanner(context, message: l10n.commonSaved);
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
-      showTopBanner(context, message: l10n.errorWithMessage('$e'));
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

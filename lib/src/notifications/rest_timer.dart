@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../exercise/providers/workouts.dart';
 import '../settings/providers/settings.dart';
 import '../ui/date_formats.dart';
+import 'active_workout_notifier.dart';
 import 'rest_alarm.dart';
 
 /// SharedPreferences keys holding the epoch millis at which the current rest
@@ -97,6 +100,11 @@ final class RestTimerNotifier extends Notifier<RestTimerState> {
             plannedSeconds: duration.inSeconds,
           );
     }
+
+    // Push the updated text (rest line appears) from the UI isolate so the
+    // notification is current immediately, even if the background tick stalls
+    // (notification-timers T02).
+    unawaited(refreshActiveWorkoutNotification());
   }
 
   Future<void> cancelRest() async {
@@ -111,6 +119,9 @@ final class RestTimerNotifier extends Notifier<RestTimerState> {
     await prefs.remove(restPlannedSecondsKey);
     await prefs.remove(restNotifiedKey);
     state = const RestTimerState();
+    // Push the updated text (rest line removed) from the UI isolate
+    // (notification-timers T02).
+    unawaited(refreshActiveWorkoutNotification());
   }
 
   /// Records the actual rest taken for the running rest (if any) before it is

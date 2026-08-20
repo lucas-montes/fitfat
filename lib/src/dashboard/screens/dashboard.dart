@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -407,9 +406,6 @@ final class _WeightTrendCard extends ConsumerWidget {
     final (day, value) = result;
     await ref.read(bodyMetricsRepositoryProvider).upsert(day, weightKg: value);
     _invalidate(ref);
-    if (context.mounted) {
-      showTopBanner(context, message: l10n.commonSaved);
-    }
   }
 
   Future<void> _addHeight(BuildContext context, WidgetRef ref) async {
@@ -424,9 +420,6 @@ final class _WeightTrendCard extends ConsumerWidget {
     final (day, value) = result;
     await ref.read(bodyMetricsRepositoryProvider).upsert(day, heightCm: value);
     _invalidate(ref);
-    if (context.mounted) {
-      showTopBanner(context, message: l10n.commonSaved);
-    }
   }
 
   void _invalidate(WidgetRef ref) {

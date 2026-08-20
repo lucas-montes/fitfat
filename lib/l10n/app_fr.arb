@@ -109,6 +109,9 @@
   "activeWorkoutInThisWorkout": "Dans cet entraînement",
   "activeWorkoutAllExercises": "Tous les exercices",
   "activeWorkoutSearchPrompt": "Tapez pour rechercher des exercices",
+  "activeWorkoutExerciseNotes": "Notes",
+  "activeWorkoutExerciseNotesDialogTitle": "Notes sur l'exercice",
+  "activeWorkoutExerciseNotesHint": "Notez ce qu'il faut refaire ou changer la prochaine fois (séries, charge, difficulté)…",
 
   "exerciseUsedTitle": "Exercice utilisé",
   "exerciseUsedBody": "Utilisé dans {count} entraînement. Supprimez d'abord l'entraînement pour retirer cet exercice.",
@@ -203,13 +206,6 @@
       "name": { "type": "String" }
     }
   },
-  "workoutDuplicated": "Séance « {name} » dupliquée",
-  "@workoutDuplicated": {
-    "placeholders": {
-      "name": { "type": "String" }
-    }
-  },
-
   "workoutFormTitle": "Nouvelle séance",
   "workoutFormEditTitle": "Modifier la séance",
   "workoutFormNameLabel": "Nom de la séance",
@@ -257,8 +253,6 @@
   "workoutDetailActualDistanceLabel": "Distance (m)",
   "workoutDetailSetCount": "{count} série",
   "workoutDetailSetCount_plural": "{count} séries",
-  "workoutStarted": "Séance démarrée",
-  "workoutCompleted": "Séance terminée",
 
   "ingredientListAppBar": "Ingrédients",
   "emptyIngredientsTitle": "Aucun ingrédient",
@@ -353,6 +347,11 @@
   "plannerRepeatInvalid": "Vérifiez les paramètres de répétition",
   "plannerAddTask": "Nouvelle tâche",
   "plannerEditTask": "Modifier la tâche",
+  "plannerEditScopeTitle": "Portée de la modification",
+  "plannerDeleteScopeTitle": "Portée de la suppression",
+  "plannerScopeBody": "Cette tâche se répète. Comment souhaitez-vous procéder ?",
+  "plannerScopeThis": "Uniquement celle-ci",
+  "plannerScopeFollowing": "Celle-ci et toutes les suivantes",
   "plannerDeleted": "Tâche « {title} » supprimée",
   "@plannerDeleted": {
     "placeholders": {
@@ -368,15 +367,6 @@
       "count": { "type": "int" }
     }
   },
-  "plannerCopyNothing": "Aucune tâche en attente d'hier à copier.",
-  "plannerCopyDone": "{count} tâche copiée aujourd'hui.",
-  "plannerCopyDone_plural": "{count} tâches copiées aujourd'hui.",
-  "@plannerCopyDone": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-
   "plannerRepeatLabel": "Répéter",
   "plannerRepeatNone": "Ne se répète pas",
   "plannerRepeatDaily": "Quotidien",
@@ -420,6 +410,12 @@
   "settingsLangEn": "English",
   "settingsLangFr": "Français",
   "settingsLangEs": "Español",
+  "settingsLangSystem": "Système",
+  "settingsProfileSubtitle": "Âge, sexe, activité et objectifs",
+  "settingsNotificationsSubtitle": "Rappels de tâches et alarme de repos",
+  "settingsAppearanceLanguage": "Apparence et langue",
+  "settingsAppearanceLanguageSubtitle": "Thème et langue de l'application",
+  "settingsCurrencyBudgetSubtitle": "Devise de base et taux de change",
   "settingsBodyWeightGoal": "Objectif de poids",
   "settingsGoalLose": "Perdre du poids",
   "settingsGoalMaintain": "Maintenir le poids",
@@ -448,7 +444,6 @@
   "settingsResetDataConfirmTitle": "Réinitialiser toutes les données ?",
   "settingsResetDataConfirmBody": "Cela supprime définitivement toutes vos données et réinitialise vos réglages. Cette action est irréversible.",
   "settingsResetDataConfirmAction": "Tout supprimer",
-  "settingsResetDataDone": "Toutes les données ont été réinitialisées.",
 
   "taskReminderDueSoon": "À faire dans 30 minutes",
   "taskReminderDueNow": "À faire maintenant",
@@ -462,7 +457,6 @@
 
   "commonCancel": "Annuler",
   "commonSave": "Enregistrer",
-  "commonSaved": "Enregistré",
   "commonEdit": "Modifier",
   "commonUndo": "Rétablir",
   "commonOk": "OK",
@@ -799,10 +793,6 @@
   "@receiptNotParsed": {
   "description": "receiptNotParsed"
 },
-  "receiptParseStarted": "Analyse du reçu…",
-  "@receiptParseStarted": {
-  "description": "receiptParseStarted"
-},
   "receiptParsed": "Analysé",
   "@receiptParsed": {
   "description": "receiptParsed"
@@ -860,10 +850,6 @@
   "settingsFxRefresh": "Actualiser les taux",
   "@settingsFxRefresh": {
   "description": "settingsFxRefresh"
-},
-  "settingsFxRefreshed": "Taux actualisés",
-  "@settingsFxRefreshed": {
-  "description": "settingsFxRefreshed"
 },
   "settingsRateEdit": "Modifier le taux",
   "@settingsRateEdit": {
@@ -1090,10 +1076,6 @@
   "@receiptCaptureStandalone": {
   "description": "receiptCaptureStandalone"
 },
-  "receiptUploadStarted": "Envoi du reçu…",
-  "@receiptUploadStarted": {
-  "description": "receiptUploadStarted"
-},
   "receiptUploadSuccess": "Reçu envoyé",
   "@receiptUploadSuccess": {
   "description": "receiptUploadSuccess"
@@ -1169,5 +1151,97 @@
   "tabBudget": "Budget",
   "@tabBudget": {
   "description": "tabBudget"
-}
+},
+  "tabExperiments": "Expériences",
+  "@tabExperiments": {
+  "description": "tabExperiments"
+},
+
+  "experimentsAppBar": "Expériences",
+  "experimentsFab": "Nouvelle expérience",
+  "experimentsEmptyTitle": "Aucune expérience",
+  "experimentsEmptyBody": "Créez une expérience pour suivre une habitude, un changement alimentaire ou un protocole d'entraînement avec des bilans quotidiens.",
+  "experimentsNoEndDate": "Sans date de fin",
+  "experimentDaysElapsed": "{days} jours écoulés",
+  "@experimentDaysElapsed": {
+    "description": "experimentDaysElapsed",
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "experimentStatusPlanned": "Planifiée",
+  "experimentStatusActive": "En cours",
+  "experimentStatusDone": "Terminée",
+  "experimentStatusAborted": "Abandonnée",
+  "experimentCategoryWorkout": "Entraînement",
+  "experimentCategoryDiet": "Alimentation",
+  "experimentCategoryBody": "Corps",
+  "experimentCategorySteps": "Pas",
+  "experimentFormTitleNew": "Nouvelle expérience",
+  "experimentFormTitleEdit": "Modifier l'expérience",
+  "experimentFormNameLabel": "Nom",
+  "experimentFormNameHint": "ex. bloc d'hypertrophie de 8 semaines",
+  "experimentFormPurposeLabel": "Hypothèse / objectif",
+  "experimentFormPurposeHint": "Que testez-vous ?",
+  "experimentFormStartLabel": "Date de début",
+  "experimentFormEndLabel": "Date de fin",
+  "experimentFormStatusLabel": "Statut",
+  "experimentFormCategoriesLabel": "Données suivies",
+  "experimentFormReminderLabel": "Rappel de bilan quotidien",
+  "experimentFormReminderSubtitle": "Une notification ouvre cette expérience pour une évaluation rapide.",
+  "experimentFormReminderTimeLabel": "Heure du rappel",
+  "experimentFormDelete": "Supprimer",
+  "experimentFormDeleteConfirmTitle": "Supprimer l'expérience ?",
+  "experimentFormDeleteConfirmBody": "Cela supprime aussi les bilans de l'expérience.",
+  "experimentFormNameRequired": "Donnez un nom à l'expérience.",
+  "experimentFormInvalidDates": "La date de fin doit être postérieure ou égale à la date de début.",
+  "experimentDetailCheckin": "Bilan",
+  "experimentDetailCheckinToday": "Vous avez déjà fait votre bilan aujourd'hui. Vous pouvez le mettre à jour.",
+  "experimentDetailCheckinDialogTitle": "Bilan quotidien",
+  "experimentDetailCheckinRatingLabel": "Note",
+  "experimentDetailCheckinRatingHint": "1 = journée difficile, 5 = excellente journée",
+  "experimentDetailCheckinNoteLabel": "Note (facultatif)",
+  "experimentDetailCheckinNoteHint": "Comment s'est passée la journée ?",
+  "experimentDetailProgressTitle": "Progression",
+  "experimentDetailCheckinsTitle": "Bilans",
+  "experimentDetailTrackedTitle": "Données suivies",
+  "experimentDetailBaselineTitle": "Base de 14 jours",
+  "experimentDetailNoData": "Aucune donnée pour cette période pour le moment.",
+  "experimentDetailMarkDone": "Marquer terminée",
+  "experimentDetailAbort": "Abandonner",
+  "experimentDetailCheckinCount": "{count} bilans",
+  "@experimentDetailCheckinCount": {
+    "description": "experimentDetailCheckinCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "experimentRatingOf5": "{rating}/5",
+  "@experimentRatingOf5": {
+    "description": "experimentRatingOf5",
+    "placeholders": {
+      "rating": { "type": "int" }
+    }
+  },
+  "experimentChartWorkout": "Volume d'entraînement (kg)",
+  "experimentChartDiet": "Calories (kcal)",
+  "experimentChartDietProtein": "Protéines (g)",
+  "experimentChartWeight": "Poids (kg)",
+  "experimentChartSteps": "Pas",
+  "experimentReminderTitle": "Bilan pour {experiment}",
+  "@experimentReminderTitle": {
+    "description": "experimentReminderTitle",
+    "placeholders": {
+      "experiment": { "type": "String" }
+    }
+  },
+  "experimentReminderBody": "Évaluez votre journée pour cette expérience.",
+  "experimentReminderScheduled": "Rappel quotidien réglé à {time}.",
+  "@experimentReminderScheduled": {
+    "description": "experimentReminderScheduled",
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "experimentReminderCancelled": "Rappel quotidien désactivé."
 }

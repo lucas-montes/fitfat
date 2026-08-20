@@ -236,7 +236,7 @@ final class PlannerRepository {
                     t.date.equals(dMillis) &
                     t.seriesId.equals(anchor.seriesId!),
               ))
-          .get();
+              .get();
       if (existing.isNotEmpty) continue;
       await _database
           .into(_database.plannerItems)
@@ -247,9 +247,7 @@ final class PlannerRepository {
               title: anchor.title,
               done: 0,
               sortOrder: anchor.sortOrder,
-              dueDate: Value(
-                anchor.dueDate == null ? null : dMillis,
-              ),
+              dueDate: Value(anchor.dueDate == null ? null : dMillis),
               startTimeMinutes: Value(anchor.startTimeMinutes),
               endTimeMinutes: Value(anchor.endTimeMinutes),
               notes: Value(anchor.notes),
@@ -265,17 +263,17 @@ final class PlannerRepository {
   /// Loads a single planner item by id (used to read/update the anchor of a
   /// recurring series, whose id equals its `seriesId`).
   Future<PlannerItem?> getById(String id) async {
-    final row = await (_database.select(_database.plannerItems)
-          ..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (_database.select(
+      _database.plannerItems,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     return row == null ? null : _toDomain(row);
   }
 
   /// All occurrences (anchor + generated) of a recurring series.
   Future<List<PlannerItem>> getBySeriesId(String seriesId) async {
-    final rows = await (_database.select(_database.plannerItems)
-          ..where((t) => t.seriesId.equals(seriesId)))
-        .get();
+    final rows = await (_database.select(
+      _database.plannerItems,
+    )..where((t) => t.seriesId.equals(seriesId))).get();
     return rows.map(_toDomain).toList();
   }
 
@@ -297,7 +295,11 @@ final class PlannerRepository {
     await _setExclusion(seriesId, day, add: false);
   }
 
-  Future<void> _setExclusion(String seriesId, DateTime day, {required bool add}) async {
+  Future<void> _setExclusion(
+    String seriesId,
+    DateTime day, {
+    required bool add,
+  }) async {
     final anchor = await getById(seriesId);
     if (anchor == null) return;
     final rule = anchor.recurrence;
@@ -339,6 +341,94 @@ final class PlannerRepository {
               ),
         ))
         .go();
+  }
+
+  /// Updates the non-rule fields of every generated occurrence of a series
+  /// with a date on or after [from] (start-of-day, inclusive). The anchor
+  /// (whose id equals the seriesId) is excluded. Used by
+  /// "edit → this and all following".
+  Future<void> updateFutureOccurrences(
+    String seriesId, {
+    required DateTime from,
+    required String title,
+    int? startTimeMinutes,
+    int? endTimeMinutes,
+    String? notes,
+    String? workoutId,
+    List<String>? tags,
+  }) async {
+    final fromStart = _startOfDay(from).millisecondsSinceEpoch;
+    await (_database.update(_database.plannerItems)..where(
+          (t) =>
+              t.seriesId.equals(seriesId) &
+              t.id.isNotValue(seriesId) &
+              t.date.isBiggerOrEqualValue(fromStart),
+        ))
+        .write(
+          db.PlannerItemsCompanion(
+            title: Value(title),
+            startTimeMinutes: Value(startTimeMinutes),
+            endTimeMinutes: Value(endTimeMinutes),
+            notes: Value(notes),
+            workoutId: Value(workoutId),
+            tags: Value(_encode(tags)),
+          ),
+        );
+  }
+
+  /// Deletes a generated occurrence and every later occurrence of the series
+  /// (date >= start-of-day [day]) and halts regeneration by setting the
+  /// anchor's `recurrence.endDate` to the day before [day]. The anchor itself
+  /// (id == seriesId) is never deleted. Returns the anchor's previous endDate
+  /// (for undo), or null when the anchor/rule is missing. Used by
+  /// "delete → this and all following".
+  Future<DateTime?> stopSeriesOnOrAfter(String seriesId, DateTime day) async {
+    final dayStart = _startOfDay(day).millisecondsSinceEpoch;
+    DateTime? previousEndDate;
+    await _database.transaction(() async {
+      await (_database.delete(_database.plannerItems)..where(
+            (t) =>
+                t.seriesId.equals(seriesId) &
+                t.id.isNotValue(seriesId) &
+                t.date.isBiggerOrEqualValue(dayStart),
+          ))
+          .go();
+      final anchor = await getById(seriesId);
+      if (anchor == null) return;
+      final rule = anchor.recurrence;
+      if (rule == null) return;
+      previousEndDate = rule.endDate;
+      final updatedRule = PlannerRecurrence(
+        type: rule.type,
+        weekdays: rule.weekdays,
+        intervalDays: rule.intervalDays,
+        monthDay: rule.monthDay,
+        endDate: _startOfDay(day).subtract(const Duration(days: 1)),
+        count: rule.count,
+        excludedDates: rule.excludedDates,
+      );
+      await update(anchor.copyWith(recurrence: updatedRule));
+    });
+    return previousEndDate;
+  }
+
+  /// Restores a series anchor's `recurrence.endDate` — the undo counterpart of
+  /// [stopSeriesOnOrAfter]. Re-materializing is left to the caller.
+  Future<void> restoreSeriesEndDate(String seriesId, DateTime? endDate) async {
+    final anchor = await getById(seriesId);
+    if (anchor == null) return;
+    final rule = anchor.recurrence;
+    if (rule == null) return;
+    final updatedRule = PlannerRecurrence(
+      type: rule.type,
+      weekdays: rule.weekdays,
+      intervalDays: rule.intervalDays,
+      monthDay: rule.monthDay,
+      endDate: endDate,
+      count: rule.count,
+      excludedDates: rule.excludedDates,
+    );
+    await update(anchor.copyWith(recurrence: updatedRule));
   }
 
   /// Normalizes any [DateTime] to the start of its day so every day is a

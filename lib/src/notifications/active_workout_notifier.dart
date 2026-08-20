@@ -27,6 +27,64 @@ const notificationRestLabelKey = 'notification_rest_label';
 const _serviceId = 256;
 const _iosNotificationId = 1001;
 
+/// Builds the ongoing notification title/text for the active workout from
+/// persisted prefs. Isolate-safe — reads only from [prefs] and never touches
+/// plugins, so both the background task handler and the UI isolate can use it.
+/// Returns null when no active session is persisted (nothing to show).
+///
+/// Callers must call `prefs.reload()` first so the instance sees values written
+/// by the other isolate (notably `rest_started_at`/`rest_planned_seconds`,
+/// which the UI writes after the service starts and the handler's cached
+/// instance never sees otherwise).
+({String title, String text})? buildActiveWorkoutNotificationText(
+  SharedPreferences prefs,
+) {
+  final startedAtMillis = prefs.getInt(activeWorkoutStartedAtKey);
+  if (startedAtMillis == null) return null;
+
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final elapsed = formatRestDuration(
+    Duration(milliseconds: now - startedAtMillis),
+  );
+  final elapsedLabel =
+      prefs.getString(notificationElapsedLabelKey) ?? 'Elapsed';
+  var text = '$elapsedLabel $elapsed';
+
+  // Count-up rest: show the elapsed rest while a rest is running (the rest
+  // keeps running past the planned duration — never auto-cleared here).
+  final restStartedAt = prefs.getInt(restStartedAtKey);
+  if (restStartedAt != null) {
+    final restLabel = prefs.getString(notificationRestLabelKey) ?? 'Rest';
+    final restElapsed = formatRestDuration(
+      Duration(milliseconds: now - restStartedAt),
+    );
+    text = '$text\n$restLabel $restElapsed';
+  }
+
+  return (title: prefs.getString(activeWorkoutNameKey) ?? '', text: text);
+}
+
+/// Best-effort push of the current notification text from the UI isolate,
+/// used right after a session/rest/set event or on app resume so the ongoing
+/// notification is current at interaction points even if the background
+/// `onRepeatEvent` tick stalls under Doze / OEM battery optimization. Android
+/// only; never throws.
+Future<void> refreshActiveWorkoutNotification() async {
+  if (!Platform.isAndroid) return;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    final snapshot = buildActiveWorkoutNotificationText(prefs);
+    if (snapshot == null) return;
+    await FlutterForegroundTask.updateService(
+      notificationTitle: snapshot.title,
+      notificationText: snapshot.text,
+    );
+  } catch (_) {
+    // Best-effort: never let a notification refresh break app logic.
+  }
+}
+
 /// Top-level entry point registered with [FlutterForegroundTask.startService].
 /// Runs in a background isolate with its own FlutterEngine, so plugins
 /// (including `shared_preferences`) are available inside the task handler.
@@ -85,30 +143,17 @@ final class ActiveWorkoutTaskHandler extends TaskHandler {
     // so without a reload the rest branch below never sees them and the rest
     // timer never appears in the notification.
     await prefs.reload();
-    final startedAtMillis = prefs.getInt(activeWorkoutStartedAtKey);
-    if (startedAtMillis == null) return;
+    final snapshot = buildActiveWorkoutNotificationText(prefs);
+    if (snapshot == null) return;
 
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final elapsed = formatRestDuration(
-      Duration(milliseconds: now - startedAtMillis),
-    );
-    final elapsedLabel =
-        prefs.getString(notificationElapsedLabelKey) ?? 'Elapsed';
-    var text = '$elapsedLabel $elapsed';
-
-    // Count-up rest: show the elapsed rest while a rest is running. The rest
-    // keeps running past the planned duration (never auto-cleared here).
+    // Fire the "rest is over" popup the moment the planned rest elapses. This
+    // stays in the handler (side effect + tick with wake lock), unlike the text
+    // building above which moved to the shared builder (T01).
     final restStartedAt = prefs.getInt(restStartedAtKey);
-    final restPlannedSeconds = prefs.getInt(restPlannedSecondsKey);
     if (restStartedAt != null) {
-      final restLabel = prefs.getString(notificationRestLabelKey) ?? 'Rest';
-      final restElapsed = formatRestDuration(
-        Duration(milliseconds: now - restStartedAt),
-      );
-      text = '$text\n$restLabel $restElapsed';
-
-      // Fire the "rest is over" popup the moment the planned rest elapses.
+      final now = DateTime.now().millisecondsSinceEpoch;
       final restElapsedSeconds = (now - restStartedAt) ~/ 1000;
+      final restPlannedSeconds = prefs.getInt(restPlannedSecondsKey);
       final notified = prefs.getBool(restNotifiedKey) ?? false;
       if (restPlannedSeconds != null &&
           restElapsedSeconds >= restPlannedSeconds &&
@@ -118,8 +163,8 @@ final class ActiveWorkoutTaskHandler extends TaskHandler {
     }
 
     await FlutterForegroundTask.updateService(
-      notificationTitle: prefs.getString(activeWorkoutNameKey) ?? '',
-      notificationText: text,
+      notificationTitle: snapshot.title,
+      notificationText: snapshot.text,
     );
   }
 

@@ -34,6 +34,7 @@ The notifications domain covers two subsystems in `lib/src/notifications/`:
 - Android 13+ `POST_NOTIFICATIONS` requested via `permission_handler` (`Permission.notification`); if denied the service still runs but the notification is hidden.
 - Channel set in `main()`: `active_workout`, English name/description (system-level, set before l10n loads), `onlyAlertOnce: true`.
 - **Tap routing (active-workout-flow T06)**: `ActiveWorkoutTaskHandler.onNotificationPressed()` sends `FlutterForegroundTask.sendDataToMain('active-workout')` to the UI isolate. `main()` registers `addTaskDataCallback`, ignores non-`'active-workout'` payloads, gates on the active session key (`active_workout_name`), and calls `appRouter.go('/active-workout')` — deferred via `addPostFrameCallback` when the router navigator isn't mounted yet (cold start can deliver the signal before the first frame). `startService(...)` sets `notificationInitialRoute: '/active-workout'` (Android cold start); `restartService()` is untouched because flutter_foreground_task 9.2.2's `restartService` takes no options, so the already-running service keeps the route stored at its own start.
+- **Event-driven refresh (notification-timers 2026-08-17)**: to mitigate the repro where both timers froze until a network toggle (background `onRepeatEvent` stalls under Doze / OEM battery optimization), the notification is also re-pushed **from the UI isolate** at interaction points. Text now comes from the shared, isolate-safe `buildActiveWorkoutNotificationText(prefs)` (returns null when no active session; callers must `prefs.reload()` first so the handler sees UI-written rest keys) — the same builder drives the handler's `onRepeatEvent` and the UI pushes. `refreshActiveWorkoutNotification()` (top-level, Android-only, try/catch) calls the builder + `FlutterForegroundTask.updateService(...)`. Callers: `RestTimerNotifier.startRest`/`cancelRest` (rest line appears/disappears immediately) and set-actuals save in `active_workout_screen.dart` `_SetRow._editActuals`. **Resume resync (T03)**: `_ActiveWorkoutScreenState` is now a `WidgetsBindingObserver` whose `didChangeAppLifecycleState(resumed)` refreshes the notification when a workout is active. Full parity on aggressive OEMs remains best-effort.
 
 ## iOS (best-effort, per plan)
 
@@ -45,8 +46,9 @@ flowchart LR
     Persist --> Fgs[FlutterForegroundTask.startService]
     Fgs --> Tick[onRepeatEvent 1 s: read prefs]
     Tick --> Upd[updateService: Elapsed ± Rest]
-    Rest[Start rest] --> RestEnd[rest_end_at set]
+    Rest[Start rest] --> RestEnd[rest_started_at set]
     RestEnd --> Tick
+    EventUI[UI event / app resume] --> Refresh[refreshActiveWorkoutNotification: shared builder + updateService]
     Complete[Complete workout] --> Stop[rest cancel + stopService]
     Tap[Tap notification] --> Sig[onNotificationPressed: sendDataToMain 'active-workout']
     Sig --> Nav[main: addTaskDataCallback -> go /active-workout]
@@ -61,6 +63,15 @@ flowchart LR
 # Planner Task Reminders (T11)
 
 Scheduled due-time + pre-reminder notifications for planner tasks, governed by a single app-wide Settings toggle (`plannerNotifications`, default **on**).
+
+# Experiment Check-in Reminders (experiments tab)
+
+Daily "check in" notification per running experiment (`lib/src/experiments/notifications/experiment_reminder.dart`):
+
+- Android channel `experiment_reminders`; payload `experiment_reminder` → tap opens `/experiments` (wired in `notification_plugin.dart` alongside the planner + rest-alarm payloads).
+- `ExperimentReminderScheduler.scheduleForExperiment` fires via `zonedSchedule` + `DateTimeComponents.time` at the experiment's `reminderTimeMinutes` (default 20:00), **only while the experiment is `active` with reminders enabled** (otherwise it cancels in place). Deterministic notification id (stable FNV-1a hash of the experiment id) so edits reschedule in place.
+- `cancelForExperiment` runs on done / aborted / delete / toggle-off (the delete path also removes the check-ins).
+- No app-wide toggle (per-experiment switch in the form); no startup reschedule required because `zonedSchedule` daily reminders survive app restart via the plugin.
 
 ## Files
 
@@ -93,4 +104,4 @@ flowchart LR
     Tap[Tap reminder] --> Nav[onDidReceive: go /plan]
 ```
 
-See also: [overview.md](../overview.md), [architecture.md](../architecture.md), [exercise/workout-crud.md](../exercise/workout-crud.md), [planner/planner.md](../planner/planner.md), [settings/settings.md](../settings/settings.md)
+See also: [overview.md](../overview.md), [architecture.md](../architecture.md), [exercise/workout-crud.md](../exercise/workout-crud.md), [planner/planner.md](../planner/planner.md), [settings/settings.md](../settings/settings.md), [experiments/experiments.md](../experiments/experiments.md)

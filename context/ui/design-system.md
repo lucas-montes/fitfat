@@ -79,6 +79,15 @@ tuned dark surfaces — both ≥ 4.5:1. "Pending"/neutral statuses use M3 `color
   optional `child` slot hosts extra content below the subtitle (e.g. the dashboard hero's P/C/F
   composition bars). Consumed by the dashboard hero card (T09).
 
+## Feedback — top banner (`lib/src/ui/widgets/top_banner.dart`)
+
+`showTopBanner` / `showTopBannerOverlay` render a compact top-anchored banner that replaces the
+previous one and auto-dismisses. Policy (feedback-banners T01/T02, 2026-08-17): **only two kinds of
+banners may ever appear** — deletion-undo banners (Undo action, generous ~3.5 s duration) and error
+banners (`errorWithMessage`, form validations, blocked-action warnings). All success/confirmation
+noise was removed; the default duration is 2 s. Do not add new confirmation banners without a
+reason.
+
 ## Number formatting (`lib/src/ui/format.dart`)
 
 - `formatDecimal(double)` — whole when `value == value.roundToDouble()`, else one decimal ("12" / "12.5"). Single formatting path for set weights/distances and summary metrics (kg / m) across the workout detail, active-workout, and summary screens (app-polish-batch T06). Reps stay integers.

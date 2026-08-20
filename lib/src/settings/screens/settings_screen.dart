@@ -14,8 +14,8 @@ import '../../planner/providers/planner.dart';
 import '../providers/settings.dart';
 import '../services/data_reset.dart';
 
-/// Settings screen: Profile (age, gender, activity, body fat), Appearance
-/// (theme mode), Language.
+/// Settings hub: a list of category tiles that push dedicated sub-screens
+/// (Profile / Notifications / Appearance & Language / Budget & Currency / Data).
 final class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -24,6 +24,108 @@ final class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    void push(Widget screen) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => screen));
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: () => context.go('/dashboard'),
+        ),
+        title: Text(l10n.settingsAppBar),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _HubTile(
+            icon: Icons.person_outline,
+            title: l10n.settingsProfile,
+            subtitle: l10n.settingsProfileSubtitle,
+            onTap: () => push(const _ProfileScreen()),
+          ),
+          _HubTile(
+            icon: Icons.notifications_outlined,
+            title: l10n.settingsNotifications,
+            subtitle: l10n.settingsNotificationsSubtitle,
+            onTap: () => push(const _NotificationsScreen()),
+          ),
+          _HubTile(
+            icon: Icons.palette_outlined,
+            title: l10n.settingsAppearanceLanguage,
+            subtitle: l10n.settingsAppearanceLanguageSubtitle,
+            onTap: () => push(const _AppearanceLanguageScreen()),
+          ),
+          _HubTile(
+            icon: Icons.currency_exchange_outlined,
+            title: l10n.settingsCurrencyBudget,
+            subtitle: l10n.settingsCurrencyBudgetSubtitle,
+            onTap: () => push(const _BudgetCurrencyScreen()),
+          ),
+          _HubTile(
+            icon: Icons.delete_forever_outlined,
+            iconColor: theme.colorScheme.error,
+            titleColor: theme.colorScheme.error,
+            title: l10n.settingsData,
+            subtitle: l10n.settingsResetDataSubtitle,
+            onTap: () => push(const _DataScreen()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Consistent settings hub tile with a trailing chevron.
+final class _HubTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final Color? iconColor;
+  final Color? titleColor;
+
+  const _HubTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.iconColor,
+    this.titleColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: iconColor ?? colorScheme.primary),
+      title: Text(title, style: TextStyle(color: titleColor)),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
+}
+
+/// Profile: age, gender, activity source/level, body fat, body weight goal.
+final class _ProfileScreen extends ConsumerStatefulWidget {
+  const _ProfileScreen();
+
+  @override
+  ConsumerState<_ProfileScreen> createState() => _ProfileScreenState();
+}
+
+final class _ProfileScreenState extends ConsumerState<_ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _ageController;
   late final TextEditingController _bodyFatController;
@@ -86,62 +188,6 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return null;
   }
 
-  /// App-wide task-reminder toggle: turning off cancels every scheduled
-  /// planner reminder; turning back on re-schedules pending future timed tasks.
-  Future<void> _setPlannerNotifications(bool enabled) async {
-    final notifier = ref.read(settingsProvider.notifier);
-    if (!enabled) {
-      await ref.read(taskReminderSchedulerProvider).cancelAll();
-    } else {
-      final l10n = AppLocalizations.of(context)!;
-      await ref
-          .read(taskReminderSchedulerProvider)
-          .reschedulePending(
-            repository: ref.read(plannerRepositoryProvider),
-            dueSoonText: l10n.taskReminderDueSoon,
-            dueNowText: l10n.taskReminderDueNow,
-          );
-    }
-    await notifier.setPlannerNotifications(enabled);
-  }
-
-  /// Destructive "reset all data": double-gated by a confirm dialog, then
-  /// wipes everything and re-seeds the catalog. Returns once the reset is done
-  /// so the caller can show a confirmation.
-  Future<bool> _confirmReset() async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.settingsResetDataConfirmTitle),
-        content: Text(l10n.settingsResetDataConfirmBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-              foregroundColor: Theme.of(ctx).colorScheme.onError,
-            ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.settingsResetDataConfirmAction),
-          ),
-        ],
-      ),
-    );
-    return confirmed ?? false;
-  }
-
-  Future<void> _resetData() async {
-    final l10n = AppLocalizations.of(context)!;
-    if (!await _confirmReset()) return;
-    await resetAllData(ref);
-    if (!mounted) return;
-    showTopBanner(context, message: l10n.settingsResetDataDone);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -150,22 +196,10 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final notifier = ref.read(settingsProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: () => context.go('/dashboard'),
-        ),
-        title: Text(l10n.settingsAppBar),
-      ),
+      appBar: AppBar(title: Text(l10n.settingsProfile)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // -----------------------------------------------------------------
-          // Profile
-          // -----------------------------------------------------------------
-          Text(l10n.settingsProfile, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 12),
           Form(
             key: _formKey,
             child: Column(
@@ -308,19 +342,57 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               notifier.setBodyWeightGoal(selection.first);
             },
           ),
-          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
 
-          // -----------------------------------------------------------------
-          // Notifications
-          // -----------------------------------------------------------------
-          Text(l10n.settingsNotifications, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 12),
+/// Notifications: planner task reminders + rest alarm sound/vibration.
+final class _NotificationsScreen extends ConsumerWidget {
+  const _NotificationsScreen();
+
+  /// App-wide task-reminder toggle: turning off cancels every scheduled
+  /// planner reminder; turning back on re-schedules pending future timed tasks.
+  Future<void> _setPlannerNotifications(
+    BuildContext context,
+    WidgetRef ref,
+    bool enabled,
+  ) async {
+    final notifier = ref.read(settingsProvider.notifier);
+    if (!enabled) {
+      await ref.read(taskReminderSchedulerProvider).cancelAll();
+    } else {
+      final l10n = AppLocalizations.of(context)!;
+      await ref
+          .read(taskReminderSchedulerProvider)
+          .reschedulePending(
+            repository: ref.read(plannerRepositoryProvider),
+            dueSoonText: l10n.taskReminderDueSoon,
+            dueNowText: l10n.taskReminderDueNow,
+          );
+    }
+    await notifier.setPlannerNotifications(enabled);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final settings = ref.watch(settingsProvider);
+    final notifier = ref.read(settingsProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.settingsNotifications)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l10n.settingsPlannerNotifications),
             subtitle: Text(l10n.settingsPlannerNotificationsSubtitle),
             value: settings.plannerNotifications,
-            onChanged: _setPlannerNotifications,
+            onChanged: (enabled) =>
+                _setPlannerNotifications(context, ref, enabled),
           ),
           const SizedBox(height: 8),
           SwitchListTile(
@@ -335,10 +407,30 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             value: settings.restAlarmVibration,
             onChanged: notifier.setRestAlarmVibration,
           ),
-          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
 
+/// Appearance & Language: theme mode + app language (System default).
+final class _AppearanceLanguageScreen extends ConsumerWidget {
+  const _AppearanceLanguageScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final settings = ref.watch(settingsProvider);
+    final notifier = ref.read(settingsProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.settingsAppearanceLanguage)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
           // -----------------------------------------------------------------
-          // Appearance
+          // Theme
           // -----------------------------------------------------------------
           Text(l10n.settingsAppearance, style: theme.textTheme.titleMedium),
           const SizedBox(height: 12),
@@ -372,51 +464,99 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // -----------------------------------------------------------------
           Text(l10n.settingsLanguage, style: theme.textTheme.titleMedium),
           const SizedBox(height: 12),
-          SegmentedButton<Locale>(
-            // No locale stored yet (device default) -> nothing selected.
-            emptySelectionAllowed: true,
+          SegmentedButton<String>(
+            // System is always the default; a stored locale overrides it.
             showSelectedIcon: false,
             segments: [
               ButtonSegment(
-                value: const Locale('en'),
-                label: Text(l10n.settingsLangEn),
+                value: 'system',
+                label: Text(l10n.settingsLangSystem),
+                icon: const Icon(Icons.language),
               ),
-              ButtonSegment(
-                value: const Locale('fr'),
-                label: Text(l10n.settingsLangFr),
-              ),
-              ButtonSegment(
-                value: const Locale('es'),
-                label: Text(l10n.settingsLangEs),
-              ),
+              ButtonSegment(value: 'en', label: Text(l10n.settingsLangEn)),
+              ButtonSegment(value: 'fr', label: Text(l10n.settingsLangFr)),
+              ButtonSegment(value: 'es', label: Text(l10n.settingsLangEs)),
             ],
-            selected: settings.locale == null
-                ? const <Locale>{}
-                : {settings.locale!},
+            selected: {settings.locale?.languageCode ?? 'system'},
             onSelectionChanged: (selection) {
-              if (selection.isEmpty) return; // deselect is not supported
-              notifier.setLocale(selection.first);
+              final value = selection.first;
+              if (value == 'system') {
+                notifier.setLocaleToSystem();
+              } else {
+                notifier.setLocale(Locale(value));
+              }
             },
           ),
+        ],
+      ),
+    );
+  }
+}
 
-          const SizedBox(height: 24),
+/// Budget & Currency: base currency + cached FX rates.
+final class _BudgetCurrencyScreen extends StatelessWidget {
+  const _BudgetCurrencyScreen();
 
-          // -----------------------------------------------------------------
-          // Currency & Budget
-          // -----------------------------------------------------------------
-          Text(
-            l10n.settingsCurrencyBudget,
-            style: theme.textTheme.titleMedium,
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.settingsCurrencyBudget)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [_CurrencySection()],
+      ),
+    );
+  }
+}
+
+/// Data: destructive reset-all with its confirm dialog.
+final class _DataScreen extends ConsumerStatefulWidget {
+  const _DataScreen();
+
+  @override
+  ConsumerState<_DataScreen> createState() => _DataScreenState();
+}
+
+final class _DataScreenState extends ConsumerState<_DataScreen> {
+  /// Destructive "reset all data": double-gated by a confirm dialog, then
+  /// wipes everything and re-seeds the catalog.
+  Future<void> _confirmReset() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.settingsResetDataConfirmTitle),
+        content: Text(l10n.settingsResetDataConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.commonCancel),
           ),
-          const SizedBox(height: 12),
-          _CurrencySection(),
-          const SizedBox(height: 24),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.settingsResetDataConfirmAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await resetAllData(ref);
+  }
 
-          // -----------------------------------------------------------------
-          // Data
-          // -----------------------------------------------------------------
-          Text(l10n.settingsData, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 12),
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.settingsData)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(
@@ -428,7 +568,7 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(color: theme.colorScheme.error),
             ),
             subtitle: Text(l10n.settingsResetDataSubtitle),
-            onTap: _resetData,
+            onTap: _confirmReset,
           ),
         ],
       ),
@@ -506,24 +646,21 @@ final class _CurrencySection extends ConsumerWidget {
         DropdownButtonFormField<String>(
           key: ValueKey(base),
           initialValue: base,
-          decoration: InputDecoration(
-            labelText: l10n.settingsBaseCurrency,
-          ),
+          decoration: InputDecoration(labelText: l10n.settingsBaseCurrency),
           items: currencyOptions
               .map((c) => DropdownMenuItem(value: c, child: Text(c)))
               .toList(),
           onChanged: (v) {
-            if (v != null) ref.read(settingsProvider.notifier).setBaseCurrency(v);
+            if (v != null) {
+              ref.read(settingsProvider.notifier).setBaseCurrency(v);
+            }
           },
         ),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              l10n.settingsFxRates,
-              style: theme.textTheme.bodyMedium,
-            ),
+            Text(l10n.settingsFxRates, style: theme.textTheme.bodyMedium),
             TextButton.icon(
               onPressed: () => _refreshRates(context, ref, base),
               icon: const Icon(Icons.refresh),
@@ -547,7 +684,8 @@ final class _CurrencySection extends ConsumerWidget {
                   trailing: IconButton(
                     tooltip: l10n.settingsRateEdit,
                     icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => _editRate(context, ref, base, e.key, e.value),
+                    onPressed: () =>
+                        _editRate(context, ref, base, e.key, e.value),
                   ),
                 );
               }).toList(),
@@ -568,9 +706,6 @@ final class _CurrencySection extends ConsumerWidget {
       final fetched = await ref.read(remoteFxProvider).fetchRates(base);
       await ref.read(fxRepositoryProvider).replaceAll(base, fetched);
       ref.invalidate(fxRatesProvider);
-      if (context.mounted) {
-        showTopBanner(context, message: l10n.settingsFxRefreshed);
-      }
     } catch (e) {
       if (context.mounted) {
         showTopBanner(context, message: l10n.errorWithMessage('$e'));
