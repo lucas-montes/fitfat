@@ -195,6 +195,22 @@
       "rest": { "type": "String" }
     }
   },
+  "exerciseDetailTrendSame": "same as previous workout",
+  "exerciseDetailTrendDelta": "{delta} {unit} vs previous workout",
+  "@exerciseDetailTrendDelta": {
+    "placeholders": {
+      "delta": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "exerciseDetailPrBadge": "New PR",
+  "exerciseDetailSetHeader": "Set",
+  "exerciseDetailSetHeaderPlanned": "Planned",
+  "exerciseDetailSetHeaderActual": "Actual",
+  "exerciseDetailSetHeaderDelta": "Δ",
+  "exerciseDetailSetHeaderRest": "Rest",
+  "exerciseDetailWeightTrend": "Best weight over time",
+  "exerciseDetailRepsTrend": "Reps over time",
 
   "exerciseFormNewTitle": "New Exercise",
   "exerciseFormEditTitle": "Edit Exercise",

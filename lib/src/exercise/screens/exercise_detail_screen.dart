@@ -11,6 +11,7 @@ import '../../models/exercise_set.dart';
 import '../../notifications/rest_timer.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
+import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
 import '../exercise_filter.dart';
 import '../providers/exercises.dart';
@@ -222,9 +223,48 @@ final class _HistoryTab extends StatelessWidget {
             spots: metrics.chartSpots,
             color: theme.colorScheme.primary,
           ),
-        for (final entry in history) _WorkoutHistoryCard(entry: entry),
+        if (metrics.trendSpots.isNotEmpty && metrics.trendSpots.length >= 2)
+          _HistoryChart(
+            title: metrics.usesWeight
+                ? l10n.exerciseDetailWeightTrend
+                : l10n.exerciseDetailRepsTrend,
+            spots: metrics.trendSpots,
+            color: theme.colorScheme.tertiary,
+          ),
+        ..._buildWorkoutCards(context),
       ],
     );
+  }
+
+  /// Per-workout cards in the provider's (newest-first) order, each annotated
+  /// with its total volume, the previous workout's volume (null for the oldest)
+  /// and whether it set a new PR (volume > every older workout).
+  List<Widget> _buildWorkoutCards(BuildContext context) {
+    final volumes = history.map((e) {
+      var volume = 0.0;
+      for (final set in e.sets) {
+        volume += set.totalVolume;
+      }
+      return volume;
+    }).toList();
+
+    final n = history.length;
+    final isPr = List<bool>.filled(n, false);
+    var bestOlder = 0.0;
+    for (var i = n - 1; i >= 0; i--) {
+      isPr[i] = volumes[i] > bestOlder;
+      if (volumes[i] > bestOlder) bestOlder = volumes[i];
+    }
+
+    return [
+      for (var i = 0; i < n; i++)
+        _WorkoutHistoryCard(
+          entry: history[i],
+          volume: volumes[i],
+          previousVolume: i < n - 1 ? volumes[i + 1] : null,
+          isPr: isPr[i],
+        ),
+    ];
   }
 }
 
@@ -706,6 +746,8 @@ final class _HistoryMetrics {
   final int totalSets;
   final bool usesWeight;
   final List<(DateTime, double)> chartSpots; // chronological
+  final List<(DateTime, double)>
+  trendSpots; // chronological (best weight OR reps)
 
   const _HistoryMetrics({
     required this.bestWeightKg,
@@ -715,6 +757,7 @@ final class _HistoryMetrics {
     required this.totalSets,
     required this.usesWeight,
     required this.chartSpots,
+    required this.trendSpots,
   });
 
   factory _HistoryMetrics.fromHistory(List<ExerciseHistoryEntry> history) {
@@ -747,16 +790,27 @@ final class _HistoryMetrics {
     // exercises, otherwise duration).
     final unitIsWeight = usesWeight;
     final ordered = <(DateTime, double)>[];
+    final trend = <(DateTime, double)>[];
     for (final entry in byDate) {
       var volume = 0.0;
       var duration = 0;
+      var bestCellWeight = 0.0;
+      var effectiveReps = 0;
       for (final set in entry.sets) {
         volume += set.totalVolume;
         duration += set.effectiveDurationMinutes;
+        if (set.effectiveWeightKg > bestCellWeight) {
+          bestCellWeight = set.effectiveWeightKg;
+        }
+        effectiveReps += set.effectiveReps;
       }
       ordered.add((
         entry.workout.date,
         unitIsWeight ? volume : duration.toDouble(),
+      ));
+      trend.add((
+        entry.workout.date,
+        unitIsWeight ? bestCellWeight : effectiveReps.toDouble(),
       ));
     }
 
@@ -768,6 +822,7 @@ final class _HistoryMetrics {
       totalSets: totalSets,
       usesWeight: usesWeight,
       chartSpots: ordered,
+      trendSpots: trend,
     );
   }
 }
@@ -979,8 +1034,16 @@ final class _HistoryChart extends StatelessWidget {
 
 final class _WorkoutHistoryCard extends StatelessWidget {
   final ExerciseHistoryEntry entry;
+  final double volume;
+  final double? previousVolume;
+  final bool isPr;
 
-  const _WorkoutHistoryCard({required this.entry});
+  const _WorkoutHistoryCard({
+    required this.entry,
+    required this.volume,
+    required this.previousVolume,
+    required this.isPr,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -992,13 +1055,16 @@ final class _WorkoutHistoryCard extends StatelessWidget {
       (s) => s.weightKg != null || s.actualWeightKg != null,
     );
 
-    var volume = 0.0;
     var duration = 0;
     for (final set in sets) {
-      volume += set.totalVolume;
       duration += set.effectiveDurationMinutes;
     }
     final completed = sets.where((s) => s.isCompleted).length;
+    final totalReps = sets.fold(0, (sum, s) => sum + s.effectiveReps);
+    final totalDistance = sets.fold(
+      0.0,
+      (sum, s) => sum + s.effectiveDistanceMeters,
+    );
 
     final plannedVolume = sets.fold(
       0.0,
@@ -1046,34 +1112,42 @@ final class _WorkoutHistoryCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: FitFatTokens.spaceS),
-            Wrap(
-              spacing: FitFatTokens.spaceM,
-              runSpacing: FitFatTokens.spaceS,
+            _TrendHeader(
+              volume: volume,
+              previousVolume: previousVolume,
+              isPr: isPr,
+              usesWeight: usesWeight,
+            ),
+            const SizedBox(height: FitFatTokens.spaceM),
+            Row(
               children: [
-                _InlineMetric(
+                _SummaryCell(
                   label: usesWeight
                       ? l10n.workoutSummaryVolume
                       : l10n.workoutSummaryTotalDuration,
                   value: usesWeight
                       ? l10n.workoutSummaryValueKg(formatDecimal(volume))
                       : formatRestDuration(Duration(minutes: duration)),
+                  theme: theme,
+                  alignEnd: false,
                 ),
-                _InlineMetric(
+                _SummaryCell(
                   label: l10n.workoutSummaryTotalReps,
-                  value: '${sets.fold(0, (sum, s) => sum + s.effectiveReps)}',
+                  value: '$totalReps',
+                  theme: theme,
+                  alignEnd: true,
                 ),
-                _InlineMetric(
+                _SummaryCell(
                   label: l10n.workoutSummaryTotalDistance,
-                  value: formatDecimal(
-                    sets.fold(
-                      0.0,
-                      (sum, s) => sum + s.effectiveDistanceMeters,
-                    ),
-                  ),
+                  value: formatDecimal(totalDistance),
+                  theme: theme,
+                  alignEnd: true,
                 ),
-                _InlineMetric(
+                _SummaryCell(
                   label: l10n.exerciseDetailSetsCompleted,
                   value: '$completed/${sets.length}',
+                  theme: theme,
+                  alignEnd: true,
                 ),
               ],
             ),
@@ -1104,6 +1178,8 @@ final class _WorkoutHistoryCard extends StatelessWidget {
                 ),
             ],
             const SizedBox(height: FitFatTokens.spaceM),
+            _SetGridHeader(l10n: l10n),
+            const SizedBox(height: FitFatTokens.spaceXs),
             for (final set in sets)
               _SetRow(set: set, usesWeight: usesWeight, l10n: l10n),
           ],
@@ -1113,30 +1189,167 @@ final class _WorkoutHistoryCard extends StatelessWidget {
   }
 }
 
-final class _InlineMetric extends StatelessWidget {
+/// Δ-vs-previous-workout header: volume delta with a trend icon + "New PR"
+/// badge when this workout beats every older one.
+final class _TrendHeader extends StatelessWidget {
+  final double volume;
+  final double? previousVolume;
+  final bool isPr;
+  final bool usesWeight;
+
+  const _TrendHeader({
+    required this.volume,
+    required this.previousVolume,
+    required this.isPr,
+    required this.usesWeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final statusColors = theme.extension<FitFatColors>()!;
+    final prev = previousVolume;
+
+    final delta = prev == null ? 0.0 : volume - prev;
+    final (icon, color, label) = delta > 0
+        ? (
+            Icons.trending_up,
+            statusColors.success,
+            l10n.exerciseDetailTrendDelta(
+              '+${formatDecimal(delta)}',
+              usesWeight ? 'kg' : 'min',
+            ),
+          )
+        : delta < 0
+        ? (
+            Icons.trending_down,
+            theme.colorScheme.error,
+            l10n.exerciseDetailTrendDelta(
+              '-${formatDecimal(delta.abs())}',
+              usesWeight ? 'kg' : 'min',
+            ),
+          )
+        : (
+            Icons.trending_flat,
+            theme.colorScheme.outline,
+            l10n.exerciseDetailTrendSame,
+          );
+
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: FitFatTokens.spaceS),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        if (isPr)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: FitFatTokens.spaceS,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(FitFatTokens.radiusFull),
+            ),
+            child: Text(
+              l10n.exerciseDetailPrBadge,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Right-aligned summary value/label cell for the per-workout card.
+final class _SummaryCell extends StatelessWidget {
   final String label;
   final String value;
+  final ThemeData theme;
+  final bool alignEnd;
 
-  const _InlineMetric({required this.label, required this.value});
+  const _SummaryCell({
+    required this.label,
+    required this.value,
+    required this.theme,
+    required this.alignEnd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: alignEnd
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _SetGridHeader extends StatelessWidget {
+  final AppLocalizations l10n;
+
+  const _SetGridHeader({required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final style = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+    return Row(
       children: [
-        Text(
-          value,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+        SizedBox(
+          width: 18,
+          child: Text(l10n.exerciseDetailSetHeader, style: style),
         ),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 3,
+          child: Text(l10n.exerciseDetailSetHeaderPlanned, style: style),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 3,
+          child: Text(l10n.exerciseDetailSetHeaderActual, style: style),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 2,
+          child: Text(l10n.exerciseDetailSetHeaderDelta, style: style),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 2,
+          child: Text(l10n.exerciseDetailSetHeaderRest, style: style),
         ),
       ],
     );
@@ -1208,7 +1421,10 @@ final class _SetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final deltaColor = theme.colorScheme.onSurfaceVariant;
+    final bodyStyle = theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
 
     final planned = usesWeight
         ? l10n.workoutDetailPlannedSetReps(
@@ -1222,48 +1438,48 @@ final class _SetRow extends StatelessWidget {
             formatDecimal(set.actualWeightKg ?? set.weightKg ?? 0),
           )
         : planned;
-    final delta = _deltaString();
-    final restLine = _restString();
+
+    final (deltaString, deltaColor) = _delta(context);
+    final restString = _restString();
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: FitFatTokens.spaceXs),
       child: Row(
         children: [
-          Icon(
-            set.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 16,
-            color: set.isCompleted
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outline,
+          SizedBox(
+            width: 18,
+            child: set.isCompleted
+                ? Icon(
+                    Icons.check_circle,
+                    size: 14,
+                    color: theme.colorScheme.primary,
+                  )
+                : Text(
+                    '${set.setNumber}',
+                    style: bodyStyle,
+                    textAlign: TextAlign.center,
+                  ),
           ),
-          const SizedBox(width: FitFatTokens.spaceS),
+          const SizedBox(width: 8),
+          Expanded(flex: 3, child: Text(planned, style: bodyStyle)),
+          const SizedBox(width: 8),
+          Expanded(flex: 3, child: Text(actual, style: bodyStyle)),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${l10n.exerciseDetailSetNumber(set.setNumber)}  '
-                  '·  $planned  →  $actual',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                if (delta != null)
-                  Text(
-                    delta,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: deltaColor,
-                    ),
-                  ),
-                if (restLine != null)
-                  Text(
-                    restLine,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
+            flex: 2,
+            child: Text(
+              deltaString,
+              style: bodyStyle?.copyWith(color: deltaColor),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: Text(
+              restString ?? '—',
+              style: bodyStyle?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -1271,40 +1487,51 @@ final class _SetRow extends StatelessWidget {
     );
   }
 
-  String? _deltaString() {
-    final deltas = <String>[];
+  /// Combined reps/weight delta with a color reflecting the direction:
+  /// green when all non-zero deltas improve, red when they regress, amber for
+  /// mixed results and neutral for no change / unknown.
+  (String, Color) _delta(BuildContext context) {
+    final theme = Theme.of(context);
+    final statusColors = theme.extension<FitFatColors>()!;
+
+    final parts = <String>[];
+    var positive = false;
+    var negative = false;
     if (set.repsDelta != null) {
-      deltas.add(l10n.exerciseDetailRepsDelta(_signed(set.repsDelta!)));
+      final v = set.repsDelta!;
+      if (v > 0) positive = true;
+      if (v < 0) negative = true;
+      parts.add(l10n.exerciseDetailRepsDelta(_signed(v)));
     }
     if (set.weightDelta != null) {
-      deltas.add(l10n.exerciseDetailWeightDelta(_signed(set.weightDelta!)));
+      final v = set.weightDelta!;
+      if (v > 0) positive = true;
+      if (v < 0) negative = true;
+      parts.add(l10n.exerciseDetailWeightDelta(_signed(v)));
     }
-    if (deltas.isEmpty) return null;
-    return deltas.join(' · ');
+
+    if (parts.isEmpty) return ('—', theme.colorScheme.outline);
+    final color = positive && !negative
+        ? statusColors.success
+        : negative && !positive
+        ? theme.colorScheme.error
+        : statusColors.warning;
+    return (parts.join('·'), color);
   }
 
   /// Planned rest and, when recorded, the actual rest taken — e.g.
-  /// `rest 1:30 · (took 1:45)`. Null when the set has no rest info at all.
+  /// `1:30 → 1:45`. Unchanged rest collapses to a single value.
   String? _restString() {
-    final parts = <String>[];
     final planned = set.restSeconds;
-    if (planned != null) {
-      parts.add(
-        l10n.exerciseDetailSetRest(
-          formatRestDuration(Duration(seconds: planned)),
-        ),
-      );
-    }
     final took = set.actualRestSeconds;
-    if (took != null) {
-      parts.add(
-        l10n.exerciseDetailSetRestTook(
-          formatRestDuration(Duration(seconds: took)),
-        ),
-      );
+    if (planned == null) {
+      return took == null ? null : formatRestDuration(Duration(seconds: took));
     }
-    if (parts.isEmpty) return null;
-    return parts.join(' · ');
+    if (took == null || took == planned) {
+      return formatRestDuration(Duration(seconds: planned));
+    }
+    return '${formatRestDuration(Duration(seconds: planned))} → '
+        '${formatRestDuration(Duration(seconds: took))}';
   }
 
   String _signed(num value) => value > 0

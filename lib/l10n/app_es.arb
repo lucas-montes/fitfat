@@ -185,6 +185,22 @@
       "rest": { "type": "String" }
     }
   },
+  "exerciseDetailTrendSame": "igual que el entrenamiento anterior",
+  "exerciseDetailTrendDelta": "{delta} {unit} vs el entrenamiento anterior",
+  "@exerciseDetailTrendDelta": {
+    "placeholders": {
+      "delta": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "exerciseDetailPrBadge": "Récord",
+  "exerciseDetailSetHeader": "Serie",
+  "exerciseDetailSetHeaderPlanned": "Planificado",
+  "exerciseDetailSetHeaderActual": "Real",
+  "exerciseDetailSetHeaderDelta": "Δ",
+  "exerciseDetailSetHeaderRest": "Descanso",
+  "exerciseDetailWeightTrend": "Peso máximo con el tiempo",
+  "exerciseDetailRepsTrend": "Repeticiones con el tiempo",
 
   "exerciseFormNewTitle": "Nuevo ejercicio",
   "exerciseFormEditTitle": "Editar ejercicio",

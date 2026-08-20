@@ -362,6 +362,38 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get exerciseDetailTrendSame => 'same as previous workout';
+
+  @override
+  String exerciseDetailTrendDelta(String delta, String unit) {
+    return '$delta $unit vs previous workout';
+  }
+
+  @override
+  String get exerciseDetailPrBadge => 'New PR';
+
+  @override
+  String get exerciseDetailSetHeader => 'Set';
+
+  @override
+  String get exerciseDetailSetHeaderPlanned => 'Planned';
+
+  @override
+  String get exerciseDetailSetHeaderActual => 'Actual';
+
+  @override
+  String get exerciseDetailSetHeaderDelta => 'Δ';
+
+  @override
+  String get exerciseDetailSetHeaderRest => 'Rest';
+
+  @override
+  String get exerciseDetailWeightTrend => 'Best weight over time';
+
+  @override
+  String get exerciseDetailRepsTrend => 'Reps over time';
+
+  @override
   String get exerciseFormNewTitle => 'New Exercise';
 
   @override

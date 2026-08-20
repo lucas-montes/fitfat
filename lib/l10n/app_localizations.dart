@@ -730,6 +730,66 @@ abstract class AppLocalizations {
   /// **'(took {rest})'**
   String exerciseDetailSetRestTook(String rest);
 
+  /// No description provided for @exerciseDetailTrendSame.
+  ///
+  /// In en, this message translates to:
+  /// **'same as previous workout'**
+  String get exerciseDetailTrendSame;
+
+  /// No description provided for @exerciseDetailTrendDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'{delta} {unit} vs previous workout'**
+  String exerciseDetailTrendDelta(String delta, String unit);
+
+  /// No description provided for @exerciseDetailPrBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'New PR'**
+  String get exerciseDetailPrBadge;
+
+  /// No description provided for @exerciseDetailSetHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Set'**
+  String get exerciseDetailSetHeader;
+
+  /// No description provided for @exerciseDetailSetHeaderPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get exerciseDetailSetHeaderPlanned;
+
+  /// No description provided for @exerciseDetailSetHeaderActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual'**
+  String get exerciseDetailSetHeaderActual;
+
+  /// No description provided for @exerciseDetailSetHeaderDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'Δ'**
+  String get exerciseDetailSetHeaderDelta;
+
+  /// No description provided for @exerciseDetailSetHeaderRest.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest'**
+  String get exerciseDetailSetHeaderRest;
+
+  /// No description provided for @exerciseDetailWeightTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Best weight over time'**
+  String get exerciseDetailWeightTrend;
+
+  /// No description provided for @exerciseDetailRepsTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Reps over time'**
+  String get exerciseDetailRepsTrend;
+
   /// No description provided for @exerciseFormNewTitle.
   ///
   /// In en, this message translates to:

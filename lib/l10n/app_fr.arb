@@ -185,6 +185,22 @@
       "rest": { "type": "String" }
     }
   },
+  "exerciseDetailTrendSame": "identique à la séance précédente",
+  "exerciseDetailTrendDelta": "{delta} {unit} par rapport à la séance précédente",
+  "@exerciseDetailTrendDelta": {
+    "placeholders": {
+      "delta": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "exerciseDetailPrBadge": "Record",
+  "exerciseDetailSetHeader": "Série",
+  "exerciseDetailSetHeaderPlanned": "Prévu",
+  "exerciseDetailSetHeaderActual": "Réel",
+  "exerciseDetailSetHeaderDelta": "Δ",
+  "exerciseDetailSetHeaderRest": "Repos",
+  "exerciseDetailWeightTrend": "Poids max au fil du temps",
+  "exerciseDetailRepsTrend": "Répétitions au fil du temps",
 
   "exerciseFormNewTitle": "Nouvel exercice",
   "exerciseFormEditTitle": "Modifier l'exercice",
