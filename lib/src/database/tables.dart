@@ -261,6 +261,8 @@ class FxRates extends Table {
   // The base currency this rate is expressed against.
   TextColumn get baseCode => text()();
   IntColumn get updatedAt => integer()();
+  // Set when the rate was edited by hand (v19); cleared by a fresh fetch.
+  BoolColumn get manual => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {code};

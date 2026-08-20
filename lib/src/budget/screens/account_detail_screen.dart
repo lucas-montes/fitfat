@@ -12,6 +12,7 @@ import '../providers/receipts.dart';
 import '../providers/transactions.dart';
 import '../services/balance.dart';
 import '../widgets/account_type_meta.dart';
+import '../widgets/transaction_tile.dart';
 
 /// Account detail: balance resume + transactions + receipts for this account.
 final class AccountDetailScreen extends ConsumerWidget {
@@ -123,38 +124,10 @@ final class AccountDetailScreen extends ConsumerWidget {
   ) {
     if (txns.isEmpty) return [Text(l10n.budgetNoTransactions)];
     return txns.map((txn) {
-      final isIncome = txn.type == TransactionType.income;
-      final isTransfer = txn.type == TransactionType.transfer;
-      final sign = isIncome ? '+' : (isTransfer ? '' : '−');
-      final color = isIncome
-          ? Colors.green
-          : (isTransfer ? Theme.of(context).colorScheme.primary : Colors.red);
-      final title = txn.category ??
-          (isTransfer
-              ? l10n.transactionTypeTransfer
-              : (isIncome
-                  ? l10n.transactionTypeIncome
-                  : l10n.transactionTypeExpense));
-      return Card(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        child: ListTile(
-          leading: Icon(
-            isIncome
-                ? Icons.arrow_downward
-                : (isTransfer ? Icons.swap_horiz : Icons.arrow_upward),
-            color: color,
-          ),
-          title: Text(title),
-          subtitle: txn.isDraft ? Text(l10n.transactionDraft) : null,
-          trailing: Text(
-            '$sign${bf.formatMoney(txn.amountBase, base)}',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          onTap: () => context.push('/budget/transaction/${txn.id}'),
-        ),
+      return TransactionTile(
+        txn: txn,
+        baseCode: base,
+        onTap: () => context.push('/budget/transaction/${txn.id}'),
       );
     }).toList();
   }

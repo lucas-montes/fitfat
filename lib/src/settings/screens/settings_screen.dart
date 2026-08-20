@@ -11,6 +11,9 @@ import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
 import '../../notifications/task_reminders.dart';
 import '../../planner/providers/planner.dart';
+import '../../ui/date_formats.dart';
+import '../../ui/format.dart';
+import '../../ui/tokens.dart';
 import '../providers/settings.dart';
 import '../services/data_reset.dart';
 
@@ -636,7 +639,7 @@ final class _CurrencySection extends ConsumerWidget {
     final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
     final base = settings.baseCurrency;
-    final ratesAsync = ref.watch(fxRatesProvider);
+    final entriesAsync = ref.watch(fxRateEntriesProvider);
 
     final currencyOptions = {base, ..._currencies}.toList()..sort();
 
@@ -669,23 +672,71 @@ final class _CurrencySection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 8),
-        ratesAsync.when(
+        entriesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Text(l10n.errorWithMessage('$e')),
-          data: (rates) {
-            if (rates.isEmpty) {
+          data: (entries) {
+            if (entries.isEmpty) {
               return Text(l10n.settingsFxRatesEmpty);
             }
             return Column(
-              children: rates.entries.map((e) {
+              children: entries.map((e) {
+                final inverse = e.rateToBase == 0
+                    ? null
+                    : formatFxRate(1 / e.rateToBase);
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.settingsRateRow(e.key, e.value, base)),
+                  title: Text(l10n.settingsRateRow(e.code, e.rateToBase, base)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (inverse != null)
+                        Text(
+                          l10n.settingsRateInverse(base, inverse, e.code),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              l10n.settingsRateUpdated(
+                                DateFormats.formatDate(context, e.updatedAt),
+                              ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          if (e.manual) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.secondaryContainer,
+                                borderRadius: BorderRadius.circular(
+                                  FitFatTokens.radiusFull,
+                                ),
+                              ),
+                              child: Text(
+                                l10n.settingsRateManual,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSecondaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                   trailing: IconButton(
                     tooltip: l10n.settingsRateEdit,
                     icon: const Icon(Icons.edit_outlined),
                     onPressed: () =>
-                        _editRate(context, ref, base, e.key, e.value),
+                        _editRate(context, ref, base, e.code, e.rateToBase),
                   ),
                 );
               }).toList(),

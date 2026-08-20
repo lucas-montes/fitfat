@@ -35,7 +35,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -151,6 +151,11 @@ final class AppDatabase extends _$AppDatabase {
         // v18: experiments + daily check-ins.
         await m.createTable(experiments);
         await m.createTable(experimentCheckins);
+      }
+      if (from < 19) {
+        // v19: fx_rates.manual — marks hand-edited rates so a refresh can
+        // distinguish them from fetched ones.
+        await m.addColumn(fxRates, fxRates.manual);
       }
     },
   );

@@ -7,7 +7,7 @@
 | **Companion** | Drift-generated class for insert/update operations on a table row. |
 | **StatefulShellRoute** | GoRouter route type that preserves child state when switching between branches (tabs). |
 | **StatefulNavigationShell** | GoRouter widget that renders the current branch of a `StatefulShellRoute` and provides tab-switching methods. |
-| **AppDatabase** | Central database class (`lib/src/database/app_database.dart`), annotated with `@DriftDatabase` listing all 16 tables. Migration `schemaVersion` is 18. |
+| **AppDatabase** | Central database class (`lib/src/database/app_database.dart`), annotated with `@DriftDatabase` listing all 16 tables. Migration `schemaVersion` is 19. |
 | **PlannerItem** | Domain model for a daily planner task (`lib/src/models/planner_item.dart`); persisted in the `planner_items` table. |
 | **planner_items** | Drift table storing per-day todo items: id, date (start-of-day epoch millis), title, done (0/1), sort_order, due_date (optional, v3), due_time_minutes (optional, v8 — minutes since midnight), notes (optional free-text, v6), created_at. |
 | **BodyMetricsEntry** | Domain model for one day's weight/height entry (`lib/src/models/body_metrics_entry.dart`); persisted in the `body_metrics` table. |

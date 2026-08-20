@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../settings/providers/settings.dart';
+import '../../ui/format.dart' as uform;
 import '../format.dart' as bf;
 import '../models/receipt.dart';
 import '../models/transaction.dart';
@@ -58,6 +59,7 @@ final class _TransactionFormScreenState
   DateTime _date = DateTime.now();
   String? _receiptId;
   String? _receiptLocalPath;
+  double _rateUsed = 0;
   bool _saving = false;
   bool _isDraft = false;
 
@@ -87,6 +89,7 @@ final class _TransactionFormScreenState
     _date = txn.date;
     _receiptId = txn.receiptId;
     _isDraft = txn.isDraft;
+    _rateUsed = txn.rateUsed;
     if (_receiptId != null) {
       final receipt = await ref
           .read(receiptRepositoryProvider)
@@ -332,6 +335,20 @@ final class _TransactionFormScreenState
               ),
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            if (_isEditing && _currency != base && _rateUsed > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  l10n.transactionRateUsed(
+                    uform.formatFxRate(_rateUsed),
+                    base,
+                    _currency,
+                  ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               key: ValueKey(_currency),

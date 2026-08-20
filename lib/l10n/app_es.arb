@@ -585,6 +585,35 @@
     }
   }
 },
+  "settingsRateInverse": "1 {base} = {rate} {code}",
+  "@settingsRateInverse": {
+    "description": "settingsRateInverse",
+    "placeholders": {
+      "base": { "type": "String" },
+      "rate": { "type": "String" },
+      "code": { "type": "String" }
+    }
+  },
+  "settingsRateUpdated": "Actualizado el {date}",
+  "@settingsRateUpdated": {
+    "description": "settingsRateUpdated",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsRateManual": "Manual",
+  "@settingsRateManual": {
+    "description": "settingsRateManual"
+  },
+  "transactionRateUsed": "convertido a {rate} {base} por {code}",
+  "@transactionRateUsed": {
+    "description": "transactionRateUsed",
+    "placeholders": {
+      "rate": { "type": "String" },
+      "base": { "type": "String" },
+      "code": { "type": "String" }
+    }
+  },
   "accountDeleteBlockedBody": "Esta cuenta es usada por {count} transacción(es) y no puede eliminarse.",
   "@accountDeleteBlockedBody": {
   "description": "accountDeleteBlockedBody",

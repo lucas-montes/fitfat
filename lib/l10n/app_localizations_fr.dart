@@ -1371,6 +1371,24 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String settingsRateInverse(String base, String rate, String code) {
+    return '1 $base = $rate $code';
+  }
+
+  @override
+  String settingsRateUpdated(String date) {
+    return 'Mis à jour le $date';
+  }
+
+  @override
+  String get settingsRateManual => 'Manuel';
+
+  @override
+  String transactionRateUsed(String rate, String base, String code) {
+    return 'converti à $rate $base pour $code';
+  }
+
+  @override
   String accountDeleteBlockedBody(int count) {
     return 'Ce compte est utilisé par $count transaction(s) et ne peut pas être supprimé.';
   }

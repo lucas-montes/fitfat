@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../settings/providers/settings.dart';
+import '../../ui/format.dart' as uform;
 import '../format.dart' as bf;
 import '../providers/budget_overview.dart';
 import '../providers/receipts.dart';
@@ -50,7 +51,8 @@ class BudgetScreen extends ConsumerWidget {
           ),
         ),
         data: (overview) {
-            final pendingReceipts = receiptsAsync.value
+          final pendingReceipts =
+              receiptsAsync.value
                   ?.where((r) => r.status != ReceiptStatus.uploaded)
                   .length ??
               0;
@@ -66,21 +68,23 @@ class BudgetScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               if (pendingReceipts > 0)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: InkWell(
-                  onTap: () => context.push('/budget/receipts'),
-                  child: Chip(
-                    avatar: const Icon(Icons.receipt_long_outlined, size: 18),
-                    label: Text(l10n.budgetPendingReceipts(pendingReceipts)),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: InkWell(
+                    onTap: () => context.push('/budget/receipts'),
+                    child: Chip(
+                      avatar: const Icon(Icons.receipt_long_outlined, size: 18),
+                      label: Text(l10n.budgetPendingReceipts(pendingReceipts)),
+                    ),
                   ),
                 ),
-              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(l10n.budgetAccounts,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    l10n.budgetAccounts,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   TextButton(
                     onPressed: () => context.push('/budget/account/new'),
                     child: Text(l10n.budgetAddAccount),
@@ -103,8 +107,10 @@ class BudgetScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(l10n.budgetRecentTransactions,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    l10n.budgetRecentTransactions,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   TextButton(
                     onPressed: () => context.push('/budget/transactions'),
                     child: Text(l10n.budgetViewAll),
@@ -115,7 +121,9 @@ class BudgetScreen extends ConsumerWidget {
               if (overview.recent.isEmpty)
                 Text(l10n.budgetNoTransactions)
               else
-                ...overview.recent.map((t) => _TransactionTile(t: t, base: base)),
+                ...overview.recent.map(
+                  (t) => _TransactionTile(t: t, base: base),
+                ),
             ],
           );
         },
@@ -146,10 +154,14 @@ class _SummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.budgetTotalBalance,
-                style: Theme.of(context).textTheme.labelMedium),
-            Text(bf.formatMoney(netWorth, base),
-                style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              l10n.budgetTotalBalance,
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+            Text(
+              bf.formatMoney(netWorth, base),
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -189,17 +201,17 @@ class _Stat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = positive
-        ? Colors.green
-        : Theme.of(context).colorScheme.error;
+    final color = positive ? Colors.green : Theme.of(context).colorScheme.error;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: Theme.of(context).textTheme.labelMedium),
-        Text(value,
-            style: Theme.of(context)
-                .textTheme.titleMedium
-                ?.copyWith(color: color)),
+        Text(
+          value,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(color: color),
+        ),
       ],
     );
   }
@@ -211,20 +223,20 @@ class _EmptyAccounts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.budgetEmptyAccounts),
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: () => context.push('/budget/account/new'),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.budgetAddAccount),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.budgetEmptyAccounts),
+        const SizedBox(height: 8),
+        FilledButton.icon(
+          onPressed: () => context.push('/budget/account/new'),
+          icon: const Icon(Icons.add),
+          label: Text(l10n.budgetAddAccount),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _TransactionTile extends StatelessWidget {
@@ -240,6 +252,9 @@ class _TransactionTile extends StatelessWidget {
       TransactionType.transfer => l10n.transactionTypeTransfer,
       TransactionType.expense => l10n.transactionTypeExpense,
     };
+    final rateNote = t.currencyCode != base && t.rateUsed > 0
+        ? ' • ${uform.formatFxRate(t.rateUsed)} $base/${t.currencyCode}'
+        : '';
     return ListTile(
       leading: Icon(switch (t.type) {
         TransactionType.income => Icons.attach_money_outlined,
@@ -247,7 +262,7 @@ class _TransactionTile extends StatelessWidget {
         TransactionType.expense => Icons.money_off_outlined,
       }),
       title: Text(typeLabel),
-      subtitle: Text(DateFormat.yMd().format(t.date)),
+      subtitle: Text('${DateFormat.yMd().format(t.date)}$rateNote'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

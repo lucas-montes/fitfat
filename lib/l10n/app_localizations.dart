@@ -2500,6 +2500,30 @@ abstract class AppLocalizations {
   /// **'{base} → {target}: {rate}'**
   String settingsRateRow(String target, num rate, String base);
 
+  /// settingsRateInverse
+  ///
+  /// In en, this message translates to:
+  /// **'1 {base} = {rate} {code}'**
+  String settingsRateInverse(String base, String rate, String code);
+
+  /// settingsRateUpdated
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {date}'**
+  String settingsRateUpdated(String date);
+
+  /// settingsRateManual
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get settingsRateManual;
+
+  /// transactionRateUsed
+  ///
+  /// In en, this message translates to:
+  /// **'converted at {rate} {base} per {code}'**
+  String transactionRateUsed(String rate, String base, String code);
+
   /// accountDeleteBlockedBody
   ///
   /// In en, this message translates to:
