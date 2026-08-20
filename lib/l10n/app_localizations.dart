@@ -1612,6 +1612,114 @@ abstract class AppLocalizations {
   /// **'More actions'**
   String get plannerMoreActions;
 
+  /// No description provided for @plannerTaskDetailAppBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Task details'**
+  String get plannerTaskDetailAppBar;
+
+  /// plannerDetailUpdatedAt
+  ///
+  /// In en, this message translates to:
+  /// **'Created {date}'**
+  String plannerDetailUpdatedAt(String date);
+
+  /// plannerDetailDueDate
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String plannerDetailDueDate(String date);
+
+  /// plannerDetailTimeRange
+  ///
+  /// In en, this message translates to:
+  /// **'{start} – {end}'**
+  String plannerDetailTimeRange(String start, String end);
+
+  /// No description provided for @plannerDetailNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get plannerDetailNotes;
+
+  /// No description provided for @plannerDetailTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get plannerDetailTags;
+
+  /// No description provided for @plannerDetailRepeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get plannerDetailRepeats;
+
+  /// No description provided for @plannerDetailLinkedWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked workout'**
+  String get plannerDetailLinkedWorkout;
+
+  /// No description provided for @plannerDetailEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit task'**
+  String get plannerDetailEdit;
+
+  /// No description provided for @plannerDetailDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete task'**
+  String get plannerDetailDelete;
+
+  /// No description provided for @plannerDetailDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete task?'**
+  String get plannerDetailDeleteTitle;
+
+  /// plannerDetailDeleteBody
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes the task \"{title}\".'**
+  String plannerDetailDeleteBody(String title);
+
+  /// No description provided for @plannerRepeatSummaryDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get plannerRepeatSummaryDaily;
+
+  /// plannerRepeatSummaryWeekly
+  ///
+  /// In en, this message translates to:
+  /// **'Every week on {days}'**
+  String plannerRepeatSummaryWeekly(String days);
+
+  /// plannerRepeatSummaryInterval
+  ///
+  /// In en, this message translates to:
+  /// **'Every {count} days'**
+  String plannerRepeatSummaryInterval(int count);
+
+  /// plannerRepeatSummaryMonthly
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly on day {day}'**
+  String plannerRepeatSummaryMonthly(int day);
+
+  /// plannerRepeatSummaryEndsDate
+  ///
+  /// In en, this message translates to:
+  /// **' · until {date}'**
+  String plannerRepeatSummaryEndsDate(String date);
+
+  /// plannerRepeatSummaryEndsCount
+  ///
+  /// In en, this message translates to:
+  /// **' · {count} occurrences'**
+  String plannerRepeatSummaryEndsCount(int count);
+
   /// No description provided for @plannerCopyConfirmTitle.
   ///
   /// In en, this message translates to:

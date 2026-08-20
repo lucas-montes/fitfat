@@ -846,6 +846,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plannerMoreActions => 'More actions';
 
   @override
+  String get plannerTaskDetailAppBar => 'Task details';
+
+  @override
+  String plannerDetailUpdatedAt(String date) {
+    return 'Created $date';
+  }
+
+  @override
+  String plannerDetailDueDate(String date) {
+    return 'Due $date';
+  }
+
+  @override
+  String plannerDetailTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get plannerDetailNotes => 'Notes';
+
+  @override
+  String get plannerDetailTags => 'Tags';
+
+  @override
+  String get plannerDetailRepeats => 'Repeat';
+
+  @override
+  String get plannerDetailLinkedWorkout => 'Linked workout';
+
+  @override
+  String get plannerDetailEdit => 'Edit task';
+
+  @override
+  String get plannerDetailDelete => 'Delete task';
+
+  @override
+  String get plannerDetailDeleteTitle => 'Delete task?';
+
+  @override
+  String plannerDetailDeleteBody(String title) {
+    return 'This deletes the task \"$title\".';
+  }
+
+  @override
+  String get plannerRepeatSummaryDaily => 'Every day';
+
+  @override
+  String plannerRepeatSummaryWeekly(String days) {
+    return 'Every week on $days';
+  }
+
+  @override
+  String plannerRepeatSummaryInterval(int count) {
+    return 'Every $count days';
+  }
+
+  @override
+  String plannerRepeatSummaryMonthly(int day) {
+    return 'Monthly on day $day';
+  }
+
+  @override
+  String plannerRepeatSummaryEndsDate(String date) {
+    return ' · until $date';
+  }
+
+  @override
+  String plannerRepeatSummaryEndsCount(int count) {
+    return ' · $count occurrences';
+  }
+
+  @override
   String get plannerCopyConfirmTitle => 'Copy pending tasks?';
 
   @override

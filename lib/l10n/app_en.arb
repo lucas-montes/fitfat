@@ -425,6 +425,79 @@
   },
   "plannerCopyPrevious": "Copy from yesterday",
   "plannerMoreActions": "More actions",
+  "plannerTaskDetailAppBar": "Task details",
+  "plannerDetailUpdatedAt": "Created {date}",
+  "@plannerDetailUpdatedAt": {
+    "description": "plannerDetailUpdatedAt",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "plannerDetailDueDate": "Due {date}",
+  "@plannerDetailDueDate": {
+    "description": "plannerDetailDueDate",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "plannerDetailTimeRange": "{start} – {end}",
+  "@plannerDetailTimeRange": {
+    "description": "plannerDetailTimeRange",
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "plannerDetailNotes": "Notes",
+  "plannerDetailTags": "Tags",
+  "plannerDetailRepeats": "Repeat",
+  "plannerDetailLinkedWorkout": "Linked workout",
+  "plannerDetailEdit": "Edit task",
+  "plannerDetailDelete": "Delete task",
+  "plannerDetailDeleteTitle": "Delete task?",
+  "plannerDetailDeleteBody": "This deletes the task \"{title}\".",
+  "@plannerDetailDeleteBody": {
+    "description": "plannerDetailDeleteBody",
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "plannerRepeatSummaryDaily": "Every day",
+  "plannerRepeatSummaryWeekly": "Every week on {days}",
+  "@plannerRepeatSummaryWeekly": {
+    "description": "plannerRepeatSummaryWeekly",
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "plannerRepeatSummaryInterval": "Every {count} days",
+  "@plannerRepeatSummaryInterval": {
+    "description": "plannerRepeatSummaryInterval",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "plannerRepeatSummaryMonthly": "Monthly on day {day}",
+  "@plannerRepeatSummaryMonthly": {
+    "description": "plannerRepeatSummaryMonthly",
+    "placeholders": {
+      "day": { "type": "int" }
+    }
+  },
+  "plannerRepeatSummaryEndsDate": " · until {date}",
+  "@plannerRepeatSummaryEndsDate": {
+    "description": "plannerRepeatSummaryEndsDate",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "plannerRepeatSummaryEndsCount": " · {count} occurrences",
+  "@plannerRepeatSummaryEndsCount": {
+    "description": "plannerRepeatSummaryEndsCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "plannerCopyConfirmTitle": "Copy pending tasks?",
   "plannerCopyConfirmBody": "{count} pending task from yesterday will be copied to today.",
   "plannerCopyConfirmBody_plural": "{count} pending tasks from yesterday will be copied to today.",

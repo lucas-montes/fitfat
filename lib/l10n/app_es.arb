@@ -360,6 +360,79 @@
   },
   "plannerCopyPrevious": "Copiar desde ayer",
   "plannerMoreActions": "Más acciones",
+  "plannerTaskDetailAppBar": "Detalles de la tarea",
+  "plannerDetailUpdatedAt": "Creada el {date}",
+  "@plannerDetailUpdatedAt": {
+    "description": "plannerDetailUpdatedAt",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "plannerDetailDueDate": "Vence el {date}",
+  "@plannerDetailDueDate": {
+    "description": "plannerDetailDueDate",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "plannerDetailTimeRange": "{start} – {end}",
+  "@plannerDetailTimeRange": {
+    "description": "plannerDetailTimeRange",
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "plannerDetailNotes": "Notas",
+  "plannerDetailTags": "Etiquetas",
+  "plannerDetailRepeats": "Repetición",
+  "plannerDetailLinkedWorkout": "Entrenamiento vinculado",
+  "plannerDetailEdit": "Editar tarea",
+  "plannerDetailDelete": "Eliminar tarea",
+  "plannerDetailDeleteTitle": "¿Eliminar tarea?",
+  "plannerDetailDeleteBody": "Esto elimina la tarea \"{title}\".",
+  "@plannerDetailDeleteBody": {
+    "description": "plannerDetailDeleteBody",
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "plannerRepeatSummaryDaily": "Todos los días",
+  "plannerRepeatSummaryWeekly": "Cada semana los {days}",
+  "@plannerRepeatSummaryWeekly": {
+    "description": "plannerRepeatSummaryWeekly",
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "plannerRepeatSummaryInterval": "Cada {count} días",
+  "@plannerRepeatSummaryInterval": {
+    "description": "plannerRepeatSummaryInterval",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "plannerRepeatSummaryMonthly": "Mensual el día {day}",
+  "@plannerRepeatSummaryMonthly": {
+    "description": "plannerRepeatSummaryMonthly",
+    "placeholders": {
+      "day": { "type": "int" }
+    }
+  },
+  "plannerRepeatSummaryEndsDate": " · hasta el {date}",
+  "@plannerRepeatSummaryEndsDate": {
+    "description": "plannerRepeatSummaryEndsDate",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "plannerRepeatSummaryEndsCount": " · {count} apariciones",
+  "@plannerRepeatSummaryEndsCount": {
+    "description": "plannerRepeatSummaryEndsCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "plannerCopyConfirmTitle": "¿Copiar tareas pendientes?",
   "plannerCopyConfirmBody": "{count} tarea pendiente de ayer se copiará hoy.",
   "plannerCopyConfirmBody_plural": "{count} tareas pendientes de ayer se copiarán hoy.",

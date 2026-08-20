@@ -854,6 +854,78 @@ class AppLocalizationsEs extends AppLocalizations {
   String get plannerMoreActions => 'Más acciones';
 
   @override
+  String get plannerTaskDetailAppBar => 'Detalles de la tarea';
+
+  @override
+  String plannerDetailUpdatedAt(String date) {
+    return 'Creada el $date';
+  }
+
+  @override
+  String plannerDetailDueDate(String date) {
+    return 'Vence el $date';
+  }
+
+  @override
+  String plannerDetailTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get plannerDetailNotes => 'Notas';
+
+  @override
+  String get plannerDetailTags => 'Etiquetas';
+
+  @override
+  String get plannerDetailRepeats => 'Repetición';
+
+  @override
+  String get plannerDetailLinkedWorkout => 'Entrenamiento vinculado';
+
+  @override
+  String get plannerDetailEdit => 'Editar tarea';
+
+  @override
+  String get plannerDetailDelete => 'Eliminar tarea';
+
+  @override
+  String get plannerDetailDeleteTitle => '¿Eliminar tarea?';
+
+  @override
+  String plannerDetailDeleteBody(String title) {
+    return 'Esto elimina la tarea \"$title\".';
+  }
+
+  @override
+  String get plannerRepeatSummaryDaily => 'Todos los días';
+
+  @override
+  String plannerRepeatSummaryWeekly(String days) {
+    return 'Cada semana los $days';
+  }
+
+  @override
+  String plannerRepeatSummaryInterval(int count) {
+    return 'Cada $count días';
+  }
+
+  @override
+  String plannerRepeatSummaryMonthly(int day) {
+    return 'Mensual el día $day';
+  }
+
+  @override
+  String plannerRepeatSummaryEndsDate(String date) {
+    return ' · hasta el $date';
+  }
+
+  @override
+  String plannerRepeatSummaryEndsCount(int count) {
+    return ' · $count apariciones';
+  }
+
+  @override
   String get plannerCopyConfirmTitle => '¿Copiar tareas pendientes?';
 
   @override

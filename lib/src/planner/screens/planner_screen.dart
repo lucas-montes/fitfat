@@ -18,7 +18,8 @@ import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/planner.dart';
 import '../repositories/planner_repository.dart';
-import 'planner_item_dialog.dart';
+import 'planner_item_detail.dart';
+import 'planner_item_form.dart';
 
 final class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
@@ -199,6 +200,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       l10n: l10n,
                       onAddItem: _addItem,
                       onToggleDone: _toggleDone,
+                      onOpenDetail: _openDetail,
                       onEdit: _editItem,
                       onDelete: _deleteItem,
                       onOpenWorkout: _openWorkout,
@@ -225,6 +227,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                     l10n: l10n,
                     onAddItem: _addItem,
                     onToggleDone: _toggleDone,
+                    onOpenDetail: _openDetail,
                     onEdit: _editItem,
                     onDelete: _deleteItem,
                     onOpenWorkout: _openWorkout,
@@ -237,6 +240,18 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  /// Opens the full read-mostly detail view for [item]; the planner tile now
+  /// navigates here (edit stays on the pencil icon).
+  Future<void> _openDetail(PlannerItem item) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlannerItemDetailScreen(itemId: item.id),
+      ),
+    );
+    ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
   }
 
   Future<void> _addItem() async {
@@ -662,6 +677,7 @@ final class _DayPage extends ConsumerWidget {
   final AppLocalizations l10n;
   final VoidCallback onAddItem;
   final void Function(PlannerItem item) onToggleDone;
+  final void Function(PlannerItem item) onOpenDetail;
   final void Function(PlannerItem item) onEdit;
   final void Function(PlannerItem item) onDelete;
   final void Function(PlannerItem item) onOpenWorkout;
@@ -671,6 +687,7 @@ final class _DayPage extends ConsumerWidget {
     required this.l10n,
     required this.onAddItem,
     required this.onToggleDone,
+    required this.onOpenDetail,
     required this.onEdit,
     required this.onDelete,
     required this.onOpenWorkout,
@@ -732,6 +749,7 @@ final class _DayPage extends ConsumerWidget {
                   item: it,
                   l10n: l10n,
                   onToggleDone: () => onToggleDone(it),
+                  onOpenDetail: () => onOpenDetail(it),
                   onEdit: () => onEdit(it),
                   onDelete: () => onDelete(it),
                   onOpenWorkout: () => onOpenWorkout(it),
@@ -775,6 +793,7 @@ final class _DayPage extends ConsumerWidget {
                   l10n: l10n,
                   timeLabel: timeText,
                   onToggleDone: () => onToggleDone(timedItem),
+                  onOpenDetail: () => onOpenDetail(timedItem),
                   onEdit: () => onEdit(timedItem),
                   onDelete: () => onDelete(timedItem),
                   onOpenWorkout: () => onOpenWorkout(timedItem),
@@ -862,6 +881,7 @@ final class _TimelineItemCard extends StatelessWidget {
   final AppLocalizations l10n;
   final String? timeLabel;
   final VoidCallback onToggleDone;
+  final VoidCallback onOpenDetail;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onOpenWorkout;
@@ -872,6 +892,7 @@ final class _TimelineItemCard extends StatelessWidget {
     required this.l10n,
     this.timeLabel,
     required this.onToggleDone,
+    required this.onOpenDetail,
     required this.onEdit,
     required this.onDelete,
     required this.onOpenWorkout,
@@ -976,7 +997,7 @@ final class _TimelineItemCard extends StatelessWidget {
               Checkbox(value: item.done, onChanged: (_) => onToggleDone()),
               Expanded(
                 child: InkWell(
-                  onTap: onEdit,
+                  onTap: onOpenDetail,
                   borderRadius: BorderRadius.circular(8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1012,6 +1033,12 @@ final class _TimelineItemCard extends StatelessWidget {
                     ],
                   ),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: l10n.plannerDetailEdit,
+                visualDensity: VisualDensity.compact,
+                onPressed: onEdit,
               ),
             ],
           ),

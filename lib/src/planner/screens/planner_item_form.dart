@@ -6,13 +6,12 @@ import '../../exercise/providers/workouts.dart';
 import '../../models/planner_recurrence.dart';
 import '../providers/planner.dart';
 
-/// Shows a bottom-sheet to enter (or edit) a planner task title, optional due
-/// date, optional start time and optional end time (both minutes since
-/// midnight, on the task's day), optional note, optional linked workout,
-/// optional free-form tags, and an optional repeat rule. Returns a
-/// `(title, dueDate, startTimeMinutes, endTimeMinutes, notes, workoutId, tags,
-/// recurrence)` record, or `null` if cancelled. The trimmed title is guaranteed
-/// non-empty; an empty note or empty tag list becomes null.
+/// Opens the full-screen task editor (add or edit) as a pushed route and
+/// resolves with a `(title, dueDate, startTimeMinutes, endTimeMinutes, notes,
+/// workoutId, tags, recurrence)` record — or `null` if cancelled. The trimmed
+/// title is guaranteed non-empty; an empty note or empty tag list becomes null.
+/// The sheet-style drag-to-dismiss is gone: the screen has an explicit close X
+/// and a Save action in the AppBar (always reachable, no scrolling).
 Future<
   (
     String,
@@ -37,7 +36,7 @@ showPlannerItemDialog(
   List<String>? initialTags,
   PlannerRecurrence? initialRecurrence,
 }) {
-  return showModalBottomSheet<
+  return Navigator.of(context).push<
     (
       String,
       DateTime?,
@@ -49,26 +48,25 @@ showPlannerItemDialog(
       PlannerRecurrence?,
     )
   >(
-    context: context,
-    useSafeArea: true,
-    isScrollControlled: true,
-    builder: (ctx) => _PlannerItemSheet(
-      dialogTitle: dialogTitle,
-      initialTitle: initialTitle,
-      initialDueDate: initialDueDate,
-      initialStartTimeMinutes: initialStartTimeMinutes,
-      initialEndTimeMinutes: initialEndTimeMinutes,
-      initialNotes: initialNotes,
-      initialWorkoutId: initialWorkoutId,
-      initialTags: initialTags,
-      initialRecurrence: initialRecurrence,
+    MaterialPageRoute(
+      builder: (_) => PlannerItemFormScreen(
+        dialogTitle: dialogTitle,
+        initialTitle: initialTitle,
+        initialDueDate: initialDueDate,
+        initialStartTimeMinutes: initialStartTimeMinutes,
+        initialEndTimeMinutes: initialEndTimeMinutes,
+        initialNotes: initialNotes,
+        initialWorkoutId: initialWorkoutId,
+        initialTags: initialTags,
+        initialRecurrence: initialRecurrence,
+      ),
     ),
   );
 }
 
 enum _EndsChoice { never, onDate, after }
 
-final class _PlannerItemSheet extends ConsumerStatefulWidget {
+final class PlannerItemFormScreen extends ConsumerStatefulWidget {
   final String dialogTitle;
   final String? initialTitle;
   final DateTime? initialDueDate;
@@ -79,7 +77,8 @@ final class _PlannerItemSheet extends ConsumerStatefulWidget {
   final List<String>? initialTags;
   final PlannerRecurrence? initialRecurrence;
 
-  const _PlannerItemSheet({
+  const PlannerItemFormScreen({
+    super.key,
     required this.dialogTitle,
     this.initialTitle,
     this.initialDueDate,
@@ -92,10 +91,12 @@ final class _PlannerItemSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_PlannerItemSheet> createState() => _PlannerItemSheetState();
+  ConsumerState<PlannerItemFormScreen> createState() =>
+      _PlannerItemFormScreenState();
 }
 
-final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
+final class _PlannerItemFormScreenState
+    extends ConsumerState<PlannerItemFormScreen> {
   late final TextEditingController _controller;
   late final TextEditingController _notesController;
   late final TextEditingController _tagController;
@@ -473,210 +474,186 @@ final class _PlannerItemSheetState extends ConsumerState<_PlannerItemSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final materialL10n = MaterialLocalizations.of(context);
-    final theme = Theme.of(context);
     final isEdit = widget.initialTitle != null;
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    return Scaffold(
+      appBar: AppBar(
+        leading: CloseButton(
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(widget.dialogTitle),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton.tonal(
+              onPressed: _submit,
+              child: Text(isEdit ? l10n.commonSave : l10n.plannerAddTask),
+            ),
+          ),
+        ],
       ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _controller,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                labelText: l10n.plannerTaskLabel,
+                hintText: l10n.plannerTaskHint,
+                errorText: _errorText,
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+          ),
+          const Divider(height: 24),
+          ExpansionTile(
+            leading: const Icon(Icons.notes),
+            title: Text(l10n.plannerNotesLabel),
             children: [
-              Center(
-                child: Container(
-                  width: 32,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: theme.dividerColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    widget.dialogTitle,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: TextField(
-                  controller: _controller,
-                  autofocus: true,
-                  textInputAction: TextInputAction.done,
+                  controller: _notesController,
+                  maxLines: 3,
                   decoration: InputDecoration(
-                    labelText: l10n.plannerTaskLabel,
                     hintText: l10n.plannerTaskHint,
-                    errorText: _errorText,
                   ),
-                  onSubmitted: (_) => _submit(),
-                ),
-              ),
-              const Divider(height: 24),
-              ExpansionTile(
-                leading: const Icon(Icons.notes),
-                title: Text(l10n.plannerNotesLabel),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    child: TextField(
-                      controller: _notesController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: l10n.plannerTaskHint,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: _tagController,
-                      textCapitalization: TextCapitalization.none,
-                      decoration: InputDecoration(
-                        labelText: l10n.plannerTagsLabel,
-                        hintText: l10n.plannerTagsHint,
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.add),
-                          tooltip: l10n.plannerTagsAdd,
-                          onPressed: _addTagFromField,
-                        ),
-                      ),
-                      onSubmitted: (_) => _addTagFromField(),
-                    ),
-                    const SizedBox(height: 8),
-                    if (_tags.isNotEmpty)
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          for (final tag in _tags)
-                            InputChip(
-                              label: Text(tag),
-                              onDeleted: () => _removeTag(tag),
-                            ),
-                        ],
-                      ),
-                    const SizedBox(height: 8),
-                    if (_suggestions.isNotEmpty)
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          for (final tag in _suggestions)
-                            ActionChip(
-                              label: Text(tag),
-                              onPressed: () => _addTag(tag),
-                            ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.event_repeat_outlined),
-                title: Text(l10n.plannerRepeatLabel),
-                subtitle: _repeatType == null
-                    ? null
-                    : _buildRepeatField(context),
-                onTap: () => setState(
-                  () =>
-                      _repeatType = _repeatType ?? PlannerRecurrenceType.daily,
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.event_outlined),
-                title: Text(
-                  _dueDate == null
-                      ? l10n.plannerDueDateNone
-                      : materialL10n.formatMediumDate(_dueDate!),
-                ),
-                trailing: _dueDate != null
-                    ? IconButton(
-                        icon: const Icon(Icons.close),
-                        tooltip: l10n.plannerDueDateClear,
-                        onPressed: _clearDueDate,
-                      )
-                    : null,
-                onTap: _pickDueDate,
-              ),
-              ListTile(
-                leading: const Icon(Icons.schedule_outlined),
-                title: Text(
-                  _startTimeMinutes == null
-                      ? l10n.plannerStartTimeNone
-                      : materialL10n.formatTimeOfDay(
-                          TimeOfDay(
-                            hour: _startTimeMinutes! ~/ 60,
-                            minute: _startTimeMinutes! % 60,
-                          ),
-                        ),
-                ),
-                subtitle: Text(l10n.plannerStartTimeLabel),
-                trailing: _startTimeMinutes != null
-                    ? IconButton(
-                        icon: const Icon(Icons.close),
-                        tooltip: l10n.plannerStartTimeClear,
-                        onPressed: _clearStartTime,
-                      )
-                    : null,
-                onTap: _pickStartTime,
-              ),
-              ListTile(
-                leading: const Icon(Icons.schedule_outlined),
-                title: Text(
-                  _endTimeMinutes == null
-                      ? l10n.plannerEndTimeNone
-                      : materialL10n.formatTimeOfDay(
-                          TimeOfDay(
-                            hour: _endTimeMinutes! ~/ 60,
-                            minute: _endTimeMinutes! % 60,
-                          ),
-                        ),
-                ),
-                subtitle: Text(l10n.plannerEndTimeLabel),
-                trailing: _endTimeMinutes != null
-                    ? IconButton(
-                        icon: const Icon(Icons.close),
-                        tooltip: l10n.plannerEndTimeClear,
-                        onPressed: _clearEndTime,
-                      )
-                    : null,
-                onTap: _pickEndTime,
-              ),
-              Row(
-                children: [
-                  const SizedBox(width: 16),
-                  const Icon(Icons.fitness_center, size: 24),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildWorkoutField(context)),
-                  const SizedBox(width: 16),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: FilledButton(
-                  onPressed: _submit,
-                  child: Text(isEdit ? l10n.commonSave : l10n.plannerAddTask),
                 ),
               ),
             ],
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: _tagController,
+                  textCapitalization: TextCapitalization.none,
+                  decoration: InputDecoration(
+                    labelText: l10n.plannerTagsLabel,
+                    hintText: l10n.plannerTagsHint,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: l10n.plannerTagsAdd,
+                      onPressed: _addTagFromField,
+                    ),
+                  ),
+                  onSubmitted: (_) => _addTagFromField(),
+                ),
+                const SizedBox(height: 8),
+                if (_tags.isNotEmpty)
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final tag in _tags)
+                        InputChip(
+                          label: Text(tag),
+                          onDeleted: () => _removeTag(tag),
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 8),
+                if (_suggestions.isNotEmpty)
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final tag in _suggestions)
+                        ActionChip(
+                          label: Text(tag),
+                          onPressed: () => _addTag(tag),
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.event_repeat_outlined),
+            title: Text(l10n.plannerRepeatLabel),
+            subtitle: _repeatType == null
+                ? null
+                : _buildRepeatField(context),
+            onTap: () => setState(
+              () => _repeatType = _repeatType ?? PlannerRecurrenceType.daily,
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.event_outlined),
+            title: Text(
+              _dueDate == null
+                  ? l10n.plannerDueDateNone
+                  : materialL10n.formatMediumDate(_dueDate!),
+            ),
+            trailing: _dueDate != null
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: l10n.plannerDueDateClear,
+                    onPressed: _clearDueDate,
+                  )
+                : null,
+            onTap: _pickDueDate,
+          ),
+          ListTile(
+            leading: const Icon(Icons.schedule_outlined),
+            title: Text(
+              _startTimeMinutes == null
+                  ? l10n.plannerStartTimeNone
+                  : materialL10n.formatTimeOfDay(
+                      TimeOfDay(
+                        hour: _startTimeMinutes! ~/ 60,
+                        minute: _startTimeMinutes! % 60,
+                      ),
+                    ),
+            ),
+            subtitle: Text(l10n.plannerStartTimeLabel),
+            trailing: _startTimeMinutes != null
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: l10n.plannerStartTimeClear,
+                    onPressed: _clearStartTime,
+                  )
+                    : null,
+            onTap: _pickStartTime,
+          ),
+          ListTile(
+            leading: const Icon(Icons.schedule_outlined),
+            title: Text(
+              _endTimeMinutes == null
+                  ? l10n.plannerEndTimeNone
+                  : materialL10n.formatTimeOfDay(
+                      TimeOfDay(
+                        hour: _endTimeMinutes! ~/ 60,
+                        minute: _endTimeMinutes! % 60,
+                      ),
+                    ),
+            ),
+            subtitle: Text(l10n.plannerEndTimeLabel),
+            trailing: _endTimeMinutes != null
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: l10n.plannerEndTimeClear,
+                    onPressed: _clearEndTime,
+                  )
+                    : null,
+            onTap: _pickEndTime,
+          ),
+          Row(
+            children: [
+              const SizedBox(width: 16),
+              const Icon(Icons.fitness_center, size: 24),
+              const SizedBox(width: 16),
+              Expanded(child: _buildWorkoutField(context)),
+              const SizedBox(width: 16),
+            ],
+          ),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }

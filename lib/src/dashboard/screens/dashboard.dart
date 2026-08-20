@@ -16,6 +16,7 @@ import '../../exercise/screens/workout_form.dart';
 import '../../models/body_metrics_entry.dart';
 import '../../models/body_weight_goal.dart';
 import '../../models/planner_item.dart';
+import '../../planner/screens/planner_item_detail.dart';
 import '../../models/workout.dart';
 import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
@@ -800,7 +801,16 @@ final class _UpcomingTasksCard extends ConsumerWidget {
                 return Column(
                   children: [
                     for (final task in tasks.take(5)) ...[
-                      _TaskRow(task: task, today: todayStart),
+                      _TaskRow(
+                        task: task,
+                        today: todayStart,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                PlannerItemDetailScreen(itemId: task.id),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: FitFatTokens.spaceS),
                     ],
                     if (tasks.length > 5) ...[
@@ -827,8 +837,13 @@ final class _UpcomingTasksCard extends ConsumerWidget {
 final class _TaskRow extends StatelessWidget {
   final PlannerItem task;
   final DateTime today;
+  final VoidCallback onTap;
 
-  const _TaskRow({required this.task, required this.today});
+  const _TaskRow({
+    required this.task,
+    required this.today,
+    required this.onTap,
+  });
 
   String _timeLabel(BuildContext context) {
     final minutes = task.startTimeMinutes!;
@@ -845,31 +860,35 @@ final class _TaskRow extends StatelessWidget {
         dueDay.month == today.month &&
         dueDay.day == today.day;
 
-    return Row(
-      children: [
-        Icon(
-          task.workoutId != null ? Icons.fitness_center : Icons.alarm,
-          size: 16,
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(width: FitFatTokens.spaceS),
-        Expanded(
-          child: Text(
-            task.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        children: [
+          Icon(
+            task.workoutId != null ? Icons.fitness_center : Icons.alarm,
+            size: 16,
+            color: theme.colorScheme.primary,
           ),
-        ),
-        const SizedBox(width: FitFatTokens.spaceS),
-        Text(
-          '${isToday ? '' : '${DateFormats.formatShortDate(context, dueDay)} · '}'
-          '${_timeLabel(context)}',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+          const SizedBox(width: FitFatTokens.spaceS),
+          Expanded(
+            child: Text(
+              task.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: FitFatTokens.spaceS),
+          Text(
+            '${isToday ? '' : '${DateFormats.formatShortDate(context, dueDay)} · '}'
+            '${_timeLabel(context)}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
