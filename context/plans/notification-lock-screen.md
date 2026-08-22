@@ -27,7 +27,7 @@ lock screen:
 - No effect on other notification types (planner/experiment reminders unchanged).
 - Device verification on Android: lock the screen while a workout is active and
   during a rest; the popup is visible on the lock screen.
-- `flutter analyze lib/` clean; `flutter test` `+39 -4` (pre-existing sqlite env
+- `flutter analyze lib/` clean; `flutter test` `+42 -4` (pre-existing sqlite env
   failures).
 
 ## Constraints & Non-Goals
@@ -39,7 +39,7 @@ lock screen:
 
 ## Task Stack
 
-- [ ] T01: `Investigate + reproduce lock-screen suppression` (status:todo)
+- [x] T01: `Investigate + reproduce lock-screen suppression` (status:done)
   - Task ID: T01
   - Goal: Confirm which notification is hidden and why before changing code.
   - Boundaries (in/out of scope):
@@ -56,7 +56,7 @@ lock screen:
     - `adb shell dumpsys notification --noredact | grep -A15 'fitfat'`;
       lock-screen screenshot before/after a rest popup.
 
-- [ ] T02: `Set visibility + category (rest popup + foreground service)` (status:todo)
+- [x] T02: `Set visibility + category (rest popup + foreground service)` (status:done)
   - Task ID: T02
   - Goal: Make both timer notifications lock-screen visible.
   - Boundaries (in/out of scope):
@@ -76,13 +76,13 @@ lock screen:
       device: locked screen during workout + during rest shows both; tap opens
       the workout.
 
-- [ ] T03: `Validation and context sync` (status:todo)
+- [x] T03: `Validation and context sync` (status:done)
   - Task ID: T03
   - Goal: Full checks + document the lock-screen behavior and its OS caveat.
   - Boundaries (in/out of scope): in — analyze/format/tests,
     `context/notifications/notifications.md` update (lock-screen section,
     "depends on OS 'show on lock screen' permission"); out — commit.
-  - Done when: `flutter analyze lib` clean; `flutter test` `+39 -4`; context
+  - Done when: `flutter analyze lib` clean; `flutter test` `+42 -4`; context
     accurate.
   - Verification notes (commands or checks):
     - `flutter analyze lib`; `flutter test`;
@@ -96,4 +96,25 @@ lock screen:
 
 ## Next Command
 
-/next-task notification-lock-screen T01
+None — all tasks complete.
+
+## Validation Report
+
+- **Commands run:** `dart analyze lib` (no issues), `flutter test` (`+42 -4`,
+  the pre-existing sqlite env failures), `dart format --output=none
+  --set-exit-if-changed lib/src/notifications lib/src/app` (clean).
+- **T01 findings (code-level; no device available in this environment):**
+  the plan's hypothesis was **half right**. The rest-over popup indeed lacked
+  `visibility` (flutter_local_notifications defaults to private → redacted on
+  secure lock screens) and `category`. The foreground notification, however,
+  already gets `visibility: VISIBILITY_PUBLIC` from flutter_foreground_task's
+  `AndroidNotificationOptions` default — its real gap was the channel:
+  `channelImportance` defaulted to DEFAULT (no lock-screen alerting) with no
+  explicit priority.
+- **T02 changes:** popup gains public visibility + alarm category;
+  foreground config gains explicit public visibility + HIGH channel importance
+  + HIGH priority (`onlyAlertOnce` kept). Tap routing untouched;
+  planner/experiment notifications untouched.
+- **Deferred to device verification:** actual lock-screen rendering + tap
+  (needs a physical Android device per T01/T02 verification notes);
+  full-screen-intent wake stays a recorded non-goal (open question in plan).

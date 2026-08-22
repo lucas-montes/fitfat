@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+// `NotificationVisibility` is hidden here: the rest popup uses
+// flutter_local_notifications' enum, and both packages export one.
+import 'package:flutter_foreground_task/flutter_foreground_task.dart'
+    hide NotificationVisibility;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -188,6 +191,11 @@ final class ActiveWorkoutTaskHandler extends TaskHandler {
             channelDescription: restAlarmChannelDescription,
             importance: Importance.high,
             priority: Priority.high,
+            // Public content visibility + alarm category so the popup shows
+            // its content on a secure lock screen instead of being redacted
+            // (notification-lock-screen T02).
+            visibility: NotificationVisibility.public,
+            category: AndroidNotificationCategory.alarm,
           ),
           iOS: const DarwinNotificationDetails(),
         ),

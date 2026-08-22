@@ -95,7 +95,11 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
       }
     }());
 
-    // 2. Foreground-service channel config (moved out of main()).
+    // 2. Foreground-service channel config (moved out of main()). The channel
+    // importance + priority are HIGH so the ongoing workout notification
+    // alerts while the device is locked; visibility stays public (also the
+    // package default) so its content is not redacted on a secure lock
+    // screen (notification-lock-screen T02).
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: 'active_workout',
@@ -103,6 +107,9 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
         channelDescription:
             'Shows workout duration and rest timer while a workout is active.',
         onlyAlertOnce: true,
+        channelImportance: NotificationChannelImportance.HIGH,
+        priority: NotificationPriority.HIGH,
+        visibility: NotificationVisibility.VISIBILITY_PUBLIC,
       ),
       iosNotificationOptions: const IOSNotificationOptions(
         showNotification: false,
