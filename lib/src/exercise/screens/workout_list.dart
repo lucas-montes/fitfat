@@ -14,6 +14,7 @@ import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../providers/workouts.dart';
 import '../../dashboard/providers/dashboard.dart';
+import '../../settings/providers/settings.dart';
 import 'exercise_list.dart';
 import 'workout_detail.dart';
 import 'workout_form.dart';
@@ -84,6 +85,7 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
           onEdit: () => _editWorkout(context, ref, workouts[i]),
           onDelete: () => _deleteWorkout(context, ref, workouts[i]),
           onDuplicate: () => _duplicateWorkout(context, ref, workouts[i]),
+          onLongPress: () => _showTileMenu(context, ref, workouts[i]),
         ),
       );
 
@@ -146,6 +148,67 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
     ref.invalidate(workoutListProvider);
   }
 
+  /// Long-press tile menu: Duplicate (independent copy) and Replay (next
+  /// lineage occurrence prefilled per the replay-prefill setting).
+  Future<void> _showTileMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Workout workout,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.replay),
+              title: Text(l10n.workoutActionReplay),
+              onTap: () => Navigator.of(ctx).pop('replay'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy_all_outlined),
+              title: Text(l10n.workoutActionDuplicate),
+              onTap: () => Navigator.of(ctx).pop('duplicate'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    switch (action) {
+      case 'replay':
+        await _replayWorkout(context, ref, workout);
+      case 'duplicate':
+        await _duplicateWorkout(context, ref, workout);
+    }
+  }
+
+  /// Creates the next replay occurrence (prefill per settings) and opens it
+  /// in the editable workout form.
+  Future<void> _replayWorkout(
+    BuildContext context,
+    WidgetRef ref,
+    Workout workout,
+  ) async {
+    final prefill = ref.read(settingsProvider).replayPrefill;
+    final created = await ref
+        .read(workoutRepositoryProvider)
+        .replayWorkout(sourceWorkoutId: workout.id, prefill: prefill);
+    ref.invalidate(workoutListProvider);
+    if (!context.mounted) return;
+    final detail = await ref.read(workoutDetailProvider(created.id).future);
+    if (detail == null || !context.mounted) return;
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => WorkoutFormScreen(initial: detail)),
+    );
+    if (context.mounted) {
+      ref.invalidate(workoutListProvider);
+      invalidateDashboard(ref);
+    }
+  }
+
   Future<void> _deleteWorkout(
     BuildContext context,
     WidgetRef ref,
@@ -183,6 +246,7 @@ final class _WorkoutTile extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onDuplicate;
+  final VoidCallback onLongPress;
 
   const _WorkoutTile({
     required this.workout,
@@ -191,6 +255,7 @@ final class _WorkoutTile extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onDuplicate,
+    required this.onLongPress,
   });
 
   @override
@@ -256,7 +321,7 @@ final class _WorkoutTile extends StatelessWidget {
           ],
         ),
         onTap: onTap,
-        onLongPress: onDuplicate,
+        onLongPress: onLongPress,
       ),
     );
   }

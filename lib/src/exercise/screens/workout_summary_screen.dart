@@ -10,8 +10,10 @@ import '../../ui/theme_extensions.dart';
 import '../../ui/units.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/status_badge.dart';
+import '../../ui/widgets/top_banner.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+import 'workout_form.dart';
 
 /// Read-only summary of a completed workout (active-workout-flow T07). Lives
 /// on the top-level `/workout-summary/:id` GoRouter route, outside the shell,
@@ -93,6 +95,34 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
 
   const _WorkoutSummaryContent({required this.detail, required this.l10n});
 
+  /// Creates the next replay occurrence (prefill per the replay-prefill
+  /// setting) and opens it in the editable workout form.
+  Future<void> _replay(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final prefill = ref.read(settingsProvider).replayPrefill;
+      final created = await ref
+          .read(workoutRepositoryProvider)
+          .replayWorkout(sourceWorkoutId: detail.workout.id, prefill: prefill);
+      ref.invalidate(workoutListProvider);
+      if (!context.mounted) return;
+      final newDetail = await ref.read(
+        workoutDetailProvider(created.id).future,
+      );
+      if (newDetail == null || !context.mounted) return;
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => WorkoutFormScreen(initial: newDetail),
+        ),
+      );
+      if (context.mounted) ref.invalidate(workoutListProvider);
+    } catch (e) {
+      if (context.mounted) {
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final w = detail.workout;
@@ -103,6 +133,11 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.workoutSummaryAppBar),
         actions: [
+          IconButton(
+            tooltip: l10n.workoutSummaryDoAgain,
+            icon: const Icon(Icons.replay),
+            onPressed: () => _replay(context, ref),
+          ),
           TextButton(
             onPressed: () => context.go('/exercise'),
             child: Text(l10n.workoutSummaryDone),

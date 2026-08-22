@@ -384,6 +384,30 @@ final class _ProfileScreenState extends ConsumerState<_ProfileScreen> {
             onSelectionChanged: (selection) =>
                 notifier.setLengthUnit(selection.first),
           ),
+
+          const SizedBox(height: 24),
+
+          // Workout replay prefill.
+          DropdownButtonFormField<String>(
+            key: const ValueKey('replay-prefill'),
+            initialValue: settings.replayPrefill,
+            decoration: InputDecoration(
+              labelText: l10n.settingsReplayPrefillLabel,
+            ),
+            items: [
+              DropdownMenuItem(
+                value: 'actuals',
+                child: Text(l10n.settingsReplayPrefillActuals),
+              ),
+              DropdownMenuItem(
+                value: 'planned',
+                child: Text(l10n.settingsReplayPrefillPlanned),
+              ),
+            ],
+            onChanged: (v) {
+              if (v != null) notifier.setReplayPrefill(v);
+            },
+          ),
         ],
       ),
     );

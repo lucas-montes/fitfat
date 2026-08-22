@@ -716,6 +716,12 @@
   "settingsLengthUnitLabel": "Height",
   "settingsExportDb": "Export database",
   "settingsExportDbSubtitle": "Share a copy of your data (SQLite)",
+  "settingsReplayPrefillLabel": "When replaying a workout, prefill sets from",
+  "settingsReplayPrefillActuals": "Previous actuals",
+  "settingsReplayPrefillPlanned": "Planned values",
+  "workoutSummaryDoAgain": "Do again",
+  "workoutActionReplay": "Replay",
+  "workoutActionDuplicate": "Duplicate",
 
   "workoutDetailPlannedSetReps": "{reps} × {weight} {unit}",
   "@workoutDetailPlannedSetReps": {

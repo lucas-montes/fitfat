@@ -31,7 +31,7 @@ Replace the "re-copy each time" flow with a real **replay** concept
   editable workout form.
 - Routine "done" count queryable per routine (grouped, single query).
 - `flutter gen-l10n` exit 0; `flutter analyze lib/` clean; `flutter test`
-  `+39 -4` (pre-existing sqlite env failures).
+  `+42 -4` (pre-existing sqlite env failures).
 
 ## Constraints & Non-Goals
 
@@ -42,7 +42,7 @@ Replace the "re-copy each time" flow with a real **replay** concept
 
 ## Task Stack
 
-- [ ] T01: `Schema v21 — workouts.routine_id + repository replay` (status:todo)
+- [x] T01: `Schema v21 — workouts.routine_id + repository replay` (status:done)
   - Task ID: T01
   - Goal: Persist workout lineage and add the replay + count operations.
   - Boundaries (in/out of scope):
@@ -66,7 +66,7 @@ Replace the "re-copy each time" flow with a real **replay** concept
     - `flutter pub run build_runner build --delete-conflicting-outputs`;
       `dart analyze lib/src/database/ lib/src/exercise/ lib/src/models/`.
 
-- [ ] T02: `Replay surface + replay-prefill setting` (status:todo)
+- [x] T02: `Replay surface + replay-prefill setting` (status:done)
   - Task ID: T02
   - Goal: Offer Replay from summary + tile menu; add the prefill setting.
   - Boundaries (in/out of scope):
@@ -84,14 +84,14 @@ Replace the "re-copy each time" flow with a real **replay** concept
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/exercise/ lib/src/settings/`.
 
-- [ ] T03: `Validation and context sync` (status:todo)
+- [x] T03: `Validation and context sync` (status:done)
   - Task ID: T03
   - Goal: Full checks + document the replay model.
   - Boundaries (in/out of scope): in — build_runner, gen-l10n, analyze, format,
     tests, `context/database/schema.md` (v21), `context/exercise/` docs +
     `context/settings/settings.md`, glossary (routine/lineage), validation
     report; out — commit.
-  - Done when: `flutter analyze lib` clean; `flutter test` `+39 -4`; context
+  - Done when: `flutter analyze lib` clean; `flutter test` `+42 -4`; context
     accurate.
   - Verification notes (commands or checks):
     - build_runner; gen-l10n; `flutter analyze lib`; `flutter test`;
@@ -99,4 +99,28 @@ Replace the "re-copy each time" flow with a real **replay** concept
 
 ## Next Command
 
-/next-task workout-replay T01
+None — all tasks complete.
+
+## Validation Report
+
+- **Commands run:** `flutter pub run build_runner build
+  --delete-conflicting-outputs` (regenerated `app_database.g.dart`),
+  `flutter gen-l10n` (exit 0), `dart analyze lib` (no issues), `flutter test`
+  (`+42 -4`, the pre-existing sqlite env failures), `dart format` on touched
+  files (clean).
+- **Success criteria:** met — schema v21 adds nullable indexed
+  `workouts.routine_id`; `replayWorkout` inserts an atomically-created lineage
+  occurrence prefilled per setting with base name + today's date;
+  `getRoutineCompletionCount` is a single grouped COUNT; Replay offered from
+  the summary appbar ("Do again") and the list tile long-press sheet;
+  Duplicate still works unchanged.
+- **Notes:**
+  - The tile menu is a **long-press bottom sheet** (Replay / Duplicate) — the
+    list previously used bare long-press = duplicate, and a trailing popup
+    button would have cluttered the tile.
+  - The replay-prefill dropdown lives on Settings → Profile (after Units);
+    there is no General screen.
+  - `restore()` (delete-undo snapshot) round-trips `routine_id`, so undoing a
+    replayed workout's deletion keeps the lineage.
+  - Progression display comes from the completed-only history (AW T03) +
+    exercise-detail trends (Phase F) — no routine screen, as planned.

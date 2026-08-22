@@ -603,6 +603,12 @@
   "settingsLengthUnitLabel": "Altura",
   "settingsExportDb": "Exportar base de datos",
   "settingsExportDbSubtitle": "Comparte una copia de tus datos (SQLite)",
+  "settingsReplayPrefillLabel": "Al repetir una sesión, precargar las series desde",
+  "settingsReplayPrefillActuals": "Los valores reales anteriores",
+  "settingsReplayPrefillPlanned": "Los valores planificados",
+  "workoutSummaryDoAgain": "Repetir",
+  "workoutActionReplay": "Repetir sesión",
+  "workoutActionDuplicate": "Duplicar",
 
   "workoutDetailPlannedSetReps": "{reps} × {weight} {unit}",
   "workoutDetailPlannedSetDuration": "{minutes} min",

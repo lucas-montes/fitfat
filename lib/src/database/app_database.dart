@@ -38,7 +38,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -50,6 +50,11 @@ final class AppDatabase extends _$AppDatabase {
       await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_ingredients_barcode '
         'ON ingredients (barcode)',
+      );
+      // Replay-lineage lookup index (v21) — same idempotent pattern.
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_workouts_routine '
+        'ON workouts (routine_id)',
       );
     },
     onUpgrade: (m, from, to) async {
@@ -177,6 +182,12 @@ final class AppDatabase extends _$AppDatabase {
         await m.createTable(stores);
         await m.createTable(ingredientPictures);
         await m.createTable(ingredientPrices);
+      }
+      if (from < 21) {
+        // v21: workouts.routine_id — replay lineage shared by all occurrences
+        // of the same routine (workout-replay T01). The lookup index is
+        // created idempotently in beforeOpen.
+        await m.addColumn(workouts, workouts.routineId);
       }
     },
   );

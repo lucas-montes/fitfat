@@ -48,6 +48,11 @@ final class SettingsState {
   final WeightUnit weightUnit; // default kg
   final LengthUnit lengthUnit; // default cm
 
+  // What replay prefills the new occurrence's planned sets from:
+  // 'actuals' (previous completion's actuals, progressive overload) or
+  // 'planned' (the source's planned values).
+  final String replayPrefill; // default 'actuals'
+
   const SettingsState({
     this.themeMode = ThemeMode.system,
     this.locale,
@@ -67,6 +72,7 @@ final class SettingsState {
     this.fxRefreshIntervalHours = 24,
     this.weightUnit = WeightUnit.kg,
     this.lengthUnit = LengthUnit.cm,
+    this.replayPrefill = 'actuals',
   });
 
   SettingsState copyWith({
@@ -94,6 +100,7 @@ final class SettingsState {
     int? fxRefreshIntervalHours,
     WeightUnit? weightUnit,
     LengthUnit? lengthUnit,
+    String? replayPrefill,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     locale: clearLocale ? null : (locale ?? this.locale),
@@ -121,6 +128,7 @@ final class SettingsState {
         fxRefreshIntervalHours ?? this.fxRefreshIntervalHours,
     weightUnit: weightUnit ?? this.weightUnit,
     lengthUnit: lengthUnit ?? this.lengthUnit,
+    replayPrefill: replayPrefill ?? this.replayPrefill,
   );
 }
 
@@ -144,6 +152,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       'settings_fx_refresh_interval_hours';
   static const _weightUnitKey = 'settings_weight_unit';
   static const _lengthUnitKey = 'settings_length_unit';
+  static const _replayPrefillKey = 'settings_replay_prefill';
 
   @override
   SettingsState build() {
@@ -170,6 +179,9 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       fxRefreshIntervalHours: prefs.getInt(_fxRefreshIntervalHoursKey) ?? 24,
       weightUnit: _weightUnitFromName(prefs.getString(_weightUnitKey)),
       lengthUnit: _lengthUnitFromName(prefs.getString(_lengthUnitKey)),
+      replayPrefill: prefs.getString(_replayPrefillKey) == 'planned'
+          ? 'planned'
+          : 'actuals',
     );
   }
 
@@ -329,6 +341,16 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setString(_lengthUnitKey, unit.name);
     state = state.copyWith(lengthUnit: unit);
+  }
+
+  /// Only 'actuals' | 'planned' are accepted; anything else keeps the current
+  /// value.
+  Future<void> setReplayPrefill(String value) async {
+    if (value != 'actuals' && value != 'planned') return;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_replayPrefillKey, value);
+    state = state.copyWith(replayPrefill: value);
   }
 
   WeightUnit _weightUnitFromName(String? name) =>

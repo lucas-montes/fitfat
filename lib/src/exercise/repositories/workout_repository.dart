@@ -89,6 +89,7 @@ final class WorkoutRepository {
               id: workout.id,
               name: workout.name,
               date: workout.date.millisecondsSinceEpoch,
+              routineId: Value(workout.routineId),
               createdAt: workout.createdAt.millisecondsSinceEpoch,
             ),
           );
@@ -583,6 +584,7 @@ final class WorkoutRepository {
               startedAt: Value(w.startedAt),
               completedAt: Value(w.completedAt),
               notes: Value(w.notes),
+              routineId: Value(w.routineId),
               createdAt: w.createdAt,
             ),
           );
@@ -760,6 +762,111 @@ final class WorkoutRepository {
     return newWorkout;
   }
 
+  /// Creates the next replay occurrence of [sourceWorkoutId]: a pending
+  /// workout with the same exercises, planned sets prefilled from the source's
+  /// **actuals** (progressive overload) or its planned values per [prefill]
+  /// ('actuals' | 'planned'; actuals fall back to planned when a set was never
+  /// logged). Trailing " #N" / " (Copy)" is stripped from the name, the date is
+  /// today (or [date]), and the occurrence joins the source's replay lineage —
+  /// its `routineId`, or a fresh UUID when the source has none. Unlike
+  /// [copyWorkout] this links occurrences instead of making an independent
+  /// copy.
+  Future<Workout> replayWorkout({
+    required String sourceWorkoutId,
+    String? prefill,
+    DateTime? date,
+  }) async {
+    final source = await getWithDetails(sourceWorkoutId);
+    if (source == null) {
+      throw StateError('Source workout not found: $sourceWorkoutId');
+    }
+
+    final useActuals = prefill != 'planned';
+    final newWorkout = Workout(
+      id: const Uuid().v7(),
+      name: _baseName(source.workout.name),
+      date: date ?? DateTime.now(),
+      routineId: source.workout.routineId ?? const Uuid().v7(),
+      createdAt: DateTime.now(),
+    );
+
+    final newExercises = <WorkoutExercise>[];
+    final newSetGroups = <List<ExerciseSet>>[];
+
+    for (final block in source.exercises) {
+      final newWe = WorkoutExercise(
+        id: const Uuid().v7(),
+        workoutId: newWorkout.id,
+        exerciseId: block.exercise.exerciseId,
+        exerciseName: block.exercise.exerciseName,
+        sortOrder: block.exercise.sortOrder,
+        notes: block.exercise.notes,
+      );
+      newExercises.add(newWe);
+
+      final newSets = block.sets
+          .map(
+            (set) => ExerciseSet(
+              id: const Uuid().v7(),
+              workoutExerciseId: newWe.id,
+              setNumber: set.setNumber,
+              // Prefill from what was actually lifted last time; sets that
+              // were never logged keep their planned values.
+              reps: switch ((useActuals, set.actualReps)) {
+                (true, final r?) => r,
+                _ => set.reps,
+              },
+              weightKg: switch ((useActuals, set.actualWeightKg)) {
+                (true, final w?) => w,
+                _ => set.weightKg,
+              },
+              restSeconds: set.restSeconds,
+              durationMinutes: switch ((
+                useActuals,
+                set.actualDurationMinutes,
+              )) {
+                (true, final d?) => d,
+                _ => set.durationMinutes,
+              },
+              distanceMeters: switch ((useActuals, set.actualDistanceMeters)) {
+                (true, final d?) => d,
+                _ => set.distanceMeters,
+              },
+            ),
+          )
+          .toList();
+      newSetGroups.add(newSets);
+    }
+
+    await insert(
+      workout: newWorkout,
+      exercises: newExercises,
+      setGroups: newSetGroups,
+    );
+
+    return newWorkout;
+  }
+
+  /// How many workouts in a replay lineage were completed — the "times done"
+  /// count for a routine. Single grouped COUNT over completed occurrences.
+  Future<int> getRoutineCompletionCount(String routineId) async {
+    final count =
+        await (_database.selectOnly(_database.workouts)
+              ..addColumns([_database.workouts.id.count()])
+              ..where(
+                _database.workouts.routineId.equals(routineId) &
+                    _database.workouts.completedAt.isNotNull(),
+              ))
+            .getSingle();
+    return count.read(_database.workouts.id.count()) ?? 0;
+  }
+
+  /// Strips copy/replay suffixes so every occurrence of a routine shares one
+  /// clean base name ("Push A #3", "Push A (Copy)" → "Push A").
+  static final RegExp _suffixPattern = RegExp(r'\s+(#\d+|\(Copy\))$');
+  static String _baseName(String name) =>
+      name.replaceAll(_suffixPattern, '').trim();
+
   Workout _toDomain(db.Workout row) => Workout(
     id: row.id,
     name: row.name,
@@ -771,6 +878,7 @@ final class WorkoutRepository {
         ? DateTime.fromMillisecondsSinceEpoch(row.completedAt!)
         : null,
     notes: row.notes,
+    routineId: row.routineId,
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
   );
 }

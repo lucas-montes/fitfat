@@ -3660,6 +3660,17 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _routineIdMeta = const VerificationMeta(
+    'routineId',
+  );
+  @override
+  late final GeneratedColumn<String> routineId = GeneratedColumn<String>(
+    'routine_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -3679,6 +3690,7 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
     startedAt,
     completedAt,
     notes,
+    routineId,
     createdAt,
   ];
   @override
@@ -3735,6 +3747,12 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('routine_id')) {
+      context.handle(
+        _routineIdMeta,
+        routineId.isAcceptableOrUnknown(data['routine_id']!, _routineIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -3776,6 +3794,10 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      routineId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}routine_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -3796,6 +3818,7 @@ class Workout extends DataClass implements Insertable<Workout> {
   final int? startedAt;
   final int? completedAt;
   final String? notes;
+  final String? routineId;
   final int createdAt;
   const Workout({
     required this.id,
@@ -3804,6 +3827,7 @@ class Workout extends DataClass implements Insertable<Workout> {
     this.startedAt,
     this.completedAt,
     this.notes,
+    this.routineId,
     required this.createdAt,
   });
   @override
@@ -3820,6 +3844,9 @@ class Workout extends DataClass implements Insertable<Workout> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || routineId != null) {
+      map['routine_id'] = Variable<String>(routineId);
     }
     map['created_at'] = Variable<int>(createdAt);
     return map;
@@ -3839,6 +3866,9 @@ class Workout extends DataClass implements Insertable<Workout> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      routineId: routineId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(routineId),
       createdAt: Value(createdAt),
     );
   }
@@ -3855,6 +3885,7 @@ class Workout extends DataClass implements Insertable<Workout> {
       startedAt: serializer.fromJson<int?>(json['startedAt']),
       completedAt: serializer.fromJson<int?>(json['completedAt']),
       notes: serializer.fromJson<String?>(json['notes']),
+      routineId: serializer.fromJson<String?>(json['routineId']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
   }
@@ -3868,6 +3899,7 @@ class Workout extends DataClass implements Insertable<Workout> {
       'startedAt': serializer.toJson<int?>(startedAt),
       'completedAt': serializer.toJson<int?>(completedAt),
       'notes': serializer.toJson<String?>(notes),
+      'routineId': serializer.toJson<String?>(routineId),
       'createdAt': serializer.toJson<int>(createdAt),
     };
   }
@@ -3879,6 +3911,7 @@ class Workout extends DataClass implements Insertable<Workout> {
     Value<int?> startedAt = const Value.absent(),
     Value<int?> completedAt = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    Value<String?> routineId = const Value.absent(),
     int? createdAt,
   }) => Workout(
     id: id ?? this.id,
@@ -3887,6 +3920,7 @@ class Workout extends DataClass implements Insertable<Workout> {
     startedAt: startedAt.present ? startedAt.value : this.startedAt,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     notes: notes.present ? notes.value : this.notes,
+    routineId: routineId.present ? routineId.value : this.routineId,
     createdAt: createdAt ?? this.createdAt,
   );
   Workout copyWithCompanion(WorkoutsCompanion data) {
@@ -3899,6 +3933,7 @@ class Workout extends DataClass implements Insertable<Workout> {
           ? data.completedAt.value
           : this.completedAt,
       notes: data.notes.present ? data.notes.value : this.notes,
+      routineId: data.routineId.present ? data.routineId.value : this.routineId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -3912,14 +3947,23 @@ class Workout extends DataClass implements Insertable<Workout> {
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('notes: $notes, ')
+          ..write('routineId: $routineId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, date, startedAt, completedAt, notes, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    date,
+    startedAt,
+    completedAt,
+    notes,
+    routineId,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3930,6 +3974,7 @@ class Workout extends DataClass implements Insertable<Workout> {
           other.startedAt == this.startedAt &&
           other.completedAt == this.completedAt &&
           other.notes == this.notes &&
+          other.routineId == this.routineId &&
           other.createdAt == this.createdAt);
 }
 
@@ -3940,6 +3985,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
   final Value<int?> startedAt;
   final Value<int?> completedAt;
   final Value<String?> notes;
+  final Value<String?> routineId;
   final Value<int> createdAt;
   final Value<int> rowid;
   const WorkoutsCompanion({
@@ -3949,6 +3995,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     this.startedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.notes = const Value.absent(),
+    this.routineId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -3959,6 +4006,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     this.startedAt = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.notes = const Value.absent(),
+    this.routineId = const Value.absent(),
     required int createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -3972,6 +4020,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     Expression<int>? startedAt,
     Expression<int>? completedAt,
     Expression<String>? notes,
+    Expression<String>? routineId,
     Expression<int>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -3982,6 +4031,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
       if (startedAt != null) 'started_at': startedAt,
       if (completedAt != null) 'completed_at': completedAt,
       if (notes != null) 'notes': notes,
+      if (routineId != null) 'routine_id': routineId,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3994,6 +4044,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     Value<int?>? startedAt,
     Value<int?>? completedAt,
     Value<String?>? notes,
+    Value<String?>? routineId,
     Value<int>? createdAt,
     Value<int>? rowid,
   }) {
@@ -4004,6 +4055,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       notes: notes ?? this.notes,
+      routineId: routineId ?? this.routineId,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -4030,6 +4082,9 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (routineId.present) {
+      map['routine_id'] = Variable<String>(routineId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -4048,6 +4103,7 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
           ..write('startedAt: $startedAt, ')
           ..write('completedAt: $completedAt, ')
           ..write('notes: $notes, ')
+          ..write('routineId: $routineId, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -13167,6 +13223,7 @@ typedef $$WorkoutsTableCreateCompanionBuilder =
       Value<int?> startedAt,
       Value<int?> completedAt,
       Value<String?> notes,
+      Value<String?> routineId,
       required int createdAt,
       Value<int> rowid,
     });
@@ -13178,6 +13235,7 @@ typedef $$WorkoutsTableUpdateCompanionBuilder =
       Value<int?> startedAt,
       Value<int?> completedAt,
       Value<String?> notes,
+      Value<String?> routineId,
       Value<int> createdAt,
       Value<int> rowid,
     });
@@ -13246,6 +13304,11 @@ class $$WorkoutsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get routineId => $composableBuilder(
+    column: $table.routineId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13319,6 +13382,11 @@ class $$WorkoutsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get routineId => $composableBuilder(
+    column: $table.routineId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -13353,6 +13421,9 @@ class $$WorkoutsTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get routineId =>
+      $composableBuilder(column: $table.routineId, builder: (column) => column);
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -13417,6 +13488,7 @@ class $$WorkoutsTableTableManager
                 Value<int?> startedAt = const Value.absent(),
                 Value<int?> completedAt = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> routineId = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WorkoutsCompanion(
@@ -13426,6 +13498,7 @@ class $$WorkoutsTableTableManager
                 startedAt: startedAt,
                 completedAt: completedAt,
                 notes: notes,
+                routineId: routineId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -13437,6 +13510,7 @@ class $$WorkoutsTableTableManager
                 Value<int?> startedAt = const Value.absent(),
                 Value<int?> completedAt = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> routineId = const Value.absent(),
                 required int createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => WorkoutsCompanion.insert(
@@ -13446,6 +13520,7 @@ class $$WorkoutsTableTableManager
                 startedAt: startedAt,
                 completedAt: completedAt,
                 notes: notes,
+                routineId: routineId,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

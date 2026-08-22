@@ -2578,6 +2578,42 @@ abstract class AppLocalizations {
   /// **'Share a copy of your data (SQLite)'**
   String get settingsExportDbSubtitle;
 
+  /// No description provided for @settingsReplayPrefillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'When replaying a workout, prefill sets from'**
+  String get settingsReplayPrefillLabel;
+
+  /// No description provided for @settingsReplayPrefillActuals.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous actuals'**
+  String get settingsReplayPrefillActuals;
+
+  /// No description provided for @settingsReplayPrefillPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned values'**
+  String get settingsReplayPrefillPlanned;
+
+  /// No description provided for @workoutSummaryDoAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Do again'**
+  String get workoutSummaryDoAgain;
+
+  /// No description provided for @workoutActionReplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay'**
+  String get workoutActionReplay;
+
+  /// No description provided for @workoutActionDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get workoutActionDuplicate;
+
   /// No description provided for @workoutDetailPlannedSetReps.
   ///
   /// In en, this message translates to:

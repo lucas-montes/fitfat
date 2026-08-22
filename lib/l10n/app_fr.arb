@@ -605,6 +605,12 @@
   "settingsLengthUnitLabel": "Taille",
   "settingsExportDb": "Exporter la base de données",
   "settingsExportDbSubtitle": "Partager une copie de vos données (SQLite)",
+  "settingsReplayPrefillLabel": "Au rejeu d'une séance, préremplir les séries depuis",
+  "settingsReplayPrefillActuals": "Les valeurs réelles précédentes",
+  "settingsReplayPrefillPlanned": "Les valeurs planifiées",
+  "workoutSummaryDoAgain": "Refaire",
+  "workoutActionReplay": "Rejouer",
+  "workoutActionDuplicate": "Dupliquer",
 
   "workoutDetailPlannedSetReps": "{reps} × {weight} {unit}",
   "workoutDetailPlannedSetDuration": "{minutes} min",

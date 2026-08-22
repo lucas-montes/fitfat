@@ -136,6 +136,10 @@ class Workouts extends Table {
   IntColumn? get startedAt => integer().nullable()();
   IntColumn? get completedAt => integer().nullable()();
   TextColumn? get notes => text().nullable()();
+  // Replay lineage (v21): all occurrences of the same routine share this id,
+  // so replays stay linked and "times done" is countable. Null for workouts
+  // created before replay existed or never replayed.
+  TextColumn? get routineId => text().nullable()();
   IntColumn get createdAt => integer()();
 
   @override

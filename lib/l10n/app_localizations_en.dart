@@ -1386,6 +1386,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsExportDbSubtitle => 'Share a copy of your data (SQLite)';
 
   @override
+  String get settingsReplayPrefillLabel =>
+      'When replaying a workout, prefill sets from';
+
+  @override
+  String get settingsReplayPrefillActuals => 'Previous actuals';
+
+  @override
+  String get settingsReplayPrefillPlanned => 'Planned values';
+
+  @override
+  String get workoutSummaryDoAgain => 'Do again';
+
+  @override
+  String get workoutActionReplay => 'Replay';
+
+  @override
+  String get workoutActionDuplicate => 'Duplicate';
+
+  @override
   String workoutDetailPlannedSetReps(String reps, String weight, String unit) {
     return '$reps × $weight $unit';
   }
