@@ -1,14 +1,22 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../budget/providers/fx_rates.dart';
 import '../../budget/providers/services.dart';
+import '../../experiments/notifications/experiment_reminder.dart';
+import '../../experiments/providers/experiments.dart';
 import '../../models/activity_level.dart';
 import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
+import '../../models/units.dart';
 import '../../notifications/task_reminders.dart';
 import '../../planner/providers/planner.dart';
 import '../../ui/date_formats.dart';
@@ -345,6 +353,37 @@ final class _ProfileScreenState extends ConsumerState<_ProfileScreen> {
               notifier.setBodyWeightGoal(selection.first);
             },
           ),
+
+          const SizedBox(height: 24),
+
+          // Display units (storage stays metric).
+          Text(l10n.settingsUnits, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
+          Text(l10n.settingsWeightUnitLabel, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 8),
+          SegmentedButton<WeightUnit>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(value: WeightUnit.kg, label: const Text('kg')),
+              ButtonSegment(value: WeightUnit.lb, label: const Text('lb')),
+            ],
+            selected: {settings.weightUnit},
+            onSelectionChanged: (selection) =>
+                notifier.setWeightUnit(selection.first),
+          ),
+          const SizedBox(height: 12),
+          Text(l10n.settingsLengthUnitLabel, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 8),
+          SegmentedButton<LengthUnit>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(value: LengthUnit.cm, label: const Text('cm')),
+              ButtonSegment(value: LengthUnit.inch, label: const Text('in')),
+            ],
+            selected: {settings.lengthUnit},
+            onSelectionChanged: (selection) =>
+                notifier.setLengthUnit(selection.first),
+          ),
         ],
       ),
     );
@@ -378,6 +417,33 @@ final class _NotificationsScreen extends ConsumerWidget {
     await notifier.setPlannerNotifications(enabled);
   }
 
+  /// Master switch for experiment check-in reminders: off cancels every
+  /// scheduled experiment reminder; on re-schedules the active ones (the
+  /// scheduler itself skips non-active / per-experiment-disabled rows).
+  Future<void> _setExperimentReminders(
+    BuildContext context,
+    WidgetRef ref,
+    bool enabled,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final scheduler = ref.read(experimentReminderSchedulerProvider);
+    final experiments = await ref.read(experimentRepositoryProvider).getAll();
+    for (final experiment in experiments) {
+      if (!enabled) {
+        await scheduler.cancelForExperiment(experiment.id);
+      } else {
+        await scheduler.scheduleForExperiment(
+          experiment,
+          title: l10n.experimentReminderTitle(experiment.name),
+          body: l10n.experimentReminderBody,
+        );
+      }
+    }
+    await ref
+        .read(settingsProvider.notifier)
+        .setExperimentRemindersEnabled(enabled);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
@@ -396,6 +462,14 @@ final class _NotificationsScreen extends ConsumerWidget {
             value: settings.plannerNotifications,
             onChanged: (enabled) =>
                 _setPlannerNotifications(context, ref, enabled),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.settingsExperimentReminders),
+            subtitle: Text(l10n.settingsExperimentRemindersSubtitle),
+            value: settings.experimentRemindersEnabled,
+            onChanged: (enabled) =>
+                _setExperimentReminders(context, ref, enabled),
           ),
           const SizedBox(height: 8),
           SwitchListTile(
@@ -522,6 +596,31 @@ final class _DataScreen extends ConsumerStatefulWidget {
 }
 
 final class _DataScreenState extends ConsumerState<_DataScreen> {
+  /// Shares a dated copy of the local SQLite database via the system share
+  /// sheet. Restore/import is out of scope this round.
+  Future<void> _exportDatabase() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final dbFile = File(p.join(dir.path, 'fitfat.sqlite'));
+      if (!await dbFile.exists()) {
+        throw StateError('Database file not found');
+      }
+      final stamp = DateTime.now().toIso8601String().split('T').first;
+      final tempDir = await getTemporaryDirectory();
+      final copy = await dbFile.copy(
+        p.join(tempDir.path, 'fitfat-$stamp.sqlite'),
+      );
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(copy.path)], title: l10n.settingsExportDb),
+      );
+    } catch (e) {
+      if (mounted) {
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
+      }
+    }
+  }
+
   /// Destructive "reset all data": double-gated by a confirm dialog, then
   /// wipes everything and re-seeds the catalog.
   Future<void> _confirmReset() async {
@@ -560,6 +659,13 @@ final class _DataScreenState extends ConsumerState<_DataScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.ios_share_outlined),
+            title: Text(l10n.settingsExportDb),
+            subtitle: Text(l10n.settingsExportDbSubtitle),
+            onTap: _exportDatabase,
+          ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(
@@ -659,6 +765,32 @@ final class _CurrencySection extends ConsumerWidget {
             }
           },
         ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.settingsFxAutoRefresh),
+          subtitle: Text(l10n.settingsFxAutoRefreshSubtitle),
+          value: settings.fxAutoRefresh,
+          onChanged: ref.read(settingsProvider.notifier).setFxAutoRefresh,
+        ),
+        if (settings.fxAutoRefresh)
+          DropdownButtonFormField<int>(
+            key: const ValueKey('fx-interval'),
+            initialValue: settings.fxRefreshIntervalHours,
+            decoration: InputDecoration(
+              labelText: l10n.settingsFxRefreshInterval,
+            ),
+            items: const [6, 12, 24, 48, 72]
+                .map((h) => DropdownMenuItem(value: h, child: Text('$h h')))
+                .toList(),
+            onChanged: (h) {
+              if (h != null) {
+                ref
+                    .read(settingsProvider.notifier)
+                    .setFxRefreshIntervalHours(h);
+              }
+            },
+          ),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

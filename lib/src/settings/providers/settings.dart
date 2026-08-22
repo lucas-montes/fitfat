@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/activity_level.dart';
 import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
+import '../../models/units.dart';
 
 /// App-level `SharedPreferences` instance. Overridden in `main()` after
 /// `SharedPreferences.getInstance()` so settings load synchronously.
@@ -34,8 +35,18 @@ final class SettingsState {
   plannerNotifications; // app-wide task reminders toggle (default on)
   final bool restAlarmSound; // rest alarm plays a sound (default on)
   final bool restAlarmVibration; // rest alarm vibrates (default on)
+  // Master switch for experiment check-in reminders (default on). When off,
+  // all scheduled experiment reminders are cancelled.
+  final bool experimentRemindersEnabled;
 
   final String baseCurrency; // ISO-4217-ish code, default 'USD'
+  // Auto-refresh cached FX rates from the remote service in the background.
+  final bool fxAutoRefresh; // default off
+  final int fxRefreshIntervalHours; // default 24
+
+  // Display units (storage stays metric).
+  final WeightUnit weightUnit; // default kg
+  final LengthUnit lengthUnit; // default cm
 
   const SettingsState({
     this.themeMode = ThemeMode.system,
@@ -50,7 +61,12 @@ final class SettingsState {
     this.plannerNotifications = true,
     this.restAlarmSound = true,
     this.restAlarmVibration = true,
+    this.experimentRemindersEnabled = true,
     this.baseCurrency = 'USD',
+    this.fxAutoRefresh = false,
+    this.fxRefreshIntervalHours = 24,
+    this.weightUnit = WeightUnit.kg,
+    this.lengthUnit = LengthUnit.cm,
   });
 
   SettingsState copyWith({
@@ -72,7 +88,12 @@ final class SettingsState {
     bool? plannerNotifications,
     bool? restAlarmSound,
     bool? restAlarmVibration,
+    bool? experimentRemindersEnabled,
     String? baseCurrency,
+    bool? fxAutoRefresh,
+    int? fxRefreshIntervalHours,
+    WeightUnit? weightUnit,
+    LengthUnit? lengthUnit,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     locale: clearLocale ? null : (locale ?? this.locale),
@@ -92,7 +113,14 @@ final class SettingsState {
     plannerNotifications: plannerNotifications ?? this.plannerNotifications,
     restAlarmSound: restAlarmSound ?? this.restAlarmSound,
     restAlarmVibration: restAlarmVibration ?? this.restAlarmVibration,
+    experimentRemindersEnabled:
+        experimentRemindersEnabled ?? this.experimentRemindersEnabled,
     baseCurrency: baseCurrency ?? this.baseCurrency,
+    fxAutoRefresh: fxAutoRefresh ?? this.fxAutoRefresh,
+    fxRefreshIntervalHours:
+        fxRefreshIntervalHours ?? this.fxRefreshIntervalHours,
+    weightUnit: weightUnit ?? this.weightUnit,
+    lengthUnit: lengthUnit ?? this.lengthUnit,
   );
 }
 
@@ -109,7 +137,13 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _plannerNotificationsKey = 'settings_planner_notifications';
   static const _restAlarmSoundKey = 'settings_rest_alarm_sound';
   static const _restAlarmVibrationKey = 'settings_rest_alarm_vibration';
+  static const _experimentRemindersKey = 'settings_experiment_reminders';
   static const _baseCurrencyKey = 'settings_base_currency';
+  static const _fxAutoRefreshKey = 'settings_fx_auto_refresh';
+  static const _fxRefreshIntervalHoursKey =
+      'settings_fx_refresh_interval_hours';
+  static const _weightUnitKey = 'settings_weight_unit';
+  static const _lengthUnitKey = 'settings_length_unit';
 
   @override
   SettingsState build() {
@@ -129,7 +163,13 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       plannerNotifications: prefs.getBool(_plannerNotificationsKey) ?? true,
       restAlarmSound: prefs.getBool(_restAlarmSoundKey) ?? true,
       restAlarmVibration: prefs.getBool(_restAlarmVibrationKey) ?? true,
+      experimentRemindersEnabled:
+          prefs.getBool(_experimentRemindersKey) ?? true,
       baseCurrency: prefs.getString(_baseCurrencyKey) ?? 'USD',
+      fxAutoRefresh: prefs.getBool(_fxAutoRefreshKey) ?? false,
+      fxRefreshIntervalHours: prefs.getInt(_fxRefreshIntervalHoursKey) ?? 24,
+      weightUnit: _weightUnitFromName(prefs.getString(_weightUnitKey)),
+      lengthUnit: _lengthUnitFromName(prefs.getString(_lengthUnitKey)),
     );
   }
 
@@ -254,6 +294,48 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .setString(_baseCurrencyKey, normalized);
     state = state.copyWith(baseCurrency: normalized);
   }
+
+  Future<void> setExperimentRemindersEnabled(bool enabled) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setBool(_experimentRemindersKey, enabled);
+    state = state.copyWith(experimentRemindersEnabled: enabled);
+  }
+
+  Future<void> setFxAutoRefresh(bool enabled) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setBool(_fxAutoRefreshKey, enabled);
+    state = state.copyWith(fxAutoRefresh: enabled);
+  }
+
+  Future<void> setFxRefreshIntervalHours(int hours) async {
+    if (hours <= 0) return;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setInt(_fxRefreshIntervalHoursKey, hours);
+    state = state.copyWith(fxRefreshIntervalHours: hours);
+  }
+
+  Future<void> setWeightUnit(WeightUnit unit) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_weightUnitKey, unit.name);
+    state = state.copyWith(weightUnit: unit);
+  }
+
+  Future<void> setLengthUnit(LengthUnit unit) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_lengthUnitKey, unit.name);
+    state = state.copyWith(lengthUnit: unit);
+  }
+
+  WeightUnit _weightUnitFromName(String? name) =>
+      name == 'lb' ? WeightUnit.lb : WeightUnit.kg;
+
+  LengthUnit _lengthUnitFromName(String? name) =>
+      name == 'inch' ? LengthUnit.inch : LengthUnit.cm;
 
   ThemeMode _themeModeFromName(String? name) => ThemeMode.values.firstWhere(
     (mode) => mode.name == name,

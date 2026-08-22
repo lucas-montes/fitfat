@@ -7,9 +7,10 @@ import 'package:go_router/go_router.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise_set.dart';
 import '../../notifications/active_workout_notifier.dart';
+import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
-import '../../ui/format.dart';
 import '../../ui/tokens.dart';
+import '../../ui/units.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../providers/workouts.dart';
@@ -208,20 +209,23 @@ final class _ExerciseBlockCard extends StatelessWidget {
 }
 
 /// One planned set as a compact chip (planned-only, planning screen).
-final class _SetChip extends StatelessWidget {
+final class _SetChip extends ConsumerWidget {
   final ExerciseSet set;
   final AppLocalizations l10n;
 
   const _SetChip({required this.set, required this.l10n});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final unit = ref.watch(settingsProvider).weightUnit;
+    final unitLabel = weightUnitLabel(unit);
 
     final plannedBase = set.reps != null
         ? l10n.workoutDetailPlannedSetReps(
             set.reps.toString(),
-            set.weightKg == null ? '?' : formatDecimal(set.weightKg!),
+            set.weightKg == null ? '?' : formatWeightValue(set.weightKg!, unit),
+            unitLabel,
           )
         : set.durationMinutes != null
         ? l10n.workoutDetailPlannedSetDuration(set.durationMinutes.toString())

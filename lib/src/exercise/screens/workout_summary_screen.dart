@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../notifications/rest_timer.dart';
+import '../../settings/providers/settings.dart';
 import '../../ui/format.dart';
 import '../../ui/theme_extensions.dart';
+import '../../ui/units.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../providers/workouts.dart';
@@ -85,14 +87,14 @@ Scaffold _statusScaffold({
   );
 }
 
-final class _WorkoutSummaryContent extends StatelessWidget {
+final class _WorkoutSummaryContent extends ConsumerWidget {
   final WorkoutWithDetails detail;
   final AppLocalizations l10n;
 
   const _WorkoutSummaryContent({required this.detail, required this.l10n});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final w = detail.workout;
     final theme = Theme.of(context);
     final statusColors = theme.extension<FitFatColors>()!;
@@ -162,16 +164,18 @@ final class _WorkoutSummaryContent extends StatelessWidget {
   }
 }
 
-final class _ExerciseSummaryCard extends StatelessWidget {
+final class _ExerciseSummaryCard extends ConsumerWidget {
   final ExerciseBlock block;
   final AppLocalizations l10n;
 
   const _ExerciseSummaryCard({required this.block, required this.l10n});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final metrics = _ExerciseMetrics.fromBlock(block);
+    final unit = ref.watch(settingsProvider).weightUnit;
+    final unitLabel = weightUnitLabel(unit);
     // Cardio classification: the app classifies per set (workout_detail /
     // active_workout_screen); the summary's natural unit is the exercise, so
     // an exercise is cardio when any of its sets logged duration or distance,
@@ -215,13 +219,15 @@ final class _ExerciseSummaryCard extends StatelessWidget {
               _MetricRow(
                 label: l10n.workoutSummaryVolume,
                 value: l10n.workoutSummaryValueKg(
-                  formatDecimal(metrics.totalVolume),
+                  formatWeightValue(metrics.totalVolume, unit),
+                  unitLabel,
                 ),
               ),
               _MetricRow(
                 label: l10n.workoutSummaryMaxWeight,
                 value: l10n.workoutSummaryValueKg(
-                  formatDecimal(metrics.maxWeightKg),
+                  formatWeightValue(metrics.maxWeightKg, unit),
+                  unitLabel,
                 ),
               ),
               _MetricRow(

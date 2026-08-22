@@ -16,10 +16,12 @@ import '../../exercise/screens/workout_form.dart';
 import '../../models/body_metrics_entry.dart';
 import '../../models/body_weight_goal.dart';
 import '../../models/planner_item.dart';
+import '../../models/units.dart';
 import '../../planner/screens/planner_item_detail.dart';
 import '../../models/workout.dart';
 import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
+import '../../ui/units.dart';
 import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/metric_card.dart';
@@ -497,11 +499,13 @@ final class _WeightTrendCard extends ConsumerWidget {
                 final parts = <String>[
                   if (latest.weightKg != null)
                     l10n.bodyMetricsLatestWeight(
-                      latest.weightKg!.toStringAsFixed(1),
+                      formatWeightValue(latest.weightKg!, settings.weightUnit),
+                      weightUnitLabel(settings.weightUnit),
                     ),
                   if (latest.heightCm != null)
                     l10n.bodyMetricsLatestHeight(
-                      latest.heightCm!.toStringAsFixed(1),
+                      formatLengthValue(latest.heightCm!, settings.lengthUnit),
+                      lengthUnitLabel(settings.lengthUnit),
                     ),
                 ];
                 if (parts.isEmpty) return const SizedBox.shrink();
@@ -522,7 +526,8 @@ final class _WeightTrendCard extends ConsumerWidget {
                 child: Center(child: CircularProgressIndicator()),
               ),
               error: (e, _) => Text(l10n.dashboardError('$e')),
-              data: (entries) => _WeightEvolution(entries: entries),
+              data: (entries) =>
+                  _WeightEvolution(entries: entries, unit: settings.weightUnit),
             ),
           ],
         ),
@@ -535,12 +540,14 @@ final class _WeightTrendCard extends ConsumerWidget {
 /// chart (height stays recordable via the Add button; only weight trends here).
 final class _WeightEvolution extends StatelessWidget {
   final List<BodyMetricsEntry> entries;
+  final WeightUnit unit;
 
-  const _WeightEvolution({required this.entries});
+  const _WeightEvolution({required this.entries, required this.unit});
 
   List<(DateTime, double)> get _points => [
     for (final entry in entries)
-      if (entry.weightKg != null) (entry.day, entry.weightKg!),
+      if (entry.weightKg != null)
+        (entry.day, weightFromKg(entry.weightKg!, unit)),
   ];
 
   @override
@@ -560,7 +567,10 @@ final class _WeightEvolution extends StatelessWidget {
     }
     if (points.length == 1) {
       return Text(
-        l10n.bodyMetricsValueKg(points.first.$2.toStringAsFixed(1)),
+        l10n.bodyMetricsValueKg(
+          formatWeightValue(entries.first.weightKg!, unit),
+          weightUnitLabel(unit),
+        ),
         style: theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
           color: color,
@@ -698,6 +708,7 @@ final class _WeeklyWorkoutCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final statsAsync = ref.watch(weeklyWorkoutStatsProvider);
+    final weightUnit = ref.watch(settingsProvider).weightUnit;
 
     return Card(
       child: Padding(
@@ -730,7 +741,8 @@ final class _WeeklyWorkoutCard extends ConsumerWidget {
                       icon: Icons.calculate_outlined,
                       title: l10n.dashboardVolume,
                       value: l10n.dashboardVolumeKg(
-                        stats.totalVolumeKg.toStringAsFixed(0),
+                        formatWeightValue(stats.totalVolumeKg, weightUnit),
+                        weightUnitLabel(weightUnit),
                       ),
                     ),
                   ),

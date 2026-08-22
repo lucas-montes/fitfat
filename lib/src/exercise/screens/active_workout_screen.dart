@@ -8,13 +8,16 @@ import 'package:video_player/video_player.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/exercise_set.dart';
+import '../../models/units.dart';
 import '../../models/workout.dart';
 import '../../notifications/active_workout_notifier.dart';
 import '../../notifications/rest_timer.dart';
 import '../../dashboard/providers/dashboard.dart';
+import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
 import '../../ui/haptics.dart';
+import '../../ui/units.dart';
 import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
@@ -516,6 +519,7 @@ final class _ExercisePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final unit = ref.watch(settingsProvider).weightUnit;
     final exercise = ref
         .watch(exerciseByIdProvider(block.exercise.exerciseId))
         .value;
@@ -622,7 +626,13 @@ final class _ExercisePage extends ConsumerWidget {
                       l10n: l10n,
                     ),
                     for (final set in block.sets)
-                      _SetRow(set: set, workout: workout, l10n: l10n, ref: ref),
+                      _SetRow(
+                        set: set,
+                        workout: workout,
+                        l10n: l10n,
+                        ref: ref,
+                        unit: unit,
+                      ),
                   ],
                 ),
               ),
@@ -655,12 +665,14 @@ final class _SetRow extends StatelessWidget {
   final Workout workout;
   final AppLocalizations l10n;
   final WidgetRef ref;
+  final WeightUnit unit;
 
   const _SetRow({
     required this.set,
     required this.workout,
     required this.l10n,
     required this.ref,
+    required this.unit,
   });
 
   @override
@@ -729,7 +741,8 @@ final class _SetRow extends StatelessWidget {
     var planned = set.reps != null
         ? l10n.workoutDetailPlannedSetReps(
             set.reps.toString(),
-            set.weightKg == null ? '?' : formatDecimal(set.weightKg!),
+            set.weightKg == null ? '?' : formatWeightValue(set.weightKg!, unit),
+            weightUnitLabel(unit),
           )
         : set.durationMinutes != null
         ? l10n.workoutDetailPlannedSetDuration(set.durationMinutes.toString())
@@ -751,10 +764,12 @@ final class _SetRow extends StatelessWidget {
                   set.actualReps.toString(),
                   set.actualWeightKg == null
                       ? '?'
-                      : formatDecimal(set.actualWeightKg!),
+                      : formatWeightValue(set.actualWeightKg!, unit),
+                  weightUnitLabel(unit),
                 )
               : l10n.workoutDetailActualSetWeight(
-                  formatDecimal(set.actualWeightKg!),
+                  formatWeightValue(set.actualWeightKg!, unit),
+                  weightUnitLabel(unit),
                 ))
         : set.actualDurationMinutes != null || set.actualDistanceMeters != null
         ? [
@@ -1587,6 +1602,7 @@ final class _ExerciseHistorySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(exerciseHistoryProvider(exerciseId));
+    final unit = ref.watch(settingsProvider).weightUnit;
     return historyAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
@@ -1598,7 +1614,7 @@ final class _ExerciseHistorySection extends ConsumerWidget {
           leading: const Icon(Icons.history),
           children: [
             for (final entry in history)
-              _ExerciseHistoryRow(entry: entry, l10n: l10n),
+              _ExerciseHistoryRow(entry: entry, l10n: l10n, unit: unit),
           ],
         );
       },
@@ -1611,8 +1627,13 @@ final class _ExerciseHistorySection extends ConsumerWidget {
 final class _ExerciseHistoryRow extends StatelessWidget {
   final ExerciseHistoryEntry entry;
   final AppLocalizations l10n;
+  final WeightUnit unit;
 
-  const _ExerciseHistoryRow({required this.entry, required this.l10n});
+  const _ExerciseHistoryRow({
+    required this.entry,
+    required this.l10n,
+    required this.unit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1629,7 +1650,10 @@ final class _ExerciseHistoryRow extends StatelessWidget {
     }
     final completed = sets.where((s) => s.isCompleted).length;
     final primary = usesWeight
-        ? l10n.workoutSummaryValueKg(formatDecimal(volume))
+        ? l10n.workoutSummaryValueKg(
+            formatWeightValue(volume, unit),
+            weightUnitLabel(unit),
+          )
         : formatRestDuration(Duration(minutes: duration));
 
     return Padding(

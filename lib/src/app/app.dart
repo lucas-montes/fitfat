@@ -10,6 +10,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../l10n/app_localizations.dart';
+import '../budget/services/fx_auto_refresh.dart';
 import '../exercise/services/catalog_importer.dart';
 import '../notifications/notification_plugin.dart';
 import '../notifications/rest_alarm.dart';
@@ -158,5 +159,11 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child ?? const SizedBox.shrink();
+  Widget build(BuildContext context) {
+    // App-lifetime FX auto-refresh coordinator: keeps cached rates fresh
+    // while the settings toggle is on. Kept alive by this widget, which
+    // spans the whole app.
+    ref.watch(fxAutoRefreshProvider);
+    return widget.child ?? const SizedBox.shrink();
+  }
 }

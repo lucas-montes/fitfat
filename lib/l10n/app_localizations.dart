@@ -319,8 +319,8 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardVolumeKg.
   ///
   /// In en, this message translates to:
-  /// **'{volume} kg'**
-  String dashboardVolumeKg(String volume);
+  /// **'{volume} {unit}'**
+  String dashboardVolumeKg(String volume, String unit);
 
   /// No description provided for @dashboardMinutes.
   ///
@@ -715,8 +715,8 @@ abstract class AppLocalizations {
   /// No description provided for @exerciseDetailWeightDelta.
   ///
   /// In en, this message translates to:
-  /// **'{delta} kg'**
-  String exerciseDetailWeightDelta(String delta);
+  /// **'{delta} {unit}'**
+  String exerciseDetailWeightDelta(String delta, String unit);
 
   /// No description provided for @exerciseDetailSetRest.
   ///
@@ -2512,11 +2512,71 @@ abstract class AppLocalizations {
   /// **'Name is required'**
   String get storeNameRequired;
 
+  /// No description provided for @settingsFxAutoRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh rates'**
+  String get settingsFxAutoRefresh;
+
+  /// No description provided for @settingsFxAutoRefreshSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetches exchange rates in the background'**
+  String get settingsFxAutoRefreshSubtitle;
+
+  /// No description provided for @settingsFxRefreshInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh interval'**
+  String get settingsFxRefreshInterval;
+
+  /// No description provided for @settingsExperimentReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Experiment reminders'**
+  String get settingsExperimentReminders;
+
+  /// No description provided for @settingsExperimentRemindersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily check-in reminders while an experiment is running'**
+  String get settingsExperimentRemindersSubtitle;
+
+  /// No description provided for @settingsUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get settingsUnits;
+
+  /// No description provided for @settingsWeightUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get settingsWeightUnitLabel;
+
+  /// No description provided for @settingsLengthUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get settingsLengthUnitLabel;
+
+  /// No description provided for @settingsExportDb.
+  ///
+  /// In en, this message translates to:
+  /// **'Export database'**
+  String get settingsExportDb;
+
+  /// No description provided for @settingsExportDbSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a copy of your data (SQLite)'**
+  String get settingsExportDbSubtitle;
+
   /// No description provided for @workoutDetailPlannedSetReps.
   ///
   /// In en, this message translates to:
-  /// **'{reps} × {weight} kg'**
-  String workoutDetailPlannedSetReps(String reps, String weight);
+  /// **'{reps} × {weight} {unit}'**
+  String workoutDetailPlannedSetReps(String reps, String weight, String unit);
 
   /// No description provided for @workoutDetailPlannedSetDuration.
   ///
@@ -2539,14 +2599,14 @@ abstract class AppLocalizations {
   /// No description provided for @workoutDetailActualSetReps.
   ///
   /// In en, this message translates to:
-  /// **'{reps} × {weight} kg'**
-  String workoutDetailActualSetReps(String reps, String weight);
+  /// **'{reps} × {weight} {unit}'**
+  String workoutDetailActualSetReps(String reps, String weight, String unit);
 
   /// No description provided for @workoutDetailActualSetWeight.
   ///
   /// In en, this message translates to:
-  /// **'{weight} kg'**
-  String workoutDetailActualSetWeight(String weight);
+  /// **'{weight} {unit}'**
+  String workoutDetailActualSetWeight(String weight, String unit);
 
   /// No description provided for @workoutDetailActualSetDuration.
   ///
@@ -2641,20 +2701,20 @@ abstract class AppLocalizations {
   /// No description provided for @bodyMetricsLatestWeight.
   ///
   /// In en, this message translates to:
-  /// **'Latest: {value} kg'**
-  String bodyMetricsLatestWeight(String value);
+  /// **'Latest: {value} {unit}'**
+  String bodyMetricsLatestWeight(String value, String unit);
 
   /// No description provided for @bodyMetricsLatestHeight.
   ///
   /// In en, this message translates to:
-  /// **'Latest: {value} cm'**
-  String bodyMetricsLatestHeight(String value);
+  /// **'Latest: {value} {unit}'**
+  String bodyMetricsLatestHeight(String value, String unit);
 
   /// No description provided for @bodyMetricsValueKg.
   ///
   /// In en, this message translates to:
-  /// **'{value} kg'**
-  String bodyMetricsValueKg(String value);
+  /// **'{value} {unit}'**
+  String bodyMetricsValueKg(String value, String unit);
 
   /// No description provided for @bodyMetricsValueCm.
   ///
@@ -2779,8 +2839,8 @@ abstract class AppLocalizations {
   /// No description provided for @workoutSummaryValueKg.
   ///
   /// In en, this message translates to:
-  /// **'{value} kg'**
-  String workoutSummaryValueKg(String value);
+  /// **'{value} {unit}'**
+  String workoutSummaryValueKg(String value, String unit);
 
   /// No description provided for @workoutSummaryDistanceValue.
   ///

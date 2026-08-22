@@ -62,10 +62,11 @@
   "dashboardWeightTrend": "Évolution du poids",
   "dashboardWeeklyWorkout": "Séances de la semaine",
   "dashboardVolume": "Volume",
-  "dashboardVolumeKg": "{volume} kg",
+  "dashboardVolumeKg": "{volume} {unit}",
   "@dashboardVolumeKg": {
     "placeholders": {
-      "volume": { "type": "String" }
+      "volume": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
   "dashboardMinutes": "Minutes",
@@ -167,10 +168,11 @@
       "delta": { "type": "String" }
     }
   },
-  "exerciseDetailWeightDelta": "{delta} kg",
+  "exerciseDetailWeightDelta": "{delta} {unit}",
   "@exerciseDetailWeightDelta": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
   "exerciseDetailSetRest": "repos {rest}",
@@ -592,12 +594,23 @@
   "storeNameLabel": "Nom du magasin",
   "storeNameRequired": "Le nom est requis",
 
-  "workoutDetailPlannedSetReps": "{reps} × {weight} kg",
+  "settingsFxAutoRefresh": "Actualisation automatique des taux",
+  "settingsFxAutoRefreshSubtitle": "Récupère les taux de change en arrière-plan",
+  "settingsFxRefreshInterval": "Intervalle d'actualisation",
+  "settingsExperimentReminders": "Rappels d'expériences",
+  "settingsExperimentRemindersSubtitle": "Rappels quotidiens tant qu'une expérience est en cours",
+  "settingsUnits": "Unités",
+  "settingsWeightUnitLabel": "Poids",
+  "settingsLengthUnitLabel": "Taille",
+  "settingsExportDb": "Exporter la base de données",
+  "settingsExportDbSubtitle": "Partager une copie de vos données (SQLite)",
+
+  "workoutDetailPlannedSetReps": "{reps} × {weight} {unit}",
   "workoutDetailPlannedSetDuration": "{minutes} min",
   "workoutDetailPlannedSetEmpty": "—",
   "workoutDetailPlannedSetRest": "{planned} · repos {rest}",
-  "workoutDetailActualSetReps": "{reps} × {weight} kg",
-  "workoutDetailActualSetWeight": "{weight} kg",
+  "workoutDetailActualSetReps": "{reps} × {weight} {unit}",
+  "workoutDetailActualSetWeight": "{weight} {unit}",
   "workoutDetailActualSetDuration": "{reps} min",
   "workoutDetailActualSetDistance": "{distance} m",
   "workoutDetailActualSetTime": "{value} · {time}",
@@ -614,19 +627,21 @@
   "bodyMetricsValuePositive": "La valeur doit être supérieure à 0",
   "bodyMetricsEmptyWeight": "Aucune entrée de poids pour l'instant.",
   "bodyMetricsEmptyHeight": "Aucune entrée de taille pour l'instant.",
-  "bodyMetricsLatestWeight": "Dernier : {value} kg",
+  "bodyMetricsLatestWeight": "Dernier : {value} {unit}",
   "@bodyMetricsLatestWeight": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
-  "bodyMetricsLatestHeight": "Dernière : {value} cm",
+  "bodyMetricsLatestHeight": "Dernière : {value} {unit}",
   "@bodyMetricsLatestHeight": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
-  "bodyMetricsValueKg": "{value} kg",
+  "bodyMetricsValueKg": "{value} {unit}",
   "@bodyMetricsValueKg": {
     "placeholders": {
       "value": { "type": "String" }
@@ -674,10 +689,11 @@
   "workoutSummaryTotalReps": "Répétitions",
   "workoutSummaryTotalDuration": "Durée totale",
   "workoutSummaryTotalDistance": "Distance totale",
-  "workoutSummaryValueKg": "{value} kg",
+  "workoutSummaryValueKg": "{value} {unit}",
   "@workoutSummaryValueKg": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
   "workoutSummaryDistanceValue": "{distance} m",

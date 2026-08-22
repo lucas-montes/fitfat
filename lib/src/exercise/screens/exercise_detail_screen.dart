@@ -8,11 +8,14 @@ import 'package:video_player/video_player.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/exercise_set.dart';
+import '../../models/units.dart';
 import '../../notifications/rest_timer.dart';
+import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
 import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
+import '../../ui/units.dart';
 import '../exercise_filter.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
@@ -63,16 +66,17 @@ final class ExerciseDetailScreen extends ConsumerWidget {
 // Layout
 // ---------------------------------------------------------------------------
 
-final class _DetailView extends StatelessWidget {
+final class _DetailView extends ConsumerWidget {
   final Exercise exercise;
   final List<ExerciseHistoryEntry> history;
 
   const _DetailView({required this.exercise, required this.history});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final metrics = _HistoryMetrics.fromHistory(history);
+    final unit = ref.watch(settingsProvider).weightUnit;
     final hasMedia = exercise.imagePath != null || exercise.videoPath != null;
     // Media (220) + name block + fact chips; a smaller height when the
     // exercise has no media so the collapsed header leaves no gap.
@@ -104,7 +108,7 @@ final class _DetailView extends StatelessWidget {
           ],
           body: TabBarView(
             children: [
-              _HistoryTab(history: history, metrics: metrics),
+              _HistoryTab(history: history, metrics: metrics, unit: unit),
               _DetailsTab(exercise: exercise),
             ],
           ),
@@ -189,8 +193,18 @@ final class _FactChips extends StatelessWidget {
 final class _HistoryTab extends StatelessWidget {
   final List<ExerciseHistoryEntry> history;
   final _HistoryMetrics metrics;
+  final WeightUnit unit;
 
-  const _HistoryTab({required this.history, required this.metrics});
+  const _HistoryTab({
+    required this.history,
+    required this.metrics,
+    required this.unit,
+  });
+
+  /// Converts kg-based chart values into the display unit (no-op for kg).
+  List<(DateTime, double)> _converted(List<(DateTime, double)> spots) => [
+    for (final (date, value) in spots) (date, weightFromKg(value, unit)),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -214,13 +228,15 @@ final class _HistoryTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: FitFatTokens.spaceXxl),
       children: [
-        _HistorySummary(metrics: metrics),
+        _HistorySummary(metrics: metrics, unit: unit),
         if (metrics.chartSpots.isNotEmpty && metrics.chartSpots.length >= 2)
           _HistoryChart(
             title: metrics.usesWeight
                 ? l10n.exerciseDetailVolumeOverTime
                 : l10n.exerciseDetailDurationOverTime,
-            spots: metrics.chartSpots,
+            spots: metrics.usesWeight
+                ? _converted(metrics.chartSpots)
+                : metrics.chartSpots,
             color: theme.colorScheme.primary,
           ),
         if (metrics.trendSpots.isNotEmpty && metrics.trendSpots.length >= 2)
@@ -228,7 +244,9 @@ final class _HistoryTab extends StatelessWidget {
             title: metrics.usesWeight
                 ? l10n.exerciseDetailWeightTrend
                 : l10n.exerciseDetailRepsTrend,
-            spots: metrics.trendSpots,
+            spots: metrics.usesWeight
+                ? _converted(metrics.trendSpots)
+                : metrics.trendSpots,
             color: theme.colorScheme.tertiary,
           ),
         ..._buildWorkoutCards(context),
@@ -237,15 +255,16 @@ final class _HistoryTab extends StatelessWidget {
   }
 
   /// Per-workout cards in the provider's (newest-first) order, each annotated
-  /// with its total volume, the previous workout's volume (null for the oldest)
-  /// and whether it set a new PR (volume > every older workout).
+  /// with its total volume (display units), the previous workout's volume
+  /// (null for the oldest) and whether it set a new PR (volume > every older
+  /// workout — conversion-invariant since it's a ratio comparison).
   List<Widget> _buildWorkoutCards(BuildContext context) {
     final volumes = history.map((e) {
       var volume = 0.0;
       for (final set in e.sets) {
         volume += set.totalVolume;
       }
-      return volume;
+      return weightFromKg(volume, unit);
     }).toList();
 
     final n = history.length;
@@ -263,6 +282,8 @@ final class _HistoryTab extends StatelessWidget {
           volume: volumes[i],
           previousVolume: i < n - 1 ? volumes[i + 1] : null,
           isPr: isPr[i],
+          usesWeight: metrics.usesWeight,
+          unit: unit,
         ),
     ];
   }
@@ -829,8 +850,9 @@ final class _HistoryMetrics {
 
 final class _HistorySummary extends StatelessWidget {
   final _HistoryMetrics metrics;
+  final WeightUnit unit;
 
-  const _HistorySummary({required this.metrics});
+  const _HistorySummary({required this.metrics, required this.unit});
 
   @override
   Widget build(BuildContext context) {
@@ -841,7 +863,10 @@ final class _HistorySummary extends StatelessWidget {
         ? l10n.exerciseDetailBestWeight
         : l10n.exerciseDetailBestDuration;
     final bestValue = metrics.usesWeight
-        ? l10n.workoutSummaryValueKg(formatDecimal(metrics.bestWeightKg))
+        ? l10n.workoutSummaryValueKg(
+            formatWeightValue(metrics.bestWeightKg, unit),
+            weightUnitLabel(unit),
+          )
         : l10n.workoutDetailPlannedSetDuration(
             '${metrics.bestDurationMinutes}',
           );
@@ -1034,15 +1059,21 @@ final class _HistoryChart extends StatelessWidget {
 
 final class _WorkoutHistoryCard extends StatelessWidget {
   final ExerciseHistoryEntry entry;
+
+  /// Total volume already converted to the display unit.
   final double volume;
   final double? previousVolume;
   final bool isPr;
+  final bool usesWeight;
+  final WeightUnit unit;
 
   const _WorkoutHistoryCard({
     required this.entry,
     required this.volume,
     required this.previousVolume,
     required this.isPr,
+    required this.usesWeight,
+    required this.unit,
   });
 
   @override
@@ -1050,11 +1081,6 @@ final class _WorkoutHistoryCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final sets = entry.sets;
-
-    final usesWeight = sets.any(
-      (s) => s.weightKg != null || s.actualWeightKg != null,
-    );
-
     var duration = 0;
     for (final set in sets) {
       duration += set.effectiveDurationMinutes;
@@ -1117,6 +1143,7 @@ final class _WorkoutHistoryCard extends StatelessWidget {
               previousVolume: previousVolume,
               isPr: isPr,
               usesWeight: usesWeight,
+              unit: unit,
             ),
             const SizedBox(height: FitFatTokens.spaceM),
             Row(
@@ -1126,7 +1153,10 @@ final class _WorkoutHistoryCard extends StatelessWidget {
                       ? l10n.workoutSummaryVolume
                       : l10n.workoutSummaryTotalDuration,
                   value: usesWeight
-                      ? l10n.workoutSummaryValueKg(formatDecimal(volume))
+                      ? l10n.workoutSummaryValueKg(
+                          formatWeightValue(volume, unit),
+                          weightUnitLabel(unit),
+                        )
                       : formatRestDuration(Duration(minutes: duration)),
                   theme: theme,
                   alignEnd: false,
@@ -1181,7 +1211,7 @@ final class _WorkoutHistoryCard extends StatelessWidget {
             _SetGridHeader(l10n: l10n),
             const SizedBox(height: FitFatTokens.spaceXs),
             for (final set in sets)
-              _SetRow(set: set, usesWeight: usesWeight, l10n: l10n),
+              _SetRow(set: set, usesWeight: usesWeight, l10n: l10n, unit: unit),
           ],
         ),
       ),
@@ -1196,12 +1226,14 @@ final class _TrendHeader extends StatelessWidget {
   final double? previousVolume;
   final bool isPr;
   final bool usesWeight;
+  final WeightUnit unit;
 
   const _TrendHeader({
     required this.volume,
     required this.previousVolume,
     required this.isPr,
     required this.usesWeight,
+    required this.unit,
   });
 
   @override
@@ -1210,6 +1242,7 @@ final class _TrendHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final statusColors = theme.extension<FitFatColors>()!;
     final prev = previousVolume;
+    final unitLabel = usesWeight ? weightUnitLabel(unit) : 'min';
 
     final delta = prev == null ? 0.0 : volume - prev;
     final (icon, color, label) = delta > 0
@@ -1218,7 +1251,7 @@ final class _TrendHeader extends StatelessWidget {
             statusColors.success,
             l10n.exerciseDetailTrendDelta(
               '+${formatDecimal(delta)}',
-              usesWeight ? 'kg' : 'min',
+              unitLabel,
             ),
           )
         : delta < 0
@@ -1227,7 +1260,7 @@ final class _TrendHeader extends StatelessWidget {
             theme.colorScheme.error,
             l10n.exerciseDetailTrendDelta(
               '-${formatDecimal(delta.abs())}',
-              usesWeight ? 'kg' : 'min',
+              unitLabel,
             ),
           )
         : (
@@ -1411,11 +1444,13 @@ final class _SetRow extends StatelessWidget {
   final ExerciseSet set;
   final bool usesWeight;
   final AppLocalizations l10n;
+  final WeightUnit unit;
 
   const _SetRow({
     required this.set,
     required this.usesWeight,
     required this.l10n,
+    required this.unit,
   });
 
   @override
@@ -1425,17 +1460,20 @@ final class _SetRow extends StatelessWidget {
       fontWeight: FontWeight.w600,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
+    final unitLabel = weightUnitLabel(unit);
 
     final planned = usesWeight
         ? l10n.workoutDetailPlannedSetReps(
             '${set.reps ?? 0}',
-            formatDecimal(set.weightKg ?? 0),
+            formatWeightValue(set.weightKg ?? 0, unit),
+            unitLabel,
           )
         : l10n.workoutDetailPlannedSetDuration('${set.durationMinutes ?? 0}');
     final actual = usesWeight
         ? l10n.workoutDetailActualSetReps(
             '${set.actualReps ?? set.reps ?? 0}',
-            formatDecimal(set.actualWeightKg ?? set.weightKg ?? 0),
+            formatWeightValue(set.actualWeightKg ?? set.weightKg ?? 0, unit),
+            unitLabel,
           )
         : planned;
 
@@ -1507,7 +1545,12 @@ final class _SetRow extends StatelessWidget {
       final v = set.weightDelta!;
       if (v > 0) positive = true;
       if (v < 0) negative = true;
-      parts.add(l10n.exerciseDetailWeightDelta(_signed(v)));
+      parts.add(
+        l10n.exerciseDetailWeightDelta(
+          _signed(weightFromKg(v, unit)),
+          weightUnitLabel(unit),
+        ),
+      );
     }
 
     if (parts.isEmpty) return ('—', theme.colorScheme.outline);

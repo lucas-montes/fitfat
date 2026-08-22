@@ -62,7 +62,7 @@
   "dashboardWeightTrend": "Evolución del peso",
   "dashboardWeeklyWorkout": "Entrenamiento semanal",
   "dashboardVolume": "Volumen",
-  "dashboardVolumeKg": "{volume} kg",
+  "dashboardVolumeKg": "{volume} {unit}",
   "@dashboardVolumeKg": {
     "placeholders": {
       "volume": { "type": "String" }
@@ -167,7 +167,7 @@
       "delta": { "type": "String" }
     }
   },
-  "exerciseDetailWeightDelta": "{delta} kg",
+  "exerciseDetailWeightDelta": "{delta} {unit}",
   "@exerciseDetailWeightDelta": {
     "placeholders": {
       "delta": { "type": "String" }
@@ -592,12 +592,23 @@
   "storeNameLabel": "Nombre de la tienda",
   "storeNameRequired": "El nombre es obligatorio",
 
-  "workoutDetailPlannedSetReps": "{reps} × {weight} kg",
+  "settingsFxAutoRefresh": "Actualización automática de tasas",
+  "settingsFxAutoRefreshSubtitle": "Obtiene las tasas de cambio en segundo plano",
+  "settingsFxRefreshInterval": "Intervalo de actualización",
+  "settingsExperimentReminders": "Recordatorios de experimentos",
+  "settingsExperimentRemindersSubtitle": "Recordatorios diarios mientras haya un experimento activo",
+  "settingsUnits": "Unidades",
+  "settingsWeightUnitLabel": "Peso",
+  "settingsLengthUnitLabel": "Altura",
+  "settingsExportDb": "Exportar base de datos",
+  "settingsExportDbSubtitle": "Comparte una copia de tus datos (SQLite)",
+
+  "workoutDetailPlannedSetReps": "{reps} × {weight} {unit}",
   "workoutDetailPlannedSetDuration": "{minutes} min",
   "workoutDetailPlannedSetEmpty": "—",
   "workoutDetailPlannedSetRest": "{planned} · descanso {rest}",
-  "workoutDetailActualSetReps": "{reps} × {weight} kg",
-  "workoutDetailActualSetWeight": "{weight} kg",
+  "workoutDetailActualSetReps": "{reps} × {weight} {unit}",
+  "workoutDetailActualSetWeight": "{weight} {unit}",
   "workoutDetailActualSetDuration": "{reps} min",
   "workoutDetailActualSetDistance": "{distance} m",
   "workoutDetailActualSetTime": "{value} · {time}",
@@ -614,19 +625,19 @@
   "bodyMetricsValuePositive": "El valor debe ser mayor que 0",
   "bodyMetricsEmptyWeight": "Aún no hay entradas de peso.",
   "bodyMetricsEmptyHeight": "Aún no hay entradas de altura.",
-  "bodyMetricsLatestWeight": "Último: {value} kg",
+  "bodyMetricsLatestWeight": "Último: {value} {unit}",
   "@bodyMetricsLatestWeight": {
     "placeholders": {
       "value": { "type": "String" }
     }
   },
-  "bodyMetricsLatestHeight": "Última: {value} cm",
+  "bodyMetricsLatestHeight": "Última: {value} {unit}",
   "@bodyMetricsLatestHeight": {
     "placeholders": {
       "value": { "type": "String" }
     }
   },
-  "bodyMetricsValueKg": "{value} kg",
+  "bodyMetricsValueKg": "{value} {unit}",
   "@bodyMetricsValueKg": {
     "placeholders": {
       "value": { "type": "String" }
@@ -674,7 +685,7 @@
   "workoutSummaryTotalReps": "Repeticiones",
   "workoutSummaryTotalDuration": "Duración total",
   "workoutSummaryTotalDistance": "Distancia total",
-  "workoutSummaryValueKg": "{value} kg",
+  "workoutSummaryValueKg": "{value} {unit}",
   "@workoutSummaryValueKg": {
     "placeholders": {
       "value": { "type": "String" }

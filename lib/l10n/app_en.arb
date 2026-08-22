@@ -72,10 +72,11 @@
   "dashboardWeightTrend": "Weight trend",
   "dashboardWeeklyWorkout": "Weekly workout",
   "dashboardVolume": "Volume",
-  "dashboardVolumeKg": "{volume} kg",
+  "dashboardVolumeKg": "{volume} {unit}",
   "@dashboardVolumeKg": {
     "placeholders": {
-      "volume": { "type": "String" }
+      "volume": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
   "dashboardMinutes": "Minutes",
@@ -177,10 +178,11 @@
       "delta": { "type": "String" }
     }
   },
-  "exerciseDetailWeightDelta": "{delta} kg",
+  "exerciseDetailWeightDelta": "{delta} {unit}",
   "@exerciseDetailWeightDelta": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
   "exerciseDetailSetRest": "rest {rest}",
@@ -703,11 +705,23 @@
   "storeNameLabel": "Store name",
   "storeNameRequired": "Name is required",
 
-  "workoutDetailPlannedSetReps": "{reps} × {weight} kg",
+  "settingsFxAutoRefresh": "Auto-refresh rates",
+  "settingsFxAutoRefreshSubtitle": "Fetches exchange rates in the background",
+  "settingsFxRefreshInterval": "Refresh interval",
+  "settingsExperimentReminders": "Experiment reminders",
+  "settingsExperimentRemindersSubtitle": "Daily check-in reminders while an experiment is running",
+  "settingsUnits": "Units",
+  "settingsWeightUnitLabel": "Weight",
+  "settingsLengthUnitLabel": "Height",
+  "settingsExportDb": "Export database",
+  "settingsExportDbSubtitle": "Share a copy of your data (SQLite)",
+
+  "workoutDetailPlannedSetReps": "{reps} × {weight} {unit}",
   "@workoutDetailPlannedSetReps": {
     "placeholders": {
       "reps": { "type": "String" },
-      "weight": { "type": "String" }
+      "weight": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
   "workoutDetailPlannedSetDuration": "{minutes} min",
@@ -718,17 +732,19 @@
   },
   "workoutDetailPlannedSetEmpty": "—",
   "workoutDetailPlannedSetRest": "{planned} · rest {rest}",
-  "workoutDetailActualSetReps": "{reps} × {weight} kg",
+  "workoutDetailActualSetReps": "{reps} × {weight} {unit}",
   "@workoutDetailActualSetReps": {
     "placeholders": {
       "reps": { "type": "String" },
-      "weight": { "type": "String" }
+      "weight": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
-  "workoutDetailActualSetWeight": "{weight} kg",
+  "workoutDetailActualSetWeight": "{weight} {unit}",
   "@workoutDetailActualSetWeight": {
     "placeholders": {
-      "weight": { "type": "String" }
+      "weight": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
   "workoutDetailActualSetDuration": "{reps} min",
@@ -763,22 +779,25 @@
   "bodyMetricsValuePositive": "Value must be greater than 0",
   "bodyMetricsEmptyWeight": "No weight entries yet.",
   "bodyMetricsEmptyHeight": "No height entries yet.",
-  "bodyMetricsLatestWeight": "Latest: {value} kg",
+  "bodyMetricsLatestWeight": "Latest: {value} {unit}",
   "@bodyMetricsLatestWeight": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
-  "bodyMetricsLatestHeight": "Latest: {value} cm",
+  "bodyMetricsLatestHeight": "Latest: {value} {unit}",
   "@bodyMetricsLatestHeight": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
-  "bodyMetricsValueKg": "{value} kg",
+  "bodyMetricsValueKg": "{value} {unit}",
   "@bodyMetricsValueKg": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
   "bodyMetricsValueCm": "{value} cm",
@@ -823,10 +842,11 @@
   "workoutSummaryTotalReps": "Total reps",
   "workoutSummaryTotalDuration": "Total duration",
   "workoutSummaryTotalDistance": "Total distance",
-  "workoutSummaryValueKg": "{value} kg",
+  "workoutSummaryValueKg": "{value} {unit}",
   "@workoutSummaryValueKg": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
   "workoutSummaryDistanceValue": "{distance} m",

@@ -32,12 +32,17 @@ App-level settings (theme mode, language, profile age, body-weight goal) persist
 | plannerNotifications | bool | true | persisted as `settings_planner_notifications`; app-wide task-reminder toggle (T11) |
 | restAlarmSound | bool | true | persisted as `settings_rest_alarm_sound`; rest alarm plays a sound |
 | restAlarmVibration | bool | true | persisted as `settings_rest_alarm_vibration`; rest alarm vibrates |
+| experimentRemindersEnabled | bool | true | persisted as `settings_experiment_reminders`; master switch for experiment check-in reminders (off cancels all, on reschedules active ones) |
 | baseCurrency | String | 'USD' | persisted as `settings_base_currency`; budget base currency (uppercase ISO-4217-ish) |
+| fxAutoRefresh | bool | false | persisted as `settings_fx_auto_refresh`; background FX re-fetch via the network-client `ApiClient` |
+| fxRefreshIntervalHours | int | 24 | persisted as `settings_fx_refresh_interval_hours`; options 6/12/24/48/72 h |
+| weightUnit | WeightUnit | kg | persisted as `settings_weight_unit` ('kg'/'lb'); enum in `lib/src/models/units.dart`; display-only conversion (storage stays metric) |
+| lengthUnit | LengthUnit | cm | persisted as `settings_length_unit` ('cm'/'inch'; value named `inch` since `in` is a Dart keyword); display-only |
 
 `SettingsNotifier` (`extends Notifier<SettingsState>`):
 
 - `build()` reads the keys from prefs synchronously.
-- `setThemeMode(ThemeMode)` / `setLocale(Locale)` / `setLocaleToSystem()` / `setAge(int?)` / `setBodyWeightGoal(BodyWeightGoal?)` / `setGender(Gender?)` / `setActivityLevel(ActivityLevel?)` / `setComputeActivity(bool)` / `setTrackBodyFat(bool)` / `setBodyFatPercent(double?)` / `setPlannerNotifications(bool)` / `setRestAlarmSound(bool)` / `setRestAlarmVibration(bool)` / `setBaseCurrency(String)` — persist first, then update state (apply immediately). Nullable setters remove the key when null (blank clears age/body-fat; there is no UI to clear the goal — once set it is always one of the three, default null = no badge). `setLocaleToSystem()` removes `settings_locale` so `state.locale` becomes null (device default); `SettingsState.copyWith` supports `clearLocale` for this.
+- `setThemeMode(ThemeMode)` / `setLocale(Locale)` / `setLocaleToSystem()` / `setAge(int?)` / `setBodyWeightGoal(BodyWeightGoal?)` / `setGender(Gender?)` / `setActivityLevel(ActivityLevel?)` / `setComputeActivity(bool)` / `setTrackBodyFat(bool)` / `setBodyFatPercent(double?)` / `setPlannerNotifications(bool)` / `setRestAlarmSound(bool)` / `setRestAlarmVibration(bool)` / `setExperimentRemindersEnabled(bool)` / `setBaseCurrency(String)` / `setFxAutoRefresh(bool)` / `setFxRefreshIntervalHours(int)` / `setWeightUnit(WeightUnit)` / `setLengthUnit(LengthUnit)` — persist first, then update state (apply immediately). Nullable setters remove the key when null (blank clears age/body-fat; there is no UI to clear the goal — once set it is always one of the three, default null = no badge). `setLocaleToSystem()` removes `settings_locale` so `state.locale` becomes null (device default); `SettingsState.copyWith` supports `clearLocale` for this.
 
 ## Settings screen
 
@@ -45,10 +50,23 @@ App-level settings (theme mode, language, profile age, body-weight goal) persist
 that push dedicated sub-screens via `MaterialPageRoute`:
 
 - **Profile** (`_ProfileScreen`) — `TextFormField` for age (numeric, validated 0–120; blank clears; saved via check icon or keyboard done); `SegmentedButton<Gender>` (Male / Female); an activity-source `SwitchListTile` (`settingsComputeActivity`) that switches between the static `SegmentedButton<ActivityLevel>` (sedentary…very active) and computed-from-workouts+steps mode; a body-fat `SwitchListTile` (`settingsTrackBodyFat`) that reveals a body-fat `TextFormField` (%) when on; **Body weight goal** `SegmentedButton<BodyWeightGoal>` (Lose / Maintain / Gain, `emptySelectionAllowed` + empty guard). These feed the dashboard calorie target (see [dashboard/dashboard.md](../dashboard/dashboard.md)).
-- **Notifications** (`_NotificationsScreen`) — `SwitchListTile` (`settingsPlannerNotifications` + `settingsPlannerNotificationsSubtitle`): app-wide task-reminder toggle (off → `TaskReminderScheduler.cancelAll()`; on → `reschedulePending(repository)`); rest alarm `SwitchListTile`s for sound + vibration (see [notifications/notifications.md](../notifications/notifications.md)).
+- **Notifications** (`_NotificationsScreen`) — `SwitchListTile` (`settingsPlannerNotifications` + `settingsPlannerNotificationsSubtitle`): app-wide task-reminder toggle (off → `TaskReminderScheduler.cancelAll()`; on → `reschedulePending(repository)`); experiment-reminders master `SwitchListTile` (off → cancel every scheduled experiment reminder; on → reschedule the active ones via `ExperimentReminderScheduler`, which itself skips non-active / per-experiment-disabled rows); rest alarm `SwitchListTile`s for sound + vibration (see [notifications/notifications.md](../notifications/notifications.md)).
 - **Appearance & Language** (`_AppearanceLanguageScreen`) — `SegmentedButton<ThemeMode>` (System / Light / Dark) + a **four-segment language selector with a System default** (`settingsLangSystem`, icon `Icons.language`): System / English / Français / Español. System is the default empty state and calls `setLocaleToSystem()`; the others persist via `settings_locale`.
-- **Budget & Currency** (`_BudgetCurrencyScreen`) — base-currency dropdown + cached FX-rate list with refresh/edit (see [budget/../architecture.md](../architecture.md)). Each rate row shows `cur → base`, the inverse, the last-updated date, a "Manual" pill for edit-set rates, plus an edit icon (fx-display T02). Transactions in a non-base currency and the recent-transactions rows show the conversion rate applied via `rateUsed` (fx-display T03).
-- **Data** (`_DataScreen`) — destructive reset-all `ListTile` with its confirm dialog.
+- **Budget & Currency** (`_BudgetCurrencyScreen`) — base-currency dropdown + FX auto-refresh `SwitchListTile` with an interval dropdown (6/12/24/48/72 h, shown only when enabled) + cached FX-rate list with refresh/edit (see [budget/../architecture.md](../architecture.md)). Each rate row shows `cur → base`, the inverse, the last-updated date, a "Manual" pill for edit-set rates, plus an edit icon (fx-display T02). Transactions in a non-base currency and the recent-transactions rows show the conversion rate applied via `rateUsed` (fx-display T03).
+- **Data** (`_DataScreen`) — "Export database" `ListTile` (copies `<docs>/fitfat.sqlite` to a dated temp file and shares it via `share_plus`; restore/import out of scope) and the destructive reset-all `ListTile` with its confirm dialog.
+
+## Units display layer
+
+Storage stays metric (kg/cm); conversion happens at render time only:
+
+- `lib/src/ui/units.dart` — `weightFromKg` / `lengthFromCm` conversions, `weightUnitLabel` / `lengthUnitLabel` suffixes ('kg'/'lb', 'cm'/'in'), `formatWeightValue` / `formatLengthValue` formatters.
+- Unit-bearing l10n keys take a `{unit}` placeholder instead of hardcoding kg/cm: `workoutDetailPlannedSetReps`, `workoutDetailActualSetReps`, `workoutDetailActualSetWeight`, `exerciseDetailWeightDelta`, `exerciseDetailTrendDelta` (already unit-parameterised), `workoutSummaryValueKg`, `dashboardVolumeKg`, `bodyMetricsLatestWeight/Height`, `bodyMetricsValueKg`.
+- Applied surfaces: dashboard body card (latest weight/height + weight-evolution chart values), dashboard weekly-volume card, exercise detail History tab (summary tiles, trend/volume charts, per-workout cards, set grid), workout detail set chips, workout summary metric rows, active-workout set rows + inline history.
+- Not converted (by design): data entry fields stay in the stored metric unit; body-metric input dialogs; chart axes show bare numbers.
+
+## FX auto-refresh
+
+`fxAutoRefreshProvider` (`lib/src/budget/services/fx_auto_refresh.dart`) — app-lifetime `Provider<void>` watched once from `_BackgroundStartupState.build`. It listens to `settingsProvider`: when `fxAutoRefresh` is on it fires one immediate `RemoteFxService.fetchRates → FxRepository.replaceAll → fxRatesProvider.invalidate` cycle and then repeats every `fxRefreshIntervalHours`; toggling off cancels the timer; changing base currency or interval reschedules. Failures (offline / unconfigured `FX_API_BASE_URL`) are swallowed — cached rates stay and the next tick retries.
 
 ## Wiring
 

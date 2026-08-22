@@ -130,8 +130,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardVolume => 'Volumen';
 
   @override
-  String dashboardVolumeKg(String volume) {
-    return '$volume kg';
+  String dashboardVolumeKg(String volume, String unit) {
+    return '$volume $unit';
   }
 
   @override
@@ -351,8 +351,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String exerciseDetailWeightDelta(String delta) {
-    return '$delta kg';
+  String exerciseDetailWeightDelta(String delta, String unit) {
+    return '$delta $unit';
   }
 
   @override
@@ -1360,8 +1360,41 @@ class AppLocalizationsEs extends AppLocalizations {
   String get storeNameRequired => 'El nombre es obligatorio';
 
   @override
-  String workoutDetailPlannedSetReps(String reps, String weight) {
-    return '$reps × $weight kg';
+  String get settingsFxAutoRefresh => 'Actualización automática de tasas';
+
+  @override
+  String get settingsFxAutoRefreshSubtitle =>
+      'Obtiene las tasas de cambio en segundo plano';
+
+  @override
+  String get settingsFxRefreshInterval => 'Intervalo de actualización';
+
+  @override
+  String get settingsExperimentReminders => 'Recordatorios de experimentos';
+
+  @override
+  String get settingsExperimentRemindersSubtitle =>
+      'Recordatorios diarios mientras haya un experimento activo';
+
+  @override
+  String get settingsUnits => 'Unidades';
+
+  @override
+  String get settingsWeightUnitLabel => 'Peso';
+
+  @override
+  String get settingsLengthUnitLabel => 'Altura';
+
+  @override
+  String get settingsExportDb => 'Exportar base de datos';
+
+  @override
+  String get settingsExportDbSubtitle =>
+      'Comparte una copia de tus datos (SQLite)';
+
+  @override
+  String workoutDetailPlannedSetReps(String reps, String weight, String unit) {
+    return '$reps × $weight $unit';
   }
 
   @override
@@ -1378,13 +1411,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String workoutDetailActualSetReps(String reps, String weight) {
-    return '$reps × $weight kg';
+  String workoutDetailActualSetReps(String reps, String weight, String unit) {
+    return '$reps × $weight $unit';
   }
 
   @override
-  String workoutDetailActualSetWeight(String weight) {
-    return '$weight kg';
+  String workoutDetailActualSetWeight(String weight, String unit) {
+    return '$weight $unit';
   }
 
   @override
@@ -1439,18 +1472,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get bodyMetricsEmptyHeight => 'Aún no hay entradas de altura.';
 
   @override
-  String bodyMetricsLatestWeight(String value) {
-    return 'Último: $value kg';
+  String bodyMetricsLatestWeight(String value, String unit) {
+    return 'Último: $value $unit';
   }
 
   @override
-  String bodyMetricsLatestHeight(String value) {
-    return 'Última: $value cm';
+  String bodyMetricsLatestHeight(String value, String unit) {
+    return 'Última: $value $unit';
   }
 
   @override
-  String bodyMetricsValueKg(String value) {
-    return '$value kg';
+  String bodyMetricsValueKg(String value, String unit) {
+    return '$value $unit';
   }
 
   @override
@@ -1522,8 +1555,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get workoutSummaryTotalDistance => 'Distancia total';
 
   @override
-  String workoutSummaryValueKg(String value) {
-    return '$value kg';
+  String workoutSummaryValueKg(String value, String unit) {
+    return '$value $unit';
   }
 
   @override

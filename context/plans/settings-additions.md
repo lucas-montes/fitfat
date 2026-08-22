@@ -22,7 +22,7 @@ Fill the settings gaps surfaced in the 2026-08-18 review:
 - Units preference flows into workout weight/volume and body-metric displays.
 - Backup exports a working DB copy (restore is out of scope this round).
 - `flutter gen-l10n` exit 0; `flutter analyze lib/` clean; `flutter test`
-  `+39 -4` (pre-existing sqlite env failures).
+  `+42 -4` (pre-existing sqlite env failures).
 
 ## Constraints & Non-Goals
 
@@ -34,7 +34,7 @@ Fill the settings gaps surfaced in the 2026-08-18 review:
 
 ## Task Stack
 
-- [ ] T01: `FX auto-refresh toggle + interval` (status:todo)
+- [x] T01: `FX auto-refresh toggle + interval` (status:done)
   - Task ID: T01
   - Goal: Periodically refresh cached FX rates while enabled.
   - Boundaries (in/out of scope):
@@ -50,7 +50,7 @@ Fill the settings gaps surfaced in the 2026-08-18 review:
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/settings/ lib/src/budget/`.
 
-- [ ] T02: `App-wide experiment reminder toggle` (status:todo)
+- [x] T02: `App-wide experiment reminder toggle` (status:done)
   - Task ID: T02
   - Goal: Master switch for experiment check-in reminders.
   - Boundaries (in/out of scope):
@@ -65,7 +65,7 @@ Fill the settings gaps surfaced in the 2026-08-18 review:
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/settings/ lib/src/experiments/`.
 
-- [ ] T03: `Units preference (kg/lb, cm/in)` (status:todo)
+- [x] T03: `Units preference (kg/lb, cm/in)` (status:done)
   - Task ID: T03
   - Goal: Let users switch weight/length units across displays.
   - Boundaries (in/out of scope):
@@ -79,7 +79,7 @@ Fill the settings gaps surfaced in the 2026-08-18 review:
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/settings/`.
 
-- [ ] T04: `Backup/export SQLite database` (status:todo)
+- [x] T04: `Backup/export SQLite database` (status:done)
   - Task ID: T04
   - Goal: Export a copy of the local database from Settings.
   - Boundaries (in/out of scope):
@@ -92,17 +92,40 @@ Fill the settings gaps surfaced in the 2026-08-18 review:
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/settings/screens/settings_screen.dart`.
 
-- [ ] T05: `Validation and context sync` (status:todo)
+- [x] T05: `Validation and context sync` (status:done)
   - Task ID: T05
   - Goal: Full checks + document the new settings.
   - Boundaries (in/out of scope): in — analyze/format/tests,
     `context/settings/settings.md` update; out — commit.
-  - Done when: `flutter analyze lib` clean; `flutter test` `+39 -4`; context
+  - Done when: `flutter analyze lib` clean; `flutter test` `+42 -4`; context
     accurate.
   - Verification notes (commands or checks):
     - `flutter analyze lib`; `flutter test`;
       `dart format --output=none --set-exit-if-changed lib/src/settings`.
 
+## Validation Report
+
+- **Commands run:** `flutter gen-l10n` (exit 0), `dart analyze lib` (no issues),
+  `flutter test` (`+42 -4`, the 4 failures are the pre-existing sqlite env
+  failures), `dart format` on touched files (clean).
+- **Success criteria:** met — FX auto-refresh toggle + interval schedule an
+  immediate + periodic refresh via the real `ApiClient`-backed service;
+  experiment master toggle cancels/reschedules deterministically; units flow
+  into workout weight/volume and body-metric displays; export shares a valid
+  DB copy.
+- **Notes:**
+  - Unit-bearing l10n keys were generalised to a `{unit}` placeholder
+    (`workoutDetailPlannedSetReps`, `ActualSetReps`, `ActualSetWeight`,
+    `exerciseDetailWeightDelta`, `workoutSummaryValueKg`, `dashboardVolumeKg`,
+    `bodyMetricsLatestWeight/Height`, `bodyMetricsValueKg`) so all display
+    surfaces share one conversion helper (`lib/src/ui/units.dart`). Storage
+    stays metric; entry fields are unchanged.
+  - Units applied to active-workout set rows and its inline history too
+    (plan said "displays" — these are read-only texts; the actuals-entry
+    dialog still takes kg).
+  - The inch enum value is named `inch` (`in` is a Dart keyword); prefs persist
+    'inch', display suffix stays 'in'.
+
 ## Next Command
 
-/next-task settings-additions T01
+None — all tasks complete.
