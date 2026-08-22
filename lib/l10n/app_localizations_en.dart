@@ -1285,6 +1285,72 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get ingredientFormBrandLabel => 'Brand';
+
+  @override
+  String get ingredientFormBarcodeLabel => 'Barcode';
+
+  @override
+  String get ingredientFormScanTile => 'Scan barcode';
+
+  @override
+  String get ingredientFormScanning => 'Scanning…';
+
+  @override
+  String get ingredientFormPicturesSection => 'Pictures';
+
+  @override
+  String get ingredientFormAddPicture => 'Add picture';
+
+  @override
+  String get ingredientDetailPricesTitle => 'Prices';
+
+  @override
+  String get ingredientDetailNoPrices => 'No prices recorded yet.';
+
+  @override
+  String ingredientDetailCostPer100g(String value) {
+    return '$value / 100 g';
+  }
+
+  @override
+  String get ingredientPriceAdd => 'Add price';
+
+  @override
+  String get ingredientPriceEdit => 'Edit price';
+
+  @override
+  String get ingredientPriceStoreLabel => 'Store';
+
+  @override
+  String get ingredientPriceAmountLabel => 'Price';
+
+  @override
+  String get ingredientPriceGramsLabel => 'Package weight (g)';
+
+  @override
+  String get ingredientPriceHistoryTitle => 'Price history';
+
+  @override
+  String get ingredientDetailManageStores => 'Manage stores';
+
+  @override
+  String get storeManagerTitle => 'Stores';
+
+  @override
+  String get storeManagerEmpty =>
+      'No stores yet. Add one to start tracking prices.';
+
+  @override
+  String get storeManagerAddTile => 'Add store';
+
+  @override
+  String get storeNameLabel => 'Store name';
+
+  @override
+  String get storeNameRequired => 'Name is required';
+
+  @override
   String workoutDetailPlannedSetReps(String reps, String weight) {
     return '$reps × $weight kg';
   }

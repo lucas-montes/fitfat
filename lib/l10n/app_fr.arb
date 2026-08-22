@@ -565,6 +565,33 @@
   "ingredientNutrientFiber": "Fibres {value}g",
   "ingredientNutrientSugar": "Sucre {value}g",
 
+  "ingredientFormBrandLabel": "Marque",
+  "ingredientFormBarcodeLabel": "Code-barres",
+  "ingredientFormScanTile": "Scanner le code-barres",
+  "ingredientFormScanning": "Scan en cours…",
+  "ingredientFormPicturesSection": "Photos",
+  "ingredientFormAddPicture": "Ajouter une photo",
+  "ingredientDetailPricesTitle": "Prix",
+  "ingredientDetailNoPrices": "Aucun prix enregistré pour le moment.",
+  "ingredientDetailCostPer100g": "{value} / 100 g",
+  "@ingredientDetailCostPer100g": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "ingredientPriceAdd": "Ajouter un prix",
+  "ingredientPriceEdit": "Modifier le prix",
+  "ingredientPriceStoreLabel": "Magasin",
+  "ingredientPriceAmountLabel": "Prix",
+  "ingredientPriceGramsLabel": "Poids du paquet (g)",
+  "ingredientPriceHistoryTitle": "Historique des prix",
+  "ingredientDetailManageStores": "Gérer les magasins",
+  "storeManagerTitle": "Magasins",
+  "storeManagerEmpty": "Aucun magasin. Ajoutez-en un pour suivre vos prix.",
+  "storeManagerAddTile": "Ajouter un magasin",
+  "storeNameLabel": "Nom du magasin",
+  "storeNameRequired": "Le nom est requis",
+
   "workoutDetailPlannedSetReps": "{reps} × {weight} kg",
   "workoutDetailPlannedSetDuration": "{minutes} min",
   "workoutDetailPlannedSetEmpty": "—",

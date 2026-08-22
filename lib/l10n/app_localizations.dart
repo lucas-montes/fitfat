@@ -2386,6 +2386,132 @@ abstract class AppLocalizations {
   /// **'Sugar {value}g'**
   String ingredientNutrientSugar(String value);
 
+  /// No description provided for @ingredientFormBrandLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get ingredientFormBrandLabel;
+
+  /// No description provided for @ingredientFormBarcodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Barcode'**
+  String get ingredientFormBarcodeLabel;
+
+  /// No description provided for @ingredientFormScanTile.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan barcode'**
+  String get ingredientFormScanTile;
+
+  /// No description provided for @ingredientFormScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning…'**
+  String get ingredientFormScanning;
+
+  /// No description provided for @ingredientFormPicturesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures'**
+  String get ingredientFormPicturesSection;
+
+  /// No description provided for @ingredientFormAddPicture.
+  ///
+  /// In en, this message translates to:
+  /// **'Add picture'**
+  String get ingredientFormAddPicture;
+
+  /// No description provided for @ingredientDetailPricesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prices'**
+  String get ingredientDetailPricesTitle;
+
+  /// No description provided for @ingredientDetailNoPrices.
+  ///
+  /// In en, this message translates to:
+  /// **'No prices recorded yet.'**
+  String get ingredientDetailNoPrices;
+
+  /// No description provided for @ingredientDetailCostPer100g.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} / 100 g'**
+  String ingredientDetailCostPer100g(String value);
+
+  /// No description provided for @ingredientPriceAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add price'**
+  String get ingredientPriceAdd;
+
+  /// No description provided for @ingredientPriceEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit price'**
+  String get ingredientPriceEdit;
+
+  /// No description provided for @ingredientPriceStoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get ingredientPriceStoreLabel;
+
+  /// No description provided for @ingredientPriceAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get ingredientPriceAmountLabel;
+
+  /// No description provided for @ingredientPriceGramsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Package weight (g)'**
+  String get ingredientPriceGramsLabel;
+
+  /// No description provided for @ingredientPriceHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Price history'**
+  String get ingredientPriceHistoryTitle;
+
+  /// No description provided for @ingredientDetailManageStores.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage stores'**
+  String get ingredientDetailManageStores;
+
+  /// No description provided for @storeManagerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stores'**
+  String get storeManagerTitle;
+
+  /// No description provided for @storeManagerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No stores yet. Add one to start tracking prices.'**
+  String get storeManagerEmpty;
+
+  /// No description provided for @storeManagerAddTile.
+  ///
+  /// In en, this message translates to:
+  /// **'Add store'**
+  String get storeManagerAddTile;
+
+  /// No description provided for @storeNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Store name'**
+  String get storeNameLabel;
+
+  /// No description provided for @storeNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get storeNameRequired;
+
   /// No description provided for @workoutDetailPlannedSetReps.
   ///
   /// In en, this message translates to:

@@ -18,10 +18,61 @@ class Ingredients extends Table {
   // Soft-delete flag (v4). Archived ingredients are hidden from list and
   // picker but their rows stay so past meals keep rendering names/macros.
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+  // Shopping metadata (v20): brand name and barcode as printed on the
+  // package (nullable — user-entered ingredients may have neither).
+  TextColumn? get brand => text().nullable()();
+  TextColumn? get barcode => text().nullable()();
   IntColumn get createdAt => integer()();
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+class Stores extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class IngredientPictures extends Table {
+  TextColumn get id => text()();
+  TextColumn get ingredientId => text().references(Ingredients, #id)();
+  // Local filesystem path of the saved image.
+  TextColumn get imagePath => text()();
+  // Gallery ordering; renumbered densely on reorder.
+  IntColumn get sortOrder => integer()();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class IngredientPrices extends Table {
+  TextColumn get id => text()();
+  TextColumn get ingredientId => text().references(Ingredients, #id)();
+  TextColumn get storeId => text().references(Stores, #id)();
+  // Price in the currency it was observed in.
+  RealColumn get price => real()();
+  // ISO-4217-ish currency code, e.g. 'USD' (same semantics as transactions).
+  TextColumn get currencyCode => text()();
+  // Package weight the price refers to; null when unknown (cost-per-100g
+  // cannot be computed then).
+  RealColumn? get packageGrams => real().nullable()();
+  // When the price was observed, start-of-day epoch milliseconds. One price
+  // row per ingredient per store per day (re-recording overwrites).
+  IntColumn get recordedAt => integer()();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {ingredientId, storeId, recordedAt},
+  ];
 }
 
 class Meals extends Table {

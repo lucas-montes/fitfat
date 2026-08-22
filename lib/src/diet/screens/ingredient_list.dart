@@ -9,6 +9,7 @@ import '../../models/ingredient.dart';
 import '../../ui/haptics.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/ingredients.dart';
+import 'ingredient_detail_screen.dart';
 import 'ingredient_form.dart';
 
 final class IngredientListScreen extends ConsumerWidget {
@@ -37,7 +38,7 @@ final class IngredientListScreen extends ConsumerWidget {
                 itemBuilder: (_, i) => _IngredientTile(
                   ingredient: ingredients[i],
                   l10n: l10n,
-                  onTap: () => _openForm(context, ref, ingredients[i]),
+                  onTap: () => _openDetail(context, ref, ingredients[i]),
                   onDismissed: () =>
                       _archiveIngredient(context, ref, ingredients[i]),
                 ),
@@ -48,6 +49,20 @@ final class IngredientListScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  /// Opens the read-mostly detail screen; edits go through its appbar action.
+  Future<void> _openDetail(
+    BuildContext context,
+    WidgetRef ref,
+    Ingredient ingredient,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => IngredientDetailScreen(ingredientId: ingredient.id),
+      ),
+    );
+    if (context.mounted) ref.invalidate(ingredientListProvider);
   }
 
   Future<void> _openForm(

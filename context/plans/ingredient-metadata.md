@@ -23,7 +23,7 @@ Give ingredients rich shopping metadata (user-approved scope, 2026-08-18):
 - Ingredient detail/list shows latest price per store and cost-per-100g
   (FX-converted via existing rates where applicable).
 - `flutter pub run build_runner build` regenerates; `flutter gen-l10n` exit 0;
-  `flutter analyze lib/` clean; `flutter test` `+39 -4` (pre-existing sqlite env
+  `flutter analyze lib/` clean; `flutter test` `+42 -4` (pre-existing sqlite env
   failures).
 
 ## Constraints & Non-Goals
@@ -38,7 +38,7 @@ Give ingredients rich shopping metadata (user-approved scope, 2026-08-18):
 
 ## Task Stack
 
-- [ ] T01: `Schema v20 — columns + stores/pictures/prices tables` (status:todo)
+- [x] T01: `Schema v20 — columns + stores/pictures/prices tables` (status:done)
   - Task ID: T01
   - Goal: Persist ingredient shopping metadata.
   - Boundaries (in/out of scope):
@@ -59,7 +59,7 @@ Give ingredients rich shopping metadata (user-approved scope, 2026-08-18):
     - `flutter pub run build_runner build --delete-conflicting-outputs`;
       `dart analyze lib/src/database/ lib/src/ingredients/`.
 
-- [ ] T02: `Ingredient form — brand, barcode, mock scan tile` (status:todo)
+- [x] T02: `Ingredient form — brand, barcode, mock scan tile` (status:done)
   - Task ID: T02
   - Goal: Let users enter brand/barcode and trigger a simulated scan.
   - Boundaries (in/out of scope):
@@ -73,7 +73,7 @@ Give ingredients rich shopping metadata (user-approved scope, 2026-08-18):
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/diet/screens/ingredient_form.dart`.
 
-- [ ] T03: `Multi-picture gallery on the ingredient form + detail` (status:todo)
+- [x] T03: `Multi-picture gallery on the ingredient form + detail` (status:done)
   - Task ID: T03
   - Goal: Attach several local pictures per ingredient and view them.
   - Boundaries (in/out of scope):
@@ -87,7 +87,7 @@ Give ingredients rich shopping metadata (user-approved scope, 2026-08-18):
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/diet/`.
 
-- [ ] T04: `Store manager + per-store price history` (status:todo)
+- [x] T04: `Store manager + per-store price history` (status:done)
   - Task ID: T04
   - Goal: Track the same product's price across different stores over time.
   - Boundaries (in/out of scope):
@@ -102,18 +102,40 @@ Give ingredients rich shopping metadata (user-approved scope, 2026-08-18):
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/diet/`.
 
-- [ ] T05: `Validation and context sync` (status:todo)
+- [x] T05: `Validation and context sync` (status:done)
   - Task ID: T05
   - Goal: Full checks + document the ingredient metadata model.
   - Boundaries (in/out of scope): in — build_runner, gen-l10n, analyze, format,
     tests, `context/database/schema.md` (v20), `context/diet/ingredient-crud.md`
     + overview/glossary updates, validation report; out — commit.
-  - Done when: `flutter analyze lib` clean; `flutter test` `+39 -4`; context
+  - Done when: `flutter analyze lib` clean; `flutter test` `+42 -4`; context
     reads back accurate.
   - Verification notes (commands or checks):
     - build_runner; gen-l10n; `flutter analyze lib`; `flutter test`;
       `dart format --output=none --set-exit-if-changed lib/src/diet lib/src/database lib/src/models`.
 
+## Validation Report
+
+- **Commands run:** `flutter pub run build_runner build --delete-conflicting-outputs`
+  (regenerated `app_database.g.dart`), `flutter gen-l10n` (exit 0),
+  `dart analyze lib` (no issues), `flutter test` (`+42 -4`, the 4 failures are
+  the pre-existing sqlite env failures), `dart format` on touched files (clean).
+- **Success criteria:** met — schema v20 migrates (`brand`/`barcode` columns +
+  `stores`/`ingredient_pictures`/`ingredient_prices`, barcode index in
+  `beforeOpen`); form has brand/barcode + mock scan tile + reorderable picture
+  strip; detail screen shows gallery + viewer, latest price per store with
+  cost-per-100g, full history and add/edit sheet; store manager create/rename.
+- **Deviations:**
+  - Price management lives on the **detail screen** only (T04 said "form/detail");
+    the form keeps brand/barcode/pictures. Detail is reachable in one tap from
+    the list.
+  - A new **ingredient detail screen** was introduced (list tap now opens it;
+    edit moved to its appbar action) — the plan assumed a detail surface that
+    did not exist yet.
+- **Notes:** `ingredientDetailVsPrevious`-style dead keys avoided; reused
+  `transactionCurrencyLabel` / `transactionDateLabel` / receipt photo-picker
+  strings instead of duplicates.
+
 ## Next Command
 
-/next-task ingredient-metadata T01
+None — all tasks complete.

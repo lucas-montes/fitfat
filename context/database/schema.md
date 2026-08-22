@@ -1,6 +1,6 @@
 # FitFat — Database Schema
 
-16 tables defined in `lib/src/database/tables.dart`. Drift generates row classes, companions, and table info classes using default singularization (no `@DataClass` annotations).
+19 tables defined in `lib/src/database/tables.dart`. Drift generates row classes, companions, and table info classes using default singularization (no `@DataClass` annotations).
 
 ## Diet tables
 
@@ -18,7 +18,47 @@
 | fiber_per100g | REAL? | v3 — optional, g per 100g |
 | sugar_per100g | REAL? | v3 — optional, g per 100g |
 | is_archived | INTEGER (bool) | v4 — soft-delete flag, `0`/`1`, default `0` |
+| brand | TEXT? | v20 — shopping metadata |
+| barcode | TEXT? | v20 — as printed on the package; indexed via `idx_ingredients_barcode` (created idempotently in `beforeOpen`, so fresh installs and every upgrade path converge) |
 | created_at | INTEGER | epoch milliseconds |
+
+### stores
+
+Shopping stores prices can be recorded at (v20).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | UUID v7 |
+| name | TEXT | |
+| created_at | INTEGER | epoch milliseconds |
+
+### ingredient_pictures
+
+Multiple pictures per ingredient (like receipts; v20).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | UUID v7 |
+| ingredient_id | TEXT FK → ingredients | |
+| image_path | TEXT | local filesystem path (`<docs>/ingredient_pictures/<uuid>.ext`) |
+| sort_order | INTEGER | gallery ordering; renumbered densely on reorder |
+| created_at | INTEGER | epoch milliseconds |
+
+### ingredient_prices
+
+Price history per ingredient per store (v20) — enables "same product sold at different stores" tracking and cost-per-100g.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | UUID v7 |
+| ingredient_id | TEXT FK → ingredients | |
+| store_id | TEXT FK → stores | renames of the store propagate to all price rows |
+| price | REAL | in the currency it was observed in |
+| currency_code | TEXT | ISO-4217-ish, same semantics as transactions |
+| package_grams | REAL? | null when unknown — cost-per-100g cannot be computed then |
+| recorded_at | INTEGER | start-of-day epoch milliseconds |
+| created_at | INTEGER | epoch milliseconds |
+| UNIQUE(ingredient_id, store_id, recorded_at) | | one observation per product/store/day; repo `upsertPrice` replaces in place |
 
 ### meals
 
@@ -176,7 +216,7 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
 - All primary keys are UUID v7 strings (generated via the `uuid` package).
 - Timestamps are stored as epoch milliseconds (integers) and converted to `DateTime` in domain models.
 - `exercise_type` is stored as plain text rather than an enum to keep the schema simple.
-- Schema version is 19. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `onUpgrade` runs stepwise:
+- Schema version is 20. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `beforeOpen` idempotently creates the barcode lookup index; `onUpgrade` runs stepwise:
   - v1 → v2: creates `planner_items`.
   - v2 → v3: adds nullable `sodium_per100g`/`fiber_per100g`/`sugar_per100g` to `ingredients`, adds nullable `due_date` to `planner_items`, creates `body_metrics`, and deletes orphaned `meal_ingredients` rows (rows whose `meal_id` has no matching `meals` row — leftover from the pre-T02 new-meal bug). No data is dropped.
   - v3 → v4: adds `is_archived` to `ingredients` (`NOT NULL DEFAULT 0` — ingredient soft-archive). No data is dropped.
@@ -195,6 +235,7 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
   - v16 → v17: adds nullable `notes` to `workout_exercises` (exercise-level note, active-workout redo T01). No data is dropped.
   - v17 → v18: creates the `experiments` + `experiment_checkins` tables (experiments tab). New tables only — no existing-table changes. No data is dropped.
   - v18 → v19: adds nullable `manual` to `fx_rates` (`NOT NULL DEFAULT 0` — flags rates set by hand, fx-display T01). No data is dropped.
+  - v19 → v20: adds nullable `brand`/`barcode` to `ingredients` and creates `stores`, `ingredient_pictures`, `ingredient_prices` (ingredient-metadata T01). New tables + additive columns only — no data is dropped.
 
 ## Generated code
 

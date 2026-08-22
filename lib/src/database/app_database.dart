@@ -12,6 +12,9 @@ part 'app_database.g.dart';
 @DriftDatabase(
   tables: [
     Ingredients,
+    Stores,
+    IngredientPictures,
+    IngredientPrices,
     Meals,
     MealIngredients,
     Exercises,
@@ -35,11 +38,20 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
+    beforeOpen: (details) async {
+      // Barcode lookup index (v20). Created idempotently here so fresh
+      // installs and every upgrade path end up with the same index without
+      // per-version migration steps.
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_ingredients_barcode '
+        'ON ingredients (barcode)',
+      );
+    },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.createTable(plannerItems);
@@ -156,6 +168,15 @@ final class AppDatabase extends _$AppDatabase {
         // v19: fx_rates.manual — marks hand-edited rates so a refresh can
         // distinguish them from fetched ones.
         await m.addColumn(fxRates, fxRates.manual);
+      }
+      if (from < 20) {
+        // v20: ingredient shopping metadata — brand + barcode columns and the
+        // stores / ingredient_pictures / ingredient_prices tables.
+        await m.addColumn(ingredients, ingredients.brand);
+        await m.addColumn(ingredients, ingredients.barcode);
+        await m.createTable(stores);
+        await m.createTable(ingredientPictures);
+        await m.createTable(ingredientPrices);
       }
     },
   );

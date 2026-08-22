@@ -13,6 +13,9 @@ final class Ingredient {
   /// Soft-delete flag: archived ingredients are hidden from list and picker
   /// but stay in the DB so past meals keep rendering name/macros.
   final bool isArchived;
+  // Shopping metadata (v20): brand name + barcode as printed on the package.
+  final String? brand;
+  final String? barcode;
   final DateTime createdAt;
 
   const Ingredient({
@@ -26,6 +29,8 @@ final class Ingredient {
     this.fiberPer100g,
     this.sugarPer100g,
     this.isArchived = false,
+    this.brand,
+    this.barcode,
     required this.createdAt,
   });
 
@@ -43,6 +48,8 @@ final class Ingredient {
     Object? fiberPer100g = _unset,
     Object? sugarPer100g = _unset,
     bool? isArchived,
+    Object? brand = _unset,
+    Object? barcode = _unset,
     DateTime? createdAt,
   }) => Ingredient(
     id: id ?? this.id,
@@ -61,6 +68,8 @@ final class Ingredient {
         ? this.sugarPer100g
         : sugarPer100g as double?,
     isArchived: isArchived ?? this.isArchived,
+    brand: identical(brand, _unset) ? this.brand : brand as String?,
+    barcode: identical(barcode, _unset) ? this.barcode : barcode as String?,
     createdAt: createdAt ?? this.createdAt,
   );
 

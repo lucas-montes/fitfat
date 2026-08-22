@@ -1296,6 +1296,73 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get ingredientFormBrandLabel => 'Marque';
+
+  @override
+  String get ingredientFormBarcodeLabel => 'Code-barres';
+
+  @override
+  String get ingredientFormScanTile => 'Scanner le code-barres';
+
+  @override
+  String get ingredientFormScanning => 'Scan en cours…';
+
+  @override
+  String get ingredientFormPicturesSection => 'Photos';
+
+  @override
+  String get ingredientFormAddPicture => 'Ajouter une photo';
+
+  @override
+  String get ingredientDetailPricesTitle => 'Prix';
+
+  @override
+  String get ingredientDetailNoPrices =>
+      'Aucun prix enregistré pour le moment.';
+
+  @override
+  String ingredientDetailCostPer100g(String value) {
+    return '$value / 100 g';
+  }
+
+  @override
+  String get ingredientPriceAdd => 'Ajouter un prix';
+
+  @override
+  String get ingredientPriceEdit => 'Modifier le prix';
+
+  @override
+  String get ingredientPriceStoreLabel => 'Magasin';
+
+  @override
+  String get ingredientPriceAmountLabel => 'Prix';
+
+  @override
+  String get ingredientPriceGramsLabel => 'Poids du paquet (g)';
+
+  @override
+  String get ingredientPriceHistoryTitle => 'Historique des prix';
+
+  @override
+  String get ingredientDetailManageStores => 'Gérer les magasins';
+
+  @override
+  String get storeManagerTitle => 'Magasins';
+
+  @override
+  String get storeManagerEmpty =>
+      'Aucun magasin. Ajoutez-en un pour suivre vos prix.';
+
+  @override
+  String get storeManagerAddTile => 'Ajouter un magasin';
+
+  @override
+  String get storeNameLabel => 'Nom du magasin';
+
+  @override
+  String get storeNameRequired => 'Le nom est requis';
+
+  @override
   String workoutDetailPlannedSetReps(String reps, String weight) {
     return '$reps × $weight kg';
   }

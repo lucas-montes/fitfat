@@ -1,12 +1,21 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import '../../ui/widgets/top_banner.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/ingredient.dart';
+import '../../ui/widgets/top_banner.dart';
 import '../providers/ingredients.dart';
 import '../repositories/ingredient_repository.dart';
+
+/// Simulated barcode capture (mock until a real scanner dependency lands).
+const _mockScannedBarcode = '3017620422003';
 
 final class IngredientFormScreen extends ConsumerStatefulWidget {
   final Ingredient? ingredient;
@@ -15,6 +24,15 @@ final class IngredientFormScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<IngredientFormScreen> createState() =>
       _IngredientFormScreenState();
+}
+
+/// A picture shown in the gallery strip: either an already-persisted row
+/// ([dbId] set) or a freshly picked file that is saved on [IngredientFormScreen._save].
+final class _PictureDraft {
+  final String? dbId;
+  final String path;
+
+  const _PictureDraft({required this.path, this.dbId});
 }
 
 final class _IngredientFormScreenState
@@ -28,7 +46,13 @@ final class _IngredientFormScreenState
   late final TextEditingController _sodiumCtrl;
   late final TextEditingController _fiberCtrl;
   late final TextEditingController _sugarCtrl;
+  late final TextEditingController _brandCtrl;
+  late final TextEditingController _barcodeCtrl;
   bool _saving = false;
+  bool _scanning = false;
+
+  final _picker = ImagePicker();
+  final List<_PictureDraft> _pictures = [];
 
   bool get _isEditing => widget.ingredient != null;
 
@@ -58,6 +82,9 @@ final class _IngredientFormScreenState
     _sugarCtrl = TextEditingController(
       text: ing?.sugarPer100g?.toStringAsFixed(1) ?? '',
     );
+    _brandCtrl = TextEditingController(text: ing?.brand ?? '');
+    _barcodeCtrl = TextEditingController(text: ing?.barcode ?? '');
+    if (_isEditing) _loadPictures();
   }
 
   @override
@@ -70,7 +97,21 @@ final class _IngredientFormScreenState
     _sodiumCtrl.dispose();
     _fiberCtrl.dispose();
     _sugarCtrl.dispose();
+    _brandCtrl.dispose();
+    _barcodeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPictures() async {
+    final rows = await ref
+        .read(ingredientRepositoryProvider)
+        .getPictures(widget.ingredient!.id);
+    if (!mounted) return;
+    setState(() {
+      _pictures
+        ..clear()
+        ..addAll(rows.map((r) => _PictureDraft(dbId: r.id, path: r.imagePath)));
+    });
   }
 
   @override
@@ -99,6 +140,40 @@ final class _IngredientFormScreenState
                   ? l10n.ingredientFormNameRequired
                   : null,
               textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _brandCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormBrandLabel,
+              ),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _barcodeCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.ingredientFormBarcodeLabel,
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\dXx-]')),
+              ],
+            ),
+            Card(
+              margin: const EdgeInsets.only(top: 8),
+              child: ListTile(
+                leading: const Icon(Icons.qr_code_scanner),
+                title: Text(l10n.ingredientFormScanTile),
+                trailing: _scanning
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : null,
+                onTap: _scanning ? null : _scanBarcode,
+              ),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -225,6 +300,8 @@ final class _IngredientFormScreenState
               ),
             ),
             const SizedBox(height: 24),
+            _buildPicturesSection(l10n),
+            const SizedBox(height: 24),
             FilledButton(
               onPressed: _saving ? null : _save,
               child: Text(_saving ? l10n.commonSaving : l10n.commonSave),
@@ -234,6 +311,204 @@ final class _IngredientFormScreenState
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Pictures gallery strip
+  // ---------------------------------------------------------------------------
+
+  Widget _buildPicturesSection(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.ingredientFormPicturesSection,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 88,
+          child: ReorderableListView.builder(
+            scrollDirection: Axis.horizontal,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _pictures.length + 1,
+            onReorder: _onReorderPictures,
+            itemBuilder: (context, i) {
+              if (i == _pictures.length) {
+                return OutlinedButton.icon(
+                  key: const ValueKey('add-picture'),
+                  onPressed: () => _pickPicture(),
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: Text(l10n.ingredientFormAddPicture),
+                );
+              }
+              final draft = _pictures[i];
+              return Stack(
+                key: ValueKey(draft.dbId ?? draft.path),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        File(draft.path),
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(
+                          width: 72,
+                          height: 72,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          child: const Icon(Icons.broken_image_outlined),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: InkResponse(
+                      onTap: () => _removePicture(i),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.errorContainer.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _onReorderPictures(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex--;
+      final moved = _pictures.removeAt(oldIndex);
+      _pictures.insert(newIndex.clamp(0, _pictures.length), moved);
+    });
+  }
+
+  Future<void> _pickPicture() async {
+    final l10n = AppLocalizations.of(context)!;
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: Text(l10n.receiptTakePhoto),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text(l10n.receiptPickGallery),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    try {
+      final picked = await _picker.pickImage(source: source, imageQuality: 85);
+      if (picked == null || !mounted) return;
+      final dir = await getApplicationDocumentsDirectory();
+      final picturesDir = Directory(p.join(dir.path, 'ingredient_pictures'));
+      await picturesDir.create(recursive: true);
+      final ext = p.extension(picked.path);
+      final name = '${const Uuid().v7()}$ext';
+      final saved = await File(
+        picked.path,
+      ).copy(p.join(picturesDir.path, name));
+      setState(() => _pictures.add(_PictureDraft(path: saved.path)));
+    } catch (e) {
+      if (mounted) {
+        showTopBanner(
+          context,
+          message: AppLocalizations.of(context)!.errorWithMessage('$e'),
+        );
+      }
+    }
+  }
+
+  Future<void> _removePicture(int index) async {
+    final draft = _pictures[index];
+    setState(() => _pictures.removeAt(index));
+    if (draft.dbId == null) return;
+    final repo = ref.read(ingredientRepositoryProvider);
+    await repo.deletePicture(draft.dbId!);
+    final file = File(draft.path);
+    if (await file.exists()) {
+      try {
+        await file.delete();
+      } catch (_) {}
+    }
+    if (mounted) {
+      ref.invalidate(ingredientPicturesProvider(widget.ingredient!.id));
+    }
+  }
+
+  /// Persists pending gallery changes after the ingredient row is written:
+  /// new pictures get rows, then the whole strip is renumbered densely
+  /// following the on-screen order.
+  Future<void> _persistPictures(String ingredientId) async {
+    if (_pictures.isEmpty) return;
+    final repo = ref.read(ingredientRepositoryProvider);
+    for (var i = 0; i < _pictures.length; i++) {
+      final draft = _pictures[i];
+      if (draft.dbId != null) continue;
+      await repo.insertPicture(
+        newIngredientPicture(
+          ingredientId: ingredientId,
+          imagePath: draft.path,
+          sortOrder: i,
+        ),
+      );
+    }
+    final rows = await repo.getPictures(ingredientId);
+    final idByPath = {for (final row in rows) row.imagePath: row.id};
+    final orderedIds = [for (final draft in _pictures) ?idByPath[draft.path]];
+    await repo.reorderPictures(ingredientId, orderedIds);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mock barcode scan
+  // ---------------------------------------------------------------------------
+
+  /// Simulated capture: a short delay then a fake EAN fills the field.
+  Future<void> _scanBarcode() async {
+    setState(() => _scanning = true);
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (!mounted) return;
+    setState(() {
+      _barcodeCtrl.text = _mockScannedBarcode;
+      _scanning = false;
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Save + validation
+  // ---------------------------------------------------------------------------
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -248,35 +523,46 @@ final class _IngredientFormScreenState
       final sodium = _parseOptional(_sodiumCtrl.text);
       final fiber = _parseOptional(_fiberCtrl.text);
       final sugar = _parseOptional(_sugarCtrl.text);
+      final brand = _parseText(_brandCtrl.text);
+      final barcode = _parseText(_barcodeCtrl.text);
 
       final repo = ref.read(ingredientRepositoryProvider);
 
       if (_isEditing) {
-        await repo.update(
-          widget.ingredient!.copyWith(
-            name: name,
-            caloriesPer100g: calories,
-            proteinPer100g: protein,
-            carbsPer100g: carbs,
-            fatPer100g: fat,
-            sodiumPer100g: sodium,
-            fiberPer100g: fiber,
-            sugarPer100g: sugar,
-          ),
+        final updated = widget.ingredient!.copyWith(
+          name: name,
+          caloriesPer100g: calories,
+          proteinPer100g: protein,
+          carbsPer100g: carbs,
+          fatPer100g: fat,
+          sodiumPer100g: sodium,
+          fiberPer100g: fiber,
+          sugarPer100g: sugar,
+          brand: brand,
+          barcode: barcode,
         );
+        await repo.update(updated);
+        await _persistPictures(updated.id);
       } else {
-        await repo.insert(
-          newIngredient(
-            name: name,
-            caloriesPer100g: calories,
-            proteinPer100g: protein,
-            carbsPer100g: carbs,
-            fatPer100g: fat,
-            sodiumPer100g: sodium,
-            fiberPer100g: fiber,
-            sugarPer100g: sugar,
-          ),
+        final created = newIngredient(
+          name: name,
+          caloriesPer100g: calories,
+          proteinPer100g: protein,
+          carbsPer100g: carbs,
+          fatPer100g: fat,
+          sodiumPer100g: sodium,
+          fiberPer100g: fiber,
+          sugarPer100g: sugar,
+          brand: brand,
+          barcode: barcode,
         );
+        await repo.insert(created);
+        await _persistPictures(created.id);
+      }
+
+      ref.invalidate(ingredientListProvider);
+      if (_isEditing) {
+        ref.invalidate(ingredientPicturesProvider(widget.ingredient!.id));
       }
 
       if (mounted) Navigator.of(context).pop(true);
@@ -328,5 +614,11 @@ final class _IngredientFormScreenState
     final trimmed = text.trim();
     if (trimmed.isEmpty) return null;
     return double.parse(trimmed);
+  }
+
+  /// Normalizes an optional free-text input; blank maps to null.
+  String? _parseText(String text) {
+    final trimmed = text.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 }

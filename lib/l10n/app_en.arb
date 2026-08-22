@@ -676,6 +676,33 @@
     }
   },
 
+  "ingredientFormBrandLabel": "Brand",
+  "ingredientFormBarcodeLabel": "Barcode",
+  "ingredientFormScanTile": "Scan barcode",
+  "ingredientFormScanning": "Scanning…",
+  "ingredientFormPicturesSection": "Pictures",
+  "ingredientFormAddPicture": "Add picture",
+  "ingredientDetailPricesTitle": "Prices",
+  "ingredientDetailNoPrices": "No prices recorded yet.",
+  "ingredientDetailCostPer100g": "{value} / 100 g",
+  "@ingredientDetailCostPer100g": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "ingredientPriceAdd": "Add price",
+  "ingredientPriceEdit": "Edit price",
+  "ingredientPriceStoreLabel": "Store",
+  "ingredientPriceAmountLabel": "Price",
+  "ingredientPriceGramsLabel": "Package weight (g)",
+  "ingredientPriceHistoryTitle": "Price history",
+  "ingredientDetailManageStores": "Manage stores",
+  "storeManagerTitle": "Stores",
+  "storeManagerEmpty": "No stores yet. Add one to start tracking prices.",
+  "storeManagerAddTile": "Add store",
+  "storeNameLabel": "Store name",
+  "storeNameRequired": "Name is required",
+
   "workoutDetailPlannedSetReps": "{reps} × {weight} kg",
   "@workoutDetailPlannedSetReps": {
     "placeholders": {
