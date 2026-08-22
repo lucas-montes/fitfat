@@ -29,3 +29,5 @@ All previous source code was deleted in commit `2893826`. The project is being r
 - Minimal, single-user, local-first
 - CRUD forms as the primary interaction pattern
 - No authentication, no sync, no cloud
+
+**Future direction (design only):** an offline-first data-sync contract has been drafted for a possible future server — see [sync/sync-contract.md](sync/sync-contract.md). The local-first principles above still govern all current code; nothing syncs today.

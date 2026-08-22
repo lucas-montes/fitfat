@@ -43,7 +43,7 @@ The contract covers:
 
 ## Task Stack
 
-- [ ] T01: `Write the sync contract document` (status:todo)
+- [x] T01: `Write the sync contract document` (status:done)
   - Task ID: T01
   - Goal: Produce `context/sync/sync-contract.md`.
   - Boundaries (in/out of scope):
@@ -62,7 +62,7 @@ The contract covers:
       `context/database/schema.md`; confirm no Dart/`lib/` files changed
       (`git status`).
 
-- [ ] T02: `Review pass + decision log` (status:todo)
+- [x] T02: `Review pass + decision log` (status:done)
   - Task ID: T02
   - Goal: Validate the contract against the codebase and record decisions.
   - Boundaries (in/out of scope):
@@ -79,4 +79,28 @@ The contract covers:
 
 ## Next Command
 
-/next-task sync-contract T01
+None — all tasks complete.
+
+## Validation Report
+
+- **Verification:** `git status` shows only `context/` changes (no Dart, no
+  deps); every synced table name in §2 matches
+  [database/schema.md](../database/schema.md); document read end-to-end.
+- **Change-tracking cross-check (T02):** only `notes.updated_at` (and the
+  excluded `fx_rates.updated_at`) exist today — every other synced table needs
+  an `updated_at` + tombstone migration before sync ships; recorded as a hard
+  prerequisite in §3. Hard deletes confirmed for meals/workouts (+children),
+  planner items, notes, unused exercises, accounts/transactions/receipts,
+  ingredient pictures/prices; `stores` has no delete (rename only);
+  `body_metrics` is upsert-by-day with no delete surface;
+  `ingredients` soft-archives — all reflected in §2 and §6.
+- **Decisions logged:** LWW per row (matches today's replace-on-update repos)
+  with aggregate atomicity + newer-delete-wins exceptions; client-generated
+  UUID v7 identity end-to-end; per-entity-type cursors; batch = 500 ops /
+  1 MiB, idempotency-keyed retries with backoff; FX caches + settings +
+  picture binaries out of scope.
+- **Open questions captured:** OQ-1…OQ-8 (server stack, blob transport, auth
+  mechanism, LWW-loss UX, locked-catalog handling, clock trust, cursor
+  granularity, schema evolution).
+- **Linked:** from `context-map.md` (Sync row) and `overview.md`
+  (future-direction note under design principles).
