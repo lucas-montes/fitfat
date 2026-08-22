@@ -30,7 +30,7 @@ image/video stays as-is (both explicitly non-negotiable).
   zero; pending stays neutral.
 - When a rest ends, the pager scrolls to the exercise whose rest was running.
 - `flutter gen-l10n` exit 0; `flutter analyze lib/` clean; `flutter test`
-  `+39 -4` (pre-existing sqlite env failures).
+  `+42 -4` (pre-existing sqlite env failures).
 
 ## Constraints & Non-Goals
 
@@ -42,7 +42,7 @@ image/video stays as-is (both explicitly non-negotiable).
 
 ## Task Stack
 
-- [ ] T01: `Merge the two top cards into one info strip` (status:todo)
+- [x] T01: `Merge the two top cards into one info strip` (status:done)
   - Task ID: T01
   - Goal: Replace the separate header card + `_RestStrip` with a single card.
   - Boundaries (in/out of scope):
@@ -60,7 +60,7 @@ image/video stays as-is (both explicitly non-negotiable).
     - `dart analyze lib/src/exercise/screens/active_workout_screen.dart`;
       remove `_RestStrip` references (`flutter analyze` catches leftovers).
 
-- [ ] T02: `Metadata + history behind icons` (status:todo)
+- [x] T02: `Metadata + history behind icons` (status:done)
   - Task ID: T02
   - Goal: Free scroll space by moving fact chips and history behind icon-opened
     sheets; keep the inline note.
@@ -78,7 +78,7 @@ image/video stays as-is (both explicitly non-negotiable).
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/exercise/screens/active_workout_screen.dart`.
 
-- [ ] T03: `History counts only completed workouts/sets` (status:todo)
+- [x] T03: `History counts only completed workouts/sets` (status:done)
   - Task ID: T03
   - Goal: Exclude pending workouts and planned sets from exercise history.
   - Boundaries (in/out of scope):
@@ -97,7 +97,7 @@ image/video stays as-is (both explicitly non-negotiable).
     - `dart analyze lib/src/exercise/`;
       manual: a pending workout with planned sets must not show in history.
 
-- [ ] T04: `Set marking — include weight in the orange case` (status:todo)
+- [x] T04: `Set marking — include weight in the orange case` (status:done)
   - Task ID: T04
   - Goal: Orange when reps OR weight (or duration/distance) is below planned.
   - Boundaries (in/out of scope):
@@ -113,7 +113,7 @@ image/video stays as-is (both explicitly non-negotiable).
     - `dart analyze lib/src/exercise/screens/active_workout_screen.dart`;
       manual: set actual weight below planned → orange.
 
-- [ ] T05: `Rest complete → jump to the current exercise` (status:todo)
+- [x] T05: `Rest complete → jump to the current exercise` (status:done)
   - Task ID: T05
   - Goal: Track the current exercise and return to it when a rest ends.
   - Boundaries (in/out of scope):
@@ -132,13 +132,13 @@ image/video stays as-is (both explicitly non-negotiable).
       manual: start a rest on exercise A, swipe to B, rest completes → pager
       returns to A.
 
-- [ ] T06: `Validation and context sync` (status:todo)
+- [x] T06: `Validation and context sync` (status:done)
   - Task ID: T06
   - Goal: Full checks + document the active-workout layout/behavior.
   - Boundaries (in/out of scope): in — analyze/format/tests,
     `context/exercise/active-workout.md` update + overview/glossary touches;
     out — commit.
-  - Done when: `flutter analyze lib` clean; `flutter test` `+39 -4`; context
+  - Done when: `flutter analyze lib` clean; `flutter test` `+42 -4`; context
     accurate.
   - Verification notes (commands or checks):
     - `flutter analyze lib`; `flutter test`;
@@ -146,4 +146,26 @@ image/video stays as-is (both explicitly non-negotiable).
 
 ## Next Command
 
-/next-task active-workout-declutter T01
+None — all tasks complete.
+
+## Validation Report
+
+- **Commands run:** `flutter gen-l10n` (exit 0), `dart analyze lib` (no
+  issues), `flutter test` (`+42 -4`, the pre-existing sqlite env failures),
+  `dart format` on the touched screen + repository (clean).
+- **Success criteria:** met — single top info card (status, elapsed,
+  started-at, rest line with overdue highlight + owning exercise, N/M page
+  indicator); fact chips behind the info icon sheet; history behind the
+  history icon sheet (`_HistorySheet`); note stays inline;
+  `getExerciseHistory` returns completed workouts with completed sets only
+  (entries with zero completed sets dropped); `partial` now includes weight
+  below planned; rest-overdue one-shot `jumpToPage` to the resting set's
+  exercise.
+- **Non-negotiables respected:** planned-set row format unchanged (only the
+  status logic changed); media strip untouched; no schema changes.
+- **Notes:** T06 named `context/exercise/active-workout.md`, which doesn't
+  exist — active-workout behavior is documented in
+  `context/exercise/workout-crud.md` (new "Active workout declutter" bullet,
+  superseding parts of the redo/performance bullets), so that file was updated
+  instead. Device-only behaviors (rest jump, sheet ergonomics) still worth a
+  manual smoke pass on a real device.

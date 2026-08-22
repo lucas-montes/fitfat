@@ -496,6 +496,12 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get activeWorkoutExerciseNotes;
 
+  /// No description provided for @activeWorkoutExerciseInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise info'**
+  String get activeWorkoutExerciseInfo;
+
   /// No description provided for @activeWorkoutExerciseNotesDialogTitle.
   ///
   /// In en, this message translates to:

@@ -228,6 +228,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get activeWorkoutExerciseNotes => 'Notes';
 
   @override
+  String get activeWorkoutExerciseInfo => 'Infos exercice';
+
+  @override
   String get activeWorkoutExerciseNotesDialogTitle => 'Notes sur l\'exercice';
 
   @override

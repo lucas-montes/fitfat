@@ -110,6 +110,7 @@
   "activeWorkoutAllExercises": "Todos los ejercicios",
   "activeWorkoutSearchPrompt": "Escribe para buscar ejercicios",
   "activeWorkoutExerciseNotes": "Notas",
+  "activeWorkoutExerciseInfo": "Info del ejercicio",
   "activeWorkoutExerciseNotesDialogTitle": "Notas sobre el ejercicio",
   "activeWorkoutExerciseNotesHint": "Anota qué repetir o cambiar la próxima vez (series, peso, dificultad)…",
 

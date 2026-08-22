@@ -376,8 +376,11 @@ final class WorkoutRepository {
     notes: s.notes,
   );
 
-  /// Every workout that has used [exerciseId], newest first, with that
-  /// exercise's sets per workout. Backs the exercise detail history screen.
+  /// Every **completed** workout that used [exerciseId], newest first, with
+  /// that exercise's completed sets per workout. Pending/active workouts and
+  /// planned-only sets are excluded (they would pollute totals and the
+  /// "times done" signal); entries with zero completed sets are dropped.
+  /// Backs the exercise detail history and the active-workout history sheet.
   Future<List<ExerciseHistoryEntry>> getExerciseHistory(
     String exerciseId,
   ) async {
@@ -389,11 +392,12 @@ final class WorkoutRepository {
     final workoutIds = weRows.map((r) => r.workoutId).toList();
     final workoutRows = await (_database.select(
       _database.workouts,
-    )..where((t) => t.id.isIn(workoutIds))).get();
+    )..where((t) => t.id.isIn(workoutIds) & t.completedAt.isNotNull())).get();
     final workoutMap = {for (final row in workoutRows) row.id: _toDomain(row)};
 
     // Load every set across all of the exercise's workout_exercises in one
     // bulk query, grouped in memory (perf T03 — was one query per entry).
+    // Planned-only rows never enter the map.
     final weIds = weRows.map((r) => r.id).toList();
     final setRows =
         await (_database.select(_database.exerciseSets)
@@ -405,21 +409,18 @@ final class WorkoutRepository {
             .get();
     final setsByWe = <String, List<ExerciseSet>>{};
     for (final row in setRows) {
-      setsByWe
-          .putIfAbsent(row.workoutExerciseId, () => [])
-          .add(_toSetDomain(row));
+      final set = _toSetDomain(row);
+      if (!set.isCompleted) continue;
+      setsByWe.putIfAbsent(row.workoutExerciseId, () => []).add(set);
     }
 
     final entries = <ExerciseHistoryEntry>[];
     for (final we in weRows) {
       final workout = workoutMap[we.workoutId];
       if (workout == null) continue;
-      entries.add(
-        ExerciseHistoryEntry(
-          workout: workout,
-          sets: setsByWe[we.id] ?? const [],
-        ),
-      );
+      final sets = setsByWe[we.id] ?? const [];
+      if (sets.isEmpty) continue;
+      entries.add(ExerciseHistoryEntry(workout: workout, sets: sets));
     }
     entries.sort((a, b) => b.workout.date.compareTo(a.workout.date));
     return entries;

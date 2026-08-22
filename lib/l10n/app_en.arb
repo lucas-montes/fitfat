@@ -121,6 +121,7 @@
   "activeWorkoutAllExercises": "All Exercises",
   "activeWorkoutSearchPrompt": "Type to search exercises",
   "activeWorkoutExerciseNotes": "Notes",
+  "activeWorkoutExerciseInfo": "Exercise info",
   "activeWorkoutExerciseNotesDialogTitle": "Exercise notes",
   "activeWorkoutExerciseNotesHint": "Note what to repeat or change next time (sets, weight, difficulty)…",
 

@@ -162,6 +162,9 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
   // Vertical pager over exercises: one exercise per swipe (one at a time).
   final PageController _pageController = PageController();
   int _page = 0;
+  // Start time of the rest whose completion already triggered a pager jump
+  // (one-shot per rest session, T05).
+  DateTime? _lastJumpedRestStart;
 
   Workout get _workout => widget.workout;
   WorkoutWithDetails get _detail => widget.detail;
@@ -195,6 +198,25 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
     final workout = _workout;
     final detail = _detail;
 
+    // Rest → current exercise (T05): when a rest transitions to overdue,
+    // one-shot jump the pager back to the exercise the resting set belongs to.
+    // Keyed on the rest's start time so it fires once per rest session; the
+    // manual pager stays independent otherwise.
+    final rest = _ref.watch(restTimerProvider);
+    if (rest.isResting && rest.isOverdue(DateTime.now())) {
+      final startedAt = rest.startedAt;
+      if (startedAt != null && _lastJumpedRestStart != startedAt) {
+        _lastJumpedRestStart = startedAt;
+        final index = _pageIndexForSet(rest.setId);
+        if (index != null && index != _page) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _pageController.jumpToPage(index);
+          });
+        }
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(workout.name),
@@ -215,12 +237,13 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header: active badge + live elapsed time.
+          // Info strip: the single top card holding status, live elapsed,
+          // started-at, the rest countdown and the exercise page indicator.
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -231,30 +254,39 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
                           color: statusColors.warning,
                         ),
                         const Spacer(),
-                        _ElapsedText(workout: workout),
+                        if (detail.exercises.isNotEmpty)
+                          Text(
+                            '${_page + 1} / ${detail.exercises.length}',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
-                    if (workout.startedAt != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.workoutDetailStartedAt(
-                          DateFormats.formatTime(
-                            context,
-                            TimeOfDay.fromDateTime(workout.startedAt!),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        _ElapsedText(workout: workout),
+                        const Spacer(),
+                        if (workout.startedAt != null)
+                          Text(
+                            l10n.workoutDetailStartedAt(
+                              DateFormats.formatTime(
+                                context,
+                                TimeOfDay.fromDateTime(workout.startedAt!),
+                              ),
+                            ),
+                            style: theme.textTheme.bodySmall,
                           ),
-                        ),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
+                      ],
+                    ),
+                    _RestLine(exerciseName: _exerciseNameForSet(rest.setId)),
                   ],
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: _RestStrip(),
           ),
           if (detail.exercises.isEmpty)
             Expanded(
@@ -288,9 +320,33 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
     );
   }
 
+  /// Page index of the exercise owning [setId], or null when unknown.
+  int? _pageIndexForSet(String? setId) {
+    if (setId == null) return null;
+    for (var i = 0; i < _detail.exercises.length; i++) {
+      for (final set in _detail.exercises[i].sets) {
+        if (set.id == setId) return i;
+      }
+    }
+    return null;
+  }
+
+  /// Exercise name owning [setId] — shown in the rest line when the user has
+  /// swiped away from that exercise while its rest is running.
+  String? _exerciseNameForSet(String? setId) {
+    if (setId == null) return null;
+    for (final block in _detail.exercises) {
+      for (final set in block.sets) {
+        if (set.id == setId) return block.exercise.exerciseName;
+      }
+    }
+    return null;
+  }
+
   Widget _buildPagerBar(ThemeData theme) {
     final l10n = _l10n;
     final count = _detail.exercises.length;
+    // Prev/next only — the N / M indicator moved into the top info strip.
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -304,15 +360,7 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
                 )
               : null,
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text(
-            '${_page + 1} / $count',
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ),
+        const SizedBox(width: FitFatTokens.spaceL),
         IconButton(
           tooltip: l10n.activeWorkoutNextExercise,
           icon: const Icon(Icons.keyboard_arrow_right),
@@ -434,14 +482,20 @@ final class _ElapsedTextState extends State<_ElapsedText> {
   }
 }
 
-final class _RestStrip extends ConsumerStatefulWidget {
-  const _RestStrip();
+/// Rest countdown line inside the top info strip. Hidden when no rest is
+/// running; otherwise shows a count-up (own scoped 1 s ticker so only this
+/// leaf rebuilds) with an overdue highlight, plus the exercise the rest
+/// belongs to when the user has swiped away from it.
+final class _RestLine extends ConsumerStatefulWidget {
+  final String? exerciseName;
+
+  const _RestLine({required this.exerciseName});
 
   @override
-  ConsumerState<_RestStrip> createState() => _RestStripState();
+  ConsumerState<_RestLine> createState() => _RestLineState();
 }
 
-final class _RestStripState extends ConsumerState<_RestStrip> {
+final class _RestLineState extends ConsumerState<_RestLine> {
   Timer? _ticker;
 
   @override
@@ -468,33 +522,42 @@ final class _RestStripState extends ConsumerState<_RestStrip> {
     final statusColors = theme.extension<FitFatColors>()!;
     final now = DateTime.now();
     final overdue = rest.isOverdue(now);
+    final exerciseName = widget.exerciseName;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: overdue
-            ? statusColors.warning.withValues(alpha: 0.14)
-            : theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.timer_outlined, size: 18, color: statusColors.warning),
-          const SizedBox(width: FitFatTokens.spaceM),
-          Expanded(
-            child: Text(
-              l10n.activeWorkoutRestLabel,
-              style: theme.textTheme.bodyMedium,
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: overdue
+              ? statusColors.warning.withValues(alpha: 0.14)
+              : theme.colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.timer_outlined, size: 16, color: statusColors.warning),
+            const SizedBox(width: FitFatTokens.spaceS),
+            Expanded(
+              child: Text(
+                exerciseName == null
+                    ? l10n.activeWorkoutRestLabel
+                    : '${l10n.activeWorkoutRestLabel} · $exerciseName',
+                style: theme.textTheme.bodySmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          Text(
-            formatRestDuration(rest.elapsedAt(now)),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontFeatures: const [FontFeature.tabularFigures()],
+            Text(
+              formatRestDuration(rest.elapsedAt(now)),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontFeatures: const [FontFeature.tabularFigures()],
+                color: overdue ? statusColors.warning : null,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -568,6 +631,18 @@ final class _ExercisePage extends ConsumerWidget {
                           ),
                         ),
                         IconButton(
+                          tooltip: l10n.activeWorkoutExerciseInfo,
+                          icon: const Icon(Icons.info_outline),
+                          onPressed: exercise == null
+                              ? null
+                              : () => _showInfoSheet(context, exercise),
+                        ),
+                        IconButton(
+                          tooltip: l10n.exerciseDetailTabHistory,
+                          icon: const Icon(Icons.history),
+                          onPressed: () => _showHistorySheet(context),
+                        ),
+                        IconButton(
                           tooltip: l10n.activeWorkoutExerciseNotes,
                           icon: Icon(
                             note == null || note.trim().isEmpty
@@ -605,10 +680,6 @@ final class _ExercisePage extends ConsumerWidget {
                         ),
                       ),
                     ],
-                    if (exercise != null) ...[
-                      const SizedBox(height: 8),
-                      _CardFactChips(exercise: exercise, l10n: l10n),
-                    ],
                   ],
                 ),
               ),
@@ -620,10 +691,6 @@ final class _ExercisePage extends ConsumerWidget {
                     _SetsProgressBar(
                       completed: completedSets,
                       total: block.sets.length,
-                    ),
-                    _ExerciseHistorySection(
-                      exerciseId: block.exercise.exerciseId,
-                      l10n: l10n,
                     ),
                     for (final set in block.sets)
                       _SetRow(
@@ -657,6 +724,50 @@ final class _ExercisePage extends ConsumerWidget {
           notes: result.isEmpty ? null : result,
         );
     ref.invalidate(workoutDetailProvider(workout.id));
+  }
+
+  /// Fact chips (type / body part / equipment) behind the info icon.
+  void _showInfoSheet(BuildContext context, Exercise exercise) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                block.exercise.exerciseName,
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              _CardFactChips(exercise: exercise, l10n: l10n),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Past sessions for this exercise behind the history icon.
+  void _showHistorySheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (ctx, scrollController) => _HistorySheet(
+          exerciseId: block.exercise.exerciseId,
+          l10n: l10n,
+          scrollController: scrollController,
+        ),
+      ),
+    );
   }
 }
 
@@ -1518,9 +1629,9 @@ enum _SetProgress { pending, partial, done, failed }
 
 /// Progress classification for one set (planned vs logged actuals).
 ///
-/// Weightlifting compares reps (weight is informational in the dialog);
-/// cardio compares duration/distance against their planned values.
-/// "Failed" = the set was logged but at zero every actual value.
+/// Weightlifting compares reps **and** weight (either below planned marks the
+/// set partial); cardio compares duration/distance against their planned
+/// values. "Failed" = the set was logged but at zero every actual value.
 _SetProgress _setProgress(ExerciseSet set) {
   if (!set.isCompleted) return _SetProgress.pending;
   final reps = set.reps;
@@ -1529,6 +1640,10 @@ _SetProgress _setProgress(ExerciseSet set) {
     final actualReps = set.actualReps;
     if (actualReps == null || actualReps == 0) return _SetProgress.failed;
     if (reps != null && actualReps < reps) return _SetProgress.partial;
+    final actualWeight = set.actualWeightKg;
+    if (weightKg != null && actualWeight != null && actualWeight < weightKg) {
+      return _SetProgress.partial;
+    }
     return _SetProgress.done;
   }
   final actualDuration = set.actualDurationMinutes;
@@ -1591,33 +1706,74 @@ final class _SetsProgressBar extends StatelessWidget {
   }
 }
 
-/// Collapsible history for one exercise (past sessions via
-/// `exerciseHistoryProvider`). Hidden entirely while loading/error/empty.
-final class _ExerciseHistorySection extends ConsumerWidget {
+/// History sheet for one exercise (past sessions via
+/// `exerciseHistoryProvider`), opened from the card's history icon. Shows a
+/// short empty state when there is nothing completed yet.
+final class _HistorySheet extends ConsumerWidget {
   final String exerciseId;
   final AppLocalizations l10n;
+  final ScrollController scrollController;
 
-  const _ExerciseHistorySection({required this.exerciseId, required this.l10n});
+  const _HistorySheet({
+    required this.exerciseId,
+    required this.l10n,
+    required this.scrollController,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(exerciseHistoryProvider(exerciseId));
     final unit = ref.watch(settingsProvider).weightUnit;
-    return historyAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (history) {
-        if (history.isEmpty) return const SizedBox.shrink();
-        return ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-          title: Text(l10n.exerciseDetailTabHistory),
-          leading: const Icon(Icons.history),
-          children: [
-            for (final entry in history)
-              _ExerciseHistoryRow(entry: entry, l10n: l10n, unit: unit),
-          ],
-        );
-      },
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              l10n.exerciseDetailTabHistory,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: historyAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text(l10n.errorWithMessage('$e')),
+              data: (history) => history.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Center(
+                        child: Text(
+                          l10n.exerciseDetailHistoryEmpty,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                    )
+                  : ListView(
+                      controller: scrollController,
+                      children: [
+                        for (final entry in history)
+                          _ExerciseHistoryRow(
+                            entry: entry,
+                            l10n: l10n,
+                            unit: unit,
+                          ),
+                      ],
+                    ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
