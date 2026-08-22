@@ -46,6 +46,20 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
   /// Maps keep insertion order) and is user-reorderable via the drag handle.
   Map<String, List<_PlannedSetEntry>> _selected = {};
 
+  // Memoized id→exercise lookup over the ~3,800-row catalog: rebuilt only
+  // when the provider's list instance actually changes, not on every
+  // add/remove/reorder setState (perf T02).
+  List<Exercise>? _byIdSource;
+  Map<String, Exercise>? _byIdCache;
+
+  Map<String, Exercise> _byIdFor(List<Exercise> exercises) {
+    if (_byIdCache != null && identical(_byIdSource, exercises)) {
+      return _byIdCache!;
+    }
+    _byIdSource = exercises;
+    return _byIdCache = {for (final ex in exercises) ex.id: ex};
+  }
+
   @override
   void initState() {
     super.initState();
@@ -140,7 +154,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                 if (exercises.isEmpty && _selected.isEmpty) {
                   return Text(l10n.workoutFormNoExercises);
                 }
-                final byId = {for (final ex in exercises) ex.id: ex};
+                final byId = _byIdFor(exercises);
                 final ordered = _selected.entries
                     .where((e) => byId[e.key] != null)
                     .toList();

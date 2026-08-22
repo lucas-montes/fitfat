@@ -28,4 +28,5 @@
 | Planner | [planner/planner.md](planner/planner.md) | Daily planner: table, model, repository, providers, screens; optional due date + due time with reminders |
 | Experiments | [experiments/experiments.md](experiments/experiments.md) | Experiments tab (v18): models, repository, providers, list/form/detail screens, daily check-in reminder, per-category charts vs 14-day baseline |
 | Network | [network/network.md](network/network.md) | Decoupled HTTP layer (Phase E): ApiClient (`HttpApiClient`/`MockApiClient`) + `apiClientProvider`; FX endpoint seam `FX_API_BASE_URL` behind `FxRateRemoteService` |
+| Performance | [performance.md](performance.md) | Perf guardrails: lazy tab branches (DeferredBranch), memoized workout-form catalog map, bulk history/stats queries, scoped tickers |
 | Sync | [sync/sync-contract.md](sync/sync-contract.md) | Data-sync contract (v1 draft, design only): offline-first delta protocol (`since=` cursors + push batches), entity inventory vs schema tables, LWW conflict policy + exceptions, device/account bootstrap, batch/idempotency guards, JSON examples, open questions |

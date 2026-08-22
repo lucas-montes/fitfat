@@ -21,7 +21,7 @@ Two complaints (review 2026-08-19):
   memoized/provider-backed map), and build remains correct through picker/add/
   remove/reorder/save.
 - No behavior/UI/visual change on either screen.
-- `dart analyze lib/` clean; `flutter test` `+39 -4` (pre-existing sqlite env
+- `dart analyze lib/` clean; `flutter test` `+42 -4` (pre-existing sqlite env
   failures).
 
 ## Constraints & Non-Goals
@@ -33,7 +33,7 @@ Two complaints (review 2026-08-19):
 
 ## Task Stack
 
-- [ ] T01: `Lazy tab branches — build on first visit, keep alive` (status:todo)
+- [x] T01: `Lazy tab branches — build on first visit, keep alive` (status:done)
   - Task ID: T01
   - Goal: Stop all 7 branches from constructing at startup.
   - Boundaries (in/out of scope):
@@ -54,7 +54,7 @@ Two complaints (review 2026-08-19):
       manual: cold-start timing, hot reload to a tab then back and confirm
       state; provider logs/`ref.read` timing on launch.
 
-- [ ] T02: `Memoize the exercise lookup map in WorkoutFormScreen` (status:todo)
+- [x] T02: `Memoize the exercise lookup map in WorkoutFormScreen` (status:done)
   - Task ID: T02
   - Goal: Remove the per-build ~3,800-item map rebuild when editing workouts.
   - Boundaries (in/out of scope):
@@ -71,13 +71,13 @@ Two complaints (review 2026-08-19):
     - `dart analyze lib/src/exercise/screens/workout_form.dart`;
       manual: edit a large workout, drag/reorder, no obvious jank.
 
-- [ ] T03: `Validation and context sync` (status:todo)
+- [x] T03: `Validation and context sync` (status:done)
   - Task ID: T03
   - Goal: Full checks + document the perf model.
   - Boundaries (in/out of scope): in — analyze/format/tests,
     `context/architecture.md` (nav shell note) + `context/performance.md`
     update; out — commit, further profiling.
-  - Done when: `flutter analyze lib` clean; `flutter test` `+39 -4`; context
+  - Done when: `flutter analyze lib` clean; `flutter test` `+42 -4`; context
     accurate.
   - Verification notes (commands or checks):
     - `flutter analyze lib`; `flutter test`;
@@ -85,4 +85,23 @@ Two complaints (review 2026-08-19):
 
 ## Next Command
 
-/next-task performance-startup-edit T01
+None — all tasks complete.
+
+## Validation Report
+
+- **Commands run:** `dart analyze lib` (no issues), `flutter test` (`+42 -4`,
+  the pre-existing sqlite env failures), `dart format` on touched files
+  (clean).
+- **T01 mechanism:** `DeferredBranch` (`lib/src/app/deferred_branch.dart`) —
+  each branch's tab widget builds only when first selected (active index via
+  the `BranchVisibility` InheritedWidget supplied by `_ShellWithNavBar`),
+  then stays alive in the shell's IndexedStack with state preserved. Cold
+  start constructs only the dashboard; deep links into another branch build
+  it immediately since it is current. No provider/screen wiring changed.
+- **T02 mechanism:** `_byIdFor` memoizes the id→exercise map on the
+  provider's list instance (`identical`), so add/remove/reorder `setState`s
+  stop rebuilding a ~3,800-entry map.
+- **Notes:** `context/performance.md` did not exist — created it (the plan
+  assumed an update) and linked it from the context map; nav-shell note added
+  to `architecture.md`. Manual cold-start timing / drag-smoothness checks
+  still worth doing on a device; nothing here changes behavior or visuals.

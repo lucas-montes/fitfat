@@ -23,6 +23,8 @@ MaterialApp.router
 
 Bottom navigation uses Material 3 `NavigationBar`. Tab state is preserved when switching via `indexedStack`.
 
+**Lazy branches (perf, 2026-08-22):** the shell's `IndexedStack` constructs every branch up front, so each tab's root widget is wrapped in `DeferredBranch` (`lib/src/app/deferred_branch.dart`): a branch builds only when first selected (the shell provides its current index via the `BranchVisibility` InheritedWidget) and stays alive afterwards — cold start fires only the dashboard's providers; visited tabs keep their state. Deep links into a non-dashboard branch build that branch immediately (it is the current one).
+
 ### Theme & Settings
 
 - Material 3 with teal seed color; design system in `lib/src/ui/` (tokens, `FitFatColors` theme extension, shared widgets) — see [ui/design-system.md](ui/design-system.md)

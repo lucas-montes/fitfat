@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import 'deferred_branch.dart';
 import '../budget/screens/account_detail_screen.dart';
 import '../budget/screens/account_form.dart';
 import '../budget/screens/receipt_list_screen.dart';
@@ -42,29 +43,54 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/dashboard',
-              builder: (_, _) => const DashboardTab(),
+              builder: (_, _) =>
+                  DeferredBranch(index: 0, child: const DashboardTab()),
             ),
           ],
         ),
         StatefulShellBranch(
           routes: [
-            GoRoute(path: '/exercise', builder: (_, _) => const ExerciseTab()),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [GoRoute(path: '/diet', builder: (_, _) => const DietTab())],
-        ),
-        StatefulShellBranch(
-          routes: [GoRoute(path: '/plan', builder: (_, _) => const PlanTab())],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(path: '/notes', builder: (_, _) => const NotesTab()),
+            GoRoute(
+              path: '/exercise',
+              builder: (_, _) =>
+                  DeferredBranch(index: 1, child: const ExerciseTab()),
+            ),
           ],
         ),
         StatefulShellBranch(
           routes: [
-            GoRoute(path: '/budget', builder: (_, _) => const BudgetTab()),
+            GoRoute(
+              path: '/diet',
+              builder: (_, _) =>
+                  DeferredBranch(index: 2, child: const DietTab()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/plan',
+              builder: (_, _) =>
+                  DeferredBranch(index: 3, child: const PlanTab()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/notes',
+              builder: (_, _) =>
+                  DeferredBranch(index: 4, child: const NotesTab()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/budget',
+              builder: (_, _) =>
+                  DeferredBranch(index: 5, child: const BudgetTab()),
+            ),
             GoRoute(
               path: '/budget/account/:id',
               builder: (_, state) {
@@ -115,7 +141,8 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/experiments',
-              builder: (_, _) => const ExperimentsTab(),
+              builder: (_, _) =>
+                  DeferredBranch(index: 6, child: const ExperimentsTab()),
             ),
           ],
         ),
@@ -148,7 +175,10 @@ final class _ShellWithNavBar extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final activeWorkout = ref.watch(activeWorkoutProvider);
     return Scaffold(
-      body: navigationShell,
+      body: BranchVisibility(
+        currentIndex: navigationShell.currentIndex,
+        child: navigationShell,
+      ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
