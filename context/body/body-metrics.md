@@ -46,7 +46,7 @@ The dashboard **weight-trend card** (`_WeightTrendCard`, private to `lib/src/das
 - `showBodyMetricDialog` (`body_metric_dialog.dart`) — single value + date picker defaulting to today; value field empty with no default; value required and > 0 (blank/zero rejected). Returns `(DateTime day, double value)` or `null`.
 - Latest summary line (`latestBodyMetricsProvider`) when data exists.
 - Goal badge: when a body-weight goal is set in Settings (`BodyWeightGoal`), the card header shows a small right-aligned "Goal: …" label (`labelMedium`, `scheme.primary`); hidden when unset (app-polish-batch T02).
-- Saving a weight or height entry shows a `commonSaved` SnackBar (T04).
+- Saving a weight or height entry closes the dialog and refreshes the card via provider invalidation (no toast/banner — the updated trend line is the feedback).
 - Weight evolution via a custom-painter `_WeightLineChart` (`_WeightLinePainter`, line + gradient fill): ≥2 points → line chart (date bottom labels, touch tooltip); 1 point → bold value text; 0 points → empty-state text. Days where the metric was not recorded are skipped.
 
 ## Semantics

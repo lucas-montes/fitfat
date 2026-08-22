@@ -55,8 +55,10 @@ dark scheme layers a **teal-tinted surface family** on top of the standard M3 da
 Component themes registered in both brightnesses: Card (flat, elevation 0, `surfaceContainerLow`),
 FilledButton / OutlinedButton / TextButton (radius `radiusM`), InputDecoration (filled + rounded,
 primary focus border), NavigationBar, AppBar (flat, transparent surface tint, per-brightness
-`systemOverlayStyle` — dark icons in light theme / light icons in dark theme), Dialog, SnackBar
-(floating), ExpansionTile (borderless), ListTile (icon color), FloatingActionButton.
+`systemOverlayStyle` — dark icons in light theme / light icons in dark theme), Dialog,
+ExpansionTile (borderless), ListTile (icon color), FloatingActionButton.
+App-level feedback uses the shared **`TopBanner`** overlay (`lib/src/ui/widgets/top_banner.dart`,
+replacing snackbars app-wide: deletion-undo + error messages only); no SnackBar theme is registered.
 
 ## FitFatColors (`lib/src/ui/theme_extensions.dart`)
 

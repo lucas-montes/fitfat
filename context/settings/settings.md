@@ -72,6 +72,6 @@ Storage stays metric (kg/cm); conversion happens at render time only:
 ## Wiring
 
 - `main.dart`: `WidgetsFlutterBinding.ensureInitialized()` → `SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)` (Android edge-to-edge, T10) → `await SharedPreferences.getInstance()` → `runApp(ProviderScope(overrides: [sharedPreferencesProvider.overrideWithValue(prefs), taskReminderSchedulerProvider.overrideWithValue(taskScheduler)], child: FitFatApp()))`.
-- `FitFatApp` (`lib/src/app/app.dart`): `ConsumerWidget` watching `settingsProvider`; passes `theme: FitFatTheme.light`, `darkTheme: FitFatTheme.dark`, `themeMode: settings.themeMode`, `locale: settings.locale` to `MaterialApp.router`, with a `builder` that mounts the one-shot `_StartupReminderSync` (startup task-reminder reschedule). Supported locales are en/fr/es.
+- `FitFatApp` (`lib/src/app/app.dart`): `ConsumerWidget` watching `settingsProvider`; passes `theme: FitFatTheme.light`, `darkTheme: FitFatTheme.dark`, `themeMode: settings.themeMode`, `locale: settings.locale` to `MaterialApp.router`, with a `builder` that mounts `_BackgroundStartup` (post-first-frame startup: catalog import, timezone + notification init, task-reminder reschedule, FX auto-refresh coordinator). Supported locales are en/fr/es.
 
 See also: [overview.md](../overview.md), [architecture.md](../architecture.md), [context-map.md](../context-map.md)

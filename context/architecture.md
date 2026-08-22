@@ -99,7 +99,7 @@ workout chart, `mealListProvider`/`bodyMetricsProvider` for diet/body aggregatio
 ### Delete semantics (T05+)
 
 - **Ingredients are soft-archived** (`ingredients.is_archived`, schema v4): `IngredientRepository` has `archive`/`restore` and no hard `delete`; `getAll()` filters archived rows so the list and meal-form picker (both read `ingredientListProvider`) hide them. Past meals keep names because `MealRepository` joins all ingredient rows regardless of the flag. See [diet/ingredient-crud.md](diet/ingredient-crud.md).
-- **Meals / workouts / planner items**: hard delete + "Deleted" SnackBar with Undo, wired in T07. Repository machinery (T06): `MealRepository.restore` (re-insert with original ids), `WorkoutRepository.deleteWithSnapshot`/`restore` via the repo-local `WorkoutSnapshot` (raw rows → exact restore of all 3 levels), `PlannerRepository.restore`, `ExerciseRepository.usageCount`. Screens: meal/workout/planner `onDismissed` → repo delete (workout via `deleteWithSnapshot`) → `ref.invalidate` → SnackBar (message + `commonUndo` action → restore + invalidate). No confirm dialogs remain on the main lists.
+- **Meals / workouts / planner items**: hard delete + "Deleted" top banner with Undo, wired in T07 (banners replaced the original snackbars app-wide). Repository machinery (T06): `MealRepository.restore` (re-insert with original ids), `WorkoutRepository.deleteWithSnapshot`/`restore` via the repo-local `WorkoutSnapshot` (raw rows → exact restore of all 3 levels), `PlannerRepository.restore`, `ExerciseRepository.usageCount`. Screens: meal/workout/planner `onDismissed` → repo delete (workout via `deleteWithSnapshot`) → `ref.invalidate` → top banner (message + `commonUndo` action → restore + invalidate). No confirm dialogs remain on the main lists.
 - **Exercises**: deletion is **blocked** when still referenced. The list screen checks `usageCount` inside `Dismissible.confirmDismiss` (before the tile leaves the tree) and shows a blocking `exerciseUsed*` dialog when count > 0 (returns false → tile snaps back, nothing deleted/throws). Unused exercises are hard-deleted with **no Undo** (user decision, T07).
 
 ### Key file locations
@@ -135,10 +135,10 @@ Notifications subsystem (`lib/src/notifications/`):
 
 ### Active-workout (T10)
 
-- `main()` calls `FlutterForegroundTask.initCommunicationPort()` + `init(...)` (Android channel `active_workout`, 1 s `repeat` event, no auto-run on boot).
+- `_BackgroundStartup` (`app.dart`) calls `FlutterForegroundTask.init(...)` (Android channel `active_workout` with HIGH importance/priority + public visibility, 1 s `repeat` event, no auto-run on boot); `main()` only opens the communication port and registers the tap callback.
 - **Android**: ongoing foreground notification via `flutter_foreground_task`. The task callback (`@pragma('vm:entry-point') activeWorkoutTaskCallback`) runs in a background isolate with its own FlutterEngine, so `shared_preferences` is readable there; `ActiveWorkoutTaskHandler.onRepeatEvent` rebuilds the notification text each tick from persisted keys.
-- Session + rest state is persisted in `shared_preferences` (`active_workout_name`, `active_workout_started_at`, `rest_end_at`, localized label fragments) so the background callback and the UI stay in sync.
-- Start is wired to the workout Start button in `workout_detail.dart` (pending screen); Complete and the rest-timer card (preset 2–6 min chips) live on `ActiveWorkoutScreen` (`/active-workout`) since active-workout-flow T04.
+- Session + rest state is persisted in `shared_preferences` (`active_workout_name`, `active_workout_started_at`, `rest_started_at`, `rest_set_id`, `rest_planned_seconds`, localized label fragments) so the background callback and the UI stay in sync.
+- Start is wired to the workout Start button in `workout_detail.dart` (pending screen); Complete and the rest UI (info-strip rest line with count-up; rests auto-start from set saves) live on `ActiveWorkoutScreen` (`/active-workout`).
 - **Tap routing (active-workout-flow T06)**: tapping the ongoing notification opens `/active-workout` — `ActiveWorkoutTaskHandler.onNotificationPressed()` → `sendDataToMain('active-workout')` → `addTaskDataCallback` in `main()` (gated on the active session, deferred to first frame on cold start). `startService` sets `notificationInitialRoute: '/active-workout'` for Android cold starts.
 - **iOS**: best-effort only via `flutter_local_notifications` (no foreground-service parity).
 
