@@ -5,13 +5,10 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:logging/logging.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../l10n/app_localizations.dart';
-import '../budget/services/fx_auto_refresh.dart';
-import '../exercise/services/catalog_importer.dart';
 import '../notifications/notification_plugin.dart';
 import '../notifications/rest_alarm.dart';
 import '../notifications/task_reminders.dart';
@@ -68,7 +65,6 @@ final class _BackgroundStartup extends ConsumerStatefulWidget {
 }
 
 final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
-  static final _log = Logger('BackgroundStartup');
   bool _ran = false;
 
   @override
@@ -85,64 +81,44 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
 
     final prefs = ref.read(sharedPreferencesProvider);
 
-    // 1. Seed the bundled exercise catalog in the background. A no-op once the
-    // one-time flag is set; errors are logged, never thrown into the UI.
-    unawaited(() async {
-      try {
-        await CatalogImporter(prefs).run();
-      } catch (e, st) {
-        _log.warning('Background catalog import failed', e, st);
-      }
-    }());
-
-    // 2. Foreground-service channel config (moved out of main()). The channel
-    // importance + priority are HIGH so the ongoing workout notification
-    // alerts while the device is locked; visibility stays public (also the
-    // package default) so its content is not redacted on a secure lock
-    // screen (notification-lock-screen T02).
-    FlutterForegroundTask.init(
-      androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'active_workout',
-        channelName: 'Active Workout',
-        channelDescription:
-            'Shows workout duration and rest timer while a workout is active.',
-        onlyAlertOnce: true,
-        channelImportance: NotificationChannelImportance.HIGH,
-        priority: NotificationPriority.HIGH,
-        visibility: NotificationVisibility.VISIBILITY_PUBLIC,
+    // Native plugin init (independent — run concurrently). The foreground-task
+    // channel is HIGH priority + public visibility so the ongoing-workout
+    // notification alerts on a locked screen; the notification plugin init
+    // wires the tap handlers.
+    await Future.wait([
+      Future(
+        () => FlutterForegroundTask.init(
+          androidNotificationOptions: AndroidNotificationOptions(
+            channelId: 'active_workout',
+            channelName: 'Active Workout',
+            channelDescription:
+                'Shows workout duration and rest timer while a workout is active.',
+            onlyAlertOnce: true,
+            channelImportance: NotificationChannelImportance.HIGH,
+            priority: NotificationPriority.HIGH,
+            visibility: NotificationVisibility.VISIBILITY_PUBLIC,
+          ),
+          iosNotificationOptions: const IOSNotificationOptions(
+            showNotification: false,
+            playSound: false,
+          ),
+          foregroundTaskOptions: ForegroundTaskOptions(
+            eventAction: ForegroundTaskEventAction.repeat(1000),
+            autoRunOnBoot: false,
+            autoRunOnMyPackageReplaced: false,
+            allowWakeLock: true,
+            allowWifiLock: false,
+          ),
+        ),
       ),
-      iosNotificationOptions: const IOSNotificationOptions(
-        showNotification: false,
-        playSound: false,
+      initializeNotifications(
+        plugin: ref.read(flutterLocalNotificationsProvider),
+        onTapPlan: () => appRouter.go('/plan'),
+        onTapActiveWorkout: () => appRouter.go('/active-workout'),
+        onTapExperiments: () => appRouter.go('/experiments'),
       ),
-      foregroundTaskOptions: ForegroundTaskOptions(
-        eventAction: ForegroundTaskEventAction.repeat(1000),
-        autoRunOnBoot: false,
-        autoRunOnMyPackageReplaced: false,
-        allowWakeLock: true,
-        allowWifiLock: false,
-      ),
-    );
+    ]);
 
-    // 3. Timezone DB with the device's local zone so `zonedSchedule` fires at
-    // the right wall-clock time.
-    tzdata.initializeTimeZones();
-    try {
-      tz.setLocalLocation(
-        tz.getLocation((await FlutterTimezone.getLocalTimezone()).identifier),
-      );
-    } catch (_) {
-      tz.setLocalLocation(tz.getLocation('UTC'));
-    }
-
-    // 4. Notification plugin init (single shared instance) with a tap handler
-    // that routes by payload, plus a cold-start tap replay.
-    await initializeNotifications(
-      plugin: ref.read(flutterLocalNotificationsProvider),
-      onTapPlan: () => appRouter.go('/plan'),
-      onTapActiveWorkout: () => appRouter.go('/active-workout'),
-      onTapExperiments: () => appRouter.go('/experiments'),
-    );
     // Cache the localized rest-alarm text for the scheduler (it schedules from
     // contexts without `AppLocalizations`, e.g. the rest-timer notifier).
     await prefs.setString(restAlarmTitleKey, l10n.restAlarmTitle);
@@ -153,8 +129,11 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
       l10n.restAlarmBodyWithDuration('{duration}'),
     );
 
-    // 5. Planner reminders for pending future timed tasks (no-op when off).
+    // Planner reminders for pending future timed tasks (no-op when off).
+    // Timezone data is initialized lazily here — only when we actually
+    // schedule — so it no longer blocks every cold start.
     if (ref.read(settingsProvider).plannerNotifications) {
+      await _initTimeZone();
       await ref
           .read(taskReminderSchedulerProvider)
           .reschedulePending(
@@ -165,12 +144,22 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
     }
   }
 
+  /// Loads the IANA timezone database and pins the device's local zone so
+  /// `zonedSchedule` fires at the right wall-clock time. Deferred until a
+  /// reminder actually needs scheduling.
+  Future<void> _initTimeZone() async {
+    tzdata.initializeTimeZones();
+    try {
+      tz.setLocalLocation(
+        tz.getLocation((await FlutterTimezone.getLocalTimezone()).identifier),
+      );
+    } catch (_) {
+      tz.setLocalLocation(tz.getLocation('UTC'));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // App-lifetime FX auto-refresh coordinator: keeps cached rates fresh
-    // while the settings toggle is on. Kept alive by this widget, which
-    // spans the whole app.
-    ref.watch(fxAutoRefreshProvider);
     return widget.child ?? const SizedBox.shrink();
   }
 }
