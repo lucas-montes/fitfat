@@ -9,18 +9,24 @@ import 'package:http/http.dart' as http;
 /// they can be unit-tested without a socket; swap it in `ProviderScope` via
 /// [apiClientProvider].
 abstract class ApiClient {
-  Future<Object?> getJson(String path, {Map<String, String>? query});
+  Future<Object?> getJson(
+    String path, {
+    Map<String, String>? query,
+    Map<String, String>? headers,
+  });
 
   Future<Object?> postJson(
     String path, {
     Object? body,
     Map<String, String>? query,
+    Map<String, String>? headers,
   });
 
   Future<Object?> putJson(
     String path, {
     Object? body,
     Map<String, String>? query,
+    Map<String, String>? headers,
   });
 
   Future<Object?> deleteJson(String path, {Map<String, String>? query});
@@ -58,7 +64,10 @@ final class HttpApiClient implements ApiClient {
     return uri.replace(queryParameters: {...uri.queryParameters, ...query});
   }
 
-  Future<http.Response> _send(Future<http.Response> Function() request) async {
+  Future<http.Response> _send(
+    Future<http.Response> Function() request, {
+    Map<String, String>? headers,
+  }) async {
     final response = await request().timeout(_timeout);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(statusCode: response.statusCode, body: response.body);
@@ -72,9 +81,17 @@ final class HttpApiClient implements ApiClient {
   }
 
   @override
-  Future<Object?> getJson(String path, {Map<String, String>? query}) async {
+  Future<Object?> getJson(
+    String path, {
+    Map<String, String>? query,
+    Map<String, String>? headers,
+  }) async {
     final response = await _send(
-      () => _client.get(_uri(path, query: query), headers: _headers),
+      () => _client.get(
+        _uri(path, query: query),
+        headers: {..._headers, ...?headers},
+      ),
+      headers: headers,
     );
     return _decode(response);
   }
@@ -84,13 +101,15 @@ final class HttpApiClient implements ApiClient {
     String path, {
     Object? body,
     Map<String, String>? query,
+    Map<String, String>? headers,
   }) async {
     final response = await _send(
       () => _client.post(
         _uri(path, query: query),
-        headers: _headers,
+        headers: {..._headers, ...?headers},
         body: _encodeBody(body),
       ),
+      headers: headers,
     );
     return _decode(response);
   }
@@ -100,13 +119,15 @@ final class HttpApiClient implements ApiClient {
     String path, {
     Object? body,
     Map<String, String>? query,
+    Map<String, String>? headers,
   }) async {
     final response = await _send(
       () => _client.put(
         _uri(path, query: query),
-        headers: _headers,
+        headers: {..._headers, ...?headers},
         body: _encodeBody(body),
       ),
+      headers: headers,
     );
     return _decode(response);
   }
@@ -138,14 +159,18 @@ final class MockApiClient implements ApiClient {
   }
 
   @override
-  Future<Object?> getJson(String path, {Map<String, String>? query}) =>
-      _handle('GET', path, null);
+  Future<Object?> getJson(
+    String path, {
+    Map<String, String>? query,
+    Map<String, String>? headers,
+  }) => _handle('GET', path, null);
 
   @override
   Future<Object?> postJson(
     String path, {
     Object? body,
     Map<String, String>? query,
+    Map<String, String>? headers,
   }) => _handle('POST', path, body);
 
   @override
@@ -153,6 +178,7 @@ final class MockApiClient implements ApiClient {
     String path, {
     Object? body,
     Map<String, String>? query,
+    Map<String, String>? headers,
   }) => _handle('PUT', path, body);
 
   @override

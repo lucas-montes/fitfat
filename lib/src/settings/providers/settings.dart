@@ -53,6 +53,12 @@ final class SettingsState {
   // 'planned' (the source's planned values).
   final String replayPrefill; // default 'actuals'
 
+  // Base URL of the user's sync server (exercises/ingredients/currencies).
+  // Empty until configured; the sync clients refuse to run without it.
+  final String remoteSyncBaseUrl; // default ''
+  // API key sent as a Bearer token on every sync request.
+  final String remoteSyncApiKey; // default ''
+
   const SettingsState({
     this.themeMode = ThemeMode.system,
     this.locale,
@@ -73,6 +79,8 @@ final class SettingsState {
     this.weightUnit = WeightUnit.kg,
     this.lengthUnit = LengthUnit.cm,
     this.replayPrefill = 'actuals',
+    this.remoteSyncBaseUrl = '',
+    this.remoteSyncApiKey = '',
   });
 
   SettingsState copyWith({
@@ -101,6 +109,8 @@ final class SettingsState {
     WeightUnit? weightUnit,
     LengthUnit? lengthUnit,
     String? replayPrefill,
+    String? remoteSyncBaseUrl,
+    String? remoteSyncApiKey,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     locale: clearLocale ? null : (locale ?? this.locale),
@@ -129,6 +139,8 @@ final class SettingsState {
     weightUnit: weightUnit ?? this.weightUnit,
     lengthUnit: lengthUnit ?? this.lengthUnit,
     replayPrefill: replayPrefill ?? this.replayPrefill,
+    remoteSyncBaseUrl: remoteSyncBaseUrl ?? this.remoteSyncBaseUrl,
+    remoteSyncApiKey: remoteSyncApiKey ?? this.remoteSyncApiKey,
   );
 }
 
@@ -153,6 +165,8 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _weightUnitKey = 'settings_weight_unit';
   static const _lengthUnitKey = 'settings_length_unit';
   static const _replayPrefillKey = 'settings_replay_prefill';
+  static const _remoteSyncBaseUrlKey = 'settings_remote_sync_base_url';
+  static const _remoteSyncApiKeyKey = 'settings_remote_sync_api_key';
 
   @override
   SettingsState build() {
@@ -182,6 +196,8 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       replayPrefill: prefs.getString(_replayPrefillKey) == 'planned'
           ? 'planned'
           : 'actuals',
+      remoteSyncBaseUrl: prefs.getString(_remoteSyncBaseUrlKey) ?? '',
+      remoteSyncApiKey: prefs.getString(_remoteSyncApiKeyKey) ?? '',
     );
   }
 
@@ -351,6 +367,22 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setString(_replayPrefillKey, value);
     state = state.copyWith(replayPrefill: value);
+  }
+
+  Future<void> setRemoteSyncBaseUrl(String value) async {
+    final trimmed = value.trim();
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_remoteSyncBaseUrlKey, trimmed);
+    state = state.copyWith(remoteSyncBaseUrl: trimmed);
+  }
+
+  Future<void> setRemoteSyncApiKey(String value) async {
+    final trimmed = value.trim();
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_remoteSyncApiKeyKey, trimmed);
+    state = state.copyWith(remoteSyncApiKey: trimmed);
   }
 
   WeightUnit _weightUnitFromName(String? name) =>
