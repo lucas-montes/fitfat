@@ -89,7 +89,6 @@ Many-to-many join between meals and ingredients with gram amounts.
 | id | TEXT PK | UUID v7 |
 | name | TEXT | |
 | exercise_type | TEXT | `'weightlifting'` or `'cardio'` |
-| is_locked | INTEGER (bool) | v8 — built-in catalog exercises (`1`), `NOT NULL DEFAULT 0`; locked rows block edit + delete in the UI |
 | body_part | TEXT? | v8 — catalog metadata |
 | equipment | TEXT? | v8 — catalog metadata |
 | primary_muscle | TEXT? | v8 — catalog metadata |
@@ -217,7 +216,7 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
 - All primary keys are UUID v7 strings (generated via the `uuid` package).
 - Timestamps are stored as epoch milliseconds (integers) and converted to `DateTime` in domain models.
 - `exercise_type` is stored as plain text rather than an enum to keep the schema simple.
-- Schema version is 21. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `beforeOpen` idempotently creates the barcode and routine lookup indexes; `onUpgrade` runs stepwise:
+- Schema version is 23. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `beforeOpen` idempotently creates the barcode and routine lookup indexes; `onUpgrade` runs stepwise:
   - v1 → v2: creates `planner_items`.
   - v2 → v3: adds nullable `sodium_per100g`/`fiber_per100g`/`sugar_per100g` to `ingredients`, adds nullable `due_date` to `planner_items`, creates `body_metrics`, and deletes orphaned `meal_ingredients` rows (rows whose `meal_id` has no matching `meals` row — leftover from the pre-T02 new-meal bug). No data is dropped.
   - v3 → v4: adds `is_archived` to `ingredients` (`NOT NULL DEFAULT 0` — ingredient soft-archive). No data is dropped.
@@ -238,6 +237,8 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
   - v18 → v19: adds nullable `manual` to `fx_rates` (`NOT NULL DEFAULT 0` — flags rates set by hand, fx-display T01). No data is dropped.
   - v19 → v20: adds nullable `brand`/`barcode` to `ingredients` and creates `stores`, `ingredient_pictures`, `ingredient_prices` (ingredient-metadata T01). New tables + additive columns only — no data is dropped.
   - v20 → v21: adds nullable `routine_id` to `workouts` (replay lineage, workout-replay T01; indexed in `beforeOpen`). Additive column only — no data is dropped.
+  - v21 → v22: rebuilds `fx_rates` around a daily-snapshot dimension — adds `rate_date` (`'YYYY-MM-DD'`, default `'0001-01-01'`) and a composite PK `(code, base_code, rate_date)` so sync can keep per-day history instead of overwriting the latest rate. Existing rows are backfilled as a single `'0001-01-01'` snapshot. No data is dropped.
+  - v22 → v23: drops `exercises.is_locked` (the bundled exercise catalog is gone — data now arrives via the sync client). Drift cannot drop a column in place, so `exercises` is rebuilt via rename → recreate → backfill → drop-old. Only the dead column is removed.
 
 ## Generated code
 
