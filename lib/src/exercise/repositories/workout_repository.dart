@@ -6,6 +6,25 @@ import '../../models/exercise_set.dart';
 import '../../models/workout.dart';
 import '../../models/workout_exercise.dart';
 
+/// Planned set values to seed when adding an exercise to a workout. Every field
+/// is optional; nulls become empty planned values (actuals stay null until the
+/// set is logged later via the set-actuals dialog).
+final class PlannedSet {
+  final int? reps;
+  final double? weightKg;
+  final int? durationMinutes;
+  final double? distanceMeters;
+  final int? restSeconds;
+
+  const PlannedSet({
+    this.reps,
+    this.weightKg,
+    this.durationMinutes,
+    this.distanceMeters,
+    this.restSeconds,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Rich result types
 // ---------------------------------------------------------------------------
@@ -640,10 +659,14 @@ final class WorkoutRepository {
     );
   }
 
-  /// Adds an exercise to an active workout with default empty sets.
+  /// Adds an exercise to an active workout. When [plannedSets] is omitted or
+  /// empty, a single empty planned set is created (legacy behavior). Otherwise
+  /// the provided planned sets (reps/weight/duration/distance/rest) are inserted
+  /// in order, numbered 1..n.
   Future<void> addExerciseToWorkout({
     required String workoutId,
     required String exerciseId,
+    List<PlannedSet>? plannedSets,
   }) async {
     // Get the exercise name
     final exerciseRow = await (_database.select(
@@ -675,6 +698,7 @@ final class WorkoutRepository {
       sortOrder: nextSortOrder,
     );
 
+    final seeds = plannedSets ?? const <PlannedSet>[];
     await _database.transaction(() async {
       await _database
           .into(_database.workoutExercises)
@@ -686,16 +710,36 @@ final class WorkoutRepository {
               sortOrder: we.sortOrder,
             ),
           );
-      // Add one empty planned set
-      await _database
-          .into(_database.exerciseSets)
-          .insert(
-            db.ExerciseSetsCompanion.insert(
-              id: const Uuid().v7(),
-              workoutExerciseId: we.id,
-              setNumber: 1,
-            ),
-          );
+      if (seeds.isEmpty) {
+        // Legacy fallback: a single empty planned set.
+        await _database
+            .into(_database.exerciseSets)
+            .insert(
+              db.ExerciseSetsCompanion.insert(
+                id: const Uuid().v7(),
+                workoutExerciseId: we.id,
+                setNumber: 1,
+              ),
+            );
+        return;
+      }
+      for (var i = 0; i < seeds.length; i++) {
+        final s = seeds[i];
+        await _database
+            .into(_database.exerciseSets)
+            .insert(
+              db.ExerciseSetsCompanion.insert(
+                id: const Uuid().v7(),
+                workoutExerciseId: we.id,
+                setNumber: i + 1,
+                reps: Value(s.reps),
+                weightKg: Value(s.weightKg),
+                restSeconds: Value(s.restSeconds),
+                durationMinutes: Value(s.durationMinutes),
+                distanceMeters: Value(s.distanceMeters),
+              ),
+            );
+      }
     });
   }
 

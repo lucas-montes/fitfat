@@ -1076,6 +1076,150 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
   }
 }
 
+/// A single planned-set row's text controllers (disposed with the dialog).
+final class _PlannedSetRow {
+  final TextEditingController repsCtrl = TextEditingController();
+  final TextEditingController weightCtrl = TextEditingController();
+
+  void dispose() {
+    repsCtrl.dispose();
+    weightCtrl.dispose();
+  }
+}
+
+/// Editor for one [_PlannedSetRow]: planned reps + weight, with an optional
+/// remove affordance (hidden when it is the only row).
+final class _PlannedSetRowEditor extends StatelessWidget {
+  final int index;
+  final _PlannedSetRow row;
+  final AppLocalizations l10n;
+  final VoidCallback? onRemove;
+
+  const _PlannedSetRowEditor({
+    required this.index,
+    required this.row,
+    required this.l10n,
+    this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: row.repsCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.activeWorkoutPlannedRepsLabel,
+                isDense: true,
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: row.weightCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.activeWorkoutPlannedWeightLabel,
+                isDense: true,
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+            ),
+          ),
+          if (onRemove != null)
+            IconButton(
+              icon: const Icon(Icons.remove_circle_outline),
+              tooltip: l10n.commonRemove,
+              onPressed: onRemove,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dialog shown when adding an exercise to an active workout so the user can
+/// seed planned sets (reps + weight) up front. Returns `null` when cancelled or
+/// a non-empty list of [PlannedSet] (one per row) when confirmed.
+final class _PlannedSetsDialog extends StatefulWidget {
+  final AppLocalizations l10n;
+  final String exerciseName;
+
+  const _PlannedSetsDialog({
+    required this.l10n,
+    required this.exerciseName,
+  });
+
+  @override
+  State<_PlannedSetsDialog> createState() => _PlannedSetsDialogState();
+}
+
+final class _PlannedSetsDialogState extends State<_PlannedSetsDialog> {
+  final List<_PlannedSetRow> _rows = [_PlannedSetRow()];
+
+  @override
+  void dispose() {
+    for (final r in _rows) {
+      r.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    return AlertDialog(
+      title: Text(l10n.activeWorkoutPlannedSetsTitle(widget.exerciseName)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < _rows.length; i++)
+              _PlannedSetRowEditor(
+                index: i,
+                row: _rows[i],
+                l10n: l10n,
+                onRemove: _rows.length > 1
+                    ? () => setState(() => _rows.removeAt(i))
+                    : null,
+              ),
+            TextButton.icon(
+              onPressed: () => setState(() => _rows.add(_PlannedSetRow())),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.workoutFormAddSet),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final sets = _rows
+                .map(
+                  (r) => PlannedSet(
+                    reps: int.tryParse(r.repsCtrl.text),
+                    weightKg: double.tryParse(r.weightCtrl.text),
+                  ),
+                )
+                .toList();
+            Navigator.of(context).pop(sets);
+          },
+          child: Text(l10n.activeWorkoutAddExercise),
+        ),
+      ],
+    );
+  }
+}
+
 /// Bottom sheet for searching and adding exercises during an active workout.
 /// Shows current workout exercises first (with checkmark), then all exercises
 /// with images/thumbnails. No "Create Exercise" option.
@@ -1404,10 +1548,19 @@ final class _ActiveWorkoutExerciseSearchSheetState
   }
 
   Future<void> _addExercise(BuildContext context, Exercise exercise) async {
+    final sets = await showDialog<List<PlannedSet>>(
+      context: context,
+      builder: (ctx) => _PlannedSetsDialog(
+        l10n: widget.l10n,
+        exerciseName: exercise.name,
+      ),
+    );
+    if (sets == null || !context.mounted) return;
     final repo = ref.read(workoutRepositoryProvider);
     await repo.addExerciseToWorkout(
       workoutId: widget.workoutId,
       exerciseId: exercise.id,
+      plannedSets: sets,
     );
     if (context.mounted) {
       setState(() => _addedIds.add(exercise.id));
