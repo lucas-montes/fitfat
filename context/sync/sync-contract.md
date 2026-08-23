@@ -1,9 +1,11 @@
 # FitFat — Data Sync Contract
 
-**Version:** 1.0-draft (2026-08-22) · **Status:** design only, no server exists yet
+**Version:** 1.0-draft (2026-08-22) · **Status:** design draft + MVP client implemented (2026-08-23)
 **Scope of this document:** the contract a future sync server (and the client
-sync engine) must implement. It intentionally avoids choosing transport
-frameworks, hosting, or auth vendors.
+sync engine) must implement. §11 records the *simpler first client* that
+actually shipped, which diverges from the full `/v1/sync/{entity}` envelope
+below (the full protocol remains the target once a server exists). It
+intentionally avoids choosing transport frameworks, hosting, or auth vendors.
 
 Related: [database/schema.md](../database/schema.md) (table names used below),
 [network/network.md](../network/network.md) (`ApiClient` seam),
@@ -52,8 +54,11 @@ Table names match `context/database/schema.md` exactly.
 
 ### 2.2 Out of scope (never synced)
 
-- **`fx_rates`** — a derived cache, refetchable from the rates endpoint;
-  syncing it would fight the manual-edit flag and the base-currency setting.
+- **`fx_rates`** — originally out of scope (a derived cache, and syncing it
+  would fight the manual-edit flag and the base-currency setting). **Updated
+  (2026-08-23):** `fx_rates` is now a *pull-only* synced resource (see §11);
+  the client preserves any locally hand-edited `manual` flag so a sync never
+  clobbers a user override. Push of local rate edits is still out of scope.
 - **Receipt/ingredient picture binaries** — local files under the app documents
   directory. Metadata rows sync; bytes need a separate blob decision (OQ-2).
 - **Settings/preferences** — device-local by nature (units, theme, locale).
@@ -296,17 +301,139 @@ names); envelope fields (`op`, `version`, cursors) are contract-level.
   regained, after each repository mutation (debounced).
 - All HTTP through the existing `ApiClient` seam (`context/network/network.md`).
 
+## 11. Implemented MVP (2026-08-23)
+
+ A first client shipped that pulls three resources from a user-configured sync
+ server (Settings → Budget & Currency → "Sync server" URL + API key). It is a
+ deliberately simpler shape than §5, chosen to match the agreed decisions:
+ server-side `since` cursor for content resources, Bearer API-key auth, full
+ payloads for exercises and ingredients (server authority on content; LWW by
+ `updated_at`), a daily snapshot for currencies, an ingredient **push** to the
+ shared catalogue, and a currencies sync button in Settings.
+
+### 11.1 Endpoints & auth
+
+| Resource | Endpoint | Query |
+|----------|----------|-------|
+| exercises | `GET /exercises` | `?since=<cursor ms>` |
+| ingredients | `GET /ingredients` | `?since=<cursor ms>` |
+ | currencies | `GET /fx-rates` | `?base=<ISO base>&date=YYYY-MM-DD` |
+ | ingredient push | `POST /ingredients` | body (see §11.3) |
+
+All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
+`SettingsState.remoteSyncBaseUrl` / `remoteSyncApiKey` (SharedPreferences).
+
+### 11.2 Pull envelope (actual, not §5)
+
+ Exercises return full item rows; the only removal signal is `deleted[]`
+ (hard-deleted server-side):
+
+ ```json
+ {
+   "items": [ { "id": "id-1", "name": "Squat", "updated_at": 1755850000000, "…" } ],
+   "deleted": [ "id-9" ],
+   "server_time": 1755850000000
+ }
+ ```
+
+ Ingredients return full item rows with **nested** `pictures[]` and `prices[]`,
+ plus a top-level `stores[]` array the items reference:
+
+ ```json
+ {
+   "items": [ {
+     "id": "id-1", "name": "Oats", "updated_at": 1755850000000, "…",
+     "pictures": [ { "id": "p-1", "ingredientId": "id-1", "imagePath": "…", "sortOrder": 0, "createdAt": 1755850000000 } ],
+     "prices": [ { "id": "pr-1", "ingredientId": "id-1", "storeId": "s-1", "price": 2.4, "currencyCode": "EUR", "packageGrams": 500, "recordedAt": 1755850000000 } ]
+   } ],
+   "stores": [ { "id": "s-1", "name": "Carrefour", "updated_at": 1755850000000 } ],
+   "deleted": [ "id-9" ],
+   "server_time": 1755850000000
+ }
+ ```
+
+ Currencies are pulled per **day** (a full day's rate table), so each request
+ carries `date=YYYY-MM-DD` and rows are keyed by that date:
+
+ ```json
+ {
+   "items": [ { "code": "EUR", "rateToBase": 0.92, "date": "2026-08-23", "updated_at": 1755850000000 } ],
+   "server_time": 1755850000000
+ }
+ ```
+
+ - `server_time` (epoch ms) is persisted as the next `since` cursor **per
+   resource** in `SyncStateStore` (SharedPreferences keys
+   `sync_last_exercises` / `sync_last_ingredients` / `sync_last_currencies`).
+ - Exercises/ingredients: every `items[]` row is **upserted** (server
+   authority on content); `deleted[]` is applied (exercises → hard delete via
+   `ExerciseRepository.delete`, ingredients → soft-archive `isArchived = true`
+   via `IngredientRepository.archive`). Nested `pictures[]`/`prices[]` and the
+   top-level `stores[]` are upserted for ingredients.
+ - Currencies: each `items[]` row is upserted into `fx_rates` keyed by
+   `(code, baseCode, date)`; there are no deletions.
+
+### 11.3 Apply rules
+
+ - **Exercises / ingredients:** full upsert of content; `deleted[]` removes
+   rows locally (hard / soft-archive as above). Local content edits are
+   overwritten by the server (server authority) — conflict UI is deferred (§5).
+ - **Currencies:** upsert into `fx_rates` but **preserve** the local `manual`
+   flag for the exact `(code, baseCode, date)` row, so a hand-edited rate is
+   never overwritten by a sync. Snapshots are daily, so `rateDate` history is
+   retained.
+ - **Ingredient push:** `POST /ingredients` (Bearer) with the full ingredient
+   plus nested `pictures[]` and `prices[]`; idempotent by ingredient `id` so
+   re-pushing the same ingredient is safe. Triggered from the ingredient detail
+   screen ("Push to shared catalogue" action). This is how a user contributes
+   a new ingredient to the shared pool.
+ - **Idempotency:** safe to replay — content resources re-request only `since`
+   the last persisted cursor; currencies re-request the current `date`.
+ - **Errors:** network/HTTP failures return a `SyncResult.error`; the UI shows a
+   banner via `showTopBanner` and keeps the last good cursor (no partial
+   advancement). Success is silent (notebook rule: no success banners).
+
+### 11.4 Client files
+
+ - `lib/src/sync/sync_models.dart` — `SyncResource`, `SyncResult`, `toSyncDateTime`.
+ - `lib/src/sync/sync_state_store.dart` — per-resource cursor persistence.
+ - `lib/src/sync/exercise_sync_client.dart` — full-payload pull → upsert +
+   hard-delete `deleted[]`.
+ - `lib/src/sync/ingredient_sync_client.dart` — full-payload pull → upsert
+   (items + stores + nested pictures/prices) + soft-archive `deleted[]`; plus
+   `push()` → `POST /ingredients`.
+ - `lib/src/sync/currency_sync_client.dart` — `date`-scoped full-rate pull →
+   `FxRepository.upsertRate(rateDate)`.
+ - `lib/src/sync/sync_service.dart` — `SyncService` + `syncServiceProvider`
+   orchestrator (reads cursor, builds `HttpApiClient`, persists cursor, exposes
+   `pushIngredient`).
+ - `lib/src/sync/sync_button.dart` — `SyncButton` (spinner + error banner).
+ - Wiring: `exercise_list.dart`, `ingredient_list.dart` app-bar `SyncButton`;
+   `ingredient_detail_screen.dart` "Push to shared catalogue" action;
+   `settings_screen.dart` `_SyncServerCard` (URL/key + currencies sync).
+ - Repository seams: `ExerciseRepository.delete` / `upsert`,
+   `IngredientRepository.upsert` / `upsertStore` / `upsertPicture` /
+   `upsertPrice` / `archive`, `FxRepository.upsertRate`.
+ - Schema: `fx_rates` now carries `rateDate` and a composite PK
+   `(code, baseCode, rateDate)` (migration v22 rebuilds the table).
+
+---
+
 ## 10. Open questions (blockers for implementation)
 
 - **OQ-1 Server stack & hosting** — undecided; contract is runtime-agnostic.
 - **OQ-2 Picture/blob transport** — direct-to-storage presigned upload vs
   base64-in-contract; affects `receipts`/`ingredient_pictures` completeness.
-- **OQ-3 Auth mechanism** — email/password vs magic-link vs OAuth; also token
-  refresh policy.
-- **OQ-4 Silent LWW loss UX** — acceptable for v1? Any per-entity merge UI?
-- **OQ-5 Locked catalog exercises** — sync user rows only and let each device
-  re-seed locked rows from the bundled asset, or sync them too (risking asset
-  refresh fighting server rows)?
+- **OQ-3 Auth mechanism** — **Resolved (MVP):** a single Bearer API key header
+  (`Authorization: Bearer <apiKey>`) configured per device in Settings. No
+  account bootstrap yet; the full `/v1/accounts/bootstrap` flow (§4.2) remains
+  the target for the complete protocol.
+- **OQ-4 Silent LWW loss UX** — **Resolved (MVP):** accept silent LWW loss for
+  v1; no per-entity merge UI. The server row wins on pull.
+- **OQ-5 Locked catalog exercises** — **Resolved (MVP):** sync all exercise
+  rows the server returns (user + catalog); conflict resolution is LWW by
+  `updated_at`. Locked-row asset refresh fighting server rows is accepted as a
+  future concern; the MVP client does not special-case `isLocked`.
 - **OQ-6 Clock trust** — keep client-clock LWW or move to server-receive-time
   ordering?
 - **OQ-7 Cursor granularity** — per-entity-type cursors (this doc) vs one

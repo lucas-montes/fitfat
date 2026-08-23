@@ -127,6 +127,26 @@ for tests), and an overridable `apiClientProvider`. `remoteFxProvider`
 is chosen → refresh surfaces a clear error banner; `MockRemoteFxService` is kept
 for tests. See [network/network.md](network/network.md).
 
+## Data sync (2026-08-23)
+
+ First sync client in `lib/src/sync/`, wired to a user-configured server
+ (Settings → Budget & Currency → "Sync server" URL + Bearer API key). Pulls
+ three resources with **full payloads**: exercises and ingredients
+ (`GET /exercises`, `GET /ingredients` return `{items, stores?, deleted,
+ server_time}`; every item is upserted, `deleted[]` removes rows — exercises
+ hard-deleted, ingredients soft-archived), and currency FX as a **daily
+ snapshot** (`GET /fx-rates?base=&date=YYYY-MM-DD`) upserted into `fx_rates`
+ keyed by `(code, baseCode, date)`. Ingredients can also be **pushed** to the
+ shared catalogue (`POST /ingredients`, Bearer). All pulls use a `since=<cursor
+ ms>` query (currencies add `date=YYYY-MM-DD`) and a per-resource cursor
+ persisted in `SyncStateStore` (SharedPreferences); `fx_rates` manual edits are
+ preserved per-day. UI entry points: `SyncButton` in the exercise and ingredient
+ list app bars, a "Push to shared catalogue" action on the ingredient detail
+ screen, and a currencies sync button in the sync-server card. Full target
+ protocol (push batches, device/account bootstrap, idempotency) is the
+ `/v1/sync/{entity}` envelope in
+ [sync/sync-contract.md](sync/sync-contract.md); the MVP diverges (§11).
+
 ---
 
 ## Notifications (T10 + T11)
