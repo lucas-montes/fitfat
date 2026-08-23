@@ -273,6 +273,9 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       recurrence,
     ) = result;
     final repo = ref.read(plannerRepositoryProvider);
+    // A chosen due date places the task on that day; otherwise it stays on
+    // the day the form was opened from.
+    final targetDay = dueDate != null ? _startOfDay(dueDate) : _selectedDay;
     final current =
         ref.read(plannerItemsProvider(_selectedDay)).value ??
         const <PlannerItem>[];
@@ -283,7 +286,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       }
     }
     final item = newPlannerItem(
-      day: _selectedDay,
+      day: targetDay,
       title: title,
       sortOrder: nextSortOrder,
       dueDate: dueDate,
@@ -302,6 +305,9 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     }
     await _syncReminder(item);
     ref.invalidate(plannerItemsProvider(_selectedDay));
+    if (targetDay != _selectedDay) {
+      ref.invalidate(plannerItemsProvider(targetDay));
+    }
     invalidateDashboard(ref);
     // Best-effort eager materialization of future occurrences; the per-day
     // provider also materializes lazily on view, so a failure here can't block
@@ -310,7 +316,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     if (recurrence != null) {
       unawaited(
         repo
-            .materializeUpTo(_selectedDay.add(const Duration(days: 90)))
+            .materializeUpTo(item.day.add(const Duration(days: 90)))
             .catchError((_) {}),
       );
     }
@@ -404,7 +410,13 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final seriesId = isAnchor
         ? (wasAnchor ? (item.seriesId ?? item.id) : item.id)
         : (wasAnchor ? null : item.seriesId);
+    // Setting a due date moves the task to that day (plain tasks and series
+    // anchors; generated occurrences keep their materialized day).
+    final movedDay = !isGenerated && dueDate != null
+        ? _startOfDay(dueDate)
+        : null;
     final updated = item.copyWith(
+      day: movedDay,
       title: title,
       dueDate: dueDate,
       startTimeMinutes: startTimeMinutes,
@@ -421,6 +433,10 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     await _cancelReminder(item.id);
     await _syncReminder(updated);
     ref.invalidate(plannerItemsProvider(_selectedDay));
+    final destination = movedDay ?? _selectedDay;
+    if (destination != _selectedDay) {
+      ref.invalidate(plannerItemsProvider(destination));
+    }
     invalidateDashboard(ref);
     // Editing the anchor re-generates future occurrences from the (possibly
     // changed) rule; the anchor's past/own row is untouched. Best-effort:

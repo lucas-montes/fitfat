@@ -112,7 +112,14 @@ final class _PlannerItemDetailScreenState
     final seriesId = isAnchor
         ? (wasAnchor ? (item.seriesId ?? item.id) : item.id)
         : (wasAnchor ? null : item.seriesId);
+    // Setting a due date moves the task to that day (plain tasks and series
+    // anchors; generated occurrences keep their materialized day).
+    final isGenerated = item.seriesId != null && item.seriesId != item.id;
+    final movedDay = !isGenerated && dueDate != null
+        ? DateTime(dueDate.year, dueDate.month, dueDate.day)
+        : null;
     final updated = item.copyWith(
+      day: movedDay,
       title: title,
       dueDate: dueDate,
       startTimeMinutes: startTimeMinutes,
@@ -134,6 +141,11 @@ final class _PlannerItemDetailScreenState
             .materializeUpTo(updated.day.add(const Duration(days: 90)))
             .catchError((_) {}),
       );
+    }
+    ref.invalidate(plannerItemsProvider(item.day));
+    final destination = movedDay ?? item.day;
+    if (destination != item.day) {
+      ref.invalidate(plannerItemsProvider(destination));
     }
     await _load();
   }
