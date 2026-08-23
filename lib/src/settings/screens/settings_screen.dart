@@ -10,7 +10,6 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../budget/providers/fx_rates.dart';
-import '../../budget/providers/services.dart';
 import '../../experiments/notifications/experiment_reminder.dart';
 import '../../experiments/providers/experiments.dart';
 import '../../models/activity_level.dart';
@@ -791,45 +790,7 @@ final class _CurrencySection extends ConsumerWidget {
             }
           },
         ),
-        const SizedBox(height: 8),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.settingsFxAutoRefresh),
-          subtitle: Text(l10n.settingsFxAutoRefreshSubtitle),
-          value: settings.fxAutoRefresh,
-          onChanged: ref.read(settingsProvider.notifier).setFxAutoRefresh,
-        ),
-        if (settings.fxAutoRefresh)
-          DropdownButtonFormField<int>(
-            key: const ValueKey('fx-interval'),
-            initialValue: settings.fxRefreshIntervalHours,
-            decoration: InputDecoration(
-              labelText: l10n.settingsFxRefreshInterval,
-            ),
-            items: const [6, 12, 24, 48, 72]
-                .map((h) => DropdownMenuItem(value: h, child: Text('$h h')))
-                .toList(),
-            onChanged: (h) {
-              if (h != null) {
-                ref
-                    .read(settingsProvider.notifier)
-                    .setFxRefreshIntervalHours(h);
-              }
-            },
-          ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(l10n.settingsFxRates, style: theme.textTheme.bodyMedium),
-            TextButton.icon(
-              onPressed: () => _refreshRates(context, ref, base),
-              icon: const Icon(Icons.refresh),
-              label: Text(l10n.settingsFxRefresh),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
         const _SyncServerCard(),
         const SizedBox(height: 8),
         entriesAsync.when(
@@ -905,23 +866,6 @@ final class _CurrencySection extends ConsumerWidget {
         ),
       ],
     );
-  }
-
-  Future<void> _refreshRates(
-    BuildContext context,
-    WidgetRef ref,
-    String base,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final fetched = await ref.read(remoteFxProvider).fetchRates(base);
-      await ref.read(fxRepositoryProvider).replaceAll(base, fetched);
-      ref.invalidate(fxRatesProvider);
-    } catch (e) {
-      if (context.mounted) {
-        showTopBanner(context, message: l10n.errorWithMessage('$e'));
-      }
-    }
   }
 
   Future<void> _editRate(

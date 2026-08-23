@@ -40,9 +40,6 @@ final class SettingsState {
   final bool experimentRemindersEnabled;
 
   final String baseCurrency; // ISO-4217-ish code, default 'USD'
-  // Auto-refresh cached FX rates from the remote service in the background.
-  final bool fxAutoRefresh; // default off
-  final int fxRefreshIntervalHours; // default 24
 
   // Display units (storage stays metric).
   final WeightUnit weightUnit; // default kg
@@ -74,8 +71,6 @@ final class SettingsState {
     this.restAlarmVibration = true,
     this.experimentRemindersEnabled = true,
     this.baseCurrency = 'USD',
-    this.fxAutoRefresh = false,
-    this.fxRefreshIntervalHours = 24,
     this.weightUnit = WeightUnit.kg,
     this.lengthUnit = LengthUnit.cm,
     this.replayPrefill = 'actuals',
@@ -104,8 +99,6 @@ final class SettingsState {
     bool? restAlarmVibration,
     bool? experimentRemindersEnabled,
     String? baseCurrency,
-    bool? fxAutoRefresh,
-    int? fxRefreshIntervalHours,
     WeightUnit? weightUnit,
     LengthUnit? lengthUnit,
     String? replayPrefill,
@@ -133,9 +126,6 @@ final class SettingsState {
     experimentRemindersEnabled:
         experimentRemindersEnabled ?? this.experimentRemindersEnabled,
     baseCurrency: baseCurrency ?? this.baseCurrency,
-    fxAutoRefresh: fxAutoRefresh ?? this.fxAutoRefresh,
-    fxRefreshIntervalHours:
-        fxRefreshIntervalHours ?? this.fxRefreshIntervalHours,
     weightUnit: weightUnit ?? this.weightUnit,
     lengthUnit: lengthUnit ?? this.lengthUnit,
     replayPrefill: replayPrefill ?? this.replayPrefill,
@@ -159,9 +149,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _restAlarmVibrationKey = 'settings_rest_alarm_vibration';
   static const _experimentRemindersKey = 'settings_experiment_reminders';
   static const _baseCurrencyKey = 'settings_base_currency';
-  static const _fxAutoRefreshKey = 'settings_fx_auto_refresh';
-  static const _fxRefreshIntervalHoursKey =
-      'settings_fx_refresh_interval_hours';
   static const _weightUnitKey = 'settings_weight_unit';
   static const _lengthUnitKey = 'settings_length_unit';
   static const _replayPrefillKey = 'settings_replay_prefill';
@@ -189,8 +176,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       experimentRemindersEnabled:
           prefs.getBool(_experimentRemindersKey) ?? true,
       baseCurrency: prefs.getString(_baseCurrencyKey) ?? 'USD',
-      fxAutoRefresh: prefs.getBool(_fxAutoRefreshKey) ?? false,
-      fxRefreshIntervalHours: prefs.getInt(_fxRefreshIntervalHoursKey) ?? 24,
       weightUnit: _weightUnitFromName(prefs.getString(_weightUnitKey)),
       lengthUnit: _lengthUnitFromName(prefs.getString(_lengthUnitKey)),
       replayPrefill: prefs.getString(_replayPrefillKey) == 'planned'
@@ -328,21 +313,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setBool(_experimentRemindersKey, enabled);
     state = state.copyWith(experimentRemindersEnabled: enabled);
-  }
-
-  Future<void> setFxAutoRefresh(bool enabled) async {
-    await ref
-        .read(sharedPreferencesProvider)
-        .setBool(_fxAutoRefreshKey, enabled);
-    state = state.copyWith(fxAutoRefresh: enabled);
-  }
-
-  Future<void> setFxRefreshIntervalHours(int hours) async {
-    if (hours <= 0) return;
-    await ref
-        .read(sharedPreferencesProvider)
-        .setInt(_fxRefreshIntervalHoursKey, hours);
-    state = state.copyWith(fxRefreshIntervalHours: hours);
   }
 
   Future<void> setWeightUnit(WeightUnit unit) async {
