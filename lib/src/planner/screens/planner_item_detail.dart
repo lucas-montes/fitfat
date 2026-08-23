@@ -362,18 +362,16 @@ final class _PlannerItemDetailScreenState
                 Row(
                   children: [
                     Expanded(
-                      child: FilledButton.tonalIcon(
+                      child: FilledButton.tonal(
                         onPressed: () => _edit(item),
-                        icon: const Icon(Icons.edit_outlined),
-                        label: Text(l10n.plannerDetailEdit),
+                        child: Text(l10n.plannerDetailEdit),
                       ),
                     ),
                     const SizedBox(width: FitFatTokens.spaceM),
                     Expanded(
-                      child: OutlinedButton.icon(
+                      child: OutlinedButton(
                         onPressed: () => _delete(item),
-                        icon: const Icon(Icons.delete_outline),
-                        label: Text(l10n.plannerDetailDelete),
+                        child: Text(l10n.plannerDetailDelete),
                       ),
                     ),
                   ],

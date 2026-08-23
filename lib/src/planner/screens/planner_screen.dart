@@ -1034,12 +1034,6 @@ final class _TimelineItemCard extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                tooltip: l10n.plannerDetailEdit,
-                visualDensity: VisualDensity.compact,
-                onPressed: onEdit,
-              ),
             ],
           ),
         ),
