@@ -105,6 +105,15 @@
   "emptyExercisesCta": "Ajouter un exercice",
   "activeWorkoutAddExercise": "Ajouter un exercice",
   "activeWorkoutAddExerciseTooltip": "Rechercher et ajouter des exercices à cet entraînement",
+  "activeWorkoutPlannedSetsTitle": "Séries planifiées pour {exercise}",
+  "@activeWorkoutPlannedSetsTitle": {
+    "placeholders": {
+      "exercise": { "type": "String" }
+    }
+  },
+  "activeWorkoutPlannedRepsLabel": "Répétitions",
+  "activeWorkoutPlannedWeightLabel": "Poids",
+  "commonRemove": "Retirer",
   "activeWorkoutPrevExercise": "Exercice précédent",
   "activeWorkoutNextExercise": "Exercice suivant",
   "activeWorkoutInThisWorkout": "Dans cet entraînement",
@@ -600,6 +609,15 @@
   "settingsFxRefreshInterval": "Intervalle d'actualisation",
   "settingsExperimentReminders": "Rappels d'expériences",
   "settingsExperimentRemindersSubtitle": "Rappels quotidiens tant qu'une expérience est en cours",
+  "settingsSyncServer": "Serveur de synchronisation",
+  "settingsSyncServerHint": "Indiquez votre serveur de sync pour récupérer exercices, ingrédients et devises. Laissez vide pour désactiver la sync.",
+  "settingsSyncBaseUrl": "URL du serveur",
+  "settingsSyncApiKey": "Clé API",
+  "syncExercisesTooltip": "Synchroniser les exercices",
+  "syncIngredientsTooltip": "Synchroniser les ingrédients",
+  "syncCurrenciesTooltip": "Synchroniser les devises",
+  "syncPushIngredientTooltip": "Publier dans le catalogue partagé",
+  "syncServerNotConfigured": "L'URL du serveur de synchronisation n'est pas configurée",
   "settingsUnits": "Unités",
   "settingsWeightUnitLabel": "Poids",
   "settingsLengthUnitLabel": "Taille",

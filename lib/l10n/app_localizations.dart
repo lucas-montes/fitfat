@@ -460,6 +460,30 @@ abstract class AppLocalizations {
   /// **'Search and add exercises to this workout'**
   String get activeWorkoutAddExerciseTooltip;
 
+  /// No description provided for @activeWorkoutPlannedSetsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned sets for {exercise}'**
+  String activeWorkoutPlannedSetsTitle(String exercise);
+
+  /// No description provided for @activeWorkoutPlannedRepsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reps'**
+  String get activeWorkoutPlannedRepsLabel;
+
+  /// No description provided for @activeWorkoutPlannedWeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get activeWorkoutPlannedWeightLabel;
+
+  /// No description provided for @commonRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get commonRemove;
+
   /// No description provided for @activeWorkoutPrevExercise.
   ///
   /// In en, this message translates to:
@@ -2547,6 +2571,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily check-in reminders while an experiment is running'**
   String get settingsExperimentRemindersSubtitle;
+
+  /// No description provided for @settingsSyncServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync server'**
+  String get settingsSyncServer;
+
+  /// No description provided for @settingsSyncServerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point this at your sync server to pull exercises, ingredients and currencies. Leave empty to disable sync.'**
+  String get settingsSyncServerHint;
+
+  /// No description provided for @settingsSyncBaseUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Server URL'**
+  String get settingsSyncBaseUrl;
+
+  /// No description provided for @settingsSyncApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get settingsSyncApiKey;
+
+  /// No description provided for @syncExercisesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync exercises'**
+  String get syncExercisesTooltip;
+
+  /// No description provided for @syncIngredientsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync ingredients'**
+  String get syncIngredientsTooltip;
+
+  /// No description provided for @syncCurrenciesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync currencies'**
+  String get syncCurrenciesTooltip;
+
+  /// No description provided for @syncPushIngredientTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Push to shared catalogue'**
+  String get syncPushIngredientTooltip;
+
+  /// No description provided for @syncServerNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync server URL is not configured'**
+  String get syncServerNotConfigured;
 
   /// No description provided for @settingsUnits.
   ///

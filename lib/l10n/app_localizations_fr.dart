@@ -210,6 +210,20 @@ class AppLocalizationsFr extends AppLocalizations {
       'Rechercher et ajouter des exercices à cet entraînement';
 
   @override
+  String activeWorkoutPlannedSetsTitle(String exercise) {
+    return 'Séries planifiées pour $exercise';
+  }
+
+  @override
+  String get activeWorkoutPlannedRepsLabel => 'Répétitions';
+
+  @override
+  String get activeWorkoutPlannedWeightLabel => 'Poids';
+
+  @override
+  String get commonRemove => 'Retirer';
+
+  @override
   String get activeWorkoutPrevExercise => 'Exercice précédent';
 
   @override
@@ -1381,6 +1395,35 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsExperimentRemindersSubtitle =>
       'Rappels quotidiens tant qu\'une expérience est en cours';
+
+  @override
+  String get settingsSyncServer => 'Serveur de synchronisation';
+
+  @override
+  String get settingsSyncServerHint =>
+      'Indiquez votre serveur de sync pour récupérer exercices, ingrédients et devises. Laissez vide pour désactiver la sync.';
+
+  @override
+  String get settingsSyncBaseUrl => 'URL du serveur';
+
+  @override
+  String get settingsSyncApiKey => 'Clé API';
+
+  @override
+  String get syncExercisesTooltip => 'Synchroniser les exercices';
+
+  @override
+  String get syncIngredientsTooltip => 'Synchroniser les ingrédients';
+
+  @override
+  String get syncCurrenciesTooltip => 'Synchroniser les devises';
+
+  @override
+  String get syncPushIngredientTooltip => 'Publier dans le catalogue partagé';
+
+  @override
+  String get syncServerNotConfigured =>
+      'L\'URL du serveur de synchronisation n\'est pas configurée';
 
   @override
   String get settingsUnits => 'Unités';

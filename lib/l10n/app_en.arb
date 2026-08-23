@@ -115,6 +115,15 @@
   "emptyExercisesCta": "Add exercise",
   "activeWorkoutAddExercise": "Add Exercise",
   "activeWorkoutAddExerciseTooltip": "Search and add exercises to this workout",
+  "activeWorkoutPlannedSetsTitle": "Planned sets for {exercise}",
+  "@activeWorkoutPlannedSetsTitle": {
+    "placeholders": {
+      "exercise": { "type": "String" }
+    }
+  },
+  "activeWorkoutPlannedRepsLabel": "Reps",
+  "activeWorkoutPlannedWeightLabel": "Weight",
+  "commonRemove": "Remove",
   "activeWorkoutPrevExercise": "Previous exercise",
   "activeWorkoutNextExercise": "Next exercise",
   "activeWorkoutInThisWorkout": "In This Workout",
@@ -711,6 +720,15 @@
   "settingsFxRefreshInterval": "Refresh interval",
   "settingsExperimentReminders": "Experiment reminders",
   "settingsExperimentRemindersSubtitle": "Daily check-in reminders while an experiment is running",
+  "settingsSyncServer": "Sync server",
+  "settingsSyncServerHint": "Point this at your sync server to pull exercises, ingredients and currencies. Leave empty to disable sync.",
+  "settingsSyncBaseUrl": "Server URL",
+  "settingsSyncApiKey": "API key",
+  "syncExercisesTooltip": "Sync exercises",
+  "syncIngredientsTooltip": "Sync ingredients",
+  "syncCurrenciesTooltip": "Sync currencies",
+  "syncPushIngredientTooltip": "Push to shared catalogue",
+  "syncServerNotConfigured": "Sync server URL is not configured",
   "settingsUnits": "Units",
   "settingsWeightUnitLabel": "Weight",
   "settingsLengthUnitLabel": "Height",

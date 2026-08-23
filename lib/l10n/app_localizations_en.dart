@@ -209,6 +209,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Search and add exercises to this workout';
 
   @override
+  String activeWorkoutPlannedSetsTitle(String exercise) {
+    return 'Planned sets for $exercise';
+  }
+
+  @override
+  String get activeWorkoutPlannedRepsLabel => 'Reps';
+
+  @override
+  String get activeWorkoutPlannedWeightLabel => 'Weight';
+
+  @override
+  String get commonRemove => 'Remove';
+
+  @override
   String get activeWorkoutPrevExercise => 'Previous exercise';
 
   @override
@@ -1369,6 +1383,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsExperimentRemindersSubtitle =>
       'Daily check-in reminders while an experiment is running';
+
+  @override
+  String get settingsSyncServer => 'Sync server';
+
+  @override
+  String get settingsSyncServerHint =>
+      'Point this at your sync server to pull exercises, ingredients and currencies. Leave empty to disable sync.';
+
+  @override
+  String get settingsSyncBaseUrl => 'Server URL';
+
+  @override
+  String get settingsSyncApiKey => 'API key';
+
+  @override
+  String get syncExercisesTooltip => 'Sync exercises';
+
+  @override
+  String get syncIngredientsTooltip => 'Sync ingredients';
+
+  @override
+  String get syncCurrenciesTooltip => 'Sync currencies';
+
+  @override
+  String get syncPushIngredientTooltip => 'Push to shared catalogue';
+
+  @override
+  String get syncServerNotConfigured => 'Sync server URL is not configured';
 
   @override
   String get settingsUnits => 'Units';

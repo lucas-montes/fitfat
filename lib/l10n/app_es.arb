@@ -104,6 +104,15 @@
   "emptyExercisesCta": "Añadir ejercicio",
   "activeWorkoutAddExercise": "Añadir ejercicio",
   "activeWorkoutAddExerciseTooltip": "Buscar y añadir ejercicios a este entrenamiento",
+  "activeWorkoutPlannedSetsTitle": "Series planificadas para {exercise}",
+  "@activeWorkoutPlannedSetsTitle": {
+    "placeholders": {
+      "exercise": { "type": "String" }
+    }
+  },
+  "activeWorkoutPlannedRepsLabel": "Repeticiones",
+  "activeWorkoutPlannedWeightLabel": "Peso",
+  "commonRemove": "Quitar",
   "activeWorkoutPrevExercise": "Ejercicio anterior",
   "activeWorkoutNextExercise": "Ejercicio siguiente",
   "activeWorkoutInThisWorkout": "En este entrenamiento",
@@ -598,6 +607,15 @@
   "settingsFxRefreshInterval": "Intervalo de actualización",
   "settingsExperimentReminders": "Recordatorios de experimentos",
   "settingsExperimentRemindersSubtitle": "Recordatorios diarios mientras haya un experimento activo",
+  "settingsSyncServer": "Servidor de sincronización",
+  "settingsSyncServerHint": "Apunta esto a tu servidor de sincronización para obtener ejercicios, ingredientes y divisas. Déjalo vacío para desactivar la sincronización.",
+  "settingsSyncBaseUrl": "URL del servidor",
+  "settingsSyncApiKey": "Clave API",
+  "syncExercisesTooltip": "Sincronizar ejercicios",
+  "syncIngredientsTooltip": "Sincronizar ingredientes",
+  "syncCurrenciesTooltip": "Sincronizar divisas",
+  "syncPushIngredientTooltip": "Publicar en el catálogo compartido",
+  "syncServerNotConfigured": "La URL del servidor de sincronización no está configurada",
   "settingsUnits": "Unidades",
   "settingsWeightUnitLabel": "Peso",
   "settingsLengthUnitLabel": "Altura",
