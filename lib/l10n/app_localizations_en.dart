@@ -1115,10 +1115,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAppearanceLanguageSubtitle => 'Theme and app language';
 
   @override
-  String get settingsCurrencyBudgetSubtitle =>
-      'Base currency and exchange rates';
-
-  @override
   String get settingsBodyWeightGoal => 'Body weight goal';
 
   @override
@@ -1217,6 +1213,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsApiTimeoutLabel => 'Sync request timeout (s)';
+
+  @override
+  String get settingsPlannerHorizonHelp =>
+      'How many days ahead recurring tasks are pre-created in the planner.';
+
+  @override
+  String get settingsCalorieAdjustmentHelp =>
+      'kcal added to (gain) or subtracted from (lose) your daily calorie target.';
+
+  @override
+  String get settingsExperimentBaselineHelp =>
+      'Days of history before an experiment starts, used as its comparison baseline.';
+
+  @override
+  String get settingsDefaultRestHelp =>
+      'Prefills the rest field when adding a new set to a workout. Leave blank for none.';
+
+  @override
+  String get settingsReminderLeadHelp =>
+      'Minutes before a task\'s start time when the advance notification fires.';
+
+  @override
+  String get settingsApiTimeoutHelp =>
+      'How long sync requests wait for the server before giving up.';
 
   @override
   String get settingsValueInvalid => 'Enter a valid non-negative number.';

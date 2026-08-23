@@ -2092,12 +2092,6 @@ abstract class AppLocalizations {
   /// **'Theme and app language'**
   String get settingsAppearanceLanguageSubtitle;
 
-  /// No description provided for @settingsCurrencyBudgetSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Base currency and exchange rates'**
-  String get settingsCurrencyBudgetSubtitle;
-
   /// No description provided for @settingsBodyWeightGoal.
   ///
   /// In en, this message translates to:
@@ -2289,6 +2283,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync request timeout (s)'**
   String get settingsApiTimeoutLabel;
+
+  /// No description provided for @settingsPlannerHorizonHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How many days ahead recurring tasks are pre-created in the planner.'**
+  String get settingsPlannerHorizonHelp;
+
+  /// No description provided for @settingsCalorieAdjustmentHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'kcal added to (gain) or subtracted from (lose) your daily calorie target.'**
+  String get settingsCalorieAdjustmentHelp;
+
+  /// No description provided for @settingsExperimentBaselineHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Days of history before an experiment starts, used as its comparison baseline.'**
+  String get settingsExperimentBaselineHelp;
+
+  /// No description provided for @settingsDefaultRestHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefills the rest field when adding a new set to a workout. Leave blank for none.'**
+  String get settingsDefaultRestHelp;
+
+  /// No description provided for @settingsReminderLeadHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes before a task\'s start time when the advance notification fires.'**
+  String get settingsReminderLeadHelp;
+
+  /// No description provided for @settingsApiTimeoutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How long sync requests wait for the server before giving up.'**
+  String get settingsApiTimeoutHelp;
 
   /// No description provided for @settingsValueInvalid.
   ///

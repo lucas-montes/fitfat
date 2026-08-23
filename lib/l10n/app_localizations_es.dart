@@ -1123,9 +1123,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tema e idioma de la aplicación';
 
   @override
-  String get settingsCurrencyBudgetSubtitle => 'Moneda base y tipos de cambio';
-
-  @override
   String get settingsBodyWeightGoal => 'Objetivo de peso';
 
   @override
@@ -1229,6 +1226,30 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get settingsApiTimeoutLabel =>
       'Tiempo de espera de sincronización (s)';
+
+  @override
+  String get settingsPlannerHorizonHelp =>
+      'Cuántos días por adelantado se crean las tareas recurrentes en el plan.';
+
+  @override
+  String get settingsCalorieAdjustmentHelp =>
+      'Kcal que se suman (aumentar) o se restan (perder) de tu objetivo calórico diario.';
+
+  @override
+  String get settingsExperimentBaselineHelp =>
+      'Días de historial antes del inicio de un experimento, usados como referencia comparativa.';
+
+  @override
+  String get settingsDefaultRestHelp =>
+      'Rellena el campo de descanso al añadir una serie nueva. Déjalo vacío para no usar ninguno.';
+
+  @override
+  String get settingsReminderLeadHelp =>
+      'Minutos antes de la hora de inicio de una tarea en que salta la notificación previa.';
+
+  @override
+  String get settingsApiTimeoutHelp =>
+      'Cuánto esperan las peticiones de sincronización al servidor antes de rendirse.';
 
   @override
   String get settingsValueInvalid => 'Introduce un número válido no negativo.';

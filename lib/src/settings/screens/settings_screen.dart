@@ -78,12 +78,6 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => push(const _AppearanceLanguageScreen()),
           ),
           _HubTile(
-            icon: Icons.currency_exchange_outlined,
-            title: l10n.settingsCurrencyBudget,
-            subtitle: l10n.settingsCurrencyBudgetSubtitle,
-            onTap: () => push(const _BudgetCurrencyScreen()),
-          ),
-          _HubTile(
             icon: Icons.tune_outlined,
             title: l10n.settingsAdvanced,
             subtitle: l10n.settingsAdvancedSubtitle,
@@ -679,9 +673,11 @@ final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
   }
 
   /// Builds one numeric field that commits through [onSave] on submit.
+  /// [help] explains what the value controls (shown under the field).
   Widget _field({
     required TextEditingController controller,
     required String label,
+    String? help,
     required String? Function(String?) validator,
     required VoidCallback onSave,
   }) => Padding(
@@ -692,6 +688,8 @@ final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
       textInputAction: TextInputAction.done,
       decoration: InputDecoration(
         labelText: label,
+        helperText: help,
+        helperMaxLines: 3,
         suffixIcon: IconButton(
           icon: const Icon(Icons.check),
           tooltip: AppLocalizations.of(context)!.commonSave,
@@ -712,6 +710,7 @@ final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final notifier = ref.read(settingsProvider.notifier);
 
     void saveIfValid(TextEditingController ctrl, VoidCallback commit) {
@@ -727,6 +726,7 @@ final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
           _field(
             controller: _horizonCtrl,
             label: l10n.settingsPlannerHorizonLabel,
+            help: l10n.settingsPlannerHorizonHelp,
             validator: _validatePositiveInt,
             onSave: () => saveIfValid(_horizonCtrl, () {
               notifier.setPlannerHorizonDays(int.parse(_horizonCtrl.text));
@@ -735,6 +735,7 @@ final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
           _field(
             controller: _adjustmentCtrl,
             label: l10n.settingsCalorieAdjustmentLabel,
+            help: l10n.settingsCalorieAdjustmentHelp,
             validator: _validateNonNegative,
             onSave: () => saveIfValid(_adjustmentCtrl, () {
               notifier.setCalorieGoalAdjustment(
@@ -745,6 +746,7 @@ final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
           _field(
             controller: _baselineCtrl,
             label: l10n.settingsExperimentBaselineLabel,
+            help: l10n.settingsExperimentBaselineHelp,
             validator: _validatePositiveInt,
             onSave: () => saveIfValid(_baselineCtrl, () {
               notifier.setExperimentBaselineDays(int.parse(_baselineCtrl.text));
@@ -753,6 +755,7 @@ final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
           _field(
             controller: _restCtrl,
             label: l10n.settingsDefaultRestLabel,
+            help: l10n.settingsDefaultRestHelp,
             validator: _validateNonNegative,
             onSave: () {
               // Blank means "no default"; minutes with decimals are allowed.
@@ -766,6 +769,7 @@ final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
           _field(
             controller: _leadCtrl,
             label: l10n.settingsReminderLeadLabel,
+            help: l10n.settingsReminderLeadHelp,
             validator: _validateNonNegative,
             onSave: () => saveIfValid(_leadCtrl, () {
               notifier.setReminderLeadMinutes(int.parse(_leadCtrl.text));
@@ -774,29 +778,19 @@ final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
           _field(
             controller: _timeoutCtrl,
             label: l10n.settingsApiTimeoutLabel,
+            help: l10n.settingsApiTimeoutHelp,
             validator: _validatePositiveInt,
             onSave: () => saveIfValid(_timeoutCtrl, () {
               notifier.setApiTimeoutSeconds(int.parse(_timeoutCtrl.text));
             }),
           ),
+          const Divider(height: 32),
+          Text(l10n.settingsCurrencyBudget, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(l10n.settingsBaseCurrency, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 12),
+          const _CurrencySection(),
         ],
-      ),
-    );
-  }
-}
-
-/// Budget & Currency: base currency + cached FX rates.
-final class _BudgetCurrencyScreen extends StatelessWidget {
-  const _BudgetCurrencyScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.settingsCurrencyBudget)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [_CurrencySection()],
       ),
     );
   }
@@ -1066,36 +1060,75 @@ final class _CurrencySection extends ConsumerWidget {
     double current,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: current.toString());
-    final saved = await showDialog<bool>(
+    // The dialog owns the controller (see [_RateEditDialog]) so it is disposed
+    // only after the route — including its exit animation — is torn down.
+    final value = await showDialog<double>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.settingsRateEdit),
-        content: TextFormField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: l10n.settingsRateRow(code, 0, base),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.commonSave),
-          ),
-        ],
+      builder: (_) => _RateEditDialog(
+        title: l10n.settingsRateEdit,
+        label: l10n.settingsRateRow(code, 0, base),
+        initial: current,
       ),
     );
-    if (saved != true || !context.mounted) return;
-    final value = double.tryParse(controller.text.trim());
-    if (value == null) return;
+    if (value == null || !context.mounted) return;
     await ref.read(fxRepositoryProvider).setRate(code, value, base);
     ref.invalidate(fxRatesProvider);
+  }
+}
+
+/// Numeric prompt for editing one cached FX rate. Owns its text controller so
+/// disposal happens after the route exit animation (never mid-rebuild).
+final class _RateEditDialog extends StatefulWidget {
+  final String title;
+  final String label;
+  final double initial;
+
+  const _RateEditDialog({
+    required this.title,
+    required this.label,
+    required this.initial,
+  });
+
+  @override
+  State<_RateEditDialog> createState() => _RateEditDialogState();
+}
+
+final class _RateEditDialogState extends State<_RateEditDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial.toString(),
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextFormField(
+        controller: _controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(labelText: widget.label),
+        autofocus: true,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final value = double.tryParse(_controller.text.trim());
+            if (value != null) Navigator.of(context).pop(value);
+          },
+          child: Text(l10n.commonSave),
+        ),
+      ],
+    );
   }
 }
 
