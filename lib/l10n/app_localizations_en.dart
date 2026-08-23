@@ -1194,6 +1194,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsResetData => 'Reset all data';
 
   @override
+  String get settingsAdvanced => 'Advanced';
+
+  @override
+  String get settingsAdvancedSubtitle =>
+      'Planner horizon, calorie adjustment, timers';
+
+  @override
+  String get settingsPlannerHorizonLabel => 'Planner look-ahead (days)';
+
+  @override
+  String get settingsCalorieAdjustmentLabel => 'Calorie goal adjustment (kcal)';
+
+  @override
+  String get settingsExperimentBaselineLabel => 'Experiment baseline (days)';
+
+  @override
+  String get settingsDefaultRestLabel => 'Default rest between sets (min)';
+
+  @override
+  String get settingsReminderLeadLabel => 'Pre-reminder lead (min)';
+
+  @override
+  String get settingsApiTimeoutLabel => 'Sync request timeout (s)';
+
+  @override
+  String get settingsValueInvalid => 'Enter a valid non-negative number.';
+
+  @override
   String get settingsResetDataSubtitle =>
       'Erase all workouts, meals, metrics, planner tasks and notes, and restore default settings.';
 

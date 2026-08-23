@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../body/providers/body_metrics.dart';
 import '../../diet/providers/meals.dart';
 import '../../models/experiment.dart';
+import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/status_badge.dart';
@@ -14,11 +15,9 @@ import '../providers/experiments.dart';
 import '../ui/experiment_labels.dart';
 import 'experiment_form_screen.dart';
 
-const _baselineDays = 14;
-
 /// Experiment detail: lifecycle status + progress, the daily check-in, a
 /// check-in timeline, and per-category charts of real data (workout volume,
-/// calories, weight, steps) against a 14-day pre-start baseline.
+/// calories, weight, steps) against a pre-start baseline.
 final class ExperimentDetailScreen extends ConsumerStatefulWidget {
   final String experimentId;
 
@@ -494,8 +493,9 @@ final class _TrackedDataSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
+    final baselineDays = ref.watch(settingsProvider).experimentBaselineDays;
     final baselineStart = experiment.startDate.subtract(
-      const Duration(days: _baselineDays),
+      Duration(days: baselineDays),
     );
 
     return Card(

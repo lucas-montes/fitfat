@@ -1202,6 +1202,38 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsResetData => 'Réinitialiser toutes les données';
 
   @override
+  String get settingsAdvanced => 'Avancé';
+
+  @override
+  String get settingsAdvancedSubtitle =>
+      'Horizon du plan, ajustement des calories, minuteurs';
+
+  @override
+  String get settingsPlannerHorizonLabel => 'Anticipation du plan (jours)';
+
+  @override
+  String get settingsCalorieAdjustmentLabel =>
+      'Ajustement de l\'objectif calorique (kcal)';
+
+  @override
+  String get settingsExperimentBaselineLabel =>
+      'Référence des expériences (jours)';
+
+  @override
+  String get settingsDefaultRestLabel => 'Repos par défaut entre séries (min)';
+
+  @override
+  String get settingsReminderLeadLabel => 'Délai du rappel anticipé (min)';
+
+  @override
+  String get settingsApiTimeoutLabel =>
+      'Délai d\'attente de synchronisation (s)';
+
+  @override
+  String get settingsValueInvalid =>
+      'Saisissez un nombre valide positif ou nul.';
+
+  @override
   String get settingsResetDataSubtitle =>
       'Effacer tous les entraînements, repas, mesures, tâches du plan et notes, et rétablir les réglages par défaut.';
 

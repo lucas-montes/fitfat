@@ -39,6 +39,10 @@ final class _PlannerItemDetailScreenState
     extends ConsumerState<PlannerItemDetailScreen> {
   PlannerItem? _item;
 
+  /// How far ahead recurring tasks are materialized (user-configurable).
+  Duration get _plannerHorizon =>
+      Duration(days: ref.read(settingsProvider).plannerHorizonDays);
+
   @override
   void initState() {
     super.initState();
@@ -138,7 +142,7 @@ final class _PlannerItemDetailScreenState
       await repo.deleteFutureOccurrences(seriesId!, DateTime.now());
       unawaited(
         repo
-            .materializeUpTo(updated.day.add(const Duration(days: 90)))
+            .materializeUpTo(updated.day.add(_plannerHorizon))
             .catchError((_) {}),
       );
     }

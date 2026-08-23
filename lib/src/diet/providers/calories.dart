@@ -21,7 +21,8 @@ const double kCardioMet = 10.0;
 /// ~0.04 kcal per step for a 100 kg person).
 const double kKcalPerStepPerKg = 0.0004;
 
-/// kcal adjustment applied on top of TDEE for the body-weight goal.
+/// kcal adjustment applied on top of TDEE for the body-weight goal
+/// (default; user-configurable via `settings.calorieGoalAdjustment`).
 const double kGoalAdjustment = 500;
 
 // ---------------------------------------------------------------------------
@@ -62,10 +63,14 @@ double stepsKcal({required double weightKg, required int steps}) =>
     steps * kKcalPerStepPerKg * weightKg;
 
 /// Applies the body-weight-goal adjustment on top of TDEE.
-/// lose → −500, gain → +500, maintain/unset → 0.
-double adjustForGoal(double tdee, BodyWeightGoal? goal) => switch (goal) {
-  BodyWeightGoal.lose => tdee - kGoalAdjustment,
-  BodyWeightGoal.gain => tdee + kGoalAdjustment,
+/// lose → −[adjustment], gain → +[adjustment], maintain/unset → 0.
+double adjustForGoal(
+  double tdee,
+  BodyWeightGoal? goal, {
+  double adjustment = kGoalAdjustment,
+}) => switch (goal) {
+  BodyWeightGoal.lose => tdee - adjustment,
+  BodyWeightGoal.gain => tdee + adjustment,
   BodyWeightGoal.maintain || null => tdee,
 };
 
@@ -171,7 +176,11 @@ final calorieTargetProvider = FutureProvider<double?>((ref) async {
     tdee = bmr * level.multiplier;
   }
 
-  return adjustForGoal(tdee, settings.bodyWeightGoal);
+  return adjustForGoal(
+    tdee,
+    settings.bodyWeightGoal,
+    adjustment: settings.calorieGoalAdjustment,
+  );
 });
 
 /// P/C/F gram targets derived from the daily calorie target, or `null` when

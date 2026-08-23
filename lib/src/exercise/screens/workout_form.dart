@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/exercise_set.dart';
 import '../../models/workout_exercise.dart';
+import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
 import '../providers/exercises.dart';
@@ -280,7 +281,14 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               icon: const Icon(Icons.add, size: 18),
               label: Text(l10n.workoutFormAddSet),
               onPressed: () => setState(() {
-                _selected[ex.id]!.add(_PlannedSetEntry());
+                // New sets prefill rest from the user's default (if any).
+                final defaultRest = ref
+                    .read(settingsProvider)
+                    .defaultRestSeconds;
+                _selected[ex.id]!.add(
+                  _PlannedSetEntry()
+                    ..restSeconds = defaultRest > 0 ? defaultRest : null,
+                );
               }),
             ),
           ],

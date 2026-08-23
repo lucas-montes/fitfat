@@ -2242,6 +2242,60 @@ abstract class AppLocalizations {
   /// **'Reset all data'**
   String get settingsResetData;
 
+  /// No description provided for @settingsAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get settingsAdvanced;
+
+  /// No description provided for @settingsAdvancedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Planner horizon, calorie adjustment, timers'**
+  String get settingsAdvancedSubtitle;
+
+  /// No description provided for @settingsPlannerHorizonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Planner look-ahead (days)'**
+  String get settingsPlannerHorizonLabel;
+
+  /// No description provided for @settingsCalorieAdjustmentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Calorie goal adjustment (kcal)'**
+  String get settingsCalorieAdjustmentLabel;
+
+  /// No description provided for @settingsExperimentBaselineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Experiment baseline (days)'**
+  String get settingsExperimentBaselineLabel;
+
+  /// No description provided for @settingsDefaultRestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default rest between sets (min)'**
+  String get settingsDefaultRestLabel;
+
+  /// No description provided for @settingsReminderLeadLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-reminder lead (min)'**
+  String get settingsReminderLeadLabel;
+
+  /// No description provided for @settingsApiTimeoutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync request timeout (s)'**
+  String get settingsApiTimeoutLabel;
+
+  /// No description provided for @settingsValueInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid non-negative number.'**
+  String get settingsValueInvalid;
+
   /// No description provided for @settingsResetDataSubtitle.
   ///
   /// In en, this message translates to:

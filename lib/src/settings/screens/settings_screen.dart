@@ -84,6 +84,12 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => push(const _BudgetCurrencyScreen()),
           ),
           _HubTile(
+            icon: Icons.tune_outlined,
+            title: l10n.settingsAdvanced,
+            subtitle: l10n.settingsAdvancedSubtitle,
+            onTap: () => push(const _AdvancedScreen()),
+          ),
+          _HubTile(
             icon: Icons.delete_forever_outlined,
             iconColor: theme.colorScheme.error,
             titleColor: theme.colorScheme.error,
@@ -588,6 +594,190 @@ final class _AppearanceLanguageScreen extends ConsumerWidget {
                 notifier.setLocale(Locale(value));
               }
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Advanced: numeric tuning knobs previously hardcoded in the app — planner
+/// materialization horizon, calorie-goal adjustment, experiment baseline,
+/// default set rest, reminder lead, and sync request timeout. Each field
+/// commits on submit (keyboard done or the check button); values are clamped
+/// by their setters.
+final class _AdvancedScreen extends ConsumerStatefulWidget {
+  const _AdvancedScreen();
+
+  @override
+  ConsumerState<_AdvancedScreen> createState() => _AdvancedScreenState();
+}
+
+final class _AdvancedScreenState extends ConsumerState<_AdvancedScreen> {
+  late final TextEditingController _horizonCtrl;
+  late final TextEditingController _adjustmentCtrl;
+  late final TextEditingController _baselineCtrl;
+  late final TextEditingController _restCtrl;
+  late final TextEditingController _leadCtrl;
+  late final TextEditingController _timeoutCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final settings = ref.read(settingsProvider);
+    _horizonCtrl = TextEditingController(
+      text: settings.plannerHorizonDays.toString(),
+    );
+    _adjustmentCtrl = TextEditingController(
+      text: settings.calorieGoalAdjustment.toStringAsFixed(0),
+    );
+    _baselineCtrl = TextEditingController(
+      text: settings.experimentBaselineDays.toString(),
+    );
+    _restCtrl = settings.defaultRestSeconds > 0
+        ? TextEditingController(
+            text: (settings.defaultRestSeconds / 60).toStringAsFixed(1),
+          )
+        : TextEditingController();
+    _leadCtrl = TextEditingController(
+      text: settings.reminderLeadMinutes.toString(),
+    );
+    _timeoutCtrl = TextEditingController(
+      text: settings.apiTimeoutSeconds.toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _horizonCtrl.dispose();
+    _adjustmentCtrl.dispose();
+    _baselineCtrl.dispose();
+    _restCtrl.dispose();
+    _leadCtrl.dispose();
+    _timeoutCtrl.dispose();
+    super.dispose();
+  }
+
+  String? _validatePositiveInt(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return null; // blank keeps the stored value
+    final parsed = int.tryParse(text);
+    if (parsed == null || parsed <= 0) {
+      return AppLocalizations.of(context)!.settingsValueInvalid;
+    }
+    return null;
+  }
+
+  String? _validateNonNegative(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return null;
+    final parsed = double.tryParse(text);
+    if (parsed == null || parsed < 0) {
+      return AppLocalizations.of(context)!.settingsValueInvalid;
+    }
+    return null;
+  }
+
+  /// Builds one numeric field that commits through [onSave] on submit.
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required String? Function(String?) validator,
+    required VoidCallback onSave,
+  }) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: TextFormField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textInputAction: TextInputAction.done,
+      decoration: InputDecoration(
+        labelText: label,
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.check),
+          tooltip: AppLocalizations.of(context)!.commonSave,
+          onPressed: () {
+            if (validator(controller.text) != null) return;
+            onSave();
+          },
+        ),
+      ),
+      validator: validator,
+      onFieldSubmitted: (_) {
+        if (validator(controller.text) != null) return;
+        onSave();
+      },
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final notifier = ref.read(settingsProvider.notifier);
+
+    void saveIfValid(TextEditingController ctrl, VoidCallback commit) {
+      if (ctrl.text.trim().isEmpty) return;
+      commit();
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.settingsAdvanced)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _field(
+            controller: _horizonCtrl,
+            label: l10n.settingsPlannerHorizonLabel,
+            validator: _validatePositiveInt,
+            onSave: () => saveIfValid(_horizonCtrl, () {
+              notifier.setPlannerHorizonDays(int.parse(_horizonCtrl.text));
+            }),
+          ),
+          _field(
+            controller: _adjustmentCtrl,
+            label: l10n.settingsCalorieAdjustmentLabel,
+            validator: _validateNonNegative,
+            onSave: () => saveIfValid(_adjustmentCtrl, () {
+              notifier.setCalorieGoalAdjustment(
+                double.parse(_adjustmentCtrl.text),
+              );
+            }),
+          ),
+          _field(
+            controller: _baselineCtrl,
+            label: l10n.settingsExperimentBaselineLabel,
+            validator: _validatePositiveInt,
+            onSave: () => saveIfValid(_baselineCtrl, () {
+              notifier.setExperimentBaselineDays(int.parse(_baselineCtrl.text));
+            }),
+          ),
+          _field(
+            controller: _restCtrl,
+            label: l10n.settingsDefaultRestLabel,
+            validator: _validateNonNegative,
+            onSave: () {
+              // Blank means "no default"; minutes with decimals are allowed.
+              final text = _restCtrl.text.trim();
+              final seconds = text.isEmpty
+                  ? 0
+                  : (double.parse(text) * 60).round();
+              notifier.setDefaultRestSeconds(seconds);
+            },
+          ),
+          _field(
+            controller: _leadCtrl,
+            label: l10n.settingsReminderLeadLabel,
+            validator: _validateNonNegative,
+            onSave: () => saveIfValid(_leadCtrl, () {
+              notifier.setReminderLeadMinutes(int.parse(_leadCtrl.text));
+            }),
+          ),
+          _field(
+            controller: _timeoutCtrl,
+            label: l10n.settingsApiTimeoutLabel,
+            validator: _validatePositiveInt,
+            onSave: () => saveIfValid(_timeoutCtrl, () {
+              notifier.setApiTimeoutSeconds(int.parse(_timeoutCtrl.text));
+            }),
           ),
         ],
       ),

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../settings/providers/settings.dart';
+
 /// Low-level HTTP abstraction returning decoded JSON. Implementations:
 /// [HttpApiClient] (real `package:http`) and [MockApiClient] (scripted, for
 /// tests). Higher-level services (FX rates, future sync) depend on this so
@@ -44,12 +46,16 @@ final class ApiException implements Exception {
 }
 
 /// Production [ApiClient] backed by `package:http`. Requests are joined onto
-/// [baseUrl] and time out after [_timeout]; responses are decoded as UTF-8
+/// [baseUrl] and time out after [timeout]; responses are decoded as UTF-8
 /// JSON.
 final class HttpApiClient implements ApiClient {
-  HttpApiClient(this._client, {required this.baseUrl});
+  HttpApiClient(
+    this._client, {
+    required this.baseUrl,
+    this.timeout = defaultTimeout,
+  });
 
-  static const Duration _timeout = Duration(seconds: 15);
+  static const Duration defaultTimeout = Duration(seconds: 15);
   static const Map<String, String> _headers = {
     'Content-Type': 'application/json',
     'User-Agent': 'FitFat/1.0',
@@ -57,6 +63,7 @@ final class HttpApiClient implements ApiClient {
 
   final http.Client _client;
   final String baseUrl;
+  final Duration timeout;
 
   Uri _uri(String path, {Map<String, String>? query}) {
     final uri = Uri.parse('$baseUrl$path');
@@ -68,7 +75,7 @@ final class HttpApiClient implements ApiClient {
     Future<http.Response> Function() request, {
     Map<String, String>? headers,
   }) async {
-    final response = await request().timeout(_timeout);
+    final response = await request().timeout(timeout);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(statusCode: response.statusCode, body: response.body);
     }
@@ -191,5 +198,8 @@ final class MockApiClient implements ApiClient {
 /// (compile-time `API_BASE_URL`, empty until a real endpoint is configured).
 final apiClientProvider = Provider<ApiClient>((ref) {
   const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
-  return HttpApiClient(http.Client(), baseUrl: baseUrl);
+  final timeout = Duration(
+    seconds: ref.watch(settingsProvider).apiTimeoutSeconds,
+  );
+  return HttpApiClient(http.Client(), baseUrl: baseUrl, timeout: timeout);
 });

@@ -45,11 +45,16 @@ int _stableHash(String value) {
 
 /// The absolute local wall-clock instants at which reminders for [item]
 /// should fire — `[pre-reminder, start-time]` when both are in the future,
-/// `[start-time]` when only the start time is (the 30-min pre-reminder would
+/// `[start-time]` when only the start time is (the pre-reminder would
 /// fall in the past), or empty when the task is done, has no start time, or is
 /// already past due (past-due tasks never schedule). The reminder anchors to
-/// the task's own day plus its start time-of-day.
-List<DateTime> plannerReminderTimes(PlannerItem item, {DateTime? now}) {
+/// the task's own day plus its start time-of-day. [lead] is how long before
+/// the start time the advance reminder fires.
+List<DateTime> plannerReminderTimes(
+  PlannerItem item, {
+  DateTime? now,
+  Duration lead = const Duration(minutes: preReminderMinutes),
+}) {
   final minutes = item.startTimeMinutes;
   if (minutes == null || item.done) return const [];
 
@@ -64,7 +69,7 @@ List<DateTime> plannerReminderTimes(PlannerItem item, {DateTime? now}) {
   final reference = now ?? DateTime.now();
   if (!dueAt.isAfter(reference)) return const [];
 
-  final pre = dueAt.subtract(const Duration(minutes: preReminderMinutes));
+  final pre = dueAt.subtract(lead);
   if (pre.isAfter(reference)) return [pre, dueAt];
   return [dueAt];
 }
@@ -80,8 +85,9 @@ final taskReminderSchedulerProvider = Provider<TaskReminderScheduler>((ref) {
   );
 });
 
-/// Schedules planner task reminders: one at the due time and one 30 minutes
-/// before. Both fire only for pending tasks with a due date + due time that is
+/// Schedules planner task reminders: one at the due time and one a
+/// configurable lead time before (default 30 minutes). Both fire only for
+/// pending tasks with a due date + due time that is
 /// still in the future; past-due tasks never schedule.
 ///
 /// Notification ids are derived deterministically from the task id (a stable
@@ -124,7 +130,15 @@ final class TaskReminderScheduler {
     required String dueSoonText,
     required String dueNowText,
   }) async {
-    final times = plannerReminderTimes(item);
+    // The pre-reminder lead is user-configurable; read it straight from prefs
+    // since the scheduler only receives SharedPreferences.
+    final leadMinutes =
+        _prefs.getInt(SettingsNotifier.reminderLeadMinutesKey) ??
+        preReminderMinutes;
+    final times = plannerReminderTimes(
+      item,
+      lead: Duration(minutes: leadMinutes),
+    );
     if (times.isEmpty) return;
 
     final tzDue = tz.TZDateTime.from(times.last, tz.local);

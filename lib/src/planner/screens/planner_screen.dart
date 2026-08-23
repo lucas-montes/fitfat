@@ -76,6 +76,10 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
 
   bool get _isToday => _selectedDay == _startOfDay(DateTime.now());
 
+  /// How far ahead recurring tasks are materialized (user-configurable).
+  Duration get _plannerHorizon =>
+      Duration(days: ref.read(settingsProvider).plannerHorizonDays);
+
   void _previousDay() =>
       _animateToDay(_selectedDay.subtract(const Duration(days: 1)));
 
@@ -315,9 +319,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     // after a restart").
     if (recurrence != null) {
       unawaited(
-        repo
-            .materializeUpTo(item.day.add(const Duration(days: 90)))
-            .catchError((_) {}),
+        repo.materializeUpTo(item.day.add(_plannerHorizon)).catchError((_) {}),
       );
     }
   }
@@ -445,7 +447,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       await repo.deleteFutureOccurrences(seriesId!, DateTime.now());
       unawaited(
         repo
-            .materializeUpTo(updated.day.add(const Duration(days: 90)))
+            .materializeUpTo(updated.day.add(_plannerHorizon))
             .catchError((_) {}),
       );
     }
@@ -498,7 +500,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     invalidateDashboard(ref);
     unawaited(
       repo
-          .materializeUpTo(updatedAnchor.day.add(const Duration(days: 90)))
+          .materializeUpTo(updatedAnchor.day.add(_plannerHorizon))
           .catchError((_) {}),
     );
   }
@@ -608,7 +610,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       onAction: () async {
         if (wasAnchor && item.seriesId != null) {
           await repo.restore(item);
-          await repo.materializeUpTo(item.day.add(const Duration(days: 90)));
+          await repo.materializeUpTo(item.day.add(_plannerHorizon));
           final restored = await repo.getBySeriesId(item.seriesId!);
           for (final it in restored) {
             await _syncReminder(it);
@@ -617,7 +619,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           // Undo a "this and all following" delete: restore the previous end
           // date and re-materialize the deleted future occurrences.
           await repo.restoreSeriesEndDate(item.seriesId!, previousEndDate);
-          await repo.materializeUpTo(item.day.add(const Duration(days: 90)));
+          await repo.materializeUpTo(item.day.add(_plannerHorizon));
           final restored = await repo.getBySeriesId(item.seriesId!);
           for (final it in restored) {
             await _syncReminder(it);

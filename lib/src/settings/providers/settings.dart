@@ -56,6 +56,23 @@ final class SettingsState {
   // API key sent as a Bearer token on every sync request.
   final String remoteSyncApiKey; // default ''
 
+  // How many days ahead recurring planner tasks are materialized
+  // (default 90).
+  final int plannerHorizonDays;
+  // kcal adjustment applied on top of TDEE for lose/gain goals (default 500).
+  final double calorieGoalAdjustment;
+  // Length of the baseline phase shown on an experiment's chart, in days
+  // (default 14).
+  final int experimentBaselineDays;
+  // Prefill for new planned sets' rest field, in seconds; 0 = empty
+  // (current behavior, default).
+  final int defaultRestSeconds;
+  // Minutes before a task's start time at which the advance reminder fires
+  // (default 30).
+  final int reminderLeadMinutes;
+  // Sync HTTP request timeout in seconds (default 15).
+  final int apiTimeoutSeconds;
+
   const SettingsState({
     this.themeMode = ThemeMode.system,
     this.locale,
@@ -76,6 +93,12 @@ final class SettingsState {
     this.replayPrefill = 'actuals',
     this.remoteSyncBaseUrl = '',
     this.remoteSyncApiKey = '',
+    this.plannerHorizonDays = 90,
+    this.calorieGoalAdjustment = 500,
+    this.experimentBaselineDays = 14,
+    this.defaultRestSeconds = 0,
+    this.reminderLeadMinutes = 30,
+    this.apiTimeoutSeconds = 15,
   });
 
   SettingsState copyWith({
@@ -104,6 +127,12 @@ final class SettingsState {
     String? replayPrefill,
     String? remoteSyncBaseUrl,
     String? remoteSyncApiKey,
+    int? plannerHorizonDays,
+    double? calorieGoalAdjustment,
+    int? experimentBaselineDays,
+    int? defaultRestSeconds,
+    int? reminderLeadMinutes,
+    int? apiTimeoutSeconds,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     locale: clearLocale ? null : (locale ?? this.locale),
@@ -131,6 +160,13 @@ final class SettingsState {
     replayPrefill: replayPrefill ?? this.replayPrefill,
     remoteSyncBaseUrl: remoteSyncBaseUrl ?? this.remoteSyncBaseUrl,
     remoteSyncApiKey: remoteSyncApiKey ?? this.remoteSyncApiKey,
+    plannerHorizonDays: plannerHorizonDays ?? this.plannerHorizonDays,
+    calorieGoalAdjustment: calorieGoalAdjustment ?? this.calorieGoalAdjustment,
+    experimentBaselineDays:
+        experimentBaselineDays ?? this.experimentBaselineDays,
+    defaultRestSeconds: defaultRestSeconds ?? this.defaultRestSeconds,
+    reminderLeadMinutes: reminderLeadMinutes ?? this.reminderLeadMinutes,
+    apiTimeoutSeconds: apiTimeoutSeconds ?? this.apiTimeoutSeconds,
   );
 }
 
@@ -154,6 +190,15 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _replayPrefillKey = 'settings_replay_prefill';
   static const _remoteSyncBaseUrlKey = 'settings_remote_sync_base_url';
   static const _remoteSyncApiKeyKey = 'settings_remote_sync_api_key';
+  static const _plannerHorizonDaysKey = 'settings_planner_horizon_days';
+  static const _calorieGoalAdjustmentKey = 'settings_calorie_goal_adjustment';
+  static const _experimentBaselineDaysKey = 'settings_experiment_baseline_days';
+  static const _defaultRestSecondsKey = 'settings_default_rest_seconds';
+
+  /// Public so the reminder scheduler can read the lead time directly from
+  /// prefs (it receives SharedPreferences, not the settings notifier).
+  static const reminderLeadMinutesKey = 'settings_reminder_lead_minutes';
+  static const _apiTimeoutSecondsKey = 'settings_api_timeout_seconds';
 
   @override
   SettingsState build() {
@@ -183,6 +228,13 @@ final class SettingsNotifier extends Notifier<SettingsState> {
           : 'actuals',
       remoteSyncBaseUrl: prefs.getString(_remoteSyncBaseUrlKey) ?? '',
       remoteSyncApiKey: prefs.getString(_remoteSyncApiKeyKey) ?? '',
+      plannerHorizonDays: prefs.getInt(_plannerHorizonDaysKey) ?? 90,
+      calorieGoalAdjustment:
+          prefs.getDouble(_calorieGoalAdjustmentKey) ?? 500.0,
+      experimentBaselineDays: prefs.getInt(_experimentBaselineDaysKey) ?? 14,
+      defaultRestSeconds: prefs.getInt(_defaultRestSecondsKey) ?? 0,
+      reminderLeadMinutes: prefs.getInt(reminderLeadMinutesKey) ?? 30,
+      apiTimeoutSeconds: prefs.getInt(_apiTimeoutSecondsKey) ?? 15,
     );
   }
 
@@ -353,6 +405,54 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setString(_remoteSyncApiKeyKey, trimmed);
     state = state.copyWith(remoteSyncApiKey: trimmed);
+  }
+
+  Future<void> setPlannerHorizonDays(int days) async {
+    final clamped = days < 1 ? 1 : days;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setInt(_plannerHorizonDaysKey, clamped);
+    state = state.copyWith(plannerHorizonDays: clamped);
+  }
+
+  Future<void> setCalorieGoalAdjustment(double kcal) async {
+    final clamped = kcal < 0 ? 0.0 : kcal;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setDouble(_calorieGoalAdjustmentKey, clamped);
+    state = state.copyWith(calorieGoalAdjustment: clamped);
+  }
+
+  Future<void> setExperimentBaselineDays(int days) async {
+    final clamped = days < 1 ? 1 : days;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setInt(_experimentBaselineDaysKey, clamped);
+    state = state.copyWith(experimentBaselineDays: clamped);
+  }
+
+  Future<void> setDefaultRestSeconds(int seconds) async {
+    final clamped = seconds < 0 ? 0 : seconds;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setInt(_defaultRestSecondsKey, clamped);
+    state = state.copyWith(defaultRestSeconds: clamped);
+  }
+
+  Future<void> setReminderLeadMinutes(int minutes) async {
+    final clamped = minutes < 0 ? 0 : minutes;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setInt(reminderLeadMinutesKey, clamped);
+    state = state.copyWith(reminderLeadMinutes: clamped);
+  }
+
+  Future<void> setApiTimeoutSeconds(int seconds) async {
+    final clamped = seconds < 1 ? 1 : seconds;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setInt(_apiTimeoutSecondsKey, clamped);
+    state = state.copyWith(apiTimeoutSeconds: clamped);
   }
 
   WeightUnit _weightUnitFromName(String? name) =>
