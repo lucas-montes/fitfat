@@ -318,9 +318,12 @@ class FxRates extends Table {
   IntColumn get updatedAt => integer()();
   // Set when the rate was edited by hand (v19); cleared by a fresh fetch.
   BoolColumn get manual => boolean().withDefault(const Constant(false))();
+  // The day this rate applies to, 'YYYY-MM-DD' (v22). Enables daily snapshots
+  // so a sync can keep history instead of overwriting the latest rate.
+  TextColumn get rateDate => text().withDefault(const Constant('0001-01-01'))();
 
   @override
-  Set<Column> get primaryKey => {code};
+  Set<Column> get primaryKey => {code, baseCode, rateDate};
 }
 
 // ---------------------------------------------------------------------------

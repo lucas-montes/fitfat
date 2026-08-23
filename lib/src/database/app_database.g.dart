@@ -8795,6 +8795,18 @@ class $FxRatesTable extends FxRates with TableInfo<$FxRatesTable, FxRate> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _rateDateMeta = const VerificationMeta(
+    'rateDate',
+  );
+  @override
+  late final GeneratedColumn<String> rateDate = GeneratedColumn<String>(
+    'rate_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('0001-01-01'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     code,
@@ -8802,6 +8814,7 @@ class $FxRatesTable extends FxRates with TableInfo<$FxRatesTable, FxRate> {
     baseCode,
     updatedAt,
     manual,
+    rateDate,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8856,11 +8869,17 @@ class $FxRatesTable extends FxRates with TableInfo<$FxRatesTable, FxRate> {
         manual.isAcceptableOrUnknown(data['manual']!, _manualMeta),
       );
     }
+    if (data.containsKey('rate_date')) {
+      context.handle(
+        _rateDateMeta,
+        rateDate.isAcceptableOrUnknown(data['rate_date']!, _rateDateMeta),
+      );
+    }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {code};
+  Set<GeneratedColumn> get $primaryKey => {code, baseCode, rateDate};
   @override
   FxRate map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -8885,6 +8904,10 @@ class $FxRatesTable extends FxRates with TableInfo<$FxRatesTable, FxRate> {
         DriftSqlType.bool,
         data['${effectivePrefix}manual'],
       )!,
+      rateDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rate_date'],
+      )!,
     );
   }
 
@@ -8900,12 +8923,14 @@ class FxRate extends DataClass implements Insertable<FxRate> {
   final String baseCode;
   final int updatedAt;
   final bool manual;
+  final String rateDate;
   const FxRate({
     required this.code,
     required this.rateToBase,
     required this.baseCode,
     required this.updatedAt,
     required this.manual,
+    required this.rateDate,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8915,6 +8940,7 @@ class FxRate extends DataClass implements Insertable<FxRate> {
     map['base_code'] = Variable<String>(baseCode);
     map['updated_at'] = Variable<int>(updatedAt);
     map['manual'] = Variable<bool>(manual);
+    map['rate_date'] = Variable<String>(rateDate);
     return map;
   }
 
@@ -8925,6 +8951,7 @@ class FxRate extends DataClass implements Insertable<FxRate> {
       baseCode: Value(baseCode),
       updatedAt: Value(updatedAt),
       manual: Value(manual),
+      rateDate: Value(rateDate),
     );
   }
 
@@ -8939,6 +8966,7 @@ class FxRate extends DataClass implements Insertable<FxRate> {
       baseCode: serializer.fromJson<String>(json['baseCode']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       manual: serializer.fromJson<bool>(json['manual']),
+      rateDate: serializer.fromJson<String>(json['rateDate']),
     );
   }
   @override
@@ -8950,6 +8978,7 @@ class FxRate extends DataClass implements Insertable<FxRate> {
       'baseCode': serializer.toJson<String>(baseCode),
       'updatedAt': serializer.toJson<int>(updatedAt),
       'manual': serializer.toJson<bool>(manual),
+      'rateDate': serializer.toJson<String>(rateDate),
     };
   }
 
@@ -8959,12 +8988,14 @@ class FxRate extends DataClass implements Insertable<FxRate> {
     String? baseCode,
     int? updatedAt,
     bool? manual,
+    String? rateDate,
   }) => FxRate(
     code: code ?? this.code,
     rateToBase: rateToBase ?? this.rateToBase,
     baseCode: baseCode ?? this.baseCode,
     updatedAt: updatedAt ?? this.updatedAt,
     manual: manual ?? this.manual,
+    rateDate: rateDate ?? this.rateDate,
   );
   FxRate copyWithCompanion(FxRatesCompanion data) {
     return FxRate(
@@ -8975,6 +9006,7 @@ class FxRate extends DataClass implements Insertable<FxRate> {
       baseCode: data.baseCode.present ? data.baseCode.value : this.baseCode,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       manual: data.manual.present ? data.manual.value : this.manual,
+      rateDate: data.rateDate.present ? data.rateDate.value : this.rateDate,
     );
   }
 
@@ -8985,14 +9017,15 @@ class FxRate extends DataClass implements Insertable<FxRate> {
           ..write('rateToBase: $rateToBase, ')
           ..write('baseCode: $baseCode, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('manual: $manual')
+          ..write('manual: $manual, ')
+          ..write('rateDate: $rateDate')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(code, rateToBase, baseCode, updatedAt, manual);
+      Object.hash(code, rateToBase, baseCode, updatedAt, manual, rateDate);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -9001,7 +9034,8 @@ class FxRate extends DataClass implements Insertable<FxRate> {
           other.rateToBase == this.rateToBase &&
           other.baseCode == this.baseCode &&
           other.updatedAt == this.updatedAt &&
-          other.manual == this.manual);
+          other.manual == this.manual &&
+          other.rateDate == this.rateDate);
 }
 
 class FxRatesCompanion extends UpdateCompanion<FxRate> {
@@ -9010,6 +9044,7 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
   final Value<String> baseCode;
   final Value<int> updatedAt;
   final Value<bool> manual;
+  final Value<String> rateDate;
   final Value<int> rowid;
   const FxRatesCompanion({
     this.code = const Value.absent(),
@@ -9017,6 +9052,7 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
     this.baseCode = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.manual = const Value.absent(),
+    this.rateDate = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FxRatesCompanion.insert({
@@ -9025,6 +9061,7 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
     required String baseCode,
     required int updatedAt,
     this.manual = const Value.absent(),
+    this.rateDate = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : code = Value(code),
        rateToBase = Value(rateToBase),
@@ -9036,6 +9073,7 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
     Expression<String>? baseCode,
     Expression<int>? updatedAt,
     Expression<bool>? manual,
+    Expression<String>? rateDate,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -9044,6 +9082,7 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
       if (baseCode != null) 'base_code': baseCode,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (manual != null) 'manual': manual,
+      if (rateDate != null) 'rate_date': rateDate,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -9054,6 +9093,7 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
     Value<String>? baseCode,
     Value<int>? updatedAt,
     Value<bool>? manual,
+    Value<String>? rateDate,
     Value<int>? rowid,
   }) {
     return FxRatesCompanion(
@@ -9062,6 +9102,7 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
       baseCode: baseCode ?? this.baseCode,
       updatedAt: updatedAt ?? this.updatedAt,
       manual: manual ?? this.manual,
+      rateDate: rateDate ?? this.rateDate,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -9084,6 +9125,9 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
     if (manual.present) {
       map['manual'] = Variable<bool>(manual.value);
     }
+    if (rateDate.present) {
+      map['rate_date'] = Variable<String>(rateDate.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -9098,6 +9142,7 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
           ..write('baseCode: $baseCode, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('manual: $manual, ')
+          ..write('rateDate: $rateDate, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16910,6 +16955,7 @@ typedef $$FxRatesTableCreateCompanionBuilder =
       required String baseCode,
       required int updatedAt,
       Value<bool> manual,
+      Value<String> rateDate,
       Value<int> rowid,
     });
 typedef $$FxRatesTableUpdateCompanionBuilder =
@@ -16919,6 +16965,7 @@ typedef $$FxRatesTableUpdateCompanionBuilder =
       Value<String> baseCode,
       Value<int> updatedAt,
       Value<bool> manual,
+      Value<String> rateDate,
       Value<int> rowid,
     });
 
@@ -16953,6 +17000,11 @@ class $$FxRatesTableFilterComposer
 
   ColumnFilters<bool> get manual => $composableBuilder(
     column: $table.manual,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rateDate => $composableBuilder(
+    column: $table.rateDate,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -16990,6 +17042,11 @@ class $$FxRatesTableOrderingComposer
     column: $table.manual,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get rateDate => $composableBuilder(
+    column: $table.rateDate,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FxRatesTableAnnotationComposer
@@ -17017,6 +17074,9 @@ class $$FxRatesTableAnnotationComposer
 
   GeneratedColumn<bool> get manual =>
       $composableBuilder(column: $table.manual, builder: (column) => column);
+
+  GeneratedColumn<String> get rateDate =>
+      $composableBuilder(column: $table.rateDate, builder: (column) => column);
 }
 
 class $$FxRatesTableTableManager
@@ -17052,6 +17112,7 @@ class $$FxRatesTableTableManager
                 Value<String> baseCode = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<bool> manual = const Value.absent(),
+                Value<String> rateDate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FxRatesCompanion(
                 code: code,
@@ -17059,6 +17120,7 @@ class $$FxRatesTableTableManager
                 baseCode: baseCode,
                 updatedAt: updatedAt,
                 manual: manual,
+                rateDate: rateDate,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17068,6 +17130,7 @@ class $$FxRatesTableTableManager
                 required String baseCode,
                 required int updatedAt,
                 Value<bool> manual = const Value.absent(),
+                Value<String> rateDate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FxRatesCompanion.insert(
                 code: code,
@@ -17075,6 +17138,7 @@ class $$FxRatesTableTableManager
                 baseCode: baseCode,
                 updatedAt: updatedAt,
                 manual: manual,
+                rateDate: rateDate,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

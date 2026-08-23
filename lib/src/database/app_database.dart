@@ -38,7 +38,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -188,6 +188,23 @@ final class AppDatabase extends _$AppDatabase {
         // of the same routine (workout-replay T01). The lookup index is
         // created idempotently in beforeOpen.
         await m.addColumn(workouts, workouts.routineId);
+      }
+      if (from < 22) {
+        // v22: fx_rates gains a daily-snapshot dimension (rate_date) and a
+        // composite PK (code, base_code, rate_date). The old table was keyed
+        // only by code, so rebuild it: rename, recreate with the new schema,
+        // and backfill existing rows as a single '0001-01-01' snapshot.
+        await m.database.customStatement(
+          'ALTER TABLE fx_rates RENAME TO fx_rates_old',
+        );
+        await m.createTable(fxRates);
+        await m.database.customStatement(
+          'INSERT INTO fx_rates '
+          '(code, rate_to_base, base_code, updated_at, manual, rate_date) '
+          "SELECT code, rate_to_base, base_code, updated_at, manual, '0001-01-01' "
+          'FROM fx_rates_old',
+        );
+        await m.database.customStatement('DROP TABLE fx_rates_old');
       }
     },
   );
