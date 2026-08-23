@@ -202,6 +202,8 @@ final class _ShellWithNavBar extends ConsumerWidget {
           ),
           NavigationBar(
             selectedIndex: navigationShell.currentIndex,
+            labelBehavior:
+                NavigationDestinationLabelBehavior.alwaysHide,
             onDestinationSelected: (index) {
               navigationShell.goBranch(
                 index,
