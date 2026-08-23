@@ -1015,7 +1015,10 @@ final class _TimelineItemCard extends StatelessWidget {
               Checkbox(value: item.done, onChanged: (_) => onToggleDone()),
               Expanded(
                 child: InkWell(
-                  onTap: onOpenDetail,
+                  // Tap edits in place; long-press opens the full detail
+                  // screen.
+                  onTap: onEdit,
+                  onLongPress: onOpenDetail,
                   borderRadius: BorderRadius.circular(8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
