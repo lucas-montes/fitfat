@@ -99,6 +99,17 @@ final class ExerciseRepository {
     )..where((t) => t.id.equals(id))).go();
   }
 
+  /// Inserts a synced exercise, or refreshes it in place when the id already
+  /// exists (server authority). Never deletes local rows.
+  Future<void> upsert(Exercise exercise) async {
+    final existing = await getById(exercise.id);
+    if (existing == null) {
+      await insert(exercise);
+    } else {
+      await updateCatalog(exercise);
+    }
+  }
+
   /// Number of `workout_exercises` rows referencing this exercise — used to
   /// block deletion of exercises that are still part of a workout.
   Future<int> usageCount(String id) async {

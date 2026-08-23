@@ -66,6 +66,18 @@ final class IngredientRepository {
     );
   }
 
+  /// Inserts a synced ingredient, or refreshes it in place when the id already
+  /// exists (server authority). Soft-deletes from the server arrive separately
+  /// via [archive].
+  Future<void> upsert(Ingredient ingredient) async {
+    final existing = await getById(ingredient.id);
+    if (existing == null) {
+      await insert(ingredient);
+    } else {
+      await update(ingredient);
+    }
+  }
+
   /// Soft-delete: hidden from list/picker via the `isArchived` flag. The row
   /// stays so past meals keep rendering the ingredient name and macros.
   Future<void> archive(String id) async {
@@ -118,6 +130,16 @@ final class IngredientRepository {
         .write(db.StoresCompanion(name: Value(store.name)));
   }
 
+  /// Inserts a synced store, or refreshes its name when the id already exists.
+  Future<void> upsertStore(Store store) async {
+    final existing = await getStoreById(store.id);
+    if (existing == null) {
+      await insertStore(store);
+    } else {
+      await updateStore(store);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Pictures (v20)
   // ---------------------------------------------------------------------------
@@ -152,6 +174,27 @@ final class IngredientRepository {
     await (_database.delete(
       _database.ingredientPictures,
     )..where((t) => t.id.equals(id))).go();
+  }
+
+  /// Inserts a synced picture, or refreshes its fields when the id already
+  /// exists.
+  Future<void> upsertPicture(IngredientPicture picture) async {
+    final existing = await (_database.select(_database.ingredientPictures)
+          ..where((t) => t.id.equals(picture.id)))
+        .getSingleOrNull();
+    if (existing == null) {
+      await insertPicture(picture);
+    } else {
+      await (_database.update(_database.ingredientPictures)
+            ..where((t) => t.id.equals(picture.id)))
+          .write(
+        db.IngredientPicturesCompanion(
+          ingredientId: Value(picture.ingredientId),
+          imagePath: Value(picture.imagePath),
+          sortOrder: Value(picture.sortOrder),
+        ),
+      );
+    }
   }
 
   /// Rewrites `sort_order` densely (0..n-1) following [orderedIds].
