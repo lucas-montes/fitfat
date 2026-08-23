@@ -10,9 +10,12 @@ import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/ingredient.dart';
+import '../../models/store.dart';
+import '../../settings/providers/settings.dart';
 import '../../ui/widgets/top_banner.dart';
 import '../providers/ingredients.dart';
 import '../repositories/ingredient_repository.dart';
+import 'store_manager_screen.dart';
 
 /// Simulated barcode capture (mock until a real scanner dependency lands).
 const _mockScannedBarcode = '3017620422003';
@@ -48,6 +51,8 @@ final class _IngredientFormScreenState
   late final TextEditingController _sugarCtrl;
   late final TextEditingController _brandCtrl;
   late final TextEditingController _barcodeCtrl;
+  late final TextEditingController _priceCtrl;
+  String? _selectedStoreId;
   bool _saving = false;
   bool _scanning = false;
 
@@ -84,7 +89,11 @@ final class _IngredientFormScreenState
     );
     _brandCtrl = TextEditingController(text: ing?.brand ?? '');
     _barcodeCtrl = TextEditingController(text: ing?.barcode ?? '');
-    if (_isEditing) _loadPictures();
+    _priceCtrl = TextEditingController();
+    if (_isEditing) {
+      _loadPictures();
+      _loadLatestPrice();
+    }
   }
 
   @override
@@ -99,6 +108,7 @@ final class _IngredientFormScreenState
     _sugarCtrl.dispose();
     _brandCtrl.dispose();
     _barcodeCtrl.dispose();
+    _priceCtrl.dispose();
     super.dispose();
   }
 
@@ -112,6 +122,32 @@ final class _IngredientFormScreenState
         ..clear()
         ..addAll(rows.map((r) => _PictureDraft(dbId: r.id, path: r.imagePath)));
     });
+  }
+
+  /// Preloads the most recent price observation (newest first from the
+  /// repository) so editing an ingredient starts from its latest known price
+  /// and store. Saving records a fresh observation for today.
+  Future<void> _loadLatestPrice() async {
+    final rows = await ref
+        .read(ingredientRepositoryProvider)
+        .getPrices(widget.ingredient!.id);
+    if (rows.isEmpty || !mounted) return;
+    final (price, store) = rows.first;
+    setState(() {
+      _priceCtrl.text = price.price.toStringAsFixed(2);
+      _selectedStoreId = store.id;
+    });
+  }
+
+  /// Prompts for a store name, creates it, and selects it in the picker.
+  Future<void> _addStore() async {
+    final name = await promptStoreName(context);
+    if (name == null || !mounted) return;
+    final repo = ref.read(ingredientRepositoryProvider);
+    final store = newStore(name: name);
+    await repo.insertStore(store);
+    ref.invalidate(storesProvider);
+    if (mounted) setState(() => _selectedStoreId = store.id);
   }
 
   @override
@@ -174,6 +210,60 @@ final class _IngredientFormScreenState
                     : null,
                 onTap: _scanning ? null : _scanBarcode,
               ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _priceCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.ingredientPriceAmountLabel,
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+              ],
+              validator: (v) => _validateOptionalNonNegative(
+                v,
+                l10n.ingredientPriceAmountLabel,
+                l10n,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Builder(
+              builder: (context) {
+                final stores =
+                    ref.watch(storesProvider).value ?? const <Store>[];
+                return Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      key: ValueKey(_selectedStoreId),
+                      initialValue: _selectedStoreId,
+                      decoration: InputDecoration(
+                        labelText: l10n.ingredientPriceStoreLabel,
+                      ),
+                      items: [
+                        for (final store in stores)
+                          DropdownMenuItem(
+                            value: store.id,
+                            child: Text(store.name),
+                          ),
+                      ],
+                      // A price observation only makes sense with a store.
+                      validator: (v) =>
+                          _priceCtrl.text.trim().isEmpty || v != null
+                          ? null
+                          : l10n.storeNameRequired,
+                      onChanged: (v) => setState(() => _selectedStoreId = v),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => _addStore(),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: Text(l10n.storeManagerAddTile),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -543,6 +633,8 @@ final class _IngredientFormScreenState
         );
         await repo.update(updated);
         await _persistPictures(updated.id);
+        await _recordPrice(updated.id, repo);
+        ref.invalidate(ingredientPricesProvider(updated.id));
       } else {
         final created = newIngredient(
           name: name,
@@ -558,6 +650,8 @@ final class _IngredientFormScreenState
         );
         await repo.insert(created);
         await _persistPictures(created.id);
+        await _recordPrice(created.id, repo);
+        ref.invalidate(ingredientPricesProvider(created.id));
       }
 
       ref.invalidate(ingredientListProvider);
@@ -574,6 +668,27 @@ final class _IngredientFormScreenState
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Records a price observation for today when a price (and its store) was
+  /// entered. Prices are optional; a blank field saves nothing.
+  Future<void> _recordPrice(
+    String ingredientId,
+    IngredientRepository repo,
+  ) async {
+    final priceText = _priceCtrl.text.trim();
+    if (priceText.isEmpty || _selectedStoreId == null) return;
+    final price = double.tryParse(priceText);
+    if (price == null || price <= 0) return;
+    await repo.upsertPrice(
+      newIngredientPrice(
+        ingredientId: ingredientId,
+        storeId: _selectedStoreId!,
+        price: price,
+        currencyCode: ref.read(settingsProvider).baseCurrency,
+        recordedAt: DateTime.now(),
+      ),
+    );
   }
 
   String? _validatePositive(String? v, String label, AppLocalizations l10n) {
