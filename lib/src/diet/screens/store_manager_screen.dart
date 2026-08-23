@@ -73,44 +73,69 @@ final class StoreManagerScreen extends ConsumerWidget {
 
 /// Name prompt used by the store manager and the price sheet's inline
 /// "add store" action; returns the trimmed name or null when cancelled.
-Future<String?> promptStoreName(BuildContext context, {String? initial}) async {
-  final controller = TextEditingController(text: initial ?? '');
-  final formKey = GlobalKey<FormState>();
-  final l10n = AppLocalizations.of(context)!;
-  try {
-    return await showDialog<String>(
+///
+/// The text controller is owned by [_StoreNameDialog]'s state so the framework
+/// disposes it only after the route (including its exit animation) is fully
+/// torn down — disposing eagerly on pop rebuilds the animating dialog with a
+/// disposed controller.
+Future<String?> promptStoreName(BuildContext context, {String? initial}) =>
+    showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          initial == null ? l10n.storeManagerAddTile : l10n.commonEdit,
-        ),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            autofocus: true,
-            controller: controller,
-            decoration: InputDecoration(labelText: l10n.storeNameLabel),
-            validator: (v) =>
-                (v == null || v.trim().isEmpty) ? l10n.storeNameRequired : null,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.of(ctx).pop(controller.text.trim());
-              }
-            },
-            child: Text(l10n.commonSave),
-          ),
-        ],
-      ),
+      builder: (_) => _StoreNameDialog(initial: initial),
     );
-  } finally {
-    controller.dispose();
+
+final class _StoreNameDialog extends StatefulWidget {
+  final String? initial;
+
+  const _StoreNameDialog({this.initial});
+
+  @override
+  State<_StoreNameDialog> createState() => _StoreNameDialogState();
+}
+
+final class _StoreNameDialogState extends State<_StoreNameDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial ?? '',
+  );
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(
+        widget.initial == null ? l10n.storeManagerAddTile : l10n.commonEdit,
+      ),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          autofocus: true,
+          controller: _controller,
+          decoration: InputDecoration(labelText: l10n.storeNameLabel),
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? l10n.storeNameRequired : null,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.of(context).pop(_controller.text.trim());
+            }
+          },
+          child: Text(l10n.commonSave),
+        ),
+      ],
+    );
   }
 }
