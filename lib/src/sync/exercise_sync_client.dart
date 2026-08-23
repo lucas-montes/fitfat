@@ -79,7 +79,6 @@ final class ExerciseSyncClient {
       id: id,
       name: name,
       exerciseType: raw['exerciseType'] as String? ?? 'weightlifting',
-      isLocked: (raw['isLocked'] as bool?) ?? false,
       bodyPart: raw['bodyPart'] as String?,
       equipment: raw['equipment'] as String?,
       primaryMuscle: raw['primaryMuscle'] as String?,

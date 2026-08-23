@@ -266,14 +266,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get exerciseLockedEdit =>
-      'Los ejercicios integrados no se pueden editar.';
-
-  @override
-  String get exerciseLockedDelete =>
-      'Los ejercicios integrados no se pueden eliminar.';
-
-  @override
   String get exerciseDetailAppBar => 'Ejercicio';
 
   @override

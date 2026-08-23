@@ -131,8 +131,6 @@
       "count": { "type": "int" }
     }
   },
-  "exerciseLockedEdit": "Los ejercicios integrados no se pueden editar.",
-  "exerciseLockedDelete": "Los ejercicios integrados no se pueden eliminar.",
   "exerciseDetailAppBar": "Ejercicio",
   "exerciseDetailNotFound": "Ejercicio no encontrado.",
   "exerciseDetailType": "Tipo",

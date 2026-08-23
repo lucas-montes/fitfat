@@ -556,18 +556,6 @@ abstract class AppLocalizations {
   /// **'Used in {count} workouts. Delete the workouts first to remove this exercise.'**
   String exerciseUsedBody_plural(Object count);
 
-  /// No description provided for @exerciseLockedEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Built-in exercises can\'t be edited.'**
-  String get exerciseLockedEdit;
-
-  /// No description provided for @exerciseLockedDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Built-in exercises can\'t be deleted.'**
-  String get exerciseLockedDelete;
-
   /// No description provided for @exerciseDetailAppBar.
   ///
   /// In en, this message translates to:

@@ -103,9 +103,6 @@ class Exercises extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get exerciseType => text()(); // 'weightlifting' | 'cardio'
-  // Seeded/built-in exercises are locked (v8): cannot be edited or deleted.
-  // User-created exercises default to 0.
-  BoolColumn get isLocked => boolean().withDefault(const Constant(false))();
   // Catalog metadata (v8), populated for seeded exercises. Nullable so
   // user-created rows stay lean. instructions/tips/keywords store JSON arrays.
   TextColumn? get bodyPart => text().nullable()();

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -91,14 +90,8 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
     if (mounted) ref.invalidate(exerciseListProvider);
   }
 
-  /// Long-press opens the edit form; built-in exercises are locked and show a
-  /// SnackBar instead.
+  /// Long-press opens the edit form.
   void _openEdit(BuildContext context, Exercise exercise) {
-    if (exercise.isLocked) {
-      final l10n = AppLocalizations.of(context)!;
-      showTopBanner(context, message: l10n.exerciseLockedEdit);
-      return;
-    }
     _openForm(context, null, exercise);
   }
 
@@ -113,14 +106,9 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
     if (saved == true && mounted) ref.invalidate(exerciseListProvider);
   }
 
-  /// Blocks the dismiss (and the delete) when the exercise is locked or still
-  /// part of a workout; otherwise passes through to the plain delete.
+  /// Blocks the dismiss (and the delete) when the exercise is still part of a
+  /// workout; otherwise passes through to the plain delete.
   Future<bool> _confirmDelete(Exercise exercise) async {
-    if (exercise.isLocked) {
-      final l10n = AppLocalizations.of(context)!;
-      showTopBanner(context, message: l10n.exerciseLockedDelete);
-      return false;
-    }
     final count = await ref
         .read(exerciseRepositoryProvider)
         .usageCount(exercise.id);

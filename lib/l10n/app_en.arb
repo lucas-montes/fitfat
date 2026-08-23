@@ -142,8 +142,6 @@
       "count": { "type": "int" }
     }
   },
-  "exerciseLockedEdit": "Built-in exercises can't be edited.",
-  "exerciseLockedDelete": "Built-in exercises can't be deleted.",
   "exerciseDetailAppBar": "Exercise",
   "exerciseDetailNotFound": "Exercise not found.",
   "exerciseDetailType": "Type",

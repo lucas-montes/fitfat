@@ -4,10 +4,6 @@ final class Exercise {
   final String name;
   final String exerciseType; // 'weightlifting' | 'cardio'
 
-  /// Seeded/built-in exercises are locked (schema v8): cannot be edited or
-  /// deleted from the app. User-created exercises are not locked.
-  final bool isLocked;
-
   // Catalog metadata (schema v8), populated for seeded exercises.
   final String? bodyPart;
   final String? equipment;
@@ -30,7 +26,6 @@ final class Exercise {
     required this.id,
     required this.name,
     required this.exerciseType,
-    this.isLocked = false,
     this.bodyPart,
     this.equipment,
     this.primaryMuscle,
@@ -51,7 +46,6 @@ final class Exercise {
     String? id,
     String? name,
     String? exerciseType,
-    bool? isLocked,
     Object? bodyPart = _unset,
     Object? equipment = _unset,
     Object? primaryMuscle = _unset,
@@ -70,7 +64,6 @@ final class Exercise {
     id: id ?? this.id,
     name: name ?? this.name,
     exerciseType: exerciseType ?? this.exerciseType,
-    isLocked: isLocked ?? this.isLocked,
     bodyPart: identical(bodyPart, _unset) ? this.bodyPart : bodyPart as String?,
     equipment: identical(equipment, _unset)
         ? this.equipment

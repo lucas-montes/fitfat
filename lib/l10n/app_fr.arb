@@ -132,8 +132,6 @@
       "count": { "type": "int" }
     }
   },
-  "exerciseLockedEdit": "Les exercices intégrés ne peuvent pas être modifiés.",
-  "exerciseLockedDelete": "Les exercices intégrés ne peuvent pas être supprimés.",
   "exerciseDetailAppBar": "Exercice",
   "exerciseDetailNotFound": "Exercice introuvable.",
   "exerciseDetailType": "Type",

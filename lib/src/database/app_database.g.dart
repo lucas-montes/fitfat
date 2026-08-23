@@ -2611,21 +2611,6 @@ class $ExercisesTable extends Exercises
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _isLockedMeta = const VerificationMeta(
-    'isLocked',
-  );
-  @override
-  late final GeneratedColumn<bool> isLocked = GeneratedColumn<bool>(
-    'is_locked',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_locked" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
   static const VerificationMeta _bodyPartMeta = const VerificationMeta(
     'bodyPart',
   );
@@ -2783,7 +2768,6 @@ class $ExercisesTable extends Exercises
     id,
     name,
     exerciseType,
-    isLocked,
     bodyPart,
     equipment,
     primaryMuscle,
@@ -2834,12 +2818,6 @@ class $ExercisesTable extends Exercises
       );
     } else if (isInserting) {
       context.missing(_exerciseTypeMeta);
-    }
-    if (data.containsKey('is_locked')) {
-      context.handle(
-        _isLockedMeta,
-        isLocked.isAcceptableOrUnknown(data['is_locked']!, _isLockedMeta),
-      );
     }
     if (data.containsKey('body_part')) {
       context.handle(
@@ -2960,10 +2938,6 @@ class $ExercisesTable extends Exercises
         DriftSqlType.string,
         data['${effectivePrefix}exercise_type'],
       )!,
-      isLocked: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_locked'],
-      )!,
       bodyPart: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}body_part'],
@@ -3033,7 +3007,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final String id;
   final String name;
   final String exerciseType;
-  final bool isLocked;
   final String? bodyPart;
   final String? equipment;
   final String? primaryMuscle;
@@ -3052,7 +3025,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     required this.id,
     required this.name,
     required this.exerciseType,
-    required this.isLocked,
     this.bodyPart,
     this.equipment,
     this.primaryMuscle,
@@ -3074,7 +3046,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['exercise_type'] = Variable<String>(exerciseType);
-    map['is_locked'] = Variable<bool>(isLocked);
     if (!nullToAbsent || bodyPart != null) {
       map['body_part'] = Variable<String>(bodyPart);
     }
@@ -3121,7 +3092,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       id: Value(id),
       name: Value(name),
       exerciseType: Value(exerciseType),
-      isLocked: Value(isLocked),
       bodyPart: bodyPart == null && nullToAbsent
           ? const Value.absent()
           : Value(bodyPart),
@@ -3166,7 +3136,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       exerciseType: serializer.fromJson<String>(json['exerciseType']),
-      isLocked: serializer.fromJson<bool>(json['isLocked']),
       bodyPart: serializer.fromJson<String?>(json['bodyPart']),
       equipment: serializer.fromJson<String?>(json['equipment']),
       primaryMuscle: serializer.fromJson<String?>(json['primaryMuscle']),
@@ -3190,7 +3159,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'exerciseType': serializer.toJson<String>(exerciseType),
-      'isLocked': serializer.toJson<bool>(isLocked),
       'bodyPart': serializer.toJson<String?>(bodyPart),
       'equipment': serializer.toJson<String?>(equipment),
       'primaryMuscle': serializer.toJson<String?>(primaryMuscle),
@@ -3212,7 +3180,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     String? id,
     String? name,
     String? exerciseType,
-    bool? isLocked,
     Value<String?> bodyPart = const Value.absent(),
     Value<String?> equipment = const Value.absent(),
     Value<String?> primaryMuscle = const Value.absent(),
@@ -3231,7 +3198,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     id: id ?? this.id,
     name: name ?? this.name,
     exerciseType: exerciseType ?? this.exerciseType,
-    isLocked: isLocked ?? this.isLocked,
     bodyPart: bodyPart.present ? bodyPart.value : this.bodyPart,
     equipment: equipment.present ? equipment.value : this.equipment,
     primaryMuscle: primaryMuscle.present
@@ -3258,7 +3224,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       exerciseType: data.exerciseType.present
           ? data.exerciseType.value
           : this.exerciseType,
-      isLocked: data.isLocked.present ? data.isLocked.value : this.isLocked,
       bodyPart: data.bodyPart.present ? data.bodyPart.value : this.bodyPart,
       equipment: data.equipment.present ? data.equipment.value : this.equipment,
       primaryMuscle: data.primaryMuscle.present
@@ -3290,7 +3255,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('exerciseType: $exerciseType, ')
-          ..write('isLocked: $isLocked, ')
           ..write('bodyPart: $bodyPart, ')
           ..write('equipment: $equipment, ')
           ..write('primaryMuscle: $primaryMuscle, ')
@@ -3314,7 +3278,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     id,
     name,
     exerciseType,
-    isLocked,
     bodyPart,
     equipment,
     primaryMuscle,
@@ -3337,7 +3300,6 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.id == this.id &&
           other.name == this.name &&
           other.exerciseType == this.exerciseType &&
-          other.isLocked == this.isLocked &&
           other.bodyPart == this.bodyPart &&
           other.equipment == this.equipment &&
           other.primaryMuscle == this.primaryMuscle &&
@@ -3358,7 +3320,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<String> id;
   final Value<String> name;
   final Value<String> exerciseType;
-  final Value<bool> isLocked;
   final Value<String?> bodyPart;
   final Value<String?> equipment;
   final Value<String?> primaryMuscle;
@@ -3378,7 +3339,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.exerciseType = const Value.absent(),
-    this.isLocked = const Value.absent(),
     this.bodyPart = const Value.absent(),
     this.equipment = const Value.absent(),
     this.primaryMuscle = const Value.absent(),
@@ -3399,7 +3359,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     required String id,
     required String name,
     required String exerciseType,
-    this.isLocked = const Value.absent(),
     this.bodyPart = const Value.absent(),
     this.equipment = const Value.absent(),
     this.primaryMuscle = const Value.absent(),
@@ -3423,7 +3382,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? exerciseType,
-    Expression<bool>? isLocked,
     Expression<String>? bodyPart,
     Expression<String>? equipment,
     Expression<String>? primaryMuscle,
@@ -3444,7 +3402,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (exerciseType != null) 'exercise_type': exerciseType,
-      if (isLocked != null) 'is_locked': isLocked,
       if (bodyPart != null) 'body_part': bodyPart,
       if (equipment != null) 'equipment': equipment,
       if (primaryMuscle != null) 'primary_muscle': primaryMuscle,
@@ -3467,7 +3424,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<String>? id,
     Value<String>? name,
     Value<String>? exerciseType,
-    Value<bool>? isLocked,
     Value<String?>? bodyPart,
     Value<String?>? equipment,
     Value<String?>? primaryMuscle,
@@ -3488,7 +3444,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       id: id ?? this.id,
       name: name ?? this.name,
       exerciseType: exerciseType ?? this.exerciseType,
-      isLocked: isLocked ?? this.isLocked,
       bodyPart: bodyPart ?? this.bodyPart,
       equipment: equipment ?? this.equipment,
       primaryMuscle: primaryMuscle ?? this.primaryMuscle,
@@ -3518,9 +3473,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     }
     if (exerciseType.present) {
       map['exercise_type'] = Variable<String>(exerciseType.value);
-    }
-    if (isLocked.present) {
-      map['is_locked'] = Variable<bool>(isLocked.value);
     }
     if (bodyPart.present) {
       map['body_part'] = Variable<String>(bodyPart.value);
@@ -3576,7 +3528,6 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('exerciseType: $exerciseType, ')
-          ..write('isLocked: $isLocked, ')
           ..write('bodyPart: $bodyPart, ')
           ..write('equipment: $equipment, ')
           ..write('primaryMuscle: $primaryMuscle, ')
@@ -12700,7 +12651,6 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       required String id,
       required String name,
       required String exerciseType,
-      Value<bool> isLocked,
       Value<String?> bodyPart,
       Value<String?> equipment,
       Value<String?> primaryMuscle,
@@ -12722,7 +12672,6 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<String> exerciseType,
-      Value<bool> isLocked,
       Value<String?> bodyPart,
       Value<String?> equipment,
       Value<String?> primaryMuscle,
@@ -12789,11 +12738,6 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<String> get exerciseType => $composableBuilder(
     column: $table.exerciseType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isLocked => $composableBuilder(
-    column: $table.isLocked,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12917,11 +12861,6 @@ class $$ExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get isLocked => $composableBuilder(
-    column: $table.isLocked,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get bodyPart => $composableBuilder(
     column: $table.bodyPart,
     builder: (column) => ColumnOrderings(column),
@@ -13012,9 +12951,6 @@ class $$ExercisesTableAnnotationComposer
     column: $table.exerciseType,
     builder: (column) => column,
   );
-
-  GeneratedColumn<bool> get isLocked =>
-      $composableBuilder(column: $table.isLocked, builder: (column) => column);
 
   GeneratedColumn<String> get bodyPart =>
       $composableBuilder(column: $table.bodyPart, builder: (column) => column);
@@ -13123,7 +13059,6 @@ class $$ExercisesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String> exerciseType = const Value.absent(),
-                Value<bool> isLocked = const Value.absent(),
                 Value<String?> bodyPart = const Value.absent(),
                 Value<String?> equipment = const Value.absent(),
                 Value<String?> primaryMuscle = const Value.absent(),
@@ -13143,7 +13078,6 @@ class $$ExercisesTableTableManager
                 id: id,
                 name: name,
                 exerciseType: exerciseType,
-                isLocked: isLocked,
                 bodyPart: bodyPart,
                 equipment: equipment,
                 primaryMuscle: primaryMuscle,
@@ -13165,7 +13099,6 @@ class $$ExercisesTableTableManager
                 required String id,
                 required String name,
                 required String exerciseType,
-                Value<bool> isLocked = const Value.absent(),
                 Value<String?> bodyPart = const Value.absent(),
                 Value<String?> equipment = const Value.absent(),
                 Value<String?> primaryMuscle = const Value.absent(),
@@ -13185,7 +13118,6 @@ class $$ExercisesTableTableManager
                 id: id,
                 name: name,
                 exerciseType: exerciseType,
-                isLocked: isLocked,
                 bodyPart: bodyPart,
                 equipment: equipment,
                 primaryMuscle: primaryMuscle,

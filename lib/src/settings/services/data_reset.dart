@@ -6,20 +6,18 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../../database/database_provider.dart';
-import '../../exercise/services/catalog_importer.dart';
 import '../../notifications/active_workout_notifier.dart';
 import '../../notifications/rest_timer.dart';
 import '../../notifications/task_reminders.dart';
 import '../providers/settings.dart';
 
-/// Erases every user-created row and every setting, then re-seeds the bundled
-/// exercise catalog so the app is back to a fresh first-launch state — all
-/// without killing the process.
+/// Erases every user-created row and every setting so the app is back to a
+/// fresh first-launch state — all without killing the process.
 ///
 /// Steps: cancel scheduled notifications → stop the active-workout foreground
 /// service → close the database → delete the SQLite files → clear all prefs →
-/// re-import the catalog on the fresh DB → invalidate the database and
-/// settings providers so every screen rebuilds from scratch.
+/// invalidate the database and settings providers so every screen rebuilds
+/// from scratch.
 Future<void> resetAllData(WidgetRef ref) async {
   final log = Logger('DataReset');
 
@@ -68,10 +66,7 @@ Future<void> resetAllData(WidgetRef ref) async {
   final prefs = ref.read(sharedPreferencesProvider);
   await prefs.clear();
 
-  // 5. Re-seed the bundled catalog on the fresh database.
-  await CatalogImporter(prefs).run();
-
-  // 6. Rebuild settings from the (now empty) prefs and recreate the DB lazily
+  // 5. Rebuild settings from the (now empty) prefs and recreate the DB lazily
   // on next access. Invalidating the database cascades to every data provider.
   ref.invalidate(settingsProvider);
 }

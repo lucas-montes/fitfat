@@ -35,7 +35,6 @@ final class ExerciseRepository {
             id: exercise.id,
             name: exercise.name,
             exerciseType: exercise.exerciseType,
-            isLocked: Value(exercise.isLocked),
             bodyPart: Value(exercise.bodyPart),
             equipment: Value(exercise.equipment),
             primaryMuscle: Value(exercise.primaryMuscle),
@@ -65,17 +64,16 @@ final class ExerciseRepository {
     );
   }
 
-  /// Refreshes a catalog (locked) row in place with all of its metadata
-  /// columns. Used by [CatalogImporter] to update already-imported locked rows
-  /// when the bundled catalog changes; never called for user-created rows.
-  Future<void> updateCatalog(Exercise exercise) async {
+  /// Refreshes an existing exercise in place with all of its metadata columns.
+  /// Used by [upsert] for server-authority synced updates; never deletes local
+  /// rows.
+  Future<void> updateFull(Exercise exercise) async {
     await (_database.update(
       _database.exercises,
     )..where((t) => t.id.equals(exercise.id))).write(
       db.ExercisesCompanion(
         name: Value(exercise.name),
         exerciseType: Value(exercise.exerciseType),
-        isLocked: Value(exercise.isLocked),
         bodyPart: Value(exercise.bodyPart),
         equipment: Value(exercise.equipment),
         primaryMuscle: Value(exercise.primaryMuscle),
@@ -106,7 +104,7 @@ final class ExerciseRepository {
     if (existing == null) {
       await insert(exercise);
     } else {
-      await updateCatalog(exercise);
+      await updateFull(exercise);
     }
   }
 
@@ -126,7 +124,6 @@ final class ExerciseRepository {
     id: row.id,
     name: row.name,
     exerciseType: row.exerciseType,
-    isLocked: row.isLocked,
     bodyPart: row.bodyPart,
     equipment: row.equipment,
     primaryMuscle: row.primaryMuscle,

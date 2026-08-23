@@ -38,7 +38,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -93,8 +93,8 @@ final class AppDatabase extends _$AppDatabase {
         await m.addColumn(exerciseSets, exerciseSets.completedAt);
       }
       if (from < 8) {
-        // v8: exercise catalog metadata + is_locked; planner due time.
-        await m.addColumn(exercises, exercises.isLocked);
+        // v8: exercise catalog metadata columns; planner due time.
+        // (is_locked was also added here once; dropped again in v23.)
         await m.addColumn(exercises, exercises.bodyPart);
         await m.addColumn(exercises, exercises.equipment);
         await m.addColumn(exercises, exercises.primaryMuscle);
@@ -205,6 +205,28 @@ final class AppDatabase extends _$AppDatabase {
           'FROM fx_rates_old',
         );
         await m.database.customStatement('DROP TABLE fx_rates_old');
+      }
+      if (from < 23) {
+        // v23: drop exercises.is_locked. The bundled catalog and its locked
+        // exercises are no longer imported (data now arrives via the sync
+        // client), so the edit/delete guard column is dead. Drift cannot drop a
+        // column in place, so rebuild: rename, recreate without the column,
+        // backfill, then drop the old table.
+        await m.database.customStatement(
+          'ALTER TABLE exercises RENAME TO exercises_old',
+        );
+        await m.createTable(exercises);
+        await m.database.customStatement(
+          'INSERT INTO exercises '
+          '(id, name, exercise_type, body_part, equipment, primary_muscle, '
+          'secondary_muscle, instructions, tips, faqs, keywords, image_path, '
+          'video_path, similar_to, tags, is_canonical, created_at) '
+          'SELECT id, name, exercise_type, body_part, equipment, primary_muscle, '
+          'secondary_muscle, instructions, tips, faqs, keywords, image_path, '
+          'video_path, similar_to, tags, is_canonical, created_at '
+          'FROM exercises_old',
+        );
+        await m.database.customStatement('DROP TABLE exercises_old');
       }
     },
   );
