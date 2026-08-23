@@ -12,11 +12,13 @@ final transactionListProvider = FutureProvider<List<Transaction>>((ref) async {
   return ref.watch(transactionRepositoryProvider).getAll();
 });
 
-final recentTransactionsProvider = FutureProvider<List<Transaction>>((ref) async {
+final recentTransactionsProvider = FutureProvider<List<Transaction>>((
+  ref,
+) async {
   return ref.watch(transactionRepositoryProvider).getRecent(10);
 });
 
 final transactionByAccountProvider =
     FutureProvider.family<List<Transaction>, String>((ref, accountId) async {
-  return ref.watch(transactionRepositoryProvider).getByAccount(accountId);
-});
+      return ref.watch(transactionRepositoryProvider).getByAccount(accountId);
+    });

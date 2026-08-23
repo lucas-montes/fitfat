@@ -93,7 +93,9 @@ final class BudgetSyncService {
     required String baseCurrency,
     required Map<String, double> ratesToBase,
   }) async {
-    final total = (json['total'] is num) ? (json['total'] as num).toDouble() : 0.0;
+    final total = (json['total'] is num)
+        ? (json['total'] as num).toDouble()
+        : 0.0;
     final currency = (json['currency'] as String?) ?? baseCurrency;
     final (amountBase, rateUsed) = convertToBase(
       total,
@@ -124,11 +126,9 @@ final class BudgetSyncService {
           ),
         );
 
-    await (_database.update(
-      _database.receipts,
-    )..where((t) => t.id.equals(receiptId))).write(
-      db.ReceiptsCompanion(transactionId: Value(txnId)),
-    );
+    await (_database.update(_database.receipts)
+          ..where((t) => t.id.equals(receiptId)))
+        .write(db.ReceiptsCompanion(transactionId: Value(txnId)));
   }
 
   DateTime _parseDate(String? raw) {

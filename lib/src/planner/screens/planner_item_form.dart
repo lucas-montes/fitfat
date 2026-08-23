@@ -477,9 +477,7 @@ final class _PlannerItemFormScreenState
     final isEdit = widget.initialTitle != null;
     return Scaffold(
       appBar: AppBar(
-        leading: CloseButton(
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: CloseButton(onPressed: () => Navigator.of(context).pop()),
         title: Text(widget.dialogTitle),
         actions: [
           Padding(
@@ -518,9 +516,7 @@ final class _PlannerItemFormScreenState
                 child: TextField(
                   controller: _notesController,
                   maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: l10n.plannerTaskHint,
-                  ),
+                  decoration: InputDecoration(hintText: l10n.plannerTaskHint),
                 ),
               ),
             ],
@@ -576,9 +572,7 @@ final class _PlannerItemFormScreenState
           ListTile(
             leading: const Icon(Icons.event_repeat_outlined),
             title: Text(l10n.plannerRepeatLabel),
-            subtitle: _repeatType == null
-                ? null
-                : _buildRepeatField(context),
+            subtitle: _repeatType == null ? null : _buildRepeatField(context),
             onTap: () => setState(
               () => _repeatType = _repeatType ?? PlannerRecurrenceType.daily,
             ),
@@ -618,7 +612,7 @@ final class _PlannerItemFormScreenState
                     tooltip: l10n.plannerStartTimeClear,
                     onPressed: _clearStartTime,
                   )
-                    : null,
+                : null,
             onTap: _pickStartTime,
           ),
           ListTile(
@@ -640,7 +634,7 @@ final class _PlannerItemFormScreenState
                     tooltip: l10n.plannerEndTimeClear,
                     onPressed: _clearEndTime,
                   )
-                    : null,
+                : null,
             onTap: _pickEndTime,
           ),
           Row(

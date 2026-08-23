@@ -9,7 +9,10 @@ void main() {
       final rule = PlannerRecurrence(type: PlannerRecurrenceType.daily);
       expect(rule.occurrenceIndex(start, start), 0);
       expect(rule.isOccurrenceOn(start, start), isTrue);
-      expect(rule.isOccurrenceOn(start, start.add(const Duration(days: 3))), isTrue);
+      expect(
+        rule.isOccurrenceOn(start, start.add(const Duration(days: 3))),
+        isTrue,
+      );
       expect(
         rule.isOccurrenceOn(start, start.subtract(const Duration(days: 1))),
         isFalse,
@@ -66,7 +69,10 @@ void main() {
         weekdays: {DateTime.wednesday, DateTime.friday},
         count: 2,
       );
-      expect(rule.isOccurrenceOn(start, DateTime(2026, 8, 19)), isFalse); // idx 2
+      expect(
+        rule.isOccurrenceOn(start, DateTime(2026, 8, 19)),
+        isFalse,
+      ); // idx 2
     });
 
     test('weekly respects endDate', () {
@@ -84,7 +90,10 @@ void main() {
         type: PlannerRecurrenceType.interval,
         intervalDays: 2,
       );
-      expect(rule.occurrenceIndex(start, start.add(const Duration(days: 2))), 1);
+      expect(
+        rule.occurrenceIndex(start, start.add(const Duration(days: 2))),
+        1,
+      );
       expect(
         rule.isOccurrenceOn(start, start.add(const Duration(days: 1))),
         isFalse,
@@ -153,9 +162,7 @@ void main() {
 
     test('isValid guards required sub-fields', () {
       expect(
-        PlannerRecurrence(
-          type: PlannerRecurrenceType.weekly,
-        ).isValid,
+        PlannerRecurrence(type: PlannerRecurrenceType.weekly).isValid,
         isFalse,
       );
       expect(

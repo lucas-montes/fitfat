@@ -8,9 +8,9 @@ final class ReceiptRepository {
   const ReceiptRepository(this._database);
 
   Future<List<Receipt>> getAll() async {
-    final rows = await (_database.select(_database.receipts)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-        .get();
+    final rows = await (_database.select(
+      _database.receipts,
+    )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
     return rows.map(_toDomain).toList();
   }
 
@@ -24,24 +24,26 @@ final class ReceiptRepository {
   /// Receipts whose linked transaction belongs to [accountId] (source or
   /// destination) — used by the account detail screen.
   Future<List<Receipt>> getByAccount(String accountId) async {
-    final txns = await (_database.select(_database.transactions)
-          ..where(
-            (t) =>
-                t.accountId.equals(accountId) |
-                t.toAccountId.equals(accountId),
-          ))
-        .get();
+    final txns =
+        await (_database.select(_database.transactions)..where(
+              (t) =>
+                  t.accountId.equals(accountId) |
+                  t.toAccountId.equals(accountId),
+            ))
+            .get();
     if (txns.isEmpty) return const [];
     final ids = txns.map((t) => t.receiptId).whereType<String>().toList();
     if (ids.isEmpty) return const [];
-    final rows = await (_database.select(_database.receipts)
-          ..where((t) => t.id.isIn(ids)))
-        .get();
+    final rows = await (_database.select(
+      _database.receipts,
+    )..where((t) => t.id.isIn(ids))).get();
     return rows.map(_toDomain).toList();
   }
 
   Future<Receipt> insert(Receipt receipt) async {
-    await _database.into(_database.receipts).insert(
+    await _database
+        .into(_database.receipts)
+        .insert(
           db.ReceiptsCompanion.insert(
             id: receipt.id,
             localPath: receipt.localPath,
@@ -78,13 +80,13 @@ final class ReceiptRepository {
   }
 
   Receipt _toDomain(db.Receipt row) => Receipt(
-        id: row.id,
-        localPath: row.localPath,
-        remotePath: row.remotePath,
-        status: ReceiptStatus.fromCode(row.uploadStatus),
-        parsed: row.parsed,
-        parsedJson: row.parsedJson,
-        transactionId: row.transactionId,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
-      );
+    id: row.id,
+    localPath: row.localPath,
+    remotePath: row.remotePath,
+    status: ReceiptStatus.fromCode(row.uploadStatus),
+    parsed: row.parsed,
+    parsedJson: row.parsedJson,
+    transactionId: row.transactionId,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+  );
 }

@@ -40,27 +40,28 @@ final class TransactionRepository {
   Future<List<Transaction>> getByAccount(String accountId) async {
     final source = await (_database.select(
       _database.transactions,
-    )..where((t) => t.accountId.equals(accountId)))
-        .get();
+    )..where((t) => t.accountId.equals(accountId))).get();
     final dest = await (_database.select(
       _database.transactions,
-    )..where((t) => t.toAccountId.equals(accountId)))
-        .get();
+    )..where((t) => t.toAccountId.equals(accountId))).get();
     final merged = [...source, ...dest];
     merged.sort((a, b) => b.date.compareTo(a.date));
     return merged.map(_toDomain).toList();
   }
 
   Future<List<Transaction>> getRecent(int limit) async {
-    final rows = await (_database.select(_database.transactions)
-          ..orderBy([(t) => OrderingTerm.desc(t.date)])
-          ..limit(limit))
-        .get();
+    final rows =
+        await (_database.select(_database.transactions)
+              ..orderBy([(t) => OrderingTerm.desc(t.date)])
+              ..limit(limit))
+            .get();
     return rows.map(_toDomain).toList();
   }
 
   Future<void> insert(Transaction txn) async {
-    await _database.into(_database.transactions).insert(
+    await _database
+        .into(_database.transactions)
+        .insert(
           db.TransactionsCompanion.insert(
             id: txn.id,
             type: txn.type.name,
@@ -108,19 +109,19 @@ final class TransactionRepository {
   }
 
   Transaction _toDomain(db.Transaction row) => Transaction(
-        id: row.id,
-        type: TransactionType.fromName(row.type),
-        amount: row.amount,
-        currencyCode: row.currencyCode,
-        amountBase: row.amountBase,
-        rateUsed: row.rateUsed,
-        accountId: row.accountId,
-        toAccountId: row.toAccountId,
-        category: row.category,
-        date: DateTime.fromMillisecondsSinceEpoch(row.date),
-        note: row.note,
-        receiptId: row.receiptId,
-        isDraft: row.isDraft,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
-      );
+    id: row.id,
+    type: TransactionType.fromName(row.type),
+    amount: row.amount,
+    currencyCode: row.currencyCode,
+    amountBase: row.amountBase,
+    rateUsed: row.rateUsed,
+    accountId: row.accountId,
+    toAccountId: row.toAccountId,
+    category: row.category,
+    date: DateTime.fromMillisecondsSinceEpoch(row.date),
+    note: row.note,
+    receiptId: row.receiptId,
+    isDraft: row.isDraft,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+  );
 }

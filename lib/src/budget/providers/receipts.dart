@@ -12,12 +12,16 @@ final receiptListProvider = FutureProvider<List<Receipt>>((ref) async {
   return ref.watch(receiptRepositoryProvider).getAll();
 });
 
-final receiptByIdProvider =
-    FutureProvider.family<Receipt?, String>((ref, id) async {
+final receiptByIdProvider = FutureProvider.family<Receipt?, String>((
+  ref,
+  id,
+) async {
   return ref.watch(receiptRepositoryProvider).getById(id);
 });
 
-final receiptsByAccountProvider =
-    FutureProvider.family<List<Receipt>, String>((ref, accountId) async {
+final receiptsByAccountProvider = FutureProvider.family<List<Receipt>, String>((
+  ref,
+  accountId,
+) async {
   return ref.watch(receiptRepositoryProvider).getByAccount(accountId);
 });

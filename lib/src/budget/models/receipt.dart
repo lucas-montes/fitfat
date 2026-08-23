@@ -9,18 +9,18 @@ enum ReceiptStatus {
   error;
 
   static ReceiptStatus fromCode(int code) => switch (code) {
-        1 => ReceiptStatus.uploading,
-        2 => ReceiptStatus.uploaded,
-        3 => ReceiptStatus.error,
-        _ => ReceiptStatus.local,
-      };
+    1 => ReceiptStatus.uploading,
+    2 => ReceiptStatus.uploaded,
+    3 => ReceiptStatus.error,
+    _ => ReceiptStatus.local,
+  };
 
   int get code => switch (this) {
-        ReceiptStatus.local => 0,
-        ReceiptStatus.uploading => 1,
-        ReceiptStatus.uploaded => 2,
-        ReceiptStatus.error => 3,
-      };
+    ReceiptStatus.local => 0,
+    ReceiptStatus.uploading => 1,
+    ReceiptStatus.uploaded => 2,
+    ReceiptStatus.error => 3,
+  };
 }
 
 final class Receipt {
@@ -61,8 +61,9 @@ final class Receipt {
     status: status ?? this.status,
     parsed: parsed ?? this.parsed,
     parsedJson: clearParsedJson ? null : (parsedJson ?? this.parsedJson),
-    transactionId:
-        clearTransactionId ? null : (transactionId ?? this.transactionId),
+    transactionId: clearTransactionId
+        ? null
+        : (transactionId ?? this.transactionId),
     createdAt: createdAt,
   );
 }

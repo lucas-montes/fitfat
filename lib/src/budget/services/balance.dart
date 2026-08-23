@@ -12,10 +12,7 @@ double computeNetWorth(
 });
 
 /// Balance of a single account (opening + signed base-currency transactions).
-double accountBalance(
-  Account account,
-  List<Transaction> transactions,
-) {
+double accountBalance(Account account, List<Transaction> transactions) {
   var balance = account.openingBalance;
   for (final txn in transactions) {
     if (txn.type == TransactionType.transfer) {

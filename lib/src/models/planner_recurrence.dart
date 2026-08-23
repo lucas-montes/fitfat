@@ -31,8 +31,7 @@ final class PlannerRecurrence {
     if (monthDay != null) 'monthDay': monthDay,
     if (endDate != null) 'endDate': endDate!.millisecondsSinceEpoch,
     if (count != null) 'count': count,
-    if (excludedDates != null)
-      'excludedDates': [...excludedDates!]..sort(),
+    if (excludedDates != null) 'excludedDates': [...excludedDates!]..sort(),
   };
 
   factory PlannerRecurrence.fromJson(Map<String, dynamic> json) {

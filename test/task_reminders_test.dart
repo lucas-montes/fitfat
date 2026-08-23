@@ -8,10 +8,7 @@ void main() {
   group('plannerReminderTimes', () {
     final now = DateTime(2026, 8, 11, 10, 0);
 
-    PlannerItem item({
-      int? startTimeMinutes,
-      bool done = false,
-    }) => PlannerItem(
+    PlannerItem item({int? startTimeMinutes, bool done = false}) => PlannerItem(
       id: 'task-1',
       day: DateTime(2026, 8, 11),
       title: 'Morning run',
@@ -52,14 +49,17 @@ void main() {
       );
     });
 
-    test('schedules only the start time when the pre-reminder would be past', () {
-      final times = plannerReminderTimes(
-        item(startTimeMinutes: 10 * 60 + 15),
-        now: now,
-      );
-      expect(times, hasLength(1));
-      expect(times.single, DateTime(2026, 8, 11, 10, 15));
-    });
+    test(
+      'schedules only the start time when the pre-reminder would be past',
+      () {
+        final times = plannerReminderTimes(
+          item(startTimeMinutes: 10 * 60 + 15),
+          now: now,
+        );
+        expect(times, hasLength(1));
+        expect(times.single, DateTime(2026, 8, 11, 10, 15));
+      },
+    );
   });
 
   group('TaskReminderScheduler notification ids', () {

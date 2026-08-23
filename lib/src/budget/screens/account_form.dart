@@ -64,19 +64,11 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       final opening = double.tryParse(_openingCtrl.text.trim()) ?? 0.0;
       if (_isEditing) {
         await repo.update(
-          _existing!.copyWith(
-            name: name,
-            type: _type,
-            openingBalance: opening,
-          ),
+          _existing!.copyWith(name: name, type: _type, openingBalance: opening),
         );
       } else {
         await repo.insert(
-          newAccountFrom(
-            name: name,
-            type: _type,
-            openingBalance: opening,
-          ),
+          newAccountFrom(name: name, type: _type, openingBalance: opening),
         );
       }
       if (mounted) {
@@ -173,20 +165,24 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             Text(
               l10n.accountFormIntro,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameCtrl,
               autofocus: true,
               decoration: InputDecoration(labelText: l10n.accountFormNameLabel),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? l10n.accountFormNameRequired : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? l10n.accountFormNameRequired
+                  : null,
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 16),
-            Text(l10n.accountFormTypeLabel, style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              l10n.accountFormTypeLabel,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -204,7 +200,9 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _openingCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: l10n.accountFormOpeningLabel,
                 suffixText: base,

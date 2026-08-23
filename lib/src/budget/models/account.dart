@@ -9,13 +9,13 @@ enum AccountType {
   other;
 
   static AccountType fromName(String? name) => switch (name) {
-        'savings' => AccountType.savings,
-        'investment' => AccountType.investment,
-        'cash' => AccountType.cash,
-        'bank' => AccountType.bank,
-        'credit' => AccountType.credit,
-        _ => AccountType.other,
-      };
+    'savings' => AccountType.savings,
+    'investment' => AccountType.investment,
+    'cash' => AccountType.cash,
+    'bank' => AccountType.bank,
+    'credit' => AccountType.credit,
+    _ => AccountType.other,
+  };
 }
 
 final class Account {

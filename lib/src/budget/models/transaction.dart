@@ -6,11 +6,11 @@ enum TransactionType {
   transfer;
 
   static TransactionType fromName(String? name) => switch (name) {
-        'income' => TransactionType.income,
-        'expense' => TransactionType.expense,
-        'transfer' => TransactionType.transfer,
-        _ => TransactionType.expense,
-      };
+    'income' => TransactionType.income,
+    'expense' => TransactionType.expense,
+    'transfer' => TransactionType.transfer,
+    _ => TransactionType.expense,
+  };
 
   bool get isTransfer => this == TransactionType.transfer;
 }
@@ -74,9 +74,7 @@ final class Transaction {
     amountBase: amountBase ?? this.amountBase,
     rateUsed: rateUsed ?? this.rateUsed,
     accountId: accountId ?? this.accountId,
-    toAccountId: clearToAccountId
-        ? null
-        : (toAccountId ?? this.toAccountId),
+    toAccountId: clearToAccountId ? null : (toAccountId ?? this.toAccountId),
     category: clearCategory ? null : (category ?? this.category),
     date: date ?? this.date,
     note: clearNote ? null : (note ?? this.note),

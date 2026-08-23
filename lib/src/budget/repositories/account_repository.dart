@@ -36,7 +36,9 @@ final class AccountRepository {
   }
 
   Future<void> insert(Account account) async {
-    await _database.into(_database.accounts).insert(
+    await _database
+        .into(_database.accounts)
+        .insert(
           db.AccountsCompanion.insert(
             id: account.id,
             name: account.name,
@@ -68,13 +70,13 @@ final class AccountRepository {
   }
 
   Account _toDomain(db.Account row) => Account(
-        id: row.id,
-        name: row.name,
-        type: AccountType.fromName(row.type),
-        openingBalance: row.openingBalance,
-        note: row.note,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
-      );
+    id: row.id,
+    name: row.name,
+    type: AccountType.fromName(row.type),
+    openingBalance: row.openingBalance,
+    note: row.note,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+  );
 }
 
 Account newAccountFrom({
