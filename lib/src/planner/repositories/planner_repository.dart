@@ -71,10 +71,10 @@ final class PlannerRepository {
       _database.plannerItems,
     )..where((t) => t.id.equals(item.id))).write(
       db.PlannerItemsCompanion(
-        // `day` is written too: setting a due date on edit moves the task to
-        // that day. All other callers pass items whose day equals the stored
-        // one, so this is a no-op for them.
-        day: Value(item.day),
+        // `date` (the item's day) is written too: setting a due date on edit
+        // moves the task to that day. All other callers pass items whose day
+        // equals the stored one, so this is a no-op for them.
+        date: Value(_startOfDay(item.day).millisecondsSinceEpoch),
         title: Value(item.title),
         done: Value(item.done ? 1 : 0),
         dueDate: Value(item.dueDate?.millisecondsSinceEpoch),
