@@ -214,6 +214,6 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'fitfat.sqlite'));
-    return NativeDatabase(file);
+    return NativeDatabase.createInBackground(file);
   });
 }
