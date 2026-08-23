@@ -6,11 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
+import '../../sync/sync_button.dart';
+import '../../sync/sync_service.dart';
 import '../../ui/haptics.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../exercise_filter.dart';
 import '../providers/exercises.dart';
+import '../../settings/providers/settings.dart';
 import 'exercise_detail_screen.dart';
 import 'exercise_form.dart';
 
@@ -154,7 +157,20 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
     final exercisesAsync = ref.watch(exerciseListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.exerciseListAppBar)),
+      appBar: AppBar(
+        title: Text(l10n.exerciseListAppBar),
+        actions: [
+          SyncButton(
+            tooltip: l10n.syncExercisesTooltip,
+            run: () {
+              final s = ref.read(settingsProvider);
+              return ref
+                  .read(syncServiceProvider)
+                  .syncExercises(s.remoteSyncBaseUrl, s.remoteSyncApiKey);
+            },
+          ),
+        ],
+      ),
       body: exercisesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),

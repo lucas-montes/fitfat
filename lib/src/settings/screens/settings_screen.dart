@@ -19,6 +19,8 @@ import '../../models/gender.dart';
 import '../../models/units.dart';
 import '../../notifications/task_reminders.dart';
 import '../../planner/providers/planner.dart';
+import '../../sync/sync_button.dart';
+import '../../sync/sync_service.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
 import '../../ui/tokens.dart';
@@ -828,6 +830,8 @@ final class _CurrencySection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 8),
+        const _SyncServerCard(),
+        const SizedBox(height: 8),
         entriesAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Text(l10n.errorWithMessage('$e')),
@@ -958,5 +962,86 @@ final class _CurrencySection extends ConsumerWidget {
     if (value == null) return;
     await ref.read(fxRepositoryProvider).setRate(code, value, base);
     ref.invalidate(fxRatesProvider);
+  }
+}
+
+/// Configures the user's sync server (URL + API key) and lets them pull the
+/// latest currency rates. The same URL/key is reused by the exercise and
+/// ingredient list screens.
+final class _SyncServerCard extends ConsumerStatefulWidget {
+  const _SyncServerCard();
+
+  @override
+  ConsumerState<_SyncServerCard> createState() => _SyncServerCardState();
+}
+
+final class _SyncServerCardState extends ConsumerState<_SyncServerCard> {
+  final _urlController = TextEditingController();
+  final _keyController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final settings = ref.read(settingsProvider);
+    _urlController.text = settings.remoteSyncBaseUrl;
+    _keyController.text = settings.remoteSyncApiKey;
+  }
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    _keyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final settings = ref.watch(settingsProvider);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(l10n.settingsSyncServer, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(l10n.settingsSyncServerHint, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _urlController,
+              decoration: InputDecoration(labelText: l10n.settingsSyncBaseUrl),
+              onChanged: ref
+                  .read(settingsProvider.notifier)
+                  .setRemoteSyncBaseUrl,
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _keyController,
+              decoration: InputDecoration(labelText: l10n.settingsSyncApiKey),
+              obscureText: true,
+              onChanged: ref
+                  .read(settingsProvider.notifier)
+                  .setRemoteSyncApiKey,
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: SyncButton(
+                tooltip: l10n.syncCurrenciesTooltip,
+                run: () => ref
+                    .read(syncServiceProvider)
+                    .syncCurrencies(
+                      settings.remoteSyncBaseUrl,
+                      settings.remoteSyncApiKey,
+                      settings.baseCurrency,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

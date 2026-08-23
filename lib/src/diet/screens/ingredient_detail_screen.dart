@@ -11,7 +11,9 @@ import '../../models/ingredient.dart';
 import '../../models/ingredient_price.dart';
 import '../../models/store.dart';
 import '../../settings/providers/settings.dart';
+import '../../sync/sync_service.dart';
 import '../../ui/date_formats.dart';
+import '../../ui/widgets/top_banner.dart';
 import '../providers/ingredients.dart';
 import '../repositories/ingredient_repository.dart';
 import 'ingredient_form.dart';
@@ -65,6 +67,11 @@ final class _DetailBody extends ConsumerWidget {
       appBar: AppBar(
         title: Text(ingredient.name),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.cloud_upload_outlined),
+            tooltip: l10n.syncPushIngredientTooltip,
+            onPressed: () => _pushToServer(context, ref),
+          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: l10n.commonEdit,
@@ -206,6 +213,34 @@ final class _DetailBody extends ConsumerWidget {
     if (saved == true) {
       ref.invalidate(ingredientListProvider);
       ref.invalidate(ingredientByIdProvider(ingredient.id));
+    }
+  }
+
+  Future<void> _pushToServer(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final settings = ref.read(settingsProvider);
+    if (settings.remoteSyncBaseUrl.isEmpty) {
+      if (context.mounted) {
+        showTopBanner(context, message: l10n.syncServerNotConfigured);
+      }
+      return;
+    }
+    final repo = ref.read(ingredientRepositoryProvider);
+    final pictures = await repo.getPictures(ingredient.id);
+    final prices = (await repo.getPrices(
+      ingredient.id,
+    )).map((p) => p.$1).toList();
+    final result = await ref
+        .read(syncServiceProvider)
+        .pushIngredient(
+          baseUrl: settings.remoteSyncBaseUrl,
+          apiKey: settings.remoteSyncApiKey,
+          ingredient: ingredient,
+          pictures: pictures,
+          prices: prices,
+        );
+    if (context.mounted && !result.ok && result.error != null) {
+      showTopBanner(context, message: result.error!);
     }
   }
 

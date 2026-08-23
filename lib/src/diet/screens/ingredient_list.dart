@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/ingredient.dart';
+import '../../settings/providers/settings.dart';
+import '../../sync/sync_button.dart';
+import '../../sync/sync_service.dart';
 import '../../ui/haptics.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/ingredients.dart';
@@ -21,7 +24,20 @@ final class IngredientListScreen extends ConsumerWidget {
     final ingredientsAsync = ref.watch(ingredientListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.ingredientListAppBar)),
+      appBar: AppBar(
+        title: Text(l10n.ingredientListAppBar),
+        actions: [
+          SyncButton(
+            tooltip: l10n.syncIngredientsTooltip,
+            run: () {
+              final s = ref.read(settingsProvider);
+              return ref
+                  .read(syncServiceProvider)
+                  .syncIngredients(s.remoteSyncBaseUrl, s.remoteSyncApiKey);
+            },
+          ),
+        ],
+      ),
       body: ingredientsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
