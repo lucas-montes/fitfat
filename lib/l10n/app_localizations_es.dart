@@ -775,12 +775,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get plannerNextDay => 'Día siguiente';
 
   @override
-  String get plannerViewMonth => 'Vista mensual';
-
-  @override
-  String get plannerViewDay => 'Vista diaria';
-
-  @override
   String get plannerAnytime => 'En cualquier momento';
 
   @override
@@ -2135,9 +2129,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get experimentsEmptyBody =>
       'Crea un experimento para hacer seguimiento de un hábito, un cambio de dieta o un protocolo de entrenamiento con controles diarios.';
-
-  @override
-  String get experimentsNoEndDate => 'Sin fecha de fin';
 
   @override
   String get plannerSegmentCalendar => 'Calendario';

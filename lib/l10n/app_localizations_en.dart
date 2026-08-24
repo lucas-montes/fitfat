@@ -769,12 +769,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plannerNextDay => 'Next day';
 
   @override
-  String get plannerViewMonth => 'Month view';
-
-  @override
-  String get plannerViewDay => 'Day view';
-
-  @override
   String get plannerAnytime => 'Anytime';
 
   @override
@@ -2119,9 +2113,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get experimentsEmptyBody =>
       'Create an experiment to track a habit, diet change, or training protocol with daily check-ins.';
-
-  @override
-  String get experimentsNoEndDate => 'Open-ended';
 
   @override
   String get plannerSegmentCalendar => 'Calendar';

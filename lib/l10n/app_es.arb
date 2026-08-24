@@ -340,8 +340,6 @@
   "plannerToday": "Hoy",
   "plannerPreviousDay": "Día anterior",
   "plannerNextDay": "Día siguiente",
-  "plannerViewMonth": "Vista mensual",
-  "plannerViewDay": "Vista diaria",
   "plannerAnytime": "En cualquier momento",
   "plannerTimelineScheduled": "Programado",
   "emptyPlannerTitle": "No hay tareas para este día",
@@ -1362,7 +1360,6 @@
   "experimentsFab": "Nuevo experimento",
   "experimentsEmptyTitle": "Aún no hay experimentos",
   "experimentsEmptyBody": "Crea un experimento para hacer seguimiento de un hábito, un cambio de dieta o un protocolo de entrenamiento con controles diarios.",
-  "experimentsNoEndDate": "Sin fecha de fin",
   "experimentDaysElapsed": "{days} días transcurridos",
   "@experimentDaysElapsed": {
     "description": "experimentDaysElapsed",

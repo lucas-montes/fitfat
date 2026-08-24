@@ -1456,18 +1456,6 @@ abstract class AppLocalizations {
   /// **'Next day'**
   String get plannerNextDay;
 
-  /// No description provided for @plannerViewMonth.
-  ///
-  /// In en, this message translates to:
-  /// **'Month view'**
-  String get plannerViewMonth;
-
-  /// No description provided for @plannerViewDay.
-  ///
-  /// In en, this message translates to:
-  /// **'Day view'**
-  String get plannerViewDay;
-
   /// No description provided for @plannerAnytime.
   ///
   /// In en, this message translates to:
@@ -3897,12 +3885,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create an experiment to track a habit, diet change, or training protocol with daily check-ins.'**
   String get experimentsEmptyBody;
-
-  /// No description provided for @experimentsNoEndDate.
-  ///
-  /// In en, this message translates to:
-  /// **'Open-ended'**
-  String get experimentsNoEndDate;
 
   /// No description provided for @plannerSegmentCalendar.
   ///
