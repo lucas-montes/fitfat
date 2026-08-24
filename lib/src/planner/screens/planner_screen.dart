@@ -29,14 +29,41 @@ enum _PlannerViewMode { day, week, month }
 
 enum _AddChoice { task, experiment }
 
-/// Anchor for the infinite day `PageView` page indices.
-final DateTime _kDayEpoch = DateTime(2020, 1, 1);
-
-/// Monday-anchored epoch for the weekly `PageView`.
-final DateTime _kWeekEpoch = DateTime(2019, 12, 30);
+/// Anchors for the infinite PageViews' page indices (one day / week page).
+/// Index math happens in UTC — local days vary in length across DST
+/// transitions, so `localA.difference(localB).inDays` can truncate onto the
+/// previous day/week. UTC days are always exactly 24h long.
+final DateTime _kDayEpochUtc = DateTime.utc(2020);
+final DateTime _kWeekEpochUtc = DateTime.utc(2019, 12, 30); // a Monday
 
 /// Upper bound for generated pages (matches the calendar's lastDay).
 final DateTime _kLastDay = DateTime(2035, 12, 31);
+
+/// Local start-of-day → page index.
+int _dayPageIndex(DateTime day) =>
+    DateTime.utc(day.year, day.month, day.day).difference(_kDayEpochUtc).inDays;
+
+/// Page index → local start-of-day.
+DateTime _dayFromIndex(int index) {
+  final u = _kDayEpochUtc.add(Duration(days: index));
+  return DateTime(u.year, u.month, u.day);
+}
+
+/// Monday of [day]'s week, as a page index.
+int _weekPageIndex(DateTime day) {
+  final monday = DateTime.utc(
+    day.year,
+    day.month,
+    day.day,
+  ).subtract(Duration(days: day.weekday - 1));
+  return monday.difference(_kWeekEpochUtc).inDays ~/ 7;
+}
+
+/// Week page index → that week's Monday as a local start-of-day.
+DateTime _weekStartFromIndex(int index) {
+  final u = _kWeekEpochUtc.add(Duration(days: index * 7));
+  return DateTime(u.year, u.month, u.day);
+}
 
 /// Min height of an empty hour slot in the day timeline.
 const double _kHourRowMinHeight = 44;
@@ -765,9 +792,6 @@ bool _experimentCoversDay(Experiment experiment, DateTime day) {
 
 DateTime _startOf(DateTime day) => DateTime(day.year, day.month, day.day);
 
-DateTime _mondayOf(DateTime day) =>
-    _startOf(day.subtract(Duration(days: day.weekday - 1)));
-
 /// The day flow: an infinite horizontal `PageView` whose pages are hourly
 /// timelines. Swiping left/right moves between days; each page reports itself
 /// back so add/copy target the visible day.
@@ -808,7 +832,7 @@ final class _DayFlowView extends StatefulWidget {
 
 final class _DayFlowViewState extends State<_DayFlowView> {
   late final PageController _controller = PageController(
-    initialPage: _startOf(widget.initialDay).difference(_kDayEpoch).inDays,
+    initialPage: _dayPageIndex(widget.initialDay),
   );
 
   @override
@@ -819,17 +843,16 @@ final class _DayFlowViewState extends State<_DayFlowView> {
 
   @override
   Widget build(BuildContext context) {
-    final pageCount = _kLastDay.difference(_kDayEpoch).inDays + 1;
+    final pageCount = _dayPageIndex(_kLastDay) + 1;
     return PageView.builder(
       controller: _controller,
       itemCount: pageCount,
       onPageChanged: (index) =>
-          widget.onSelectedDayChanged(_kDayEpoch.add(Duration(days: index))),
+          widget.onSelectedDayChanged(_dayFromIndex(index)),
       itemBuilder: (context, index) {
-        final day = _kDayEpoch.add(Duration(days: index));
         return _DayTimelinePage(
-          key: ValueKey(day),
-          day: day,
+          key: ValueKey(index),
+          day: _dayFromIndex(index),
           callbacks: widget,
         );
       },
@@ -1242,8 +1265,7 @@ final class _WeekFlowView extends StatefulWidget {
 
 final class _WeekFlowViewState extends State<_WeekFlowView> {
   late final PageController _controller = PageController(
-    initialPage:
-        _mondayOf(widget.initialDay).difference(_kWeekEpoch).inDays ~/ 7,
+    initialPage: _weekPageIndex(widget.initialDay),
   );
 
   @override
@@ -1254,18 +1276,16 @@ final class _WeekFlowViewState extends State<_WeekFlowView> {
 
   @override
   Widget build(BuildContext context) {
-    final pageCount = _kLastDay.difference(_kWeekEpoch).inDays ~/ 7 + 1;
+    final pageCount = _weekPageIndex(_kLastDay) + 1;
     return PageView.builder(
       controller: _controller,
       itemCount: pageCount,
-      onPageChanged: (index) => widget.onSelectedDayChanged(
-        _kWeekEpoch.add(Duration(days: index * 7)),
-      ),
+      onPageChanged: (index) =>
+          widget.onSelectedDayChanged(_weekStartFromIndex(index)),
       itemBuilder: (context, index) {
-        final weekStart = _kWeekEpoch.add(Duration(days: index * 7));
         return _WeekPage(
-          key: ValueKey(weekStart),
-          weekStart: weekStart,
+          key: ValueKey(index),
+          weekStart: _weekStartFromIndex(index),
           callbacks: widget,
         );
       },
