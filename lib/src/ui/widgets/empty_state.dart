@@ -27,8 +27,11 @@ final class EmptyState extends StatelessWidget {
     final scheme = theme.colorScheme;
     final hasCta = ctaLabel != null && onCtaPressed != null;
 
+    // Scrollable so cramped hosts (e.g. the planner's calendar leaves little
+    // height for the day list) clip-and-scroll instead of RenderFlex-
+    // overflowing. When everything fits, this centers exactly as before.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(FitFatTokens.spaceXl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
