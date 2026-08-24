@@ -877,6 +877,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String plannerCancelled(String title) {
+    return 'Task \"$title\" cancelled';
+  }
+
+  @override
   String get plannerCopyPrevious => 'Copy from yesterday';
 
   @override

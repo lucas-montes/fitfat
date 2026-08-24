@@ -380,6 +380,12 @@
       "title": { "type": "String" }
     }
   },
+  "plannerCancelled": "Tarea «{title}» cancelada",
+  "@plannerCancelled": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
   "plannerCopyPrevious": "Copiar desde ayer",
   "experimentLinkedTasksTitle": "Tareas vinculadas",
   "experimentLinkTask": "Vincular tarea",

@@ -565,11 +565,14 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       await _syncReminder(updated);
     }
     ref.invalidate(plannerItemsProvider(updated.day));
+    ref.invalidate(plannerRangeItemsProvider);
     invalidateDashboard(ref);
   }
 
-  /// Swipe-right action: cancels a pending/done task, reopens a cancelled
-  /// one. Reminders follow the same rules as the done toggle.
+  /// Swipe-right action: cancels a pending/done task (reopening works via
+  /// the Undo banner or the detail screen). Reminders follow the same rules
+  /// as the done toggle. Cancelled tasks disappear from the timeline/week
+  /// lists, so the banner is the immediate recovery path — like delete.
   Future<void> _toggleCancelled(PlannerItem item) async {
     unawaited(Haptics.selection());
     final updated = item.withTaskStatus(
@@ -580,8 +583,29 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     if (!updated.isCancelled && !updated.done) {
       await _syncReminder(updated);
     }
-    ref.invalidate(plannerItemsProvider(updated.day));
+    ref.invalidate(plannerItemsProvider);
+    ref.invalidate(plannerRangeItemsProvider);
+    ref.invalidate(plannerMonthItemsProvider);
     invalidateDashboard(ref);
+    if (mounted && updated.isCancelled) {
+      final l10n = AppLocalizations.of(context)!;
+      showTopBannerOverlay(
+        Overlay.of(context),
+        message: l10n.plannerCancelled(item.title),
+        actionLabel: l10n.commonUndo,
+        // Restoring the untouched original item revives its exact previous
+        // lifecycle (pending or done).
+        onAction: () async {
+          await ref.read(plannerRepositoryProvider).update(item);
+          await _cancelReminder(item.id);
+          if (!item.done) await _syncReminder(item);
+          ref.invalidate(plannerItemsProvider);
+          ref.invalidate(plannerRangeItemsProvider);
+          ref.invalidate(plannerMonthItemsProvider);
+          invalidateDashboard(ref);
+        },
+      );
+    }
   }
 
   Future<void> _deleteItem(PlannerItem item) async {
@@ -864,6 +888,12 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
     final cbs = widget.callbacks;
 
     final tasks = itemsAsync.value ?? const <PlannerItem>[];
+    // Cancelled tasks are dropped from the planning surfaces (recoverable
+    // via the cancel Undo banner or the detail screen).
+    final visibleTasks = [
+      for (final t in tasks)
+        if (!t.isCancelled) t,
+    ];
     final activeExperiments = [
       for (final e in experimentsAsync.value ?? const <Experiment>[])
         if (_experimentCoversDay(e, widget.day)) e,
@@ -895,7 +925,7 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
         Expanded(
           child: itemsAsync.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : tasks.isEmpty && activeExperiments.isEmpty
+              : visibleTasks.isEmpty && activeExperiments.isEmpty
               ? EmptyState(
                   icon: Icons.event_note,
                   title: l10n.emptyPlannerTitle,
@@ -911,7 +941,7 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
                     children: _buildChildren(
                       l10n,
                       material,
-                      tasks,
+                      visibleTasks,
                       activeExperiments,
                     ),
                   ),
@@ -1331,8 +1361,9 @@ final class _WeekDayColumn extends StatelessWidget {
     final now = DateTime.now();
     final isToday = _startOf(day) == _startOf(now);
 
+    // Cancelled tasks are dropped from the planning surfaces.
     final dayTasks = items
-        .where((it) => _startOf(it.day) == _startOf(day))
+        .where((it) => _startOf(it.day) == _startOf(day) && !it.isCancelled)
         .toList();
     final dayExperiments = experiments
         .where((e) => _experimentCoversDay(e, day))

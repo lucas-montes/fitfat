@@ -382,6 +382,12 @@
       "title": { "type": "String" }
     }
   },
+  "plannerCancelled": "Tâche « {title} » annulée",
+  "@plannerCancelled": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
   "plannerCopyPrevious": "Copier depuis hier",
   "experimentLinkedTasksTitle": "Tâches liées",
   "experimentLinkTask": "Lier une tâche",

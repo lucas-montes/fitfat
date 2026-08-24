@@ -883,6 +883,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String plannerCancelled(String title) {
+    return 'Tâche « $title » annulée';
+  }
+
+  @override
   String get plannerCopyPrevious => 'Copier depuis hier';
 
   @override

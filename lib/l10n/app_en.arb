@@ -447,6 +447,12 @@
       "title": { "type": "String" }
     }
   },
+  "plannerCancelled": "Task \"{title}\" cancelled",
+  "@plannerCancelled": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
   "plannerCopyPrevious": "Copy from yesterday",
   "plannerMoreActions": "More actions",
   "plannerTaskCancelled": "Cancelled",

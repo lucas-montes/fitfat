@@ -1666,6 +1666,12 @@ abstract class AppLocalizations {
   /// **'Task \"{title}\" deleted'**
   String plannerDeleted(String title);
 
+  /// No description provided for @plannerCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Task \"{title}\" cancelled'**
+  String plannerCancelled(String title);
+
   /// No description provided for @plannerCopyPrevious.
   ///
   /// In en, this message translates to:
