@@ -2124,6 +2124,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get experimentsNoEndDate => 'Open-ended';
 
   @override
+  String get plannerSegmentCalendar => 'Calendar';
+
+  @override
+  String get plannerSegmentExperiments => 'Experiments';
+
+  @override
+  String get experimentLinkedTasksTitle => 'Linked tasks';
+
+  @override
+  String get experimentLinkTask => 'Link task';
+
+  @override
+  String get experimentUnlinkTask => 'Unlink task';
+
+  @override
+  String get experimentNoLinkedTasks =>
+      'No linked tasks yet. Link tasks to follow the steps of this experiment.';
+
+  @override
+  String get experimentSearchTasksHint => 'Search tasks…';
+
+  @override
   String experimentDaysElapsed(int days) {
     return '$days days elapsed';
   }

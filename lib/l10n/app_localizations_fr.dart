@@ -2144,6 +2144,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get experimentsNoEndDate => 'Sans date de fin';
 
   @override
+  String get plannerSegmentCalendar => 'Calendrier';
+
+  @override
+  String get plannerSegmentExperiments => 'Expériences';
+
+  @override
+  String get experimentLinkedTasksTitle => 'Tâches liées';
+
+  @override
+  String get experimentLinkTask => 'Lier une tâche';
+
+  @override
+  String get experimentUnlinkTask => 'Délier la tâche';
+
+  @override
+  String get experimentNoLinkedTasks =>
+      'Aucune tâche liée pour l\'instant. Liez des tâches pour suivre les étapes de cette expérience.';
+
+  @override
+  String get experimentSearchTasksHint => 'Rechercher des tâches…';
+
+  @override
   String experimentDaysElapsed(int days) {
     return '$days jours écoulés';
   }

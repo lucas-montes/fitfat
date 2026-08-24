@@ -11,10 +11,11 @@ import '../ui/experiment_labels.dart';
 import 'experiment_detail_screen.dart';
 import 'experiment_form_screen.dart';
 
-/// Experiments tab (schema v18): a list of self-tracking experiments, newest
-/// first. Tapping a card opens its detail; the FAB creates a new one.
-final class ExperimentsScreen extends ConsumerWidget {
-  const ExperimentsScreen({super.key});
+/// Experiments list (the "Experiments" half of the planner's segmented view):
+/// a list of self-tracking experiments, newest first. Tapping a card opens its
+/// detail. Embeddable — the host supplies the app bar and FAB.
+final class ExperimentsView extends ConsumerWidget {
+  const ExperimentsView({super.key});
 
   Future<void> _openDetail(BuildContext context, String id) async {
     await Navigator.of(context).push(
@@ -24,11 +25,13 @@ final class ExperimentsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _openForm(BuildContext context, WidgetRef ref) async {
+  /// Opens the create/edit form; returns true when something was saved so the
+  /// host can refresh.
+  static Future<bool> openForm(BuildContext context) async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const ExperimentFormScreen()),
     );
-    if (saved == true) ref.invalidate(experimentListProvider);
+    return saved ?? false;
   }
 
   @override
@@ -36,36 +39,32 @@ final class ExperimentsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final experimentsAsync = ref.watch(experimentListProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.tabExperiments)),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l10n.experimentsFab,
-        onPressed: () => _openForm(context, ref),
-        child: const Icon(Icons.add),
-      ),
-      body: experimentsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
-        data: (experiments) {
-          if (experiments.isEmpty) {
-            return EmptyState(
-              icon: Icons.science_outlined,
-              title: l10n.experimentsEmptyTitle,
-              description: l10n.experimentsEmptyBody,
-              ctaLabel: l10n.experimentsFab,
-              onCtaPressed: () => _openForm(context, ref),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: experiments.length,
-            itemBuilder: (context, i) => _ExperimentCard(
-              experiment: experiments[i],
-              onTap: () => _openDetail(context, experiments[i].id),
-            ),
+    return experimentsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
+      data: (experiments) {
+        if (experiments.isEmpty) {
+          return EmptyState(
+            icon: Icons.science_outlined,
+            title: l10n.experimentsEmptyTitle,
+            description: l10n.experimentsEmptyBody,
+            ctaLabel: l10n.experimentsFab,
+            onCtaPressed: () async {
+              if (await openForm(context)) {
+                ref.invalidate(experimentListProvider);
+              }
+            },
           );
-        },
-      ),
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: experiments.length,
+          itemBuilder: (context, i) => _ExperimentCard(
+            experiment: experiments[i],
+            onTap: () => _openDetail(context, experiments[i].id),
+          ),
+        );
+      },
     );
   }
 }

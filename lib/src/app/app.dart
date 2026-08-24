@@ -115,7 +115,8 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
         plugin: ref.read(flutterLocalNotificationsProvider),
         onTapPlan: () => appRouter.go('/plan'),
         onTapActiveWorkout: () => appRouter.go('/active-workout'),
-        onTapExperiments: () => appRouter.go('/experiments'),
+        // Experiments now live inside the Planner tab.
+        onTapExperiments: () => appRouter.go('/plan'),
       ),
     ]);
 

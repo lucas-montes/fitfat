@@ -4,10 +4,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/experiment.dart';
+import '../../planner/providers/planner.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
 import '../notifications/experiment_reminder.dart';
-import '../providers/experiments.dart';
 import '../ui/experiment_labels.dart';
 
 /// Create / edit a self-tracking experiment: name, hypothesis, date range,
@@ -31,7 +31,10 @@ final class _ExperimentFormScreenState
   final _purposeCtrl = TextEditingController();
 
   DateTime _startDate = DateTime.now();
-  DateTime? _endDate;
+
+  /// Required since the v24 merge: every experiment has a concrete end date.
+  /// New experiments default to one week out.
+  late DateTime _endDate = DateTime.now().add(const Duration(days: 6));
   ExperimentStatus _status = ExperimentStatus.planned;
   Set<ExperimentCategory> _categories = {
     ExperimentCategory.workout,
@@ -60,14 +63,14 @@ final class _ExperimentFormScreenState
 
   Future<void> _loadExisting() async {
     final experiment = await ref
-        .read(experimentRepositoryProvider)
-        .getById(widget.experimentId!);
+        .read(plannerRepositoryProvider)
+        .getExperimentById(widget.experimentId!);
     if (experiment == null || !mounted) return;
     setState(() {
       _nameCtrl.text = experiment.name;
       _purposeCtrl.text = experiment.purpose ?? '';
       _startDate = experiment.startDate;
-      _endDate = experiment.endDate;
+      _endDate = experiment.endDate ?? _endDate;
       _status = experiment.status;
       _categories = experiment.categories.toSet();
       _reminderEnabled = experiment.reminderEnabled;
@@ -93,7 +96,7 @@ final class _ExperimentFormScreenState
   Future<void> _pickEndDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _endDate ?? _startDate,
+      initialDate: _endDate.isBefore(_startDate) ? _startDate : _endDate,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
@@ -111,7 +114,8 @@ final class _ExperimentFormScreenState
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_endDate != null && _endDate!.isBefore(_startDate)) {
+    // The end date is required since experiments fold into the planner (v24).
+    if (_endDate.isBefore(_startDate)) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.experimentFormInvalidDates)));
@@ -119,7 +123,7 @@ final class _ExperimentFormScreenState
     }
 
     setState(() => _saving = true);
-    final repo = ref.read(experimentRepositoryProvider);
+    final repo = ref.read(plannerRepositoryProvider);
     final scheduler = ref.read(experimentReminderSchedulerProvider);
 
     final experiment = Experiment(
@@ -138,11 +142,7 @@ final class _ExperimentFormScreenState
     );
 
     try {
-      if (_isEditing) {
-        await repo.update(experiment);
-      } else {
-        await repo.insert(experiment);
-      }
+      await repo.upsertExperiment(experiment);
       await scheduler.scheduleForExperiment(
         experiment,
         title: l10n.experimentReminderTitle(experiment.name),
@@ -182,11 +182,12 @@ final class _ExperimentFormScreenState
 
     setState(() => _saving = true);
     try {
-      final repo = ref.read(experimentRepositoryProvider);
       await ref
           .read(experimentReminderSchedulerProvider)
           .cancelForExperiment(widget.experimentId!);
-      await repo.delete(widget.experimentId!);
+      await ref
+          .read(plannerRepositoryProvider)
+          .deleteExperiment(widget.experimentId!);
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -248,15 +249,11 @@ final class _ExperimentFormScreenState
                     label: l10n.experimentFormStartLabel,
                     value: _startDate,
                     onTap: _pickStartDate,
-                    showClear: false,
                   ),
                   _DateTile(
                     label: l10n.experimentFormEndLabel,
                     value: _endDate,
                     onTap: _pickEndDate,
-                    showClear: true,
-                    onClear: () => setState(() => _endDate = null),
-                    emptyText: l10n.experimentsNoEndDate,
                   ),
                   const SizedBox(height: FitFatTokens.spaceM),
                   DropdownButtonFormField<ExperimentStatus>(
@@ -351,43 +348,22 @@ final class _ExperimentFormScreenState
 
 final class _DateTile extends StatelessWidget {
   final String label;
-  final DateTime? value;
+  final DateTime value;
   final VoidCallback onTap;
-  final bool showClear;
-  final VoidCallback? onClear;
-  final String? emptyText;
 
   const _DateTile({
     required this.label,
     required this.value,
     required this.onTap,
-    required this.showClear,
-    this.onClear,
-    this.emptyText,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(label),
-      subtitle: Text(
-        value == null
-            ? emptyText ?? ''
-            : DateFormats.formatDate(context, value!),
-        style: TextStyle(
-          color: value == null ? theme.colorScheme.onSurfaceVariant : null,
-        ),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showClear && value != null)
-            IconButton(icon: const Icon(Icons.clear), onPressed: onClear),
-          const Icon(Icons.calendar_today),
-        ],
-      ),
+      subtitle: Text(DateFormats.formatDate(context, value)),
+      trailing: const Icon(Icons.calendar_today),
       onTap: onTap,
     );
   }

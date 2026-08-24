@@ -217,6 +217,24 @@ class PlannerItems extends Table {
   TextColumn? get recurrence => text().nullable()();
   // Groups occurrences of one recurring series (v13).
   TextColumn? get seriesId => text().nullable()();
+  // Experiment merge (v24): a planner item is either a plain task or an
+  // experiment. Experiment-only columns below are null/ignored for tasks.
+  TextColumn get kind => text().withDefault(const Constant('task'))();
+  // Experiment end date (start-of-day epoch ms). Required for experiments.
+  IntColumn? get endDate => integer().nullable()();
+  // Experiment hypothesis / stated purpose.
+  TextColumn? get purpose => text().nullable()();
+  // 'planned' | 'active' | 'done' | 'aborted' (experiments only).
+  TextColumn? get status => text().nullable()();
+  // JSON string[] of linked data categories: workout | diet | body | steps.
+  TextColumn? get categories => text().nullable()();
+  // Daily check-in reminder (experiments only).
+  BoolColumn get reminderEnabled =>
+      boolean().withDefault(const Constant(true))();
+  IntColumn get reminderTimeMinutes =>
+      integer().withDefault(const Constant(1200))();
+  // Back-reference from a child task to the experiment it belongs to.
+  TextColumn? get experimentId => text().nullable()();
   IntColumn get createdAt => integer()();
 
   @override
@@ -345,33 +363,11 @@ class BodyMetrics extends Table {
 // Experiments tables (v18)
 // ---------------------------------------------------------------------------
 
-class Experiments extends Table {
-  TextColumn get id => text()();
-  TextColumn get name => text()();
-  // Optional hypothesis / stated purpose of the experiment.
-  TextColumn? get purpose => text().nullable()();
-  // Start-of-day epoch milliseconds (inclusive baseline start).
-  IntColumn get startDate => integer()();
-  // Null = open-ended.
-  IntColumn? get endDate => integer().nullable()();
-  // 'planned' | 'active' | 'done' | 'aborted'.
-  TextColumn get status => text()();
-  // JSON string[] of linked categories: workout | diet | body | steps.
-  TextColumn get categories => text()();
-  BoolColumn get reminderEnabled =>
-      boolean().withDefault(const Constant(true))();
-  // Daily check-in reminder time as minutes-from-midnight (default 20:00).
-  IntColumn get reminderTimeMinutes =>
-      integer().withDefault(const Constant(1200))();
-  IntColumn get createdAt => integer()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
 class ExperimentCheckins extends Table {
   TextColumn get id => text()();
-  TextColumn get experimentId => text().references(Experiments, #id)();
+  // The experiment's planner_items id (plain reference, no FK: the standalone
+  // experiments table was folded into planner_items in v24).
+  TextColumn get experimentId => text()();
   // Start-of-day epoch milliseconds — one check-in per experiment per day.
   IntColumn get day => integer()();
   // 1..5 wellbeing/rating scale.

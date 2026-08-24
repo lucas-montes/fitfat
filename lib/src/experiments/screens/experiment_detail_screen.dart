@@ -6,6 +6,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../body/providers/body_metrics.dart';
 import '../../diet/providers/meals.dart';
 import '../../models/experiment.dart';
+import '../../models/planner_item.dart';
+import '../../planner/providers/planner.dart';
 import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
@@ -71,6 +73,7 @@ final class _ExperimentDetailScreenState
                 experiment: experiment,
                 checkins: checkinsAsync.value ?? const [],
               ),
+              _LinkedTasksSection(experimentId: widget.experimentId),
               _TrackedDataSection(experiment: experiment),
               _CheckinTimeline(
                 checkins: checkinsAsync.value ?? const [],
@@ -231,7 +234,7 @@ final class _StatusActions extends ConsumerWidget {
         reminderTimeMinutes: experiment.reminderTimeMinutes,
         createdAt: experiment.createdAt,
       );
-      await ref.read(experimentRepositoryProvider).update(updated);
+      await ref.read(plannerRepositoryProvider).upsertExperiment(updated);
       await ref
           .read(experimentReminderSchedulerProvider)
           .scheduleForExperiment(
@@ -267,6 +270,243 @@ final class _StatusActions extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Intermediary tasks linked to this experiment. Each tile unlinks on tap;
+/// the header button opens a searchable picker that links existing planner
+/// tasks (never other experiments).
+final class _LinkedTasksSection extends ConsumerWidget {
+  final String experimentId;
+
+  const _LinkedTasksSection({required this.experimentId});
+
+  Future<void> _openPicker(BuildContext context, WidgetRef ref) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => _TaskPickerSheet(experimentId: experimentId),
+    );
+    ref.invalidate(experimentLinkedTasksProvider(experimentId));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final tasksAsync = ref.watch(experimentLinkedTasksProvider(experimentId));
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Padding(
+        padding: const EdgeInsets.all(FitFatTokens.spaceL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.experimentLinkedTasksTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.link, size: 18),
+                  label: Text(l10n.experimentLinkTask),
+                  onPressed: () => _openPicker(context, ref),
+                ),
+              ],
+            ),
+            const SizedBox(height: FitFatTokens.spaceS),
+            tasksAsync.when(
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (e, _) => Text(l10n.errorWithMessage('$e')),
+              data: (tasks) {
+                if (tasks.isEmpty) {
+                  return Text(
+                    l10n.experimentNoLinkedTasks,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  );
+                }
+                return Column(
+                  children: [
+                    for (final task in tasks)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        leading: Icon(
+                          task.done
+                              ? Icons.check_circle_outline
+                              : Icons.radio_button_unchecked,
+                          size: 20,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        title: Text(
+                          task.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: task.done
+                              ? TextStyle(
+                                  decoration: TextDecoration.lineThrough,
+                                  color: theme.colorScheme.outline,
+                                )
+                              : null,
+                        ),
+                        subtitle: Text(
+                          DateFormats.formatDate(context, task.day),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          tooltip: l10n.experimentUnlinkTask,
+                          icon: const Icon(Icons.link_off, size: 20),
+                          onPressed: () async {
+                            await ref
+                                .read(plannerRepositoryProvider)
+                                .setTaskExperiment(task.id, null);
+                            ref.invalidate(
+                              experimentLinkedTasksProvider(experimentId),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Searchable sheet listing plain planner tasks; tapping a result links it to
+/// the experiment, tapping an already-linked one unlinks it.
+final class _TaskPickerSheet extends ConsumerStatefulWidget {
+  final String experimentId;
+
+  const _TaskPickerSheet({required this.experimentId});
+
+  @override
+  ConsumerState<_TaskPickerSheet> createState() => _TaskPickerSheetState();
+}
+
+final class _TaskPickerSheetState extends ConsumerState<_TaskPickerSheet> {
+  final _controller = TextEditingController();
+  List<PlannerItem>? _results;
+  Set<String> _linkedIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _search();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search() async {
+    final repo = ref.read(plannerRepositoryProvider);
+    final results = await repo.searchTasks(_controller.text);
+    final linked = await repo.getLinkedTasks(widget.experimentId);
+    if (!mounted) return;
+    setState(() {
+      _results = results;
+      _linkedIds = {for (final t in linked) t.id};
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: l10n.experimentSearchTasksHint,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  onChanged: (_) => _search(),
+                ),
+              ),
+              Expanded(
+                child: _results == null
+                    ? const Center(child: CircularProgressIndicator())
+                    : _results!.isEmpty
+                    ? Center(child: Text(l10n.experimentNoLinkedTasks))
+                    : ListView(
+                        children: [
+                          for (final task in _results!)
+                            ListTile(
+                              leading: Icon(
+                                _linkedIds.contains(task.id)
+                                    ? Icons.link
+                                    : Icons.add_link,
+                                size: 20,
+                              ),
+                              title: Text(
+                                task.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                DateFormats.formatDate(context, task.day),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              onTap: () async {
+                                final repo = ref.read(
+                                  plannerRepositoryProvider,
+                                );
+                                final wasLinked = _linkedIds.contains(task.id);
+                                await repo.setTaskExperiment(
+                                  task.id,
+                                  wasLinked ? null : widget.experimentId,
+                                );
+                                await _search();
+                              },
+                            ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -382,7 +622,7 @@ final class _CheckinCardState extends ConsumerState<_CheckinCard> {
     setState(() => _saving = true);
     try {
       await ref
-          .read(experimentRepositoryProvider)
+          .read(plannerRepositoryProvider)
           .upsertCheckin(
             experimentId: widget.experiment.id,
             day: DateTime.now(),

@@ -4,17 +4,19 @@ import 'package:flutter/material.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../dashboard/providers/dashboard.dart';
 import '../../exercise/screens/workout_detail.dart';
 import '../../exercise/providers/workouts.dart';
+import '../../experiments/providers/experiments.dart';
+import '../../experiments/screens/experiments_screen.dart';
 import '../../models/planner_item.dart';
 import '../../notifications/task_reminders.dart';
 import '../../settings/providers/settings.dart';
 import '../../ui/haptics.dart';
 import '../../ui/tag_colors.dart';
-import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/planner.dart';
 import '../repositories/planner_repository.dart';
@@ -28,77 +30,30 @@ final class PlannerScreen extends ConsumerStatefulWidget {
   ConsumerState<PlannerScreen> createState() => _PlannerScreenState();
 }
 
-enum _PlannerViewMode { day, month }
+enum _PlannerViewMode { calendar, experiments }
 
 enum _PlannerMenuAction { copyPreviousDay }
 
 final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
-  /// Fixed anchor for the infinite day pager; all real days are after it.
-  static final DateTime _anchorDate = DateTime(2000);
-
   late DateTime _selectedDay;
-  late final PageController _pageController;
-  _PlannerViewMode _viewMode = _PlannerViewMode.day;
+  late DateTime _focusedDay;
+  _PlannerViewMode _viewMode = _PlannerViewMode.calendar;
 
   @override
   void initState() {
     super.initState();
     _selectedDay = _startOfDay(DateTime.now());
-    _pageController = PageController(initialPage: _dayIndex(_selectedDay));
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+    _focusedDay = _selectedDay;
   }
 
   DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
 
-  /// Whole-day offset of [day] from `_anchorDate`. Computed in UTC so DST
-  /// transitions never skew the page index.
-  static int _dayIndex(DateTime day) =>
-      DateTime.utc(day.year, day.month, day.day)
-          .difference(
-            DateTime.utc(_anchorDate.year, _anchorDate.month, _anchorDate.day),
-          )
-          .inDays;
-
-  /// Start-of-day for the day [index] days after `_anchorDate`.
-  static DateTime _dayFromIndex(int index) {
-    final day = DateTime.utc(
-      _anchorDate.year,
-      _anchorDate.month,
-      _anchorDate.day,
-    ).add(Duration(days: index));
-    return DateTime(day.year, day.month, day.day);
-  }
-
-  bool get _isToday => _selectedDay == _startOfDay(DateTime.now());
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   /// How far ahead recurring tasks are materialized (user-configurable).
   Duration get _plannerHorizon =>
       Duration(days: ref.read(settingsProvider).plannerHorizonDays);
-
-  void _previousDay() =>
-      _animateToDay(_selectedDay.subtract(const Duration(days: 1)));
-
-  void _nextDay() => _animateToDay(_selectedDay.add(const Duration(days: 1)));
-
-  void _goToday() => _animateToDay(_startOfDay(DateTime.now()));
-
-  void _toggleViewMode() {
-    setState(() {
-      _viewMode = _viewMode == _PlannerViewMode.day
-          ? _PlannerViewMode.month
-          : _PlannerViewMode.day;
-    });
-    // When returning to the day pager, snap it to the selected day so the
-    // two views stay in sync.
-    if (_viewMode == _PlannerViewMode.day) {
-      _pageController.jumpToPage(_dayIndex(_selectedDay));
-    }
-  }
 
   /// Schedules reminders for [item] (no-op when the app-wide toggle is off or
   /// the item is untimed/past-due). Called after any mutation that creates or
@@ -125,16 +80,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     await ref.read(taskReminderSchedulerProvider).cancelForTask(taskId);
   }
 
-  /// Animates the day pager to [day]; `onPageChanged` keeps `_selectedDay`
-  /// in sync once the page settles.
-  void _animateToDay(DateTime day) {
-    _pageController.animateToPage(
-      _dayIndex(day),
-      duration: FitFatTokens.motionNormal,
-      curve: Curves.easeOutCubic,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -143,107 +88,82 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       appBar: AppBar(
         title: Text(l10n.plannerAppBar),
         actions: [
-          IconButton(
-            icon: Icon(
-              _viewMode == _PlannerViewMode.day
-                  ? Icons.calendar_month
-                  : Icons.view_agenda,
-            ),
-            tooltip: _viewMode == _PlannerViewMode.day
-                ? l10n.plannerViewMonth
-                : l10n.plannerViewDay,
-            onPressed: _toggleViewMode,
-          ),
-          PopupMenuButton<_PlannerMenuAction>(
-            tooltip: l10n.plannerMoreActions,
-            onSelected: (action) {
-              switch (action) {
-                case _PlannerMenuAction.copyPreviousDay:
-                  _copyFromPreviousDay();
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: _PlannerMenuAction.copyPreviousDay,
-                child: ListTile(
-                  leading: const Icon(Icons.copy_all),
-                  title: Text(l10n.plannerCopyPrevious),
-                  contentPadding: EdgeInsets.zero,
+          if (_viewMode == _PlannerViewMode.calendar)
+            PopupMenuButton<_PlannerMenuAction>(
+              tooltip: l10n.plannerMoreActions,
+              onSelected: (action) {
+                switch (action) {
+                  case _PlannerMenuAction.copyPreviousDay:
+                    _copyFromPreviousDay();
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _PlannerMenuAction.copyPreviousDay,
+                  child: ListTile(
+                    leading: const Icon(Icons.copy_all),
+                    title: Text(l10n.plannerCopyPrevious),
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
-      ),
-      body: _viewMode == _PlannerViewMode.day
-          ? Column(
-              children: [
-                _DayNavHeader(
-                  selectedDay: _selectedDay,
-                  isToday: _isToday,
-                  onPrevious: _previousDay,
-                  onNext: _nextDay,
-                  onToday: _goToday,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: SegmentedButton<_PlannerViewMode>(
+              segments: [
+                ButtonSegment(
+                  value: _PlannerViewMode.calendar,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: Text(l10n.plannerSegmentCalendar),
                 ),
-                const Divider(height: 1),
-                Expanded(
-                  // Infinite horizontal pager: page index = whole-day offset from
-                  // `_anchorDate`. Each `_DayPage` watches its own day's items so
-                  // adjacent days load independently of the selected day.
-                  // Swiping the body is disabled so a horizontal drag on a task
-                  // card triggers its swipe-to-delete instead of changing the day;
-                  // day changes happen from the header (buttons + swipe gesture).
-                  child: PageView.builder(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (index) => setState(() {
-                      _selectedDay = _dayFromIndex(index);
-                    }),
-                    itemBuilder: (context, index) => _DayPage(
-                      day: _dayFromIndex(index),
-                      l10n: l10n,
-                      onAddItem: _addItem,
-                      onToggleDone: _toggleDone,
-                      onOpenDetail: _openDetail,
-                      onEdit: _editItem,
-                      onDelete: _deleteItem,
-                      onOpenWorkout: _openWorkout,
-                    ),
-                  ),
+                ButtonSegment(
+                  value: _PlannerViewMode.experiments,
+                  icon: const Icon(Icons.science_outlined),
+                  label: Text(l10n.plannerSegmentExperiments),
                 ),
               ],
-            )
-          : Column(
-              children: [
-                CalendarDatePicker(
-                  key: ValueKey(_selectedDay),
-                  initialDate: _selectedDay,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2035),
-                  currentDate: _startOfDay(DateTime.now()),
-                  onDateChanged: (day) =>
-                      setState(() => _selectedDay = _startOfDay(day)),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: _DayPage(
-                    day: _selectedDay,
-                    l10n: l10n,
-                    onAddItem: _addItem,
-                    onToggleDone: _toggleDone,
-                    onOpenDetail: _openDetail,
-                    onEdit: _editItem,
-                    onDelete: _deleteItem,
-                    onOpenWorkout: _openWorkout,
-                  ),
-                ),
-              ],
+              selected: {_viewMode},
+              onSelectionChanged: (selection) =>
+                  setState(() => _viewMode = selection.first),
             ),
+          ),
+        ),
+      ),
+      body: _viewMode == _PlannerViewMode.calendar
+          ? _CalendarView(
+              selectedDay: _selectedDay,
+              focusedDay: _focusedDay,
+              isSameDay: _isSameDay,
+              onDaySelected: (day, focused) => setState(() {
+                _selectedDay = day;
+                _focusedDay = focused;
+              }),
+              onPageChanged: (focused) => setState(() => _focusedDay = focused),
+              onAddItem: _addItem,
+              onToggleDone: _toggleDone,
+              onOpenDetail: _openDetail,
+              onEdit: _editItem,
+              onDelete: _deleteItem,
+              onOpenWorkout: _openWorkout,
+            )
+          : const ExperimentsView(),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addItem,
+        onPressed: _viewMode == _PlannerViewMode.calendar
+            ? _addItem
+            : _addExperiment,
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _addExperiment() async {
+    if (await ExperimentsView.openForm(context)) {
+      ref.invalidate(experimentListProvider);
+    }
   }
 
   /// Opens the full read-mostly detail view for [item]; the planner tile now
@@ -683,6 +603,181 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 }
 
+/// The calendar half of the planner: a month grid showing both plain tasks
+/// (dot marker) and experiment ranges (tinted background), with the selected
+/// day's task list underneath. Task tap edits in place; long-press opens the
+/// detail screen.
+final class _CalendarView extends ConsumerWidget {
+  final DateTime selectedDay;
+  final DateTime focusedDay;
+  final bool Function(DateTime a, DateTime b) isSameDay;
+  final void Function(DateTime day, DateTime focused) onDaySelected;
+  final void Function(DateTime focused) onPageChanged;
+  final VoidCallback onAddItem;
+  final void Function(PlannerItem item) onToggleDone;
+  final void Function(PlannerItem item) onOpenDetail;
+  final void Function(PlannerItem item) onEdit;
+  final void Function(PlannerItem item) onDelete;
+  final void Function(PlannerItem item) onOpenWorkout;
+
+  const _CalendarView({
+    required this.selectedDay,
+    required this.focusedDay,
+    required this.isSameDay,
+    required this.onDaySelected,
+    required this.onPageChanged,
+    required this.onAddItem,
+    required this.onToggleDone,
+    required this.onOpenDetail,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onOpenWorkout,
+  });
+
+  DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final monthStart = DateTime(focusedDay.year, focusedDay.month, 1);
+    final itemsAsync = ref.watch(plannerMonthItemsProvider(monthStart));
+    final experimentsAsync = ref.watch(experimentListProvider);
+
+    final taskDays = <DateTime>{};
+    for (final item in itemsAsync.value ?? const <PlannerItem>[]) {
+      if (!item.isExperiment) taskDays.add(_startOfDay(item.day));
+    }
+    final experimentDays = <DateTime>{};
+    for (final experiment in experimentsAsync.value ?? const []) {
+      final start = _startOfDay(experiment.startDate);
+      final end = experiment.endDate == null
+          ? start
+          : _startOfDay(experiment.endDate!);
+      for (var d = start; !d.isAfter(end); d = d.add(const Duration(days: 1))) {
+        experimentDays.add(d);
+      }
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      children: [
+        TableCalendar(
+          firstDay: DateTime(2020),
+          lastDay: DateTime(2035),
+          focusedDay: focusedDay,
+          calendarFormat: CalendarFormat.month,
+          availableGestures: AvailableGestures.horizontalSwipe,
+          availableCalendarFormats: const {},
+          headerStyle: const HeaderStyle(
+            formatButtonVisible: false,
+            titleCentered: true,
+          ),
+          selectedDayPredicate: (day) => isSameDay(day, selectedDay),
+          onDaySelected: (selected, focused) =>
+              onDaySelected(_startOfDay(selected), focused),
+          onPageChanged: onPageChanged,
+          calendarBuilders: CalendarBuilders(
+            defaultBuilder: (context, day, focusedMonth) => _dayCell(
+              context,
+              day,
+              focusedMonth,
+              taskDays: taskDays,
+              experimentDays: experimentDays,
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: _DayPage(
+            day: selectedDay,
+            l10n: l10n,
+            onAddItem: onAddItem,
+            onToggleDone: onToggleDone,
+            onOpenDetail: onOpenDetail,
+            onEdit: onEdit,
+            onDelete: onDelete,
+            onOpenWorkout: onOpenWorkout,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Custom cell for days worth marking: experiment-range tint, a task dot,
+  /// the selected-day fill, and today's outline. Plain days return null so the
+  /// stock rendering applies.
+  Widget? _dayCell(
+    BuildContext context,
+    DateTime day,
+    DateTime focusedMonth, {
+    required Set<DateTime> taskDays,
+    required Set<DateTime> experimentDays,
+  }) {
+    final d = _startOfDay(day);
+    final inExperiment = experimentDays.contains(d);
+    final hasTask = taskDays.contains(d);
+    final isSelected = isSameDay(day, selectedDay);
+    final isToday = isSameDay(d, _startOfDay(DateTime.now()));
+    if (!inExperiment && !hasTask && !isSelected && !isToday) return null;
+
+    final scheme = Theme.of(context).colorScheme;
+    final isOutside =
+        day.month != focusedMonth.month || day.year != focusedMonth.year;
+
+    BoxDecoration decoration;
+    if (isSelected) {
+      decoration = BoxDecoration(
+        color: scheme.primary,
+        borderRadius: BorderRadius.circular(8),
+      );
+    } else if (isToday) {
+      decoration = BoxDecoration(
+        border: Border.fromBorderSide(BorderSide(color: scheme.primary)),
+        borderRadius: BorderRadius.circular(8),
+      );
+    } else {
+      decoration = BoxDecoration(
+        color: inExperiment
+            ? scheme.primaryContainer.withValues(alpha: 0.55)
+            : null,
+        borderRadius: BorderRadius.circular(8),
+      );
+    }
+
+    final textColor = isSelected
+        ? scheme.onPrimary
+        : isOutside
+        ? scheme.onSurfaceVariant
+        : scheme.onSurface;
+
+    return Container(
+      margin: const EdgeInsets.all(4),
+      decoration: decoration,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '${day.day}',
+            style: TextStyle(
+              color: textColor,
+              fontWeight: isSelected ? FontWeight.bold : null,
+            ),
+          ),
+          if (hasTask && !isSelected)
+            Container(
+              margin: const EdgeInsets.only(top: 2),
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(
+                color: isSelected ? scheme.onPrimary : scheme.secondary,
+                shape: BoxShape.circle,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// One day's task list inside the infinite day `PageView`. Watches its own
 /// day's items via `plannerItemsProvider(day)`, so adjacent days load
 /// independently of the selected day.
@@ -822,70 +917,6 @@ final class _DayPage extends ConsumerWidget {
         }
         return ListView(children: children);
       },
-    );
-  }
-}
-
-final class _DayNavHeader extends StatelessWidget {
-  final DateTime selectedDay;
-  final bool isToday;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-  final VoidCallback onToday;
-
-  const _DayNavHeader({
-    required this.selectedDay,
-    required this.isToday,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onToday,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final materialL10n = MaterialLocalizations.of(context);
-    // Swiping horizontally on the header changes the day (right = previous,
-    // left = next) without affecting the task list body below.
-    return GestureDetector(
-      onHorizontalDragEnd: (details) {
-        final velocity = details.primaryVelocity;
-        if (velocity == null) return;
-        if (velocity < 0) {
-          onNext();
-        } else if (velocity > 0) {
-          onPrevious();
-        }
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              tooltip: l10n.plannerPreviousDay,
-              onPressed: onPrevious,
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  materialL10n.formatMediumDate(selectedDay),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              tooltip: l10n.plannerNextDay,
-              onPressed: onNext,
-            ),
-            TextButton(
-              onPressed: isToday ? null : onToday,
-              child: Text(l10n.plannerToday),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

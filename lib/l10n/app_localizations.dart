@@ -3904,6 +3904,48 @@ abstract class AppLocalizations {
   /// **'Open-ended'**
   String get experimentsNoEndDate;
 
+  /// No description provided for @plannerSegmentCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get plannerSegmentCalendar;
+
+  /// No description provided for @plannerSegmentExperiments.
+  ///
+  /// In en, this message translates to:
+  /// **'Experiments'**
+  String get plannerSegmentExperiments;
+
+  /// No description provided for @experimentLinkedTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked tasks'**
+  String get experimentLinkedTasksTitle;
+
+  /// No description provided for @experimentLinkTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Link task'**
+  String get experimentLinkTask;
+
+  /// No description provided for @experimentUnlinkTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink task'**
+  String get experimentUnlinkTask;
+
+  /// No description provided for @experimentNoLinkedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No linked tasks yet. Link tasks to follow the steps of this experiment.'**
+  String get experimentNoLinkedTasks;
+
+  /// No description provided for @experimentSearchTasksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tasks…'**
+  String get experimentSearchTasksHint;
+
   /// experimentDaysElapsed
   ///
   /// In en, this message translates to:

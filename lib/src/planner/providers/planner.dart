@@ -23,3 +23,12 @@ final plannerItemsProvider = FutureProvider.family<List<PlannerItem>, DateTime>(
     return repo.getByDay(day);
   },
 );
+
+/// Every planner item (tasks and experiments) whose day falls within the
+/// month containing [monthAnchor] — powers the calendar month markers.
+final plannerMonthItemsProvider =
+    FutureProvider.family<List<PlannerItem>, DateTime>((ref, monthAnchor) {
+      final start = DateTime(monthAnchor.year, monthAnchor.month, 1);
+      final end = DateTime(monthAnchor.year, monthAnchor.month + 1, 0);
+      return ref.watch(plannerRepositoryProvider).getByRange(start, end);
+    });

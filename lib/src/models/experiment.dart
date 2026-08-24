@@ -39,6 +39,24 @@ final class Experiment {
   bool get isActive => status == ExperimentStatus.active;
 }
 
+extension ExperimentStatusStorage on ExperimentStatus {
+  String get storage => switch (this) {
+    ExperimentStatus.planned => 'planned',
+    ExperimentStatus.active => 'active',
+    ExperimentStatus.done => 'done',
+    ExperimentStatus.aborted => 'aborted',
+  };
+}
+
+extension ExperimentCategoryStorage on ExperimentCategory {
+  String get storage => switch (this) {
+    ExperimentCategory.workout => 'workout',
+    ExperimentCategory.diet => 'diet',
+    ExperimentCategory.body => 'body',
+    ExperimentCategory.steps => 'steps',
+  };
+}
+
 /// One daily check-in (rating + optional note) for an experiment.
 final class ExperimentCheckin {
   final String id;

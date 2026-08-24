@@ -1514,6 +1514,13 @@
   "experimentsEmptyTitle": "No experiments yet",
   "experimentsEmptyBody": "Create an experiment to track a habit, diet change, or training protocol with daily check-ins.",
   "experimentsNoEndDate": "Open-ended",
+  "plannerSegmentCalendar": "Calendar",
+  "plannerSegmentExperiments": "Experiments",
+  "experimentLinkedTasksTitle": "Linked tasks",
+  "experimentLinkTask": "Link task",
+  "experimentUnlinkTask": "Unlink task",
+  "experimentNoLinkedTasks": "No linked tasks yet. Link tasks to follow the steps of this experiment.",
+  "experimentSearchTasksHint": "Search tasks…",
   "experimentDaysElapsed": "{days} days elapsed",
   "@experimentDaysElapsed": {
     "description": "experimentDaysElapsed",

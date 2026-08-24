@@ -383,6 +383,13 @@
     }
   },
   "plannerCopyPrevious": "Copiar desde ayer",
+  "plannerSegmentCalendar": "Calendario",
+  "plannerSegmentExperiments": "Experimentos",
+  "experimentLinkedTasksTitle": "Tareas vinculadas",
+  "experimentLinkTask": "Vincular tarea",
+  "experimentUnlinkTask": "Desvincular tarea",
+  "experimentNoLinkedTasks": "Aún no hay tareas vinculadas. Vincula tareas para seguir los pasos de este experimento.",
+  "experimentSearchTasksHint": "Buscar tareas…",
   "plannerMoreActions": "Más acciones",
   "plannerTaskDetailAppBar": "Detalles de la tarea",
   "plannerDetailUpdatedAt": "Creada el {date}",

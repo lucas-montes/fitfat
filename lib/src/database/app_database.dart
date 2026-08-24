@@ -28,7 +28,6 @@ part 'app_database.g.dart';
     Transactions,
     Receipts,
     FxRates,
-    Experiments,
     ExperimentCheckins,
   ],
 )
@@ -38,7 +37,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -165,8 +164,22 @@ final class AppDatabase extends _$AppDatabase {
         await m.addColumn(workoutExercises, workoutExercises.notes);
       }
       if (from < 18) {
-        // v18: experiments + daily check-ins.
-        await m.createTable(experiments);
+        // v18: experiments + daily check-ins. The standalone experiments
+        // table is raw-SQL-created (its Dart class is gone since v24) so the
+        // sequential v24 migration can copy rows out of it before dropping.
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiments ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'name TEXT NOT NULL, '
+          'purpose TEXT NULL, '
+          'start_date INTEGER NOT NULL, '
+          'end_date INTEGER NULL, '
+          'status TEXT NOT NULL, '
+          'categories TEXT NOT NULL, '
+          'reminder_enabled INTEGER NOT NULL DEFAULT 1, '
+          'reminder_time_minutes INTEGER NOT NULL DEFAULT 1200, '
+          'created_at INTEGER NOT NULL)',
+        );
         await m.createTable(experimentCheckins);
       }
       if (from < 19) {
@@ -227,6 +240,45 @@ final class AppDatabase extends _$AppDatabase {
           'FROM exercises_old',
         );
         await m.database.customStatement('DROP TABLE exercises_old');
+      }
+      if (from < 24) {
+        // v24: experiments fold into planner_items as kind='experiment' rows
+        // (day = start date, end_date = required end, plus purpose/status/
+        // categories/reminder columns and a child-task experiment_id link).
+        // Check-ins re-point at planner ids (ids are preserved by the copy),
+        // losing their FK to the standalone table, which is then dropped.
+        await m.addColumn(plannerItems, plannerItems.kind);
+        await m.addColumn(plannerItems, plannerItems.endDate);
+        await m.addColumn(plannerItems, plannerItems.purpose);
+        await m.addColumn(plannerItems, plannerItems.status);
+        await m.addColumn(plannerItems, plannerItems.categories);
+        await m.addColumn(plannerItems, plannerItems.reminderEnabled);
+        await m.addColumn(plannerItems, plannerItems.reminderTimeMinutes);
+        await m.addColumn(plannerItems, plannerItems.experimentId);
+        await m.database.customStatement(
+          'INSERT INTO planner_items '
+          '(id, date, title, done, sort_order, end_date, purpose, status, '
+          'categories, reminder_enabled, reminder_time_minutes, created_at) '
+          'SELECT id, start_date, name, '
+          "CASE WHEN status = 'done' THEN 1 ELSE 0 END, 0, "
+          // Open-ended experiments get a concrete end one week out so the
+          // new required-end rule holds for migrated rows.
+          'COALESCE(end_date, start_date + 604800000), purpose, status, '
+          'categories, reminder_enabled, reminder_time_minutes, created_at '
+          'FROM experiments',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE experiment_checkins RENAME TO experiment_checkins_old',
+        );
+        await m.createTable(experimentCheckins);
+        await m.database.customStatement(
+          'INSERT INTO experiment_checkins '
+          '(id, experiment_id, day, rating, note, created_at) '
+          'SELECT id, experiment_id, day, rating, note, created_at '
+          'FROM experiment_checkins_old',
+        );
+        await m.database.customStatement('DROP TABLE experiment_checkins_old');
+        await m.database.customStatement('DROP TABLE IF EXISTS experiments');
       }
     },
   );

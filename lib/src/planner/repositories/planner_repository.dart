@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
+import '../../models/experiment.dart';
 import '../../models/planner_item.dart';
 import '../../models/planner_recurrence.dart';
 
@@ -15,7 +16,11 @@ final class PlannerRepository {
     final startOfDay = _startOfDay(day);
     final rows =
         await (_database.select(_database.plannerItems)
-              ..where((t) => t.date.equals(startOfDay.millisecondsSinceEpoch))
+              ..where(
+                (t) =>
+                    t.date.equals(startOfDay.millisecondsSinceEpoch) &
+                    t.kind.equals(_kindStorage(PlannerItemKind.task)),
+              )
               ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
             .get();
     return rows.map(_toDomain).toList();
@@ -46,24 +51,7 @@ final class PlannerRepository {
   Future<void> insert(PlannerItem item) async {
     await _database
         .into(_database.plannerItems)
-        .insert(
-          db.PlannerItemsCompanion.insert(
-            id: item.id,
-            date: _startOfDay(item.day).millisecondsSinceEpoch,
-            title: item.title,
-            done: item.done ? 1 : 0,
-            sortOrder: item.sortOrder,
-            dueDate: Value(item.dueDate?.millisecondsSinceEpoch),
-            startTimeMinutes: Value(item.startTimeMinutes),
-            endTimeMinutes: Value(item.endTimeMinutes),
-            notes: Value(item.notes),
-            workoutId: Value(item.workoutId),
-            tags: Value(_encode(item.tags)),
-            recurrence: Value(_encodeRecurrence(item.recurrence)),
-            seriesId: Value(item.seriesId),
-            createdAt: item.createdAt.millisecondsSinceEpoch,
-          ),
-        );
+        .insert(_companionFor(item, createdAt: item.createdAt));
   }
 
   Future<void> update(PlannerItem item) async {
@@ -85,9 +73,54 @@ final class PlannerRepository {
         tags: Value(_encode(item.tags)),
         recurrence: Value(_encodeRecurrence(item.recurrence)),
         seriesId: Value(item.seriesId),
+        kind: Value(_kindStorage(item.kind)),
+        endDate: Value(
+          item.endDate == null
+              ? null
+              : _startOfDay(item.endDate!).millisecondsSinceEpoch,
+        ),
+        purpose: Value(item.purpose),
+        status: Value(item.status?.storage),
+        categories: Value(_encodeCategories(item.categories)),
+        reminderEnabled: Value(item.reminderEnabled),
+        reminderTimeMinutes: Value(item.reminderTimeMinutes),
+        experimentId: Value(item.experimentId),
       ),
     );
   }
+
+  /// Full insert companion for any planner item (task or experiment).
+  db.PlannerItemsCompanion _companionFor(
+    PlannerItem item, {
+    required DateTime createdAt,
+  }) => db.PlannerItemsCompanion.insert(
+    id: item.id,
+    date: _startOfDay(item.day).millisecondsSinceEpoch,
+    title: item.title,
+    done: item.done ? 1 : 0,
+    sortOrder: item.sortOrder,
+    dueDate: Value(item.dueDate?.millisecondsSinceEpoch),
+    startTimeMinutes: Value(item.startTimeMinutes),
+    endTimeMinutes: Value(item.endTimeMinutes),
+    notes: Value(item.notes),
+    workoutId: Value(item.workoutId),
+    tags: Value(_encode(item.tags)),
+    recurrence: Value(_encodeRecurrence(item.recurrence)),
+    seriesId: Value(item.seriesId),
+    kind: Value(_kindStorage(item.kind)),
+    endDate: Value(
+      item.endDate == null
+          ? null
+          : _startOfDay(item.endDate!).millisecondsSinceEpoch,
+    ),
+    purpose: Value(item.purpose),
+    status: Value(item.status?.storage),
+    categories: Value(_encodeCategories(item.categories)),
+    reminderEnabled: Value(item.reminderEnabled),
+    reminderTimeMinutes: Value(item.reminderTimeMinutes),
+    experimentId: Value(item.experimentId),
+    createdAt: createdAt.millisecondsSinceEpoch,
+  );
 
   Future<void> delete(String id) async {
     await (_database.delete(
@@ -115,7 +148,10 @@ final class PlannerRepository {
               ..where(
                 (t) =>
                     t.date.equals(previousDay.millisecondsSinceEpoch) &
-                    t.done.equals(0),
+                    t.done.equals(0) &
+                    // Only plain tasks are copied; experiments are ranges,
+                    // not repeatable day entries.
+                    t.kind.equals(_kindStorage(PlannerItemKind.task)),
               )
               ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
             .get();
@@ -165,6 +201,16 @@ final class PlannerRepository {
     tags: _decode(row.tags),
     recurrence: _decodeRecurrence(row.recurrence),
     seriesId: row.seriesId,
+    kind: _kindFromStorage(row.kind),
+    endDate: row.endDate == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(row.endDate!),
+    purpose: row.purpose,
+    status: row.status == null ? null : _statusFromStorage(row.status!),
+    categories: _decodeCategories(row.categories),
+    reminderEnabled: row.reminderEnabled,
+    reminderTimeMinutes: row.reminderTimeMinutes,
+    experimentId: row.experimentId,
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
   );
 
@@ -434,6 +480,261 @@ final class PlannerRepository {
     );
     await update(anchor.copyWith(recurrence: updatedRule));
   }
+
+  // ---------------------------------------------------------------------------
+  // Experiments (planner items with kind='experiment').
+  //
+  // Since v24 an experiment IS a planner item: day = start date, endDate =
+  // required end date, plus purpose/status/categories/reminder columns.
+  // Check-ins live in experiment_checkins keyed by the item's id.
+  // ---------------------------------------------------------------------------
+
+  /// All experiments ordered by start date, newest first.
+  Future<List<Experiment>> getExperiments() async {
+    final rows =
+        await (_database.select(_database.plannerItems)
+              ..where(
+                (t) => t.kind.equals(_kindStorage(PlannerItemKind.experiment)),
+              )
+              ..orderBy([
+                (t) =>
+                    OrderingTerm(expression: t.date, mode: OrderingMode.desc),
+              ]))
+            .get();
+    return rows.map(_toExperiment).toList();
+  }
+
+  Future<Experiment?> getExperimentById(String id) async {
+    final row = await (_database.select(
+      _database.plannerItems,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (row == null ||
+        _kindFromStorage(row.kind) != PlannerItemKind.experiment) {
+      return null;
+    }
+    return _toExperiment(row);
+  }
+
+  /// Inserts a new experiment row or refreshes it in place (server of truth is
+  /// local here; ids are stable).
+  Future<void> upsertExperiment(Experiment experiment) async {
+    final existing = await getById(experiment.id);
+    final companion = db.PlannerItemsCompanion.insert(
+      id: experiment.id,
+      date: _startOfDay(experiment.startDate).millisecondsSinceEpoch,
+      title: experiment.name,
+      done: experiment.status == ExperimentStatus.done ? 1 : 0,
+      sortOrder: 0,
+      kind: const Value('experiment'),
+      endDate: Value(
+        experiment.endDate == null
+            ? null
+            : _startOfDay(experiment.endDate!).millisecondsSinceEpoch,
+      ),
+      purpose: Value(experiment.purpose),
+      status: Value(experiment.status.storage),
+      categories: Value(_encodeCategories(experiment.categories)),
+      reminderEnabled: Value(experiment.reminderEnabled),
+      reminderTimeMinutes: Value(experiment.reminderTimeMinutes),
+      createdAt: experiment.createdAt.millisecondsSinceEpoch,
+    );
+    if (existing == null) {
+      await _database.into(_database.plannerItems).insert(companion);
+    } else {
+      await (_database.update(
+        _database.plannerItems,
+      )..where((t) => t.id.equals(experiment.id))).write(companion);
+    }
+  }
+
+  /// Deletes an experiment plus its check-ins in one transaction and detaches
+  /// any child tasks linked via [PlannerItem.experimentId].
+  Future<void> deleteExperiment(String id) async {
+    await _database.transaction(() async {
+      await (_database.update(_database.plannerItems)
+            ..where((t) => t.experimentId.equals(id)))
+          .write(db.PlannerItemsCompanion(experimentId: const Value(null)));
+      await (_database.delete(
+        _database.experimentCheckins,
+      )..where((t) => t.experimentId.equals(id))).go();
+      await (_database.delete(
+        _database.plannerItems,
+      )..where((t) => t.id.equals(id))).go();
+    });
+  }
+
+  /// Tasks linked to an experiment ([PlannerItem.experimentId] == [id]),
+  /// ordered by day then sort order.
+  Future<List<PlannerItem>> getLinkedTasks(String id) async {
+    final rows =
+        await (_database.select(_database.plannerItems)
+              ..where((t) => t.experimentId.equals(id))
+              ..orderBy([
+                (t) => OrderingTerm(expression: t.date),
+                (t) => OrderingTerm(expression: t.sortOrder),
+              ]))
+            .get();
+    return rows.map(_toDomain).toList();
+  }
+
+  /// Links [taskId] to an experiment, or unlinks it when [experimentId] is
+  /// null.
+  Future<void> setTaskExperiment(String taskId, String? experimentId) async {
+    await (_database.update(_database.plannerItems)
+          ..where((t) => t.id.equals(taskId)))
+        .write(db.PlannerItemsCompanion(experimentId: Value(experimentId)));
+  }
+
+  /// Plain tasks whose title contains [query] (case-insensitive), newest
+  /// first. Powers the link-a-task picker on the experiment detail screen.
+  Future<List<PlannerItem>> searchTasks(String query, {int limit = 50}) async {
+    final pattern = '%${query.trim()}%';
+    final rows =
+        await (_database.select(_database.plannerItems)
+              ..where(
+                (t) =>
+                    t.kind.equals(_kindStorage(PlannerItemKind.task)) &
+                    t.title.like(pattern),
+              )
+              ..orderBy([
+                (t) =>
+                    OrderingTerm(expression: t.date, mode: OrderingMode.desc),
+              ])
+              ..limit(limit))
+            .get();
+    return rows.map(_toDomain).toList();
+  }
+
+  /// All planner items (any kind) with `date` within [start, end]
+  /// (start-of-day bounds, inclusive). Powers calendar month markers.
+  Future<List<PlannerItem>> getByRange(DateTime start, DateTime end) async {
+    final fromMs = _startOfDay(start).millisecondsSinceEpoch;
+    final toMs = _startOfDay(end).millisecondsSinceEpoch;
+    final rows =
+        await (_database.select(_database.plannerItems)..where(
+              (t) =>
+                  t.date.isBiggerOrEqualValue(fromMs) &
+                  t.date.isSmallerOrEqualValue(toMs),
+            ))
+            .get();
+    return rows.map(_toDomain).toList();
+  }
+
+  /// Replaces the check-in for ([experimentId], [day]); the unique key on
+  /// (experiment_id, day) guarantees one per day.
+  Future<void> upsertCheckin({
+    required String experimentId,
+    required DateTime day,
+    required int rating,
+    String? note,
+  }) async {
+    final startOfDay = _startOfDay(day);
+    final existing =
+        await (_database.select(_database.experimentCheckins)..where(
+              (t) =>
+                  t.experimentId.equals(experimentId) &
+                  t.day.equals(startOfDay.millisecondsSinceEpoch),
+            ))
+            .getSingleOrNull();
+
+    if (existing == null) {
+      await _database
+          .into(_database.experimentCheckins)
+          .insert(
+            db.ExperimentCheckinsCompanion.insert(
+              id: const Uuid().v7(),
+              experimentId: experimentId,
+              day: startOfDay.millisecondsSinceEpoch,
+              rating: rating,
+              note: Value(note),
+              createdAt: DateTime.now().millisecondsSinceEpoch,
+            ),
+          );
+      return;
+    }
+
+    await (_database.update(
+      _database.experimentCheckins,
+    )..where((t) => t.id.equals(existing.id))).write(
+      db.ExperimentCheckinsCompanion(
+        rating: Value(rating),
+        note: note == null ? const Value(null) : Value(note),
+      ),
+    );
+  }
+
+  Future<List<ExperimentCheckin>> getCheckins(String experimentId) async {
+    final rows =
+        await (_database.select(_database.experimentCheckins)
+              ..where((t) => t.experimentId.equals(experimentId))
+              ..orderBy([(t) => OrderingTerm(expression: t.day)]))
+            .get();
+    return rows.map(_toCheckin).toList();
+  }
+
+  Experiment _toExperiment(db.PlannerItem row) => Experiment(
+    id: row.id,
+    name: row.title,
+    purpose: row.purpose,
+    startDate: DateTime.fromMillisecondsSinceEpoch(row.date),
+    endDate: row.endDate == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(row.endDate!),
+    status: row.status == null
+        ? ExperimentStatus.planned
+        : _statusFromStorage(row.status!),
+    categories: _decodeCategories(row.categories),
+    reminderEnabled: row.reminderEnabled,
+    reminderTimeMinutes: row.reminderTimeMinutes,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+  );
+
+  ExperimentCheckin _toCheckin(db.ExperimentCheckin row) => ExperimentCheckin(
+    id: row.id,
+    experimentId: row.experimentId,
+    day: DateTime.fromMillisecondsSinceEpoch(row.day),
+    rating: row.rating,
+    note: row.note,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+  );
+
+  static String _kindStorage(PlannerItemKind kind) => switch (kind) {
+    PlannerItemKind.task => 'task',
+    PlannerItemKind.experiment => 'experiment',
+  };
+
+  static PlannerItemKind _kindFromStorage(String value) =>
+      value == 'experiment' ? PlannerItemKind.experiment : PlannerItemKind.task;
+
+  static ExperimentStatus _statusFromStorage(String value) => switch (value) {
+    'active' => ExperimentStatus.active,
+    'done' => ExperimentStatus.done,
+    'aborted' => ExperimentStatus.aborted,
+    _ => ExperimentStatus.planned,
+  };
+
+  static String? _encodeCategories(List<ExperimentCategory>? values) {
+    if (values == null || values.isEmpty) return null;
+    return jsonEncode(values.map((c) => c.storage).toList());
+  }
+
+  static List<ExperimentCategory> _decodeCategories(String? raw) {
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => _categoryFromStorage(e as String)).toList();
+    } on Object {
+      return const [];
+    }
+  }
+
+  static ExperimentCategory _categoryFromStorage(String value) =>
+      switch (value) {
+        'diet' => ExperimentCategory.diet,
+        'body' => ExperimentCategory.body,
+        'steps' => ExperimentCategory.steps,
+        _ => ExperimentCategory.workout,
+      };
 
   /// Normalizes any [DateTime] to the start of its day so every day is a
   /// stable query key, matching how `date` is stored.

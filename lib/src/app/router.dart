@@ -25,7 +25,6 @@ import '../ui/widgets/status_badge.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/diet_tab.dart';
 import 'tabs/exercise_tab.dart';
-import 'tabs/experiments_tab.dart';
 import 'tabs/notes_tab.dart';
 import 'tabs/plan_tab.dart';
 
@@ -137,15 +136,6 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/experiments',
-              builder: (_, _) =>
-                  DeferredBranch(index: 6, child: const ExperimentsTab()),
-            ),
-          ],
-        ),
       ],
     ),
     GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
@@ -202,8 +192,7 @@ final class _ShellWithNavBar extends ConsumerWidget {
           ),
           NavigationBar(
             selectedIndex: navigationShell.currentIndex,
-            labelBehavior:
-                NavigationDestinationLabelBehavior.alwaysHide,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
             onDestinationSelected: (index) {
               navigationShell.goBranch(
                 index,
@@ -240,11 +229,6 @@ final class _ShellWithNavBar extends ConsumerWidget {
                 icon: Icon(Icons.account_balance_wallet_outlined),
                 selectedIcon: Icon(Icons.account_balance_wallet),
                 label: l10n.tabBudget,
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.science_outlined),
-                selectedIcon: Icon(Icons.science),
-                label: l10n.tabExperiments,
               ),
             ],
           ),

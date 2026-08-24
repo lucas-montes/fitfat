@@ -385,6 +385,13 @@
     }
   },
   "plannerCopyPrevious": "Copier depuis hier",
+  "plannerSegmentCalendar": "Calendrier",
+  "plannerSegmentExperiments": "Expériences",
+  "experimentLinkedTasksTitle": "Tâches liées",
+  "experimentLinkTask": "Lier une tâche",
+  "experimentUnlinkTask": "Délier la tâche",
+  "experimentNoLinkedTasks": "Aucune tâche liée pour l'instant. Liez des tâches pour suivre les étapes de cette expérience.",
+  "experimentSearchTasksHint": "Rechercher des tâches…",
   "plannerMoreActions": "Plus d'actions",
   "plannerTaskDetailAppBar": "Détails de la tâche",
   "plannerDetailUpdatedAt": "Créée le {date}",
