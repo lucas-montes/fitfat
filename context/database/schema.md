@@ -150,18 +150,26 @@ Individual sets within a workout exercise. Supports both weightlifting (reps/wei
 
 ### planner_items
 
-Per-day planner tasks (daily todo list). Standalone table — no foreign keys.
+Per-day planner tasks — and since v24 experiments too (`kind='experiment'`).
+Standalone table — no foreign keys.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | TEXT PK | UUID v7 |
-| date | INTEGER | start-of-day epoch milliseconds (normalized `DateTime(y,m,d)`) |
+| date | INTEGER | start-of-day epoch milliseconds (normalized `DateTime(y,m,d)`); for experiments = start date |
 | title | TEXT | |
 | done | INTEGER | `0` or `1` |
 | sort_order | INTEGER | display order within the day |
 | due_date | INTEGER? | v3 — optional due date, epoch milliseconds |
-| due_time_minutes | INTEGER? | v8 — optional due time-of-day, minutes since midnight |
+| due_time_minutes | INTEGER? | v8 — optional due time-of-day (retained; new tasks use start/end below) |
 | notes | TEXT? | v6 — optional free-text note |
+| start_time_minutes / end_time_minutes | INTEGER? | v15 — optional time-of-day span, minutes since midnight |
+| workout_id | TEXT? | v11 — linked workout |
+| tags | TEXT? | v12 — JSON `string[]` free-form labels |
+| recurrence | TEXT? | v13 — repeat rule JSON |
+| series_id | TEXT? | v13 — groups occurrences of one recurring series |
+| kind | TEXT | v24 — `'task'` (default) \| `'experiment'`; see the Experiments section for the experiment-only columns |
+| experiment_id | TEXT? | v24 — child-task link to its experiment |
 | created_at | INTEGER | epoch milliseconds |
 
 ## Body metrics tables
@@ -178,24 +186,26 @@ One row per day (keyed by start-of-day) holding optional weight and/or height. A
 | height_cm | REAL? | optional |
 | created_at | INTEGER | epoch milliseconds |
 
-## Experiments tables (v18)
+## Experiments (v24 — folded into planner_items)
 
-### experiments
-
-One row per self-tracking experiment. Added in v18.
+Since v24 an experiment **is** a `planner_items` row with `kind='experiment'`;
+the standalone `experiments` table is gone. Experiment-only columns live on
+`planner_items`:
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | TEXT PK | UUID v7 |
-| name | TEXT | |
-| purpose | TEXT? | hypothesis / stated purpose |
-| start_date | INTEGER | start-of-day epoch milliseconds (inclusive baseline start) |
-| end_date | INTEGER? | null = open-ended |
-| status | TEXT | `'planned' \| 'active' \| 'done' \| 'aborted'` (plain text, like `exercise_type`) |
-| categories | TEXT | JSON `string[]` of linked categories: `workout \| diet \| body \| steps` |
+| kind | TEXT | `'task'` default \| `'experiment'` |
+| end_date | INTEGER? | experiment end date, start-of-day epoch ms (**required** for experiments; forms enforce it) |
+| purpose | TEXT? | hypothesis |
+| status | TEXT? | `'planned' \| 'active' \| 'done' \| 'aborted'` |
+| categories | TEXT? | JSON `string[]`: `workout \| diet \| body \| steps` |
 | reminder_enabled | INTEGER (bool) | `NOT NULL DEFAULT 1` |
 | reminder_time_minutes | INTEGER | minutes from midnight, `NOT NULL DEFAULT 1200` (20:00) |
-| created_at | INTEGER | epoch milliseconds |
+| experiment_id | TEXT? | child-task link back to its experiment |
+
+The start date reuses the standard `date` column; `title` holds the name.
+`PlannerRepository._toExperiment` projects a row into the domain
+`Experiment`.
 
 ### experiment_checkins
 
@@ -204,7 +214,7 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
 | Column | Type | Notes |
 |--------|------|-------|
 | id | TEXT PK | UUID v7 |
-| experiment_id | TEXT FK → experiments | |
+| experiment_id | TEXT | references `planner_items.id` (plain reference — no FK since v24) |
 | day | INTEGER | start-of-day epoch milliseconds |
 | rating | INTEGER | 1..5 scale |
 | note | TEXT? | optional |
@@ -239,6 +249,7 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
   - v20 → v21: adds nullable `routine_id` to `workouts` (replay lineage, workout-replay T01; indexed in `beforeOpen`). Additive column only — no data is dropped.
   - v21 → v22: rebuilds `fx_rates` around a daily-snapshot dimension — adds `rate_date` (`'YYYY-MM-DD'`, default `'0001-01-01'`) and a composite PK `(code, base_code, rate_date)` so sync can keep per-day history instead of overwriting the latest rate. Existing rows are backfilled as a single `'0001-01-01'` snapshot. No data is dropped.
   - v22 → v23: drops `exercises.is_locked` (the bundled exercise catalog is gone — data now arrives via the sync client). Drift cannot drop a column in place, so `exercises` is rebuilt via rename → recreate → backfill → drop-old. Only the dead column is removed.
+  - v23 → v24: folds experiments into `planner_items` — adds `kind` (`'task'` default), `end_date`, `purpose`, `status`, `categories` (JSON), `reminder_enabled`, `reminder_time_minutes`, and child-link `experiment_id`; copies each `experiments` row into a `planner_items` row **preserving ids** (`date = start_date`, open-ended rows get `end_date = start_date + 7d`); rebuilds `experiment_checkins` without its FK to the dropped table; then drops `experiments`. No data is lost.
 
 ## Generated code
 
