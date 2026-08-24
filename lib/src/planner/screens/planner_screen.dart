@@ -11,7 +11,9 @@ import '../../dashboard/providers/dashboard.dart';
 import '../../exercise/screens/workout_detail.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../experiments/providers/experiments.dart';
-import '../../experiments/screens/experiments_screen.dart';
+import '../../experiments/screens/experiment_detail_screen.dart';
+import '../../experiments/screens/experiment_form_screen.dart';
+import '../../models/experiment.dart';
 import '../../models/planner_item.dart';
 import '../../notifications/task_reminders.dart';
 import '../../settings/providers/settings.dart';
@@ -23,6 +25,22 @@ import '../repositories/planner_repository.dart';
 import 'planner_item_detail.dart';
 import 'planner_item_form.dart';
 
+enum _PlannerViewMode { day, week, month }
+
+enum _AddChoice { task, experiment }
+
+/// Anchor for the infinite day `PageView` page indices.
+final DateTime _kDayEpoch = DateTime(2020, 1, 1);
+
+/// Monday-anchored epoch for the weekly `PageView`.
+final DateTime _kWeekEpoch = DateTime(2019, 12, 30);
+
+/// Upper bound for generated pages (matches the calendar's lastDay).
+final DateTime _kLastDay = DateTime(2035, 12, 31);
+
+/// Min height of an empty hour slot in the day timeline.
+const double _kHourRowMinHeight = 44;
+
 final class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
 
@@ -30,20 +48,14 @@ final class PlannerScreen extends ConsumerStatefulWidget {
   ConsumerState<PlannerScreen> createState() => _PlannerScreenState();
 }
 
-enum _PlannerViewMode { calendar, experiments }
-
-enum _PlannerMenuAction { copyPreviousDay }
-
 final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   late DateTime _selectedDay;
-  late DateTime _focusedDay;
-  _PlannerViewMode _viewMode = _PlannerViewMode.calendar;
+  _PlannerViewMode _viewMode = _PlannerViewMode.day;
 
   @override
   void initState() {
     super.initState();
     _selectedDay = _startOfDay(DateTime.now());
-    _focusedDay = _selectedDay;
   }
 
   DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
@@ -88,42 +100,29 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       appBar: AppBar(
         title: Text(l10n.plannerAppBar),
         actions: [
-          if (_viewMode == _PlannerViewMode.calendar)
-            PopupMenuButton<_PlannerMenuAction>(
-              tooltip: l10n.plannerMoreActions,
-              onSelected: (action) {
-                switch (action) {
-                  case _PlannerMenuAction.copyPreviousDay:
-                    _copyFromPreviousDay();
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: _PlannerMenuAction.copyPreviousDay,
-                  child: ListTile(
-                    leading: const Icon(Icons.copy_all),
-                    title: Text(l10n.plannerCopyPrevious),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
-            ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
             child: SegmentedButton<_PlannerViewMode>(
+              showSelectedIcon: false,
+              style: const ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               segments: [
                 ButtonSegment(
-                  value: _PlannerViewMode.calendar,
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  label: Text(l10n.plannerSegmentCalendar),
+                  value: _PlannerViewMode.day,
+                  icon: const Icon(Icons.view_day_outlined),
+                  tooltip: l10n.plannerViewDay,
                 ),
                 ButtonSegment(
-                  value: _PlannerViewMode.experiments,
-                  icon: const Icon(Icons.science_outlined),
-                  label: Text(l10n.plannerSegmentExperiments),
+                  value: _PlannerViewMode.week,
+                  icon: const Icon(Icons.view_week_outlined),
+                  tooltip: l10n.plannerViewWeek,
+                ),
+                ButtonSegment(
+                  value: _PlannerViewMode.month,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  tooltip: l10n.plannerViewMonth,
                 ),
               ],
               selected: {_viewMode},
@@ -131,51 +130,137 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   setState(() => _viewMode = selection.first),
             ),
           ),
-        ),
+        ],
       ),
-      body: _viewMode == _PlannerViewMode.calendar
-          ? _CalendarView(
-              selectedDay: _selectedDay,
-              focusedDay: _focusedDay,
-              isSameDay: _isSameDay,
-              onDaySelected: (day, focused) => setState(() {
-                _selectedDay = day;
-                _focusedDay = focused;
-              }),
-              onPageChanged: (focused) => setState(() => _focusedDay = focused),
-              onAddItem: _addItem,
-              onToggleDone: _toggleDone,
-              onToggleCancelled: _toggleCancelled,
-              onOpenDetail: _openDetail,
-              onEdit: _editItem,
-              onDelete: _deleteItem,
-              onOpenWorkout: _openWorkout,
-            )
-          : const ExperimentsView(),
+      body: switch (_viewMode) {
+        _PlannerViewMode.day => _DayFlowView(
+          initialDay: _selectedDay,
+          isSameDay: _isSameDay,
+          onSelectedDayChanged: (day) => _selectedDay = day,
+          onAddItem: _addItem,
+          onCopyPreviousDay: _copyFromPreviousDay,
+          onToggleDone: _toggleDone,
+          onToggleCancelled: _toggleCancelled,
+          onOpenDetail: _openDetail,
+          onEditItem: _editItem,
+          onDeleteItem: _deleteItem,
+          onOpenWorkout: _openWorkout,
+          onOpenExperiment: _openExperimentDetail,
+          onEditExperiment: _editExperiment,
+        ),
+        _PlannerViewMode.week => _WeekFlowView(
+          initialDay: _selectedDay,
+          isSameDay: _isSameDay,
+          onSelectedDayChanged: (day) => _selectedDay = day,
+          onJumpToDay: _jumpToDay,
+          onToggleDone: _toggleDone,
+          onToggleCancelled: _toggleCancelled,
+          onOpenDetail: _openDetail,
+          onEditItem: _editItem,
+          onDeleteItem: _deleteItem,
+          onOpenWorkout: _openWorkout,
+          onOpenExperiment: _openExperimentDetail,
+          onEditExperiment: _editExperiment,
+        ),
+        _PlannerViewMode.month => _MonthOverview(
+          selectedDay: _selectedDay,
+          isSameDay: _isSameDay,
+          onDayPicked: _jumpToDay,
+        ),
+      },
       floatingActionButton: FloatingActionButton(
-        onPressed: _viewMode == _PlannerViewMode.calendar
-            ? _addItem
-            : _addExperiment,
+        onPressed: _showAddSheet,
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  Future<void> _addExperiment() async {
-    if (await ExperimentsView.openForm(context)) {
-      ref.invalidate(experimentListProvider);
+  /// FAB opens a chooser instead of assuming what to create: tasks and
+  /// experiments now share every view.
+  Future<void> _showAddSheet() async {
+    final l10n = AppLocalizations.of(context)!;
+    final choice = await showModalBottomSheet<_AddChoice>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.check_circle_outline),
+              title: Text(l10n.plannerAddTask),
+              onTap: () => Navigator.of(ctx).pop(_AddChoice.task),
+            ),
+            ListTile(
+              leading: const Icon(Icons.science_outlined),
+              title: Text(l10n.experimentsFab),
+              onTap: () => Navigator.of(ctx).pop(_AddChoice.experiment),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    switch (choice) {
+      case _AddChoice.task:
+        await _addItem();
+      case _AddChoice.experiment:
+        await _addExperiment();
+      case null:
+        break;
     }
   }
 
-  /// Opens the full read-mostly detail view for [item]; the planner tile now
-  /// navigates here (edit stays on the pencil icon).
+  /// Shows the current day's timeline (the default landing view).
+  void _jumpToDay(DateTime day) => setState(() {
+    _selectedDay = _startOfDay(day);
+    _viewMode = _PlannerViewMode.day;
+  });
+
+  Future<void> _addExperiment() async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const ExperimentFormScreen()),
+    );
+    _refreshAfterExperimentChange(saved ?? false);
+  }
+
+  Future<void> _editExperiment(String experimentId) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ExperimentFormScreen(experimentId: experimentId),
+      ),
+    );
+    _refreshAfterExperimentChange(saved ?? false);
+  }
+
+  Future<void> _openExperimentDetail(String experimentId) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ExperimentDetailScreen(experimentId: experimentId),
+      ),
+    );
+    // Detail edits (status/check-ins) live in planner_items rows too.
+    _refreshAfterExperimentChange(true);
+  }
+
+  /// Experiments are planner rows spanning many days, so every planner cache
+  /// is dropped when one may have changed.
+  void _refreshAfterExperimentChange(bool changed) {
+    if (!changed) return;
+    ref.invalidate(experimentListProvider);
+    ref.invalidate(plannerItemsProvider);
+    ref.invalidate(plannerRangeItemsProvider);
+    ref.invalidate(plannerMonthItemsProvider);
+    invalidateDashboard(ref);
+  }
+
+  /// Opens the full read-mostly detail view for [item].
   Future<void> _openDetail(PlannerItem item) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PlannerItemDetailScreen(itemId: item.id),
       ),
     );
-    ref.invalidate(plannerItemsProvider(_selectedDay));
+    ref.invalidate(plannerItemsProvider(item.day));
     invalidateDashboard(ref);
   }
 
@@ -325,6 +410,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         notes: notes,
         workoutId: workoutId,
         tags: tags,
+        carryOver: carryOver,
       );
       return;
     }
@@ -361,7 +447,8 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     await _cancelReminder(item.id);
     await _syncReminder(updated);
     ref.invalidate(plannerItemsProvider(_selectedDay));
-    final destination = movedDay ?? _selectedDay;
+    ref.invalidate(plannerItemsProvider(item.day));
+    final destination = movedDay ?? item.day;
     if (destination != _selectedDay) {
       ref.invalidate(plannerItemsProvider(destination));
     }
@@ -386,6 +473,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   Future<void> _editFollowing(
     PlannerItem item, {
     required String title,
+    required bool carryOver,
     DateTime? dueDate,
     int? startTimeMinutes,
     int? endTimeMinutes,
@@ -405,6 +493,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       notes: notes,
       workoutId: workoutId,
       tags: tags,
+      carryOver: carryOver,
     );
     await repo.update(updatedAnchor);
     await repo.updateFutureOccurrences(
@@ -422,7 +511,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       await _cancelReminder(it.id);
       await _syncReminder(it);
     }
-    ref.invalidate(plannerItemsProvider(_selectedDay));
+    ref.invalidate(plannerItemsProvider);
     invalidateDashboard(ref);
     unawaited(
       repo
@@ -459,7 +548,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         ),
       );
     }
-    ref.invalidate(plannerItemsProvider(_selectedDay));
+    ref.invalidate(plannerItemsProvider(item.day));
     invalidateDashboard(ref);
   }
 
@@ -475,7 +564,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       await _cancelReminder(item.id);
       await _syncReminder(updated);
     }
-    ref.invalidate(plannerItemsProvider(_selectedDay));
+    ref.invalidate(plannerItemsProvider(updated.day));
     invalidateDashboard(ref);
   }
 
@@ -491,7 +580,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     if (!updated.isCancelled && !updated.done) {
       await _syncReminder(updated);
     }
-    ref.invalidate(plannerItemsProvider(_selectedDay));
+    ref.invalidate(plannerItemsProvider(updated.day));
     invalidateDashboard(ref);
   }
 
@@ -545,7 +634,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       await _cancelReminder(item.id);
       await repo.delete(item.id);
     }
-    ref.invalidate(plannerItemsProvider(_selectedDay));
+    ref.invalidate(plannerItemsProvider);
     invalidateDashboard(ref);
     showTopBannerOverlay(
       overlay,
@@ -576,7 +665,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           await repo.restore(item);
           await _syncReminder(item);
         }
-        ref.invalidate(plannerItemsProvider(_selectedDay));
+        ref.invalidate(plannerItemsProvider);
         invalidateDashboard(ref);
       },
     );
@@ -631,44 +720,838 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 }
 
-/// The calendar half of the planner: a month grid showing both plain tasks
-/// (dot marker) and experiment ranges (tinted background), with the selected
-/// day's task list underneath. Task tap edits in place; long-press opens the
-/// detail screen.
-final class _CalendarView extends ConsumerWidget {
-  final DateTime selectedDay;
-  final DateTime focusedDay;
+/// True when the experiment's inclusive [startDate, endDate] range covers
+/// [day] (all comparisons at start-of-day granularity).
+bool _experimentCoversDay(Experiment experiment, DateTime day) {
+  final d = DateTime(day.year, day.month, day.day);
+  final start = DateTime(
+    experiment.startDate.year,
+    experiment.startDate.month,
+    experiment.startDate.day,
+  );
+  final end = experiment.endDate == null
+      ? start
+      : DateTime(
+          experiment.endDate!.year,
+          experiment.endDate!.month,
+          experiment.endDate!.day,
+        );
+  return !start.isAfter(d) && !end.isBefore(d);
+}
+
+DateTime _startOf(DateTime day) => DateTime(day.year, day.month, day.day);
+
+DateTime _mondayOf(DateTime day) =>
+    _startOf(day.subtract(Duration(days: day.weekday - 1)));
+
+/// The day flow: an infinite horizontal `PageView` whose pages are hourly
+/// timelines. Swiping left/right moves between days; each page reports itself
+/// back so add/copy target the visible day.
+final class _DayFlowView extends StatefulWidget {
+  final DateTime initialDay;
   final bool Function(DateTime a, DateTime b) isSameDay;
-  final void Function(DateTime day, DateTime focused) onDaySelected;
-  final void Function(DateTime focused) onPageChanged;
+  final void Function(DateTime day) onSelectedDayChanged;
   final VoidCallback onAddItem;
+  final VoidCallback onCopyPreviousDay;
   final void Function(PlannerItem item) onToggleDone;
   final void Function(PlannerItem item) onToggleCancelled;
   final void Function(PlannerItem item) onOpenDetail;
-  final void Function(PlannerItem item) onEdit;
-  final void Function(PlannerItem item) onDelete;
+  final void Function(PlannerItem item) onEditItem;
+  final void Function(PlannerItem item) onDeleteItem;
   final void Function(PlannerItem item) onOpenWorkout;
+  final void Function(String experimentId) onOpenExperiment;
+  final void Function(String experimentId) onEditExperiment;
 
-  const _CalendarView({
-    required this.selectedDay,
-    required this.focusedDay,
+  const _DayFlowView({
+    required this.initialDay,
     required this.isSameDay,
-    required this.onDaySelected,
-    required this.onPageChanged,
+    required this.onSelectedDayChanged,
     required this.onAddItem,
+    required this.onCopyPreviousDay,
     required this.onToggleDone,
     required this.onToggleCancelled,
     required this.onOpenDetail,
-    required this.onEdit,
-    required this.onDelete,
+    required this.onEditItem,
+    required this.onDeleteItem,
     required this.onOpenWorkout,
+    required this.onOpenExperiment,
+    required this.onEditExperiment,
   });
+
+  @override
+  State<_DayFlowView> createState() => _DayFlowViewState();
+}
+
+final class _DayFlowViewState extends State<_DayFlowView> {
+  late final PageController _controller = PageController(
+    initialPage: _startOf(widget.initialDay).difference(_kDayEpoch).inDays,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pageCount = _kLastDay.difference(_kDayEpoch).inDays + 1;
+    return PageView.builder(
+      controller: _controller,
+      itemCount: pageCount,
+      onPageChanged: (index) =>
+          widget.onSelectedDayChanged(_kDayEpoch.add(Duration(days: index))),
+      itemBuilder: (context, index) {
+        final day = _kDayEpoch.add(Duration(days: index));
+        return _DayTimelinePage(
+          key: ValueKey(day),
+          day: day,
+          callbacks: widget,
+        );
+      },
+    );
+  }
+}
+
+/// Bundles the host callbacks so the per-day page stays readable.
+typedef _DayCallbacks = _DayFlowView;
+
+/// One day inside [_DayFlowView]: date header with copy-yesterday, an
+/// all-day strip for experiments covering the day, an "Anytime" group for
+/// untimed tasks, and an hourly grid for timed ones. Today's page opens
+/// scrolled to roughly the current hour.
+final class _DayTimelinePage extends ConsumerStatefulWidget {
+  final DateTime day;
+  final _DayCallbacks callbacks;
+
+  const _DayTimelinePage({
+    super.key,
+    required this.day,
+    required this.callbacks,
+  });
+
+  @override
+  ConsumerState<_DayTimelinePage> createState() => _DayTimelinePageState();
+}
+
+final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    final isToday = _startOf(widget.day) == _startOf(now);
+    _scrollController = ScrollController(
+      initialScrollOffset: isToday
+          ? (now.hour * _kHourRowMinHeight - 120).clamp(0.0, double.infinity)
+          : 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final material = MaterialLocalizations.of(context);
+    final itemsAsync = ref.watch(plannerItemsProvider(widget.day));
+    final experimentsAsync = ref.watch(experimentListProvider);
+    final cbs = widget.callbacks;
+
+    final tasks = itemsAsync.value ?? const <PlannerItem>[];
+    final activeExperiments = [
+      for (final e in experimentsAsync.value ?? const <Experiment>[])
+        if (_experimentCoversDay(e, widget.day)) e,
+    ];
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  material.formatMediumDate(widget.day),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: l10n.plannerCopyPrevious,
+                icon: const Icon(Icons.copy_all),
+                onPressed: cbs.onCopyPreviousDay,
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: itemsAsync.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : tasks.isEmpty && activeExperiments.isEmpty
+              ? EmptyState(
+                  icon: Icons.event_note,
+                  title: l10n.emptyPlannerTitle,
+                  description: l10n.emptyPlannerBody,
+                  ctaLabel: l10n.emptyPlannerCta,
+                  onCtaPressed: cbs.onAddItem,
+                )
+              : _ErrorGuard(
+                  hasError: itemsAsync.hasError,
+                  message: itemsAsync.error?.toString(),
+                  child: ListView(
+                    controller: _scrollController,
+                    children: _buildChildren(
+                      l10n,
+                      material,
+                      tasks,
+                      activeExperiments,
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildChildren(
+    AppLocalizations l10n,
+    MaterialLocalizations material,
+    List<PlannerItem> tasks,
+    List<Experiment> activeExperiments,
+  ) {
+    final theme = Theme.of(context);
+    final cbs = widget.callbacks;
+    final children = <Widget>[];
+
+    // All-day strip: experiments whose range covers this day.
+    if (activeExperiments.isNotEmpty) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Text(
+            l10n.plannerAllDay,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      );
+      children.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final e in activeExperiments)
+                _AllDayChip(
+                  experiment: e,
+                  l10n: l10n,
+                  onTap: () => cbs.onOpenExperiment(e.id),
+                  onLongPress: () => cbs.onEditExperiment(e.id),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Untimed tasks pin to the top "Anytime" group; timed ones flow down the
+    // hour grid below.
+    final untimed = [
+      for (final it in tasks)
+        if (it.startTimeMinutes == null) it,
+    ];
+    final timed = [
+      for (final it in tasks)
+        if (it.startTimeMinutes != null) it,
+    ];
+    timed.sort((a, b) => a.startTimeMinutes!.compareTo(b.startTimeMinutes!));
+
+    if (untimed.isNotEmpty) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Text(
+            l10n.plannerAnytime,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      );
+      for (final it in untimed) {
+        children.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: _TimelineItemCard(
+              key: ValueKey(it.id),
+              item: it,
+              l10n: l10n,
+              onToggleDone: () => cbs.onToggleDone(it),
+              onToggleCancelled: () => cbs.onToggleCancelled(it),
+              onOpenDetail: () => cbs.onOpenDetail(it),
+              onEdit: () => cbs.onEditItem(it),
+              onDelete: () => cbs.onDeleteItem(it),
+              onOpenWorkout: () => cbs.onOpenWorkout(it),
+            ),
+          ),
+        );
+      }
+      children.add(const SizedBox(height: 8));
+    }
+
+    // Hour grid: one row per hour; tasks sit under their start hour.
+    final byHour = <int, List<PlannerItem>>{};
+    for (final it in timed) {
+      byHour.putIfAbsent(it.startTimeMinutes! ~/ 60, () => []).add(it);
+    }
+    for (var hour = 0; hour < 24; hour++) {
+      final slot = byHour[hour];
+      final fmt = material.formatHour(
+        TimeOfDay(hour: hour, minute: 0),
+        alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+      );
+      children.add(
+        Container(
+          constraints: slot == null
+              ? const BoxConstraints(minHeight: _kHourRowMinHeight)
+              : null,
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                width: 0.5,
+              ),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 56,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 6, right: 4),
+                  child: Text(
+                    fmt,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: slot == null
+                    ? const SizedBox()
+                    : Column(
+                        children: [
+                          for (final it in slot)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              child: _TimelineItemCard(
+                                key: ValueKey(it.id),
+                                item: it,
+                                l10n: l10n,
+                                timeLabel: _timeLabel(material, it),
+                                onToggleDone: () => cbs.onToggleDone(it),
+                                onToggleCancelled: () =>
+                                    cbs.onToggleCancelled(it),
+                                onOpenDetail: () => cbs.onOpenDetail(it),
+                                onEdit: () => cbs.onEditItem(it),
+                                onDelete: () => cbs.onDeleteItem(it),
+                                onOpenWorkout: () => cbs.onOpenWorkout(it),
+                              ),
+                            ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    children.add(const SizedBox(height: 16));
+    return children;
+  }
+
+  String _timeLabel(MaterialLocalizations material, PlannerItem item) {
+    final startText = material.formatTimeOfDay(
+      TimeOfDay(
+        hour: item.startTimeMinutes! ~/ 60,
+        minute: item.startTimeMinutes! % 60,
+      ),
+    );
+    final end = item.endTimeMinutes;
+    if (end == null) return startText;
+    return '$startText – ${material.formatTimeOfDay(TimeOfDay(hour: end ~/ 60, minute: end % 60))}';
+  }
+}
+
+/// Renders the load-error branch without losing the surrounding layout.
+final class _ErrorGuard extends StatelessWidget {
+  final bool hasError;
+  final String? message;
+  final Widget child;
+
+  const _ErrorGuard({
+    required this.hasError,
+    this.message,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasError) return child;
+    final l10n = AppLocalizations.of(context)!;
+    return Center(child: Text(l10n.errorWithMessage(message ?? '')));
+  }
+}
+
+/// A tinted chip for an experiment in the all-day strip. Tap opens the
+/// experiment detail; long-press opens its edit form.
+final class _AllDayChip extends StatelessWidget {
+  final Experiment experiment;
+  final AppLocalizations l10n;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const _AllDayChip({
+    required this.experiment,
+    required this.l10n,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: scheme.primaryContainer,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.science_outlined,
+              size: 14,
+              color: scheme.onPrimaryContainer,
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                experiment.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: scheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The week flow: an infinite horizontal `PageView` whose pages are seven-day
+/// overviews. Each column shows that day's experiments on top, timed tasks by
+/// start time, then untimed ones. Tapping a column header jumps to that day.
+final class _WeekFlowView extends StatefulWidget {
+  final DateTime initialDay;
+  final bool Function(DateTime a, DateTime b) isSameDay;
+  final void Function(DateTime day) onSelectedDayChanged;
+  final void Function(DateTime day) onJumpToDay;
+  final void Function(PlannerItem item) onToggleDone;
+  final void Function(PlannerItem item) onToggleCancelled;
+  final void Function(PlannerItem item) onOpenDetail;
+  final void Function(PlannerItem item) onEditItem;
+  final void Function(PlannerItem item) onDeleteItem;
+  final void Function(PlannerItem item) onOpenWorkout;
+  final void Function(String experimentId) onOpenExperiment;
+  final void Function(String experimentId) onEditExperiment;
+
+  const _WeekFlowView({
+    required this.initialDay,
+    required this.isSameDay,
+    required this.onSelectedDayChanged,
+    required this.onJumpToDay,
+    required this.onToggleDone,
+    required this.onToggleCancelled,
+    required this.onOpenDetail,
+    required this.onEditItem,
+    required this.onDeleteItem,
+    required this.onOpenWorkout,
+    required this.onOpenExperiment,
+    required this.onEditExperiment,
+  });
+
+  @override
+  State<_WeekFlowView> createState() => _WeekFlowViewState();
+}
+
+final class _WeekFlowViewState extends State<_WeekFlowView> {
+  late final PageController _controller = PageController(
+    initialPage:
+        _mondayOf(widget.initialDay).difference(_kWeekEpoch).inDays ~/ 7,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pageCount = _kLastDay.difference(_kWeekEpoch).inDays ~/ 7 + 1;
+    return PageView.builder(
+      controller: _controller,
+      itemCount: pageCount,
+      onPageChanged: (index) => widget.onSelectedDayChanged(
+        _kWeekEpoch.add(Duration(days: index * 7)),
+      ),
+      itemBuilder: (context, index) {
+        final weekStart = _kWeekEpoch.add(Duration(days: index * 7));
+        return _WeekPage(
+          key: ValueKey(weekStart),
+          weekStart: weekStart,
+          callbacks: widget,
+        );
+      },
+    );
+  }
+}
+
+typedef _WeekCallbacks = _WeekFlowView;
+
+/// One week page: range header + the Mon–Sun columns.
+final class _WeekPage extends ConsumerWidget {
+  final DateTime weekStart;
+  final _WeekCallbacks callbacks;
+
+  const _WeekPage({
+    super.key,
+    required this.weekStart,
+    required this.callbacks,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final material = MaterialLocalizations.of(context);
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    final itemsAsync = ref.watch(
+      plannerRangeItemsProvider((weekStart, weekEnd)),
+    );
+    final experimentsAsync = ref.watch(experimentListProvider);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Text(
+            '${material.formatMediumDate(weekStart)} – ${material.formatMediumDate(weekEnd)}',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: itemsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
+            data: (items) {
+              final experiments =
+                  experimentsAsync.value ?? const <Experiment>[];
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < 7; i++) ...[
+                    if (i > 0) const VerticalDivider(width: 1),
+                    Expanded(
+                      child: _WeekDayColumn(
+                        day: weekStart.add(Duration(days: i)),
+                        items: items,
+                        experiments: experiments,
+                        callbacks: callbacks,
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One day column inside [_WeekPage].
+final class _WeekDayColumn extends StatelessWidget {
+  final DateTime day;
+  final List<PlannerItem> items;
+  final List<Experiment> experiments;
+  final _WeekCallbacks callbacks;
+
+  const _WeekDayColumn({
+    required this.day,
+    required this.items,
+    required this.experiments,
+    required this.callbacks,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final material = MaterialLocalizations.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final now = DateTime.now();
+    final isToday = _startOf(day) == _startOf(now);
+
+    final dayTasks = items
+        .where((it) => _startOf(it.day) == _startOf(day))
+        .toList();
+    final dayExperiments = experiments
+        .where((e) => _experimentCoversDay(e, day))
+        .toList();
+
+    final timed = [
+      for (final it in dayTasks)
+        if (it.startTimeMinutes != null) it,
+    ]..sort((a, b) => a.startTimeMinutes!.compareTo(b.startTimeMinutes!));
+    final untimed = [
+      for (final it in dayTasks)
+        if (it.startTimeMinutes == null) it,
+    ];
+
+    final children = <Widget>[
+      for (final e in dayExperiments)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+          child: GestureDetector(
+            onTap: () => callbacks.onOpenExperiment(e.id),
+            onLongPress: () => callbacks.onEditExperiment(e.id),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.science_outlined,
+                    size: 11,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: 3),
+                  Expanded(
+                    child: Text(
+                      e.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      for (final it in timed)
+        _WeekTaskCard(
+          key: ValueKey(it.id),
+          item: it,
+          timeLabel: material.formatTimeOfDay(
+            TimeOfDay(
+              hour: it.startTimeMinutes! ~/ 60,
+              minute: it.startTimeMinutes! % 60,
+            ),
+          ),
+          onOpenDetail: () => callbacks.onOpenDetail(it),
+          onEdit: () => callbacks.onEditItem(it),
+        ),
+      if (untimed.isNotEmpty) ...[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 6, 4, 2),
+          child: Text(
+            l10n.plannerAnytime,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontSize: 10,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        for (final it in untimed)
+          _WeekTaskCard(
+            key: ValueKey(it.id),
+            item: it,
+            onOpenDetail: () => callbacks.onOpenDetail(it),
+            onEdit: () => callbacks.onEditItem(it),
+          ),
+      ],
+    ];
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => callbacks.onJumpToDay(day),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.all(3),
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            decoration: BoxDecoration(
+              color: isToday
+                  ? theme.colorScheme.primaryContainer
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  material.narrowWeekdays[day.weekday % 7],
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: isToday
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  '${day.day}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isToday
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: children.isEmpty
+              ? const SizedBox()
+              : ListView(padding: const EdgeInsets.all(2), children: children),
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact task card for the week overview: time (timed only) above a
+/// two-line title. Tap opens detail; long-press edits.
+final class _WeekTaskCard extends StatelessWidget {
+  final PlannerItem item;
+  final String? timeLabel;
+  final VoidCallback onOpenDetail;
+  final VoidCallback onEdit;
+
+  const _WeekTaskCard({
+    super.key,
+    required this.item,
+    this.timeLabel,
+    required this.onOpenDetail,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = item.done || item.isCancelled;
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+      child: InkWell(
+        onTap: onOpenDetail,
+        onLongPress: onEdit,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (timeLabel != null)
+                Text(
+                  timeLabel!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              Text(
+                item.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  decoration: muted ? TextDecoration.lineThrough : null,
+                  color: muted
+                      ? theme.colorScheme.outline
+                      : theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The month overview: the calendar grid showing both plain tasks (dot
+/// marker) and experiment ranges (tinted background). Picking a day jumps to
+/// the day flow.
+final class _MonthOverview extends ConsumerStatefulWidget {
+  final DateTime selectedDay;
+  final bool Function(DateTime a, DateTime b) isSameDay;
+  final void Function(DateTime day) onDayPicked;
+
+  const _MonthOverview({
+    required this.selectedDay,
+    required this.isSameDay,
+    required this.onDayPicked,
+  });
+
+  @override
+  ConsumerState<_MonthOverview> createState() => _MonthOverviewState();
+}
+
+final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
+  late DateTime _focusedDay = widget.selectedDay;
 
   DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final monthStart = DateTime(focusedDay.year, focusedDay.month, 1);
+  Widget build(BuildContext context) {
+    final monthStart = DateTime(_focusedDay.year, _focusedDay.month, 1);
     final itemsAsync = ref.watch(plannerMonthItemsProvider(monthStart));
     final experimentsAsync = ref.watch(experimentListProvider);
 
@@ -677,7 +1560,7 @@ final class _CalendarView extends ConsumerWidget {
       if (!item.isExperiment) taskDays.add(_startOfDay(item.day));
     }
     final experimentDays = <DateTime>{};
-    for (final experiment in experimentsAsync.value ?? const []) {
+    for (final experiment in experimentsAsync.value ?? const <Experiment>[]) {
       final start = _startOfDay(experiment.startDate);
       final end = experiment.endDate == null
           ? start
@@ -687,57 +1570,41 @@ final class _CalendarView extends ConsumerWidget {
       }
     }
 
-    final l10n = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        TableCalendar(
-          firstDay: DateTime(2020),
-          lastDay: DateTime(2035),
-          focusedDay: focusedDay,
-          calendarFormat: CalendarFormat.month,
-          availableGestures: AvailableGestures.horizontalSwipe,
-          // The label is only shown by the (hidden) format toggle button;
-          // the map must contain the fixed calendarFormat above.
-          availableCalendarFormats: const {CalendarFormat.month: 'Month'},
-          headerStyle: const HeaderStyle(
-            formatButtonVisible: false,
-            titleCentered: true,
-          ),
-          selectedDayPredicate: (day) => isSameDay(day, selectedDay),
-          onDaySelected: (selected, focused) =>
-              onDaySelected(_startOfDay(selected), focused),
-          onPageChanged: onPageChanged,
-          calendarBuilders: CalendarBuilders(
-            defaultBuilder: (context, day, focusedMonth) => _dayCell(
-              context,
-              day,
-              focusedMonth,
-              taskDays: taskDays,
-              experimentDays: experimentDays,
-            ),
-          ),
+    return TableCalendar(
+      firstDay: DateTime(2020),
+      lastDay: _kLastDay,
+      focusedDay: _focusedDay,
+      calendarFormat: CalendarFormat.month,
+      availableGestures: AvailableGestures.horizontalSwipe,
+      // The label is only shown by the (hidden) format toggle button;
+      // the map must contain the fixed calendarFormat above.
+      availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+      headerStyle: const HeaderStyle(
+        formatButtonVisible: false,
+        titleCentered: true,
+      ),
+      selectedDayPredicate: (day) => widget.isSameDay(day, widget.selectedDay),
+      onDaySelected: (selected, focused) {
+        setState(() => _focusedDay = _startOfDay(focused));
+        widget.onDayPicked(_startOfDay(selected));
+      },
+      onPageChanged: (focused) =>
+          setState(() => _focusedDay = _startOfDay(focused)),
+      calendarBuilders: CalendarBuilders(
+        defaultBuilder: (context, day, focusedMonth) => _dayCell(
+          context,
+          day,
+          focusedMonth,
+          taskDays: taskDays,
+          experimentDays: experimentDays,
         ),
-        const Divider(height: 1),
-        Expanded(
-          child: _DayPage(
-            day: selectedDay,
-            l10n: l10n,
-            onAddItem: onAddItem,
-            onToggleDone: onToggleDone,
-            onToggleCancelled: onToggleCancelled,
-            onOpenDetail: onOpenDetail,
-            onEdit: onEdit,
-            onDelete: onDelete,
-            onOpenWorkout: onOpenWorkout,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   /// Custom cell for days worth marking: experiment-range tint, a task dot,
-  /// the selected-day fill, and today's outline. Plain days return null so the
-  /// stock rendering applies.
+  /// the selected-day fill, and today's outline. Plain days return null so
+  /// the stock rendering applies.
   Widget? _dayCell(
     BuildContext context,
     DateTime day,
@@ -748,8 +1615,8 @@ final class _CalendarView extends ConsumerWidget {
     final d = _startOfDay(day);
     final inExperiment = experimentDays.contains(d);
     final hasTask = taskDays.contains(d);
-    final isSelected = isSameDay(day, selectedDay);
-    final isToday = isSameDay(d, _startOfDay(DateTime.now()));
+    final isSelected = widget.isSameDay(day, widget.selectedDay);
+    final isToday = widget.isSameDay(d, _startOfDay(DateTime.now()));
     if (!inExperiment && !hasTask && !isSelected && !isToday) return null;
 
     final scheme = Theme.of(context).colorScheme;
@@ -801,7 +1668,7 @@ final class _CalendarView extends ConsumerWidget {
               width: 5,
               height: 5,
               decoration: BoxDecoration(
-                color: isSelected ? scheme.onPrimary : scheme.secondary,
+                color: scheme.secondary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -811,161 +1678,15 @@ final class _CalendarView extends ConsumerWidget {
   }
 }
 
-/// One day's task list inside the infinite day `PageView`. Watches its own
-/// day's items via `plannerItemsProvider(day)`, so adjacent days load
-/// independently of the selected day.
+/// A planner task card used for both the Anytime group and the hourly slots.
+/// Layout is identical for both: the done `Checkbox` is on the left, the
+/// title beside it, and the time pill (scheduled only) plus the linked-workout
+/// icon sit in a small meta row underneath the title.
 ///
-/// Gesture behavior: a horizontal drag that starts ON a tile is claimed by
-/// the tile's `Dismissible` (swipe-to-delete); a drag that starts elsewhere
-/// moves the `PageView` and changes the selected day.
-final class _DayPage extends ConsumerWidget {
-  final DateTime day;
-  final AppLocalizations l10n;
-  final VoidCallback onAddItem;
-  final void Function(PlannerItem item) onToggleDone;
-  final void Function(PlannerItem item) onToggleCancelled;
-  final void Function(PlannerItem item) onOpenDetail;
-  final void Function(PlannerItem item) onEdit;
-  final void Function(PlannerItem item) onDelete;
-  final void Function(PlannerItem item) onOpenWorkout;
-
-  const _DayPage({
-    required this.day,
-    required this.l10n,
-    required this.onAddItem,
-    required this.onToggleDone,
-    required this.onToggleCancelled,
-    required this.onOpenDetail,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onOpenWorkout,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final itemsAsync = ref.watch(plannerItemsProvider(day));
-    return itemsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
-      data: (items) {
-        if (items.isEmpty) {
-          return EmptyState(
-            icon: Icons.event_note,
-            title: l10n.emptyPlannerTitle,
-            description: l10n.emptyPlannerBody,
-            ctaLabel: l10n.emptyPlannerCta,
-            onCtaPressed: onAddItem,
-          );
-        }
-
-        // Untimed tasks (no start time) pin to the top "Anytime" group; timed
-        // tasks flow down the timeline in start-time order.
-        final untimed = <PlannerItem>[
-          for (final it in items)
-            if (it.startTimeMinutes == null) it,
-        ];
-        final timed = <PlannerItem>[
-          for (final it in items)
-            if (it.startTimeMinutes != null) it,
-        ];
-        timed.sort(
-          (a, b) => a.startTimeMinutes!.compareTo(b.startTimeMinutes!),
-        );
-
-        final children = <Widget>[];
-        if (untimed.isNotEmpty) {
-          children.add(
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text(
-                l10n.plannerAnytime,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          );
-          for (final it in untimed) {
-            children.add(
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                child: _TimelineItemCard(
-                  key: ValueKey(it.id),
-                  item: it,
-                  l10n: l10n,
-                  onToggleDone: () => onToggleDone(it),
-                  onToggleCancelled: () => onToggleCancelled(it),
-                  onOpenDetail: () => onOpenDetail(it),
-                  onEdit: () => onEdit(it),
-                  onDelete: () => onDelete(it),
-                  onOpenWorkout: () => onOpenWorkout(it),
-                ),
-              ),
-            );
-          }
-        }
-        if (timed.isNotEmpty) {
-          children.add(
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text(
-                l10n.plannerTimelineScheduled,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          );
-          for (final timedItem in timed) {
-            final fmt = MaterialLocalizations.of(context).formatTimeOfDay;
-            final startText = fmt(
-              TimeOfDay(
-                hour: timedItem.startTimeMinutes! ~/ 60,
-                minute: timedItem.startTimeMinutes! % 60,
-              ),
-            );
-            final timeText = timedItem.endTimeMinutes == null
-                ? startText
-                : '$startText – ${fmt(TimeOfDay(hour: timedItem.endTimeMinutes! ~/ 60, minute: timedItem.endTimeMinutes! % 60))}';
-            children.add(
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                child: _TimelineItemCard(
-                  key: ValueKey(timedItem.id),
-                  item: timedItem,
-                  l10n: l10n,
-                  timeLabel: timeText,
-                  onToggleDone: () => onToggleDone(timedItem),
-                  onToggleCancelled: () => onToggleCancelled(timedItem),
-                  onOpenDetail: () => onOpenDetail(timedItem),
-                  onEdit: () => onEdit(timedItem),
-                  onDelete: () => onDelete(timedItem),
-                  onOpenWorkout: () => onOpenWorkout(timedItem),
-                ),
-              ),
-            );
-          }
-        }
-        return ListView(children: children);
-      },
-    );
-  }
-}
-
-/// A planner task card used for both Scheduled and Anytime groups. Layout is
-/// identical for both: the done `Checkbox` is on the left, the title beside
-/// it, and the time pill (scheduled only) plus the linked-workout icon sit in
-/// a small meta row underneath the title.
-///
-/// Gestures: swipe left deletes; swipe right cancels (reopens a cancelled
-/// task). The done checkbox is inert while cancelled — use swipe-right or the
-/// detail actions to bring the task back.
+/// Gestures: tap opens the full detail view; long-press edits in place.
+/// Swipe left deletes; swipe right cancels (reopens a cancelled task). The
+/// done checkbox is inert while cancelled — use swipe-right or the detail
+/// actions to bring the task back.
 final class _TimelineItemCard extends StatelessWidget {
   final PlannerItem item;
   final AppLocalizations l10n;
@@ -1130,10 +1851,10 @@ final class _TimelineItemCard extends StatelessWidget {
               ),
               Expanded(
                 child: InkWell(
-                  // Tap edits in place; long-press opens the full detail
-                  // screen.
-                  onTap: onEdit,
-                  onLongPress: onOpenDetail,
+                  // Tap opens the full detail screen; long-press edits in
+                  // place.
+                  onTap: onOpenDetail,
+                  onLongPress: onEdit,
                   borderRadius: BorderRadius.circular(8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

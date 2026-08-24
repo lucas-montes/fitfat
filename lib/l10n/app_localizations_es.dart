@@ -2143,17 +2143,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get experimentsFab => 'Nuevo experimento';
 
   @override
+  String get plannerViewDay => 'Vista de día';
+
+  @override
+  String get plannerViewWeek => 'Vista semanal';
+
+  @override
+  String get plannerViewMonth => 'Vista mensual';
+
+  @override
+  String get plannerAllDay => 'Todo el día';
+
+  @override
   String get experimentsEmptyTitle => 'Aún no hay experimentos';
 
   @override
   String get experimentsEmptyBody =>
       'Crea un experimento para hacer seguimiento de un hábito, un cambio de dieta o un protocolo de entrenamiento con controles diarios.';
-
-  @override
-  String get plannerSegmentCalendar => 'Calendario';
-
-  @override
-  String get plannerSegmentExperiments => 'Experimentos';
 
   @override
   String get experimentLinkedTasksTitle => 'Tareas vinculadas';

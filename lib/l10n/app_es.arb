@@ -381,8 +381,6 @@
     }
   },
   "plannerCopyPrevious": "Copiar desde ayer",
-  "plannerSegmentCalendar": "Calendario",
-  "plannerSegmentExperiments": "Experimentos",
   "experimentLinkedTasksTitle": "Tareas vinculadas",
   "experimentLinkTask": "Vincular tarea",
   "experimentUnlinkTask": "Desvincular tarea",
@@ -1364,6 +1362,10 @@
 
   "experimentsAppBar": "Experimentos",
   "experimentsFab": "Nuevo experimento",
+  "plannerViewDay": "Vista de día",
+  "plannerViewWeek": "Vista semanal",
+  "plannerViewMonth": "Vista mensual",
+  "plannerAllDay": "Todo el día",
   "experimentsEmptyTitle": "Aún no hay experimentos",
   "experimentsEmptyBody": "Crea un experimento para hacer seguimiento de un hábito, un cambio de dieta o un protocolo de entrenamiento con controles diarios.",
   "experimentDaysElapsed": "{days} días transcurridos",

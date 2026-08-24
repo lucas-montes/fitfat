@@ -3910,6 +3910,30 @@ abstract class AppLocalizations {
   /// **'New experiment'**
   String get experimentsFab;
 
+  /// No description provided for @plannerViewDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day view'**
+  String get plannerViewDay;
+
+  /// No description provided for @plannerViewWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week view'**
+  String get plannerViewWeek;
+
+  /// No description provided for @plannerViewMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month view'**
+  String get plannerViewMonth;
+
+  /// No description provided for @plannerAllDay.
+  ///
+  /// In en, this message translates to:
+  /// **'All-day'**
+  String get plannerAllDay;
+
   /// No description provided for @experimentsEmptyTitle.
   ///
   /// In en, this message translates to:
@@ -3921,18 +3945,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create an experiment to track a habit, diet change, or training protocol with daily check-ins.'**
   String get experimentsEmptyBody;
-
-  /// No description provided for @plannerSegmentCalendar.
-  ///
-  /// In en, this message translates to:
-  /// **'Calendar'**
-  String get plannerSegmentCalendar;
-
-  /// No description provided for @plannerSegmentExperiments.
-  ///
-  /// In en, this message translates to:
-  /// **'Experiments'**
-  String get plannerSegmentExperiments;
 
   /// No description provided for @experimentLinkedTasksTitle.
   ///

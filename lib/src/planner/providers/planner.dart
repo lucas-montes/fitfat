@@ -32,3 +32,19 @@ final plannerMonthItemsProvider =
       final end = DateTime(monthAnchor.year, monthAnchor.month + 1, 0);
       return ref.watch(plannerRepositoryProvider).getByRange(start, end);
     });
+
+/// Every planner item within an inclusive (start, end) day range — powers
+/// the week overview. Keyed by a record so each week caches independently.
+final plannerRangeItemsProvider =
+    FutureProvider.family<List<PlannerItem>, (DateTime, DateTime)>((
+      ref,
+      range,
+    ) {
+      final (start, end) = range;
+      return ref
+          .watch(plannerRepositoryProvider)
+          .getByRange(
+            DateTime(start.year, start.month, start.day),
+            DateTime(end.year, end.month, end.day),
+          );
+    });
