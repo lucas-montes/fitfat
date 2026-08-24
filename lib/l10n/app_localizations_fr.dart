@@ -1382,8 +1382,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun prix enregistré pour le moment.';
 
   @override
-  String ingredientDetailCostPer100g(String value) {
-    return '$value / 100 g';
+  String ingredientDetailCostPerKg(String value) {
+    return '$value /kg';
   }
 
   @override
@@ -1399,7 +1399,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ingredientPriceAmountLabel => 'Prix';
 
   @override
-  String get ingredientPriceGramsLabel => 'Poids du paquet (g)';
+  String get ingredientPriceGramsLabel => 'Taille du paquet';
 
   @override
   String get ingredientPriceHistoryTitle => 'Historique des prix';

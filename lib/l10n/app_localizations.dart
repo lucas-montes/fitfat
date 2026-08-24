@@ -2536,11 +2536,11 @@ abstract class AppLocalizations {
   /// **'No prices recorded yet.'**
   String get ingredientDetailNoPrices;
 
-  /// No description provided for @ingredientDetailCostPer100g.
+  /// No description provided for @ingredientDetailCostPerKg.
   ///
   /// In en, this message translates to:
-  /// **'{value} / 100 g'**
-  String ingredientDetailCostPer100g(String value);
+  /// **'{value} /kg'**
+  String ingredientDetailCostPerKg(String value);
 
   /// No description provided for @ingredientPriceAdd.
   ///
@@ -2569,7 +2569,7 @@ abstract class AppLocalizations {
   /// No description provided for @ingredientPriceGramsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Package weight (g)'**
+  /// **'Package size'**
   String get ingredientPriceGramsLabel;
 
   /// No description provided for @ingredientPriceHistoryTitle.

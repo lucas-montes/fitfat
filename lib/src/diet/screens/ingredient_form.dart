@@ -520,17 +520,27 @@ final class _IngredientFormScreenState
     if (source == null || !mounted) return;
 
     try {
-      final picked = await _picker.pickImage(source: source, imageQuality: 85);
-      if (picked == null || !mounted) return;
+      // Gallery allows multi-select; camera stays single-shot.
+      final picked = source == ImageSource.gallery
+          ? await _picker.pickMultiImage(imageQuality: 85)
+          : [
+              await _picker.pickImage(
+                source: source,
+                imageQuality: 85,
+              ),
+            ].whereType<XFile>().toList();
+      if (picked.isEmpty || !mounted) return;
       final dir = await getApplicationDocumentsDirectory();
       final picturesDir = Directory(p.join(dir.path, 'ingredient_pictures'));
       await picturesDir.create(recursive: true);
-      final ext = p.extension(picked.path);
-      final name = '${const Uuid().v7()}$ext';
-      final saved = await File(
-        picked.path,
-      ).copy(p.join(picturesDir.path, name));
-      setState(() => _pictures.add(_PictureDraft(path: saved.path)));
+      for (final file in picked) {
+        final ext = p.extension(file.path);
+        final name = '${const Uuid().v7()}$ext';
+        final saved = await File(
+          file.path,
+        ).copy(p.join(picturesDir.path, name));
+        setState(() => _pictures.add(_PictureDraft(path: saved.path)));
+      }
     } catch (e) {
       if (mounted) {
         showTopBanner(

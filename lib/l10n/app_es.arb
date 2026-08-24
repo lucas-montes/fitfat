@@ -595,8 +595,8 @@
   "ingredientFormAddPicture": "Añadir foto",
   "ingredientDetailPricesTitle": "Precios",
   "ingredientDetailNoPrices": "Aún no hay precios registrados.",
-  "ingredientDetailCostPer100g": "{value} / 100 g",
-  "@ingredientDetailCostPer100g": {
+  "ingredientDetailCostPerKg": "{value} /kg",
+  "@ingredientDetailCostPerKg": {
     "placeholders": {
       "value": { "type": "String" }
     }
@@ -605,7 +605,7 @@
   "ingredientPriceEdit": "Editar precio",
   "ingredientPriceStoreLabel": "Tienda",
   "ingredientPriceAmountLabel": "Precio",
-  "ingredientPriceGramsLabel": "Peso del paquete (g)",
+  "ingredientPriceGramsLabel": "Tamaño del paquete",
   "ingredientPriceHistoryTitle": "Historial de precios",
   "ingredientDetailManageStores": "Gestionar tiendas",
   "storeManagerTitle": "Tiendas",

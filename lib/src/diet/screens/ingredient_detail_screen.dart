@@ -470,10 +470,10 @@ final class _PricesSection extends ConsumerWidget {
   ) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final per100 = price.costPer100gInBase(baseCode: base, ratesToBase: rates);
+    final perKg = price.costPerKgInBase(baseCode: base, ratesToBase: rates);
     final parts = <String>[
-      if (per100 != null)
-        l10n.ingredientDetailCostPer100g(bf.formatMoney(per100, base)),
+      if (perKg != null)
+        l10n.ingredientDetailCostPerKg(bf.formatMoney(perKg, base)),
       if (price.packageGrams != null) '${_formatGrams(price.packageGrams!)} g',
     ];
     if (parts.isEmpty) return null;
@@ -545,6 +545,11 @@ final class _PriceSheetState extends ConsumerState<_PriceSheet> {
   late final TextEditingController _priceCtrl;
   late final TextEditingController _gramsCtrl;
   late String _currency;
+
+  /// Unit the package size is entered in: 'g' | 'kg' | 'ml'. Stored as grams
+  /// either way (ml counts gram-for-gram, i.e. water density).
+  String _weightUnit = 'g';
+
   DateTime _recordedAt = DateTime.now();
 
   @override
@@ -662,16 +667,35 @@ final class _PriceSheetState extends ConsumerState<_PriceSheet> {
               onChanged: (v) => setState(() => _currency = v!),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _gramsCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.ingredientPriceGramsLabel,
-              ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _gramsCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.ingredientPriceGramsLabel,
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'g', label: Text('g')),
+                    ButtonSegment(value: 'kg', label: Text('kg')),
+                    ButtonSegment(value: 'ml', label: Text('ml')),
+                  ],
+                  selected: {_weightUnit},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (s) =>
+                      setState(() => _weightUnit = s.first),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -730,7 +754,15 @@ final class _PriceSheetState extends ConsumerState<_PriceSheet> {
     if (storeId == null) return;
     final price = double.tryParse(_priceCtrl.text.trim());
     if (price == null || price <= 0) return;
-    final grams = double.tryParse(_gramsCtrl.text.trim());
+    // Package size is normalized to grams: kg ×1000, ml counts gram-for-gram
+    // (water density) so per-kg math works uniformly.
+    final size = double.tryParse(_gramsCtrl.text.trim());
+    final grams = size == null
+        ? null
+        : switch (_weightUnit) {
+            'kg' => size * 1000,
+            _ => size,
+          };
     final repo = ref.read(ingredientRepositoryProvider);
     // Moving an existing observation to another day deletes the original row
     // (the new day gets a fresh upsert); same-day saves just overwrite.
