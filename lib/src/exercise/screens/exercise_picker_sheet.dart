@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,11 +79,11 @@ final class _ExercisePickerContentState
   }
 
   /// 48×48 exercise thumbnail; falls back to the type icon when there is no
-  /// image or the asset fails to load (mirrors the active-workout search tile).
+  /// image or the file fails to load (mirrors the active-workout search tile).
   Widget _buildThumbnail(Exercise exercise) {
     if (exercise.imagePath != null) {
-      return Image.asset(
-        exercise.imagePath!,
+      return Image.file(
+        File(exercise.imagePath!),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stack) => _typeIcon(exercise),
       );

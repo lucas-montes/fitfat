@@ -13,8 +13,8 @@ final class Exercise {
   final List<String>? tips;
   final String? faqs;
   final List<String>? keywords;
-  final String? imagePath; // bundled asset path
-  final String? videoPath; // bundled asset path
+  final String? imagePath; // local downloaded file (sync); null = none yet
+  final String? videoPath; // local downloaded file (sync); null = none yet
   // Canonicalization fields (schema v10): mark one exercise as canonical per
   // group, link variants via similarTo, and allow user tags.
   final String? similarTo; // ID of canonical exercise this is a variant of

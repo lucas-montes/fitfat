@@ -113,8 +113,11 @@ class Exercises extends Table {
   TextColumn? get tips => text().nullable()(); // JSON string[]
   TextColumn? get faqs => text().nullable()();
   TextColumn? get keywords => text().nullable()(); // JSON string[]
-  TextColumn? get imagePath => text().nullable()(); // asset path
-  TextColumn? get videoPath => text().nullable()(); // asset path
+  // Local media file paths, managed by the sync engine (exercise_media_sync):
+  // absolute paths under <documents>/exercise_media/<id>.jpg|.mp4, or null
+  // when the server advertises no such media or it is not downloaded yet.
+  TextColumn? get imagePath => text().nullable()();
+  TextColumn? get videoPath => text().nullable()();
   // Canonicalization fields (v10): mark one exercise as canonical per group,
   // link variants via similarTo, and allow user tags.
   TextColumn? get similarTo => text().nullable()();

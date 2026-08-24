@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
@@ -436,7 +437,7 @@ final class _MediaHeaderState extends State<_MediaHeader> {
   Future<void> _initVideo() async {
     final path = widget.exercise.videoPath;
     if (path == null) return;
-    final controller = VideoPlayerController.asset(path);
+    final controller = VideoPlayerController.file(File(path));
     _controller = controller;
     try {
       await controller.initialize();
@@ -472,8 +473,8 @@ final class _MediaHeaderState extends State<_MediaHeader> {
               width: double.infinity,
               color: theme.colorScheme.surfaceContainerHighest,
               alignment: Alignment.center,
-              child: Image.asset(
-                imagePath,
+              child: Image.file(
+                File(imagePath),
                 fit: BoxFit.contain,
                 errorBuilder: (_, _, _) => _placeholder(theme),
               ),
@@ -556,8 +557,8 @@ final class _FullScreenImageViewer extends StatelessWidget {
         minScale: 1,
         maxScale: 6,
         child: Center(
-          child: Image.asset(
-            imagePath,
+          child: Image.file(
+            File(imagePath),
             fit: BoxFit.contain,
             errorBuilder: (_, _, _) => Icon(
               Icons.broken_image_outlined,

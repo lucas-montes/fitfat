@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -16,6 +17,9 @@ abstract class ApiClient {
     Map<String, String>? query,
     Map<String, String>? headers,
   });
+
+  /// Fetches a binary resource (exercise media) relative to the base URL.
+  Future<Uint8List> getBytes(String path, {Map<String, String>? headers});
 
   Future<Object?> postJson(
     String path, {
@@ -122,6 +126,18 @@ final class HttpApiClient implements ApiClient {
   }
 
   @override
+  Future<Uint8List> getBytes(
+    String path, {
+    Map<String, String>? headers,
+  }) async {
+    final response = await _send(
+      () => _client.get(_uri(path), headers: {..._headers, ...?headers}),
+      headers: headers,
+    );
+    return response.bodyBytes;
+  }
+
+  @override
   Future<Object?> putJson(
     String path, {
     Object? body,
@@ -171,6 +187,15 @@ final class MockApiClient implements ApiClient {
     Map<String, String>? query,
     Map<String, String>? headers,
   }) => _handle('GET', path, null);
+
+  @override
+  Future<Uint8List> getBytes(
+    String path, {
+    Map<String, String>? headers,
+  }) async {
+    final result = await _handle('GET', path, null);
+    return result as Uint8List;
+  }
 
   @override
   Future<Object?> postJson(

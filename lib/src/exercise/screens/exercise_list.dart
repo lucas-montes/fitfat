@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -539,8 +540,8 @@ final class _ExerciseThumbnail extends StatelessWidget {
       child: SizedBox(
         width: 48,
         height: 48,
-        child: Image.asset(
-          imagePath,
+        child: Image.file(
+          File(imagePath),
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => Center(child: fallback),
         ),

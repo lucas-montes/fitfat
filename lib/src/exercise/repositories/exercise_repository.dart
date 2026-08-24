@@ -97,6 +97,30 @@ final class ExerciseRepository {
     )..where((t) => t.id.equals(id))).go();
   }
 
+  static const _unset = Object();
+
+  /// Writes the local media-file paths for one exercise. Absent arguments
+  /// leave the column untouched; an explicit null clears it. Used by the sync
+  /// engine after downloading (or dropping) exercise media.
+  Future<void> updateMedia(
+    String id, {
+    Object? imagePath = _unset,
+    Object? videoPath = _unset,
+  }) async {
+    await (_database.update(
+      _database.exercises,
+    )..where((t) => t.id.equals(id))).write(
+      db.ExercisesCompanion(
+        imagePath: identical(imagePath, _unset)
+            ? const Value.absent()
+            : Value(imagePath as String?),
+        videoPath: identical(videoPath, _unset)
+            ? const Value.absent()
+            : Value(videoPath as String?),
+      ),
+    );
+  }
+
   /// Inserts a synced exercise, or refreshes it in place when the id already
   /// exists (server authority). Never deletes local rows.
   Future<void> upsert(Exercise exercise) async {

@@ -325,16 +325,41 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
 
 ### 11.2 Pull envelope (actual, not §5)
 
- Exercises return full item rows; the only removal signal is `deleted[]`
- (hard-deleted server-side):
+ Exercises return full item rows plus two media-presence flags; the only
+ removal signal is `deleted[]` (hard-deleted server-side):
 
  ```json
  {
-   "items": [ { "id": "id-1", "name": "Squat", "updated_at": 1755850000000, "…" } ],
+   "items": [ { "id": "id-1", "name": "Squat", "updated_at": 1755850000000, "hasImage": true, "hasVideo": true, "…" } ],
    "deleted": [ "id-9" ],
    "server_time": 1755850000000
  }
  ```
+
+ **Exercise media (2026-08-25).** The payload never carries media paths or
+ binaries. Media lives on the sync server at URLs *derived* from the exercise
+ id, fetched with the same Bearer API key:
+
+ - image: `GET <baseUrl>/exercises/<id>.jpg`
+ - video: `GET <baseUrl>/exercises/<id>.mp4`
+
+ Client rules:
+
+ - `hasImage` / `hasVideo` (bool) say whether those files exist server-side;
+   without them the client would have to 404-probe every exercise every sync.
+ - On pull the client downloads any advertised medium missing on disk and
+   stores it under `<documents>/exercise_media/<id>.<ext>`; the absolute local
+   path is persisted in the row's `imagePath` / `videoPath` columns (null =
+   not downloaded / no media — this doubles as the "already downloaded" mark,
+   so no extra schema columns exist).
+ - Pulls never clobber an existing local media path; a failed download keeps
+   the last good cursor so the whole resource retries next sync.
+ - When a flag turns false (or the exercise appears in `deleted[]`) the local
+   file is removed and the column cleared.
+ - **Known limitation:** media is assumed immutable per exercise id — the
+   client has no way to notice new bytes at the same derived URL. Replacing an
+   image/video means deleting the exercise (or flipping its flag) and
+   re-advertising it, until a future contract version adds content hashing.
 
  Ingredients return full item rows with **nested** `pictures[]` and `prices[]`,
  plus a top-level `stores[]` array the items reference:
@@ -375,9 +400,12 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
 
 ### 11.3 Apply rules
 
- - **Exercises / ingredients:** full upsert of content; `deleted[]` removes
-   rows locally (hard / soft-archive as above). Local content edits are
-   overwritten by the server (server authority) — conflict UI is deferred (§5).
+  - **Exercises / ingredients:** full upsert of content; `deleted[]` removes
+    rows locally (hard / soft-archive as above). Local content edits are
+    overwritten by the server (server authority) — conflict UI is deferred (§5).
+    Exercise media is the exception to "full upsert": `imagePath`/`videoPath`
+    are client-local download state, reconciled per §11.2 rather than taken
+    from the payload.
  - **Currencies:** upsert into `fx_rates` but **preserve** the local `manual`
    flag for the exact `(code, baseCode, date)` row, so a hand-edited rate is
    never overwritten by a sync. Snapshots are daily, so `rateDate` history is
@@ -397,8 +425,13 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
 
  - `lib/src/sync/sync_models.dart` — `SyncResource`, `SyncResult`, `toSyncDateTime`.
  - `lib/src/sync/sync_state_store.dart` — per-resource cursor persistence.
- - `lib/src/sync/exercise_sync_client.dart` — full-payload pull → upsert +
-   hard-delete `deleted[]`.
+  - `lib/src/sync/exercise_sync_client.dart` — full-payload pull → upsert +
+    hard-delete `deleted[]`; reconciles local media paths and drives
+    `ExerciseMediaDownloader` (download missing, remove dropped/deleted).
+  - `lib/src/sync/exercise_media_sync.dart` — `ExerciseMediaDownloader` +
+    `ExerciseMediaKind`: derived media URLs (`<base>/exercises/<id>.jpg|.mp4`,
+    Bearer auth via `ApiClient.getBytes`), storage under
+    `<documents>/exercise_media/`, best-effort file removal.
  - `lib/src/sync/ingredient_sync_client.dart` — full-payload pull → upsert
    (items + stores + nested pictures/prices) + soft-archive `deleted[]`; plus
    `push()` → `POST /ingredients`.

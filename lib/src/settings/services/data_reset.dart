@@ -47,7 +47,8 @@ Future<void> resetAllData(WidgetRef ref) async {
   }
   ref.invalidate(databaseProvider);
 
-  // 3. Delete the SQLite files (and any side files).
+  // 3. Delete the SQLite files (and any side files) plus synced exercise
+  // media so no orphaned binaries survive the reset.
   final dbFolder = await getApplicationDocumentsDirectory();
   for (final name in [
     'fitfat.sqlite',
@@ -60,6 +61,14 @@ Future<void> resetAllData(WidgetRef ref) async {
     } catch (e) {
       log.warning('Deleting "$name" failed: $e');
     }
+  }
+  final mediaDir = Directory(p.join(dbFolder.path, 'exercise_media'));
+  try {
+    if (await mediaDir.exists()) {
+      await mediaDir.delete(recursive: true);
+    }
+  } catch (e) {
+    log.warning('Deleting exercise media failed: $e');
   }
 
   // 4. Clear every preference (settings + one-time flags + session keys).

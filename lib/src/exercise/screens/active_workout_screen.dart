@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1703,8 +1704,8 @@ final class _ExerciseSearchTile extends StatelessWidget {
 
   Widget _buildThumbnail(BuildContext context) {
     if (exercise.imagePath != null) {
-      return Image.asset(
-        exercise.imagePath!,
+      return Image.file(
+        File(exercise.imagePath!),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stack) => _typeIcon(context),
       );
@@ -2077,7 +2078,7 @@ final class _CompactMediaState extends State<_CompactMedia> {
     super.initState();
     final path = widget.exercise.videoPath;
     if (path == null) return;
-    final controller = VideoPlayerController.asset(path);
+    final controller = VideoPlayerController.file(File(path));
     _controller = controller;
     controller
         .initialize()
@@ -2111,8 +2112,8 @@ final class _CompactMediaState extends State<_CompactMedia> {
               width: double.infinity,
               color: theme.colorScheme.surfaceContainerHighest,
               alignment: Alignment.center,
-              child: Image.asset(
-                exercise.imagePath!,
+              child: Image.file(
+                File(exercise.imagePath!),
                 fit: BoxFit.contain,
                 errorBuilder: (_, _, _) => _placeholder(theme),
               ),
@@ -2216,8 +2217,8 @@ final class _CardImageViewer extends StatelessWidget {
         minScale: 1,
         maxScale: 6,
         child: Center(
-          child: Image.asset(
-            imagePath,
+          child: Image.file(
+            File(imagePath),
             fit: BoxFit.contain,
             errorBuilder: (_, _, _) => Icon(
               Icons.broken_image_outlined,
