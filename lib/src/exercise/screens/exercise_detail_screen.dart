@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -953,6 +954,15 @@ final class _HistoryChart extends StatelessWidget {
     final maxValue = values.reduce((a, b) => a > b ? a : b);
     final padding = maxValue == minValue ? 1.0 : (maxValue - minValue) * 0.2;
 
+    final xs = spots.map((s) => s.$1.millisecondsSinceEpoch.toDouble());
+    final minX = xs.reduce((a, b) => a < b ? a : b);
+    final maxX = xs.reduce((a, b) => a > b ? a : b);
+    // ~4 evenly spaced date labels regardless of how many points exist —
+    // without an explicit interval fl_chart labels every spot and they overlap.
+    final xInterval = math.max((maxX - minX) / 4, 86400000.0);
+    // Round the y range to human steps (1/2/2.5/5 × 10ⁿ).
+    final yInterval = _niceStep((maxValue - minValue + 2 * padding) / 4);
+
     return Card(
       margin: const EdgeInsets.fromLTRB(
         FitFatTokens.spaceL,
@@ -973,7 +983,7 @@ final class _HistoryChart extends StatelessWidget {
             ),
             const SizedBox(height: FitFatTokens.spaceM),
             SizedBox(
-              height: 160,
+              height: 200,
               child: LineChart(
                 LineChartData(
                   minY: minValue - padding,
@@ -1003,7 +1013,11 @@ final class _HistoryChart extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 28,
+                        interval: xInterval,
                         getTitlesWidget: (value, meta) {
+                          if (value < minX || value > maxX) {
+                            return const SizedBox.shrink();
+                          }
                           final date = DateTime.fromMillisecondsSinceEpoch(
                             value.toInt(),
                           );
@@ -1017,8 +1031,20 @@ final class _HistoryChart extends StatelessWidget {
                         },
                       ),
                     ),
-                    leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 44,
+                        interval: yInterval,
+                        getTitlesWidget: (value, meta) => Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: Text(
+                            _compactAxisLabel(value),
+                            style: const TextStyle(fontSize: 10),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ),
                     ),
                     topTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
@@ -1053,11 +1079,35 @@ final class _HistoryChart extends StatelessWidget {
   }
 }
 
+/// Smallest "nice" step (1/2/2.5/5 × 10ⁿ) covering [raw].
+double _niceStep(double raw) {
+  if (raw <= 0) return 1;
+  final magnitude = math
+      .pow(10, (math.log(raw) / math.ln10).floor())
+      .toDouble();
+  for (final m in const [1.0, 2.0, 2.5, 5.0, 10.0]) {
+    if (raw <= m * magnitude) return m * magnitude;
+  }
+  return 10 * magnitude;
+}
+
+/// Compact y-axis label: whole numbers where possible, k-suffix for thousands.
+String _compactAxisLabel(double value) {
+  if (value >= 1000 || value <= -1000) {
+    final k = value / 1000;
+    return '${k.toStringAsFixed(k % 1 == 0 ? 0 : 1)}k';
+  }
+  return value % 1 == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+}
+
 // ---------------------------------------------------------------------------
 // Per-workout history card
 // ---------------------------------------------------------------------------
 
-final class _WorkoutHistoryCard extends StatelessWidget {
+/// One historical workout for this exercise. Collapsed by default: name,
+/// date, trend and summary cells. Tapping expands the adherence breakdown
+/// and the full per-set grid.
+final class _WorkoutHistoryCard extends StatefulWidget {
   final ExerciseHistoryEntry entry;
 
   /// Total volume already converted to the display unit.
@@ -1077,9 +1127,18 @@ final class _WorkoutHistoryCard extends StatelessWidget {
   });
 
   @override
+  State<_WorkoutHistoryCard> createState() => _WorkoutHistoryCardState();
+}
+
+final class _WorkoutHistoryCardState extends State<_WorkoutHistoryCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final entry = widget.entry;
+    final volume = widget.volume;
     final sets = entry.sets;
     var duration = 0;
     for (final set in sets) {
@@ -1114,105 +1173,126 @@ final class _WorkoutHistoryCard extends StatelessWidget {
         FitFatTokens.spaceL,
         0,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(FitFatTokens.spaceL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    entry.workout.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
+      child: InkWell(
+        onTap: () => setState(() => _expanded = !_expanded),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(FitFatTokens.spaceL),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      entry.workout.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    DateFormats.formatShortDate(context, entry.workout.date),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Icon(
+                      Icons.expand_more,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: FitFatTokens.spaceS),
+              _TrendHeader(
+                volume: volume,
+                previousVolume: widget.previousVolume,
+                isPr: widget.isPr,
+                usesWeight: widget.usesWeight,
+                unit: widget.unit,
+              ),
+              const SizedBox(height: FitFatTokens.spaceM),
+              Row(
+                children: [
+                  _SummaryCell(
+                    label: widget.usesWeight
+                        ? l10n.workoutSummaryVolume
+                        : l10n.workoutSummaryTotalDuration,
+                    value: widget.usesWeight
+                        ? l10n.workoutSummaryValueKg(
+                            formatWeightValue(volume, widget.unit),
+                            weightUnitLabel(widget.unit),
+                          )
+                        : formatRestDuration(Duration(minutes: duration)),
+                    theme: theme,
+                    alignEnd: false,
+                  ),
+                  _SummaryCell(
+                    label: l10n.workoutSummaryTotalReps,
+                    value: '$totalReps',
+                    theme: theme,
+                    alignEnd: true,
+                  ),
+                  _SummaryCell(
+                    label: l10n.workoutSummaryTotalDistance,
+                    value: formatDecimal(totalDistance),
+                    theme: theme,
+                    alignEnd: true,
+                  ),
+                  _SummaryCell(
+                    label: l10n.exerciseDetailSetsCompleted,
+                    value: '$completed/${sets.length}',
+                    theme: theme,
+                    alignEnd: true,
+                  ),
+                ],
+              ),
+              // Expanded-only detail: adherence bars + the full per-set grid.
+              if (_expanded) ...[
+                if (adherence != null) ...[
+                  const SizedBox(height: FitFatTokens.spaceM),
+                  Text(
+                    l10n.exerciseDetailPlannedVsActual,
+                    style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                Text(
-                  DateFormats.formatShortDate(context, entry.workout.date),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: FitFatTokens.spaceS),
-            _TrendHeader(
-              volume: volume,
-              previousVolume: previousVolume,
-              isPr: isPr,
-              usesWeight: usesWeight,
-              unit: unit,
-            ),
-            const SizedBox(height: FitFatTokens.spaceM),
-            Row(
-              children: [
-                _SummaryCell(
-                  label: usesWeight
-                      ? l10n.workoutSummaryVolume
-                      : l10n.workoutSummaryTotalDuration,
-                  value: usesWeight
-                      ? l10n.workoutSummaryValueKg(
-                          formatWeightValue(volume, unit),
-                          weightUnitLabel(unit),
-                        )
-                      : formatRestDuration(Duration(minutes: duration)),
-                  theme: theme,
-                  alignEnd: false,
-                ),
-                _SummaryCell(
-                  label: l10n.workoutSummaryTotalReps,
-                  value: '$totalReps',
-                  theme: theme,
-                  alignEnd: true,
-                ),
-                _SummaryCell(
-                  label: l10n.workoutSummaryTotalDistance,
-                  value: formatDecimal(totalDistance),
-                  theme: theme,
-                  alignEnd: true,
-                ),
-                _SummaryCell(
-                  label: l10n.exerciseDetailSetsCompleted,
-                  value: '$completed/${sets.length}',
-                  theme: theme,
-                  alignEnd: true,
-                ),
-              ],
-            ),
-            if (adherence != null) ...[
-              const SizedBox(height: FitFatTokens.spaceM),
-              Text(
-                l10n.exerciseDetailPlannedVsActual,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: FitFatTokens.spaceS),
-              _ProgressBar(
-                label: l10n.exerciseDetailVolumeAdherence,
-                value: adherence,
-                l10n: l10n,
-                color: theme.colorScheme.primary,
-              ),
-              if (setsCompletedPct != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: FitFatTokens.spaceS),
-                  child: _ProgressBar(
-                    label: l10n.exerciseDetailSetsCompleted,
-                    value: setsCompletedPct.toDouble(),
+                  const SizedBox(height: FitFatTokens.spaceS),
+                  _ProgressBar(
+                    label: l10n.exerciseDetailVolumeAdherence,
+                    value: adherence,
                     l10n: l10n,
-                    color: theme.colorScheme.tertiary,
+                    color: theme.colorScheme.primary,
                   ),
-                ),
+                  if (setsCompletedPct != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: FitFatTokens.spaceS),
+                      child: _ProgressBar(
+                        label: l10n.exerciseDetailSetsCompleted,
+                        value: setsCompletedPct.toDouble(),
+                        l10n: l10n,
+                        color: theme.colorScheme.tertiary,
+                      ),
+                    ),
+                ],
+                const SizedBox(height: FitFatTokens.spaceM),
+                _SetGridHeader(l10n: l10n),
+                const SizedBox(height: FitFatTokens.spaceXs),
+                for (final set in sets)
+                  _SetRow(
+                    set: set,
+                    usesWeight: widget.usesWeight,
+                    l10n: l10n,
+                    unit: widget.unit,
+                  ),
+              ],
             ],
-            const SizedBox(height: FitFatTokens.spaceM),
-            _SetGridHeader(l10n: l10n),
-            const SizedBox(height: FitFatTokens.spaceXs),
-            for (final set in sets)
-              _SetRow(set: set, usesWeight: usesWeight, l10n: l10n, unit: unit),
-          ],
+          ),
         ),
       ),
     );
