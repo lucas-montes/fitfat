@@ -666,7 +666,9 @@ final class _CalendarView extends ConsumerWidget {
           focusedDay: focusedDay,
           calendarFormat: CalendarFormat.month,
           availableGestures: AvailableGestures.horizontalSwipe,
-          availableCalendarFormats: const {},
+          // The label is only shown by the (hidden) format toggle button;
+          // the map must contain the fixed calendarFormat above.
+          availableCalendarFormats: const {CalendarFormat.month: 'Month'},
           headerStyle: const HeaderStyle(
             formatButtonVisible: false,
             titleCentered: true,
