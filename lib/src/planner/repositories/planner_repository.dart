@@ -35,6 +35,9 @@ final class PlannerRepository {
               ..where(
                 (t) =>
                     t.done.equals(0) &
+                    // Cancelled tasks are neither upcoming nor copyable.
+                    (t.taskStatus.isNull() |
+                        t.taskStatus.isNotIn([TaskStatus.cancelled.storage])) &
                     t.startTimeMinutes.isNotNull() &
                     t.date.isBiggerOrEqualValue(
                       fromStart.millisecondsSinceEpoch,
@@ -73,6 +76,8 @@ final class PlannerRepository {
         tags: Value(_encode(item.tags)),
         recurrence: Value(_encodeRecurrence(item.recurrence)),
         seriesId: Value(item.seriesId),
+        taskStatus: Value(item.taskStatus?.storage),
+        carryOver: Value(item.carryOver),
         kind: Value(_kindStorage(item.kind)),
         endDate: Value(
           item.endDate == null
@@ -107,6 +112,8 @@ final class PlannerRepository {
     tags: Value(_encode(item.tags)),
     recurrence: Value(_encodeRecurrence(item.recurrence)),
     seriesId: Value(item.seriesId),
+    taskStatus: Value(item.taskStatus?.storage),
+    carryOver: Value(item.carryOver),
     kind: Value(_kindStorage(item.kind)),
     endDate: Value(
       item.endDate == null
@@ -149,6 +156,9 @@ final class PlannerRepository {
                 (t) =>
                     t.date.equals(previousDay.millisecondsSinceEpoch) &
                     t.done.equals(0) &
+                    // Cancelled tasks were explicitly dropped; don't revive.
+                    (t.taskStatus.isNull() |
+                        t.taskStatus.isNotIn([TaskStatus.cancelled.storage])) &
                     // Only plain tasks are copied; experiments are ranges,
                     // not repeatable day entries.
                     t.kind.equals(_kindStorage(PlannerItemKind.task)),
@@ -185,6 +195,36 @@ final class PlannerRepository {
     return pendingRows.length;
   }
 
+  /// Day rollover: past pending single (non-recurring) tasks are either moved
+  /// to today (carry-over on) or marked cancelled (carry-over off). Recurring
+  /// series are skipped — their anchor already regenerates future days.
+  /// Idempotent; called on app start/resume. Returns the affected count so
+  /// callers only invalidate providers when something changed.
+  Future<int> rolloverPastTasks() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final rows =
+        await (_database.select(_database.plannerItems)..where(
+              (t) =>
+                  t.kind.equals(_kindStorage(PlannerItemKind.task)) &
+                  t.seriesId.isNull() &
+                  t.date.isSmallerThanValue(today.millisecondsSinceEpoch) &
+                  t.done.equals(0) &
+                  (t.taskStatus.isNull() |
+                      t.taskStatus.equals(TaskStatus.pending.storage)),
+            ))
+            .get();
+    for (final row in rows) {
+      final item = _toDomain(row);
+      await update(
+        item.carryOver
+            ? item.copyWith(day: today)
+            : item.withTaskStatus(TaskStatus.cancelled),
+      );
+    }
+    return rows.length;
+  }
+
   PlannerItem _toDomain(db.PlannerItem row) => PlannerItem(
     id: row.id,
     day: DateTime.fromMillisecondsSinceEpoch(row.date),
@@ -201,6 +241,10 @@ final class PlannerRepository {
     tags: _decode(row.tags),
     recurrence: _decodeRecurrence(row.recurrence),
     seriesId: row.seriesId,
+    taskStatus: row.taskStatus == null
+        ? null
+        : _taskStatusFromStorage(row.taskStatus!),
+    carryOver: row.carryOver,
     kind: _kindFromStorage(row.kind),
     endDate: row.endDate == null
         ? null
@@ -706,6 +750,9 @@ final class PlannerRepository {
   static PlannerItemKind _kindFromStorage(String value) =>
       value == 'experiment' ? PlannerItemKind.experiment : PlannerItemKind.task;
 
+  static TaskStatus _taskStatusFromStorage(int value) =>
+      TaskStatus.values[value.clamp(0, TaskStatus.values.length - 1)];
+
   static ExperimentStatus _statusFromStorage(String value) => switch (value) {
     'active' => ExperimentStatus.active,
     'done' => ExperimentStatus.done,
@@ -785,11 +832,14 @@ PlannerItem newPlannerItem({
   List<String>? tags,
   PlannerRecurrence? recurrence,
   String? seriesId,
+  bool carryOver = true,
 }) => PlannerItem(
   id: const Uuid().v7(),
   day: DateTime(day.year, day.month, day.day),
   title: title,
   done: false,
+  taskStatus: TaskStatus.pending,
+  carryOver: carryOver,
   sortOrder: sortOrder,
   dueDate: dueDate,
   startTimeMinutes: startTimeMinutes,

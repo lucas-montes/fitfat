@@ -8,10 +8,11 @@ import '../providers/planner.dart';
 
 /// Opens the full-screen task editor (add or edit) as a pushed route and
 /// resolves with a `(title, dueDate, startTimeMinutes, endTimeMinutes, notes,
-/// workoutId, tags, recurrence)` record — or `null` if cancelled. The trimmed
-/// title is guaranteed non-empty; an empty note or empty tag list becomes null.
-/// The sheet-style drag-to-dismiss is gone: the screen has an explicit close X
-/// and a Save action in the AppBar (always reachable, no scrolling).
+/// workoutId, tags, recurrence, carryOver)` record — or `null` if cancelled.
+/// The trimmed title is guaranteed non-empty; an empty note or empty tag list
+/// becomes null. The sheet-style drag-to-dismiss is gone: the screen has an
+/// explicit close X and a Save action in the AppBar (always reachable, no
+/// scrolling).
 Future<
   (
     String,
@@ -22,6 +23,7 @@ Future<
     String?,
     List<String>?,
     PlannerRecurrence?,
+    bool,
   )?
 >
 showPlannerItemDialog(
@@ -35,6 +37,7 @@ showPlannerItemDialog(
   String? initialWorkoutId,
   List<String>? initialTags,
   PlannerRecurrence? initialRecurrence,
+  bool initialCarryOver = true,
 }) {
   return Navigator.of(context).push<
     (
@@ -46,6 +49,7 @@ showPlannerItemDialog(
       String?,
       List<String>?,
       PlannerRecurrence?,
+      bool,
     )
   >(
     MaterialPageRoute(
@@ -59,6 +63,7 @@ showPlannerItemDialog(
         initialWorkoutId: initialWorkoutId,
         initialTags: initialTags,
         initialRecurrence: initialRecurrence,
+        initialCarryOver: initialCarryOver,
       ),
     ),
   );
@@ -76,6 +81,7 @@ final class PlannerItemFormScreen extends ConsumerStatefulWidget {
   final String? initialWorkoutId;
   final List<String>? initialTags;
   final PlannerRecurrence? initialRecurrence;
+  final bool initialCarryOver;
 
   const PlannerItemFormScreen({
     super.key,
@@ -88,6 +94,7 @@ final class PlannerItemFormScreen extends ConsumerStatefulWidget {
     this.initialWorkoutId,
     this.initialTags,
     this.initialRecurrence,
+    this.initialCarryOver = true,
   });
 
   @override
@@ -106,6 +113,7 @@ final class _PlannerItemFormScreenState
   late DateTime? _dueDate;
   late int? _startTimeMinutes;
   late int? _endTimeMinutes;
+  late bool _carryOver;
   String? _errorText;
   String? _selectedWorkoutId;
   final List<String> _tags = [];
@@ -125,6 +133,7 @@ final class _PlannerItemFormScreenState
     _dueDate = widget.initialDueDate;
     _startTimeMinutes = widget.initialStartTimeMinutes;
     _endTimeMinutes = widget.initialEndTimeMinutes;
+    _carryOver = widget.initialCarryOver;
     _selectedWorkoutId = widget.initialWorkoutId;
     _tags.addAll(widget.initialTags ?? const []);
     _intervalDaysController = TextEditingController();
@@ -238,6 +247,7 @@ final class _PlannerItemFormScreenState
       _selectedWorkoutId,
       tags,
       recurrence,
+      _carryOver,
     ));
   }
 
@@ -592,6 +602,13 @@ final class _PlannerItemFormScreenState
                   )
                 : null,
             onTap: _pickDueDate,
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.redo_outlined),
+            title: Text(l10n.plannerCarryOverLabel),
+            subtitle: Text(l10n.plannerCarryOverHelp),
+            value: _carryOver,
+            onChanged: (value) => setState(() => _carryOver = value),
           ),
           ListTile(
             leading: const Icon(Icons.schedule_outlined),

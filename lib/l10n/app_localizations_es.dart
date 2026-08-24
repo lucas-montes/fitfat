@@ -889,6 +889,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get plannerMoreActions => 'Más acciones';
 
   @override
+  String get plannerTaskCancelled => 'Cancelada';
+
+  @override
+  String get plannerActionMarkDone => 'Marcar hecha';
+
+  @override
+  String get plannerActionCancelTask => 'Marcar cancelada';
+
+  @override
+  String get plannerActionReopen => 'Reabrir';
+
+  @override
+  String get plannerCarryOverLabel => 'Arrastrar si no se completa';
+
+  @override
+  String get plannerCarryOverHelp =>
+      'Si el día termina y esta tarea no está hecha, pasa a hoy. Desactívalo para marcarla como cancelada.';
+
+  @override
   String get plannerTaskDetailAppBar => 'Detalles de la tarea';
 
   @override

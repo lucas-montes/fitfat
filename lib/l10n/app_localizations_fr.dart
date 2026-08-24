@@ -889,6 +889,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plannerMoreActions => 'Plus d\'actions';
 
   @override
+  String get plannerTaskCancelled => 'Annulée';
+
+  @override
+  String get plannerActionMarkDone => 'Marquer faite';
+
+  @override
+  String get plannerActionCancelTask => 'Marquer annulée';
+
+  @override
+  String get plannerActionReopen => 'Rouvrir';
+
+  @override
+  String get plannerCarryOverLabel => 'Reporter si non faite';
+
+  @override
+  String get plannerCarryOverHelp =>
+      'Si la journée se termine et que cette tâche n\'est pas faite, elle passe à aujourd\'hui. Désactivez pour la marquer annulée.';
+
+  @override
   String get plannerTaskDetailAppBar => 'Détails de la tâche';
 
   @override

@@ -5400,6 +5400,32 @@ class $PlannerItemsTable extends PlannerItems
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _taskStatusMeta = const VerificationMeta(
+    'taskStatus',
+  );
+  @override
+  late final GeneratedColumn<int> taskStatus = GeneratedColumn<int>(
+    'task_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _carryOverMeta = const VerificationMeta(
+    'carryOver',
+  );
+  @override
+  late final GeneratedColumn<bool> carryOver = GeneratedColumn<bool>(
+    'carry_over',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("carry_over" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   static const VerificationMeta _sortOrderMeta = const VerificationMeta(
     'sortOrder',
   );
@@ -5612,6 +5638,8 @@ class $PlannerItemsTable extends PlannerItems
     date,
     title,
     done,
+    taskStatus,
+    carryOver,
     sortOrder,
     dueDate,
     dueTimeMinutes,
@@ -5672,6 +5700,18 @@ class $PlannerItemsTable extends PlannerItems
       );
     } else if (isInserting) {
       context.missing(_doneMeta);
+    }
+    if (data.containsKey('task_status')) {
+      context.handle(
+        _taskStatusMeta,
+        taskStatus.isAcceptableOrUnknown(data['task_status']!, _taskStatusMeta),
+      );
+    }
+    if (data.containsKey('carry_over')) {
+      context.handle(
+        _carryOverMeta,
+        carryOver.isAcceptableOrUnknown(data['carry_over']!, _carryOverMeta),
+      );
     }
     if (data.containsKey('sort_order')) {
       context.handle(
@@ -5834,6 +5874,14 @@ class $PlannerItemsTable extends PlannerItems
         DriftSqlType.int,
         data['${effectivePrefix}done'],
       )!,
+      taskStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}task_status'],
+      ),
+      carryOver: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}carry_over'],
+      )!,
       sortOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
@@ -5924,6 +5972,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
   final int date;
   final String title;
   final int done;
+  final int? taskStatus;
+  final bool carryOver;
   final int sortOrder;
   final int? dueDate;
   final int? dueTimeMinutes;
@@ -5948,6 +5998,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     required this.date,
     required this.title,
     required this.done,
+    this.taskStatus,
+    required this.carryOver,
     required this.sortOrder,
     this.dueDate,
     this.dueTimeMinutes,
@@ -5975,6 +6027,10 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     map['date'] = Variable<int>(date);
     map['title'] = Variable<String>(title);
     map['done'] = Variable<int>(done);
+    if (!nullToAbsent || taskStatus != null) {
+      map['task_status'] = Variable<int>(taskStatus);
+    }
+    map['carry_over'] = Variable<bool>(carryOver);
     map['sort_order'] = Variable<int>(sortOrder);
     if (!nullToAbsent || dueDate != null) {
       map['due_date'] = Variable<int>(dueDate);
@@ -6031,6 +6087,10 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       date: Value(date),
       title: Value(title),
       done: Value(done),
+      taskStatus: taskStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskStatus),
+      carryOver: Value(carryOver),
       sortOrder: Value(sortOrder),
       dueDate: dueDate == null && nullToAbsent
           ? const Value.absent()
@@ -6089,6 +6149,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       date: serializer.fromJson<int>(json['date']),
       title: serializer.fromJson<String>(json['title']),
       done: serializer.fromJson<int>(json['done']),
+      taskStatus: serializer.fromJson<int?>(json['taskStatus']),
+      carryOver: serializer.fromJson<bool>(json['carryOver']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       dueDate: serializer.fromJson<int?>(json['dueDate']),
       dueTimeMinutes: serializer.fromJson<int?>(json['dueTimeMinutes']),
@@ -6120,6 +6182,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       'date': serializer.toJson<int>(date),
       'title': serializer.toJson<String>(title),
       'done': serializer.toJson<int>(done),
+      'taskStatus': serializer.toJson<int?>(taskStatus),
+      'carryOver': serializer.toJson<bool>(carryOver),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'dueDate': serializer.toJson<int?>(dueDate),
       'dueTimeMinutes': serializer.toJson<int?>(dueTimeMinutes),
@@ -6147,6 +6211,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     int? date,
     String? title,
     int? done,
+    Value<int?> taskStatus = const Value.absent(),
+    bool? carryOver,
     int? sortOrder,
     Value<int?> dueDate = const Value.absent(),
     Value<int?> dueTimeMinutes = const Value.absent(),
@@ -6171,6 +6237,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     date: date ?? this.date,
     title: title ?? this.title,
     done: done ?? this.done,
+    taskStatus: taskStatus.present ? taskStatus.value : this.taskStatus,
+    carryOver: carryOver ?? this.carryOver,
     sortOrder: sortOrder ?? this.sortOrder,
     dueDate: dueDate.present ? dueDate.value : this.dueDate,
     dueTimeMinutes: dueTimeMinutes.present
@@ -6203,6 +6271,10 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
       date: data.date.present ? data.date.value : this.date,
       title: data.title.present ? data.title.value : this.title,
       done: data.done.present ? data.done.value : this.done,
+      taskStatus: data.taskStatus.present
+          ? data.taskStatus.value
+          : this.taskStatus,
+      carryOver: data.carryOver.present ? data.carryOver.value : this.carryOver,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       dueDate: data.dueDate.present ? data.dueDate.value : this.dueDate,
       dueTimeMinutes: data.dueTimeMinutes.present
@@ -6248,6 +6320,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
           ..write('date: $date, ')
           ..write('title: $title, ')
           ..write('done: $done, ')
+          ..write('taskStatus: $taskStatus, ')
+          ..write('carryOver: $carryOver, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('dueDate: $dueDate, ')
           ..write('dueTimeMinutes: $dueTimeMinutes, ')
@@ -6277,6 +6351,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
     date,
     title,
     done,
+    taskStatus,
+    carryOver,
     sortOrder,
     dueDate,
     dueTimeMinutes,
@@ -6305,6 +6381,8 @@ class PlannerItem extends DataClass implements Insertable<PlannerItem> {
           other.date == this.date &&
           other.title == this.title &&
           other.done == this.done &&
+          other.taskStatus == this.taskStatus &&
+          other.carryOver == this.carryOver &&
           other.sortOrder == this.sortOrder &&
           other.dueDate == this.dueDate &&
           other.dueTimeMinutes == this.dueTimeMinutes &&
@@ -6331,6 +6409,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
   final Value<int> date;
   final Value<String> title;
   final Value<int> done;
+  final Value<int?> taskStatus;
+  final Value<bool> carryOver;
   final Value<int> sortOrder;
   final Value<int?> dueDate;
   final Value<int?> dueTimeMinutes;
@@ -6356,6 +6436,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     this.date = const Value.absent(),
     this.title = const Value.absent(),
     this.done = const Value.absent(),
+    this.taskStatus = const Value.absent(),
+    this.carryOver = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.dueTimeMinutes = const Value.absent(),
@@ -6382,6 +6464,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     required int date,
     required String title,
     required int done,
+    this.taskStatus = const Value.absent(),
+    this.carryOver = const Value.absent(),
     required int sortOrder,
     this.dueDate = const Value.absent(),
     this.dueTimeMinutes = const Value.absent(),
@@ -6413,6 +6497,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     Expression<int>? date,
     Expression<String>? title,
     Expression<int>? done,
+    Expression<int>? taskStatus,
+    Expression<bool>? carryOver,
     Expression<int>? sortOrder,
     Expression<int>? dueDate,
     Expression<int>? dueTimeMinutes,
@@ -6439,6 +6525,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
       if (date != null) 'date': date,
       if (title != null) 'title': title,
       if (done != null) 'done': done,
+      if (taskStatus != null) 'task_status': taskStatus,
+      if (carryOver != null) 'carry_over': carryOver,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (dueDate != null) 'due_date': dueDate,
       if (dueTimeMinutes != null) 'due_time_minutes': dueTimeMinutes,
@@ -6468,6 +6556,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     Value<int>? date,
     Value<String>? title,
     Value<int>? done,
+    Value<int?>? taskStatus,
+    Value<bool>? carryOver,
     Value<int>? sortOrder,
     Value<int?>? dueDate,
     Value<int?>? dueTimeMinutes,
@@ -6494,6 +6584,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
       date: date ?? this.date,
       title: title ?? this.title,
       done: done ?? this.done,
+      taskStatus: taskStatus ?? this.taskStatus,
+      carryOver: carryOver ?? this.carryOver,
       sortOrder: sortOrder ?? this.sortOrder,
       dueDate: dueDate ?? this.dueDate,
       dueTimeMinutes: dueTimeMinutes ?? this.dueTimeMinutes,
@@ -6531,6 +6623,12 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
     }
     if (done.present) {
       map['done'] = Variable<int>(done.value);
+    }
+    if (taskStatus.present) {
+      map['task_status'] = Variable<int>(taskStatus.value);
+    }
+    if (carryOver.present) {
+      map['carry_over'] = Variable<bool>(carryOver.value);
     }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
@@ -6602,6 +6700,8 @@ class PlannerItemsCompanion extends UpdateCompanion<PlannerItem> {
           ..write('date: $date, ')
           ..write('title: $title, ')
           ..write('done: $done, ')
+          ..write('taskStatus: $taskStatus, ')
+          ..write('carryOver: $carryOver, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('dueDate: $dueDate, ')
           ..write('dueTimeMinutes: $dueTimeMinutes, ')
@@ -14397,6 +14497,8 @@ typedef $$PlannerItemsTableCreateCompanionBuilder =
       required int date,
       required String title,
       required int done,
+      Value<int?> taskStatus,
+      Value<bool> carryOver,
       required int sortOrder,
       Value<int?> dueDate,
       Value<int?> dueTimeMinutes,
@@ -14424,6 +14526,8 @@ typedef $$PlannerItemsTableUpdateCompanionBuilder =
       Value<int> date,
       Value<String> title,
       Value<int> done,
+      Value<int?> taskStatus,
+      Value<bool> carryOver,
       Value<int> sortOrder,
       Value<int?> dueDate,
       Value<int?> dueTimeMinutes,
@@ -14472,6 +14576,16 @@ class $$PlannerItemsTableFilterComposer
 
   ColumnFilters<int> get done => $composableBuilder(
     column: $table.done,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get taskStatus => $composableBuilder(
+    column: $table.taskStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get carryOver => $composableBuilder(
+    column: $table.carryOver,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14600,6 +14714,16 @@ class $$PlannerItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get taskStatus => $composableBuilder(
+    column: $table.taskStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get carryOver => $composableBuilder(
+    column: $table.carryOver,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
@@ -14717,6 +14841,14 @@ class $$PlannerItemsTableAnnotationComposer
   GeneratedColumn<int> get done =>
       $composableBuilder(column: $table.done, builder: (column) => column);
 
+  GeneratedColumn<int> get taskStatus => $composableBuilder(
+    column: $table.taskStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get carryOver =>
+      $composableBuilder(column: $table.carryOver, builder: (column) => column);
+
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
 
@@ -14826,6 +14958,8 @@ class $$PlannerItemsTableTableManager
                 Value<int> date = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<int> done = const Value.absent(),
+                Value<int?> taskStatus = const Value.absent(),
+                Value<bool> carryOver = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<int?> dueDate = const Value.absent(),
                 Value<int?> dueTimeMinutes = const Value.absent(),
@@ -14851,6 +14985,8 @@ class $$PlannerItemsTableTableManager
                 date: date,
                 title: title,
                 done: done,
+                taskStatus: taskStatus,
+                carryOver: carryOver,
                 sortOrder: sortOrder,
                 dueDate: dueDate,
                 dueTimeMinutes: dueTimeMinutes,
@@ -14878,6 +15014,8 @@ class $$PlannerItemsTableTableManager
                 required int date,
                 required String title,
                 required int done,
+                Value<int?> taskStatus = const Value.absent(),
+                Value<bool> carryOver = const Value.absent(),
                 required int sortOrder,
                 Value<int?> dueDate = const Value.absent(),
                 Value<int?> dueTimeMinutes = const Value.absent(),
@@ -14903,6 +15041,8 @@ class $$PlannerItemsTableTableManager
                 date: date,
                 title: title,
                 done: done,
+                taskStatus: taskStatus,
+                carryOver: carryOver,
                 sortOrder: sortOrder,
                 dueDate: dueDate,
                 dueTimeMinutes: dueTimeMinutes,

@@ -145,6 +145,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               onPageChanged: (focused) => setState(() => _focusedDay = focused),
               onAddItem: _addItem,
               onToggleDone: _toggleDone,
+              onToggleCancelled: _toggleCancelled,
               onOpenDetail: _openDetail,
               onEdit: _editItem,
               onDelete: _deleteItem,
@@ -195,6 +196,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       workoutId,
       tags,
       recurrence,
+      carryOver,
     ) = result;
     final repo = ref.read(plannerRepositoryProvider);
     // A chosen due date places the task on that day; otherwise it stays on
@@ -220,6 +222,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       workoutId: workoutId,
       tags: tags,
       recurrence: recurrence,
+      carryOver: carryOver,
     );
     await repo.insert(item);
     // A recurring task stores one anchor (seriesId == its own id) that
@@ -296,6 +299,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       initialNotes: item.notes,
       initialWorkoutId: item.workoutId,
       initialTags: item.tags,
+      initialCarryOver: item.carryOver,
     );
     if (result == null || !mounted) return;
     final (
@@ -307,6 +311,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       workoutId,
       tags,
       recurrence,
+      carryOver,
     ) = result;
     final repo = ref.read(plannerRepositoryProvider);
 
@@ -348,6 +353,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       tags: tags,
       recurrence: recurrence,
       seriesId: seriesId,
+      carryOver: carryOver,
     );
     await repo.update(updated);
     // Cancel first so a removed/cleared due time also drops the old reminders;
@@ -459,12 +465,30 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
 
   Future<void> _toggleDone(PlannerItem item) async {
     unawaited(Haptics.selection());
-    final updated = item.copyWith(done: !item.done);
+    final updated = item.withTaskStatus(
+      item.done ? TaskStatus.pending : TaskStatus.done,
+    );
     await ref.read(plannerRepositoryProvider).update(updated);
     if (updated.done) {
       await _cancelReminder(item.id);
     } else {
       await _cancelReminder(item.id);
+      await _syncReminder(updated);
+    }
+    ref.invalidate(plannerItemsProvider(_selectedDay));
+    invalidateDashboard(ref);
+  }
+
+  /// Swipe-right action: cancels a pending/done task, reopens a cancelled
+  /// one. Reminders follow the same rules as the done toggle.
+  Future<void> _toggleCancelled(PlannerItem item) async {
+    unawaited(Haptics.selection());
+    final updated = item.withTaskStatus(
+      item.isCancelled ? TaskStatus.pending : TaskStatus.cancelled,
+    );
+    await ref.read(plannerRepositoryProvider).update(updated);
+    await _cancelReminder(item.id);
+    if (!updated.isCancelled && !updated.done) {
       await _syncReminder(updated);
     }
     ref.invalidate(plannerItemsProvider(_selectedDay));
@@ -563,7 +587,11 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final repo = ref.read(plannerRepositoryProvider);
     final yesterday = _selectedDay.subtract(const Duration(days: 1));
     final previousItems = await repo.getByDay(yesterday);
-    final pendingCount = previousItems.where((e) => !e.done).length;
+    // Cancelled tasks were explicitly dropped — they are neither counted nor
+    // copied (the repository query skips them too).
+    final pendingCount = previousItems
+        .where((e) => !e.done && !e.isCancelled)
+        .length;
     if (!mounted) return;
 
     if (pendingCount == 0) {
@@ -615,6 +643,7 @@ final class _CalendarView extends ConsumerWidget {
   final void Function(DateTime focused) onPageChanged;
   final VoidCallback onAddItem;
   final void Function(PlannerItem item) onToggleDone;
+  final void Function(PlannerItem item) onToggleCancelled;
   final void Function(PlannerItem item) onOpenDetail;
   final void Function(PlannerItem item) onEdit;
   final void Function(PlannerItem item) onDelete;
@@ -628,6 +657,7 @@ final class _CalendarView extends ConsumerWidget {
     required this.onPageChanged,
     required this.onAddItem,
     required this.onToggleDone,
+    required this.onToggleCancelled,
     required this.onOpenDetail,
     required this.onEdit,
     required this.onDelete,
@@ -694,6 +724,7 @@ final class _CalendarView extends ConsumerWidget {
             l10n: l10n,
             onAddItem: onAddItem,
             onToggleDone: onToggleDone,
+            onToggleCancelled: onToggleCancelled,
             onOpenDetail: onOpenDetail,
             onEdit: onEdit,
             onDelete: onDelete,
@@ -792,6 +823,7 @@ final class _DayPage extends ConsumerWidget {
   final AppLocalizations l10n;
   final VoidCallback onAddItem;
   final void Function(PlannerItem item) onToggleDone;
+  final void Function(PlannerItem item) onToggleCancelled;
   final void Function(PlannerItem item) onOpenDetail;
   final void Function(PlannerItem item) onEdit;
   final void Function(PlannerItem item) onDelete;
@@ -802,6 +834,7 @@ final class _DayPage extends ConsumerWidget {
     required this.l10n,
     required this.onAddItem,
     required this.onToggleDone,
+    required this.onToggleCancelled,
     required this.onOpenDetail,
     required this.onEdit,
     required this.onDelete,
@@ -864,6 +897,7 @@ final class _DayPage extends ConsumerWidget {
                   item: it,
                   l10n: l10n,
                   onToggleDone: () => onToggleDone(it),
+                  onToggleCancelled: () => onToggleCancelled(it),
                   onOpenDetail: () => onOpenDetail(it),
                   onEdit: () => onEdit(it),
                   onDelete: () => onDelete(it),
@@ -908,6 +942,7 @@ final class _DayPage extends ConsumerWidget {
                   l10n: l10n,
                   timeLabel: timeText,
                   onToggleDone: () => onToggleDone(timedItem),
+                  onToggleCancelled: () => onToggleCancelled(timedItem),
                   onOpenDetail: () => onOpenDetail(timedItem),
                   onEdit: () => onEdit(timedItem),
                   onDelete: () => onDelete(timedItem),
@@ -927,11 +962,16 @@ final class _DayPage extends ConsumerWidget {
 /// identical for both: the done `Checkbox` is on the left, the title beside
 /// it, and the time pill (scheduled only) plus the linked-workout icon sit in
 /// a small meta row underneath the title.
+///
+/// Gestures: swipe left deletes; swipe right cancels (reopens a cancelled
+/// task). The done checkbox is inert while cancelled — use swipe-right or the
+/// detail actions to bring the task back.
 final class _TimelineItemCard extends StatelessWidget {
   final PlannerItem item;
   final AppLocalizations l10n;
   final String? timeLabel;
   final VoidCallback onToggleDone;
+  final VoidCallback onToggleCancelled;
   final VoidCallback onOpenDetail;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -943,6 +983,7 @@ final class _TimelineItemCard extends StatelessWidget {
     required this.l10n,
     this.timeLabel,
     required this.onToggleDone,
+    required this.onToggleCancelled,
     required this.onOpenDetail,
     required this.onEdit,
     required this.onDelete,
@@ -955,6 +996,7 @@ final class _TimelineItemCard extends StatelessWidget {
     final notes = item.notes;
     final hasNotes = notes != null && notes.isNotEmpty;
     final hasWorkout = item.workoutId != null;
+    final cancelled = item.isCancelled;
 
     final timePill = timeLabel != null
         ? Container(
@@ -985,9 +1027,27 @@ final class _TimelineItemCard extends StatelessWidget {
           )
         : null;
 
-    // Meta row shown under the title: time pill (scheduled) + linked-workout
-    // icon + tag chips. All intentionally small; wraps on narrow screens.
-    final metaChildren = <Widget>[];
+    // Meta row shown under the title: cancelled chip, time pill (scheduled) +
+    // linked-workout icon + tag chips. All intentionally small; wraps on
+    // narrow screens.
+    final metaChildren = <Widget>[
+      if (cancelled)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.errorContainer,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            l10n.plannerTaskCancelled,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontSize: 11,
+              color: theme.colorScheme.onErrorContainer,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+    ];
     if (timePill != null) metaChildren.add(timePill);
     if (hasWorkout) {
       metaChildren.add(
@@ -1030,14 +1090,31 @@ final class _TimelineItemCard extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(item.id),
-      direction: DismissDirection.endToStart,
+      direction: DismissDirection.horizontal,
+      // Swipe right = cancel (reopen when already cancelled); swipe left =
+      // delete.
       background: Container(
+        color: theme.colorScheme.tertiary,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 16),
+        child: Icon(
+          cancelled ? Icons.undo : Icons.cancel_outlined,
+          color: theme.colorScheme.onTertiary,
+        ),
+      ),
+      secondaryBackground: Container(
         color: theme.colorScheme.error,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
         child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
-      onDismissed: (_) => onDelete(),
+      onDismissed: (direction) {
+        if (direction == DismissDirection.startToEnd) {
+          onToggleCancelled();
+        } else {
+          onDelete();
+        }
+      },
       child: Card(
         margin: EdgeInsets.zero,
         child: Padding(
@@ -1045,7 +1122,12 @@ final class _TimelineItemCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Checkbox(value: item.done, onChanged: (_) => onToggleDone()),
+              // Inert while cancelled: bring the task back first (swipe
+              // right or the detail actions) before marking it done.
+              Checkbox(
+                value: item.done,
+                onChanged: cancelled ? null : (_) => onToggleDone(),
+              ),
               Expanded(
                 child: InkWell(
                   // Tap edits in place; long-press opens the full detail
@@ -1058,7 +1140,7 @@ final class _TimelineItemCard extends StatelessWidget {
                     children: [
                       Text(
                         item.title,
-                        style: item.done
+                        style: item.done || cancelled
                             ? TextStyle(
                                 decoration: TextDecoration.lineThrough,
                                 color: theme.colorScheme.outline,

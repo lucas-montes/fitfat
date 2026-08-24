@@ -391,6 +391,12 @@
   "experimentNoLinkedTasks": "Aucune tâche liée pour l'instant. Liez des tâches pour suivre les étapes de cette expérience.",
   "experimentSearchTasksHint": "Rechercher des tâches…",
   "plannerMoreActions": "Plus d'actions",
+  "plannerTaskCancelled": "Annulée",
+  "plannerActionMarkDone": "Marquer faite",
+  "plannerActionCancelTask": "Marquer annulée",
+  "plannerActionReopen": "Rouvrir",
+  "plannerCarryOverLabel": "Reporter si non faite",
+  "plannerCarryOverHelp": "Si la journée se termine et que cette tâche n'est pas faite, elle passe à aujourd'hui. Désactivez pour la marquer annulée.",
   "plannerTaskDetailAppBar": "Détails de la tâche",
   "plannerDetailUpdatedAt": "Créée le {date}",
   "@plannerDetailUpdatedAt": {

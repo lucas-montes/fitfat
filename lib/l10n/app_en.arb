@@ -449,6 +449,12 @@
   },
   "plannerCopyPrevious": "Copy from yesterday",
   "plannerMoreActions": "More actions",
+  "plannerTaskCancelled": "Cancelled",
+  "plannerActionMarkDone": "Mark done",
+  "plannerActionCancelTask": "Mark cancelled",
+  "plannerActionReopen": "Reopen",
+  "plannerCarryOverLabel": "Carry over if not done",
+  "plannerCarryOverHelp": "If the day ends and this task isn't done, it moves to today. Turn off to mark it cancelled instead.",
   "plannerTaskDetailAppBar": "Task details",
   "plannerDetailUpdatedAt": "Created {date}",
   "@plannerDetailUpdatedAt": {

@@ -9,6 +9,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../l10n/app_localizations.dart';
+import '../dashboard/providers/dashboard.dart';
 import '../notifications/notification_plugin.dart';
 import '../notifications/rest_alarm.dart';
 import '../notifications/task_reminders.dart';
@@ -53,8 +54,11 @@ final class FitFatApp extends ConsumerWidget {
 ///  2. Foreground-service channel config (only needed when a workout starts).
 ///  3. Timezone DB + device zone (only needed when scheduling reminders).
 ///  4. Notification scheduler init + cold-start tap replay.
+///  4. Notification scheduler init + cold-start tap replay.
 ///  5. Planner reminder (re)schedule for pending future timed tasks — covers
 ///     cold starts; a no-op when the app-wide toggle is off.
+///  6. Day rollover — past pending carry-over tasks move to today, others
+///     become cancelled; re-runs on every app resume.
 final class _BackgroundStartup extends ConsumerStatefulWidget {
   final Widget? child;
 
@@ -64,13 +68,41 @@ final class _BackgroundStartup extends ConsumerStatefulWidget {
   ConsumerState<_BackgroundStartup> createState() => _BackgroundStartupState();
 }
 
-final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
+final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
+    with WidgetsBindingObserver {
   bool _ran = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _run());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Moves past pending carry-over tasks to today (others become cancelled)
+  /// and refreshes the affected providers. Runs on cold start and on every
+  /// resume so a day that passes while the app sits in the background is
+  /// still rolled over.
+  Future<void> _rollover() async {
+    try {
+      final moved = await ref
+          .read(plannerRepositoryProvider)
+          .rolloverPastTasks();
+      if (moved == 0 || !mounted) return;
+    } catch (_) {
+      return; // Rollover must never block startup.
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    ref.invalidate(plannerItemsProvider(today));
+    ref.invalidate(plannerMonthItemsProvider(today));
+    invalidateDashboard(ref);
   }
 
   Future<void> _run() async {
@@ -142,6 +174,15 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup> {
             dueSoonText: l10n.taskReminderDueSoon,
             dueNowText: l10n.taskReminderDueNow,
           );
+    }
+
+    await _rollover();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_rollover());
     }
   }
 

@@ -1678,6 +1678,42 @@ abstract class AppLocalizations {
   /// **'More actions'**
   String get plannerMoreActions;
 
+  /// No description provided for @plannerTaskCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get plannerTaskCancelled;
+
+  /// No description provided for @plannerActionMarkDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark done'**
+  String get plannerActionMarkDone;
+
+  /// No description provided for @plannerActionCancelTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark cancelled'**
+  String get plannerActionCancelTask;
+
+  /// No description provided for @plannerActionReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen'**
+  String get plannerActionReopen;
+
+  /// No description provided for @plannerCarryOverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Carry over if not done'**
+  String get plannerCarryOverLabel;
+
+  /// No description provided for @plannerCarryOverHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'If the day ends and this task isn\'t done, it moves to today. Turn off to mark it cancelled instead.'**
+  String get plannerCarryOverHelp;
+
   /// No description provided for @plannerTaskDetailAppBar.
   ///
   /// In en, this message translates to:

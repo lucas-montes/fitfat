@@ -37,7 +37,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -279,6 +279,18 @@ final class AppDatabase extends _$AppDatabase {
         );
         await m.database.customStatement('DROP TABLE experiment_checkins_old');
         await m.database.customStatement('DROP TABLE IF EXISTS experiments');
+      }
+      if (from < 25) {
+        // v25: task lifecycle + carry-over. task_status distinguishes
+        // pending/done/cancelled for plain tasks (experiments stay null and
+        // keep using status); done stays the source of truth for "completed"
+        // and is kept in sync (done == task_status == 1).
+        await m.addColumn(plannerItems, plannerItems.taskStatus);
+        await m.addColumn(plannerItems, plannerItems.carryOver);
+        await m.database.customStatement(
+          "UPDATE planner_items SET task_status = CASE WHEN done = 1 "
+          "THEN 1 ELSE 0 END WHERE kind = 'task'",
+        );
       }
     },
   );

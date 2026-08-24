@@ -6,6 +6,13 @@ import 'planner_recurrence.dart';
 /// are single-day to-dos.
 enum PlannerItemKind { task, experiment }
 
+/// Lifecycle of a plain task. Experiments use [ExperimentStatus] instead.
+enum TaskStatus { pending, done, cancelled }
+
+extension TaskStatusStorage on TaskStatus {
+  int get storage => index;
+}
+
 /// Plain domain model for a daily planner task.
 final class PlannerItem {
   final String id;
@@ -24,6 +31,12 @@ final class PlannerItem {
   final List<String>? tags; // optional free-form labels (schema v12)
   final PlannerRecurrence? recurrence; // optional repeat rule (schema v13)
   final String? seriesId; // groups occurrences of one recurring series
+  // Task lifecycle (v25). Null for experiments; for tasks [done] is kept in
+  // sync (done == taskStatus == TaskStatus.done).
+  final TaskStatus? taskStatus;
+  // When a pending task's day passes: true moves it to today, false marks it
+  // cancelled (see PlannerRepository.rolloverPastTasks).
+  final bool carryOver;
 
   // Experiment fields (schema v24); ignored for plain tasks.
   final PlannerItemKind kind;
@@ -51,6 +64,8 @@ final class PlannerItem {
     this.tags,
     this.recurrence,
     this.seriesId,
+    this.taskStatus,
+    this.carryOver = true,
     this.kind = PlannerItemKind.task,
     this.endDate,
     this.purpose,
@@ -64,6 +79,18 @@ final class PlannerItem {
 
   bool get isExperiment => kind == PlannerItemKind.experiment;
 
+  /// Resolved task lifecycle; falls back to [done] when [taskStatus] is unset
+  /// (pre-v25 rows, experiments).
+  TaskStatus get taskState =>
+      taskStatus ?? (done ? TaskStatus.done : TaskStatus.pending);
+
+  bool get isCancelled => taskState == TaskStatus.cancelled;
+
+  /// Returns a copy with the given lifecycle, keeping [done] in sync so
+  /// existing "completed" checks keep working.
+  PlannerItem withTaskStatus(TaskStatus status) =>
+      copyWith(taskStatus: status, done: status == TaskStatus.done);
+
   /// Sentinel to distinguish "not passed" from "explicitly set to null".
   static const _unset = Object();
 
@@ -72,6 +99,8 @@ final class PlannerItem {
     DateTime? day,
     String? title,
     bool? done,
+    Object? taskStatus = _unset,
+    bool? carryOver,
     int? sortOrder,
     Object? dueDate = _unset,
     Object? startTimeMinutes = _unset,
@@ -95,6 +124,10 @@ final class PlannerItem {
     day: day ?? this.day,
     title: title ?? this.title,
     done: done ?? this.done,
+    taskStatus: identical(taskStatus, _unset)
+        ? this.taskStatus
+        : taskStatus as TaskStatus?,
+    carryOver: carryOver ?? this.carryOver,
     sortOrder: sortOrder ?? this.sortOrder,
     dueDate: identical(dueDate, _unset) ? this.dueDate : dueDate as DateTime?,
     startTimeMinutes: identical(startTimeMinutes, _unset)

@@ -77,11 +77,34 @@ final class _PlannerItemDetailScreenState
 
   Future<void> _toggleDone(PlannerItem item) async {
     unawaited(Haptics.selection());
-    final updated = item.copyWith(done: !item.done);
+    final updated = item.withTaskStatus(
+      item.done ? TaskStatus.pending : TaskStatus.done,
+    );
+    await _applyStatus(updated);
+  }
+
+  /// Marks the task cancelled (or back to pending when it already is).
+  Future<void> _toggleCancelled(PlannerItem item) async {
+    unawaited(Haptics.selection());
+    final updated = item.withTaskStatus(
+      item.isCancelled ? TaskStatus.pending : TaskStatus.cancelled,
+    );
+    await _applyStatus(updated);
+  }
+
+  /// Persists a lifecycle change: reminders follow the done rules (pending
+  /// re-syncs, done/cancelled drop), providers are invalidated and the local
+  /// copy refreshes.
+  Future<void> _applyStatus(PlannerItem updated) async {
     await ref.read(plannerRepositoryProvider).update(updated);
-    await _cancelReminder(item.id);
-    if (!updated.done) await _syncReminder(updated);
+    if (updated.taskState == TaskStatus.pending) {
+      await _cancelReminder(updated.id);
+      await _syncReminder(updated);
+    } else {
+      await _cancelReminder(updated.id);
+    }
     invalidateDashboard(ref);
+    ref.invalidate(plannerItemsProvider(updated.day));
     if (mounted) setState(() => _item = updated);
   }
 
@@ -98,6 +121,7 @@ final class _PlannerItemDetailScreenState
       initialWorkoutId: item.workoutId,
       initialTags: item.tags,
       initialRecurrence: item.recurrence,
+      initialCarryOver: item.carryOver,
     );
     if (result == null || !mounted) return;
     final (
@@ -109,6 +133,7 @@ final class _PlannerItemDetailScreenState
       workoutId,
       tags,
       recurrence,
+      carryOver,
     ) = result;
     final repo = ref.read(plannerRepositoryProvider);
     final wasAnchor = item.recurrence != null;
@@ -133,6 +158,7 @@ final class _PlannerItemDetailScreenState
       tags: tags,
       recurrence: recurrence,
       seriesId: seriesId,
+      carryOver: carryOver,
     );
     await repo.update(updated);
     await _cancelReminder(item.id);
@@ -268,18 +294,21 @@ final class _PlannerItemDetailScreenState
               children: [
                 Row(
                   children: [
+                    // Inert while cancelled — reopen first.
                     Checkbox(
                       value: item.done,
-                      onChanged: (_) => _toggleDone(item),
+                      onChanged: item.isCancelled
+                          ? null
+                          : (_) => _toggleDone(item),
                     ),
                     Expanded(
                       child: Text(
                         item.title,
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          decoration: item.done
+                          decoration: item.done || item.isCancelled
                               ? TextDecoration.lineThrough
                               : null,
-                          color: item.done
+                          color: item.done || item.isCancelled
                               ? theme.colorScheme.outline
                               : theme.colorScheme.onSurface,
                         ),
@@ -287,6 +316,29 @@ final class _PlannerItemDetailScreenState
                     ),
                   ],
                 ),
+                if (item.isCancelled) ...[
+                  const SizedBox(height: FitFatTokens.spaceS),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        l10n.plannerTaskCancelled,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: FitFatTokens.spaceM),
                 _MetaLine(
                   icon: Icons.event_outlined,
@@ -375,6 +427,40 @@ final class _PlannerItemDetailScreenState
                   ),
                 ),
                 const SizedBox(height: FitFatTokens.spaceL),
+                // Lifecycle actions, then the always-available edit/delete.
+                Row(
+                  children: [
+                    if (!item.done && !item.isCancelled)
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () => _toggleDone(item),
+                          child: Text(l10n.plannerActionMarkDone),
+                        ),
+                      )
+                    else if (item.isCancelled || item.done)
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: () async {
+                            final updated = item.withTaskStatus(
+                              TaskStatus.pending,
+                            );
+                            await _applyStatus(updated);
+                          },
+                          child: Text(l10n.plannerActionReopen),
+                        ),
+                      ),
+                    if (!item.isCancelled) ...[
+                      const SizedBox(width: FitFatTokens.spaceM),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _toggleCancelled(item),
+                          child: Text(l10n.plannerActionCancelTask),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: FitFatTokens.spaceM),
                 Row(
                   children: [
                     Expanded(

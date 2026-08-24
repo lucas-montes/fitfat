@@ -389,6 +389,12 @@
   "experimentNoLinkedTasks": "Aún no hay tareas vinculadas. Vincula tareas para seguir los pasos de este experimento.",
   "experimentSearchTasksHint": "Buscar tareas…",
   "plannerMoreActions": "Más acciones",
+  "plannerTaskCancelled": "Cancelada",
+  "plannerActionMarkDone": "Marcar hecha",
+  "plannerActionCancelTask": "Marcar cancelada",
+  "plannerActionReopen": "Reabrir",
+  "plannerCarryOverLabel": "Arrastrar si no se completa",
+  "plannerCarryOverHelp": "Si el día termina y esta tarea no está hecha, pasa a hoy. Desactívalo para marcarla como cancelada.",
   "plannerTaskDetailAppBar": "Detalles de la tarea",
   "plannerDetailUpdatedAt": "Creada el {date}",
   "@plannerDetailUpdatedAt": {

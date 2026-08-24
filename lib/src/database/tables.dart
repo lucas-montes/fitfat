@@ -197,6 +197,13 @@ class PlannerItems extends Table {
   IntColumn get date => integer()(); // start-of-day epoch milliseconds
   TextColumn get title => text()();
   IntColumn get done => integer()(); // 0 | 1
+  // Task lifecycle (v25): 0=pending | 1=done | 2=cancelled. Null for
+  // experiments, which use [status] instead. Kept in sync with [done]
+  // (done == task_status == 1) so existing queries keep working.
+  IntColumn? get taskStatus => integer().nullable()();
+  // Carry-over flag (v25): when a pending task's day passes, it moves to
+  // today; when false it is marked cancelled by the rollover instead.
+  BoolColumn get carryOver => boolean().withDefault(const Constant(true))();
   IntColumn get sortOrder => integer()();
   IntColumn? get dueDate =>
       integer().nullable()(); // optional due date, epoch milliseconds

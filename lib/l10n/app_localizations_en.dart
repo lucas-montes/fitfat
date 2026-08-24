@@ -883,6 +883,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plannerMoreActions => 'More actions';
 
   @override
+  String get plannerTaskCancelled => 'Cancelled';
+
+  @override
+  String get plannerActionMarkDone => 'Mark done';
+
+  @override
+  String get plannerActionCancelTask => 'Mark cancelled';
+
+  @override
+  String get plannerActionReopen => 'Reopen';
+
+  @override
+  String get plannerCarryOverLabel => 'Carry over if not done';
+
+  @override
+  String get plannerCarryOverHelp =>
+      'If the day ends and this task isn\'t done, it moves to today. Turn off to mark it cancelled instead.';
+
+  @override
   String get plannerTaskDetailAppBar => 'Task details';
 
   @override
