@@ -2144,6 +2144,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plannerAllDay => 'All-day';
 
   @override
+  String get plannerGoToday => 'Go to today';
+
+  @override
   String get experimentsEmptyTitle => 'No experiments yet';
 
   @override

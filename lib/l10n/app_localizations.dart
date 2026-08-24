@@ -3940,6 +3940,12 @@ abstract class AppLocalizations {
   /// **'All-day'**
   String get plannerAllDay;
 
+  /// No description provided for @plannerGoToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to today'**
+  String get plannerGoToday;
+
   /// No description provided for @experimentsEmptyTitle.
   ///
   /// In en, this message translates to:

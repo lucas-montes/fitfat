@@ -1377,6 +1377,7 @@
   "plannerViewWeek": "Vue semaine",
   "plannerViewMonth": "Vue mois",
   "plannerAllDay": "Journée entière",
+  "plannerGoToday": "Aller à aujourd'hui",
   "experimentsEmptyTitle": "Aucune expérience",
   "experimentsEmptyBody": "Créez une expérience pour suivre une habitude, un changement alimentaire ou un protocole d'entraînement avec des bilans quotidiens.",
   "experimentDaysElapsed": "{days} jours écoulés",

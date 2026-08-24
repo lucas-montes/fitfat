@@ -1525,6 +1525,7 @@
   "plannerViewWeek": "Week view",
   "plannerViewMonth": "Month view",
   "plannerAllDay": "All-day",
+  "plannerGoToday": "Go to today",
   "experimentsEmptyTitle": "No experiments yet",
   "experimentsEmptyBody": "Create an experiment to track a habit, diet change, or training protocol with daily check-ins.",
   "experimentLinkedTasksTitle": "Linked tasks",

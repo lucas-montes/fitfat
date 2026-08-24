@@ -2160,6 +2160,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get plannerAllDay => 'Todo el día';
 
   @override
+  String get plannerGoToday => 'Ir a hoy';
+
+  @override
   String get experimentsEmptyTitle => 'Aún no hay experimentos';
 
   @override

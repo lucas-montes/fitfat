@@ -1372,6 +1372,7 @@
   "plannerViewWeek": "Vista semanal",
   "plannerViewMonth": "Vista mensual",
   "plannerAllDay": "Todo el día",
+  "plannerGoToday": "Ir a hoy",
   "experimentsEmptyTitle": "Aún no hay experimentos",
   "experimentsEmptyBody": "Crea un experimento para hacer seguimiento de un hábito, un cambio de dieta o un protocolo de entrenamiento con controles diarios.",
   "experimentDaysElapsed": "{days} días transcurridos",

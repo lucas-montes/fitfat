@@ -79,6 +79,14 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   late DateTime _selectedDay;
   _PlannerViewMode _viewMode = _PlannerViewMode.day;
 
+  // Allow the AppBar shortcuts to steer the active view.
+  final GlobalKey<_DayFlowViewState> _dayFlowKey =
+      GlobalKey<_DayFlowViewState>();
+  final GlobalKey<_WeekFlowViewState> _weekFlowKey =
+      GlobalKey<_WeekFlowViewState>();
+  final GlobalKey<_MonthOverviewState> _monthKey =
+      GlobalKey<_MonthOverviewState>();
+
   @override
   void initState() {
     super.initState();
@@ -127,6 +135,13 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       appBar: AppBar(
         title: Text(l10n.plannerAppBar),
         actions: [
+          // "Back to today" — only meaningful when drifted away.
+          if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
+            IconButton(
+              tooltip: l10n.plannerGoToday,
+              icon: const Icon(Icons.today_outlined),
+              onPressed: _goToToday,
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: SegmentedButton<_PlannerViewMode>(
@@ -161,9 +176,11 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       ),
       body: switch (_viewMode) {
         _PlannerViewMode.day => _DayFlowView(
+          key: _dayFlowKey,
           initialDay: _selectedDay,
           isSameDay: _isSameDay,
-          onSelectedDayChanged: (day) => _selectedDay = day,
+          onSelectedDayChanged: (day) =>
+              setState(() => _selectedDay = _startOfDay(day)),
           onAddItem: _addItem,
           onCopyPreviousDay: _copyFromPreviousDay,
           onToggleDone: _toggleDone,
@@ -176,9 +193,11 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           onEditExperiment: _editExperiment,
         ),
         _PlannerViewMode.week => _WeekFlowView(
+          key: _weekFlowKey,
           initialDay: _selectedDay,
           isSameDay: _isSameDay,
-          onSelectedDayChanged: (day) => _selectedDay = day,
+          onSelectedDayChanged: (day) =>
+              setState(() => _selectedDay = _startOfDay(day)),
           onJumpToDay: _jumpToDay,
           onToggleDone: _toggleDone,
           onToggleCancelled: _toggleCancelled,
@@ -190,6 +209,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           onEditExperiment: _editExperiment,
         ),
         _PlannerViewMode.month => _MonthOverview(
+          key: _monthKey,
           selectedDay: _selectedDay,
           isSameDay: _isSameDay,
           onDayPicked: _jumpToDay,
@@ -242,6 +262,20 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     _selectedDay = _startOfDay(day);
     _viewMode = _PlannerViewMode.day;
   });
+
+  /// AppBar shortcut: bring whichever view is active back to today.
+  void _goToToday() {
+    final today = _startOfDay(DateTime.now());
+    switch (_viewMode) {
+      case _PlannerViewMode.day:
+        _dayFlowKey.currentState?.animateToDate(_dayPageIndex(today));
+      case _PlannerViewMode.week:
+        _weekFlowKey.currentState?.animateToWeek(_weekPageIndex(today));
+      case _PlannerViewMode.month:
+        _monthKey.currentState?.focusDay(today);
+    }
+    setState(() => _selectedDay = today);
+  }
 
   Future<void> _addExperiment() async {
     final saved = await Navigator.of(context).push<bool>(
@@ -811,6 +845,7 @@ final class _DayFlowView extends StatefulWidget {
   final void Function(String experimentId) onEditExperiment;
 
   const _DayFlowView({
+    super.key,
     required this.initialDay,
     required this.isSameDay,
     required this.onSelectedDayChanged,
@@ -834,6 +869,20 @@ final class _DayFlowViewState extends State<_DayFlowView> {
   late final PageController _controller = PageController(
     initialPage: _dayPageIndex(widget.initialDay),
   );
+
+  /// Animates the pager so the given page is front and center (the AppBar
+  /// "today" shortcut).
+  void animateToDate(int pageIndex) {
+    if (!_controller.hasClients) {
+      _controller.jumpToPage(pageIndex);
+      return;
+    }
+    _controller.animateToPage(
+      pageIndex,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   void dispose() {
@@ -1245,6 +1294,7 @@ final class _WeekFlowView extends StatefulWidget {
   final void Function(String experimentId) onEditExperiment;
 
   const _WeekFlowView({
+    super.key,
     required this.initialDay,
     required this.isSameDay,
     required this.onSelectedDayChanged,
@@ -1267,6 +1317,20 @@ final class _WeekFlowViewState extends State<_WeekFlowView> {
   late final PageController _controller = PageController(
     initialPage: _weekPageIndex(widget.initialDay),
   );
+
+  /// Animates the pager so the given week page is front and center (the
+  /// AppBar "today" shortcut).
+  void animateToWeek(int pageIndex) {
+    if (!_controller.hasClients) {
+      _controller.jumpToPage(pageIndex);
+      return;
+    }
+    _controller.animateToPage(
+      pageIndex,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   void dispose() {
@@ -1586,6 +1650,7 @@ final class _MonthOverview extends ConsumerStatefulWidget {
   final void Function(DateTime day) onDayPicked;
 
   const _MonthOverview({
+    super.key,
     required this.selectedDay,
     required this.isSameDay,
     required this.onDayPicked,
@@ -1597,6 +1662,11 @@ final class _MonthOverview extends ConsumerStatefulWidget {
 
 final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
   late DateTime _focusedDay = widget.selectedDay;
+
+  /// Re-centers the grid on [day] without leaving the month view (the AppBar
+  /// "today" shortcut).
+  void focusDay(DateTime day) =>
+      setState(() => _focusedDay = DateTime(day.year, day.month, day.day));
 
   DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
 

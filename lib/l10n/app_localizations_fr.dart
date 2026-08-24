@@ -2164,6 +2164,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plannerAllDay => 'Journée entière';
 
   @override
+  String get plannerGoToday => 'Aller à aujourd\'hui';
+
+  @override
   String get experimentsEmptyTitle => 'Aucune expérience';
 
   @override
