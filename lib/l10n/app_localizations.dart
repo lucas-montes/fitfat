@@ -4299,6 +4299,330 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily reminder disabled.'**
   String get experimentReminderCancelled;
+
+  /// No description provided for @plannerViewGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals view'**
+  String get plannerViewGoals;
+
+  /// No description provided for @prioritiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Priorities'**
+  String get prioritiesTitle;
+
+  /// No description provided for @prioritiesManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage priorities'**
+  String get prioritiesManage;
+
+  /// No description provided for @prioritiesAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add priority'**
+  String get prioritiesAdd;
+
+  /// No description provided for @prioritiesRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename priority'**
+  String get prioritiesRename;
+
+  /// No description provided for @prioritiesNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get prioritiesNameLabel;
+
+  /// No description provided for @prioritiesColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get prioritiesColor;
+
+  /// No description provided for @prioritiesDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete priority?'**
+  String get prioritiesDeleteConfirmTitle;
+
+  /// No description provided for @prioritiesDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” will be removed from {count, plural, =0{no items} other{{count} items}}.'**
+  String prioritiesDeleteConfirmBody(num count, Object name);
+
+  /// No description provided for @prioritiesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No priorities yet. Create one to start organizing your goals, tasks and notes.'**
+  String get prioritiesEmpty;
+
+  /// No description provided for @prioritiesUsageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{unused} =1{1 item} other{{count} items}}'**
+  String prioritiesUsageCount(num count);
+
+  /// No description provided for @goalsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New goal'**
+  String get goalsNew;
+
+  /// No description provided for @goalsEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit goal'**
+  String get goalsEdit;
+
+  /// No description provided for @goalsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal not found.'**
+  String get goalsMissing;
+
+  /// No description provided for @goalsFormTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get goalsFormTitleLabel;
+
+  /// No description provided for @goalsFormTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Run a 10k race'**
+  String get goalsFormTitleHint;
+
+  /// No description provided for @goalsFormTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a goal'**
+  String get goalsFormTitleRequired;
+
+  /// No description provided for @goalsFormDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get goalsFormDescriptionLabel;
+
+  /// No description provided for @goalsFormStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get goalsFormStartLabel;
+
+  /// No description provided for @goalsFormEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target date (optional)'**
+  String get goalsFormEndLabel;
+
+  /// No description provided for @goalsNoEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-ended'**
+  String get goalsNoEndDate;
+
+  /// No description provided for @goalsFormStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get goalsFormStatusLabel;
+
+  /// No description provided for @goalsStatusPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get goalsStatusPlanned;
+
+  /// No description provided for @goalsStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get goalsStatusActive;
+
+  /// No description provided for @goalsStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get goalsStatusDone;
+
+  /// No description provided for @goalsStatusAborted.
+  ///
+  /// In en, this message translates to:
+  /// **'Aborted'**
+  String get goalsStatusAborted;
+
+  /// No description provided for @goalsTargetTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get goalsTargetTypeLabel;
+
+  /// No description provided for @goalsTargetTypeNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get goalsTargetTypeNone;
+
+  /// No description provided for @goalsTargetTypeNumeric.
+  ///
+  /// In en, this message translates to:
+  /// **'Numeric'**
+  String get goalsTargetTypeNumeric;
+
+  /// No description provided for @goalsTargetTypeBoolean.
+  ///
+  /// In en, this message translates to:
+  /// **'Achieve'**
+  String get goalsTargetTypeBoolean;
+
+  /// No description provided for @goalsTargetValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target value'**
+  String get goalsTargetValueLabel;
+
+  /// No description provided for @goalsTargetValueInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number'**
+  String get goalsTargetValueInvalid;
+
+  /// No description provided for @goalsUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get goalsUnitLabel;
+
+  /// No description provided for @goalsDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete goal?'**
+  String get goalsDeleteConfirmTitle;
+
+  /// No description provided for @goalsDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The goal and its progress log will be permanently deleted.'**
+  String get goalsDeleteConfirmBody;
+
+  /// No description provided for @goalsMarkActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get goalsMarkActive;
+
+  /// No description provided for @goalsMarkDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark done'**
+  String get goalsMarkDone;
+
+  /// No description provided for @goalsAbort.
+  ///
+  /// In en, this message translates to:
+  /// **'Abort'**
+  String get goalsAbort;
+
+  /// No description provided for @goalsReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen'**
+  String get goalsReopen;
+
+  /// No description provided for @goalsProgressSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get goalsProgressSection;
+
+  /// No description provided for @goalsRecordProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Record progress'**
+  String get goalsRecordProgress;
+
+  /// No description provided for @goalsCurrentValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get goalsCurrentValueLabel;
+
+  /// No description provided for @goalsTargetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get goalsTargetLabel;
+
+  /// No description provided for @goalsAchievedQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Achieved? (1 = yes)'**
+  String get goalsAchievedQuestion;
+
+  /// No description provided for @goalsAchieved.
+  ///
+  /// In en, this message translates to:
+  /// **'Achieved'**
+  String get goalsAchieved;
+
+  /// No description provided for @goalsNotAchieved.
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet'**
+  String get goalsNotAchieved;
+
+  /// No description provided for @goalsProgressNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get goalsProgressNoteHint;
+
+  /// No description provided for @goalsProgressDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded on'**
+  String get goalsProgressDateLabel;
+
+  /// No description provided for @goalsLogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log'**
+  String get goalsLogTitle;
+
+  /// No description provided for @goalsNoProgressYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing recorded yet.'**
+  String get goalsNoProgressYet;
+
+  /// No description provided for @goalsEmptyAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No goals yet'**
+  String get goalsEmptyAllTitle;
+
+  /// No description provided for @goalsEmptyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a long-term outcome to work toward and link it to your priorities.'**
+  String get goalsEmptyAll;
+
+  /// No description provided for @goalsEmptyFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No goals here'**
+  String get goalsEmptyFilterTitle;
+
+  /// No description provided for @goalsEmptyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No goals carry the selected priorities.'**
+  String get goalsEmptyFilter;
 }
 
 class _AppLocalizationsDelegate

@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../models/experiment.dart';
 import '../../planner/providers/planner.dart';
+import '../../tags/widgets/tag_picker.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
 import '../notifications/experiment_reminder.dart';
@@ -40,6 +41,7 @@ final class _ExperimentFormScreenState
     ExperimentCategory.workout,
     ExperimentCategory.diet,
   };
+  List<String> _tags = [];
   bool _reminderEnabled = true;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 20, minute: 0);
   bool _saving = false;
@@ -73,6 +75,7 @@ final class _ExperimentFormScreenState
       _endDate = experiment.endDate ?? _endDate;
       _status = experiment.status;
       _categories = experiment.categories.toSet();
+      _tags = List<String>.from(experiment.tags ?? const []);
       _reminderEnabled = experiment.reminderEnabled;
       _reminderTime = TimeOfDay(
         hour: experiment.reminderTimeMinutes ~/ 60,
@@ -136,6 +139,7 @@ final class _ExperimentFormScreenState
       endDate: _endDate,
       status: _status,
       categories: _categories.toList(),
+      tags: _tags.isEmpty ? null : _tags,
       reminderEnabled: _reminderEnabled,
       reminderTimeMinutes: _reminderTime.hour * 60 + _reminderTime.minute,
       createdAt: _createdAt,
@@ -304,6 +308,18 @@ final class _ExperimentFormScreenState
                           }),
                         ),
                     ],
+                  ),
+                  const SizedBox(height: FitFatTokens.spaceL),
+                  Text(
+                    l10n.plannerTagsLabel,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: FitFatTokens.spaceS),
+                  TagPicker(
+                    tags: _tags,
+                    onChanged: (tags) => setState(() => _tags = tags),
                   ),
                   const SizedBox(height: FitFatTokens.spaceL),
                   SwitchListTile(

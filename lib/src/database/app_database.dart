@@ -29,6 +29,9 @@ part 'app_database.g.dart';
     Receipts,
     FxRates,
     ExperimentCheckins,
+    Tags,
+    Goals,
+    GoalProgressEntries,
   ],
 )
 final class AppDatabase extends _$AppDatabase {
@@ -37,7 +40,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -291,6 +294,16 @@ final class AppDatabase extends _$AppDatabase {
           "UPDATE planner_items SET task_status = CASE WHEN done = 1 "
           "THEN 1 ELSE 0 END WHERE kind = 'task'",
         );
+      }
+      if (from < 26) {
+        // v26: goals & priorities. `tags` is the shared vocabulary behind the
+        // Priorities feature; notes gain tag support and goals link to tags
+        // by name via their own JSON string[] column. Progress entries are
+        // unique per goal per day.
+        await m.createTable(tags);
+        await m.addColumn(notes, notes.tags);
+        await m.createTable(goals);
+        await m.createTable(goalProgressEntries);
       }
     },
   );

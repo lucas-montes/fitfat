@@ -578,6 +578,7 @@ final class PlannerRepository {
       purpose: Value(experiment.purpose),
       status: Value(experiment.status.storage),
       categories: Value(_encodeCategories(experiment.categories)),
+      tags: Value(_encode(experiment.tags)),
       reminderEnabled: Value(experiment.reminderEnabled),
       reminderTimeMinutes: Value(experiment.reminderTimeMinutes),
       createdAt: experiment.createdAt.millisecondsSinceEpoch,
@@ -728,6 +729,7 @@ final class PlannerRepository {
         ? ExperimentStatus.planned
         : _statusFromStorage(row.status!),
     categories: _decodeCategories(row.categories),
+    tags: _decode(row.tags),
     reminderEnabled: row.reminderEnabled,
     reminderTimeMinutes: row.reminderTimeMinutes,
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),

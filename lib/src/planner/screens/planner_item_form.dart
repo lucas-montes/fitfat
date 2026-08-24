@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../models/planner_recurrence.dart';
-import '../providers/planner.dart';
+import '../../tags/widgets/tag_picker.dart';
 
 /// Opens the full-screen task editor (add or edit) as a pushed route and
 /// resolves with a `(title, dueDate, startTimeMinutes, endTimeMinutes, notes,
@@ -106,7 +106,6 @@ final class _PlannerItemFormScreenState
     extends ConsumerState<PlannerItemFormScreen> {
   late final TextEditingController _controller;
   late final TextEditingController _notesController;
-  late final TextEditingController _tagController;
   late final TextEditingController _intervalDaysController;
   late final TextEditingController _monthDayController;
   late final TextEditingController _countController;
@@ -116,8 +115,7 @@ final class _PlannerItemFormScreenState
   late bool _carryOver;
   String? _errorText;
   String? _selectedWorkoutId;
-  final List<String> _tags = [];
-  List<String> _allTags = [];
+  List<String> _tags = [];
 
   PlannerRecurrenceType? _repeatType;
   final Set<int> _weekdays = {};
@@ -129,13 +127,12 @@ final class _PlannerItemFormScreenState
     super.initState();
     _controller = TextEditingController(text: widget.initialTitle ?? '');
     _notesController = TextEditingController(text: widget.initialNotes ?? '');
-    _tagController = TextEditingController();
     _dueDate = widget.initialDueDate;
     _startTimeMinutes = widget.initialStartTimeMinutes;
     _endTimeMinutes = widget.initialEndTimeMinutes;
     _carryOver = widget.initialCarryOver;
     _selectedWorkoutId = widget.initialWorkoutId;
-    _tags.addAll(widget.initialTags ?? const []);
+    _tags = List<String>.from(widget.initialTags ?? const []);
     _intervalDaysController = TextEditingController();
     _monthDayController = TextEditingController();
     _countController = TextEditingController();
@@ -157,41 +154,17 @@ final class _PlannerItemFormScreenState
         _endsChoice = _EndsChoice.never;
       }
     }
-    _loadSuggestions();
   }
-
-  Future<void> _loadSuggestions() async {
-    final tags = await ref.read(plannerRepositoryProvider).distinctTags();
-    if (mounted) setState(() => _allTags = tags);
-  }
-
-  List<String> get _suggestions =>
-      _allTags.where((t) => !_tags.contains(t)).toList();
 
   @override
   void dispose() {
     _controller.dispose();
     _notesController.dispose();
-    _tagController.dispose();
     _intervalDaysController.dispose();
     _monthDayController.dispose();
     _countController.dispose();
     super.dispose();
   }
-
-  void _addTagFromField() {
-    final tag = _tagController.text.trim();
-    _tagController.clear();
-    _addTag(tag);
-  }
-
-  void _addTag(String tag) {
-    final t = tag.trim();
-    if (t.isEmpty || _tags.contains(t)) return;
-    setState(() => _tags.add(t));
-  }
-
-  void _removeTag(String tag) => setState(() => _tags.remove(tag));
 
   PlannerRecurrence? _buildRecurrence() {
     final type = _repeatType;
@@ -533,50 +506,9 @@ final class _PlannerItemFormScreenState
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextField(
-                  controller: _tagController,
-                  textCapitalization: TextCapitalization.none,
-                  decoration: InputDecoration(
-                    labelText: l10n.plannerTagsLabel,
-                    hintText: l10n.plannerTagsHint,
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.add),
-                      tooltip: l10n.plannerTagsAdd,
-                      onPressed: _addTagFromField,
-                    ),
-                  ),
-                  onSubmitted: (_) => _addTagFromField(),
-                ),
-                const SizedBox(height: 8),
-                if (_tags.isNotEmpty)
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final tag in _tags)
-                        InputChip(
-                          label: Text(tag),
-                          onDeleted: () => _removeTag(tag),
-                        ),
-                    ],
-                  ),
-                const SizedBox(height: 8),
-                if (_suggestions.isNotEmpty)
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final tag in _suggestions)
-                        ActionChip(
-                          label: Text(tag),
-                          onPressed: () => _addTag(tag),
-                        ),
-                    ],
-                  ),
-              ],
+            child: TagPicker(
+              tags: _tags,
+              onChanged: (tags) => setState(() => _tags = tags),
             ),
           ),
           ListTile(

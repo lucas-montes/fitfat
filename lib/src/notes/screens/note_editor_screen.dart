@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/note.dart';
+import '../../tags/widgets/tag_picker.dart';
 import '../providers/notes.dart';
 import '../repositories/note_repository.dart';
 
@@ -22,6 +23,7 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleCtrl;
   late final TextEditingController _bodyCtrl;
+  List<String> _tags = [];
   bool _saving = false;
 
   bool get _isEditing => widget.note != null;
@@ -31,6 +33,7 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     super.initState();
     _titleCtrl = TextEditingController(text: widget.note?.title ?? '');
     _bodyCtrl = TextEditingController(text: widget.note?.body ?? '');
+    _tags = List<String>.from(widget.note?.tags ?? const []);
   }
 
   @override
@@ -55,11 +58,14 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           existing.copyWith(
             title: title,
             body: body,
+            tags: _tags.isEmpty ? null : _tags,
             updatedAt: DateTime.now(),
           ),
         );
       } else {
-        await repo.insert(newNote(title: title, body: body));
+        await repo.insert(
+          newNote(title: title, body: body, tags: _tags.isEmpty ? null : _tags),
+        );
       }
 
       if (mounted) Navigator.of(context).pop(true);
@@ -138,6 +144,11 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 labelText: l10n.notesBodyLabel,
                 alignLabelWithHint: true,
               ),
+            ),
+            const SizedBox(height: 16),
+            TagPicker(
+              tags: _tags,
+              onChanged: (tags) => setState(() => _tags = tags),
             ),
             const SizedBox(height: 24),
             FilledButton(

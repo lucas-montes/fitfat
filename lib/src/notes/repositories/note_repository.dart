@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -36,6 +38,7 @@ final class NoteRepository {
             id: note.id,
             title: note.title,
             body: Value(note.body),
+            tags: Value(_encodeTags(note.tags)),
             updatedAt: note.updatedAt.millisecondsSinceEpoch,
             createdAt: note.createdAt.millisecondsSinceEpoch,
           ),
@@ -49,6 +52,7 @@ final class NoteRepository {
       db.NotesCompanion(
         title: Value(note.title),
         body: Value(note.body),
+        tags: Value(_encodeTags(note.tags)),
         updatedAt: Value(note.updatedAt.millisecondsSinceEpoch),
       ),
     );
@@ -64,16 +68,34 @@ final class NoteRepository {
     id: row.id,
     title: row.title,
     body: row.body,
+    tags: _decodeTags(row.tags),
     updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
   );
 }
 
+/// All notes, newest first.
+String? _encodeTags(List<String>? values) {
+  if (values == null || values.isEmpty) return null;
+  return jsonEncode(values);
+}
+
+List<String>? _decodeTags(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is List) return decoded.cast<String>();
+  } catch (_) {}
+  return null;
+}
+
 /// Creates a new [Note] with a fresh UUID v7 and the current timestamp.
-Note newNote({required String title, String body = ''}) => Note(
-  id: const Uuid().v7(),
-  title: title,
-  body: body,
-  updatedAt: DateTime.now(),
-  createdAt: DateTime.now(),
-);
+Note newNote({required String title, String body = '', List<String>? tags}) =>
+    Note(
+      id: const Uuid().v7(),
+      title: title,
+      body: body,
+      tags: tags,
+      updatedAt: DateTime.now(),
+      createdAt: DateTime.now(),
+    );

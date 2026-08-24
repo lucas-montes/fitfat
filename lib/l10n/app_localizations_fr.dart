@@ -2362,4 +2362,187 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get experimentReminderCancelled => 'Rappel quotidien désactivé.';
+
+  @override
+  String get plannerViewGoals => 'Vue des objectifs';
+
+  @override
+  String get prioritiesTitle => 'Priorités';
+
+  @override
+  String get prioritiesManage => 'Gérer les priorités';
+
+  @override
+  String get prioritiesAdd => 'Ajouter une priorité';
+
+  @override
+  String get prioritiesRename => 'Renommer la priorité';
+
+  @override
+  String get prioritiesNameLabel => 'Nom';
+
+  @override
+  String get prioritiesColor => 'Couleur';
+
+  @override
+  String get prioritiesDeleteConfirmTitle => 'Supprimer la priorité ?';
+
+  @override
+  String prioritiesDeleteConfirmBody(num count, Object name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count éléments',
+      zero: 'aucun élément',
+    );
+    return '« $name » sera retirée de $_temp0.';
+  }
+
+  @override
+  String get prioritiesEmpty =>
+      'Aucune priorité pour l\'instant. Créez-en une pour organiser vos objectifs, tâches et notes.';
+
+  @override
+  String prioritiesUsageCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count éléments',
+      one: '1 élément',
+      zero: 'inutilisée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalsNew => 'Nouvel objectif';
+
+  @override
+  String get goalsEdit => 'Modifier l\'objectif';
+
+  @override
+  String get goalsMissing => 'Objectif introuvable.';
+
+  @override
+  String get goalsFormTitleLabel => 'Objectif';
+
+  @override
+  String get goalsFormTitleHint => 'ex. Courir un 10 km';
+
+  @override
+  String get goalsFormTitleRequired => 'Saisissez un objectif';
+
+  @override
+  String get goalsFormDescriptionLabel => 'Description';
+
+  @override
+  String get goalsFormStartLabel => 'Date de début';
+
+  @override
+  String get goalsFormEndLabel => 'Date cible (facultatif)';
+
+  @override
+  String get goalsNoEndDate => 'Sans échéance';
+
+  @override
+  String get goalsFormStatusLabel => 'Statut';
+
+  @override
+  String get goalsStatusPlanned => 'Planifié';
+
+  @override
+  String get goalsStatusActive => 'Actif';
+
+  @override
+  String get goalsStatusDone => 'Terminé';
+
+  @override
+  String get goalsStatusAborted => 'Abandonné';
+
+  @override
+  String get goalsTargetTypeLabel => 'Cible';
+
+  @override
+  String get goalsTargetTypeNone => 'Aucune';
+
+  @override
+  String get goalsTargetTypeNumeric => 'Numérique';
+
+  @override
+  String get goalsTargetTypeBoolean => 'À atteindre';
+
+  @override
+  String get goalsTargetValueLabel => 'Valeur cible';
+
+  @override
+  String get goalsTargetValueInvalid => 'Saisissez un nombre';
+
+  @override
+  String get goalsUnitLabel => 'Unité';
+
+  @override
+  String get goalsDeleteConfirmTitle => 'Supprimer l\'objectif ?';
+
+  @override
+  String get goalsDeleteConfirmBody =>
+      'L\'objectif et son journal de progression seront définitivement supprimés.';
+
+  @override
+  String get goalsMarkActive => 'Activer';
+
+  @override
+  String get goalsMarkDone => 'Marquer terminé';
+
+  @override
+  String get goalsAbort => 'Abandonner';
+
+  @override
+  String get goalsReopen => 'Rouvrir';
+
+  @override
+  String get goalsProgressSection => 'Progression';
+
+  @override
+  String get goalsRecordProgress => 'Enregistrer la progression';
+
+  @override
+  String get goalsCurrentValueLabel => 'Actuel';
+
+  @override
+  String get goalsTargetLabel => 'Cible';
+
+  @override
+  String get goalsAchievedQuestion => 'Atteint ? (1 = oui)';
+
+  @override
+  String get goalsAchieved => 'Atteint';
+
+  @override
+  String get goalsNotAchieved => 'Pas encore';
+
+  @override
+  String get goalsProgressNoteHint => 'Note (facultatif)';
+
+  @override
+  String get goalsProgressDateLabel => 'Enregistré le';
+
+  @override
+  String get goalsLogTitle => 'Journal';
+
+  @override
+  String get goalsNoProgressYet => 'Rien d\'enregistré pour l\'instant.';
+
+  @override
+  String get goalsEmptyAllTitle => 'Aucun objectif';
+
+  @override
+  String get goalsEmptyAll =>
+      'Définissez un résultat à long terme et liez-le à vos priorités.';
+
+  @override
+  String get goalsEmptyFilterTitle => 'Aucun objectif ici';
+
+  @override
+  String get goalsEmptyFilter =>
+      'Aucun objectif ne porte les priorités sélectionnées.';
 }

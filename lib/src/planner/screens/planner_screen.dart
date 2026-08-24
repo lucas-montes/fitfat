@@ -13,6 +13,8 @@ import '../../exercise/providers/workouts.dart';
 import '../../experiments/providers/experiments.dart';
 import '../../experiments/screens/experiment_detail_screen.dart';
 import '../../experiments/screens/experiment_form_screen.dart';
+import '../../goals/screens/goal_form_screen.dart';
+import '../../goals/screens/goals_screen.dart';
 import '../../models/experiment.dart';
 import '../../models/planner_item.dart';
 import '../../notifications/task_reminders.dart';
@@ -25,7 +27,7 @@ import '../repositories/planner_repository.dart';
 import 'planner_item_detail.dart';
 import 'planner_item_form.dart';
 
-enum _PlannerViewMode { day, week, month }
+enum _PlannerViewMode { day, week, month, goals }
 
 enum _AddChoice { task, experiment }
 
@@ -166,6 +168,11 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   icon: const Icon(Icons.calendar_month_outlined),
                   tooltip: l10n.plannerViewMonth,
                 ),
+                ButtonSegment(
+                  value: _PlannerViewMode.goals,
+                  icon: const Icon(Icons.flag_outlined),
+                  tooltip: l10n.plannerViewGoals,
+                ),
               ],
               selected: {_viewMode},
               onSelectionChanged: (selection) =>
@@ -214,12 +221,21 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           isSameDay: _isSameDay,
           onDayPicked: _jumpToDay,
         ),
+        _PlannerViewMode.goals => const GoalsView(),
       },
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddSheet,
+        onPressed: _viewMode == _PlannerViewMode.goals
+            ? _addGoal
+            : _showAddSheet,
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _addGoal() async {
+    await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const GoalFormScreen()));
   }
 
   /// FAB opens a chooser instead of assuming what to create: tasks and
@@ -273,6 +289,8 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         _weekFlowKey.currentState?.animateToWeek(_weekPageIndex(today));
       case _PlannerViewMode.month:
         _monthKey.currentState?.focusDay(today);
+      case _PlannerViewMode.goals:
+        break;
     }
     setState(() => _selectedDay = today);
   }

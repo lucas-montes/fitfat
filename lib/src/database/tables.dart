@@ -256,11 +256,89 @@ class Notes extends Table {
   TextColumn get id => text()();
   TextColumn get title => text()();
   TextColumn get body => text().withDefault(const Constant(''))();
+  // Free-form tags as a JSON string[] (v26) — names from the shared `tags`
+  // vocabulary, same convention as planner_items.tags.
+  TextColumn? get tags => text().nullable()();
   IntColumn get updatedAt => integer()();
   IntColumn get createdAt => integer()();
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Goals & priorities tables (v26)
+// ---------------------------------------------------------------------------
+
+/// Shared tag vocabulary — the "Priorities" feature. Entities (planner items,
+/// notes, goals) reference tags by [name] inside their own JSON string[]
+/// columns; this table holds the display metadata: an optional explicit color
+/// and the manual priority order.
+class Tags extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text().unique()();
+
+  /// Explicit ARGB color; null = derived deterministically from [name].
+  IntColumn? get color => integer().nullable()();
+
+  /// Manual priority rank (lower sorts first).
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  IntColumn get createdAt => integer()();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A long-term outcome to work toward, optionally linked to priorities via
+/// its JSON string[] tags column and tracked with a target + progress log.
+class Goals extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  TextColumn? get description => text().nullable()();
+
+  /// JSON string[] of tag names (shared vocabulary).
+  TextColumn? get tags => text().nullable()();
+  // Start-of-day epoch milliseconds.
+  IntColumn get startDate => integer()();
+
+  /// Target end date (start-of-day epoch ms); null = open-ended.
+  IntColumn? get endDate => integer().nullable()();
+  // 'planned' | 'active' | 'done' | 'aborted'.
+  TextColumn get status => text().withDefault(const Constant('planned'))();
+  // 'none' | 'numeric' | 'boolean'.
+  TextColumn get targetType => text().withDefault(const Constant('none'))();
+
+  /// Numeric goal target; null for 'none'/'boolean'.
+  RealColumn? get targetValue => real().nullable()();
+
+  /// Optional unit label for numeric targets ('kg', 'km', …).
+  TextColumn? get unit => text().nullable()();
+  IntColumn get createdAt => integer()();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// One progress measurement for a goal; unique per goal per day so re-recording
+/// on the same day overwrites (same convention as experiment check-ins).
+class GoalProgressEntries extends Table {
+  TextColumn get id => text()();
+  TextColumn get goalId => text()();
+  // Start-of-day epoch milliseconds.
+  IntColumn get recordedAt => integer()();
+  RealColumn get value => real()();
+  TextColumn? get note => text().nullable()();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {goalId, recordedAt},
+  ];
 }
 
 // ---------------------------------------------------------------------------

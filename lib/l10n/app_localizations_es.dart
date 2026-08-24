@@ -2356,4 +2356,187 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get experimentReminderCancelled => 'Recordatorio diario desactivado.';
+
+  @override
+  String get plannerViewGoals => 'Vista de metas';
+
+  @override
+  String get prioritiesTitle => 'Prioridades';
+
+  @override
+  String get prioritiesManage => 'Gestionar prioridades';
+
+  @override
+  String get prioritiesAdd => 'Añadir prioridad';
+
+  @override
+  String get prioritiesRename => 'Renombrar prioridad';
+
+  @override
+  String get prioritiesNameLabel => 'Nombre';
+
+  @override
+  String get prioritiesColor => 'Color';
+
+  @override
+  String get prioritiesDeleteConfirmTitle => '¿Eliminar prioridad?';
+
+  @override
+  String prioritiesDeleteConfirmBody(num count, Object name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementos',
+      zero: 'ningún elemento',
+    );
+    return '«$name» se quitará de $_temp0.';
+  }
+
+  @override
+  String get prioritiesEmpty =>
+      'Aún no hay prioridades. Crea una para organizar tus metas, tareas y notas.';
+
+  @override
+  String prioritiesUsageCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementos',
+      one: '1 elemento',
+      zero: 'sin uso',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalsNew => 'Nueva meta';
+
+  @override
+  String get goalsEdit => 'Editar meta';
+
+  @override
+  String get goalsMissing => 'Meta no encontrada.';
+
+  @override
+  String get goalsFormTitleLabel => 'Meta';
+
+  @override
+  String get goalsFormTitleHint => 'p. ej. Correr una carrera de 10k';
+
+  @override
+  String get goalsFormTitleRequired => 'Introduce una meta';
+
+  @override
+  String get goalsFormDescriptionLabel => 'Descripción';
+
+  @override
+  String get goalsFormStartLabel => 'Fecha de inicio';
+
+  @override
+  String get goalsFormEndLabel => 'Fecha objetivo (opcional)';
+
+  @override
+  String get goalsNoEndDate => 'Sin fecha límite';
+
+  @override
+  String get goalsFormStatusLabel => 'Estado';
+
+  @override
+  String get goalsStatusPlanned => 'Planificada';
+
+  @override
+  String get goalsStatusActive => 'Activa';
+
+  @override
+  String get goalsStatusDone => 'Completada';
+
+  @override
+  String get goalsStatusAborted => 'Abandonada';
+
+  @override
+  String get goalsTargetTypeLabel => 'Objetivo';
+
+  @override
+  String get goalsTargetTypeNone => 'Ninguno';
+
+  @override
+  String get goalsTargetTypeNumeric => 'Numérico';
+
+  @override
+  String get goalsTargetTypeBoolean => 'Logro';
+
+  @override
+  String get goalsTargetValueLabel => 'Valor objetivo';
+
+  @override
+  String get goalsTargetValueInvalid => 'Introduce un número';
+
+  @override
+  String get goalsUnitLabel => 'Unidad';
+
+  @override
+  String get goalsDeleteConfirmTitle => '¿Eliminar meta?';
+
+  @override
+  String get goalsDeleteConfirmBody =>
+      'La meta y su registro de progreso se eliminarán permanentemente.';
+
+  @override
+  String get goalsMarkActive => 'Activar';
+
+  @override
+  String get goalsMarkDone => 'Marcar completada';
+
+  @override
+  String get goalsAbort => 'Abandonar';
+
+  @override
+  String get goalsReopen => 'Reabrir';
+
+  @override
+  String get goalsProgressSection => 'Progreso';
+
+  @override
+  String get goalsRecordProgress => 'Registrar progreso';
+
+  @override
+  String get goalsCurrentValueLabel => 'Actual';
+
+  @override
+  String get goalsTargetLabel => 'Objetivo';
+
+  @override
+  String get goalsAchievedQuestion => '¿Logrado? (1 = sí)';
+
+  @override
+  String get goalsAchieved => 'Lograda';
+
+  @override
+  String get goalsNotAchieved => 'Todavía no';
+
+  @override
+  String get goalsProgressNoteHint => 'Nota (opcional)';
+
+  @override
+  String get goalsProgressDateLabel => 'Registrado el';
+
+  @override
+  String get goalsLogTitle => 'Registro';
+
+  @override
+  String get goalsNoProgressYet => 'Nada registrado todavía.';
+
+  @override
+  String get goalsEmptyAllTitle => 'Aún no hay metas';
+
+  @override
+  String get goalsEmptyAll =>
+      'Define un resultado a largo plazo y vincúlalo a tus prioridades.';
+
+  @override
+  String get goalsEmptyFilterTitle => 'No hay metas aquí';
+
+  @override
+  String get goalsEmptyFilter =>
+      'Ninguna meta lleva las prioridades seleccionadas.';
 }

@@ -17,6 +17,10 @@ final class Experiment {
   final DateTime? endDate;
   final ExperimentStatus status;
   final List<ExperimentCategory> categories;
+
+  /// Tag names from the shared vocabulary ("priorities"); stored on the
+  /// underlying planner item's JSON tags column.
+  final List<String>? tags;
   final bool reminderEnabled;
 
   /// Daily check-in reminder time as minutes from midnight (default 20:00).
@@ -31,6 +35,7 @@ final class Experiment {
     this.endDate,
     required this.status,
     this.categories = const [],
+    this.tags,
     this.reminderEnabled = true,
     this.reminderTimeMinutes = 20 * 60,
     required this.createdAt,

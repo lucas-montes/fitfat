@@ -2339,4 +2339,186 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get experimentReminderCancelled => 'Daily reminder disabled.';
+
+  @override
+  String get plannerViewGoals => 'Goals view';
+
+  @override
+  String get prioritiesTitle => 'Priorities';
+
+  @override
+  String get prioritiesManage => 'Manage priorities';
+
+  @override
+  String get prioritiesAdd => 'Add priority';
+
+  @override
+  String get prioritiesRename => 'Rename priority';
+
+  @override
+  String get prioritiesNameLabel => 'Name';
+
+  @override
+  String get prioritiesColor => 'Color';
+
+  @override
+  String get prioritiesDeleteConfirmTitle => 'Delete priority?';
+
+  @override
+  String prioritiesDeleteConfirmBody(num count, Object name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      zero: 'no items',
+    );
+    return '“$name” will be removed from $_temp0.';
+  }
+
+  @override
+  String get prioritiesEmpty =>
+      'No priorities yet. Create one to start organizing your goals, tasks and notes.';
+
+  @override
+  String prioritiesUsageCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+      zero: 'unused',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalsNew => 'New goal';
+
+  @override
+  String get goalsEdit => 'Edit goal';
+
+  @override
+  String get goalsMissing => 'Goal not found.';
+
+  @override
+  String get goalsFormTitleLabel => 'Goal';
+
+  @override
+  String get goalsFormTitleHint => 'e.g. Run a 10k race';
+
+  @override
+  String get goalsFormTitleRequired => 'Enter a goal';
+
+  @override
+  String get goalsFormDescriptionLabel => 'Description';
+
+  @override
+  String get goalsFormStartLabel => 'Start date';
+
+  @override
+  String get goalsFormEndLabel => 'Target date (optional)';
+
+  @override
+  String get goalsNoEndDate => 'Open-ended';
+
+  @override
+  String get goalsFormStatusLabel => 'Status';
+
+  @override
+  String get goalsStatusPlanned => 'Planned';
+
+  @override
+  String get goalsStatusActive => 'Active';
+
+  @override
+  String get goalsStatusDone => 'Done';
+
+  @override
+  String get goalsStatusAborted => 'Aborted';
+
+  @override
+  String get goalsTargetTypeLabel => 'Target';
+
+  @override
+  String get goalsTargetTypeNone => 'None';
+
+  @override
+  String get goalsTargetTypeNumeric => 'Numeric';
+
+  @override
+  String get goalsTargetTypeBoolean => 'Achieve';
+
+  @override
+  String get goalsTargetValueLabel => 'Target value';
+
+  @override
+  String get goalsTargetValueInvalid => 'Enter a number';
+
+  @override
+  String get goalsUnitLabel => 'Unit';
+
+  @override
+  String get goalsDeleteConfirmTitle => 'Delete goal?';
+
+  @override
+  String get goalsDeleteConfirmBody =>
+      'The goal and its progress log will be permanently deleted.';
+
+  @override
+  String get goalsMarkActive => 'Activate';
+
+  @override
+  String get goalsMarkDone => 'Mark done';
+
+  @override
+  String get goalsAbort => 'Abort';
+
+  @override
+  String get goalsReopen => 'Reopen';
+
+  @override
+  String get goalsProgressSection => 'Progress';
+
+  @override
+  String get goalsRecordProgress => 'Record progress';
+
+  @override
+  String get goalsCurrentValueLabel => 'Current';
+
+  @override
+  String get goalsTargetLabel => 'Target';
+
+  @override
+  String get goalsAchievedQuestion => 'Achieved? (1 = yes)';
+
+  @override
+  String get goalsAchieved => 'Achieved';
+
+  @override
+  String get goalsNotAchieved => 'Not yet';
+
+  @override
+  String get goalsProgressNoteHint => 'Note (optional)';
+
+  @override
+  String get goalsProgressDateLabel => 'Recorded on';
+
+  @override
+  String get goalsLogTitle => 'Log';
+
+  @override
+  String get goalsNoProgressYet => 'Nothing recorded yet.';
+
+  @override
+  String get goalsEmptyAllTitle => 'No goals yet';
+
+  @override
+  String get goalsEmptyAll =>
+      'Set a long-term outcome to work toward and link it to your priorities.';
+
+  @override
+  String get goalsEmptyFilterTitle => 'No goals here';
+
+  @override
+  String get goalsEmptyFilter => 'No goals carry the selected priorities.';
 }
