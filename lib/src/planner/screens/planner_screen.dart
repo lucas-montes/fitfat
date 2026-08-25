@@ -142,43 +142,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       appBar: AppBar(
         title: Text(l10n.plannerAppBar),
         actions: [
-          // "Back to today" — only meaningful when drifted away.
-          if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
-            IconButton(
-              tooltip: l10n.plannerGoToday,
-              icon: const Icon(Icons.today_outlined),
-              onPressed: _goToToday,
-            ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: SegmentedButton<_PlannerViewMode>(
-              showSelectedIcon: false,
-              style: const ButtonStyle(
-                visualDensity: VisualDensity.compact,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              segments: [
-                ButtonSegment(
-                  value: _PlannerViewMode.day,
-                  icon: const Icon(Icons.view_day_outlined),
-                  tooltip: l10n.plannerViewDay,
-                ),
-                ButtonSegment(
-                  value: _PlannerViewMode.week,
-                  icon: const Icon(Icons.view_week_outlined),
-                  tooltip: l10n.plannerViewWeek,
-                ),
-                ButtonSegment(
-                  value: _PlannerViewMode.month,
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  tooltip: l10n.plannerViewMonth,
-                ),
-              ],
-              selected: {_viewMode},
-              onSelectionChanged: (selection) =>
-                  setState(() => _viewMode = selection.first),
-            ),
-          ),
           // Navbar shortcuts to the companion destinations.
           IconButton(
             tooltip: l10n.plannerViewGoals,
@@ -197,46 +160,96 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           ),
         ],
       ),
-      body: switch (_viewMode) {
-        _PlannerViewMode.day => _DayFlowView(
-          key: _dayFlowKey,
-          initialDay: _selectedDay,
-          isSameDay: _isSameDay,
-          onSelectedDayChanged: (day) =>
-              setState(() => _selectedDay = _startOfDay(day)),
-          onAddItem: _addItem,
-          onToggleDone: _toggleDone,
-          onToggleCancelled: _toggleCancelled,
-          onOpenDetail: _openDetail,
-          onEditItem: _editItem,
-          onDeleteItem: _deleteItem,
-          onOpenWorkout: _openWorkout,
-          onOpenExperiment: _openExperimentDetail,
-          onEditExperiment: _editExperiment,
-        ),
-        _PlannerViewMode.week => _WeekFlowView(
-          key: _weekFlowKey,
-          initialDay: _selectedDay,
-          isSameDay: _isSameDay,
-          onSelectedDayChanged: (day) =>
-              setState(() => _selectedDay = _startOfDay(day)),
-          onJumpToDay: _jumpToDay,
-          onToggleDone: _toggleDone,
-          onToggleCancelled: _toggleCancelled,
-          onOpenDetail: _openDetail,
-          onEditItem: _editItem,
-          onDeleteItem: _deleteItem,
-          onOpenWorkout: _openWorkout,
-          onOpenExperiment: _openExperimentDetail,
-          onEditExperiment: _editExperiment,
-        ),
-        _PlannerViewMode.month => _MonthOverview(
-          key: _monthKey,
-          selectedDay: _selectedDay,
-          isSameDay: _isSameDay,
-          onDayPicked: _jumpToDay,
-        ),
-      },
+      body: Column(
+        children: [
+          // View switcher + "back to today" live below the app bar so the
+          // navbar stays uncluttered.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
+                  IconButton(
+                    tooltip: l10n.plannerGoToday,
+                    icon: const Icon(Icons.today_outlined),
+                    onPressed: _goToToday,
+                  ),
+                if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
+                  const SizedBox(width: 8),
+                SegmentedButton<_PlannerViewMode>(
+                  showSelectedIcon: false,
+                  style: const ButtonStyle(
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  segments: [
+                    ButtonSegment(
+                      value: _PlannerViewMode.day,
+                      icon: const Icon(Icons.view_day_outlined),
+                      tooltip: l10n.plannerViewDay,
+                    ),
+                    ButtonSegment(
+                      value: _PlannerViewMode.week,
+                      icon: const Icon(Icons.view_week_outlined),
+                      tooltip: l10n.plannerViewWeek,
+                    ),
+                    ButtonSegment(
+                      value: _PlannerViewMode.month,
+                      icon: const Icon(Icons.calendar_month_outlined),
+                      tooltip: l10n.plannerViewMonth,
+                    ),
+                  ],
+                  selected: {_viewMode},
+                  onSelectionChanged: (selection) =>
+                      setState(() => _viewMode = selection.first),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: switch (_viewMode) {
+              _PlannerViewMode.day => _DayFlowView(
+                key: _dayFlowKey,
+                initialDay: _selectedDay,
+                isSameDay: _isSameDay,
+                onSelectedDayChanged: (day) =>
+                    setState(() => _selectedDay = _startOfDay(day)),
+                onAddItem: _addItem,
+                onToggleDone: _toggleDone,
+                onToggleCancelled: _toggleCancelled,
+                onOpenDetail: _openDetail,
+                onEditItem: _editItem,
+                onDeleteItem: _deleteItem,
+                onOpenWorkout: _openWorkout,
+                onOpenExperiment: _openExperimentDetail,
+                onEditExperiment: _editExperiment,
+              ),
+              _PlannerViewMode.week => _WeekFlowView(
+                key: _weekFlowKey,
+                initialDay: _selectedDay,
+                isSameDay: _isSameDay,
+                onSelectedDayChanged: (day) =>
+                    setState(() => _selectedDay = _startOfDay(day)),
+                onJumpToDay: _jumpToDay,
+                onToggleDone: _toggleDone,
+                onToggleCancelled: _toggleCancelled,
+                onOpenDetail: _openDetail,
+                onEditItem: _editItem,
+                onDeleteItem: _deleteItem,
+                onOpenWorkout: _openWorkout,
+                onOpenExperiment: _openExperimentDetail,
+                onEditExperiment: _editExperiment,
+              ),
+              _PlannerViewMode.month => _MonthOverview(
+                key: _monthKey,
+                selectedDay: _selectedDay,
+                isSameDay: _isSameDay,
+                onDayPicked: _jumpToDay,
+              ),
+            },
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddSheet,
         child: const Icon(Icons.add),
