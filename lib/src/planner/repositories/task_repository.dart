@@ -50,6 +50,36 @@ final class TaskRepository {
     return rows.map(_toDomain).toList();
   }
 
+  /// Pending tasks on or after [from] (inclusive), ordered by day then start
+  /// time — untimed tasks come after the timed ones of the same day instead
+  /// of being excluded, so the dashboard's upcoming card surfaces them too.
+  /// The reminder scheduler keeps using [getUpcomingWithStartTime], whose
+  /// timed-only semantics it depends on.
+  Future<List<Task>> getUpcoming(DateTime from) async {
+    final fromStart = _startOfDay(from);
+    final rows =
+        await (_database.select(_database.tasks)
+              ..where(
+                (t) =>
+                    t.done.equals(0) &
+                    // Cancelled tasks are neither upcoming nor copyable.
+                    (t.taskStatus.isNull() |
+                        t.taskStatus.isNotIn([TaskStatus.cancelled.storage])) &
+                    t.date.isBiggerOrEqualValue(
+                      fromStart.millisecondsSinceEpoch,
+                    ),
+              )
+              ..orderBy([(t) => OrderingTerm(expression: t.date)]))
+            .get();
+    final tasks = rows.map(_toDomain).toList();
+    int rank(Task t) => t.startTimeMinutes ?? 24 * 60;
+    tasks.sort((a, b) {
+      if (a.day != b.day) return a.day.compareTo(b.day);
+      return rank(a).compareTo(rank(b));
+    });
+    return tasks;
+  }
+
   Future<void> insert(Task item) async {
     await _database
         .into(_database.tasks)

@@ -773,7 +773,7 @@ final class _UpcomingTasksCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final tasksAsync = ref.watch(upcomingTimedTasksProvider);
+    final tasksAsync = ref.watch(upcomingTasksProvider);
 
     return Card(
       child: Padding(
@@ -834,6 +834,15 @@ final class _UpcomingTasksCard extends ConsumerWidget {
                           l10n.dashboardSeeAllTasks(tasks.length.toString()),
                         ),
                       ),
+                    ] else ...[
+                      // Even when every task fits, keep a visible path into
+                      // the planner (previously the link needed >5 tasks).
+                      const SizedBox(height: FitFatTokens.spaceXs),
+                      TextButton.icon(
+                        onPressed: () => context.go('/plan'),
+                        icon: const Icon(Icons.chevron_right, size: 18),
+                        label: Text(l10n.plannerAppBar),
+                      ),
                     ],
                   ],
                 );
@@ -858,7 +867,12 @@ final class _TaskRow extends StatelessWidget {
   });
 
   String _timeLabel(BuildContext context) {
-    final minutes = task.startTimeMinutes!;
+    final minutes = task.startTimeMinutes;
+    // Untimed tasks surface here too now; they read as "Anytime" instead of
+    // a clock time.
+    if (minutes == null) {
+      return AppLocalizations.of(context)!.plannerAnytime;
+    }
     final time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
     return DateFormats.formatTime(context, time);
   }

@@ -73,4 +73,24 @@ void main() {
       expect(reloaded.dueDate, today);
     },
   );
+
+  test('getUpcoming surfaces untimed tasks after timed ones', () async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    await repository.insert(
+      newTask(day: today, title: 'Anytime errand', sortOrder: 0),
+    );
+    await repository.insert(
+      newTask(
+        day: today,
+        title: 'Timed run',
+        startTimeMinutes: 7 * 60,
+        sortOrder: 1,
+      ),
+    );
+
+    final upcoming = await repository.getUpcoming(today);
+
+    expect(upcoming.map((t) => t.title), ['Timed run', 'Anytime errand']);
+  });
 }

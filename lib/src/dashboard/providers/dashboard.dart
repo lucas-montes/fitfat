@@ -139,8 +139,8 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
 // Upcoming timed tasks (pending, today or later, with a start time)
 // ---------------------------------------------------------------------------
 
-final upcomingTimedTasksProvider = FutureProvider<List<Task>>((ref) async {
+final upcomingTasksProvider = FutureProvider<List<Task>>((ref) async {
   ref.watch(dashboardRefreshProvider);
   final today = DateTime.now();
-  return ref.watch(_taskRepositoryProvider).getUpcomingWithStartTime(today);
+  return ref.watch(_taskRepositoryProvider).getUpcoming(today);
 });
