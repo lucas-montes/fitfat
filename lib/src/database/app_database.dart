@@ -21,7 +21,8 @@ part 'app_database.g.dart';
     Workouts,
     WorkoutExercises,
     ExerciseSets,
-    PlannerItems,
+    Tasks,
+    Experiments,
     BodyMetrics,
     Notes,
     Accounts,
@@ -32,6 +33,14 @@ part 'app_database.g.dart';
     Tags,
     Goals,
     GoalProgressEntries,
+    TaskExperiments,
+    TaskGoals,
+    ExperimentGoals,
+    TaskNotes,
+    ExperimentNotes,
+    GoalNotes,
+    GoalWorkouts,
+    NoteWorkouts,
   ],
 )
 final class AppDatabase extends _$AppDatabase {
@@ -40,7 +49,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,17 +67,52 @@ final class AppDatabase extends _$AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_workouts_routine '
         'ON workouts (routine_id)',
       );
+      // Link-table reverse-lookup indexes (v27). The composite primary keys
+      // already serve lookups on the leading column; these cover queries that
+      // start from the second column (e.g. goals for a task, tasks for a goal).
+      const linkIndexes = [
+        (
+          'idx_task_experiments_experiment',
+          'task_experiments',
+          'experiment_id',
+        ),
+        ('idx_task_goals_goal', 'task_goals', 'goal_id'),
+        ('idx_experiment_goals_goal', 'experiment_goals', 'goal_id'),
+        ('idx_task_notes_note', 'task_notes', 'note_id'),
+        ('idx_experiment_notes_note', 'experiment_notes', 'note_id'),
+        ('idx_goal_notes_note', 'goal_notes', 'note_id'),
+        ('idx_goal_workouts_workout', 'goal_workouts', 'workout_id'),
+        ('idx_note_workouts_workout', 'note_workouts', 'workout_id'),
+      ];
+      for (final (name, table, column) in linkIndexes) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS $name ON $table ($column)',
+        );
+      }
     },
     onUpgrade: (m, from, to) async {
+      // Historical planner_items steps are frozen raw SQL: the table has since
+      // been renamed to `tasks` (v27) and its Dart class no longer exists, but
+      // upgrades from very old schemas still need the original statements.
       if (from < 2) {
-        await m.createTable(plannerItems);
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS planner_items ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'date INTEGER NOT NULL, '
+          'title TEXT NOT NULL, '
+          'done INTEGER NOT NULL, '
+          'sort_order INTEGER NOT NULL, '
+          'created_at INTEGER NOT NULL)',
+        );
       }
       if (from < 3) {
         // v3: optional ingredient nutriments, planner due date, body_metrics.
         await m.addColumn(ingredients, ingredients.sodiumPer100g);
         await m.addColumn(ingredients, ingredients.fiberPer100g);
         await m.addColumn(ingredients, ingredients.sugarPer100g);
-        await m.addColumn(plannerItems, plannerItems.dueDate);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN due_date INTEGER NULL',
+        );
         await m.createTable(bodyMetrics);
         // Clean up orphaned meal_ingredients rows left by the pre-T02
         // new-meal bug (rows whose meal_id points at no meals row).
@@ -87,7 +131,9 @@ final class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         // v6: optional free-text note per planner task.
-        await m.addColumn(plannerItems, plannerItems.notes);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN notes TEXT NULL',
+        );
       }
       if (from < 7) {
         // v7: set completion timestamp (epoch millis), stamped when actuals
@@ -107,7 +153,9 @@ final class AppDatabase extends _$AppDatabase {
         await m.addColumn(exercises, exercises.keywords);
         await m.addColumn(exercises, exercises.imagePath);
         await m.addColumn(exercises, exercises.videoPath);
-        await m.addColumn(plannerItems, plannerItems.dueTimeMinutes);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN due_time_minutes INTEGER NULL',
+        );
       }
       if (from < 9) {
         // v9: free-form notes (Notes tab).
@@ -121,16 +169,24 @@ final class AppDatabase extends _$AppDatabase {
       }
       if (from < 11) {
         // v11: planner workout linking.
-        await m.addColumn(plannerItems, plannerItems.workoutId);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN workout_id TEXT NULL',
+        );
       }
       if (from < 12) {
         // v12: free-form planner task tags (JSON string[]).
-        await m.addColumn(plannerItems, plannerItems.tags);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN tags TEXT NULL',
+        );
       }
       if (from < 13) {
         // v13: recurring task rule + series grouping.
-        await m.addColumn(plannerItems, plannerItems.recurrence);
-        await m.addColumn(plannerItems, plannerItems.seriesId);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN recurrence TEXT NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN series_id TEXT NULL',
+        );
       }
       if (from < 14) {
         // v14: budget section — accounts, transactions, receipts, fx_rates.
@@ -142,8 +198,12 @@ final class AppDatabase extends _$AppDatabase {
       if (from < 15) {
         // v15: planner task start/end time (replaces the single due time).
         // Existing due_time_minutes is carried over into start_time_minutes.
-        await m.addColumn(plannerItems, plannerItems.startTimeMinutes);
-        await m.addColumn(plannerItems, plannerItems.endTimeMinutes);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN start_time_minutes INTEGER NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN end_time_minutes INTEGER NULL',
+        );
         await m.database.customStatement(
           'UPDATE planner_items SET start_time_minutes = due_time_minutes '
           'WHERE due_time_minutes IS NOT NULL',
@@ -250,14 +310,32 @@ final class AppDatabase extends _$AppDatabase {
         // categories/reminder columns and a child-task experiment_id link).
         // Check-ins re-point at planner ids (ids are preserved by the copy),
         // losing their FK to the standalone table, which is then dropped.
-        await m.addColumn(plannerItems, plannerItems.kind);
-        await m.addColumn(plannerItems, plannerItems.endDate);
-        await m.addColumn(plannerItems, plannerItems.purpose);
-        await m.addColumn(plannerItems, plannerItems.status);
-        await m.addColumn(plannerItems, plannerItems.categories);
-        await m.addColumn(plannerItems, plannerItems.reminderEnabled);
-        await m.addColumn(plannerItems, plannerItems.reminderTimeMinutes);
-        await m.addColumn(plannerItems, plannerItems.experimentId);
+        await m.database.customStatement(
+          "ALTER TABLE planner_items ADD COLUMN kind TEXT NOT NULL DEFAULT 'task'",
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN end_date INTEGER NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN purpose TEXT NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN status TEXT NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN categories TEXT NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items '
+          'ADD COLUMN reminder_enabled INTEGER NOT NULL DEFAULT 1',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items '
+          'ADD COLUMN reminder_time_minutes INTEGER NOT NULL DEFAULT 1200',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN experiment_id TEXT NULL',
+        );
         await m.database.customStatement(
           'INSERT INTO planner_items '
           '(id, date, title, done, sort_order, end_date, purpose, status, '
@@ -288,8 +366,13 @@ final class AppDatabase extends _$AppDatabase {
         // pending/done/cancelled for plain tasks (experiments stay null and
         // keep using status); done stays the source of truth for "completed"
         // and is kept in sync (done == task_status == 1).
-        await m.addColumn(plannerItems, plannerItems.taskStatus);
-        await m.addColumn(plannerItems, plannerItems.carryOver);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN task_status INTEGER NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items '
+          'ADD COLUMN carry_over INTEGER NOT NULL DEFAULT 1',
+        );
         await m.database.customStatement(
           "UPDATE planner_items SET task_status = CASE WHEN done = 1 "
           "THEN 1 ELSE 0 END WHERE kind = 'task'",
@@ -304,6 +387,60 @@ final class AppDatabase extends _$AppDatabase {
         await m.addColumn(notes, notes.tags);
         await m.createTable(goals);
         await m.createTable(goalProgressEntries);
+      }
+      if (from < 27) {
+        // v27: un-merge the v24 experiment fold and introduce link tables.
+        //
+        // 1. Experiments move back into a standalone `experiments` table
+        //    (ids preserved so experiment_checkins keep resolving).
+        // 2. `planner_items` is rebuilt as `tasks` without the
+        //    experiment-only columns (kind, end_date, purpose, status,
+        //    categories, reminder_*, experiment_id).
+        // 3. Child-task → experiment back-references become rows in the
+        //    `task_experiments` link table; further junction tables are
+        //    created empty.
+        // 4. Goals gain reminder + baseline columns.
+        await m.createTable(experiments);
+        await m.database.customStatement(
+          'INSERT INTO experiments '
+          '(id, name, purpose, start_date, end_date, status, categories, '
+          'reminder_enabled, reminder_time_minutes, tags, created_at) '
+          'SELECT id, title, purpose, date, end_date, '
+          "COALESCE(status, 'planned'), categories, reminder_enabled, "
+          'reminder_time_minutes, tags, created_at '
+          "FROM planner_items WHERE kind = 'experiment'",
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items RENAME TO planner_items_old',
+        );
+        await m.createTable(tasks);
+        await m.database.customStatement(
+          'INSERT INTO tasks '
+          '(id, date, title, done, task_status, carry_over, sort_order, '
+          'due_date, due_time_minutes, start_time_minutes, end_time_minutes, '
+          'notes, workout_id, tags, recurrence, series_id, created_at) '
+          'SELECT id, date, title, done, task_status, carry_over, sort_order, '
+          'due_date, due_time_minutes, start_time_minutes, end_time_minutes, '
+          'notes, workout_id, tags, recurrence, series_id, created_at '
+          "FROM planner_items_old WHERE kind = 'task'",
+        );
+        await m.createTable(taskExperiments);
+        await m.database.customStatement(
+          'INSERT INTO task_experiments (task_id, experiment_id) '
+          'SELECT id, experiment_id FROM planner_items_old '
+          "WHERE kind = 'task' AND experiment_id IS NOT NULL",
+        );
+        await m.database.customStatement('DROP TABLE planner_items_old');
+        await m.createTable(taskGoals);
+        await m.createTable(experimentGoals);
+        await m.createTable(taskNotes);
+        await m.createTable(experimentNotes);
+        await m.createTable(goalNotes);
+        await m.createTable(goalWorkouts);
+        await m.createTable(noteWorkouts);
+        await m.addColumn(goals, goals.reminderEnabled);
+        await m.addColumn(goals, goals.reminderTimeMinutes);
+        await m.addColumn(goals, goals.baselineValue);
       }
     },
   );

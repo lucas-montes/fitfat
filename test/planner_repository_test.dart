@@ -1,17 +1,17 @@
 import 'package:drift/native.dart';
 import 'package:fitfat/src/database/app_database.dart' show AppDatabase;
-import 'package:fitfat/src/planner/repositories/planner_repository.dart';
+import 'package:fitfat/src/planner/repositories/task_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase database;
-  late PlannerRepository repository;
+  late TaskRepository repository;
 
   setUp(() {
     database = AppDatabase.forTesting(NativeDatabase.memory());
-    repository = PlannerRepository(database);
+    repository = TaskRepository(database);
   });
 
   tearDown(() async {
@@ -20,7 +20,7 @@ void main() {
 
   test('insert, update and read back a planner task', () async {
     final day = DateTime(2026, 8, 23);
-    final created = newPlannerItem(
+    final created = newTask(
       day: day,
       title: 'Water the plants',
       sortOrder: 0,

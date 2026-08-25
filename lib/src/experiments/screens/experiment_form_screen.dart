@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/experiment.dart';
-import '../../planner/providers/planner.dart';
+import '../providers/experiments_repository.dart';
 import '../../tags/widgets/tag_picker.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
@@ -65,8 +65,8 @@ final class _ExperimentFormScreenState
 
   Future<void> _loadExisting() async {
     final experiment = await ref
-        .read(plannerRepositoryProvider)
-        .getExperimentById(widget.experimentId!);
+        .read(experimentRepositoryProvider)
+        .getById(widget.experimentId!);
     if (experiment == null || !mounted) return;
     setState(() {
       _nameCtrl.text = experiment.name;
@@ -126,7 +126,7 @@ final class _ExperimentFormScreenState
     }
 
     setState(() => _saving = true);
-    final repo = ref.read(plannerRepositoryProvider);
+    final repo = ref.read(experimentRepositoryProvider);
     final scheduler = ref.read(experimentReminderSchedulerProvider);
 
     final experiment = Experiment(
@@ -146,7 +146,7 @@ final class _ExperimentFormScreenState
     );
 
     try {
-      await repo.upsertExperiment(experiment);
+      await repo.upsert(experiment);
       await scheduler.scheduleForExperiment(
         experiment,
         title: l10n.experimentReminderTitle(experiment.name),
@@ -189,9 +189,7 @@ final class _ExperimentFormScreenState
       await ref
           .read(experimentReminderSchedulerProvider)
           .cancelForExperiment(widget.experimentId!);
-      await ref
-          .read(plannerRepositoryProvider)
-          .deleteExperiment(widget.experimentId!);
+      await ref.read(experimentRepositoryProvider).delete(widget.experimentId!);
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {

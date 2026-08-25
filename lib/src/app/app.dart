@@ -91,17 +91,15 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
   /// still rolled over.
   Future<void> _rollover() async {
     try {
-      final moved = await ref
-          .read(plannerRepositoryProvider)
-          .rolloverPastTasks();
+      final moved = await ref.read(taskRepositoryProvider).rolloverPastTasks();
       if (moved == 0 || !mounted) return;
     } catch (_) {
       return; // Rollover must never block startup.
     }
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    ref.invalidate(plannerItemsProvider(today));
-    ref.invalidate(plannerMonthItemsProvider(today));
+    ref.invalidate(dayEntriesProvider(today));
+    ref.invalidate(monthEntriesProvider(today));
     invalidateDashboard(ref);
   }
 
@@ -170,7 +168,7 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
       await ref
           .read(taskReminderSchedulerProvider)
           .reschedulePending(
-            repository: ref.read(plannerRepositoryProvider),
+            repository: ref.read(taskRepositoryProvider),
             dueSoonText: l10n.taskReminderDueSoon,
             dueNowText: l10n.taskReminderDueNow,
           );

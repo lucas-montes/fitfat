@@ -192,14 +192,13 @@ class ExerciseSets extends Table {
 // Planner tables
 // ---------------------------------------------------------------------------
 
-class PlannerItems extends Table {
+class Tasks extends Table {
   TextColumn get id => text()();
   IntColumn get date => integer()(); // start-of-day epoch milliseconds
   TextColumn get title => text()();
   IntColumn get done => integer()(); // 0 | 1
-  // Task lifecycle (v25): 0=pending | 1=done | 2=cancelled. Null for
-  // experiments, which use [status] instead. Kept in sync with [done]
-  // (done == task_status == 1) so existing queries keep working.
+  // Task lifecycle (v25): 0=pending | 1=done | 2=cancelled. Kept in sync with
+  // [done] (done == task_status == 1) so existing queries keep working.
   IntColumn? get taskStatus => integer().nullable()();
   // Carry-over flag (v25): when a pending task's day passes, it moves to
   // today; when false it is marked cancelled by the rollover instead.
@@ -216,7 +215,8 @@ class PlannerItems extends Table {
   IntColumn? get endTimeMinutes => integer().nullable()();
   // Optional free-text note (v6).
   TextColumn? get notes => text().nullable()();
-  // Optional linked workout (v11).
+  // Optional linked workout (v11). 1:1 owner side; set automatically when a
+  // workout is created/replayed with "add planner task".
   TextColumn? get workoutId => text().nullable()();
   // Optional free-form tags as a JSON string[] (v12).
   TextColumn? get tags => text().nullable()();
@@ -224,24 +224,41 @@ class PlannerItems extends Table {
   TextColumn? get recurrence => text().nullable()();
   // Groups occurrences of one recurring series (v13).
   TextColumn? get seriesId => text().nullable()();
-  // Experiment merge (v24): a planner item is either a plain task or an
-  // experiment. Experiment-only columns below are null/ignored for tasks.
-  TextColumn get kind => text().withDefault(const Constant('task'))();
-  // Experiment end date (start-of-day epoch ms). Required for experiments.
-  IntColumn? get endDate => integer().nullable()();
-  // Experiment hypothesis / stated purpose.
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A self-tracking experiment with a start→end date range, lifecycle status,
+/// linked data categories and daily check-ins (schema v27). Experiments were
+/// planner_items rows (kind='experiment') between v24 and v26; v27 splits them
+/// back out into this standalone table. Check-ins in [ExperimentCheckins]
+/// reference [id] directly.
+class Experiments extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  // Hypothesis / stated purpose.
   TextColumn? get purpose => text().nullable()();
-  // 'planned' | 'active' | 'done' | 'aborted' (experiments only).
-  TextColumn? get status => text().nullable()();
-  // JSON string[] of linked data categories: workout | diet | body | steps.
+  IntColumn get startDate => integer()(); // start-of-day epoch milliseconds
+
+  /// Target end date (start-of-day epoch ms); null = open-ended.
+  IntColumn? get endDate => integer().nullable()();
+
+  /// 'planned' | 'active' | 'done' | 'aborted'.
+  TextColumn get status => text().withDefault(const Constant('planned'))();
+
+  /// JSON string[] of linked data categories: workout | diet | body | steps.
   TextColumn? get categories => text().nullable()();
-  // Daily check-in reminder (experiments only).
+
+  /// JSON string[] of tag names from the shared vocabulary ("priorities").
+  TextColumn? get tags => text().nullable()();
+
+  // Daily check-in reminder.
   BoolColumn get reminderEnabled =>
       boolean().withDefault(const Constant(true))();
   IntColumn get reminderTimeMinutes =>
       integer().withDefault(const Constant(1200))();
-  // Back-reference from a child task to the experiment it belongs to.
-  TextColumn? get experimentId => text().nullable()();
   IntColumn get createdAt => integer()();
 
   @override
@@ -312,8 +329,18 @@ class Goals extends Table {
   /// Numeric goal target; null for 'none'/'boolean'.
   RealColumn? get targetValue => real().nullable()();
 
+  /// Optional starting point for numeric targets; progress is measured from
+  /// baseline → target. Null = start from zero.
+  RealColumn? get baselineValue => real().nullable()();
+
   /// Optional unit label for numeric targets ('kg', 'km', …).
   TextColumn? get unit => text().nullable()();
+
+  // Daily goal reminder (v27), mirroring the experiment check-in reminder.
+  BoolColumn get reminderEnabled =>
+      boolean().withDefault(const Constant(false))();
+  IntColumn get reminderTimeMinutes =>
+      integer().withDefault(const Constant(1200))();
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
 
@@ -339,6 +366,104 @@ class GoalProgressEntries extends Table {
   List<Set<Column>> get uniqueKeys => [
     {goalId, recordedAt},
   ];
+}
+
+// ---------------------------------------------------------------------------
+// Link tables (v27)
+//
+// Typed many-to-many associations between the core entities. Each is a
+// FK-backed junction table with an optional relationship [label]; the
+// composite primary key makes links idempotent per pair.
+//
+// Not modeled here on purpose:
+//   * task ↔ workout stays the 1:1 `tasks.workout_id` column (auto-managed
+//     when a workout is created/replayed).
+//   * task ↔ tag / note ↔ tag / goal ↔ tag remain JSON name arrays pointing
+//     into the shared `tags` vocabulary.
+// ---------------------------------------------------------------------------
+
+/// Tasks associated with an experiment (many tasks per experiment, and a task
+/// may support several experiments). Replaces the pre-v27
+/// `planner_items.experiment_id` back-reference column.
+class TaskExperiments extends Table {
+  TextColumn get taskId => text().references(Tasks, #id)();
+  TextColumn get experimentId => text().references(Experiments, #id)();
+
+  /// Optional relationship label ('supports', 'measures', …).
+  TextColumn? get label => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {taskId, experimentId};
+}
+
+/// Tasks associated with a goal.
+class TaskGoals extends Table {
+  TextColumn get taskId => text().references(Tasks, #id)();
+  TextColumn get goalId => text().references(Goals, #id)();
+  TextColumn? get label => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {taskId, goalId};
+}
+
+/// Experiments associated with a goal.
+class ExperimentGoals extends Table {
+  TextColumn get experimentId => text().references(Experiments, #id)();
+  TextColumn get goalId => text().references(Goals, #id)();
+  TextColumn? get label => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {experimentId, goalId};
+}
+
+/// Notes attached to a task.
+class TaskNotes extends Table {
+  TextColumn get taskId => text().references(Tasks, #id)();
+  TextColumn get noteId => text().references(Notes, #id)();
+  TextColumn? get label => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {taskId, noteId};
+}
+
+/// Notes attached to an experiment.
+class ExperimentNotes extends Table {
+  TextColumn get experimentId => text().references(Experiments, #id)();
+  TextColumn get noteId => text().references(Notes, #id)();
+  TextColumn? get label => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {experimentId, noteId};
+}
+
+/// Notes attached to a goal.
+class GoalNotes extends Table {
+  TextColumn get goalId => text().references(Goals, #id)();
+  TextColumn get noteId => text().references(Notes, #id)();
+  TextColumn? get label => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {goalId, noteId};
+}
+
+/// Workouts that count toward a goal.
+class GoalWorkouts extends Table {
+  TextColumn get goalId => text().references(Goals, #id)();
+  TextColumn get workoutId => text().references(Workouts, #id)();
+  TextColumn? get label => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {goalId, workoutId};
+}
+
+/// Workouts referenced by a note.
+class NoteWorkouts extends Table {
+  TextColumn get noteId => text().references(Notes, #id)();
+  TextColumn get workoutId => text().references(Workouts, #id)();
+  TextColumn? get label => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {noteId, workoutId};
 }
 
 // ---------------------------------------------------------------------------

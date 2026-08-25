@@ -9,7 +9,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../dashboard/providers/dashboard.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../exercise/screens/workout_detail.dart';
-import '../../models/planner_item.dart';
+import '../../models/task.dart';
 import '../../models/planner_recurrence.dart';
 import '../../notifications/task_reminders.dart';
 import '../../settings/providers/settings.dart';
@@ -37,7 +37,7 @@ final class PlannerItemDetailScreen extends ConsumerStatefulWidget {
 
 final class _PlannerItemDetailScreenState
     extends ConsumerState<PlannerItemDetailScreen> {
-  PlannerItem? _item;
+  Task? _item;
 
   /// How far ahead recurring tasks are materialized (user-configurable).
   Duration get _plannerHorizon =>
@@ -50,13 +50,11 @@ final class _PlannerItemDetailScreenState
   }
 
   Future<void> _load() async {
-    final item = await ref
-        .read(plannerRepositoryProvider)
-        .getById(widget.itemId);
+    final item = await ref.read(taskRepositoryProvider).getById(widget.itemId);
     if (mounted) setState(() => _item = item);
   }
 
-  Future<void> _syncReminder(PlannerItem item) async {
+  Future<void> _syncReminder(Task item) async {
     if (!ref.read(settingsProvider).plannerNotifications) return;
     final l10n = AppLocalizations.of(context)!;
     final scheduler = ref.read(taskReminderSchedulerProvider);
@@ -75,7 +73,7 @@ final class _PlannerItemDetailScreenState
     await ref.read(taskReminderSchedulerProvider).cancelForTask(taskId);
   }
 
-  Future<void> _toggleDone(PlannerItem item) async {
+  Future<void> _toggleDone(Task item) async {
     unawaited(Haptics.selection());
     final updated = item.withTaskStatus(
       item.done ? TaskStatus.pending : TaskStatus.done,
@@ -84,7 +82,7 @@ final class _PlannerItemDetailScreenState
   }
 
   /// Marks the task cancelled (or back to pending when it already is).
-  Future<void> _toggleCancelled(PlannerItem item) async {
+  Future<void> _toggleCancelled(Task item) async {
     unawaited(Haptics.selection());
     final updated = item.withTaskStatus(
       item.isCancelled ? TaskStatus.pending : TaskStatus.cancelled,
@@ -95,8 +93,8 @@ final class _PlannerItemDetailScreenState
   /// Persists a lifecycle change: reminders follow the done rules (pending
   /// re-syncs, done/cancelled drop), providers are invalidated and the local
   /// copy refreshes.
-  Future<void> _applyStatus(PlannerItem updated) async {
-    await ref.read(plannerRepositoryProvider).update(updated);
+  Future<void> _applyStatus(Task updated) async {
+    await ref.read(taskRepositoryProvider).update(updated);
     if (updated.taskState == TaskStatus.pending) {
       await _cancelReminder(updated.id);
       await _syncReminder(updated);
@@ -104,11 +102,11 @@ final class _PlannerItemDetailScreenState
       await _cancelReminder(updated.id);
     }
     invalidateDashboard(ref);
-    ref.invalidate(plannerItemsProvider(updated.day));
+    ref.invalidate(dayEntriesProvider(updated.day));
     if (mounted) setState(() => _item = updated);
   }
 
-  Future<void> _edit(PlannerItem item) async {
+  Future<void> _edit(Task item) async {
     final l10n = AppLocalizations.of(context)!;
     final result = await showPlannerItemDialog(
       context,
@@ -135,7 +133,7 @@ final class _PlannerItemDetailScreenState
       recurrence,
       carryOver,
     ) = result;
-    final repo = ref.read(plannerRepositoryProvider);
+    final repo = ref.read(taskRepositoryProvider);
     final wasAnchor = item.recurrence != null;
     final isAnchor = recurrence != null;
     final seriesId = isAnchor
@@ -172,15 +170,15 @@ final class _PlannerItemDetailScreenState
             .catchError((_) {}),
       );
     }
-    ref.invalidate(plannerItemsProvider(item.day));
+    ref.invalidate(dayEntriesProvider(item.day));
     final destination = movedDay ?? item.day;
     if (destination != item.day) {
-      ref.invalidate(plannerItemsProvider(destination));
+      ref.invalidate(dayEntriesProvider(destination));
     }
     await _load();
   }
 
-  Future<void> _delete(PlannerItem item) async {
+  Future<void> _delete(Task item) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -201,7 +199,7 @@ final class _PlannerItemDetailScreenState
     );
     if (confirmed != true || !mounted) return;
     unawaited(Haptics.mediumImpact());
-    final repo = ref.read(plannerRepositoryProvider);
+    final repo = ref.read(taskRepositoryProvider);
     final wasAnchor = item.seriesId == item.id;
     if (wasAnchor) {
       final occurrences = await repo.getBySeriesId(item.seriesId!);

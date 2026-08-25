@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-import '../models/planner_item.dart';
-import '../planner/repositories/planner_repository.dart';
+import '../models/task.dart';
+import '../planner/repositories/task_repository.dart';
 import '../settings/providers/settings.dart';
 import 'notification_plugin.dart';
 
@@ -51,7 +51,7 @@ int _stableHash(String value) {
 /// the task's own day plus its start time-of-day. [lead] is how long before
 /// the start time the advance reminder fires.
 List<DateTime> plannerReminderTimes(
-  PlannerItem item, {
+  Task item, {
   DateTime? now,
   Duration lead = const Duration(minutes: preReminderMinutes),
 }) {
@@ -126,7 +126,7 @@ final class TaskReminderScheduler {
   /// A no-op when the task is done, has no due date/time, or is already past
   /// due. [dueSoonText]/[dueNowText] are the localized notification bodies.
   Future<void> scheduleForItem(
-    PlannerItem item, {
+    Task item, {
     required String dueSoonText,
     required String dueNowText,
   }) async {
@@ -203,7 +203,7 @@ final class TaskReminderScheduler {
   /// were done/deleted elsewhere are dropped; past-due and done tasks are
   /// skipped by [scheduleForItem].
   Future<void> reschedulePending({
-    required PlannerRepository repository,
+    required TaskRepository repository,
     required String dueSoonText,
     required String dueNowText,
   }) async {

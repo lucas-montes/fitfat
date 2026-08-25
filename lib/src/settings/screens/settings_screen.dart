@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../budget/providers/fx_rates.dart';
 import '../../experiments/notifications/experiment_reminder.dart';
+import '../../experiments/providers/experiments_repository.dart';
 import '../../models/activity_level.dart';
 import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
@@ -433,7 +434,7 @@ final class _NotificationsScreen extends ConsumerWidget {
       await ref
           .read(taskReminderSchedulerProvider)
           .reschedulePending(
-            repository: ref.read(plannerRepositoryProvider),
+            repository: ref.read(taskRepositoryProvider),
             dueSoonText: l10n.taskReminderDueSoon,
             dueNowText: l10n.taskReminderDueNow,
           );
@@ -451,9 +452,7 @@ final class _NotificationsScreen extends ConsumerWidget {
   ) async {
     final l10n = AppLocalizations.of(context)!;
     final scheduler = ref.read(experimentReminderSchedulerProvider);
-    final experiments = await ref
-        .read(plannerRepositoryProvider)
-        .getExperiments();
+    final experiments = await ref.read(experimentRepositoryProvider).getAll();
     for (final experiment in experiments) {
       if (!enabled) {
         await scheduler.cancelForExperiment(experiment.id);

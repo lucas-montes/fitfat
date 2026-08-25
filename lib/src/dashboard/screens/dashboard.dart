@@ -15,7 +15,7 @@ import '../../exercise/providers/workouts.dart';
 import '../../exercise/screens/workout_form.dart';
 import '../../models/body_metrics_entry.dart';
 import '../../models/body_weight_goal.dart';
-import '../../models/planner_item.dart';
+import '../../models/task.dart';
 import '../../models/units.dart';
 import '../../planner/screens/planner_item_detail.dart';
 import '../../models/workout.dart';
@@ -847,7 +847,7 @@ final class _UpcomingTasksCard extends ConsumerWidget {
 }
 
 final class _TaskRow extends StatelessWidget {
-  final PlannerItem task;
+  final Task task;
   final DateTime today;
   final VoidCallback onTap;
 

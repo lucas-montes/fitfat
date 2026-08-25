@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../diet/providers/health_connect_steps.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../models/experiment.dart';
-import '../../models/planner_item.dart';
-import '../../planner/providers/planner.dart';
+import '../../models/task.dart';
+import '../../planner/providers/planner.dart' show linksRepositoryProvider;
+import 'experiments_repository.dart';
 
-/// All experiments ordered newest-first. Since v24 experiments are planner
-/// items (kind='experiment'), so these providers read through
-/// [PlannerRepository].
+/// All experiments ordered newest-first.
 final experimentListProvider = FutureProvider<List<Experiment>>((ref) {
-  return ref.watch(plannerRepositoryProvider).getExperiments();
+  return ref.watch(experimentRepositoryProvider).getAll();
 });
 
 /// A single experiment by id, or `null` when it does not exist.
@@ -18,19 +17,26 @@ final experimentByIdProvider = FutureProvider.family<Experiment?, String>((
   ref,
   id,
 ) {
-  return ref.watch(plannerRepositoryProvider).getExperimentById(id);
+  return ref.watch(experimentRepositoryProvider).getById(id);
 });
 
 /// Check-ins for an experiment ordered chronologically (chart-ready).
 final experimentCheckinsProvider =
     FutureProvider.family<List<ExperimentCheckin>, String>((ref, experimentId) {
-      return ref.watch(plannerRepositoryProvider).getCheckins(experimentId);
+      return ref.watch(experimentRepositoryProvider).getCheckins(experimentId);
     });
 
-/// Planner tasks linked to an experiment via their `experimentId`.
+/// Tasks linked to an experiment via the `task_experiments` link table,
+/// ordered by day then sort order. Each item carries its optional
+/// relationship label.
 final experimentLinkedTasksProvider =
-    FutureProvider.family<List<PlannerItem>, String>((ref, experimentId) {
-      return ref.watch(plannerRepositoryProvider).getLinkedTasks(experimentId);
+    FutureProvider.family<List<({Task item, String? label})>, String>((
+      ref,
+      experimentId,
+    ) {
+      return ref
+          .watch(linksRepositoryProvider)
+          .tasksForExperiment(experimentId);
     });
 
 /// Completed-workout volume (kg) per day for workouts completed on or after

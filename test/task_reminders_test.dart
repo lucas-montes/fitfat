@@ -1,4 +1,4 @@
-import 'package:fitfat/src/models/planner_item.dart';
+import 'package:fitfat/src/models/task.dart';
 import 'package:fitfat/src/notifications/task_reminders.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +8,7 @@ void main() {
   group('plannerReminderTimes', () {
     final now = DateTime(2026, 8, 11, 10, 0);
 
-    PlannerItem item({int? startTimeMinutes, bool done = false}) => PlannerItem(
+    Task item({int? startTimeMinutes, bool done = false}) => Task(
       id: 'task-1',
       day: DateTime(2026, 8, 11),
       title: 'Morning run',

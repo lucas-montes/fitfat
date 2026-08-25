@@ -99,7 +99,7 @@ final class TagRepository {
             ..where((t) => t.name.equals(oldName)))
           .write(db.TagsCompanion(name: Value(trimmed), updatedAt: Value(now)));
       for (final updated in [
-        _mapRenameWith(_loadPlannerItemsTags, _writePlannerItemsTags),
+        _mapRenameWith(_loadTasksTags, _writeTasksTags),
         _mapRenameWith(_loadNotesTags, _writeNotesTags),
         _mapRenameWith(_loadGoalsTags, _writeGoalsTags),
       ]) {
@@ -113,11 +113,7 @@ final class TagRepository {
   Future<int> deleteTag(String name) async {
     var removed = 0;
     await _database.transaction(() async {
-      removed = await _stripFrom(
-        name,
-        _loadPlannerItemsTags,
-        _writePlannerItemsTags,
-      );
+      removed = await _stripFrom(name, _loadTasksTags, _writeTasksTags);
       removed += await _stripFrom(name, _loadNotesTags, _writeNotesTags);
       removed += await _stripFrom(name, _loadGoalsTags, _writeGoalsTags);
       await (_database.delete(
@@ -134,7 +130,10 @@ final class TagRepository {
     for (final row in await _database.select(_database.tags).get()) {
       names.add(row.name);
     }
-    for (final row in await _database.select(_database.plannerItems).get()) {
+    for (final row in await _database.select(_database.tasks).get()) {
+      names.addAll(_decode(row.tags) ?? const []);
+    }
+    for (final row in await _database.select(_database.experiments).get()) {
       names.addAll(_decode(row.tags) ?? const []);
     }
     for (final row in await _database.select(_database.notes).get()) {
@@ -155,7 +154,10 @@ final class TagRepository {
       }
     }
 
-    for (final row in await _database.select(_database.plannerItems).get()) {
+    for (final row in await _database.select(_database.tasks).get()) {
+      count(_decode(row.tags));
+    }
+    for (final row in await _database.select(_database.experiments).get()) {
       count(_decode(row.tags));
     }
     for (final row in await _database.select(_database.notes).get()) {
@@ -201,18 +203,18 @@ final class TagRepository {
     return removed;
   }
 
-  Future<Map<String, List<String>?>> _loadPlannerItemsTags() async {
-    final rows = await _database.select(_database.plannerItems).get();
+  Future<Map<String, List<String>?>> _loadTasksTags() async {
+    final rows = await _database.select(_database.tasks).get();
     return {for (final r in rows) r.id: _decode(r.tags)};
   }
 
-  Future<void> _writePlannerItemsTags(Map<String, List<String>?> rows) =>
+  Future<void> _writeTasksTags(Map<String, List<String>?> rows) =>
       _database.batch((batch) {
         rows.forEach((id, tags) {
           batch.update(
-            _database.plannerItems,
-            db.PlannerItemsCompanion(tags: Value(_encode(tags))),
-            where: (db.$PlannerItemsTable t) => t.id.equals(id),
+            _database.tasks,
+            db.TasksCompanion(tags: Value(_encode(tags))),
+            where: (db.$TasksTable t) => t.id.equals(id),
           );
         });
       });

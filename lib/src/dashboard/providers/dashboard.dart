@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../database/database_provider.dart';
 import '../../diet/repositories/meal_repository.dart';
 import '../../exercise/repositories/workout_repository.dart';
-import '../../models/planner_item.dart';
+import '../../models/task.dart';
 import '../../models/workout.dart';
-import '../../planner/repositories/planner_repository.dart';
+import '../../planner/repositories/task_repository.dart';
 
 /// Today's macro totals in grams, read-only composition data for the hero card.
 typedef TodayMacros = ({double protein, double carbs, double fat});
@@ -51,8 +51,8 @@ final _workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
   return WorkoutRepository(ref.watch(databaseProvider));
 });
 
-final _plannerRepositoryProvider = Provider<PlannerRepository>((ref) {
-  return PlannerRepository(ref.watch(databaseProvider));
+final _taskRepositoryProvider = Provider<TaskRepository>((ref) {
+  return TaskRepository(ref.watch(databaseProvider));
 });
 
 // ---------------------------------------------------------------------------
@@ -139,10 +139,8 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
 // Upcoming timed tasks (pending, today or later, with a start time)
 // ---------------------------------------------------------------------------
 
-final upcomingTimedTasksProvider = FutureProvider<List<PlannerItem>>((
-  ref,
-) async {
+final upcomingTimedTasksProvider = FutureProvider<List<Task>>((ref) async {
   ref.watch(dashboardRefreshProvider);
   final today = DateTime.now();
-  return ref.watch(_plannerRepositoryProvider).getUpcomingWithStartTime(today);
+  return ref.watch(_taskRepositoryProvider).getUpcomingWithStartTime(today);
 });
