@@ -10,6 +10,7 @@ import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/goals.dart';
 import 'goal_detail_screen.dart';
+import 'goal_form_screen.dart';
 
 /// The Planner tab's "Goals" view: a horizontally scrolling **Priorities**
 /// bar (the shared tag vocabulary, ranked) above the goals list. Tapping a
@@ -34,6 +35,15 @@ final class _GoalsViewState extends ConsumerState<GoalsView> {
     ref.invalidate(tagUsageCountsProvider);
     ref.invalidate(goalListProvider);
     setState(_filter.clear);
+  }
+
+  /// Opens the create form; the goal list refreshes on return.
+  Future<void> _createGoal() async {
+    await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const GoalFormScreen()));
+    if (!mounted) return;
+    ref.invalidate(goalListProvider);
   }
 
   @override
@@ -115,6 +125,8 @@ final class _GoalsViewState extends ConsumerState<GoalsView> {
                   description: goals.isEmpty
                       ? l10n.goalsEmptyAll
                       : l10n.goalsEmptyFilter,
+                  ctaLabel: l10n.goalsNew,
+                  onCtaPressed: _createGoal,
                 );
               }
               // Active first, then planned, then finished.

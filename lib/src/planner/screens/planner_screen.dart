@@ -15,6 +15,7 @@ import '../../experiments/providers/experiments.dart';
 import '../../experiments/screens/experiment_detail_screen.dart';
 import '../../experiments/screens/experiment_form_screen.dart';
 import '../../experiments/screens/experiments_screen.dart';
+import '../../goals/providers/goals.dart';
 import '../../goals/screens/goal_form_screen.dart';
 import '../../goals/screens/goals_screen.dart';
 import '../../models/experiment.dart';
@@ -2060,15 +2061,25 @@ final class _TimelineItemCard extends StatelessWidget {
 
 /// Pushed navbar destination hosting the embeddable [GoalsView] (priorities
 /// bar + goal list) under its own app bar.
-final class _GoalsScreen extends StatelessWidget {
+final class _GoalsScreen extends ConsumerWidget {
   const _GoalsScreen();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.plannerViewGoals)),
       body: const GoalsView(),
+      floatingActionButton: FloatingActionButton(
+        tooltip: l10n.goalsNew,
+        onPressed: () async {
+          await Navigator.of(context).push<bool>(
+            MaterialPageRoute(builder: (_) => const GoalFormScreen()),
+          );
+          ref.invalidate(goalListProvider);
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
