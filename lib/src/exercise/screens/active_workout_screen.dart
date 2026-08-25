@@ -1151,10 +1151,7 @@ final class _PlannedSetsDialog extends StatefulWidget {
   final AppLocalizations l10n;
   final String exerciseName;
 
-  const _PlannedSetsDialog({
-    required this.l10n,
-    required this.exerciseName,
-  });
+  const _PlannedSetsDialog({required this.l10n, required this.exerciseName});
 
   @override
   State<_PlannedSetsDialog> createState() => _PlannedSetsDialogState();
@@ -1551,10 +1548,8 @@ final class _ActiveWorkoutExerciseSearchSheetState
   Future<void> _addExercise(BuildContext context, Exercise exercise) async {
     final sets = await showDialog<List<PlannedSet>>(
       context: context,
-      builder: (ctx) => _PlannedSetsDialog(
-        l10n: widget.l10n,
-        exerciseName: exercise.name,
-      ),
+      builder: (ctx) =>
+          _PlannedSetsDialog(l10n: widget.l10n, exerciseName: exercise.name),
     );
     if (sets == null || !context.mounted) return;
     final repo = ref.read(workoutRepositoryProvider);

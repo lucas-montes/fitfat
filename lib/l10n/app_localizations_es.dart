@@ -470,6 +470,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get workoutFormDate => 'Fecha';
 
   @override
+  String get workoutFormAddPlannerTask => 'Añadir al planificador';
+
+  @override
+  String get workoutFormAddPlannerTaskSubtitle =>
+      'Crea una tarea \"hacer este entrenamiento\" en el planificador para esta fecha.';
+
+  @override
   String get workoutFormExercises => 'Ejercicios';
 
   @override

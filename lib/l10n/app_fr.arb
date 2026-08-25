@@ -238,6 +238,8 @@
   "workoutFormNameHint": "Ex. : Séance du matin",
   "workoutFormNameRequired": "Le nom est requis",
   "workoutFormDate": "Date",
+  "workoutFormAddPlannerTask": "Ajouter au planning",
+  "workoutFormAddPlannerTaskSubtitle": "Crée une tâche « faire cette séance » au planning pour cette date.",
   "workoutFormExercises": "Exercices",
   "workoutFormAddExercise": "Ajouter un exercice",
   "workoutFormRemoveSet": "Supprimer la série",

@@ -236,6 +236,8 @@
   "workoutFormNameHint": "Ej.: Entreno matutino",
   "workoutFormNameRequired": "El nombre es obligatorio",
   "workoutFormDate": "Fecha",
+  "workoutFormAddPlannerTask": "Añadir al planificador",
+  "workoutFormAddPlannerTaskSubtitle": "Crea una tarea \"hacer este entrenamiento\" en el planificador para esta fecha.",
   "workoutFormExercises": "Ejercicios",
   "workoutFormAddExercise": "Añadir ejercicio",
   "workoutFormRemoveSet": "Eliminar serie",

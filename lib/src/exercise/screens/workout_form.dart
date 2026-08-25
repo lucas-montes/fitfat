@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/exercise_set.dart';
 import '../../models/workout_exercise.dart';
+import '../../planner/providers/planner.dart' show taskRepositoryProvider;
 import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
@@ -42,6 +43,11 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
   late final TextEditingController _nameCtrl;
   late DateTime _date;
   bool _saving = false;
+
+  /// Create-only: also drop a linked "do this workout" task onto the planner
+  /// (tasks.workout_id), on by default so the workout shows up in the day
+  /// timeline without a second manual step.
+  bool _addToPlanner = true;
 
   /// Selected exercise ids → planned set configs. Order is preserved (Dart
   /// Maps keep insertion order) and is user-reorderable via the drag handle.
@@ -136,6 +142,16 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               trailing: const Icon(Icons.edit_calendar),
               onTap: _pickDate,
             ),
+            // Create-only: drop the new workout onto today's planner as a
+            // "do this workout" task (1:1 via tasks.workout_id).
+            if (widget.initial == null)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.workoutFormAddPlannerTask),
+                subtitle: Text(l10n.workoutFormAddPlannerTaskSubtitle),
+                value: _addToPlanner,
+                onChanged: (v) => setState(() => _addToPlanner = v),
+              ),
             const SizedBox(height: 16),
             Text(
               l10n.workoutFormExercises,
@@ -507,6 +523,11 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
           exercises: exercises,
           setGroups: setGroups,
         );
+        if (_addToPlanner) {
+          await ref
+              .read(taskRepositoryProvider)
+              .createForWorkout(workoutId: workout.id, title: name, day: _date);
+        }
       }
       invalidateDashboard(ref);
 

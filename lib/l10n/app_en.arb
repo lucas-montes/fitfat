@@ -249,6 +249,8 @@
   "workoutFormNameHint": "e.g. Morning Push",
   "workoutFormNameRequired": "Name is required",
   "workoutFormDate": "Date",
+  "workoutFormAddPlannerTask": "Add to planner",
+  "workoutFormAddPlannerTaskSubtitle": "Creates a \"do this workout\" task on the planner for this date.",
   "workoutFormExercises": "Exercises",
   "workoutFormAddExercise": "Add exercise",
   "workoutFormRemoveSet": "Remove set",

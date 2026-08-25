@@ -928,6 +928,18 @@ abstract class AppLocalizations {
   /// **'Date'**
   String get workoutFormDate;
 
+  /// No description provided for @workoutFormAddPlannerTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to planner'**
+  String get workoutFormAddPlannerTask;
+
+  /// No description provided for @workoutFormAddPlannerTaskSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates a \"do this workout\" task on the planner for this date.'**
+  String get workoutFormAddPlannerTaskSubtitle;
+
   /// No description provided for @workoutFormExercises.
   ///
   /// In en, this message translates to:

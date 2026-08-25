@@ -429,6 +429,42 @@ final class TaskRepository {
     return rows.map(_toDomain).toList();
   }
 
+  /// Creates the "do this workout" planner task for a workout: a pending
+  /// task on [day] carrying [workoutId] so the two stay 1:1 linked. Used by
+  /// the workout form ("add planner task") and by replay so each occurrence
+  /// regenerates its task automatically.
+  Future<Task> createForWorkout({
+    required String workoutId,
+    required String title,
+    required DateTime day,
+    String? notes,
+    int? startTimeMinutes,
+    int? endTimeMinutes,
+    List<String>? tags,
+    int sortOrder = 0,
+  }) async {
+    final task = newTask(
+      day: day,
+      title: title,
+      notes: notes,
+      startTimeMinutes: startTimeMinutes,
+      endTimeMinutes: endTimeMinutes,
+      tags: tags,
+      sortOrder: sortOrder,
+      workoutId: workoutId,
+    );
+    await insert(task);
+    return task;
+  }
+
+  /// The task linked to [workoutId] via its `workout_id` column, if any.
+  Future<Task?> getByWorkoutId(String workoutId) async {
+    final rows = await (_database.select(
+      _database.tasks,
+    )..where((t) => t.workoutId.equals(workoutId))).get();
+    return rows.isEmpty ? null : _toDomain(rows.first);
+  }
+
   /// All tasks with `date` within [start, end] (start-of-day bounds,
   /// inclusive). Combined with the matching experiment query this powers the
   /// timeline union.

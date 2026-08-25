@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
 import '../../models/exercise_set.dart';
+import '../../models/task.dart' show Task, TaskStatus, TaskStatusStorage;
 import '../../models/workout.dart';
 import '../../models/workout_exercise.dart';
+import '../../planner/repositories/task_repository.dart' show taskFromRow;
 
 /// Planned set values to seed when adding an exercise to a workout. Every field
 /// is optional; nulls become empty planned values (actuals stay null until the
@@ -888,8 +892,66 @@ final class WorkoutRepository {
       setGroups: newSetGroups,
     );
 
+    // Carry over the "do this workout" planner task so every occurrence of
+    // the routine regenerates its planner entry automatically (1:1 via
+    // tasks.workout_id). Schedule fields and tags follow the source task.
+    final sourceTask = await findTaskForWorkout(sourceWorkoutId);
+    if (sourceTask != null) {
+      final carried = sourceTask
+          .copyWith(
+            id: const Uuid().v7(),
+            day: newWorkout.date,
+            workoutId: newWorkout.id,
+            seriesId: null,
+            recurrence: null,
+          )
+          .withTaskStatus(TaskStatus.pending);
+      await upsertLinkedWorkoutTask(carried);
+    }
+
     return newWorkout;
   }
+
+  /// The pending "do this workout" task linked to [workoutId] via its
+  /// `workout_id` column, or null when the workout has no planner entry.
+  Future<Task?> findTaskForWorkout(String workoutId) async {
+    final rows = await (_database.select(
+      _database.tasks,
+    )..where((t) => t.workoutId.equals(workoutId))).get();
+    return rows.isEmpty ? null : taskFromRow(rows.first);
+  }
+
+  /// Inserts or refreshes the "do this workout" planner task for a workout
+  /// (shared by replay carry-over and the workout form's add-planner-task).
+  Future<void> upsertLinkedWorkoutTask(Task task) async {
+    await _database
+        .into(_database.tasks)
+        .insert(
+          _taskCompanion(task),
+          onConflict: DoUpdate((_) => _taskCompanion(task)),
+        );
+  }
+
+  db.TasksCompanion _taskCompanion(Task t) => db.TasksCompanion.insert(
+    id: t.id,
+    date: DateTime(t.day.year, t.day.month, t.day.day).millisecondsSinceEpoch,
+    title: t.title,
+    done: t.done ? 1 : 0,
+    sortOrder: t.sortOrder,
+    dueDate: Value(t.dueDate?.millisecondsSinceEpoch),
+    startTimeMinutes: Value(t.startTimeMinutes),
+    endTimeMinutes: Value(t.endTimeMinutes),
+    notes: Value(t.notes),
+    workoutId: Value(t.workoutId),
+    tags: Value(_encodeTags(t.tags)),
+    recurrence: Value(
+      t.recurrence == null ? null : jsonEncode(t.recurrence!.toJson()),
+    ),
+    seriesId: Value(t.seriesId),
+    taskStatus: Value(t.taskStatus?.storage),
+    carryOver: Value(t.carryOver),
+    createdAt: t.createdAt.millisecondsSinceEpoch,
+  );
 
   /// How many workouts in a replay lineage were completed — the "times done"
   /// count for a routine. Single grouped COUNT over completed occurrences.
@@ -976,3 +1038,8 @@ ExerciseSet newPlannedSet({
 );
 
 DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
+
+String? _encodeTags(List<String>? values) {
+  if (values == null || values.isEmpty) return null;
+  return jsonEncode(values);
+}
