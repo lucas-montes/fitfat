@@ -23,6 +23,7 @@ final class Task {
   endTimeMinutes; // optional end time-of-day (schema v15); null = open-ended
   final String? notes; // optional free-text note
   final String? workoutId; // optional linked workout (1:1, auto via replay)
+  final String? workoutTemplateId; // scheduled occurrence from a template (v28)
   final List<String>? tags; // optional free-form labels (priorities)
   final PlannerRecurrence? recurrence; // optional repeat rule (schema v13)
   final String? seriesId; // groups occurrences of one recurring series
@@ -45,6 +46,7 @@ final class Task {
     this.endTimeMinutes,
     this.notes,
     this.workoutId,
+    this.workoutTemplateId,
     this.tags,
     this.recurrence,
     this.seriesId,
@@ -81,6 +83,7 @@ final class Task {
     Object? endTimeMinutes = _unset,
     Object? notes = _unset,
     Object? workoutId = _unset,
+    Object? workoutTemplateId = _unset,
     Object? tags = _unset,
     Object? recurrence = _unset,
     Object? seriesId = _unset,
@@ -106,6 +109,9 @@ final class Task {
     workoutId: identical(workoutId, _unset)
         ? this.workoutId
         : workoutId as String?,
+    workoutTemplateId: identical(workoutTemplateId, _unset)
+        ? this.workoutTemplateId
+        : workoutTemplateId as String?,
     tags: identical(tags, _unset) ? this.tags : tags as List<String>?,
     recurrence: identical(recurrence, _unset)
         ? this.recurrence

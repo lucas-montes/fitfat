@@ -4,7 +4,9 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
+import '../planner/repositories/task_repository.dart' show decodeTagList;
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -21,6 +23,9 @@ part 'app_database.g.dart';
     Workouts,
     WorkoutExercises,
     ExerciseSets,
+    WorkoutTemplates,
+    WorkoutTemplateExercises,
+    WorkoutTemplateSets,
     Tasks,
     Experiments,
     BodyMetrics,
@@ -49,7 +54,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -441,6 +446,136 @@ final class AppDatabase extends _$AppDatabase {
         await m.addColumn(goals, goals.reminderEnabled);
         await m.addColumn(goals, goals.reminderTimeMinutes);
         await m.addColumn(goals, goals.baselineValue);
+      }
+      if (from < 28) {
+        // v28: workout templates + priorities backfill.
+        //
+        // 1. Template tables (blueprint exercises + planned sets) plus
+        //    provenance columns on workouts / tasks.
+        // 2. Every distinct replay lineage (routine_id) is auto-promoted to
+        //    a template seeded from its latest occurrence's planned sets;
+        //    that lineage's sessions get stamped with the template id.
+        // 3. Free-form tag references across tasks/experiments/notes/goals
+        //    are normalized and registered in the shared `tags` vocabulary.
+        await m.createTable(workoutTemplates);
+        await m.createTable(workoutTemplateExercises);
+        await m.createTable(workoutTemplateSets);
+        await m.addColumn(workouts, workouts.templateId);
+        await m.addColumn(tasks, tasks.workoutTemplateId);
+
+        final uuid = const Uuid();
+        String baseName(String raw) {
+          final stripped = raw.replaceAll(RegExp(r' (#\d+|\(Copy\))+$'), '');
+          return stripped.trim().isEmpty ? raw.trim() : stripped.trim();
+        }
+
+        // --- Auto-promote routine lineages -------------------------------
+        final lineageRows = await (select(
+          workouts,
+        )..where((t) => t.routineId.isNotNull())).get();
+        final byLineage = <String, List<Workout>>{};
+        for (final row in lineageRows) {
+          byLineage.putIfAbsent(row.routineId!, () => []).add(row);
+        }
+        for (final entry in byLineage.entries) {
+          final lineage = entry.value;
+          // Prefer the most recently completed occurrence; fall back to the
+          // newest one so never-completed routines still promote.
+          int rank(Workout w) =>
+              (w.completedAt ?? 0) * 2 + (w.date > 0 ? 1 : 0);
+          lineage.sort((a, b) => rank(b).compareTo(rank(a)));
+          final source = lineage.first;
+
+          final templateId = uuid.v7();
+          final now = DateTime.now().millisecondsSinceEpoch;
+          await into(workoutTemplates).insert(
+            WorkoutTemplatesCompanion.insert(
+              id: templateId,
+              name: baseName(source.name),
+              startDate: source.date,
+              sourceRoutineId: Value(entry.key),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+          final blocks = await (select(
+            workoutExercises,
+          )..where((t) => t.workoutId.equals(source.id))).get();
+          blocks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+          for (final block in blocks) {
+            final templateExerciseId = uuid.v7();
+            await into(workoutTemplateExercises).insert(
+              WorkoutTemplateExercisesCompanion.insert(
+                id: templateExerciseId,
+                templateId: templateId,
+                exerciseId: block.exerciseId,
+                sortOrder: block.sortOrder,
+                notes: Value(block.notes),
+              ),
+            );
+            final sets = await (select(
+              exerciseSets,
+            )..where((t) => t.workoutExerciseId.equals(block.id))).get();
+            sets.sort((a, b) => a.setNumber.compareTo(b.setNumber));
+            for (final set in sets) {
+              await into(workoutTemplateSets).insert(
+                WorkoutTemplateSetsCompanion.insert(
+                  id: uuid.v7(),
+                  templateExerciseId: templateExerciseId,
+                  setNumber: set.setNumber,
+                  reps: Value(set.reps),
+                  weightKg: Value(set.weightKg),
+                  restSeconds: Value(set.restSeconds),
+                  durationMinutes: Value(set.durationMinutes),
+                  distanceMeters: Value(set.distanceMeters),
+                ),
+              );
+            }
+          }
+          // Stamp provenance onto every session of this lineage.
+          await (update(workouts)..where((t) => t.routineId.equals(entry.key)))
+              .write(WorkoutsCompanion(templateId: Value(templateId)));
+        }
+
+        // --- Priorities vocabulary backfill ------------------------------
+        Future<void> registerRefs(List<String>? refs) async {
+          for (final ref in refs ?? const <String>[]) {
+            final clean = ref.trim().replaceAll(RegExp(r'\s+'), ' ');
+            if (clean.isEmpty) continue;
+            final existing = await (select(
+              tags,
+            )..where((t) => t.name.equals(clean))).getSingleOrNull();
+            if (existing != null) continue;
+            final maxOrderExp = tags.sortOrder.max();
+            final orderRow = await (selectOnly(
+              tags,
+            )..addColumns([maxOrderExp])).getSingleOrNull();
+            final now = DateTime.now().millisecondsSinceEpoch;
+            await into(tags).insert(
+              TagsCompanion.insert(
+                id: uuid.v7(),
+                name: clean,
+                sortOrder: Value((orderRow?.read(maxOrderExp) ?? -1) + 1),
+                createdAt: now,
+                updatedAt: now,
+              ),
+            );
+          }
+        }
+
+        for (final row in await select(tasks).get()) {
+          await registerRefs(decodeTagList(row.tags));
+        }
+        for (final row in await select(experiments).get()) {
+          await registerRefs(decodeTagList(row.tags));
+        }
+        for (final row in await select(notes).get()) {
+          await registerRefs(decodeTagList(row.tags));
+        }
+        for (final row in await select(goals).get()) {
+          await registerRefs(decodeTagList(row.tags));
+        }
       }
     },
   );

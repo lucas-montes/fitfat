@@ -140,7 +140,77 @@ class Workouts extends Table {
   // so replays stay linked and "times done" is countable. Null for workouts
   // created before replay existed or never replayed.
   TextColumn? get routineId => text().nullable()();
+  // Template provenance (v28): set when the session was instantiated from a
+  // workout template; null for ad-hoc sessions.
+  TextColumn? get templateId => text().nullable()();
   IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Workout templates (schema v28)
+//
+// A template is the reusable blueprint of a routine: exercises + planned
+// sets, plus an optional repeat rule that materializes planner tasks for
+// upcoming days (tasks.workout_template_id). Starting a session from a
+// template snapshots the plan into a normal workouts row stamped with
+// workouts.template_id; sessions stay fully editable and never mutate the
+// blueprint.
+// ---------------------------------------------------------------------------
+
+class WorkoutTemplates extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn? get notes => text().nullable()();
+
+  /// Anchor day for the repeat rule (start-of-day epoch ms). Rules compute
+  /// occurrences relative to it; templates without a rule ignore it.
+  IntColumn get startDate => integer()();
+
+  /// Optional repeat rule as a JSON object — same shape as
+  /// planner recurrence, so weekly weekdays / interval / monthly all work.
+  TextColumn? get recurrence => text().nullable()();
+
+  /// JSON string[] of excluded occurrence days (start-of-day epoch ms) —
+  /// recorded when a generated task is deleted so it stays deleted.
+  TextColumn? get excludedDates => text().nullable()();
+
+  /// Replay-lineage provenance when auto-promoted from history (v28).
+  TextColumn? get sourceRoutineId => text().nullable()();
+  IntColumn get createdAt => integer()();
+  IntColumn get updatedAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class WorkoutTemplateExercises extends Table {
+  TextColumn get id => text()();
+  TextColumn get templateId => text().references(WorkoutTemplates, #id)();
+  TextColumn get exerciseId => text().references(Exercises, #id)();
+  IntColumn get sortOrder => integer()();
+  // Exercise-level free-text note, mirroring workout_exercises.
+  TextColumn? get notes => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Planned-only set values for a template exercise; actual columns are
+/// deliberately absent — those belong to sessions, not blueprints.
+class WorkoutTemplateSets extends Table {
+  TextColumn get id => text()();
+  TextColumn get templateExerciseId =>
+      text().references(WorkoutTemplateExercises, #id)();
+  IntColumn get setNumber => integer()();
+  IntColumn? get reps => integer().nullable()();
+  RealColumn? get weightKg => real().nullable()();
+  // Planned rest between sets in seconds.
+  IntColumn? get restSeconds => integer().nullable()();
+  IntColumn? get durationMinutes => integer().nullable()();
+  RealColumn? get distanceMeters => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -218,6 +288,9 @@ class Tasks extends Table {
   // Optional linked workout (v11). 1:1 owner side; set automatically when a
   // workout is created/replayed with "add planner task".
   TextColumn? get workoutId => text().nullable()();
+  // Scheduled workout occurrence (v28): set on tasks generated from a workout
+  // template's repeat rule; starting the session links [workoutId] as well.
+  TextColumn? get workoutTemplateId => text().nullable()();
   // Optional free-form tags as a JSON string[] (v12).
   TextColumn? get tags => text().nullable()();
   // Optional repeat rule as a JSON object (v13).

@@ -9,6 +9,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../dashboard/providers/dashboard.dart';
 import '../../exercise/screens/workout_detail.dart';
+import '../../exercise/providers/workout_templates.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../experiments/providers/experiments.dart';
 import '../../experiments/screens/experiment_detail_screen.dart';
@@ -781,6 +782,14 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       await _cancelReminder(item.id);
       await repo.delete(item.id);
       await ref.read(linksRepositoryProvider).detachTask(item.id);
+      // Scheduled workout occurrence: record the exclusion so the template
+      // materializer doesn't regenerate it on the next view of this day.
+      final scheduledTemplateId = item.workoutTemplateId;
+      if (scheduledTemplateId != null) {
+        await ref
+            .read(workoutTemplateRepositoryProvider)
+            .excludeOccurrence(scheduledTemplateId, item.day);
+      }
     }
     ref.invalidate(dayEntriesProvider);
     invalidateDashboard(ref);
@@ -812,6 +821,14 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         } else {
           await repo.restore(item);
           await _syncReminder(item);
+          // Undoing a scheduled-occurrence delete re-includes the day so the
+          // materializer keeps generating it.
+          final scheduledTemplateId = item.workoutTemplateId;
+          if (scheduledTemplateId != null) {
+            await ref
+                .read(workoutTemplateRepositoryProvider)
+                .restoreOccurrence(scheduledTemplateId, item.day);
+          }
         }
         ref.invalidate(dayEntriesProvider);
         invalidateDashboard(ref);

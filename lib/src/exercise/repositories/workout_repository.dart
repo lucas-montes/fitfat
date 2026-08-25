@@ -8,7 +8,9 @@ import '../../models/exercise_set.dart';
 import '../../models/task.dart' show Task, TaskStatus, TaskStatusStorage;
 import '../../models/workout.dart';
 import '../../models/workout_exercise.dart';
-import '../../planner/repositories/task_repository.dart' show taskFromRow;
+import '../../models/workout_template.dart';
+import '../../planner/repositories/task_repository.dart'
+    show newTask, taskFromRow;
 
 /// Planned set values to seed when adding an exercise to a workout. Every field
 /// is optional; nulls become empty planned values (actuals stay null until the
@@ -113,6 +115,7 @@ final class WorkoutRepository {
               name: workout.name,
               date: workout.date.millisecondsSinceEpoch,
               routineId: Value(workout.routineId),
+              templateId: Value(workout.templateId),
               createdAt: workout.createdAt.millisecondsSinceEpoch,
             ),
           );
@@ -912,6 +915,176 @@ final class WorkoutRepository {
     return newWorkout;
   }
 
+  /// Creates the next session from [details.template] on [day]: planned sets
+  /// snapshotted from the blueprint, `workouts.template_id` stamped, and the
+  /// routine lineage kept continuous when the template was auto-promoted
+  /// (so per-template "times done" history keeps counting). When
+  /// [addPlannerTask] is set, the matching "do this workout" task is created
+  /// for [day] as well.
+  Future<Workout> instantiateTemplate(
+    WorkoutTemplateDetails details, {
+    required DateTime day,
+    bool addPlannerTask = true,
+  }) async {
+    final template = details.template;
+    final session = Workout(
+      id: const Uuid().v7(),
+      name: template.name,
+      date: DateTime(day.year, day.month, day.day),
+      // Lineage continuity: sessions of one template share its provenance
+      // lineage (auto-promoted routines keep counting; fresh templates group
+      // under the template id).
+      routineId: template.sourceRoutineId ?? template.id,
+      templateId: template.id,
+      createdAt: DateTime.now(),
+    );
+
+    final exercises = <WorkoutExercise>[];
+    final setGroups = <List<ExerciseSet>>[];
+    for (final (i, block) in details.blocks.indexed) {
+      final we = newWorkoutExercise(
+        workoutId: session.id,
+        exerciseId: block.exercise.exerciseId,
+        exerciseName: '',
+        sortOrder: i,
+        notes: block.exercise.notes,
+      );
+      exercises.add(we);
+      setGroups.add([
+        for (final (j, set) in block.sets.indexed)
+          newPlannedSet(
+            workoutExerciseId: we.id,
+            setNumber: j + 1,
+            reps: set.reps,
+            weightKg: set.weightKg,
+            restSeconds: set.restSeconds,
+            durationMinutes: set.durationMinutes,
+            distanceMeters: set.distanceMeters,
+          ),
+      ]);
+    }
+
+    await insert(workout: session, exercises: exercises, setGroups: setGroups);
+    if (addPlannerTask) {
+      await upsertLinkedWorkoutTask(
+        newTask(day: session.date, title: session.name, workoutId: session.id),
+      );
+    }
+    return session;
+  }
+
+  /// Creates a template from an existing session's current plan (the
+  /// explicit "save this as a template" action). Returns the new template id.
+  Future<String> saveAsTemplate({
+    required String workoutId,
+    String? name,
+  }) async {
+    final source = await getWithDetails(workoutId);
+    if (source == null) {
+      throw StateError('Workout not found: $workoutId');
+    }
+    final now = DateTime.now();
+    final templateId = const Uuid().v7();
+    await _database
+        .into(_database.workoutTemplates)
+        .insert(
+          db.WorkoutTemplatesCompanion.insert(
+            id: templateId,
+            name: name?.trim().isNotEmpty == true
+                ? name!.trim()
+                : _baseName(source.workout.name),
+            startDate: _startOfDay(source.workout.date).millisecondsSinceEpoch,
+            sourceRoutineId: Value(source.workout.routineId),
+            createdAt: now.millisecondsSinceEpoch,
+            updatedAt: now.millisecondsSinceEpoch,
+          ),
+        );
+    await replaceTemplateBlueprint(templateId, [
+      for (final block in source.exercises)
+        TemplateBlock(
+          exercise: WorkoutTemplateExercise(
+            id: 'adhoc',
+            templateId: templateId,
+            exerciseId: block.exercise.exerciseId,
+            sortOrder: block.exercise.sortOrder,
+            notes: block.exercise.notes,
+          ),
+          sets: [
+            for (final set in block.sets)
+              WorkoutTemplateSet(
+                id: 'adhoc',
+                templateExerciseId: 'adhoc',
+                setNumber: set.setNumber,
+                reps: set.reps,
+                weightKg: set.weightKg,
+                restSeconds: set.restSeconds,
+                durationMinutes: set.durationMinutes,
+                distanceMeters: set.distanceMeters,
+              ),
+          ],
+        ),
+    ]);
+    return templateId;
+  }
+
+  /// Replace-style blueprint write shared with the editor; thin wrapper so
+  /// callers of this repository don't need the template repository too.
+  Future<void> replaceTemplateBlueprint(
+    String templateId,
+    List<TemplateBlock> blocks,
+  ) async {
+    await _database.transaction(() async {
+      final oldExercises = await (_database.select(
+        _database.workoutTemplateExercises,
+      )..where((t) => t.templateId.equals(templateId))).get();
+      for (final ex in oldExercises) {
+        await (_database.delete(
+          _database.workoutTemplateSets,
+        )..where((t) => t.templateExerciseId.equals(ex.id))).go();
+      }
+      await (_database.delete(
+        _database.workoutTemplateExercises,
+      )..where((t) => t.templateId.equals(templateId))).go();
+      for (final (i, block) in blocks.indexed) {
+        final exerciseId = const Uuid().v7();
+        await _database
+            .into(_database.workoutTemplateExercises)
+            .insert(
+              db.WorkoutTemplateExercisesCompanion.insert(
+                id: exerciseId,
+                templateId: templateId,
+                exerciseId: block.exercise.exerciseId,
+                sortOrder: i,
+                notes: Value(block.exercise.notes),
+              ),
+            );
+        for (final (j, set) in block.sets.indexed) {
+          await _database
+              .into(_database.workoutTemplateSets)
+              .insert(
+                db.WorkoutTemplateSetsCompanion.insert(
+                  id: const Uuid().v7(),
+                  templateExerciseId: exerciseId,
+                  setNumber: j + 1,
+                  reps: Value(set.reps),
+                  weightKg: Value(set.weightKg),
+                  restSeconds: Value(set.restSeconds),
+                  durationMinutes: Value(set.durationMinutes),
+                  distanceMeters: Value(set.distanceMeters),
+                ),
+              );
+        }
+      }
+      await (_database.update(
+        _database.workoutTemplates,
+      )..where((t) => t.id.equals(templateId))).write(
+        db.WorkoutTemplatesCompanion(
+          updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
+    });
+  }
+
   /// The pending "do this workout" task linked to [workoutId] via its
   /// `workout_id` column, or null when the workout has no planner entry.
   Future<Task?> findTaskForWorkout(String workoutId) async {
@@ -985,6 +1158,7 @@ final class WorkoutRepository {
         : null,
     notes: row.notes,
     routineId: row.routineId,
+    templateId: row.templateId,
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
   );
 }

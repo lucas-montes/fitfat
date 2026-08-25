@@ -9,6 +9,9 @@ final class Workout {
   // Replay lineage (schema v21): shared by all occurrences of the same
   // routine; null when the workout was never part of a replay chain.
   final String? routineId;
+  // Template provenance (schema v28): set when the session was instantiated
+  // from a workout template; null for ad-hoc sessions.
+  final String? templateId;
   final DateTime createdAt;
 
   const Workout({
@@ -19,6 +22,7 @@ final class Workout {
     this.completedAt,
     this.notes,
     this.routineId,
+    this.templateId,
     required this.createdAt,
   });
 
@@ -33,6 +37,7 @@ final class Workout {
     String? notes,
     bool clearNotes = false,
     String? routineId,
+    String? templateId,
     DateTime? createdAt,
   }) => Workout(
     id: id ?? this.id,
@@ -43,6 +48,7 @@ final class Workout {
     notes: clearNotes ? null : (notes ?? this.notes),
     // Lineage is never unset via copyWith — replay only ever adds it.
     routineId: routineId ?? this.routineId,
+    templateId: templateId ?? this.templateId,
     createdAt: createdAt ?? this.createdAt,
   );
 

@@ -72,6 +72,7 @@ final class TaskRepository {
         endTimeMinutes: Value(item.endTimeMinutes),
         notes: Value(item.notes),
         workoutId: Value(item.workoutId),
+        workoutTemplateId: Value(item.workoutTemplateId),
         tags: Value(_encode(item.tags)),
         recurrence: Value(encodeRecurrenceJson(item.recurrence)),
         seriesId: Value(item.seriesId),
@@ -94,6 +95,7 @@ final class TaskRepository {
         endTimeMinutes: Value(item.endTimeMinutes),
         notes: Value(item.notes),
         workoutId: Value(item.workoutId),
+        workoutTemplateId: Value(item.workoutTemplateId),
         tags: Value(_encode(item.tags)),
         recurrence: Value(encodeRecurrenceJson(item.recurrence)),
         seriesId: Value(item.seriesId),
@@ -189,6 +191,50 @@ final class TaskRepository {
     final d = _startOfDay(day);
     final anchors = await getRecurringAnchors(d);
     await _materializeDay(anchors, d);
+    await materializeScheduledWorkouts(d);
+  }
+
+  /// Materializes planner tasks for workout templates whose repeat rule
+  /// fires on [day] (schema v28). Each occurrence becomes a task carrying
+  /// `workout_template_id`; starting it instantiates the session. Idempotent
+  /// and exclusion-aware (deleted occurrences stay deleted).
+  Future<int> materializeScheduledWorkouts(DateTime day) async {
+    final d = _startOfDay(day);
+    final dayMs = d.millisecondsSinceEpoch;
+    final rows = await (_database.select(
+      _database.workoutTemplates,
+    )..where((t) => t.recurrence.isNotNull())).get();
+    var created = 0;
+    for (final row in rows) {
+      final rule = decodeRecurrenceJson(row.recurrence);
+      if (rule == null || !rule.isValid) continue;
+      final anchor = DateTime.fromMillisecondsSinceEpoch(row.startDate);
+      if (!rule.isOccurrenceOn(anchor, d)) continue;
+      final excluded = _decodeDays(row.excludedDates);
+      if (excluded?.contains(dayMs) ?? false) continue;
+      final existing =
+          await (_database.select(_database.tasks)..where(
+                (t) =>
+                    t.workoutTemplateId.equals(row.id) & t.date.equals(dayMs),
+              ))
+              .get();
+      if (existing.isNotEmpty) continue;
+      await _database
+          .into(_database.tasks)
+          .insert(
+            db.TasksCompanion.insert(
+              id: const Uuid().v7(),
+              date: dayMs,
+              title: row.name,
+              done: 0,
+              sortOrder: 0,
+              workoutTemplateId: Value(row.id),
+              createdAt: DateTime.now().millisecondsSinceEpoch,
+            ),
+          );
+      created++;
+    }
+    return created;
   }
 
   /// Materializes occurrences for every day from the earliest anchor up to
@@ -242,6 +288,7 @@ final class TaskRepository {
               endTimeMinutes: Value(anchor.endTimeMinutes),
               notes: Value(anchor.notes),
               workoutId: Value(anchor.workoutId),
+              workoutTemplateId: Value(anchor.workoutTemplateId),
               tags: Value(_encode(anchor.tags)),
               seriesId: Value(anchor.seriesId),
               createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -345,6 +392,7 @@ final class TaskRepository {
     int? endTimeMinutes,
     String? notes,
     String? workoutId,
+    String? workoutTemplateId,
     List<String>? tags,
   }) async {
     final fromStart = _startOfDay(from).millisecondsSinceEpoch;
@@ -361,6 +409,7 @@ final class TaskRepository {
             endTimeMinutes: Value(endTimeMinutes),
             notes: Value(notes),
             workoutId: Value(workoutId),
+            workoutTemplateId: Value(workoutTemplateId),
             tags: Value(_encode(tags)),
           ),
         );
@@ -525,6 +574,7 @@ Task taskFromRow(db.Task row) => Task(
   endTimeMinutes: row.endTimeMinutes,
   notes: row.notes,
   workoutId: row.workoutId,
+  workoutTemplateId: row.workoutTemplateId,
   tags: decodeTagList(row.tags),
   recurrence: decodeRecurrenceJson(row.recurrence),
   seriesId: row.seriesId,
@@ -544,6 +594,16 @@ List<String>? decodeTagList(String? raw) {
   try {
     final decoded = jsonDecode(raw);
     if (decoded is List) return decoded.cast<String>();
+  } catch (_) {}
+  return null;
+}
+
+/// Decodes a JSON int[] column (template exclusion days); shared internally.
+Set<int>? _decodeDays(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is List) return decoded.cast<int>().toSet();
   } catch (_) {}
   return null;
 }
@@ -573,6 +633,7 @@ Task newTask({
   int? endTimeMinutes,
   String? notes,
   String? workoutId,
+  String? workoutTemplateId,
   List<String>? tags,
   PlannerRecurrence? recurrence,
   String? seriesId,
@@ -590,6 +651,7 @@ Task newTask({
   endTimeMinutes: endTimeMinutes,
   notes: notes,
   workoutId: workoutId,
+  workoutTemplateId: workoutTemplateId,
   tags: tags,
   recurrence: recurrence,
   seriesId: seriesId,
