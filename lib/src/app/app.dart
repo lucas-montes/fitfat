@@ -12,6 +12,8 @@ import '../../l10n/app_localizations.dart';
 import '../dashboard/providers/dashboard.dart';
 import '../notifications/notification_plugin.dart';
 import '../notifications/rest_alarm.dart';
+import '../goals/notifications/goal_reminder.dart';
+import '../goals/providers/goals.dart';
 import '../notifications/task_reminders.dart';
 import '../planner/providers/planner.dart';
 import '../settings/providers/settings.dart';
@@ -172,6 +174,18 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
             dueSoonText: l10n.taskReminderDueSoon,
             dueNowText: l10n.taskReminderDueNow,
           );
+      // Daily goal reminders for active goals (the scheduler itself skips
+      // non-active / per-goal-disabled rows).
+      final goals = await ref.read(goalRepositoryProvider).getGoals();
+      for (final goal in goals) {
+        await ref
+            .read(goalReminderSchedulerProvider)
+            .scheduleForGoal(
+              goal,
+              title: goal.title,
+              body: l10n.goalsReminderSubtitle,
+            );
+      }
     }
 
     await _rollover();

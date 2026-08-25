@@ -62,8 +62,16 @@ final class Goal {
   /// Target value for [GoalTargetType.numeric]; null otherwise.
   final double? targetValue;
 
+  /// Optional starting point for numeric targets; progress is measured from
+  /// [baselineValue] → [targetValue]. Null = start from zero.
+  final double? baselineValue;
+
   /// Optional unit label ('kg', 'km', …).
   final String? unit;
+
+  // Daily goal reminder (v27); scheduled while the goal is active.
+  final bool reminderEnabled;
+  final int reminderTimeMinutes; // minutes from midnight
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -77,7 +85,10 @@ final class Goal {
     this.status = GoalStatus.planned,
     this.targetType = GoalTargetType.none,
     this.targetValue,
+    this.baselineValue,
     this.unit,
+    this.reminderEnabled = false,
+    this.reminderTimeMinutes = 20 * 60,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -85,15 +96,19 @@ final class Goal {
   bool get isActive => status == GoalStatus.active;
 
   /// 0..1 progress derived from the latest recorded value, or null when the
-  /// goal has no measurable target or no entries yet.
+  /// goal has no measurable target or no entries yet. Numeric progress runs
+  /// from [baselineValue] (or zero) toward [targetValue].
   double? progressFrom(double? latestValue) {
     if (targetType == GoalTargetType.none || latestValue == null) return null;
     if (targetType == GoalTargetType.boolean) {
       return latestValue >= 1 ? 1.0 : 0.0;
     }
     final target = targetValue;
-    if (target == null || target == 0) return null;
-    return (latestValue / target).clamp(0.0, 1.0);
+    if (target == null) return null;
+    final baseline = baselineValue ?? 0;
+    final span = target - baseline;
+    if (span == 0) return null;
+    return ((latestValue - baseline) / span).clamp(0.0, 1.0);
   }
 
   Goal copyWith({
@@ -106,7 +121,10 @@ final class Goal {
     GoalStatus? status,
     GoalTargetType? targetType,
     Object? targetValue = _unset,
+    Object? baselineValue = _unset,
     Object? unit = _unset,
+    bool? reminderEnabled,
+    int? reminderTimeMinutes,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Goal(
@@ -123,7 +141,12 @@ final class Goal {
     targetValue: identical(targetValue, _unset)
         ? this.targetValue
         : targetValue as double?,
+    baselineValue: identical(baselineValue, _unset)
+        ? this.baselineValue
+        : baselineValue as double?,
     unit: identical(unit, _unset) ? this.unit : unit as String?,
+    reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+    reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );

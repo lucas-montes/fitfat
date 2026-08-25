@@ -45,7 +45,10 @@ final class GoalRepository {
       status: Value(goal.status.storage),
       targetType: Value(goal.targetType.storage),
       targetValue: Value(goal.targetValue),
+      baselineValue: Value(goal.baselineValue),
       unit: Value(goal.unit),
+      reminderEnabled: Value(goal.reminderEnabled),
+      reminderTimeMinutes: Value(goal.reminderTimeMinutes),
       createdAt: goal.createdAt.millisecondsSinceEpoch,
       updatedAt: goal.updatedAt.millisecondsSinceEpoch,
     );
@@ -72,11 +75,23 @@ final class GoalRepository {
     );
   }
 
-  /// Deletes a goal plus its progress entries.
+  /// Deletes a goal plus its progress entries and link-table rows.
   Future<void> deleteGoal(String id) async {
     await _database.transaction(() async {
       await (_database.delete(
         _database.goalProgressEntries,
+      )..where((t) => t.goalId.equals(id))).go();
+      await (_database.delete(
+        _database.taskGoals,
+      )..where((t) => t.goalId.equals(id))).go();
+      await (_database.delete(
+        _database.experimentGoals,
+      )..where((t) => t.goalId.equals(id))).go();
+      await (_database.delete(
+        _database.goalNotes,
+      )..where((t) => t.goalId.equals(id))).go();
+      await (_database.delete(
+        _database.goalWorkouts,
       )..where((t) => t.goalId.equals(id))).go();
       await (_database.delete(
         _database.goals,
@@ -169,7 +184,10 @@ final class GoalRepository {
     status: GoalStatusStorage.parse(row.status),
     targetType: GoalTargetTypeStorage.parse(row.targetType),
     targetValue: row.targetValue,
+    baselineValue: row.baselineValue,
     unit: row.unit,
+    reminderEnabled: row.reminderEnabled,
+    reminderTimeMinutes: row.reminderTimeMinutes,
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
     updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
   );

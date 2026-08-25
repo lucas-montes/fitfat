@@ -5,6 +5,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../models/goal.dart';
 import '../../tags/widgets/tag_picker.dart';
 import '../../ui/tokens.dart';
+import '../notifications/goal_reminder.dart';
 import '../providers/goals.dart';
 import 'goal_form_screen.dart';
 
@@ -92,6 +93,7 @@ final class GoalDetailScreen extends ConsumerWidget {
           ),
         );
         if (confirmed != true || !context.mounted) return;
+        await ref.read(goalReminderSchedulerProvider).cancelForGoal(goalId);
         await repo.deleteGoal(goalId);
         ref.invalidate(goalListProvider);
         if (context.mounted) Navigator.of(context).pop(true);
@@ -125,9 +127,22 @@ final class _GoalDetailViewState extends ConsumerState<_GoalDetailView> {
   }
 
   Future<void> _setStatus(GoalStatus status) async {
+    final l10n = AppLocalizations.of(context)!;
     await ref
         .read(goalRepositoryProvider)
         .setGoalStatus(widget.goal.id, status);
+    // Reminders follow the lifecycle: active re-syncs (in case the goal or
+    // its reminder changed), any other status drops the daily notification.
+    final scheduler = ref.read(goalReminderSchedulerProvider);
+    if (status == GoalStatus.active) {
+      await scheduler.scheduleForGoal(
+        widget.goal.copyWith(status: status),
+        title: widget.goal.title,
+        body: l10n.goalsReminderSubtitle,
+      );
+    } else {
+      await scheduler.cancelForGoal(widget.goal.id);
+    }
     _refresh();
   }
 

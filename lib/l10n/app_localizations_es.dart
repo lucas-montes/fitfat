@@ -2475,6 +2475,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalsUnitLabel => 'Unidad';
 
   @override
+  String get goalsBaselineLabel => 'Valor inicial';
+
+  @override
+  String get goalsReminderLabel => 'Recordatorio diario de la meta';
+
+  @override
+  String get goalsReminderSubtitle =>
+      'Una notificación mantiene esta meta presente.';
+
+  @override
+  String get goalsReminderTimeLabel => 'Hora del recordatorio';
+
+  @override
+  String get goalsRelatedTasks => 'Tareas relacionadas';
+
+  @override
+  String get goalsNoLinkedTasks => 'Aún no hay tareas relacionadas.';
+
+  @override
   String get goalsDeleteConfirmTitle => '¿Eliminar meta?';
 
   @override

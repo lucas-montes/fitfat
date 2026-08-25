@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../database/database_provider.dart';
 import '../../models/goal.dart';
+import '../../models/task.dart';
+import '../../planner/providers/planner.dart' show linksRepositoryProvider;
 import '../repositories/goal_repository.dart';
 
 final goalRepositoryProvider = Provider<GoalRepository>((ref) {
@@ -33,3 +35,13 @@ final latestGoalProgressProvider = FutureProvider.family<double?, String>((
 ) {
   return ref.watch(goalRepositoryProvider).getLatestProgressValue(goalId);
 });
+
+/// Tasks linked to a goal via the `task_goals` link table, ordered by day
+/// then sort order. Each carries its optional relationship label.
+final tasksByGoalProvider =
+    FutureProvider.family<List<({Task item, String? label})>, String>((
+      ref,
+      goalId,
+    ) {
+      return ref.watch(linksRepositoryProvider).tasksForGoal(goalId);
+    });

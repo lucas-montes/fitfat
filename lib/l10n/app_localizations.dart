@@ -4498,6 +4498,42 @@ abstract class AppLocalizations {
   /// **'Unit'**
   String get goalsUnitLabel;
 
+  /// No description provided for @goalsBaselineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting value'**
+  String get goalsBaselineLabel;
+
+  /// No description provided for @goalsReminderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily goal reminder'**
+  String get goalsReminderLabel;
+
+  /// No description provided for @goalsReminderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A notification keeps this goal on your radar.'**
+  String get goalsReminderSubtitle;
+
+  /// No description provided for @goalsReminderTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder time'**
+  String get goalsReminderTimeLabel;
+
+  /// No description provided for @goalsRelatedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Related tasks'**
+  String get goalsRelatedTasks;
+
+  /// No description provided for @goalsNoLinkedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No related tasks yet.'**
+  String get goalsNoLinkedTasks;
+
   /// No description provided for @goalsDeleteConfirmTitle.
   ///
   /// In en, this message translates to:

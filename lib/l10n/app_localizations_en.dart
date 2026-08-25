@@ -2458,6 +2458,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalsUnitLabel => 'Unit';
 
   @override
+  String get goalsBaselineLabel => 'Starting value';
+
+  @override
+  String get goalsReminderLabel => 'Daily goal reminder';
+
+  @override
+  String get goalsReminderSubtitle =>
+      'A notification keeps this goal on your radar.';
+
+  @override
+  String get goalsReminderTimeLabel => 'Reminder time';
+
+  @override
+  String get goalsRelatedTasks => 'Related tasks';
+
+  @override
+  String get goalsNoLinkedTasks => 'No related tasks yet.';
+
+  @override
   String get goalsDeleteConfirmTitle => 'Delete goal?';
 
   @override
