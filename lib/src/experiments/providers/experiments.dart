@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../diet/providers/health_connect_steps.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../models/experiment.dart';
+import '../../models/goal.dart';
+import '../../models/note.dart';
 import '../../models/task.dart';
 import '../../planner/providers/planner.dart' show linksRepositoryProvider;
 import 'experiments_repository.dart';
@@ -37,6 +39,28 @@ final experimentLinkedTasksProvider =
       return ref
           .watch(linksRepositoryProvider)
           .tasksForExperiment(experimentId);
+    });
+
+/// Goals linked to an experiment via the `experiment_goals` link table.
+final goalsByExperimentProvider =
+    FutureProvider.family<List<({Goal item, String? label})>, String>((
+      ref,
+      experimentId,
+    ) {
+      return ref
+          .watch(linksRepositoryProvider)
+          .goalsForExperiment(experimentId);
+    });
+
+/// Notes attached to an experiment via the `experiment_notes` link table.
+final notesByExperimentProvider =
+    FutureProvider.family<List<({Note item, String? label})>, String>((
+      ref,
+      experimentId,
+    ) {
+      return ref
+          .watch(linksRepositoryProvider)
+          .notesForExperiment(experimentId);
     });
 
 /// Completed-workout volume (kg) per day for workouts completed on or after

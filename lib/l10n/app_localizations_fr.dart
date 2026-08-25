@@ -2197,6 +2197,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get experimentSearchTasksHint => 'Rechercher des tâches…';
 
   @override
+  String get experimentsRelatedGoals => 'Objectifs liés';
+
+  @override
+  String get experimentsRelatedNotes => 'Notes liées';
+
+  @override
+  String get experimentsNoLinkedGoals => 'Aucun objectif lié pour l\'instant.';
+
+  @override
+  String get experimentsNoLinkedNotes => 'Aucune note liée pour l\'instant.';
+
+  @override
+  String get linkGoal => 'Lier un objectif';
+
+  @override
+  String get unlinkGoal => 'Délier l\'objectif';
+
+  @override
+  String get linkNote => 'Lier une note';
+
+  @override
+  String get unlinkNote => 'Délier la note';
+
+  @override
   String experimentDaysElapsed(int days) {
     return '$days jours écoulés';
   }

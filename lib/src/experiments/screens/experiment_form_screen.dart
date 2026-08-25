@@ -4,6 +4,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/experiment.dart';
+import '../../notes/providers/notes.dart';
+import '../../planner/providers/planner.dart' show linksRepositoryProvider;
+import '../../goals/providers/goals.dart';
+import '../providers/experiments.dart';
 import '../providers/experiments_repository.dart';
 import '../../tags/widgets/tag_picker.dart';
 import '../../ui/date_formats.dart';
@@ -337,6 +341,12 @@ final class _ExperimentFormScreenState
                       trailing: const Icon(Icons.access_time),
                       onTap: _pickReminderTime,
                     ),
+                  if (_isEditing) ...[
+                    const SizedBox(height: FitFatTokens.spaceL),
+                    _RelatedGoalsSection(experimentId: widget.experimentId!),
+                    const SizedBox(height: FitFatTokens.spaceL),
+                    _RelatedNotesSection(experimentId: widget.experimentId!),
+                  ],
                   const SizedBox(height: FitFatTokens.spaceL),
                   FilledButton(
                     onPressed: _saving ? null : _save,
@@ -379,6 +389,294 @@ final class _DateTile extends StatelessWidget {
       subtitle: Text(DateFormats.formatDate(context, value)),
       trailing: const Icon(Icons.calendar_today),
       onTap: onTap,
+    );
+  }
+}
+
+/// Related goals for an existing experiment: `experiment_goals` links with
+/// unlink actions plus a pick-from-list flow.
+final class _RelatedGoalsSection extends ConsumerStatefulWidget {
+  final String experimentId;
+
+  const _RelatedGoalsSection({required this.experimentId});
+
+  @override
+  ConsumerState<_RelatedGoalsSection> createState() =>
+      _RelatedGoalsSectionState();
+}
+
+final class _RelatedGoalsSectionState
+    extends ConsumerState<_RelatedGoalsSection> {
+  Future<void> _pickGoal() async {
+    final goalId = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => const _GoalPickerSheet(),
+    );
+    if (goalId == null || !mounted) return;
+    await ref
+        .read(linksRepositoryProvider)
+        .linkExperimentGoal(widget.experimentId, goalId);
+    if (!mounted) return;
+    ref.invalidate(goalsByExperimentProvider(widget.experimentId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final goalsAsync = ref.watch(
+      goalsByExperimentProvider(widget.experimentId),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.experimentsRelatedGoals,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: FitFatTokens.spaceS),
+        goalsAsync.when(
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (e, _) => Text(l10n.errorWithMessage('$e')),
+          data: (goals) => goals.isEmpty
+              ? Text(
+                  l10n.experimentsNoLinkedGoals,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              : Column(
+                  children: [
+                    for (final (:item, label: _) in goals)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        leading: Icon(
+                          item.isActive ? Icons.flag : Icons.flag_outlined,
+                          size: 20,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        title: Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: IconButton(
+                          tooltip: l10n.unlinkGoal,
+                          icon: const Icon(Icons.link_off, size: 20),
+                          onPressed: () async {
+                            await ref
+                                .read(linksRepositoryProvider)
+                                .unlinkExperimentGoal(
+                                  widget.experimentId,
+                                  item.id,
+                                );
+                            ref.invalidate(
+                              goalsByExperimentProvider(widget.experimentId),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        ActionChip(
+          avatar: const Icon(Icons.add_link, size: 18),
+          label: Text(l10n.linkGoal),
+          onPressed: _pickGoal,
+        ),
+      ],
+    );
+  }
+}
+
+/// Related notes for an existing experiment: `experiment_notes` links with
+/// unlink actions plus a pick-from-list flow.
+final class _RelatedNotesSection extends ConsumerStatefulWidget {
+  final String experimentId;
+
+  const _RelatedNotesSection({required this.experimentId});
+
+  @override
+  ConsumerState<_RelatedNotesSection> createState() =>
+      _RelatedNotesSectionState();
+}
+
+final class _RelatedNotesSectionState
+    extends ConsumerState<_RelatedNotesSection> {
+  Future<void> _pickNote() async {
+    final noteId = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => const _NotePickerSheet(),
+    );
+    if (noteId == null || !mounted) return;
+    await ref
+        .read(linksRepositoryProvider)
+        .linkExperimentNote(widget.experimentId, noteId);
+    if (!mounted) return;
+    ref.invalidate(notesByExperimentProvider(widget.experimentId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final notesAsync = ref.watch(
+      notesByExperimentProvider(widget.experimentId),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.experimentsRelatedNotes,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: FitFatTokens.spaceS),
+        notesAsync.when(
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (e, _) => Text(l10n.errorWithMessage('$e')),
+          data: (notes) => notes.isEmpty
+              ? Text(
+                  l10n.experimentsNoLinkedNotes,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              : Column(
+                  children: [
+                    for (final (:item, label: _) in notes)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        leading: Icon(
+                          Icons.sticky_note_2_outlined,
+                          size: 20,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        title: Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: IconButton(
+                          tooltip: l10n.unlinkNote,
+                          icon: const Icon(Icons.link_off, size: 20),
+                          onPressed: () async {
+                            await ref
+                                .read(linksRepositoryProvider)
+                                .unlinkExperimentNote(
+                                  widget.experimentId,
+                                  item.id,
+                                );
+                            ref.invalidate(
+                              notesByExperimentProvider(widget.experimentId),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        ActionChip(
+          avatar: const Icon(Icons.add_link, size: 18),
+          label: Text(l10n.linkNote),
+          onPressed: _pickNote,
+        ),
+      ],
+    );
+  }
+}
+
+/// Bottom sheet listing all goals; tapping one pops with its id.
+final class _GoalPickerSheet extends ConsumerWidget {
+  const _GoalPickerSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final goalsAsync = ref.watch(goalListProvider);
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: goalsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
+          data: (goals) => goals.isEmpty
+              ? Center(child: Text(l10n.experimentsNoLinkedGoals))
+              : ListView(
+                  children: [
+                    for (final goal in goals)
+                      ListTile(
+                        leading: Icon(
+                          goal.isActive ? Icons.flag : Icons.flag_outlined,
+                          size: 20,
+                        ),
+                        title: Text(
+                          goal.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => Navigator.of(context).pop(goal.id),
+                      ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet listing all notes (newest first); tapping one pops with its id.
+final class _NotePickerSheet extends ConsumerWidget {
+  const _NotePickerSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final notesAsync = ref.watch(noteListProvider);
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: notesAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
+          data: (notes) => notes.isEmpty
+              ? Center(child: Text(l10n.experimentsNoLinkedNotes))
+              : ListView(
+                  children: [
+                    for (final note in notes)
+                      ListTile(
+                        leading: const Icon(
+                          Icons.sticky_note_2_outlined,
+                          size: 20,
+                        ),
+                        title: Text(
+                          note.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () => Navigator.of(context).pop(note.id),
+                      ),
+                  ],
+                ),
+        ),
+      ),
     );
   }
 }

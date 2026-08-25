@@ -2193,6 +2193,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String get experimentSearchTasksHint => 'Buscar tareas…';
 
   @override
+  String get experimentsRelatedGoals => 'Metas relacionadas';
+
+  @override
+  String get experimentsRelatedNotes => 'Notas relacionadas';
+
+  @override
+  String get experimentsNoLinkedGoals => 'Aún no hay metas relacionadas.';
+
+  @override
+  String get experimentsNoLinkedNotes => 'Aún no hay notas relacionadas.';
+
+  @override
+  String get linkGoal => 'Vincular meta';
+
+  @override
+  String get unlinkGoal => 'Desvincular meta';
+
+  @override
+  String get linkNote => 'Vincular nota';
+
+  @override
+  String get unlinkNote => 'Desvincular nota';
+
+  @override
   String experimentDaysElapsed(int days) {
     return '$days días transcurridos';
   }

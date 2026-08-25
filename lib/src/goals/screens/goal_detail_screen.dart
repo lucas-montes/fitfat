@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/goal.dart';
+import '../../planner/providers/planner.dart' show linksRepositoryProvider;
 import '../../tags/widgets/tag_picker.dart';
 import '../../ui/tokens.dart';
 import '../notifications/goal_reminder.dart';
@@ -358,6 +359,10 @@ final class _GoalDetailViewState extends ConsumerState<_GoalDetailView> {
           ),
         ],
         const Divider(height: FitFatTokens.spaceXl),
+        _GoalRelatedTasks(goalId: goal.id, onChanged: _refresh),
+        const Divider(height: FitFatTokens.spaceXl),
+        _GoalRelatedTasks(goalId: goal.id, onChanged: _refresh),
+        const Divider(height: FitFatTokens.spaceXl),
         Wrap(
           spacing: FitFatTokens.spaceS,
           runSpacing: FitFatTokens.spaceS,
@@ -488,6 +493,87 @@ final class _ProgressSummary extends StatelessWidget {
           '${l10n.goalsCurrentValueLabel}: $currentText · '
           '${l10n.goalsTargetLabel}: $targetText',
           style: theme.textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+}
+
+/// Related tasks linked to this goal via the `task_goals` junction table.
+/// Read-mostly: unlink here; linking happens in the goal form.
+final class _GoalRelatedTasks extends ConsumerWidget {
+  final String goalId;
+  final VoidCallback onChanged;
+
+  const _GoalRelatedTasks({required this.goalId, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final tasksAsync = ref.watch(tasksByGoalProvider(goalId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.goalsRelatedTasks, style: theme.textTheme.titleMedium),
+        const SizedBox(height: FitFatTokens.spaceS),
+        tasksAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: FitFatTokens.spaceL),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Text('$e'),
+          data: (tasks) => tasks.isEmpty
+              ? Text(
+                  l10n.goalsNoLinkedTasks,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              : Column(
+                  children: [
+                    for (final (:item, label: _) in tasks)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          item.done
+                              ? Icons.check_circle_outline
+                              : Icons.radio_button_unchecked,
+                          color: item.done
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        title: Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: item.done
+                              ? TextStyle(
+                                  decoration: TextDecoration.lineThrough,
+                                  color: theme.colorScheme.outline,
+                                )
+                              : null,
+                        ),
+                        subtitle: Text(
+                          MaterialLocalizations.of(
+                            context,
+                          ).formatMediumDate(item.day),
+                        ),
+                        trailing: IconButton(
+                          tooltip: l10n.experimentUnlinkTask,
+                          icon: const Icon(Icons.link_off),
+                          onPressed: () async {
+                            await ref
+                                .read(linksRepositoryProvider)
+                                .unlinkTaskGoal(item.id, goalId);
+                            ref.invalidate(tasksByGoalProvider(goalId));
+                            onChanged();
+                          },
+                        ),
+                      ),
+                  ],
+                ),
         ),
       ],
     );

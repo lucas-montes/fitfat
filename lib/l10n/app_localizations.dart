@@ -4000,6 +4000,54 @@ abstract class AppLocalizations {
   /// **'Search tasks…'**
   String get experimentSearchTasksHint;
 
+  /// No description provided for @experimentsRelatedGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Related goals'**
+  String get experimentsRelatedGoals;
+
+  /// No description provided for @experimentsRelatedNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Related notes'**
+  String get experimentsRelatedNotes;
+
+  /// No description provided for @experimentsNoLinkedGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'No related goals yet.'**
+  String get experimentsNoLinkedGoals;
+
+  /// No description provided for @experimentsNoLinkedNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No related notes yet.'**
+  String get experimentsNoLinkedNotes;
+
+  /// No description provided for @linkGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Link goal'**
+  String get linkGoal;
+
+  /// No description provided for @unlinkGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink goal'**
+  String get unlinkGoal;
+
+  /// No description provided for @linkNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Link note'**
+  String get linkNote;
+
+  /// No description provided for @unlinkNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlink note'**
+  String get unlinkNote;
+
   /// experimentDaysElapsed
   ///
   /// In en, this message translates to:
