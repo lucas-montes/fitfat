@@ -18,6 +18,7 @@ import '../../settings/providers/settings.dart';
 import 'exercise_list.dart';
 import 'workout_detail.dart';
 import 'workout_form.dart';
+import 'workout_templates_screen.dart';
 
 final class WorkoutListScreen extends ConsumerStatefulWidget {
   const WorkoutListScreen({super.key});
@@ -41,6 +42,13 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
       appBar: AppBar(
         title: Text(l10n.workoutListAppBar),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmarks_outlined),
+            tooltip: l10n.templatesTitle,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WorkoutTemplatesScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.fitness_center),
             tooltip: l10n.workoutListManageBtn,

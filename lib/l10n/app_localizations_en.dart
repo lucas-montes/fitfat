@@ -432,6 +432,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workoutListAppBar => 'Workouts';
 
   @override
+  String get templatesTitle => 'Templates';
+
+  @override
+  String get templatesEmptyTitle => 'No templates yet';
+
+  @override
+  String get templatesEmptyBody =>
+      'Create a reusable routine, or save a past workout as a template.';
+
+  @override
+  String get templatesNew => 'New template';
+
+  @override
+  String get templatesStartToday => 'Start today';
+
+  @override
+  String templatesExercisesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count exercises',
+      one: '1 exercise',
+      zero: 'No exercises',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get templatesScheduleOff => 'Not scheduled';
+
+  @override
+  String get templatesScheduleDaily => 'Every day';
+
+  @override
+  String templatesScheduleWeekly(Object days) {
+    return 'Weekly on $days';
+  }
+
+  @override
+  String templatesScheduleInterval(Object days) {
+    return 'Every $days days';
+  }
+
+  @override
+  String get templatesSavedAsTemplate => 'Workout saved as template';
+
+  @override
+  String get templatesDeleteConfirmTitle => 'Delete template?';
+
+  @override
+  String get templatesDeleteConfirmBody =>
+      'The blueprint will be deleted. Sessions you already started are kept.';
+
+  @override
+  String get templatesAddSet => 'Add set';
+
+  @override
   String get workoutListManageBtn => 'Manage Exercises';
 
   @override

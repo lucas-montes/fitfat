@@ -95,6 +95,21 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
 
   const _WorkoutSummaryContent({required this.detail, required this.l10n});
 
+  /// Saves this session's current plan as a reusable template.
+  Future<void> _saveAsTemplate(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await ref
+          .read(workoutRepositoryProvider)
+          .saveAsTemplate(workoutId: detail.workout.id);
+      if (!context.mounted) return;
+      showTopBanner(context, message: l10n.templatesSavedAsTemplate);
+    } catch (e) {
+      if (!context.mounted) return;
+      showTopBanner(context, message: l10n.errorWithMessage('$e'));
+    }
+  }
+
   /// Creates the next replay occurrence (prefill per the replay-prefill
   /// setting) and opens it in the editable workout form.
   Future<void> _replay(BuildContext context, WidgetRef ref) async {
@@ -137,6 +152,11 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
             tooltip: l10n.workoutSummaryDoAgain,
             icon: const Icon(Icons.replay),
             onPressed: () => _replay(context, ref),
+          ),
+          IconButton(
+            tooltip: l10n.templatesTitle,
+            icon: const Icon(Icons.bookmark_add_outlined),
+            onPressed: () => _saveAsTemplate(context, ref),
           ),
           TextButton(
             onPressed: () => context.go('/exercise'),

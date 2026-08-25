@@ -434,6 +434,64 @@ class AppLocalizationsEs extends AppLocalizations {
   String get workoutListAppBar => 'Entrenamientos';
 
   @override
+  String get templatesTitle => 'Plantillas';
+
+  @override
+  String get templatesEmptyTitle => 'Aún no hay plantillas';
+
+  @override
+  String get templatesEmptyBody =>
+      'Crea una rutina reutilizable o guarda un entrenamiento pasado como plantilla.';
+
+  @override
+  String get templatesNew => 'Nueva plantilla';
+
+  @override
+  String get templatesStartToday => 'Empezar hoy';
+
+  @override
+  String templatesExercisesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ejercicios',
+      one: '1 ejercicio',
+      zero: 'Sin ejercicios',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get templatesScheduleOff => 'Sin programar';
+
+  @override
+  String get templatesScheduleDaily => 'Todos los días';
+
+  @override
+  String templatesScheduleWeekly(Object days) {
+    return 'Semanal: $days';
+  }
+
+  @override
+  String templatesScheduleInterval(Object days) {
+    return 'Cada $days días';
+  }
+
+  @override
+  String get templatesSavedAsTemplate =>
+      'Entrenamiento guardado como plantilla';
+
+  @override
+  String get templatesDeleteConfirmTitle => '¿Eliminar plantilla?';
+
+  @override
+  String get templatesDeleteConfirmBody =>
+      'Se eliminará el esquema. Las sesiones ya iniciadas se conservan.';
+
+  @override
+  String get templatesAddSet => 'Añadir serie';
+
+  @override
   String get workoutListManageBtn => 'Gestionar ejercicios';
 
   @override

@@ -862,6 +862,90 @@ abstract class AppLocalizations {
   /// **'Workouts'**
   String get workoutListAppBar;
 
+  /// No description provided for @templatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get templatesTitle;
+
+  /// No description provided for @templatesEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No templates yet'**
+  String get templatesEmptyTitle;
+
+  /// No description provided for @templatesEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a reusable routine, or save a past workout as a template.'**
+  String get templatesEmptyBody;
+
+  /// No description provided for @templatesNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New template'**
+  String get templatesNew;
+
+  /// No description provided for @templatesStartToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Start today'**
+  String get templatesStartToday;
+
+  /// No description provided for @templatesExercisesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No exercises} =1{1 exercise} other{{count} exercises}}'**
+  String templatesExercisesCount(num count);
+
+  /// No description provided for @templatesScheduleOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Not scheduled'**
+  String get templatesScheduleOff;
+
+  /// No description provided for @templatesScheduleDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get templatesScheduleDaily;
+
+  /// No description provided for @templatesScheduleWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly on {days}'**
+  String templatesScheduleWeekly(Object days);
+
+  /// No description provided for @templatesScheduleInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Every {days} days'**
+  String templatesScheduleInterval(Object days);
+
+  /// No description provided for @templatesSavedAsTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout saved as template'**
+  String get templatesSavedAsTemplate;
+
+  /// No description provided for @templatesDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete template?'**
+  String get templatesDeleteConfirmTitle;
+
+  /// No description provided for @templatesDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The blueprint will be deleted. Sessions you already started are kept.'**
+  String get templatesDeleteConfirmBody;
+
+  /// No description provided for @templatesAddSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add set'**
+  String get templatesAddSet;
+
   /// No description provided for @workoutListManageBtn.
   ///
   /// In en, this message translates to:

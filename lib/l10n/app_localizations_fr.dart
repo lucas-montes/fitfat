@@ -433,6 +433,63 @@ class AppLocalizationsFr extends AppLocalizations {
   String get workoutListAppBar => 'Séances';
 
   @override
+  String get templatesTitle => 'Modèles';
+
+  @override
+  String get templatesEmptyTitle => 'Aucun modèle pour l\'instant';
+
+  @override
+  String get templatesEmptyBody =>
+      'Créez une routine réutilisable ou enregistrez une séance passée comme modèle.';
+
+  @override
+  String get templatesNew => 'Nouveau modèle';
+
+  @override
+  String get templatesStartToday => 'Commencer aujourd\'hui';
+
+  @override
+  String templatesExercisesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count exercices',
+      one: '1 exercice',
+      zero: 'Aucun exercice',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get templatesScheduleOff => 'Non programmé';
+
+  @override
+  String get templatesScheduleDaily => 'Tous les jours';
+
+  @override
+  String templatesScheduleWeekly(Object days) {
+    return 'Hebdomadaire : $days';
+  }
+
+  @override
+  String templatesScheduleInterval(Object days) {
+    return 'Tous les $days jours';
+  }
+
+  @override
+  String get templatesSavedAsTemplate => 'Séance enregistrée comme modèle';
+
+  @override
+  String get templatesDeleteConfirmTitle => 'Supprimer le modèle ?';
+
+  @override
+  String get templatesDeleteConfirmBody =>
+      'Le plan sera supprimé. Les séances déjà commencées sont conservées.';
+
+  @override
+  String get templatesAddSet => 'Ajouter une série';
+
+  @override
   String get workoutListManageBtn => 'Gérer les exercices';
 
   @override
