@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/tag.dart';
+import '../../ui/widgets/top_banner.dart';
 import '../providers/tags.dart';
+import '../repositories/tag_repository.dart'
+    show DuplicateTagException, normalizeTagName;
 
 /// A small curated palette for assigning explicit priority colors.
 const List<Color> _kPalette = [
@@ -38,7 +41,15 @@ final class _TagManagerScreenState extends ConsumerState<TagManagerScreen> {
     final l10n = AppLocalizations.of(context)!;
     final name = await _promptName(title: l10n.prioritiesAdd, initialName: '');
     if (name == null || !mounted) return;
-    await ref.read(tagRepositoryProvider).saveTag(name: name, color: null);
+    try {
+      await ref.read(tagRepositoryProvider).saveTag(name: name, color: null);
+    } on DuplicateTagException {
+      if (mounted) {
+        showTopBanner(context, message: l10n.prioritiesAlreadyExists);
+      }
+    } on ArgumentError {
+      // Blank input — the dialog already blocks this; nothing to do.
+    }
     _invalidate();
   }
 
@@ -49,7 +60,13 @@ final class _TagManagerScreenState extends ConsumerState<TagManagerScreen> {
       initialName: tag.name,
     );
     if (name == null || name == tag.name || !mounted) return;
-    await ref.read(tagRepositoryProvider).renameTag(tag.name, name);
+    try {
+      await ref.read(tagRepositoryProvider).renameTag(tag.name, name);
+    } on DuplicateTagException {
+      if (mounted) {
+        showTopBanner(context, message: l10n.prioritiesAlreadyExists);
+      }
+    }
     _invalidate();
   }
 
@@ -63,12 +80,23 @@ final class _TagManagerScreenState extends ConsumerState<TagManagerScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(labelText: l10n.prioritiesNameLabel),
-          onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
+        content: StatefulBuilder(
+          builder: (ctx, setDialogState) => TextField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: l10n.prioritiesNameLabel,
+              errorText: normalizeTagName(controller.text).isEmpty
+                  ? l10n.prioritiesNameRequired
+                  : null,
+            ),
+            onChanged: (_) => setDialogState(() {}),
+            onSubmitted: (v) {
+              final clean = normalizeTagName(v);
+              if (clean.isNotEmpty) Navigator.of(ctx).pop(clean);
+            },
+          ),
         ),
         actions: [
           TextButton(
@@ -76,7 +104,10 @@ final class _TagManagerScreenState extends ConsumerState<TagManagerScreen> {
             child: Text(l10n.commonCancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            onPressed: () {
+              final clean = normalizeTagName(controller.text);
+              if (clean.isNotEmpty) Navigator.of(ctx).pop(clean);
+            },
             child: Text(l10n.commonSave),
           ),
         ],

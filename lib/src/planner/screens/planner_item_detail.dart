@@ -139,10 +139,20 @@ final class _PlannerItemDetailScreenState
     final seriesId = isAnchor
         ? (wasAnchor ? (item.seriesId ?? item.id) : item.id)
         : (wasAnchor ? null : item.seriesId);
-    // Setting a due date moves the task to that day (plain tasks and series
-    // anchors; generated occurrences keep their materialized day).
+    // Setting an (actually changed) due date moves the task to that day
+    // (plain tasks and series anchors; generated occurrences keep their
+    // materialized day). Comparing against the original dueDate keeps a
+    // no-change edit from regressing the task to a stale carried-over day.
+    bool dueDateChanged(DateTime? a, DateTime? b) {
+      if (a == null || b == null) return a != b;
+      return a.year != b.year || a.month != b.month || a.day != b.day;
+    }
+
     final isGenerated = item.seriesId != null && item.seriesId != item.id;
-    final movedDay = !isGenerated && dueDate != null
+    final movedDay =
+        !isGenerated &&
+            dueDate != null &&
+            dueDateChanged(dueDate, item.dueDate ?? item.day)
         ? DateTime(dueDate.year, dueDate.month, dueDate.day)
         : null;
     final updated = item.copyWith(

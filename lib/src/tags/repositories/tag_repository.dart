@@ -10,6 +10,22 @@ typedef _TagLoader = Future<Map<String, List<String>?>> Function();
 typedef _TagWriter = Future<void> Function(Map<String, List<String>?>);
 typedef _TagRenamer = Future<void> Function(String oldName, String newName);
 
+/// Thrown when creating or renaming a priority would collide with an
+/// existing vocabulary entry (names are unique). The UI surfaces this as a
+/// friendly message instead of a raw database error.
+final class DuplicateTagException implements Exception {
+  final String name;
+  const DuplicateTagException(this.name);
+
+  @override
+  String toString() => 'DuplicateTagException: $name';
+}
+
+/// Normalizes a priority name: trims the edges and collapses internal runs
+/// of whitespace so "Leg  day" and " leg day " all store as "Leg day".
+String normalizeTagName(String raw) =>
+    raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+
 final class TagRepository {
   final db.AppDatabase _database;
   const TagRepository(this._database);
@@ -34,8 +50,14 @@ final class TagRepository {
 
   /// Creates or updates a vocabulary entry. When [id] is null the tag is
   /// looked up by [name] (creating it if unknown) so the picker and manager
-  /// can both funnel through here.
+  /// can both funnel through here. The name is normalized (trimmed, internal
+  /// whitespace collapsed); blank names throw [ArgumentError] and a colliding
+  /// name throws [DuplicateTagException].
   Future<void> saveTag({required String name, int? color, String? id}) async {
+    final clean = normalizeTagName(name);
+    if (clean.isEmpty) {
+      throw ArgumentError.value(name, 'name', 'Priority name is blank');
+    }
     final now = DateTime.now().millisecondsSinceEpoch;
     final existing = id != null
         ? await (_database.select(
@@ -43,34 +65,52 @@ final class TagRepository {
           )..where((t) => t.id.equals(id))).getSingleOrNull()
         : await (_database.select(
             _database.tags,
-          )..where((t) => t.name.equals(name))).getSingleOrNull();
-    if (existing == null) {
+          )..where((t) => t.name.equals(clean))).getSingleOrNull();
+    if (existing == null && id == null) {
       // New tags land at the bottom of the priority order.
-      final maxOrder = await (_database.select(
+      final maxOrderExp = _database.tags.sortOrder.max();
+      final row = await (_database.selectOnly(
         _database.tags,
-      )..orderBy([(t) => OrderingTerm.desc(t.sortOrder)])).getSingleOrNull();
+      )..addColumns([maxOrderExp])).getSingleOrNull();
+      final nextOrder = (row?.read(maxOrderExp) ?? -1) + 1;
       await _database
           .into(_database.tags)
           .insert(
             db.TagsCompanion.insert(
               id: const Uuid().v7(),
-              name: name,
+              name: clean,
               color: Value(color),
-              sortOrder: Value((maxOrder?.sortOrder ?? -1) + 1),
+              sortOrder: Value(nextOrder),
               createdAt: now,
               updatedAt: now,
             ),
           );
-    } else {
+    } else if (existing != null) {
       await (_database.update(
         _database.tags,
       )..where((t) => t.id.equals(existing.id))).write(
         db.TagsCompanion(
-          name: Value(name),
+          name: Value(clean),
           color: Value(color),
           updatedAt: Value(now),
         ),
       );
+    } else {
+      // id given but no such row — treat as a create that must not collide.
+      final clash = await getByName(clean);
+      if (clash != null) throw DuplicateTagException(clean);
+      await _database
+          .into(_database.tags)
+          .insert(
+            db.TagsCompanion.insert(
+              id: id!,
+              name: clean,
+              color: Value(color),
+              sortOrder: Value(0),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
     }
   }
 
@@ -90,20 +130,26 @@ final class TagRepository {
 
   /// Renames a tag everywhere: the vocabulary row plus every JSON string[]
   /// reference across planner items (tasks + experiments), notes and goals.
+  /// Throws [DuplicateTagException] when another entry already uses the
+  /// normalized target name.
   Future<void> renameTag(String oldName, String newName) async {
-    final trimmed = newName.trim();
-    if (trimmed.isEmpty || trimmed == oldName) return;
+    final clean = normalizeTagName(newName);
+    if (clean.isEmpty || clean == normalizeTagName(oldName)) return;
+    final clash = await getByName(clean);
+    if (clash != null && clash.name != oldName) {
+      throw DuplicateTagException(clean);
+    }
     final now = DateTime.now().millisecondsSinceEpoch;
     await _database.transaction(() async {
       await (_database.update(_database.tags)
             ..where((t) => t.name.equals(oldName)))
-          .write(db.TagsCompanion(name: Value(trimmed), updatedAt: Value(now)));
+          .write(db.TagsCompanion(name: Value(clean), updatedAt: Value(now)));
       for (final updated in [
         _mapRenameWith(_loadTasksTags, _writeTasksTags),
         _mapRenameWith(_loadNotesTags, _writeNotesTags),
         _mapRenameWith(_loadGoalsTags, _writeGoalsTags),
       ]) {
-        await updated(oldName, trimmed);
+        await updated(oldName, clean);
       }
     });
   }
@@ -124,23 +170,25 @@ final class TagRepository {
   }
 
   /// Every known tag name — the registered vocabulary plus any free-form name
-  /// still referenced by an entity. Powers autocomplete suggestions.
+  /// still referenced by an entity (normalized). Powers autocomplete.
   Future<List<String>> distinctTagNames() async {
     final names = <String>{};
     for (final row in await _database.select(_database.tags).get()) {
       names.add(row.name);
     }
+    Iterable<String> refs(List<String>? tags) =>
+        (tags ?? const []).map(normalizeTagName).where((n) => n.isNotEmpty);
     for (final row in await _database.select(_database.tasks).get()) {
-      names.addAll(_decode(row.tags) ?? const []);
+      names.addAll(refs(_decode(row.tags)));
     }
     for (final row in await _database.select(_database.experiments).get()) {
-      names.addAll(_decode(row.tags) ?? const []);
+      names.addAll(refs(_decode(row.tags)));
     }
     for (final row in await _database.select(_database.notes).get()) {
-      names.addAll(_decode(row.tags) ?? const []);
+      names.addAll(refs(_decode(row.tags)));
     }
     for (final row in await _database.select(_database.goals).get()) {
-      names.addAll(_decode(row.tags) ?? const []);
+      names.addAll(refs(_decode(row.tags)));
     }
     return names.toList()..sort();
   }

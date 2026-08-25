@@ -4396,6 +4396,18 @@ abstract class AppLocalizations {
   /// **'Name'**
   String get prioritiesNameLabel;
 
+  /// No description provided for @prioritiesNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name'**
+  String get prioritiesNameRequired;
+
+  /// No description provided for @prioritiesAlreadyExists.
+  ///
+  /// In en, this message translates to:
+  /// **'A priority with this name already exists.'**
+  String get prioritiesAlreadyExists;
+
   /// No description provided for @prioritiesColor.
   ///
   /// In en, this message translates to:

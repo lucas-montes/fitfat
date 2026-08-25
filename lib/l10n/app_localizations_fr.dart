@@ -2413,6 +2413,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get prioritiesNameLabel => 'Nom';
 
   @override
+  String get prioritiesNameRequired => 'Saisissez un nom';
+
+  @override
+  String get prioritiesAlreadyExists =>
+      'Une priorité portant ce nom existe déjà.';
+
+  @override
   String get prioritiesColor => 'Couleur';
 
   @override

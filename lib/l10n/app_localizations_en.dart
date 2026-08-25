@@ -2390,6 +2390,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get prioritiesNameLabel => 'Name';
 
   @override
+  String get prioritiesNameRequired => 'Enter a name';
+
+  @override
+  String get prioritiesAlreadyExists =>
+      'A priority with this name already exists.';
+
+  @override
   String get prioritiesColor => 'Color';
 
   @override

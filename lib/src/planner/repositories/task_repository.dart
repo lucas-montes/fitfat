@@ -137,11 +137,19 @@ final class TaskRepository {
             .get();
     for (final row in rows) {
       final item = _toDomain(row);
-      await update(
-        item.carryOver
-            ? item.copyWith(day: today)
-            : item.withTaskStatus(TaskStatus.cancelled),
-      );
+      if (!item.carryOver) {
+        await update(item.withTaskStatus(TaskStatus.cancelled));
+        continue;
+      }
+      var moved = item.copyWith(day: today);
+      // Keep dueDate in lockstep with the carried day: a stale earlier
+      // dueDate would resurface on the next edit and regress the task back
+      // to its old day (the "edited task jumps to yesterday" bug).
+      final due = moved.dueDate;
+      if (due != null && due.isBefore(today)) {
+        moved = moved.copyWith(dueDate: today);
+      }
+      await update(moved);
     }
     return rows.length;
   }

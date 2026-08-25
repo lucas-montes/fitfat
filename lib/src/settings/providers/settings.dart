@@ -48,7 +48,7 @@ final class SettingsState {
   // What replay prefills the new occurrence's planned sets from:
   // 'actuals' (previous completion's actuals, progressive overload) or
   // 'planned' (the source's planned values).
-  final String replayPrefill; // default 'actuals'
+  final String replayPrefill; // default 'planned'
 
   // Base URL of the user's sync server (exercises/ingredients/currencies).
   // Empty until configured; the sync clients refuse to run without it.
@@ -90,7 +90,7 @@ final class SettingsState {
     this.baseCurrency = 'USD',
     this.weightUnit = WeightUnit.kg,
     this.lengthUnit = LengthUnit.cm,
-    this.replayPrefill = 'actuals',
+    this.replayPrefill = 'planned',
     this.remoteSyncBaseUrl = '',
     this.remoteSyncApiKey = '',
     this.plannerHorizonDays = 90,
@@ -223,9 +223,12 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       baseCurrency: prefs.getString(_baseCurrencyKey) ?? 'USD',
       weightUnit: _weightUnitFromName(prefs.getString(_weightUnitKey)),
       lengthUnit: _lengthUnitFromName(prefs.getString(_lengthUnitKey)),
-      replayPrefill: prefs.getString(_replayPrefillKey) == 'planned'
-          ? 'planned'
-          : 'actuals',
+      // Default (and any unrecognized stored value) is 'planned': replays
+      // seed from the routine's planned sets unless the user explicitly
+      // opted into progressive-overload 'actuals'.
+      replayPrefill: prefs.getString(_replayPrefillKey) == 'actuals'
+          ? 'actuals'
+          : 'planned',
       remoteSyncBaseUrl: prefs.getString(_remoteSyncBaseUrlKey) ?? '',
       remoteSyncApiKey: prefs.getString(_remoteSyncApiKeyKey) ?? '',
       plannerHorizonDays: prefs.getInt(_plannerHorizonDaysKey) ?? 90,

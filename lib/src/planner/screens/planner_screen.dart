@@ -537,9 +537,18 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final seriesId = isAnchor
         ? (wasAnchor ? (item.seriesId ?? item.id) : item.id)
         : (wasAnchor ? null : item.seriesId);
-    // Setting a due date moves the task to that day (plain tasks and series
-    // anchors; generated occurrences keep their materialized day).
-    final movedDay = !isGenerated && dueDate != null
+    // Setting an (actually changed) due date moves the task to that day
+    // (plain tasks and series anchors; generated occurrences keep their
+    // materialized day). The form round-trips the original dueDate, so a
+    // no-change edit compares equal and never moves the task — this guards
+    // the "edited task jumps back to its old day" regression.
+    bool dueDateChanged(DateTime? a, DateTime? b) {
+      if (a == null || b == null) return a != b;
+      return !_isSameDay(a, b);
+    }
+
+    final movedDay =
+        !isGenerated && dueDate != null && dueDateChanged(dueDate, item.dueDate)
         ? _startOfDay(dueDate)
         : null;
     final updated = item.copyWith(

@@ -44,4 +44,33 @@ void main() {
     expect(byDayAfter.first.title, 'Water all plants');
     expect(byDayAfter.first.done, isTrue);
   });
+
+  test(
+    'rollover carries a past task to today and keeps dueDate in step',
+    () async {
+      final now = DateTime.now();
+      final yesterday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: 1));
+      final created = newTask(
+        day: yesterday,
+        title: 'Carry me',
+        dueDate: yesterday,
+      );
+      await repository.insert(created);
+
+      await repository.rolloverPastTasks();
+
+      final reloaded = await repository.getById(created.id);
+      expect(reloaded, isNotNull);
+      final today = DateTime(now.year, now.month, now.day);
+      // The task itself moved to today…
+      expect(reloaded!.day, today);
+      // …and its due date moved with it, so a later no-change edit cannot
+      // regress the row back to yesterday.
+      expect(reloaded.dueDate, today);
+    },
+  );
 }

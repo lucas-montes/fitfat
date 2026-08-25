@@ -218,9 +218,6 @@ final class _ExerciseSummaryCard extends ConsumerWidget {
     final isCardio = block.sets.any(
       (s) => s.durationMinutes != null || s.distanceMeters != null,
     );
-    final avgRest = metrics.averageRestSeconds == null
-        ? l10n.workoutDetailPlannedSetEmpty
-        : formatRestDuration(Duration(seconds: metrics.averageRestSeconds!));
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -236,7 +233,15 @@ final class _ExerciseSummaryCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _MetricRow(label: l10n.workoutSummaryAvgRest, value: avgRest),
+            // Hidden entirely when no set logged rest — a planned-only value
+            // would suggest work that never happened.
+            if (metrics.averageRestSeconds != null)
+              _MetricRow(
+                label: l10n.workoutSummaryAvgRest,
+                value: formatRestDuration(
+                  Duration(seconds: metrics.averageRestSeconds!),
+                ),
+              ),
             if (isCardio) ...[
               _MetricRow(
                 label: l10n.workoutSummaryTotalDuration,
@@ -317,9 +322,9 @@ final class _MetricRow extends StatelessWidget {
 /// derived from actual data only: a set with no logged actuals contributes 0
 /// (it was not done at all), never its planned values.
 final class _ExerciseMetrics {
-  /// Mean rest in seconds: recorded actual rest, falling back to the planned
-  /// rest for sets where no actual rest was recorded. Null when the exercise
-  /// has no sets or no rest info at all (rendered as the em-dash placeholder).
+  /// Mean rest in seconds over the sets that actually logged rest. Null when
+  /// no set recorded an actual rest — planned rest never counts, and the
+  /// metric row is hidden entirely instead of showing a placeholder.
   final int? averageRestSeconds;
 
   final double totalVolume;
@@ -338,12 +343,11 @@ final class _ExerciseMetrics {
   });
 
   factory _ExerciseMetrics.fromBlock(ExerciseBlock block) {
+    // Actual rest only: an unlogged set contributes nothing (its planned
+    // rest is not evidence that any rest happened).
     final rests = <int>[
       for (final set in block.sets)
-        if (set.actualRestSeconds != null)
-          set.actualRestSeconds!
-        else if (set.restSeconds != null)
-          set.restSeconds!,
+        if (set.actualRestSeconds != null) set.actualRestSeconds!,
     ];
 
     var totalVolume = 0.0;

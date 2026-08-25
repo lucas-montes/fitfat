@@ -1479,6 +1479,8 @@
   "prioritiesAdd": "Ajouter une priorité",
   "prioritiesRename": "Renommer la priorité",
   "prioritiesNameLabel": "Nom",
+  "prioritiesNameRequired": "Saisissez un nom",
+  "prioritiesAlreadyExists": "Une priorité portant ce nom existe déjà.",
   "prioritiesColor": "Couleur",
   "prioritiesDeleteConfirmTitle": "Supprimer la priorité ?",
   "prioritiesDeleteConfirmBody": "« {name} » sera retirée de {count, plural, =0{aucun élément} other{{count} éléments}}.",
