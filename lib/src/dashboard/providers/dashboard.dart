@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/startup_gate.dart';
 import '../../database/database_provider.dart';
 import '../../diet/repositories/meal_repository.dart';
 import '../../exercise/repositories/workout_repository.dart';
@@ -61,6 +62,7 @@ final _taskRepositoryProvider = Provider<TaskRepository>((ref) {
 
 final todayCaloriesProvider = FutureProvider<double>((ref) async {
   ref.watch(dashboardRefreshProvider);
+  if (!ref.watch(startupGateProvider)) return 0.0;
   final meals = await ref.watch(_mealRepositoryProvider).getAll();
   final now = DateTime.now();
   final todayStart = DateTime(now.year, now.month, now.day);
@@ -79,6 +81,9 @@ final todayCaloriesProvider = FutureProvider<double>((ref) async {
 
 final todayMacrosProvider = FutureProvider<TodayMacros>((ref) async {
   ref.watch(dashboardRefreshProvider);
+  if (!ref.watch(startupGateProvider)) {
+    return (protein: 0.0, carbs: 0.0, fat: 0.0);
+  }
   final meals = await ref.watch(_mealRepositoryProvider).getAll();
   final now = DateTime.now();
   final todayStart = DateTime(now.year, now.month, now.day);
@@ -107,6 +112,7 @@ final todayMacrosProvider = FutureProvider<TodayMacros>((ref) async {
 
 final latestWorkoutProvider = FutureProvider<Workout?>((ref) async {
   ref.watch(dashboardRefreshProvider);
+  if (!ref.watch(startupGateProvider)) return null;
   final workouts = await ref.watch(_workoutRepositoryProvider).getAll();
   final completed = workouts.where((w) => w.isCompleted).toList();
   if (completed.isEmpty) return null;
@@ -124,6 +130,9 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
   ref,
 ) async {
   ref.watch(dashboardRefreshProvider);
+  if (!ref.watch(startupGateProvider)) {
+    return (totalVolumeKg: 0.0, totalMinutes: 0);
+  }
   final now = DateTime.now();
   final weekStart = DateTime(now.year, now.month, now.day - 6);
 
@@ -141,6 +150,7 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
 
 final upcomingTasksProvider = FutureProvider<List<Task>>((ref) async {
   ref.watch(dashboardRefreshProvider);
+  if (!ref.watch(startupGateProvider)) return const [];
   final today = DateTime.now();
   return ref.watch(_taskRepositoryProvider).getUpcoming(today);
 });

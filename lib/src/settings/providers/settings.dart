@@ -7,13 +7,35 @@ import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
 import '../../models/units.dart';
 
-/// App-level `SharedPreferences` instance. Overridden in `main()` after
-/// `SharedPreferences.getInstance()` so settings load synchronously.
-final sharedPreferencesProvider = Provider<SharedPreferences>(
-  (ref) => throw UnimplementedError(
-    'sharedPreferencesProvider must be overridden in main()',
-  ),
-);
+final class SharedPreferencesHolder extends Notifier<SharedPreferences?> {
+  @override
+  SharedPreferences? build() => null;
+
+  void set(SharedPreferences? value) => state = value;
+}
+
+final sharedPreferencesHolderProvider =
+    NotifierProvider<SharedPreferencesHolder, SharedPreferences?>(
+      SharedPreferencesHolder.new,
+    );
+
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  final prefs = ref.watch(sharedPreferencesHolderProvider);
+  if (prefs == null) {
+    throw UnimplementedError('SharedPreferences not yet loaded');
+  }
+  return prefs;
+});
+
+final sharedPreferencesReadyProvider = FutureProvider<SharedPreferences>((
+  ref,
+) async {
+  final existing = ref.watch(sharedPreferencesHolderProvider);
+  if (existing != null) return existing;
+  final prefs = await SharedPreferences.getInstance();
+  ref.read(sharedPreferencesHolderProvider.notifier).set(prefs);
+  return prefs;
+});
 
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(
   SettingsNotifier.new,
@@ -56,6 +78,23 @@ final class SettingsState {
   // API key sent as a Bearer token on every sync request.
   final String remoteSyncApiKey; // default ''
 
+  // Configurable server endpoints (paths appended to [remoteSyncBaseUrl]).
+  // Defaults assume a conventional REST layout; override any that differ.
+  final String endpointExport; // default '/backup'
+  final String endpointImport; // default '/backup/latest'
+  final String endpointExercises; // default '/exercises'
+  final String endpointIngredients; // default '/ingredients'
+  final String endpointCurrencies; // default '/fx-rates'
+  final String endpointWorkouts; // default '/workouts'
+  final String endpointTemplates; // default '/templates'
+  final String endpointNotes; // default '/notes'
+  final String endpointTasks; // default '/tasks'
+  final String endpointGoals; // default '/goals'
+  final String endpointMeals; // default '/meals'
+  final String endpointTransactions; // default '/transactions'
+  final String endpointBudgetAccounts; // default '/budget-accounts'
+  final String endpointReceiptPictures; // default '/receipt-pictures'
+
   // How many days ahead recurring planner tasks are materialized
   // (default 90).
   final int plannerHorizonDays;
@@ -93,6 +132,20 @@ final class SettingsState {
     this.replayPrefill = 'planned',
     this.remoteSyncBaseUrl = '',
     this.remoteSyncApiKey = '',
+    this.endpointExport = '/backup',
+    this.endpointImport = '/backup/latest',
+    this.endpointExercises = '/exercises',
+    this.endpointIngredients = '/ingredients',
+    this.endpointCurrencies = '/fx-rates',
+    this.endpointWorkouts = '/workouts',
+    this.endpointTemplates = '/templates',
+    this.endpointNotes = '/notes',
+    this.endpointTasks = '/tasks',
+    this.endpointGoals = '/goals',
+    this.endpointMeals = '/meals',
+    this.endpointTransactions = '/transactions',
+    this.endpointBudgetAccounts = '/budget-accounts',
+    this.endpointReceiptPictures = '/receipt-pictures',
     this.plannerHorizonDays = 90,
     this.calorieGoalAdjustment = 500,
     this.experimentBaselineDays = 14,
@@ -127,6 +180,20 @@ final class SettingsState {
     String? replayPrefill,
     String? remoteSyncBaseUrl,
     String? remoteSyncApiKey,
+    String? endpointExport,
+    String? endpointImport,
+    String? endpointExercises,
+    String? endpointIngredients,
+    String? endpointCurrencies,
+    String? endpointWorkouts,
+    String? endpointTemplates,
+    String? endpointNotes,
+    String? endpointTasks,
+    String? endpointGoals,
+    String? endpointMeals,
+    String? endpointTransactions,
+    String? endpointBudgetAccounts,
+    String? endpointReceiptPictures,
     int? plannerHorizonDays,
     double? calorieGoalAdjustment,
     int? experimentBaselineDays,
@@ -160,6 +227,22 @@ final class SettingsState {
     replayPrefill: replayPrefill ?? this.replayPrefill,
     remoteSyncBaseUrl: remoteSyncBaseUrl ?? this.remoteSyncBaseUrl,
     remoteSyncApiKey: remoteSyncApiKey ?? this.remoteSyncApiKey,
+    endpointExport: endpointExport ?? this.endpointExport,
+    endpointImport: endpointImport ?? this.endpointImport,
+    endpointExercises: endpointExercises ?? this.endpointExercises,
+    endpointIngredients: endpointIngredients ?? this.endpointIngredients,
+    endpointCurrencies: endpointCurrencies ?? this.endpointCurrencies,
+    endpointWorkouts: endpointWorkouts ?? this.endpointWorkouts,
+    endpointTemplates: endpointTemplates ?? this.endpointTemplates,
+    endpointNotes: endpointNotes ?? this.endpointNotes,
+    endpointTasks: endpointTasks ?? this.endpointTasks,
+    endpointGoals: endpointGoals ?? this.endpointGoals,
+    endpointMeals: endpointMeals ?? this.endpointMeals,
+    endpointTransactions: endpointTransactions ?? this.endpointTransactions,
+    endpointBudgetAccounts:
+        endpointBudgetAccounts ?? this.endpointBudgetAccounts,
+    endpointReceiptPictures:
+        endpointReceiptPictures ?? this.endpointReceiptPictures,
     plannerHorizonDays: plannerHorizonDays ?? this.plannerHorizonDays,
     calorieGoalAdjustment: calorieGoalAdjustment ?? this.calorieGoalAdjustment,
     experimentBaselineDays:
@@ -190,6 +273,22 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _replayPrefillKey = 'settings_replay_prefill';
   static const _remoteSyncBaseUrlKey = 'settings_remote_sync_base_url';
   static const _remoteSyncApiKeyKey = 'settings_remote_sync_api_key';
+  static const _endpointExportKey = 'settings_endpoint_export';
+  static const _endpointImportKey = 'settings_endpoint_import';
+  static const _endpointExercisesKey = 'settings_endpoint_exercises';
+  static const _endpointIngredientsKey = 'settings_endpoint_ingredients';
+  static const _endpointCurrenciesKey = 'settings_endpoint_currencies';
+  static const _endpointWorkoutsKey = 'settings_endpoint_workouts';
+  static const _endpointTemplatesKey = 'settings_endpoint_templates';
+  static const _endpointNotesKey = 'settings_endpoint_notes';
+  static const _endpointTasksKey = 'settings_endpoint_tasks';
+  static const _endpointGoalsKey = 'settings_endpoint_goals';
+  static const _endpointMealsKey = 'settings_endpoint_meals';
+  static const _endpointTransactionsKey = 'settings_endpoint_transactions';
+  static const _endpointBudgetAccountsKey =
+      'settings_endpoint_budget_accounts';
+  static const _endpointReceiptPicturesKey =
+      'settings_endpoint_receipt_pictures';
   static const _plannerHorizonDaysKey = 'settings_planner_horizon_days';
   static const _calorieGoalAdjustmentKey = 'settings_calorie_goal_adjustment';
   static const _experimentBaselineDaysKey = 'settings_experiment_baseline_days';
@@ -202,7 +301,8 @@ final class SettingsNotifier extends Notifier<SettingsState> {
 
   @override
   SettingsState build() {
-    final prefs = ref.watch(sharedPreferencesProvider);
+    final prefs = ref.watch(sharedPreferencesHolderProvider);
+    if (prefs == null) return const SettingsState();
     return SettingsState(
       themeMode: _themeModeFromName(prefs.getString(_themeModeKey)),
       locale: _localeFromCode(prefs.getString(_localeKey)),
@@ -231,6 +331,29 @@ final class SettingsNotifier extends Notifier<SettingsState> {
           : 'planned',
       remoteSyncBaseUrl: prefs.getString(_remoteSyncBaseUrlKey) ?? '',
       remoteSyncApiKey: prefs.getString(_remoteSyncApiKeyKey) ?? '',
+      endpointExport: prefs.getString(_endpointExportKey) ?? '/backup',
+      endpointImport:
+          prefs.getString(_endpointImportKey) ?? '/backup/latest',
+      endpointExercises:
+          prefs.getString(_endpointExercisesKey) ?? '/exercises',
+      endpointIngredients:
+          prefs.getString(_endpointIngredientsKey) ?? '/ingredients',
+      endpointCurrencies:
+          prefs.getString(_endpointCurrenciesKey) ?? '/fx-rates',
+      endpointWorkouts:
+          prefs.getString(_endpointWorkoutsKey) ?? '/workouts',
+      endpointTemplates:
+          prefs.getString(_endpointTemplatesKey) ?? '/templates',
+      endpointNotes: prefs.getString(_endpointNotesKey) ?? '/notes',
+      endpointTasks: prefs.getString(_endpointTasksKey) ?? '/tasks',
+      endpointGoals: prefs.getString(_endpointGoalsKey) ?? '/goals',
+      endpointMeals: prefs.getString(_endpointMealsKey) ?? '/meals',
+      endpointTransactions:
+          prefs.getString(_endpointTransactionsKey) ?? '/transactions',
+      endpointBudgetAccounts:
+          prefs.getString(_endpointBudgetAccountsKey) ?? '/budget-accounts',
+      endpointReceiptPictures:
+          prefs.getString(_endpointReceiptPicturesKey) ?? '/receipt-pictures',
       plannerHorizonDays: prefs.getInt(_plannerHorizonDaysKey) ?? 90,
       calorieGoalAdjustment:
           prefs.getDouble(_calorieGoalAdjustmentKey) ?? 500.0,
@@ -408,6 +531,128 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setString(_remoteSyncApiKeyKey, trimmed);
     state = state.copyWith(remoteSyncApiKey: trimmed);
+  }
+
+  Future<void> _setEndpoint(
+    String key,
+    String? value,
+    SettingsState Function(String v) apply,
+  ) async {
+    final trimmed = (value ?? '').trim();
+    await ref.read(sharedPreferencesProvider).setString(key, trimmed);
+    state = apply(trimmed);
+  }
+
+  Future<void> setEndpointExport(String value) async {
+    await _setEndpoint(
+      _endpointExportKey,
+      value,
+      (v) => state.copyWith(endpointExport: v),
+    );
+  }
+
+  Future<void> setEndpointImport(String value) async {
+    await _setEndpoint(
+      _endpointImportKey,
+      value,
+      (v) => state.copyWith(endpointImport: v),
+    );
+  }
+
+  Future<void> setEndpointExercises(String value) async {
+    await _setEndpoint(
+      _endpointExercisesKey,
+      value,
+      (v) => state.copyWith(endpointExercises: v),
+    );
+  }
+
+  Future<void> setEndpointIngredients(String value) async {
+    await _setEndpoint(
+      _endpointIngredientsKey,
+      value,
+      (v) => state.copyWith(endpointIngredients: v),
+    );
+  }
+
+  Future<void> setEndpointCurrencies(String value) async {
+    await _setEndpoint(
+      _endpointCurrenciesKey,
+      value,
+      (v) => state.copyWith(endpointCurrencies: v),
+    );
+  }
+
+  Future<void> setEndpointWorkouts(String value) async {
+    await _setEndpoint(
+      _endpointWorkoutsKey,
+      value,
+      (v) => state.copyWith(endpointWorkouts: v),
+    );
+  }
+
+  Future<void> setEndpointTemplates(String value) async {
+    await _setEndpoint(
+      _endpointTemplatesKey,
+      value,
+      (v) => state.copyWith(endpointTemplates: v),
+    );
+  }
+
+  Future<void> setEndpointNotes(String value) async {
+    await _setEndpoint(
+      _endpointNotesKey,
+      value,
+      (v) => state.copyWith(endpointNotes: v),
+    );
+  }
+
+  Future<void> setEndpointTasks(String value) async {
+    await _setEndpoint(
+      _endpointTasksKey,
+      value,
+      (v) => state.copyWith(endpointTasks: v),
+    );
+  }
+
+  Future<void> setEndpointGoals(String value) async {
+    await _setEndpoint(
+      _endpointGoalsKey,
+      value,
+      (v) => state.copyWith(endpointGoals: v),
+    );
+  }
+
+  Future<void> setEndpointMeals(String value) async {
+    await _setEndpoint(
+      _endpointMealsKey,
+      value,
+      (v) => state.copyWith(endpointMeals: v),
+    );
+  }
+
+  Future<void> setEndpointTransactions(String value) async {
+    await _setEndpoint(
+      _endpointTransactionsKey,
+      value,
+      (v) => state.copyWith(endpointTransactions: v),
+    );
+  }
+
+  Future<void> setEndpointBudgetAccounts(String value) async {
+    await _setEndpoint(
+      _endpointBudgetAccountsKey,
+      value,
+      (v) => state.copyWith(endpointBudgetAccounts: v),
+    );
+  }
+
+  Future<void> setEndpointReceiptPictures(String value) async {
+    await _setEndpoint(
+      _endpointReceiptPicturesKey,
+      value,
+      (v) => state.copyWith(endpointReceiptPictures: v),
+    );
   }
 
   Future<void> setPlannerHorizonDays(int days) async {

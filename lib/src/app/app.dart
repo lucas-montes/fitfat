@@ -8,8 +8,11 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'dart:developer' as developer;
+
 import '../../l10n/app_localizations.dart';
 import '../dashboard/providers/dashboard.dart';
+import '../database/database_provider.dart';
 import '../notifications/notification_plugin.dart';
 import '../notifications/rest_alarm.dart';
 import '../goals/notifications/goal_reminder.dart';
@@ -18,13 +21,28 @@ import '../notifications/task_reminders.dart';
 import '../planner/providers/planner.dart';
 import '../settings/providers/settings.dart';
 import 'router.dart';
+import 'startup_gate.dart';
 import 'theme.dart';
 
-final class FitFatApp extends ConsumerWidget {
+final class FitFatApp extends ConsumerStatefulWidget {
   const FitFatApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FitFatApp> createState() => _FitFatAppState();
+}
+
+final class _FitFatAppState extends ConsumerState<FitFatApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      developer.Timeline.instantSync('startup.firstFrame');
+      if (mounted) ref.read(startupGateProvider.notifier).complete();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     return MaterialApp.router(
       title: 'FitFat',
@@ -111,7 +129,16 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
     final l10n = AppLocalizations.of(context);
     if (l10n == null) return;
 
-    final prefs = ref.read(sharedPreferencesProvider);
+    final prefs = await ref.read(sharedPreferencesReadyProvider.future);
+    developer.Timeline.instantSync('startup.db.warmup.start');
+    unawaited(
+      Future(() async {
+        try {
+          await ref.read(databaseProvider).customStatement('SELECT 1');
+          developer.Timeline.instantSync('startup.db.warmup.done');
+        } catch (_) {}
+      }),
+    );
 
     // Native plugin init (independent — run concurrently). The foreground-task
     // channel is HIGH priority + public visibility so the ongoing-workout

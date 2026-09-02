@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/startup_gate.dart';
 import '../../database/database_provider.dart';
 import '../../models/workout.dart';
 import '../repositories/workout_repository.dart';
@@ -17,6 +18,7 @@ final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
 // ---------------------------------------------------------------------------
 
 final workoutListProvider = FutureProvider<List<Workout>>((ref) async {
+  if (!ref.watch(startupGateProvider)) return const [];
   return ref.watch(workoutRepositoryProvider).getAll();
 });
 
@@ -31,6 +33,7 @@ final workoutListProvider = FutureProvider<List<Workout>>((ref) async {
 /// lists), so the global floating bar (T08) and the dashboard resume chip
 /// (T09) stay in sync without a dedicated query or stream.
 final activeWorkoutProvider = Provider<Workout?>((ref) {
+  if (!ref.watch(startupGateProvider)) return null;
   final workouts = ref.watch(workoutListProvider).value;
   if (workouts == null) return null;
   for (final workout in workouts) {
