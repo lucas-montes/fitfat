@@ -6,6 +6,9 @@ final class Note {
 
   /// Tag names from the shared vocabulary (JSON string[] at rest).
   final List<String>? tags;
+
+  /// Number of voice clips attached to this note (derived, for list badges).
+  final int clipCount;
   final DateTime updatedAt;
   final DateTime createdAt;
 
@@ -14,6 +17,7 @@ final class Note {
     required this.title,
     required this.body,
     this.tags,
+    this.clipCount = 0,
     required this.updatedAt,
     required this.createdAt,
   });
@@ -23,6 +27,7 @@ final class Note {
     String? title,
     String? body,
     Object? tags = _unset,
+    int? clipCount,
     DateTime? updatedAt,
     DateTime? createdAt,
   }) => Note(
@@ -30,6 +35,7 @@ final class Note {
     title: title ?? this.title,
     body: body ?? this.body,
     tags: identical(tags, _unset) ? this.tags : tags as List<String>?,
+    clipCount: clipCount ?? this.clipCount,
     updatedAt: updatedAt ?? this.updatedAt,
     createdAt: createdAt ?? this.createdAt,
   );

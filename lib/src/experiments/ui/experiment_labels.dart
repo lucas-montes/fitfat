@@ -34,6 +34,7 @@ String experimentCategoryLabel(
   ExperimentCategory.diet => l10n.experimentCategoryDiet,
   ExperimentCategory.body => l10n.experimentCategoryBody,
   ExperimentCategory.steps => l10n.experimentCategorySteps,
+  ExperimentCategory.budget => l10n.experimentCategoryBudget,
 };
 
 /// Icon used for an [ExperimentCategory].
@@ -43,4 +44,5 @@ IconData experimentCategoryIcon(ExperimentCategory category) =>
       ExperimentCategory.diet => Icons.restaurant,
       ExperimentCategory.body => Icons.monitor_weight_outlined,
       ExperimentCategory.steps => Icons.directions_walk,
+      ExperimentCategory.budget => Icons.account_balance_wallet,
     };

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 
 import '../../database/app_database.dart' as db;
@@ -10,6 +8,7 @@ import '../../models/task.dart';
 import '../../models/workout.dart';
 import '../../experiments/repositories/experiment_repository.dart'
     show experimentFromRow;
+import '../../tags/repositories/tag_repository.dart';
 import 'task_repository.dart' show taskFromRow;
 
 /// One end of a link: the linked entity plus the optional relationship label.
@@ -49,11 +48,14 @@ final class LinksRepository {
             OrderingTerm.asc(_database.tasks.sortOrder),
           ]);
     final rows = await query.get();
+    final items = await _attachTasks(
+      rows.map((r) => taskFromRow(r.readTable(_database.tasks))).toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: taskFromRow(row.readTable(_database.tasks)),
-          label: row.readTable(_database.taskExperiments).label,
+          item: items[i],
+          label: rows[i].readTable(_database.taskExperiments).label,
         ),
     ];
   }
@@ -71,11 +73,16 @@ final class LinksRepository {
           ..where(_database.taskExperiments.taskId.equals(taskId))
           ..orderBy([OrderingTerm.asc(_database.experiments.startDate)]);
     final rows = await query.get();
+    final items = await _attachExperiments(
+      rows
+          .map((r) => experimentFromRow(r.readTable(_database.experiments)))
+          .toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: experimentFromRow(row.readTable(_database.experiments)),
-          label: row.readTable(_database.taskExperiments).label,
+          item: items[i],
+          label: rows[i].readTable(_database.taskExperiments).label,
         ),
     ];
   }
@@ -124,11 +131,14 @@ final class LinksRepository {
             OrderingTerm.asc(_database.tasks.sortOrder),
           ]);
     final rows = await query.get();
+    final items = await _attachTasks(
+      rows.map((r) => taskFromRow(r.readTable(_database.tasks))).toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: taskFromRow(row.readTable(_database.tasks)),
-          label: row.readTable(_database.taskGoals).label,
+          item: items[i],
+          label: rows[i].readTable(_database.taskGoals).label,
         ),
     ];
   }
@@ -144,11 +154,14 @@ final class LinksRepository {
           ..where(_database.taskGoals.taskId.equals(taskId))
           ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
     final rows = await query.get();
+    final items = await _attachGoals(
+      rows.map((r) => _goalFrom(r.readTable(_database.goals))).toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: _goalFrom(row.readTable(_database.goals)),
-          label: row.readTable(_database.taskGoals).label,
+          item: items[i],
+          label: rows[i].readTable(_database.taskGoals).label,
         ),
     ];
   }
@@ -191,11 +204,16 @@ final class LinksRepository {
           ..where(_database.experimentGoals.goalId.equals(goalId))
           ..orderBy([OrderingTerm.asc(_database.experiments.startDate)]);
     final rows = await query.get();
+    final items = await _attachExperiments(
+      rows
+          .map((r) => experimentFromRow(r.readTable(_database.experiments)))
+          .toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: experimentFromRow(row.readTable(_database.experiments)),
-          label: row.readTable(_database.experimentGoals).label,
+          item: items[i],
+          label: rows[i].readTable(_database.experimentGoals).label,
         ),
     ];
   }
@@ -211,11 +229,14 @@ final class LinksRepository {
           ..where(_database.experimentGoals.experimentId.equals(experimentId))
           ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
     final rows = await query.get();
+    final items = await _attachGoals(
+      rows.map((r) => _goalFrom(r.readTable(_database.goals))).toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: _goalFrom(row.readTable(_database.goals)),
-          label: row.readTable(_database.experimentGoals).label,
+          item: items[i],
+          label: rows[i].readTable(_database.experimentGoals).label,
         ),
     ];
   }
@@ -261,11 +282,14 @@ final class LinksRepository {
           ..where(_database.taskNotes.taskId.equals(taskId))
           ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
     final rows = await query.get();
+    final items = await _attachNotes(
+      rows.map((r) => _noteFrom(r.readTable(_database.notes))).toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: _noteFrom(row.readTable(_database.notes)),
-          label: row.readTable(_database.taskNotes).label,
+          item: items[i],
+          label: rows[i].readTable(_database.taskNotes).label,
         ),
     ];
   }
@@ -281,11 +305,14 @@ final class LinksRepository {
           ..where(_database.taskNotes.noteId.equals(noteId))
           ..orderBy([OrderingTerm.desc(_database.tasks.date)]);
     final rows = await query.get();
+    final items = await _attachTasks(
+      rows.map((r) => taskFromRow(r.readTable(_database.tasks))).toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: taskFromRow(row.readTable(_database.tasks)),
-          label: row.readTable(_database.taskNotes).label,
+          item: items[i],
+          label: rows[i].readTable(_database.taskNotes).label,
         ),
     ];
   }
@@ -326,11 +353,14 @@ final class LinksRepository {
           ..where(_database.experimentNotes.experimentId.equals(experimentId))
           ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
     final rows = await query.get();
+    final items = await _attachNotes(
+      rows.map((r) => _noteFrom(r.readTable(_database.notes))).toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: _noteFrom(row.readTable(_database.notes)),
-          label: row.readTable(_database.experimentNotes).label,
+          item: items[i],
+          label: rows[i].readTable(_database.experimentNotes).label,
         ),
     ];
   }
@@ -348,11 +378,16 @@ final class LinksRepository {
           ..where(_database.experimentNotes.noteId.equals(noteId))
           ..orderBy([OrderingTerm.asc(_database.experiments.startDate)]);
     final rows = await query.get();
+    final items = await _attachExperiments(
+      rows
+          .map((r) => experimentFromRow(r.readTable(_database.experiments)))
+          .toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: experimentFromRow(row.readTable(_database.experiments)),
-          label: row.readTable(_database.experimentNotes).label,
+          item: items[i],
+          label: rows[i].readTable(_database.experimentNotes).label,
         ),
     ];
   }
@@ -398,11 +433,14 @@ final class LinksRepository {
           ..where(_database.goalNotes.goalId.equals(goalId))
           ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
     final rows = await query.get();
+    final items = await _attachNotes(
+      rows.map((r) => _noteFrom(r.readTable(_database.notes))).toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: _noteFrom(row.readTable(_database.notes)),
-          label: row.readTable(_database.goalNotes).label,
+          item: items[i],
+          label: rows[i].readTable(_database.goalNotes).label,
         ),
     ];
   }
@@ -418,11 +456,14 @@ final class LinksRepository {
           ..where(_database.goalNotes.noteId.equals(noteId))
           ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
     final rows = await query.get();
+    final items = await _attachGoals(
+      rows.map((r) => _goalFrom(r.readTable(_database.goals))).toList(),
+    );
     return [
-      for (final row in rows)
+      for (var i = 0; i < items.length; i++)
         (
-          item: _goalFrom(row.readTable(_database.goals)),
-          label: row.readTable(_database.goalNotes).label,
+          item: items[i],
+          label: rows[i].readTable(_database.goalNotes).label,
         ),
     ];
   }
@@ -669,7 +710,7 @@ final class LinksRepository {
     id: row.id,
     title: row.title,
     description: row.description,
-    tags: _decodeTags(row.tags),
+    tags: null,
     startDate: DateTime.fromMillisecondsSinceEpoch(row.startDate),
     endDate: row.endDate == null
         ? null
@@ -686,7 +727,7 @@ final class LinksRepository {
     id: row.id,
     title: row.title,
     body: row.body,
-    tags: _decodeTags(row.tags),
+    tags: null,
     updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
   );
@@ -703,15 +744,50 @@ final class LinksRepository {
         : null,
     notes: row.notes,
     routineId: row.routineId,
-    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
   );
-}
 
-List<String>? _decodeTags(String? raw) {
-  if (raw == null || raw.isEmpty) return null;
-  try {
-    final decoded = jsonDecode(raw);
-    if (decoded is List) return decoded.cast<String>();
-  } catch (_) {}
-  return null;
+  /// Populates [Task.tags] for a batch of tasks in a single lookup.
+  Future<List<Task>> _attachTasks(List<Task> tasks) async {
+    if (tasks.isEmpty) return tasks;
+    final map = await TagRepository(
+      _database,
+    ).tagNamesForTasks(tasks.map((t) => t.id).toList());
+    return [
+      for (final t in tasks) t.copyWith(tags: map[t.id] ?? const []),
+    ];
+  }
+
+  /// Populates [Experiment.tags] for a batch of experiments in one lookup.
+  Future<List<Experiment>> _attachExperiments(List<Experiment> items) async {
+    if (items.isEmpty) return items;
+    final map = await TagRepository(
+      _database,
+    ).tagNamesForExperiments(items.map((e) => e.id).toList());
+    return [
+      for (final e in items) e.copyWith(tags: map[e.id] ?? const []),
+    ];
+  }
+
+  /// Populates [Goal.tags] for a batch of goals in one lookup.
+  Future<List<Goal>> _attachGoals(List<Goal> items) async {
+    if (items.isEmpty) return items;
+    final map = await TagRepository(
+      _database,
+    ).tagNamesForGoals(items.map((g) => g.id).toList());
+    return [
+      for (final g in items) g.copyWith(tags: map[g.id] ?? const []),
+    ];
+  }
+
+  /// Populates [Note.tags] for a batch of notes in one lookup.
+  Future<List<Note>> _attachNotes(List<Note> items) async {
+    if (items.isEmpty) return items;
+    final map = await TagRepository(
+      _database,
+    ).tagNamesForNotes(items.map((n) => n.id).toList());
+    return [
+      for (final n in items) n.copyWith(tags: map[n.id] ?? const []),
+    ];
+  }
 }

@@ -18,10 +18,14 @@ final class IngredientSyncClient {
 
   static const _path = '/ingredients';
 
-  Future<SyncResult> sync({required int since, required String apiKey}) async {
+  Future<SyncResult> sync({
+    required int since,
+    required String apiKey,
+    String endpoint = _path,
+  }) async {
     try {
       final payload = await _api.getJson(
-        _path,
+        endpoint,
         query: {'since': '$since'},
         headers: _auth(apiKey),
       );

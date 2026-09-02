@@ -43,4 +43,8 @@ abstract final class FitFatTokens {
   /// Maximum content width for large screens; wider layouts center the
   /// content (dashboard uses a `ConstrainedBox` with this value).
   static const double kContentMaxWidth = 600;
+
+  /// Width at which settings switches from the hub list (phone) to a
+  /// master-detail layout with a permanent [NavigationRail].
+  static const double kRailBreakpoint = 840;
 }

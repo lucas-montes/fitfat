@@ -1,14 +1,8 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
 import '../../models/tag.dart';
-
-typedef _TagLoader = Future<Map<String, List<String>?>> Function();
-typedef _TagWriter = Future<void> Function(Map<String, List<String>?>);
-typedef _TagRenamer = Future<void> Function(String oldName, String newName);
 
 /// Thrown when creating or renaming a priority would collide with an
 /// existing vocabulary entry (names are unique). The UI surfaces this as a
@@ -23,8 +17,7 @@ final class DuplicateTagException implements Exception {
 
 /// Normalizes a priority name: trims the edges and collapses internal runs
 /// of whitespace so "Leg  day" and " leg day " all store as "Leg day".
-String normalizeTagName(String raw) =>
-    raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+String normalizeTagName(String raw) => raw.trim().replaceAll(RegExp(r'\s+'), ' ');
 
 final class TagRepository {
   final db.AppDatabase _database;
@@ -128,8 +121,42 @@ final class TagRepository {
     });
   }
 
-  /// Renames a tag everywhere: the vocabulary row plus every JSON string[]
-  /// reference across planner items (tasks + experiments), notes and goals.
+  /// Ensures a priority with [name] exists in the vocabulary and returns its
+  /// id. Used by the entity tag setters so a free-form name typed in a form
+  /// is registered on first use, matching the old behavior where the v28
+  /// backfill later promoted names into the vocabulary.
+  Future<String> ensureTag(String name) async {
+    final clean = normalizeTagName(name);
+    if (clean.isEmpty) {
+      throw ArgumentError.value(name, 'name', 'Priority name is blank');
+    }
+    final existing = await (_database.select(
+      _database.tags,
+    )..where((t) => t.name.equals(clean))).getSingleOrNull();
+    if (existing != null) return existing.id;
+    final maxOrderExp = _database.tags.sortOrder.max();
+    final row = await (_database.selectOnly(
+      _database.tags,
+    )..addColumns([maxOrderExp])).getSingleOrNull();
+    final nextOrder = (row?.read(maxOrderExp) ?? -1) + 1;
+    final id = const Uuid().v7();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await _database
+        .into(_database.tags)
+        .insert(
+          db.TagsCompanion.insert(
+            id: id,
+            name: clean,
+            sortOrder: Value(nextOrder),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+    return id;
+  }
+
+  /// Renames a priority. Join rows reference the tag by id, so no entity
+  /// rewrite is required — the links follow the rename automatically.
   /// Throws [DuplicateTagException] when another entry already uses the
   /// normalized target name.
   Future<void> renameTag(String oldName, String newName) async {
@@ -139,177 +166,219 @@ final class TagRepository {
     if (clash != null && clash.name != oldName) {
       throw DuplicateTagException(clean);
     }
-    final now = DateTime.now().millisecondsSinceEpoch;
-    await _database.transaction(() async {
-      await (_database.update(_database.tags)
-            ..where((t) => t.name.equals(oldName)))
-          .write(db.TagsCompanion(name: Value(clean), updatedAt: Value(now)));
-      for (final updated in [
-        _mapRenameWith(_loadTasksTags, _writeTasksTags),
-        _mapRenameWith(_loadNotesTags, _writeNotesTags),
-        _mapRenameWith(_loadGoalsTags, _writeGoalsTags),
-      ]) {
-        await updated(oldName, clean);
-      }
-    });
+    await (_database.update(_database.tags)
+          ..where((t) => t.name.equals(oldName)))
+        .write(
+          db.TagsCompanion(
+            name: Value(clean),
+            updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+          ),
+        );
   }
 
-  /// Deletes a tag from the vocabulary and strips every reference to it from
-  /// planner items, notes and goals. Returns the number of usages removed.
+  /// Deletes a priority and (via ON DELETE CASCADE) every link to it. Returns
+  /// the number of linked entities removed.
   Future<int> deleteTag(String name) async {
-    var removed = 0;
-    await _database.transaction(() async {
-      removed = await _stripFrom(name, _loadTasksTags, _writeTasksTags);
-      removed += await _stripFrom(name, _loadNotesTags, _writeNotesTags);
-      removed += await _stripFrom(name, _loadGoalsTags, _writeGoalsTags);
-      await (_database.delete(
-        _database.tags,
-      )..where((t) => t.name.equals(name))).go();
-    });
+    final tag = await getByName(name);
+    if (tag == null) return 0;
+    final removed = await usageForTagId(tag.id);
+    await (_database.delete(
+      _database.tags,
+    )..where((t) => t.id.equals(tag.id))).go();
     return removed;
   }
 
-  /// Every known tag name — the registered vocabulary plus any free-form name
-  /// still referenced by an entity (normalized). Powers autocomplete.
+  /// Every known tag name — the registered vocabulary (now the sole source of
+  /// tag names, since every referenced name is a `tags` row). Powers
+  /// autocomplete.
   Future<List<String>> distinctTagNames() async {
-    final names = <String>{};
-    for (final row in await _database.select(_database.tags).get()) {
-      names.add(row.name);
-    }
-    Iterable<String> refs(List<String>? tags) =>
-        (tags ?? const []).map(normalizeTagName).where((n) => n.isNotEmpty);
-    for (final row in await _database.select(_database.tasks).get()) {
-      names.addAll(refs(_decode(row.tags)));
-    }
-    for (final row in await _database.select(_database.experiments).get()) {
-      names.addAll(refs(_decode(row.tags)));
-    }
-    for (final row in await _database.select(_database.notes).get()) {
-      names.addAll(refs(_decode(row.tags)));
-    }
-    for (final row in await _database.select(_database.goals).get()) {
-      names.addAll(refs(_decode(row.tags)));
-    }
-    return names.toList()..sort();
+    final rows = await _database.select(_database.tags).get();
+    final names = rows.map((r) => r.name).toList()..sort();
+    return names;
   }
 
   /// Usage count per tag name across all tagged entity types.
   Future<Map<String, int>> usageCounts() async {
+    final tags = await _database.select(_database.tags).get();
+    final nameById = {for (final t in tags) t.id: t.name};
     final counts = <String, int>{};
-    void count(List<String>? tags) {
-      for (final t in tags ?? const <String>[]) {
-        counts.update(t, (c) => c + 1, ifAbsent: () => 1);
-      }
+    void bump(String tagId) {
+      final name = nameById[tagId];
+      if (name == null) return;
+      counts.update(name, (c) => c + 1, ifAbsent: () => 1);
     }
 
-    for (final row in await _database.select(_database.tasks).get()) {
-      count(_decode(row.tags));
+    for (final row in await _database.select(_database.taskTags).get()) {
+      bump(row.tagId);
     }
-    for (final row in await _database.select(_database.experiments).get()) {
-      count(_decode(row.tags));
+    for (final row in await _database.select(_database.experimentTags).get()) {
+      bump(row.tagId);
     }
-    for (final row in await _database.select(_database.notes).get()) {
-      count(_decode(row.tags));
+    for (final row in await _database.select(_database.goalTags).get()) {
+      bump(row.tagId);
     }
-    for (final row in await _database.select(_database.goals).get()) {
-      count(_decode(row.tags));
+    for (final row in await _database.select(_database.noteTags).get()) {
+      bump(row.tagId);
     }
     return counts;
   }
 
-  Tag _toDomain(db.Tag row) => Tag(
-    id: row.id,
-    name: row.name,
-    color: row.color,
-    sortOrder: row.sortOrder,
-    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
-    updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
-  );
+  /// Usage count for a single tag id (used by [deleteTag]).
+  Future<int> usageForTagId(String tagId) async {
+    final tag = await (_database.select(
+      _database.tags,
+    )..where((t) => t.id.equals(tagId))).getSingleOrNull();
+    if (tag == null) return 0;
+    return usageCounts().then((c) => c[tag.name] ?? 0);
+  }
 
-  _TagRenamer _mapRenameWith(_TagLoader load, _TagWriter write) =>
-      (oldName, newName) async {
-        final rows = await load();
-        final changed = <String, List<String>?>{};
-        rows.forEach((id, tags) {
-          if (tags == null || !tags.contains(oldName)) return;
-          changed[id] = tags.map((t) => t == oldName ? newName : t).toList();
-        });
-        if (changed.isNotEmpty) await write(changed);
-      };
+  // --- Per-entity reads (ordered by priority rank, then name) -------------
 
-  Future<int> _stripFrom(String name, _TagLoader load, _TagWriter write) async {
-    final rows = await load();
-    var removed = 0;
-    final changed = <String, List<String>?>{};
-    rows.forEach((id, tags) {
-      if (tags == null || !tags.contains(name)) return;
-      removed += tags.where((t) => t == name).length;
-      final next = tags.where((t) => t != name).toList();
-      changed[id] = next.isEmpty ? null : next;
+  Future<List<String>> tagsForTask(String id) =>
+      _namesFor('task_tags', 'task_id', id);
+
+  Future<List<String>> tagsForExperiment(String id) =>
+      _namesFor('experiment_tags', 'experiment_id', id);
+
+  Future<List<String>> tagsForGoal(String id) =>
+      _namesFor('goal_tags', 'goal_id', id);
+
+  Future<List<String>> tagsForNote(String id) =>
+      _namesFor('note_tags', 'note_id', id);
+
+  /// Batched variant: returns id → tag names for a batch of entity ids.
+  Future<Map<String, List<String>>> tagNamesForTasks(List<String> ids) =>
+      _namesMap('task_tags', 'task_id', ids);
+
+  Future<Map<String, List<String>>> tagNamesForExperiments(List<String> ids) =>
+      _namesMap('experiment_tags', 'experiment_id', ids);
+
+  Future<Map<String, List<String>>> tagNamesForGoals(List<String> ids) =>
+      _namesMap('goal_tags', 'goal_id', ids);
+
+  Future<Map<String, List<String>>> tagNamesForNotes(List<String> ids) =>
+      _namesMap('note_tags', 'note_id', ids);
+
+  // --- Per-entity writes (replace all links for an entity) ----------------
+
+  Future<void> setTaskTags(String taskId, List<String> names) async {
+    final tagIds = await _resolveTagIds(names);
+    await _database.transaction(() async {
+      await (_database.delete(
+        _database.taskTags,
+      )..where((t) => t.taskId.equals(taskId))).go();
+      for (final tagId in tagIds) {
+        await _database.into(_database.taskTags).insert(
+              db.TaskTagsCompanion.insert(tagId: tagId, taskId: taskId),
+              onConflict: DoNothing(),
+            );
+      }
     });
-    if (changed.isNotEmpty) await write(changed);
-    return removed;
   }
 
-  Future<Map<String, List<String>?>> _loadTasksTags() async {
-    final rows = await _database.select(_database.tasks).get();
-    return {for (final r in rows) r.id: _decode(r.tags)};
+  Future<void> setExperimentTags(String experimentId, List<String> names) async {
+    final tagIds = await _resolveTagIds(names);
+    await _database.transaction(() async {
+      await (_database.delete(
+        _database.experimentTags,
+      )..where((t) => t.experimentId.equals(experimentId))).go();
+      for (final tagId in tagIds) {
+        await _database.into(_database.experimentTags).insert(
+              db.ExperimentTagsCompanion.insert(
+                tagId: tagId,
+                experimentId: experimentId,
+              ),
+              onConflict: DoNothing(),
+            );
+      }
+    });
   }
 
-  Future<void> _writeTasksTags(Map<String, List<String>?> rows) =>
-      _database.batch((batch) {
-        rows.forEach((id, tags) {
-          batch.update(
-            _database.tasks,
-            db.TasksCompanion(tags: Value(_encode(tags))),
-            where: (db.$TasksTable t) => t.id.equals(id),
-          );
-        });
-      });
-
-  Future<Map<String, List<String>?>> _loadNotesTags() async {
-    final rows = await _database.select(_database.notes).get();
-    return {for (final r in rows) r.id: _decode(r.tags)};
+  Future<void> setGoalTags(String goalId, List<String> names) async {
+    final tagIds = await _resolveTagIds(names);
+    await _database.transaction(() async {
+      await (_database.delete(
+        _database.goalTags,
+      )..where((t) => t.goalId.equals(goalId))).go();
+      for (final tagId in tagIds) {
+        await _database.into(_database.goalTags).insert(
+              db.GoalTagsCompanion.insert(tagId: tagId, goalId: goalId),
+              onConflict: DoNothing(),
+            );
+      }
+    });
   }
 
-  Future<void> _writeNotesTags(Map<String, List<String>?> rows) =>
-      _database.batch((batch) {
-        rows.forEach((id, tags) {
-          batch.update(
-            _database.notes,
-            db.NotesCompanion(tags: Value(_encode(tags))),
-            where: (db.$NotesTable t) => t.id.equals(id),
-          );
-        });
-      });
-
-  Future<Map<String, List<String>?>> _loadGoalsTags() async {
-    final rows = await _database.select(_database.goals).get();
-    return {for (final r in rows) r.id: _decode(r.tags)};
+  Future<void> setNoteTags(String noteId, List<String> names) async {
+    final tagIds = await _resolveTagIds(names);
+    await _database.transaction(() async {
+      await (_database.delete(
+        _database.noteTags,
+      )..where((t) => t.noteId.equals(noteId))).go();
+      for (final tagId in tagIds) {
+        await _database.into(_database.noteTags).insert(
+              db.NoteTagsCompanion.insert(tagId: tagId, noteId: noteId),
+              onConflict: DoNothing(),
+            );
+      }
+    });
   }
 
-  Future<void> _writeGoalsTags(Map<String, List<String>?> rows) =>
-      _database.batch((batch) {
-        rows.forEach((id, tags) {
-          batch.update(
-            _database.goals,
-            db.GoalsCompanion(tags: Value(_encode(tags))),
-            where: (db.$GoalsTable t) => t.id.equals(id),
-          );
-        });
-      });
+  // --- Internals -----------------------------------------------------------
 
-  static String? _encode(List<String>? values) {
-    if (values == null || values.isEmpty) return null;
-    return jsonEncode(values);
+  Future<List<String>> _resolveTagIds(List<String> names) async {
+    final out = <String>[];
+    for (final name in names) {
+      final clean = normalizeTagName(name);
+      if (clean.isEmpty) continue;
+      out.add(await ensureTag(clean));
+    }
+    return out;
   }
 
-  static List<String>? _decode(String? raw) {
-    if (raw == null || raw.isEmpty) return null;
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is List) return decoded.cast<String>();
-    } catch (_) {}
-    return null;
+  Future<List<String>> _namesFor(
+    String linkTable,
+    String idColumn,
+    String entityId,
+  ) async {
+    final result = await _database.customSelect(
+      'SELECT t.name AS name FROM tags t '
+      'INNER JOIN $linkTable l ON l.tag_id = t.id '
+      'WHERE l.$idColumn = ? '
+      'ORDER BY t.sort_order, t.name COLLATE NOCASE',
+      variables: [Variable<String>(entityId)],
+    ).get();
+    return result.map((r) => r.read<String>('name')).toList();
   }
+
+  Future<Map<String, List<String>>> _namesMap(
+    String linkTable,
+    String idColumn,
+    List<String> ids,
+  ) async {
+    final map = <String, List<String>>{for (final id in ids) id: <String>[]};
+    if (ids.isEmpty) return map;
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final result = await _database.customSelect(
+      'SELECT l.$idColumn AS eid, t.name AS name FROM tags t '
+      'INNER JOIN $linkTable l ON l.tag_id = t.id '
+      'WHERE l.$idColumn IN ($placeholders) '
+      'ORDER BY t.sort_order, t.name COLLATE NOCASE',
+      variables: [for (final id in ids) Variable<String>(id)],
+    ).get();
+    for (final row in result) {
+      final eid = row.read<String>('eid');
+      (map[eid] ??= []).add(row.read<String>('name'));
+    }
+    return map;
+  }
+
+  Tag _toDomain(db.Tag row) => Tag(
+        id: row.id,
+        name: row.name,
+        color: row.color,
+        sortOrder: row.sortOrder,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
+      );
 }

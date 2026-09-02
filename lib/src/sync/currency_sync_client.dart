@@ -19,10 +19,11 @@ final class CurrencySyncClient {
     required String apiKey,
     required String baseCode,
     required String date,
+    String endpoint = _path,
   }) async {
     try {
       final payload = await _api.getJson(
-        _path,
+        endpoint,
         query: {'since': '$since', 'base': baseCode, 'date': date},
         headers: _auth(apiKey),
       );

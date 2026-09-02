@@ -1,0 +1,1392 @@
+openapi: 3.0.3
+info:
+  title: FitFat Sync API
+  version: 1.0.0
+  description: >-
+    Intended client-server contract for FitFat's sync/backup features.
+
+    The server implementation does not live in this repository; this document
+    describes the contract the Flutter client expects so a backend can be built
+    or validated against it.
+
+    Authentication is a Bearer API key on every request:
+    `Authorization: Bearer <apiKey>`.
+
+    Naming convention:
+    - PULL responses (server -> client) use `snake_case` for timestamp fields
+      (`created_at`, `updated_at`) and may add derived fields (e.g. exercise
+      `hasImage` / `hasVideo`).
+    - PUSH request bodies (client -> server) are the raw Drift `toJson()` output
+      and therefore use `camelCase` column names.
+
+    All `since` cursors and `IntColumn` timestamps are Unix epoch
+    **milliseconds** (int64). The base URL and every path are user-configurable
+    in the app's Settings; the paths below are the defaults.
+servers:
+  - url: https://your-sync-server.example.com
+    description: Placeholder; replace with the user-configured sync server URL.
+security:
+  - bearerAuth: []
+tags:
+  - name: Pull
+    description: Incremental GET endpoints that download catalog/data into the app.
+  - name: Push
+    description: One-way POST endpoints that upload local data to the server.
+  - name: Backup
+    description: Full SQLite database export/import.
+  - name: Media
+    description: Binary exercise media downloads.
+paths:
+  /exercises:
+    get:
+      tags: [Pull]
+      operationId: pullExercises
+      summary: Pull exercises changed since a cursor
+      parameters:
+        - name: since
+          in: query
+          required: false
+          description: Epoch-millisecond cursor; only rows changed after it are returned.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Exercise catalog delta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullExercisesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /ingredients:
+    get:
+      tags: [Pull]
+      operationId: pullIngredients
+      summary: Pull ingredients (with nested pictures/prices and stores) since a cursor
+      parameters:
+        - name: since
+          in: query
+          required: false
+          description: Epoch-millisecond cursor.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Ingredient catalog delta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullIngredientsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Push]
+      operationId: pushIngredient
+      summary: Contribute one ingredient to the shared pool
+      description: >-
+        Idempotent by ingredient id. Nested `pictures` and `prices` are included
+        inline (camelCase, Drift toJson shape).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngredientContribution'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /fx-rates:
+    get:
+      tags: [Pull]
+      operationId: pullFxRates
+      summary: Pull currency/FX rates for a base currency and day
+      parameters:
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: base
+          in: query
+          required: true
+          description: Base currency code (e.g. USD).
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          description: Day the rates apply to, YYYY-MM-DD.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: FX rates for the requested day.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullFxRatesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /workouts:
+    post:
+      tags: [Push]
+      operationId: pushWorkouts
+      summary: Push workout sessions (local -> server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutsPush'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /templates:
+    post:
+      tags: [Push]
+      operationId: pushTemplates
+      summary: Push workout templates (local -> server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplatesPush'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /notes:
+    post:
+      tags: [Push]
+      operationId: pushNotes
+      summary: Push notes (local -> server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotesPush'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /tasks:
+    post:
+      tags: [Push]
+      operationId: pushTasks
+      summary: Push planner tasks (local -> server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TasksPush'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /goals:
+    post:
+      tags: [Push]
+      operationId: pushGoals
+      summary: Push goals (local -> server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalsPush'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /meals:
+    post:
+      tags: [Push]
+      operationId: pushMeals
+      summary: Push meals (local -> server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealsPush'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /transactions:
+    post:
+      tags: [Push]
+      operationId: pushTransactions
+      summary: Push budget transactions (local -> server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionsPush'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /budget-accounts:
+    post:
+      tags: [Push]
+      operationId: pushBudgetAccounts
+      summary: Push budget accounts (local -> server)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetAccountsPush'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /receipt-pictures:
+    post:
+      tags: [Push]
+      operationId: pushReceiptPictures
+      summary: Push receipt pictures (local -> server)
+      description: >-
+        When a local picture exists the client uploads `multipart/form-data`
+        with a `receipt` JSON field and a `picture` file. When no picture is
+        present it falls back to a JSON body `{"receipts":[...]}`.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                receipt:
+                  type: string
+                  description: JSON-encoded Receipt row.
+                picture:
+                  type: string
+                  format: binary
+                  description: Receipt image bytes.
+          application/json:
+            schema:
+              type: object
+              properties:
+                receipts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Receipt'
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /backup:
+    post:
+      tags: [Backup]
+      operationId: exportBackup
+      summary: Upload a full SQLite database backup
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              description: Raw fitfat.sqlite file bytes.
+      responses:
+        '200':
+          description: Accepted (body ignored by client).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAck'
+        '204':
+          description: No content (client also accepts this).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /backup/latest:
+    get:
+      tags: [Backup]
+      operationId: importBackup
+      summary: Download the latest full SQLite database backup
+      responses:
+        '200':
+          description: Raw fitfat.sqlite file bytes.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /exercises/{id}.jpg:
+    get:
+      tags: [Media]
+      operationId: getExerciseImage
+      summary: Download an exercise's image
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: JPEG image bytes.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /exercises/{id}.mp4:
+    get:
+      tags: [Media]
+      operationId: getExerciseVideo
+      summary: Download an exercise's video
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: MP4 video bytes.
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: "API key issued by the sync server, sent as `Authorization: Bearer <apiKey>`."
+  responses:
+    Unauthorized:
+      description: Missing or invalid Bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Error:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+    SyncAck:
+      type: object
+      description: Optional ack returned by push endpoints; the client ignores it.
+      properties:
+        updated:
+          type: integer
+          format: int64
+        deleted:
+          type: integer
+          format: int64
+        server_time:
+          type: integer
+          format: int64
+    # ---- Pull responses -----------------------------------------------------
+    Exercise:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        exerciseType:
+          type: string
+          description: "'weightlifting' | 'cardio'"
+        bodyPart:
+          type: string
+          nullable: true
+        equipment:
+          type: string
+          nullable: true
+        primaryMuscle:
+          type: string
+          nullable: true
+        secondaryMuscle:
+          type: string
+          nullable: true
+        instructions:
+          type: array
+          items:
+            type: string
+          nullable: true
+        tips:
+          type: array
+          items:
+            type: string
+          nullable: true
+        faqs:
+          type: string
+          nullable: true
+        keywords:
+          type: array
+          items:
+            type: string
+          nullable: true
+        similarTo:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+        isCanonical:
+          type: boolean
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+          nullable: true
+        hasImage:
+          type: boolean
+        hasVideo:
+          type: boolean
+      required: [id, name, isCanonical, created_at, hasImage, hasVideo]
+    PullExercisesResponse:
+      type: object
+      properties:
+        server_time:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Exercise'
+        deleted:
+          type: array
+          items:
+            type: string
+      required: [server_time, items, deleted]
+    IngredientPicture:
+      type: object
+      properties:
+        id:
+          type: string
+        ingredientId:
+          type: string
+        imagePath:
+          type: string
+        sortOrder:
+          type: integer
+          format: int64
+        createdAt:
+          type: integer
+          format: int64
+      required: [id, ingredientId, imagePath, sortOrder, createdAt]
+    IngredientPrice:
+      type: object
+      properties:
+        id:
+          type: string
+        ingredientId:
+          type: string
+        storeId:
+          type: string
+        price:
+          type: number
+          format: double
+        currencyCode:
+          type: string
+        packageGrams:
+          type: number
+          format: double
+          nullable: true
+        recordedAt:
+          type: integer
+          format: int64
+      required: [id, ingredientId, storeId, price, currencyCode, recordedAt]
+    Ingredient:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        caloriesPer100g:
+          type: number
+          format: double
+        proteinPer100g:
+          type: number
+          format: double
+        carbsPer100g:
+          type: number
+          format: double
+        fatPer100g:
+          type: number
+          format: double
+        sodiumPer100g:
+          type: number
+          format: double
+          nullable: true
+        fiberPer100g:
+          type: number
+          format: double
+          nullable: true
+        sugarPer100g:
+          type: number
+          format: double
+          nullable: true
+        isArchived:
+          type: boolean
+        brand:
+          type: string
+          nullable: true
+        barcode:
+          type: string
+          nullable: true
+        updated_at:
+          type: integer
+          format: int64
+          nullable: true
+        created_at:
+          type: integer
+          format: int64
+        pictures:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredientPicture'
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredientPrice'
+      required:
+        - id
+        - name
+        - caloriesPer100g
+        - proteinPer100g
+        - carbsPer100g
+        - fatPer100g
+        - isArchived
+        - created_at
+    Store:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        updated_at:
+          type: integer
+          format: int64
+          nullable: true
+      required: [id, name]
+    PullIngredientsResponse:
+      type: object
+      properties:
+        server_time:
+          type: integer
+          format: int64
+        stores:
+          type: array
+          items:
+            $ref: '#/components/schemas/Store'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ingredient'
+        deleted:
+          type: array
+          items:
+            type: string
+      required: [server_time, items, deleted]
+    FxRate:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Non-base currency code, e.g. EUR.
+        rateToBase:
+          type: number
+          format: double
+        date:
+          type: string
+          description: Day the rate applies to, YYYY-MM-DD.
+        updated_at:
+          type: integer
+          format: int64
+      required: [code, rateToBase, date]
+    PullFxRatesResponse:
+      type: object
+      properties:
+        server_time:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FxRate'
+      required: [server_time, items]
+    # ---- Push bodies (camelCase, Drift toJson) -----------------------------
+    Workout:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        date:
+          type: integer
+          format: int64
+        startedAt:
+          type: integer
+          format: int64
+          nullable: true
+        completedAt:
+          type: integer
+          format: int64
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        routineId:
+          type: string
+          nullable: true
+        templateId:
+          type: string
+          nullable: true
+        createdAt:
+          type: integer
+          format: int64
+      required: [id, name, date, createdAt]
+    WorkoutExercise:
+      type: object
+      properties:
+        id:
+          type: string
+        workoutId:
+          type: string
+        exerciseId:
+          type: string
+        sortOrder:
+          type: integer
+          format: int64
+        notes:
+          type: string
+          nullable: true
+      required: [id, workoutId, exerciseId, sortOrder]
+    ExerciseSet:
+      type: object
+      properties:
+        id:
+          type: string
+        workoutExerciseId:
+          type: string
+        setNumber:
+          type: integer
+          format: int64
+        reps:
+          type: integer
+          format: int64
+          nullable: true
+        weightKg:
+          type: number
+          format: double
+          nullable: true
+        restSeconds:
+          type: integer
+          format: int64
+          nullable: true
+        actualReps:
+          type: integer
+          format: int64
+          nullable: true
+        actualWeightKg:
+          type: number
+          format: double
+          nullable: true
+        actualRestSeconds:
+          type: integer
+          format: int64
+          nullable: true
+        completedAt:
+          type: integer
+          format: int64
+          nullable: true
+        durationMinutes:
+          type: integer
+          format: int64
+          nullable: true
+        distanceMeters:
+          type: number
+          format: double
+          nullable: true
+        actualDurationMinutes:
+          type: integer
+          format: int64
+          nullable: true
+        actualDistanceMeters:
+          type: number
+          format: double
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required: [id, workoutExerciseId, setNumber]
+    WorkoutsPush:
+      type: object
+      properties:
+        workouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workout'
+        workoutExercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutExercise'
+        exerciseSets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseSet'
+      required: [workouts, workoutExercises, exerciseSets]
+    WorkoutTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        startDate:
+          type: integer
+          format: int64
+        recurrence:
+          type: string
+          nullable: true
+          description: JSON recurrence object.
+        excludedDates:
+          type: string
+          nullable: true
+          description: JSON string[] of excluded days.
+        sourceRoutineId:
+          type: string
+          nullable: true
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+      required: [id, name, startDate, createdAt, updatedAt]
+    WorkoutTemplateExercise:
+      type: object
+      properties:
+        id:
+          type: string
+        templateId:
+          type: string
+        exerciseId:
+          type: string
+        sortOrder:
+          type: integer
+          format: int64
+        notes:
+          type: string
+          nullable: true
+      required: [id, templateId, exerciseId, sortOrder]
+    WorkoutTemplateSet:
+      type: object
+      properties:
+        id:
+          type: string
+        templateExerciseId:
+          type: string
+        setNumber:
+          type: integer
+          format: int64
+        reps:
+          type: integer
+          format: int64
+          nullable: true
+        weightKg:
+          type: number
+          format: double
+          nullable: true
+        restSeconds:
+          type: integer
+          format: int64
+          nullable: true
+        durationMinutes:
+          type: integer
+          format: int64
+          nullable: true
+        distanceMeters:
+          type: number
+          format: double
+          nullable: true
+      required: [id, templateExerciseId, setNumber]
+    TemplatesPush:
+      type: object
+      properties:
+        workoutTemplates:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutTemplate'
+        workoutTemplateExercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutTemplateExercise'
+        workoutTemplateSets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutTemplateSet'
+      required: [workoutTemplates, workoutTemplateExercises, workoutTemplateSets]
+    Note:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        updatedAt:
+          type: integer
+          format: int64
+        createdAt:
+          type: integer
+          format: int64
+      required: [id, title, body, updatedAt, createdAt]
+    NoteTag:
+      type: object
+      properties:
+        tagId:
+          type: string
+        noteId:
+          type: string
+      required: [tagId, noteId]
+    NotesPush:
+      type: object
+      properties:
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        noteTags:
+          type: array
+          items:
+            $ref: '#/components/schemas/NoteTag'
+      required: [notes, noteTags]
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: integer
+          format: int64
+        title:
+          type: string
+        done:
+          type: integer
+          format: int64
+          description: 0 | 1
+        taskStatus:
+          type: integer
+          format: int64
+          nullable: true
+          description: 0=pending | 1=done | 2=cancelled
+        carryOver:
+          type: boolean
+        sortOrder:
+          type: integer
+          format: int64
+        dueDate:
+          type: integer
+          format: int64
+          nullable: true
+        dueTimeMinutes:
+          type: integer
+          format: int64
+          nullable: true
+        startTimeMinutes:
+          type: integer
+          format: int64
+          nullable: true
+        endTimeMinutes:
+          type: integer
+          format: int64
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        workoutId:
+          type: string
+          nullable: true
+        workoutTemplateId:
+          type: string
+          nullable: true
+        recurrence:
+          type: string
+          nullable: true
+          description: JSON recurrence object.
+        seriesId:
+          type: string
+          nullable: true
+        createdAt:
+          type: integer
+          format: int64
+      required: [id, date, title, done, carryOver, sortOrder, createdAt]
+    TaskTag:
+      type: object
+      properties:
+        tagId:
+          type: string
+        taskId:
+          type: string
+      required: [tagId, taskId]
+    TasksPush:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        taskTags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskTag'
+      required: [tasks, taskTags]
+    Goal:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        startDate:
+          type: integer
+          format: int64
+        endDate:
+          type: integer
+          format: int64
+          nullable: true
+        status:
+          type: string
+          description: "'planned' | 'active' | 'done' | 'aborted'"
+        targetType:
+          type: string
+          description: "'none' | 'numeric' | 'boolean'"
+        targetValue:
+          type: number
+          format: double
+          nullable: true
+        baselineValue:
+          type: number
+          format: double
+          nullable: true
+        unit:
+          type: string
+          nullable: true
+        reminderEnabled:
+          type: boolean
+        reminderTimeMinutes:
+          type: integer
+          format: int64
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+      required:
+        - id
+        - title
+        - startDate
+        - status
+        - targetType
+        - reminderEnabled
+        - reminderTimeMinutes
+        - createdAt
+        - updatedAt
+    GoalProgressEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        goalId:
+          type: string
+        recordedAt:
+          type: integer
+          format: int64
+        value:
+          type: number
+          format: double
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: integer
+          format: int64
+      required: [id, goalId, recordedAt, value, createdAt]
+    GoalTag:
+      type: object
+      properties:
+        tagId:
+          type: string
+        goalId:
+          type: string
+      required: [tagId, goalId]
+    GoalsPush:
+      type: object
+      properties:
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Goal'
+        goalProgressEntries:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalProgressEntry'
+        goalTags:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalTag'
+      required: [goals, goalProgressEntries, goalTags]
+    Meal:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        eatenAt:
+          type: integer
+          format: int64
+        createdAt:
+          type: integer
+          format: int64
+      required: [id, name, eatenAt, createdAt]
+    MealIngredient:
+      type: object
+      properties:
+        id:
+          type: string
+        mealId:
+          type: string
+        ingredientId:
+          type: string
+        grams:
+          type: number
+          format: double
+      required: [id, mealId, ingredientId, grams]
+    MealsPush:
+      type: object
+      properties:
+        meals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Meal'
+        mealIngredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealIngredient'
+      required: [meals, mealIngredients]
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          description: "'income' | 'expense' | 'transfer'"
+        amount:
+          type: number
+          format: double
+        currencyCode:
+          type: string
+        amountBase:
+          type: number
+          format: double
+        rateUsed:
+          type: number
+          format: double
+        accountId:
+          type: string
+          nullable: true
+        toAccountId:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        date:
+          type: integer
+          format: int64
+        note:
+          type: string
+          nullable: true
+        receiptId:
+          type: string
+          nullable: true
+        isDraft:
+          type: boolean
+        createdAt:
+          type: integer
+          format: int64
+      required:
+        - id
+        - type
+        - amount
+        - currencyCode
+        - amountBase
+        - rateUsed
+        - date
+        - isDraft
+        - createdAt
+    TransactionsPush:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+      required: [transactions]
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          description: "'savings' | 'investment' | 'cash' | 'bank' | 'credit' | 'other'"
+        openingBalance:
+          type: number
+          format: double
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: integer
+          format: int64
+      required: [id, name, type, openingBalance, createdAt]
+    BudgetAccountsPush:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+      required: [accounts]
+    Receipt:
+      type: object
+      properties:
+        id:
+          type: string
+        localPath:
+          type: string
+        remotePath:
+          type: string
+          nullable: true
+        uploadStatus:
+          type: integer
+          format: int64
+          description: 0 local | 1 uploading | 2 uploaded | 3 error
+        parsed:
+          type: boolean
+        parsedJson:
+          type: string
+          nullable: true
+        transactionId:
+          type: string
+          nullable: true
+        createdAt:
+          type: integer
+          format: int64
+      required: [id, localPath, uploadStatus, parsed, createdAt]
+    IngredientContribution:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        caloriesPer100g:
+          type: number
+          format: double
+        proteinPer100g:
+          type: number
+          format: double
+        carbsPer100g:
+          type: number
+          format: double
+        fatPer100g:
+          type: number
+          format: double
+        sodiumPer100g:
+          type: number
+          format: double
+          nullable: true
+        fiberPer100g:
+          type: number
+          format: double
+          nullable: true
+        sugarPer100g:
+          type: number
+          format: double
+          nullable: true
+        isArchived:
+          type: boolean
+        brand:
+          type: string
+          nullable: true
+        barcode:
+          type: string
+          nullable: true
+        createdAt:
+          type: integer
+          format: int64
+        pictures:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredientPicture'
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngredientPrice'
+      required:
+        - id
+        - name
+        - caloriesPer100g
+        - proteinPer100g
+        - carbsPer100g
+        - fatPer100g
+        - isArchived
+        - createdAt

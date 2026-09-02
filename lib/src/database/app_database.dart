@@ -46,6 +46,11 @@ part 'app_database.g.dart';
     GoalNotes,
     GoalWorkouts,
     NoteWorkouts,
+    TaskTags,
+    ExperimentTags,
+    GoalTags,
+    NoteTags,
+    NoteAudio,
   ],
 )
 final class AppDatabase extends _$AppDatabase {
@@ -54,7 +59,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 30;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -88,6 +93,10 @@ final class AppDatabase extends _$AppDatabase {
         ('idx_goal_notes_note', 'goal_notes', 'note_id'),
         ('idx_goal_workouts_workout', 'goal_workouts', 'workout_id'),
         ('idx_note_workouts_workout', 'note_workouts', 'workout_id'),
+        ('idx_task_tags_task', 'task_tags', 'task_id'),
+        ('idx_experiment_tags_experiment', 'experiment_tags', 'experiment_id'),
+        ('idx_goal_tags_goal', 'goal_tags', 'goal_id'),
+        ('idx_note_tags_note', 'note_tags', 'note_id'),
       ];
       for (final (name, table, column) in linkIndexes) {
         await customStatement(
@@ -389,7 +398,12 @@ final class AppDatabase extends _$AppDatabase {
         // by name via their own JSON string[] column. Progress entries are
         // unique per goal per day.
         await m.createTable(tags);
-        await m.addColumn(notes, notes.tags);
+        // `notes` gains a JSON `tags` string[] column (removed in v29 in favor
+        // of a dedicated tag link table; this only matters for the v26→v29
+        // upgrade path, where the column still physically exists on old DBs).
+        await m.database.customStatement(
+          'ALTER TABLE notes ADD COLUMN tags TEXT',
+        );
         await m.createTable(goals);
         await m.createTable(goalProgressEntries);
       }
@@ -409,10 +423,10 @@ final class AppDatabase extends _$AppDatabase {
         await m.database.customStatement(
           'INSERT INTO experiments '
           '(id, name, purpose, start_date, end_date, status, categories, '
-          'reminder_enabled, reminder_time_minutes, tags, created_at) '
+          'reminder_enabled, reminder_time_minutes, created_at) '
           'SELECT id, title, purpose, date, end_date, '
           "COALESCE(status, 'planned'), categories, reminder_enabled, "
-          'reminder_time_minutes, tags, created_at '
+          'reminder_time_minutes, created_at '
           "FROM planner_items WHERE kind = 'experiment'",
         );
         await m.database.customStatement(
@@ -423,10 +437,10 @@ final class AppDatabase extends _$AppDatabase {
           'INSERT INTO tasks '
           '(id, date, title, done, task_status, carry_over, sort_order, '
           'due_date, due_time_minutes, start_time_minutes, end_time_minutes, '
-          'notes, workout_id, tags, recurrence, series_id, created_at) '
+          'notes, workout_id, recurrence, series_id, created_at) '
           'SELECT id, date, title, done, task_status, carry_over, sort_order, '
           'due_date, due_time_minutes, start_time_minutes, end_time_minutes, '
-          'notes, workout_id, tags, recurrence, series_id, created_at '
+          'notes, workout_id, recurrence, series_id, created_at '
           "FROM planner_items_old WHERE kind = 'task'",
         );
         await m.createTable(taskExperiments);
@@ -564,18 +578,146 @@ final class AppDatabase extends _$AppDatabase {
           }
         }
 
-        for (final row in await select(tasks).get()) {
-          await registerRefs(decodeTagList(row.tags));
+        Future<void> readRefs(String table) async {
+          try {
+            final rows = await m.database
+                .customSelect('SELECT id, tags FROM $table')
+                .get();
+            for (final row in rows) {
+              await registerRefs(decodeTagList(row.read<String?>('tags')));
+            }
+          } on Exception {
+            // The `tags` column may be absent on this table (e.g. when a
+            // cross-version upgrade created it from a model that no longer
+            // carries the JSON column). Nothing to backfill here.
+          }
         }
-        for (final row in await select(experiments).get()) {
-          await registerRefs(decodeTagList(row.tags));
+
+        await readRefs('tasks');
+        await readRefs('experiments');
+        await readRefs('notes');
+        await readRefs('goals');
+      }
+      if (from < 29) {
+        // v29: tags become a real many-to-many. Each tagged entity now links
+        // to the shared `tags` (Priorities) vocabulary by id via a dedicated
+        // junction table, replacing the per-entity JSON name arrays.
+        //
+        // 1. Create the four junction tables.
+        // 2. Backfill links from the existing JSON columns (still present).
+        //    Every referenced name was already registered into `tags` by the
+        //    v28 backfill, but we still upsert defensively in case any slipped
+        //    through.
+        // 3. Drop the now-redundant JSON `tags` columns.
+        await m.createTable(taskTags);
+        await m.createTable(experimentTags);
+        await m.createTable(goalTags);
+        await m.createTable(noteTags);
+
+        String normalize(String raw) =>
+            raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+        Future<String> ensureTag(String rawName) async {
+          final clean = normalize(rawName);
+          if (clean.isEmpty) throw ArgumentError('Blank tag name');
+          final existing = await (select(
+            tags,
+          )..where((t) => t.name.equals(clean))).getSingleOrNull();
+          if (existing != null) return existing.id;
+          final maxOrderExp = tags.sortOrder.max();
+          final orderRow = await (selectOnly(
+            tags,
+          )..addColumns([maxOrderExp])).getSingleOrNull();
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final id = const Uuid().v7();
+          await into(tags).insert(
+            TagsCompanion.insert(
+              id: id,
+              name: clean,
+              sortOrder: Value((orderRow?.read(maxOrderExp) ?? -1) + 1),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+          return id;
         }
-        for (final row in await select(notes).get()) {
-          await registerRefs(decodeTagList(row.tags));
+
+        Future<void> linkRows(
+          String table,
+          Future<void> Function(String id, List<String> names) insertLinks,
+        ) async {
+          List<QueryRow> rows;
+          try {
+            rows = await m.database.customSelect(
+              'SELECT id, id AS entity_id, tags FROM $table',
+            ).get();
+          } on Exception {
+            // The `tags` column is absent on this table (cross-version
+            // upgrade from a schema that never carried JSON tags here):
+            // there is nothing to link, so skip it.
+            return;
+          }
+          for (final row in rows) {
+            final id = row.read<String>('id');
+            final names = decodeTagList(row.read<String?>('tags'));
+            if (names == null || names.isEmpty) continue;
+            await insertLinks(id, names);
+          }
         }
-        for (final row in await select(goals).get()) {
-          await registerRefs(decodeTagList(row.tags));
+
+        await linkRows('tasks', (id, names) async {
+          for (final name in names) {
+            final tagId = await ensureTag(name);
+            await into(taskTags).insert(
+              TaskTagsCompanion.insert(tagId: tagId, taskId: id),
+              onConflict: DoNothing(),
+            );
+          }
+        });
+        await linkRows('experiments', (id, names) async {
+          for (final name in names) {
+            final tagId = await ensureTag(name);
+            await into(experimentTags).insert(
+              ExperimentTagsCompanion.insert(tagId: tagId, experimentId: id),
+              onConflict: DoNothing(),
+            );
+          }
+        });
+        await linkRows('notes', (id, names) async {
+          for (final name in names) {
+            final tagId = await ensureTag(name);
+            await into(noteTags).insert(
+              NoteTagsCompanion.insert(tagId: tagId, noteId: id),
+              onConflict: DoNothing(),
+            );
+          }
+        });
+        await linkRows('goals', (id, names) async {
+          for (final name in names) {
+            final tagId = await ensureTag(name);
+            await into(goalTags).insert(
+              GoalTagsCompanion.insert(tagId: tagId, goalId: id),
+              onConflict: DoNothing(),
+            );
+          }
+        });
+
+        // Dropping the JSON columns is best-effort: SQLite < 3.35 lacks
+        // DROP COLUMN, in which case the unused column harmlessly lingers.
+        for (final table in ['tasks', 'experiments', 'notes', 'goals']) {
+          try {
+            await m.database.customStatement(
+              'ALTER TABLE $table DROP COLUMN tags',
+            );
+          } catch (_) {
+            // Leave the dead column in place on unsupported runtimes.
+          }
         }
+      }
+
+      if (from < 30) {
+        // v30: voice clips attached to notes (one audio file per clip).
+        await m.createTable(noteAudio);
       }
     },
   );

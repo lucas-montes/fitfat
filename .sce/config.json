@@ -1,3 +1,9 @@
 {
-  "$schema": "https://sce.crocoder.dev/config.json"
+  "$schema": "https://sce.crocoder.dev/config.json",
+  "integrations": {
+    "optional_workflows": [],
+    "target": [
+      "opencode"
+    ]
+  }
 }

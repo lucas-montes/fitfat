@@ -35,26 +35,34 @@ final class SyncService {
     required this.state,
   });
 
-  Future<SyncResult> syncExercises(String baseUrl, String apiKey) async {
+  Future<SyncResult> syncExercises(
+    String baseUrl,
+    String apiKey, {
+    String endpoint = '/exercises',
+  }) async {
     final since = state.getLastSyncedAt(SyncResource.exercises);
     final client = HttpApiClient(http.Client(), baseUrl: baseUrl);
     final result = await ExerciseSyncClient(
       client,
       exercises,
-    ).sync(since: since, apiKey: apiKey);
+    ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
     if (result.ok && result.serverTime > 0) {
       await state.setLastSyncedAt(SyncResource.exercises, result.serverTime);
     }
     return result;
   }
 
-  Future<SyncResult> syncIngredients(String baseUrl, String apiKey) async {
+  Future<SyncResult> syncIngredients(
+    String baseUrl,
+    String apiKey, {
+    String endpoint = '/ingredients',
+  }) async {
     final since = state.getLastSyncedAt(SyncResource.ingredients);
     final client = HttpApiClient(http.Client(), baseUrl: baseUrl);
     final result = await IngredientSyncClient(
       client,
       ingredients,
-    ).sync(since: since, apiKey: apiKey);
+    ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
     if (result.ok && result.serverTime > 0) {
       await state.setLastSyncedAt(SyncResource.ingredients, result.serverTime);
     }
@@ -64,14 +72,21 @@ final class SyncService {
   Future<SyncResult> syncCurrencies(
     String baseUrl,
     String apiKey,
-    String baseCode,
-  ) async {
+    String baseCode, {
+    String endpoint = '/fx-rates',
+  }) async {
     final since = state.getLastSyncedAt(SyncResource.currencies);
     final client = HttpApiClient(http.Client(), baseUrl: baseUrl);
     final result = await CurrencySyncClient(
       client,
       currencies,
-    ).sync(since: since, apiKey: apiKey, baseCode: baseCode, date: _today());
+    ).sync(
+      since: since,
+      apiKey: apiKey,
+      baseCode: baseCode,
+      date: _today(),
+      endpoint: endpoint,
+    );
     if (result.ok && result.serverTime > 0) {
       await state.setLastSyncedAt(SyncResource.currencies, result.serverTime);
     }

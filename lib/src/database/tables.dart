@@ -291,8 +291,6 @@ class Tasks extends Table {
   // Scheduled workout occurrence (v28): set on tasks generated from a workout
   // template's repeat rule; starting the session links [workoutId] as well.
   TextColumn? get workoutTemplateId => text().nullable()();
-  // Optional free-form tags as a JSON string[] (v12).
-  TextColumn? get tags => text().nullable()();
   // Optional repeat rule as a JSON object (v13).
   TextColumn? get recurrence => text().nullable()();
   // Groups occurrences of one recurring series (v13).
@@ -324,9 +322,6 @@ class Experiments extends Table {
   /// JSON string[] of linked data categories: workout | diet | body | steps.
   TextColumn? get categories => text().nullable()();
 
-  /// JSON string[] of tag names from the shared vocabulary ("priorities").
-  TextColumn? get tags => text().nullable()();
-
   // Daily check-in reminder.
   BoolColumn get reminderEnabled =>
       boolean().withDefault(const Constant(true))();
@@ -346,9 +341,6 @@ class Notes extends Table {
   TextColumn get id => text()();
   TextColumn get title => text()();
   TextColumn get body => text().withDefault(const Constant(''))();
-  // Free-form tags as a JSON string[] (v26) — names from the shared `tags`
-  // vocabulary, same convention as planner_items.tags.
-  TextColumn? get tags => text().nullable()();
   IntColumn get updatedAt => integer()();
   IntColumn get createdAt => integer()();
 
@@ -387,8 +379,6 @@ class Goals extends Table {
   TextColumn get title => text()();
   TextColumn? get description => text().nullable()();
 
-  /// JSON string[] of tag names (shared vocabulary).
-  TextColumn? get tags => text().nullable()();
   // Start-of-day epoch milliseconds.
   IntColumn get startDate => integer()();
 
@@ -451,8 +441,10 @@ class GoalProgressEntries extends Table {
 // Not modeled here on purpose:
 //   * task ↔ workout stays the 1:1 `tasks.workout_id` column (auto-managed
 //     when a workout is created/replayed).
-//   * task ↔ tag / note ↔ tag / goal ↔ tag remain JSON name arrays pointing
-//     into the shared `tags` vocabulary.
+//
+// Tag (priority) links live in their own junction tables below (v29): every
+// tagged entity references the shared `tags` vocabulary by id, replacing the
+// former per-entity JSON name arrays.
 // ---------------------------------------------------------------------------
 
 /// Tasks associated with an experiment (many tasks per experiment, and a task
@@ -537,6 +529,70 @@ class NoteWorkouts extends Table {
 
   @override
   Set<Column> get primaryKey => {noteId, workoutId};
+}
+
+// ---------------------------------------------------------------------------
+// Tag (priority) link tables (v29)
+//
+// Many-to-many associations between the shared `tags` vocabulary (the
+// Priorities feature) and each tagged entity. Tags are referenced by id, so
+// renaming a priority never rewrites these rows. `ON DELETE CASCADE` clears
+// an entity's links when it is removed and clears an entity's links when the
+// tag is removed.
+// ---------------------------------------------------------------------------
+
+/// Priorities attached to a task (many tags per task, a tag across many tasks).
+class TaskTags extends Table {
+  TextColumn get tagId => text().references(Tags, #id, onDelete: KeyAction.cascade)();
+  TextColumn get taskId => text().references(Tasks, #id, onDelete: KeyAction.cascade)();
+
+  @override
+  Set<Column> get primaryKey => {tagId, taskId};
+}
+
+/// Priorities attached to an experiment.
+class ExperimentTags extends Table {
+  TextColumn get tagId => text().references(Tags, #id, onDelete: KeyAction.cascade)();
+  TextColumn get experimentId => text().references(Experiments, #id, onDelete: KeyAction.cascade)();
+
+  @override
+  Set<Column> get primaryKey => {tagId, experimentId};
+}
+
+/// Priorities attached to a goal.
+class GoalTags extends Table {
+  TextColumn get tagId => text().references(Tags, #id, onDelete: KeyAction.cascade)();
+  TextColumn get goalId => text().references(Goals, #id, onDelete: KeyAction.cascade)();
+
+  @override
+  Set<Column> get primaryKey => {tagId, goalId};
+}
+
+/// Priorities attached to a note.
+class NoteTags extends Table {
+  TextColumn get tagId => text().references(Tags, #id, onDelete: KeyAction.cascade)();
+  TextColumn get noteId => text().references(Notes, #id, onDelete: KeyAction.cascade)();
+
+  @override
+  Set<Column> get primaryKey => {tagId, noteId};
+}
+
+// ---------------------------------------------------------------------------
+// Note voice clips (v30) — one-to-many on Notes, each its own audio file.
+// ---------------------------------------------------------------------------
+
+class NoteAudio extends Table {
+  TextColumn get id => text()();
+  TextColumn get noteId => text().references(Notes, #id, onDelete: KeyAction.cascade)();
+  TextColumn get audioPath => text()();
+  IntColumn get durationMs => integer().withDefault(const Constant(0))();
+
+  /// Display order within a note (lower sorts first).
+  IntColumn get position => integer().withDefault(const Constant(0))();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 // ---------------------------------------------------------------------------

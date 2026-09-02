@@ -21,6 +21,21 @@ abstract class ApiClient {
   /// Fetches a binary resource (exercise media) relative to the base URL.
   Future<Uint8List> getBytes(String path, {Map<String, String>? headers});
 
+  /// Uploads raw [body] bytes (e.g. a SQLite database file) to [path].
+  Future<Object?> postBytes(
+    String path, {
+    required Uint8List body,
+    Map<String, String>? headers,
+  });
+
+  /// Uploads [fields] + [files] as `multipart/form-data` (e.g. receipt images).
+  Future<Object?> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    required Map<String, Uint8List> files,
+    Map<String, String>? headers,
+  });
+
   Future<Object?> postJson(
     String path, {
     Object? body,
@@ -138,6 +153,42 @@ final class HttpApiClient implements ApiClient {
   }
 
   @override
+  Future<Object?> postBytes(
+    String path, {
+    required Uint8List body,
+    Map<String, String>? headers,
+  }) async {
+    final response = await _send(
+      () => _client.post(
+        _uri(path),
+        headers: {..._headers, ...?headers},
+        body: body,
+      ),
+      headers: headers,
+    );
+    return _decode(response);
+  }
+
+  @override
+  Future<Object?> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    required Map<String, Uint8List> files,
+    Map<String, String>? headers,
+  }) async {
+    final request = http.MultipartRequest('POST', _uri(path));
+    request.headers.addAll({..._headers, ...?headers});
+    fields.forEach((k, v) => request.fields[k] = v);
+    files.forEach((k, v) => request.files.add(http.MultipartFile.fromBytes(k, v)));
+    final streamed = await request.send().timeout(timeout);
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(statusCode: response.statusCode, body: response.body);
+    }
+    return _decode(response);
+  }
+
+  @override
   Future<Object?> putJson(
     String path, {
     Object? body,
@@ -216,7 +267,28 @@ final class MockApiClient implements ApiClient {
   @override
   Future<Object?> deleteJson(String path, {Map<String, String>? query}) =>
       _handle('DELETE', path, null);
+
+  @override
+  Future<Object?> postBytes(
+    String path, {
+    required Uint8List body,
+    Map<String, String>? headers,
+  }) =>
+      _handle('POST', path, body);
+
+  @override
+  Future<Object?> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    required Map<String, Uint8List> files,
+    Map<String, String>? headers,
+  }) =>
+      _handle('POST', path, {'fields': fields, 'files': files.keys.toList()});
 }
+
+/// Standard `Bearer` auth header for sync/export/import requests.
+Map<String, String> authHeaders(String apiKey) =>
+    {'Authorization': 'Bearer ${apiKey.trim()}'};
 
 /// Overridable network client. Tests inject [MockApiClient] via
 /// `apiClientProvider.overrideWithValue(...)`; the default hits [baseUrl]

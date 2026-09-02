@@ -1116,7 +1116,6 @@ final class WorkoutRepository {
     endTimeMinutes: Value(t.endTimeMinutes),
     notes: Value(t.notes),
     workoutId: Value(t.workoutId),
-    tags: Value(_encodeTags(t.tags)),
     recurrence: Value(
       t.recurrence == null ? null : jsonEncode(t.recurrence!.toJson()),
     ),
@@ -1213,7 +1212,3 @@ ExerciseSet newPlannedSet({
 
 DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
 
-String? _encodeTags(List<String>? values) {
-  if (values == null || values.isEmpty) return null;
-  return jsonEncode(values);
-}

@@ -19,6 +19,10 @@ import 'rest_timer.dart';
 /// popup. Distinct from planner reminder ids (which are derived from task ids).
 const restPopupNotificationId = 424242;
 
+/// Heartbeat written by the foreground handler on every successful tick so the
+/// UI watchdog can detect (and recover from) a frozen service.
+const _lastTickKey = 'active_workout_last_tick';
+
 /// SharedPreferences keys written by the UI isolate and read by the background
 /// task callback (which cannot use `AppLocalizations`): the active workout
 /// session plus the localized label fragments for the notification text.
@@ -125,7 +129,17 @@ final class ActiveWorkoutTaskHandler extends TaskHandler {
 
   @override
   void onRepeatEvent(DateTime timestamp) {
-    unawaited(_updateNotification());
+    // Guard the tick: an exception here would otherwise crash the foreground
+    // task isolate and freeze the notification (the "stuck timers" bug).
+    unawaited(_safeUpdate());
+  }
+
+  Future<void> _safeUpdate() async {
+    try {
+      await _updateNotification();
+    } catch (_) {
+      // Swallow: a single failed tick must never stop the service.
+    }
   }
 
   @override
@@ -169,6 +183,8 @@ final class ActiveWorkoutTaskHandler extends TaskHandler {
       notificationTitle: snapshot.title,
       notificationText: snapshot.text,
     );
+    // Record a heartbeat so the UI watchdog can detect a frozen service.
+    await prefs.setInt(_lastTickKey, DateTime.now().millisecondsSinceEpoch);
   }
 
   /// Posts a high-importance "rest is over" notification and marks it fired so
@@ -241,6 +257,16 @@ final class ActiveWorkoutNotifier {
       if (!await Permission.notification.isGranted) {
         await Permission.notification.request();
       }
+      // Ask the OS to exclude us from Doze / battery optimization so the
+      // foreground ticker isn't suspended (keeps the elapsed timer alive,
+      // including on the lock screen).
+      try {
+        if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+          await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+        }
+      } catch (_) {
+        // Best-effort: some devices/ROMs reject this; ignore.
+      }
       if (await FlutterForegroundTask.isRunningService) {
         await FlutterForegroundTask.restartService();
       } else {
@@ -252,19 +278,75 @@ final class ActiveWorkoutNotifier {
           callback: activeWorkoutTaskCallback,
         );
       }
+      _lastWorkoutName = workoutName;
+      _lastStartedAt = startedAt;
+      _startWatchdog();
     } else if (Platform.isIOS) {
       await _showIosNotification(workoutName: workoutName, l10n: l10n);
     }
   }
 
   Future<void> stopWorkoutNotification() async {
+    _stopWatchdog();
+    // Clear any lingering "rest is over" popup so it never gets stuck.
+    try {
+      await FlutterLocalNotificationsPlugin().cancel(restPopupNotificationId);
+    } catch (_) {
+      // Best-effort.
+    }
     await _prefs.remove(activeWorkoutNameKey);
     await _prefs.remove(activeWorkoutStartedAtKey);
+    await _prefs.remove(_lastTickKey);
     if (Platform.isAndroid) {
       await FlutterForegroundTask.stopService();
     } else if (Platform.isIOS) {
       await _iosPlugin.cancel(_iosNotificationId);
     }
+  }
+
+  String? _lastWorkoutName;
+  DateTime? _lastStartedAt;
+  Timer? _watchdog;
+
+  void _startWatchdog() {
+    _watchdog?.cancel();
+    _watchdog = Timer.periodic(const Duration(seconds: 5), (_) async {
+      try {
+        final active =
+            (await SharedPreferences.getInstance()).getInt(activeWorkoutStartedAtKey) !=
+                null;
+        if (!active) {
+          _stopWatchdog();
+          return;
+        }
+        final running = await FlutterForegroundTask.isRunningService;
+        if (!running) {
+          if (_lastWorkoutName != null && _lastStartedAt != null) {
+            await FlutterForegroundTask.startService(
+              serviceId: _serviceId,
+              notificationTitle: _lastWorkoutName!,
+              notificationText: _lastWorkoutName!,
+              notificationInitialRoute: '/active-workout',
+              callback: activeWorkoutTaskCallback,
+            );
+          }
+          return;
+        }
+        final last = (await SharedPreferences.getInstance()).getInt(_lastTickKey);
+        final now = DateTime.now().millisecondsSinceEpoch;
+        if (last != null && now - last > 15000) {
+          // Service is alive but the ticker has stalled — restart it.
+          await FlutterForegroundTask.restartService();
+        }
+      } catch (_) {
+        // Never let the watchdog break app logic.
+      }
+    });
+  }
+
+  void _stopWatchdog() {
+    _watchdog?.cancel();
+    _watchdog = null;
   }
 
   // -- iOS best-effort (per plan: no iOS foreground-service parity) ---------

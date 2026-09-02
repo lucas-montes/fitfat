@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../database/app_database.dart' as db;
 import '../../models/planner_recurrence.dart';
 import '../../models/task.dart';
+import '../../tags/repositories/tag_repository.dart';
 
 /// Data access for plain planner tasks (schema v27: the `tasks` table; the
 /// experiment half of the former planner items lives in
@@ -22,7 +23,7 @@ final class TaskRepository {
               ..where((t) => t.date.equals(startOfDay.millisecondsSinceEpoch))
               ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
             .get();
-    return rows.map(_toDomain).toList();
+    return _attachTags(rows.map(_toDomain).toList());
   }
 
   /// Pending tasks with a start time, on or after [from] (inclusive), ordered
@@ -42,12 +43,12 @@ final class TaskRepository {
                       fromStart.millisecondsSinceEpoch,
                     ),
               )
-              ..orderBy([
-                (t) => OrderingTerm(expression: t.date),
-                (t) => OrderingTerm(expression: t.startTimeMinutes),
-              ]))
-            .get();
-    return rows.map(_toDomain).toList();
+            ..orderBy([
+              (t) => OrderingTerm(expression: t.date),
+              (t) => OrderingTerm(expression: t.startTimeMinutes),
+            ]))
+        .get();
+    return _attachTags(rows.map(_toDomain).toList());
   }
 
   /// Pending tasks on or after [from] (inclusive), ordered by day then start
@@ -77,13 +78,17 @@ final class TaskRepository {
       if (a.day != b.day) return a.day.compareTo(b.day);
       return rank(a).compareTo(rank(b));
     });
-    return tasks;
+    return _attachTags(tasks);
   }
 
   Future<void> insert(Task item) async {
     await _database
         .into(_database.tasks)
         .insert(_companionFor(item, createdAt: item.createdAt));
+    final tags = item.tags;
+    if (tags != null) {
+      await _tags.setTaskTags(item.id, tags);
+    }
   }
 
   Future<void> update(Task item) async {
@@ -103,13 +108,18 @@ final class TaskRepository {
         notes: Value(item.notes),
         workoutId: Value(item.workoutId),
         workoutTemplateId: Value(item.workoutTemplateId),
-        tags: Value(_encode(item.tags)),
         recurrence: Value(encodeRecurrenceJson(item.recurrence)),
         seriesId: Value(item.seriesId),
         taskStatus: Value(item.taskStatus?.storage),
         carryOver: Value(item.carryOver),
       ),
     );
+    // Only rewrite tag links when the caller supplied tags; incidental updates
+    // (rollover, recurrence edits) that didn't load tags must not wipe them.
+    final tags = item.tags;
+    if (tags != null) {
+      await _tags.setTaskTags(item.id, tags);
+    }
   }
 
   /// Full insert companion for a task.
@@ -126,7 +136,6 @@ final class TaskRepository {
         notes: Value(item.notes),
         workoutId: Value(item.workoutId),
         workoutTemplateId: Value(item.workoutTemplateId),
-        tags: Value(_encode(item.tags)),
         recurrence: Value(encodeRecurrenceJson(item.recurrence)),
         seriesId: Value(item.seriesId),
         taskStatus: Value(item.taskStatus?.storage),
@@ -189,13 +198,12 @@ final class TaskRepository {
   /// All distinct tags across every task, sorted. Powers the autocomplete
   /// suggestions in the add/edit dialog.
   Future<List<String>> distinctTags() async {
-    final rows = await (_database.select(_database.tasks)).get();
-    final result = <String>{};
-    for (final row in rows) {
-      final tags = _decode(row.tags);
-      if (tags != null) result.addAll(tags);
-    }
-    return (result.toList()..sort());
+    final result = await _database.customSelect(
+      'SELECT DISTINCT t.name AS name FROM tags t '
+      'INNER JOIN task_tags l ON l.tag_id = t.id '
+      'ORDER BY t.name COLLATE NOCASE',
+    ).get();
+    return result.map((r) => r.read<String>('name')).toList();
   }
 
   /// Recurring "anchor" tasks (those carrying a rule) whose series can still
@@ -212,7 +220,7 @@ final class TaskRepository {
               )
               ..orderBy([(t) => OrderingTerm(expression: t.date)]))
             .get();
-    return rows.map(_toDomain).toList();
+    return _attachTags(rows.map(_toDomain).toList());
   }
 
   /// Ensures every occurrence of every series that falls on [day] exists as a
@@ -304,11 +312,12 @@ final class TaskRepository {
               ))
               .get();
       if (existing.isNotEmpty) continue;
+      final newId = const Uuid().v7();
       await _database
           .into(_database.tasks)
           .insert(
             db.TasksCompanion.insert(
-              id: const Uuid().v7(),
+              id: newId,
               date: dMillis,
               title: anchor.title,
               done: 0,
@@ -319,11 +328,13 @@ final class TaskRepository {
               notes: Value(anchor.notes),
               workoutId: Value(anchor.workoutId),
               workoutTemplateId: Value(anchor.workoutTemplateId),
-              tags: Value(_encode(anchor.tags)),
               seriesId: Value(anchor.seriesId),
               createdAt: DateTime.now().millisecondsSinceEpoch,
             ),
           );
+      if (anchor.tags != null && anchor.tags!.isNotEmpty) {
+        await _tags.setTaskTags(newId, anchor.tags!);
+      }
     }
   }
 
@@ -333,7 +344,8 @@ final class TaskRepository {
     final row = await (_database.select(
       _database.tasks,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
-    return row == null ? null : _toDomain(row);
+    if (row == null) return null;
+    return (await _attachTags([_toDomain(row)])).first;
   }
 
   /// All occurrences (anchor + generated) of a recurring series.
@@ -341,7 +353,7 @@ final class TaskRepository {
     final rows = await (_database.select(
       _database.tasks,
     )..where((t) => t.seriesId.equals(seriesId))).get();
-    return rows.map(_toDomain).toList();
+    return _attachTags(rows.map(_toDomain).toList());
   }
 
   /// Deletes one generated occurrence of a series and records its day as an
@@ -440,9 +452,20 @@ final class TaskRepository {
             notes: Value(notes),
             workoutId: Value(workoutId),
             workoutTemplateId: Value(workoutTemplateId),
-            tags: Value(_encode(tags)),
           ),
         );
+    if (tags != null) {
+      final affected = await (_database.select(_database.tasks)..where(
+            (t) =>
+                t.seriesId.equals(seriesId) &
+                t.id.isNotValue(seriesId) &
+                t.date.isBiggerOrEqualValue(fromStart),
+          ))
+          .get();
+      for (final row in affected) {
+        await _tags.setTaskTags(row.id, tags);
+      }
+    }
   }
 
   /// Deletes a generated occurrence and every later occurrence of the series
@@ -513,7 +536,7 @@ final class TaskRepository {
               ])
               ..limit(limit))
             .get();
-    return rows.map(_toDomain).toList();
+    return _attachTags(rows.map(_toDomain).toList());
   }
 
   /// Creates the "do this workout" planner task for a workout: a pending
@@ -565,27 +588,33 @@ final class TaskRepository {
                   t.date.isSmallerOrEqualValue(toMs),
             ))
             .get();
-    return rows.map(_toDomain).toList();
+    return _attachTags(rows.map(_toDomain).toList());
   }
 
   Task _toDomain(db.Task row) => taskFromRow(row);
+
+  /// Every task regardless of date (used by data push/sync).
+  Future<List<Task>> getAll() async {
+    final rows = await _database.select(_database.tasks).get();
+    return _attachTags(rows.map(_toDomain).toList());
+  }
 
   /// Normalizes any [DateTime] to the start of its day so every day is a
   /// stable query key, matching how `date` is stored.
   DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
 
-  static String? _encode(List<String>? values) {
-    if (values == null || values.isEmpty) return null;
-    return jsonEncode(values);
-  }
+  /// Tag (priority) access for this task table.
+  TagRepository get _tags => TagRepository(_database);
 
-  static List<String>? _decode(String? raw) {
-    if (raw == null || raw.isEmpty) return null;
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is List) return decoded.cast<String>();
-    } catch (_) {}
-    return null;
+  /// Populates [Task.tags] for a batch of tasks in a single lookup.
+  Future<List<Task>> _attachTags(List<Task> tasks) async {
+    if (tasks.isEmpty) return tasks;
+    final map = await _tags.tagNamesForTasks(
+      tasks.map((t) => t.id).toList(),
+    );
+    return [
+      for (final t in tasks) t.copyWith(tags: map[t.id] ?? const []),
+    ];
   }
 }
 
@@ -605,7 +634,7 @@ Task taskFromRow(db.Task row) => Task(
   notes: row.notes,
   workoutId: row.workoutId,
   workoutTemplateId: row.workoutTemplateId,
-  tags: decodeTagList(row.tags),
+  tags: null,
   recurrence: decodeRecurrenceJson(row.recurrence),
   seriesId: row.seriesId,
   taskStatus: row.taskStatus == null

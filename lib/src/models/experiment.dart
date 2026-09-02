@@ -2,7 +2,7 @@
 enum ExperimentStatus { planned, active, done, aborted }
 
 /// A domain category an experiment links to; charts are aggregated per-category.
-enum ExperimentCategory { workout, diet, body, steps }
+enum ExperimentCategory { workout, diet, body, steps, budget }
 
 /// Plain domain model for a self-tracking experiment with daily check-ins.
 final class Experiment {
@@ -42,7 +42,38 @@ final class Experiment {
   });
 
   bool get isActive => status == ExperimentStatus.active;
+
+  Experiment copyWith({
+    String? id,
+    String? name,
+    Object? purpose = _unset,
+    DateTime? startDate,
+    DateTime? endDate,
+    ExperimentStatus? status,
+    List<ExperimentCategory>? categories,
+    Object? tags = _unset,
+    bool? reminderEnabled,
+    int? reminderTimeMinutes,
+    DateTime? createdAt,
+  }) => Experiment(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    purpose: identical(purpose, _unset)
+        ? this.purpose
+        : purpose as String?,
+    startDate: startDate ?? this.startDate,
+    endDate: endDate ?? this.endDate,
+    status: status ?? this.status,
+    categories: categories ?? this.categories,
+    tags: identical(tags, _unset) ? this.tags : tags as List<String>?,
+    reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+    reminderTimeMinutes:
+        reminderTimeMinutes ?? this.reminderTimeMinutes,
+    createdAt: createdAt ?? this.createdAt,
+  );
 }
+
+const Object _unset = Object();
 
 extension ExperimentStatusStorage on ExperimentStatus {
   String get storage => switch (this) {
@@ -59,6 +90,7 @@ extension ExperimentCategoryStorage on ExperimentCategory {
     ExperimentCategory.diet => 'diet',
     ExperimentCategory.body => 'body',
     ExperimentCategory.steps => 'steps',
+    ExperimentCategory.budget => 'budget',
   };
 }
 

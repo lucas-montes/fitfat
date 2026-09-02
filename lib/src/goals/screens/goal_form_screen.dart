@@ -4,11 +4,13 @@ import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/goal.dart';
+import '../../models/planner_recurrence.dart';
 import '../../models/task.dart';
 import '../../planner/providers/planner.dart';
 import '../../planner/repositories/task_repository.dart';
 import '../../planner/screens/planner_item_form.dart';
 import '../../tags/widgets/tag_picker.dart';
+import '../../tags/providers/tags.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
 import '../notifications/goal_reminder.dart';
@@ -46,6 +48,7 @@ final class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
   bool _saving = false;
   bool _loaded = false;
   DateTime _createdAt = DateTime.now();
+  List<_TaskLink> _taskLinks = [];
   Goal? _existing;
 
   bool get _isEditing => widget.goalId != null;
@@ -181,7 +184,42 @@ final class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
             body: l10n.goalsReminderSubtitle,
           );
       if (!mounted) return;
+      if (!_isEditing) {
+        // Commit any tasks staged in the create form, then return to the
+        // Initiatives list (refreshed via invalidation below).
+        final links = ref.read(linksRepositoryProvider);
+        final taskRepo = ref.read(taskRepositoryProvider);
+        for (final link in _taskLinks) {
+          if (link is _TaskLinkExisting) {
+            await links.linkTaskGoal(link.task.id, goal.id);
+          } else if (link is _TaskLinkCreate) {
+            final r = link.result;
+            final task = newTask(
+              day: r.$2 ?? DateTime.now(),
+              title: r.$1,
+              startTimeMinutes: r.$3,
+              endTimeMinutes: r.$4,
+              notes: r.$5,
+              workoutId: r.$6,
+              tags: r.$7,
+              recurrence: r.$8,
+              carryOver: r.$9,
+            );
+            await taskRepo.insert(task);
+            if (r.$8 != null) {
+              await taskRepo.update(task.copyWith(seriesId: task.id));
+            }
+            await links.linkTaskGoal(task.id, goal.id);
+            ref.invalidate(dayEntriesProvider(task.day));
+          }
+        }
+        ref.invalidate(tasksByGoalProvider(goal.id));
+      }
+      if (!mounted) return;
       Navigator.of(context).pop(true);
+      ref.invalidate(goalListProvider);
+      ref.invalidate(tagListProvider);
+      ref.invalidate(tagNamesProvider);
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -368,6 +406,13 @@ final class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
                   if (_isEditing) ...[
                     const SizedBox(height: FitFatTokens.spaceL),
                     _RelatedTasksSection(goalId: widget.goalId!),
+                  ] else ...[
+                    const SizedBox(height: FitFatTokens.spaceL),
+                    _PendingTasksSection(
+                      links: _taskLinks,
+                      onChanged: (l) => setState(() => _taskLinks = l),
+                      excludeGoalId: '',
+                    ),
                   ],
                   const SizedBox(height: FitFatTokens.spaceL),
                   FilledButton(
@@ -640,6 +685,136 @@ final class _TaskPickerSheetState extends ConsumerState<_TaskPickerSheet> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Pending task-link intents collected in the create form, committed to the
+/// database only after the goal is first saved (it needs an id).
+sealed class _TaskLink {
+  const _TaskLink();
+}
+
+final class _TaskLinkExisting extends _TaskLink {
+  final Task task;
+  const _TaskLinkExisting(this.task);
+}
+
+final class _TaskLinkCreate extends _TaskLink {
+  final (
+    String,
+    DateTime?,
+    int?,
+    int?,
+    String?,
+    String?,
+    List<String>?,
+    PlannerRecurrence?,
+    bool,
+  ) result;
+  const _TaskLinkCreate(this.result);
+}
+
+/// Create-mode "Related tasks" editor: links existing tasks or stages new
+/// ones locally, committed when the goal is saved.
+final class _PendingTasksSection extends ConsumerWidget {
+  final List<_TaskLink> links;
+  final ValueChanged<List<_TaskLink>> onChanged;
+  final String excludeGoalId;
+
+  const _PendingTasksSection({
+    required this.links,
+    required this.onChanged,
+    required this.excludeGoalId,
+  });
+
+  Future<void> _linkExisting(BuildContext context, WidgetRef ref) async {
+    final id = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => _TaskPickerSheet(excludeGoalId: excludeGoalId),
+    );
+    if (id == null || !context.mounted) return;
+    final task = await ref.read(taskRepositoryProvider).getById(id);
+    if (task == null || !context.mounted) return;
+    onChanged([...links, _TaskLinkExisting(task)]);
+  }
+
+  Future<void> _createNew(BuildContext context, WidgetRef ref) async {
+    final result = await showPlannerItemDialog(
+      context,
+      dialogTitle: AppLocalizations.of(context)!.plannerAddTask,
+      initialDueDate: DateTime.now(),
+    );
+    if (result == null || !context.mounted) return;
+    onChanged([...links, _TaskLinkCreate(result)]);
+  }
+
+  String _title(_TaskLink link) => switch (link) {
+    _TaskLinkExisting(:final task) => task.title,
+    _TaskLinkCreate(:final result) => result.$1,
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.goalsRelatedTasks,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: FitFatTokens.spaceS),
+        links.isEmpty
+            ? Text(
+                l10n.goalsNoLinkedTasks,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            : Column(
+                children: [
+                  for (final link in links)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      leading: Icon(
+                        Icons.radio_button_unchecked,
+                        size: 20,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      title: Text(
+                        _title(link),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: () =>
+                            onChanged(links.where((l) => l != link).toList()),
+                      ),
+                    ),
+                ],
+              ),
+        Wrap(
+          spacing: 8,
+          children: [
+            ActionChip(
+              avatar: const Icon(Icons.add_link, size: 18),
+              label: Text(l10n.experimentLinkTask),
+              onPressed: () => _linkExisting(context, ref),
+            ),
+            ActionChip(
+              avatar: const Icon(Icons.add, size: 18),
+              label: Text(l10n.plannerAddTask),
+              onPressed: () => _createNew(context, ref),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
