@@ -24,7 +24,7 @@ final class TransactionListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.transactionListAppBar)),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         tooltip: l10n.budgetFabExpense,
         onPressed: () async {
           await context.push('/budget/transaction/new?type=expense');

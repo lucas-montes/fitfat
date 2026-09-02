@@ -270,7 +270,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         onPressed: _planMode == _PlanMode.initiatives
             ? _showInitiativeSheet
             : _showAddSheet,

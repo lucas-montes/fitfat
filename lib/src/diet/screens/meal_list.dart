@@ -50,7 +50,7 @@ final class MealListScreen extends ConsumerWidget {
               )
             : _buildMealList(context, ref, meals, l10n),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         onPressed: () => _openForm(context, ref, null),
         child: const Icon(Icons.add),
       ),

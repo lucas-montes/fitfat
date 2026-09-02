@@ -265,7 +265,7 @@ final class _TagManagerScreenState extends ConsumerState<TagManagerScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         tooltip: l10n.prioritiesAdd,
         onPressed: _addTag,
         child: const Icon(Icons.add),

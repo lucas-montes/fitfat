@@ -314,7 +314,7 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         onPressed: () => _openForm(context, null, null),
         child: const Icon(Icons.add),
       ),

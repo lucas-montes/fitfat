@@ -76,7 +76,7 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
               : _buildList(l10n, workouts);
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         onPressed: () => _openForm(context, ref),
         child: const Icon(Icons.add),
       ),

@@ -44,7 +44,7 @@ final class WorkoutTemplatesScreen extends ConsumerWidget {
                 ],
               ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         tooltip: l10n.templatesNew,
         onPressed: () => _openEditor(context),
         child: const Icon(Icons.add),

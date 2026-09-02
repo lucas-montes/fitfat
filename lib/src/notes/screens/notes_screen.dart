@@ -31,7 +31,7 @@ final class NotesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.notesAppBar)),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         tooltip: l10n.notesFab,
         onPressed: () => _openEditor(context, ref, null),
         child: const Icon(Icons.add),

@@ -51,7 +51,7 @@ final class AccountDetailScreen extends ConsumerWidget {
       ),
       floatingActionButton: account == null
           ? null
-          : FloatingActionButton(
+          : FloatingActionButton(heroTag: null, 
               onPressed: () =>
                   context.push('/budget/transaction/new?account=$accountId'),
               tooltip: l10n.budgetAddTransaction,

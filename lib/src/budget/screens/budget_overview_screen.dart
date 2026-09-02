@@ -31,7 +31,7 @@ class BudgetScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.budgetAppBar)),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         onPressed: () => context.push('/budget/transaction/new'),
         tooltip: l10n.budgetAddTransaction,
         child: const Icon(Icons.add),

@@ -28,7 +28,7 @@ final class ReceiptListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.receiptListAppBar)),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         tooltip: l10n.receiptCapture,
         onPressed: () => _capture(context, ref),
         child: const Icon(Icons.add_a_photo_outlined),

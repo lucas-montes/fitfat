@@ -60,7 +60,7 @@ final class IngredientListScreen extends ConsumerWidget {
                 ),
               ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(heroTag: null, 
         onPressed: () => _openForm(context, ref, null),
         child: const Icon(Icons.add),
       ),
