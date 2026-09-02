@@ -19,6 +19,17 @@ import '../../ui/tokens.dart';
 import '../providers/planner.dart';
 import 'planner_item_form.dart';
 
+void _invalidatePlannerForDay(WidgetRef ref, DateTime day) {
+  final d = DateTime(day.year, day.month, day.day);
+  ref.invalidate(dayEntriesProvider(d));
+  final utc = DateTime.utc(d.year, d.month, d.day);
+  final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
+  final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
+  final weekEnd = weekStart.add(const Duration(days: 6));
+  ref.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
+  ref.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+}
+
 /// Read-mostly detail view for a single planner task: title + done toggle,
 /// date/times, the full note, linked workout, tags and the recurrence summary,
 /// with Edit (→ [PlannerItemFormScreen]) and Delete (confirmed) actions.
@@ -102,11 +113,11 @@ final class _PlannerItemDetailScreenState
       await _cancelReminder(updated.id);
     }
     invalidateDashboard(ref);
-    final d = DateTime(updated.day.year, updated.day.month, updated.day.day);
-    ref.invalidate(dayEntriesProvider(d));
-    ref.invalidate(dayEntriesProvider);
-    ref.invalidate(rangeEntriesProvider);
-    ref.invalidate(monthEntriesProvider);
+    _invalidatePlannerForDay(ref, updated.day);
+    if (updated.day != _item?.day) {
+      final old = _item?.day;
+      if (old != null) _invalidatePlannerForDay(ref, old);
+    }
     if (mounted) setState(() => _item = updated);
   }
 
@@ -184,13 +195,10 @@ final class _PlannerItemDetailScreenState
             .catchError((_) {}),
       );
     }
-    ref.invalidate(dayEntriesProvider(item.day));
-    ref.invalidate(dayEntriesProvider);
-    ref.invalidate(rangeEntriesProvider);
-    ref.invalidate(monthEntriesProvider);
+    _invalidatePlannerForDay(ref, item.day);
     final destination = movedDay ?? item.day;
     if (destination != item.day) {
-      ref.invalidate(dayEntriesProvider(destination));
+      _invalidatePlannerForDay(ref, destination);
     }
     await _load();
   }
@@ -236,9 +244,7 @@ final class _PlannerItemDetailScreenState
       await repo.delete(item.id);
     }
     invalidateDashboard(ref);
-    ref.invalidate(dayEntriesProvider);
-    ref.invalidate(rangeEntriesProvider);
-    ref.invalidate(monthEntriesProvider);
+    _invalidatePlannerForDay(ref, item.day);
     if (mounted) Navigator.of(context).pop();
   }
 

@@ -75,6 +75,15 @@ DateTime _weekStartFromIndex(int index) {
 /// Min height of an empty hour slot in the day timeline.
 const double _kHourRowMinHeight = 44;
 
+void _invalidatePlannerForDay(WidgetRef ref, DateTime day) {
+  final d = DateTime(day.year, day.month, day.day);
+  ref.invalidate(dayEntriesProvider(d));
+  final weekStart = _weekStartFromIndex(_weekPageIndex(d));
+  final weekEnd = weekStart.add(const Duration(days: 6));
+  ref.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
+  ref.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+}
+
 final class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
 
@@ -733,11 +742,8 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       await _cancelReminder(item.id);
       await _syncReminder(updated);
     }
-    final d = DateTime(updated.day.year, updated.day.month, updated.day.day);
-    ref.invalidate(dayEntriesProvider(d));
-    ref.invalidate(dayEntriesProvider);
-    ref.invalidate(rangeEntriesProvider);
-    ref.invalidate(monthEntriesProvider);
+    _invalidatePlannerForDay(ref, updated.day);
+    if (updated.day != item.day) _invalidatePlannerForDay(ref, item.day);
     invalidateDashboard(ref);
   }
 
@@ -755,9 +761,8 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     if (!updated.isCancelled && !updated.done) {
       await _syncReminder(updated);
     }
-    ref.invalidate(dayEntriesProvider);
-    ref.invalidate(rangeEntriesProvider);
-    ref.invalidate(monthEntriesProvider);
+    _invalidatePlannerForDay(ref, updated.day);
+    if (updated.day != item.day) _invalidatePlannerForDay(ref, item.day);
     invalidateDashboard(ref);
     if (mounted && updated.isCancelled) {
       final l10n = AppLocalizations.of(context)!;
@@ -771,9 +776,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           await ref.read(taskRepositoryProvider).update(item);
           await _cancelReminder(item.id);
           if (!item.done) await _syncReminder(item);
-          ref.invalidate(dayEntriesProvider);
-          ref.invalidate(rangeEntriesProvider);
-          ref.invalidate(monthEntriesProvider);
+          _invalidatePlannerForDay(ref, item.day);
           invalidateDashboard(ref);
         },
       );
@@ -839,9 +842,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             .excludeOccurrence(scheduledTemplateId, item.day);
       }
     }
-    ref.invalidate(dayEntriesProvider);
-    ref.invalidate(rangeEntriesProvider);
-    ref.invalidate(monthEntriesProvider);
+    _invalidatePlannerForDay(ref, item.day);
     invalidateDashboard(ref);
     showTopBannerOverlay(
       overlay,
@@ -880,9 +881,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 .restoreOccurrence(scheduledTemplateId, item.day);
           }
         }
-        ref.invalidate(dayEntriesProvider);
-        ref.invalidate(rangeEntriesProvider);
-        ref.invalidate(monthEntriesProvider);
+        _invalidatePlannerForDay(ref, item.day);
         invalidateDashboard(ref);
       },
     );
@@ -1018,13 +1017,7 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    final isToday = _startOf(widget.day) == _startOf(now);
-    _scrollController = ScrollController(
-      initialScrollOffset: isToday
-          ? (now.hour * _kHourRowMinHeight - 120).clamp(0.0, double.infinity)
-          : 0,
-    );
+    _scrollController = ScrollController(initialScrollOffset: 0);
   }
 
   @override
@@ -1765,7 +1758,7 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
     for (final entry in entriesAsync.value ?? const <PlannerEntry>[]) {
       switch (entry) {
         case TaskEntry(:final task):
-          taskDays.add(_startOfDay(task.day));
+          if (!task.isCancelled) taskDays.add(_startOfDay(task.day));
         case ExperimentEntry(:final experiment):
           final start = _startOfDay(experiment.startDate);
           final end = experiment.endDate == null
@@ -1845,6 +1838,11 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
         border: Border.fromBorderSide(BorderSide(color: scheme.primary)),
         borderRadius: BorderRadius.circular(8),
       );
+    } else if (hasTask) {
+      decoration = BoxDecoration(
+        color: scheme.secondaryContainer.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(8),
+      );
     } else {
       decoration = BoxDecoration(
         color: inExperiment
@@ -1873,13 +1871,13 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
               fontWeight: isSelected ? FontWeight.bold : null,
             ),
           ),
-          if (hasTask && !isSelected)
+          if (hasTask)
             Container(
               margin: const EdgeInsets.only(top: 2),
-              width: 5,
-              height: 5,
+              width: 8,
+              height: 8,
               decoration: BoxDecoration(
-                color: scheme.secondary,
+                color: isSelected ? scheme.onPrimary : scheme.secondary,
                 shape: BoxShape.circle,
               ),
             ),

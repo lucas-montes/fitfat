@@ -120,11 +120,17 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
     }
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    ref.invalidate(dayEntriesProvider);
     ref.invalidate(dayEntriesProvider(today));
-    ref.invalidate(rangeEntriesProvider);
-    ref.invalidate(monthEntriesProvider);
-    ref.invalidate(monthEntriesProvider(today));
+    final weekStartUtc = DateTime.utc(today.year, today.month, today.day)
+        .subtract(Duration(days: today.weekday - 1));
+    final weekStart = DateTime(
+      weekStartUtc.year,
+      weekStartUtc.month,
+      weekStartUtc.day,
+    );
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    ref.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
+    ref.invalidate(monthEntriesProvider(DateTime(today.year, today.month, 1)));
     invalidateDashboard(ref);
   }
 

@@ -15,6 +15,7 @@ import '../../planner/providers/planner.dart';
 import '../../settings/providers/settings.dart';
 import '../../ui/cascade_delete_dialog.dart';
 import '../../ui/date_formats.dart';
+import '../../ui/haptics.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 
@@ -140,152 +141,148 @@ final class _InitiativeCard extends ConsumerWidget {
     final storage = isExperiment
         ? (item.entity as Experiment).status.storage
         : (item.entity as Goal).status.storage;
+    final kindColor = isExperiment
+        ? theme.colorScheme.primary
+        : theme.colorScheme.tertiary;
+    final cardColor = isExperiment
+        ? theme.colorScheme.primaryContainer.withValues(alpha: 0.22)
+        : theme.colorScheme.tertiaryContainer.withValues(alpha: 0.22);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(
-        horizontal: FitFatTokens.spaceM,
-        vertical: 4,
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.of(context).push<bool>(
-          MaterialPageRoute(
-            builder: (_) => isExperiment
-                ? ExperimentDetailScreen(experimentId: item.id)
-                : GoalDetailScreen(goalId: item.id),
-          ),
+    return Dismissible(
+      key: ValueKey(item.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async {
+        Haptics.mediumImpact();
+        final behavior = ref.read(settingsProvider).cascadeDeleteBehavior;
+        final links = isExperiment
+            ? await ref
+                .read(linksRepositoryProvider)
+                .tasksForExperiment(item.id)
+            : await ref.read(linksRepositoryProvider).tasksForGoal(item.id);
+        final title = isExperiment
+            ? l10n.experimentFormDeleteConfirmTitle
+            : l10n.goalsDeleteConfirmTitle;
+        final choice = await showCascadeDeleteDialog(
+          context,
+          title: title,
+          behavior: behavior,
+          linkedTaskCount: links.length,
+        );
+        if (choice == null || choice == CascadeChoice.cancel) return false;
+        final cascade = choice == CascadeChoice.cascade;
+        try {
+          if (isExperiment) {
+            await ref
+                .read(experimentReminderSchedulerProvider)
+                .cancelForExperiment(item.id);
+            await ref
+                .read(experimentRepositoryProvider)
+                .delete(item.id, cascadeTasks: cascade);
+            ref.invalidate(experimentListProvider);
+            ref.invalidate(experimentByIdProvider(item.id));
+            ref.invalidate(experimentCheckinsProvider(item.id));
+            ref.invalidate(experimentLinkedTasksProvider(item.id));
+            ref.invalidate(goalsByExperimentProvider(item.id));
+            ref.invalidate(notesByExperimentProvider(item.id));
+          } else {
+            await ref.read(goalReminderSchedulerProvider).cancelForGoal(item.id);
+            await ref.read(goalRepositoryProvider).deleteGoal(item.id, cascadeTasks: cascade);
+            ref.invalidate(goalListProvider);
+            ref.invalidate(goalByIdProvider(item.id));
+            ref.invalidate(goalProgressProvider(item.id));
+            ref.invalidate(latestGoalProgressProvider(item.id));
+            ref.invalidate(tasksByGoalProvider(item.id));
+          }
+          if (cascade) {
+            ref.invalidate(dayEntriesProvider);
+            ref.invalidate(rangeEntriesProvider);
+            ref.invalidate(monthEntriesProvider);
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.errorWithMessage('$e'))),
+            );
+          }
+          return false;
+        }
+        return true;
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.error,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(FitFatTokens.spaceM),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.title,
-                      style: theme.textTheme.titleMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+        child: Icon(Icons.delete_outline, color: theme.colorScheme.onError),
+      ),
+      child: Card(
+        margin: const EdgeInsets.symmetric(
+          horizontal: FitFatTokens.spaceM,
+          vertical: 4,
+        ),
+        color: cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: kindColor.withValues(alpha: 0.35), width: 1.2),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => isExperiment
+                  ? ExperimentDetailScreen(experimentId: item.id)
+                  : GoalDetailScreen(goalId: item.id),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(FitFatTokens.spaceM),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      isExperiment
+                          ? Icons.science_outlined
+                          : Icons.flag_outlined,
+                      size: 18,
+                      color: kindColor,
                     ),
-                  ),
-                  _statusDot(context, storage),
-                  const SizedBox(width: 6),
-                  Text(
-                    _statusLabel(l10n, isExperiment, storage),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (v) {
-                      if (v == 'delete') {
-                        if (isExperiment) {
-                          _deleteExperiment(context, ref, item.id);
-                        } else {
-                          _deleteGoal(context, ref, item.id);
-                        }
-                      }
-                    },
-                    itemBuilder: (ctx) => [
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: ListTile(
-                          leading: const Icon(Icons.delete_outline),
-                          title: Text(l10n.commonDelete),
-                        ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        style: theme.textTheme.titleMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              if (isExperiment)
-                Text(
-                  _dateRange(context, item.start, item.end),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                )
-              else
-                _GoalProgress(goal: item.entity as Goal),
-            ],
+                    ),
+                    _statusDot(context, storage),
+                    const SizedBox(width: 6),
+                    Text(
+                      _statusLabel(l10n, isExperiment, storage),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                if (isExperiment)
+                  Text(
+                    _dateRange(context, item.start, item.end),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                else
+                  _GoalProgress(goal: item.entity as Goal),
+              ],
+            ),
           ),
         ),
       ),
     );
-  }
-
-  Future<void> _deleteExperiment(
-    BuildContext context,
-    WidgetRef ref,
-    String id,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    final behavior = ref.read(settingsProvider).cascadeDeleteBehavior;
-    final links = await ref.read(linksRepositoryProvider).tasksForExperiment(id);
-    final choice = await showCascadeDeleteDialog(
-      context,
-      title: l10n.experimentFormDeleteConfirmTitle,
-      behavior: behavior,
-      linkedTaskCount: links.length,
-    );
-    if (choice == null || choice == CascadeChoice.cancel) return;
-    final cascade = choice == CascadeChoice.cascade;
-    try {
-      await ref.read(experimentReminderSchedulerProvider).cancelForExperiment(id);
-      await ref.read(experimentRepositoryProvider).delete(id, cascadeTasks: cascade);
-      ref.invalidate(experimentListProvider);
-      ref.invalidate(experimentByIdProvider(id));
-      ref.invalidate(experimentCheckinsProvider(id));
-      ref.invalidate(experimentLinkedTasksProvider(id));
-      ref.invalidate(goalsByExperimentProvider(id));
-      ref.invalidate(notesByExperimentProvider(id));
-      if (cascade) {
-        ref.invalidate(dayEntriesProvider);
-        ref.invalidate(rangeEntriesProvider);
-        ref.invalidate(monthEntriesProvider);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
-        );
-      }
-    }
-  }
-
-  Future<void> _deleteGoal(BuildContext context, WidgetRef ref, String id) async {
-    final l10n = AppLocalizations.of(context)!;
-    final behavior = ref.read(settingsProvider).cascadeDeleteBehavior;
-    final links = await ref.read(linksRepositoryProvider).tasksForGoal(id);
-    final choice = await showCascadeDeleteDialog(
-      context,
-      title: l10n.goalsDeleteConfirmTitle,
-      behavior: behavior,
-      linkedTaskCount: links.length,
-    );
-    if (choice == null || choice == CascadeChoice.cancel) return;
-    final cascade = choice == CascadeChoice.cascade;
-    try {
-      await ref.read(goalReminderSchedulerProvider).cancelForGoal(id);
-      await ref.read(goalRepositoryProvider).deleteGoal(id, cascadeTasks: cascade);
-      ref.invalidate(goalListProvider);
-      ref.invalidate(goalByIdProvider(id));
-      ref.invalidate(goalProgressProvider(id));
-      ref.invalidate(latestGoalProgressProvider(id));
-      ref.invalidate(tasksByGoalProvider(id));
-      if (cascade) {
-        ref.invalidate(dayEntriesProvider);
-        ref.invalidate(rangeEntriesProvider);
-        ref.invalidate(monthEntriesProvider);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
-        );
-      }
-    }
   }
 
   Widget _statusDot(BuildContext context, String storage) {
