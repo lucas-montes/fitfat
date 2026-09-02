@@ -160,12 +160,14 @@ final class _InitiativeCard extends ConsumerWidget {
       direction: DismissDirection.endToStart,
       confirmDismiss: (_) async {
         Haptics.mediumImpact();
-        final behavior = ref.read(settingsProvider).cascadeDeleteBehavior;
+        final container = ProviderScope.containerOf(context);
+        final behavior = container.read(settingsProvider).cascadeDeleteBehavior;
         final links = isExperiment
-            ? await ref
+            ? await container
                 .read(linksRepositoryProvider)
                 .tasksForExperiment(item.id)
-            : await ref.read(linksRepositoryProvider).tasksForGoal(item.id);
+            : await container.read(linksRepositoryProvider).tasksForGoal(item.id);
+        if (!context.mounted) return false;
         final title = isExperiment
             ? l10n.experimentFormDeleteConfirmTitle
             : l10n.goalsDeleteConfirmTitle;
@@ -177,44 +179,44 @@ final class _InitiativeCard extends ConsumerWidget {
         );
         if (choice == null || choice == CascadeChoice.cancel) return false;
         final cascade = choice == CascadeChoice.cascade;
-        ref.read(dismissedTaskIdsProvider.notifier).add(item.id);
+        container.read(dismissedTaskIdsProvider.notifier).add(item.id);
         try {
           if (isExperiment) {
-            await ref
+            await container
                 .read(experimentReminderSchedulerProvider)
                 .cancelForExperiment(item.id);
-            await ref
+            await container
                 .read(experimentRepositoryProvider)
                 .delete(item.id, cascadeTasks: cascade);
-            ref.invalidate(experimentListProvider);
-            ref.invalidate(experimentByIdProvider(item.id));
-            ref.invalidate(experimentCheckinsProvider(item.id));
-            ref.invalidate(experimentLinkedTasksProvider(item.id));
-            ref.invalidate(goalsByExperimentProvider(item.id));
-            ref.invalidate(notesByExperimentProvider(item.id));
+            container.invalidate(experimentListProvider);
+            container.invalidate(experimentByIdProvider(item.id));
+            container.invalidate(experimentCheckinsProvider(item.id));
+            container.invalidate(experimentLinkedTasksProvider(item.id));
+            container.invalidate(goalsByExperimentProvider(item.id));
+            container.invalidate(notesByExperimentProvider(item.id));
           } else {
-            await ref.read(goalReminderSchedulerProvider).cancelForGoal(item.id);
-            await ref.read(goalRepositoryProvider).deleteGoal(item.id, cascadeTasks: cascade);
-            ref.invalidate(goalListProvider);
-            ref.invalidate(goalByIdProvider(item.id));
-            ref.invalidate(goalProgressProvider(item.id));
-            ref.invalidate(latestGoalProgressProvider(item.id));
-            ref.invalidate(tasksByGoalProvider(item.id));
+            await container.read(goalReminderSchedulerProvider).cancelForGoal(item.id);
+            await container.read(goalRepositoryProvider).deleteGoal(item.id, cascadeTasks: cascade);
+            container.invalidate(goalListProvider);
+            container.invalidate(goalByIdProvider(item.id));
+            container.invalidate(goalProgressProvider(item.id));
+            container.invalidate(latestGoalProgressProvider(item.id));
+            container.invalidate(tasksByGoalProvider(item.id));
           }
           if (cascade) {
             for (final link in links) {
               final d = link.item.day;
-              ref.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
+              container.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
               final utc = DateTime.utc(d.year, d.month, d.day);
               final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
               final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
               final weekEnd = weekStart.add(const Duration(days: 6));
-              ref.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
-              ref.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+              container.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
+              container.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
             }
           }
         } catch (e) {
-          ref.read(dismissedTaskIdsProvider.notifier).remove(item.id);
+          container.read(dismissedTaskIdsProvider.notifier).remove(item.id);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(l10n.errorWithMessage('$e'))),
