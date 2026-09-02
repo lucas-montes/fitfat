@@ -16,6 +16,7 @@ import '../../settings/providers/settings.dart';
 import '../../ui/cascade_delete_dialog.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/haptics.dart';
+import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 
@@ -141,12 +142,13 @@ final class _InitiativeCard extends ConsumerWidget {
     final storage = isExperiment
         ? (item.entity as Experiment).status.storage
         : (item.entity as Goal).status.storage;
+    final fitFatColors = theme.extension<FitFatColors>()!;
     final kindColor = isExperiment
         ? theme.colorScheme.primary
-        : theme.colorScheme.tertiary;
+        : fitFatColors.warning;
     final cardColor = isExperiment
-        ? theme.colorScheme.primaryContainer.withValues(alpha: 0.22)
-        : theme.colorScheme.tertiaryContainer.withValues(alpha: 0.22);
+        ? theme.colorScheme.primaryContainer.withValues(alpha: 0.52)
+        : fitFatColors.warning.withValues(alpha: 0.16);
 
     return Dismissible(
       key: ValueKey(item.id),
@@ -225,7 +227,7 @@ final class _InitiativeCard extends ConsumerWidget {
         color: cardColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: kindColor.withValues(alpha: 0.35), width: 1.2),
+          side: BorderSide(color: kindColor.withValues(alpha: 0.85), width: 1.6),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -236,49 +238,93 @@ final class _InitiativeCard extends ConsumerWidget {
                   : GoalDetailScreen(goalId: item.id),
             ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(FitFatTokens.spaceM),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      isExperiment
-                          ? Icons.science_outlined
-                          : Icons.flag_outlined,
-                      size: 18,
-                      color: kindColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        style: theme.textTheme.titleMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    _statusDot(context, storage),
-                    const SizedBox(width: 6),
-                    Text(
-                      _statusLabel(l10n, isExperiment, storage),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
+          child: Row(
+            children: [
+              Container(
+                width: 6,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: kindColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
                 ),
-                const SizedBox(height: 6),
-                if (isExperiment)
-                  Text(
-                    _dateRange(context, item.start, item.end),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  )
-                else
-                  _GoalProgress(goal: item.entity as Goal),
-              ],
-            ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(FitFatTokens.spaceM),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: kindColor.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: kindColor.withValues(alpha: 0.45),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isExperiment
+                                      ? Icons.science_outlined
+                                      : Icons.flag_outlined,
+                                  size: 13,
+                                  color: kindColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isExperiment ? 'EXPERIMENT' : 'GOAL',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: kindColor,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              style: theme.textTheme.titleMedium,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          _statusDot(context, storage),
+                          const SizedBox(width: 6),
+                          Text(
+                            _statusLabel(l10n, isExperiment, storage),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      if (isExperiment)
+                        Text(
+                          _dateRange(context, item.start, item.end),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      else
+                        _GoalProgress(goal: item.entity as Goal),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

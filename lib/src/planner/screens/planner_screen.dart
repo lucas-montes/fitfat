@@ -1838,16 +1838,14 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
         border: Border.fromBorderSide(BorderSide(color: scheme.primary)),
         borderRadius: BorderRadius.circular(8),
       );
-    } else if (hasTask) {
+    } else if (inExperiment) {
       decoration = BoxDecoration(
-        color: scheme.secondaryContainer.withValues(alpha: 0.45),
+        color: scheme.primaryContainer.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(8),
       );
     } else {
       decoration = BoxDecoration(
-        color: inExperiment
-            ? scheme.primaryContainer.withValues(alpha: 0.55)
-            : null,
+        color: null,
         borderRadius: BorderRadius.circular(8),
       );
     }
