@@ -231,14 +231,26 @@ final class _InitiativeCard extends ConsumerWidget {
     );
     if (choice == null || choice == CascadeChoice.cancel) return;
     final cascade = choice == CascadeChoice.cascade;
-    await ref.read(experimentReminderSchedulerProvider).cancelForExperiment(id);
-    await ref.read(experimentRepositoryProvider).delete(id, cascadeTasks: cascade);
-    ref.invalidate(experimentListProvider);
-    ref.invalidate(experimentByIdProvider(id));
-    if (cascade) {
-      ref.invalidate(dayEntriesProvider);
-      ref.invalidate(rangeEntriesProvider);
-      ref.invalidate(monthEntriesProvider);
+    try {
+      await ref.read(experimentReminderSchedulerProvider).cancelForExperiment(id);
+      await ref.read(experimentRepositoryProvider).delete(id, cascadeTasks: cascade);
+      ref.invalidate(experimentListProvider);
+      ref.invalidate(experimentByIdProvider(id));
+      ref.invalidate(experimentCheckinsProvider(id));
+      ref.invalidate(experimentLinkedTasksProvider(id));
+      ref.invalidate(goalsByExperimentProvider(id));
+      ref.invalidate(notesByExperimentProvider(id));
+      if (cascade) {
+        ref.invalidate(dayEntriesProvider);
+        ref.invalidate(rangeEntriesProvider);
+        ref.invalidate(monthEntriesProvider);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
+        );
+      }
     }
   }
 
@@ -254,14 +266,25 @@ final class _InitiativeCard extends ConsumerWidget {
     );
     if (choice == null || choice == CascadeChoice.cancel) return;
     final cascade = choice == CascadeChoice.cascade;
-    await ref.read(goalReminderSchedulerProvider).cancelForGoal(id);
-    await ref.read(goalRepositoryProvider).deleteGoal(id, cascadeTasks: cascade);
-    ref.invalidate(goalListProvider);
-    ref.invalidate(goalByIdProvider(id));
-    if (cascade) {
-      ref.invalidate(dayEntriesProvider);
-      ref.invalidate(rangeEntriesProvider);
-      ref.invalidate(monthEntriesProvider);
+    try {
+      await ref.read(goalReminderSchedulerProvider).cancelForGoal(id);
+      await ref.read(goalRepositoryProvider).deleteGoal(id, cascadeTasks: cascade);
+      ref.invalidate(goalListProvider);
+      ref.invalidate(goalByIdProvider(id));
+      ref.invalidate(goalProgressProvider(id));
+      ref.invalidate(latestGoalProgressProvider(id));
+      ref.invalidate(tasksByGoalProvider(id));
+      if (cascade) {
+        ref.invalidate(dayEntriesProvider);
+        ref.invalidate(rangeEntriesProvider);
+        ref.invalidate(monthEntriesProvider);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
+        );
+      }
     }
   }
 

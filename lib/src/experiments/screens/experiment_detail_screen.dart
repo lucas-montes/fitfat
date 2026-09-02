@@ -140,6 +140,10 @@ final class _ExperimentDetailScreenState
           .delete(widget.experimentId, cascadeTasks: cascade);
       ref.invalidate(experimentListProvider);
       ref.invalidate(experimentByIdProvider(widget.experimentId));
+      ref.invalidate(experimentCheckinsProvider(widget.experimentId));
+      ref.invalidate(experimentLinkedTasksProvider(widget.experimentId));
+      ref.invalidate(goalsByExperimentProvider(widget.experimentId));
+      ref.invalidate(notesByExperimentProvider(widget.experimentId));
       if (cascade) {
         ref.invalidate(dayEntriesProvider);
         ref.invalidate(rangeEntriesProvider);

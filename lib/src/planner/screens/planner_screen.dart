@@ -14,16 +14,14 @@ import '../../exercise/providers/workouts.dart';
 import '../../experiments/providers/experiments.dart';
 import '../../experiments/screens/experiment_detail_screen.dart';
 import '../../experiments/screens/experiment_form_screen.dart';
-import '../../experiments/screens/experiments_screen.dart';
-import '../../goals/providers/goals.dart';
 import '../../goals/screens/goal_form_screen.dart';
-import '../../goals/screens/goals_screen.dart';
 import '../../models/experiment.dart';
 import '../../models/planner_entry.dart';
 import '../../models/task.dart';
 import '../../notifications/task_reminders.dart';
+import '../../tags/providers/tags.dart';
 import '../../settings/providers/settings.dart';
-import '../../tags/screens/tag_manager_screen.dart';
+import 'initiatives_view.dart';
 import '../../ui/haptics.dart';
 import '../../ui/tag_colors.dart';
 import '../../ui/widgets/empty_state.dart';
@@ -33,6 +31,8 @@ import 'planner_item_detail.dart';
 import 'planner_item_form.dart';
 
 enum _PlannerViewMode { day, week, month }
+
+enum _PlanMode { timeline, initiatives }
 
 enum _AddChoice { task, experiment, goal }
 
@@ -85,6 +85,7 @@ final class PlannerScreen extends ConsumerStatefulWidget {
 final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   late DateTime _selectedDay;
   _PlannerViewMode _viewMode = _PlannerViewMode.day;
+  _PlanMode _planMode = _PlanMode.timeline;
 
   // Allow the AppBar shortcuts to steer the active view.
   final GlobalKey<_DayFlowViewState> _dayFlowKey =
@@ -142,72 +143,82 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       appBar: AppBar(
         title: Text(l10n.plannerAppBar),
         actions: [
-          // Navbar shortcuts to the companion destinations.
-          IconButton(
-            tooltip: l10n.plannerViewGoals,
-            icon: const Icon(Icons.flag_outlined),
-            onPressed: _openGoals,
-          ),
-          IconButton(
-            tooltip: l10n.experimentsFab,
-            icon: const Icon(Icons.science_outlined),
-            onPressed: _openExperiments,
-          ),
-          IconButton(
-            tooltip: l10n.prioritiesTitle,
-            icon: const Icon(Icons.sell_outlined),
-            onPressed: _openPriorities,
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: SegmentedButton<_PlanMode>(
+              showSelectedIcon: false,
+              style: const ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              segments: [
+                ButtonSegment(
+                  value: _PlanMode.timeline,
+                  icon: const Icon(Icons.view_agenda_outlined),
+                  label: Text(l10n.plannerModeTimeline),
+                ),
+                ButtonSegment(
+                  value: _PlanMode.initiatives,
+                  icon: const Icon(Icons.explore_outlined),
+                  label: Text(l10n.plannerModeInitiatives),
+                ),
+              ],
+              selected: {_planMode},
+              onSelectionChanged: (selection) =>
+                  setState(() => _planMode = selection.first),
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // View switcher + "back to today" live below the app bar so the
-          // navbar stays uncluttered.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Row(
-              children: [
-                if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
-                  IconButton(
-                    tooltip: l10n.plannerGoToday,
-                    icon: const Icon(Icons.today_outlined),
-                    onPressed: _goToToday,
+          if (_planMode == _PlanMode.timeline)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: Row(
+                children: [
+                  if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
+                    IconButton(
+                      tooltip: l10n.plannerGoToday,
+                      icon: const Icon(Icons.today_outlined),
+                      onPressed: _goToToday,
+                    ),
+                  if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
+                    const SizedBox(width: 8),
+                  SegmentedButton<_PlannerViewMode>(
+                    showSelectedIcon: false,
+                    style: const ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    segments: [
+                      ButtonSegment(
+                        value: _PlannerViewMode.day,
+                        icon: const Icon(Icons.view_day_outlined),
+                        tooltip: l10n.plannerViewDay,
+                      ),
+                      ButtonSegment(
+                        value: _PlannerViewMode.week,
+                        icon: const Icon(Icons.view_week_outlined),
+                        tooltip: l10n.plannerViewWeek,
+                      ),
+                      ButtonSegment(
+                        value: _PlannerViewMode.month,
+                        icon: const Icon(Icons.calendar_month_outlined),
+                        tooltip: l10n.plannerViewMonth,
+                      ),
+                    ],
+                    selected: {_viewMode},
+                    onSelectionChanged: (selection) =>
+                        setState(() => _viewMode = selection.first),
                   ),
-                if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
-                  const SizedBox(width: 8),
-                SegmentedButton<_PlannerViewMode>(
-                  showSelectedIcon: false,
-                  style: const ButtonStyle(
-                    visualDensity: VisualDensity.compact,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  segments: [
-                    ButtonSegment(
-                      value: _PlannerViewMode.day,
-                      icon: const Icon(Icons.view_day_outlined),
-                      tooltip: l10n.plannerViewDay,
-                    ),
-                    ButtonSegment(
-                      value: _PlannerViewMode.week,
-                      icon: const Icon(Icons.view_week_outlined),
-                      tooltip: l10n.plannerViewWeek,
-                    ),
-                    ButtonSegment(
-                      value: _PlannerViewMode.month,
-                      icon: const Icon(Icons.calendar_month_outlined),
-                      tooltip: l10n.plannerViewMonth,
-                    ),
-                  ],
-                  selected: {_viewMode},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _viewMode = selection.first),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           Expanded(
-            child: switch (_viewMode) {
+            child: _planMode == _PlanMode.initiatives
+                ? InitiativesView(onAdd: _showInitiativeSheet)
+                : switch (_viewMode) {
               _PlannerViewMode.day => _DayFlowView(
                 key: _dayFlowKey,
                 initialDay: _selectedDay,
@@ -251,32 +262,12 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddSheet,
+        onPressed: _planMode == _PlanMode.initiatives
+            ? _showInitiativeSheet
+            : _showAddSheet,
         child: const Icon(Icons.add),
       ),
     );
-  }
-
-  /// Navbar destination: the Goals view (priorities bar + goal list) as a
-  /// pushed screen.
-  Future<void> _openGoals() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const _GoalsScreen()));
-  }
-
-  /// Navbar destination: the experiments list as a pushed screen.
-  Future<void> _openExperiments() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const _ExperimentsScreen()));
-  }
-
-  /// Navbar destination: the Priorities vocabulary manager.
-  Future<void> _openPriorities() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const TagManagerScreen()));
   }
 
   /// FAB opens a chooser instead of assuming what to create: tasks,
@@ -318,6 +309,43 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         await Navigator.of(
           context,
         ).push<bool>(MaterialPageRoute(builder: (_) => const GoalFormScreen()));
+      case null:
+        break;
+    }
+  }
+
+  /// Initiatives-mode FAB: only experiments and goals (no day-bound task).
+  Future<void> _showInitiativeSheet() async {
+    final l10n = AppLocalizations.of(context)!;
+    final choice = await showModalBottomSheet<_AddChoice>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.science_outlined),
+              title: Text(l10n.experimentsFab),
+              onTap: () => Navigator.of(ctx).pop(_AddChoice.experiment),
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: Text(l10n.goalsNew),
+              onTap: () => Navigator.of(ctx).pop(_AddChoice.goal),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    switch (choice) {
+      case _AddChoice.experiment:
+        await _addExperiment();
+      case _AddChoice.goal:
+        await Navigator.of(
+          context,
+        ).push<bool>(MaterialPageRoute(builder: (_) => const GoalFormScreen()));
+      case _AddChoice.task:
       case null:
         break;
     }
@@ -439,6 +467,9 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       carryOver: carryOver,
     );
     await repo.insert(item);
+    // New tags typed into the task form must surface in the Tags vocabulary.
+    ref.invalidate(tagListProvider);
+    ref.invalidate(tagNamesProvider);
     // A recurring task stores one anchor (seriesId == its own id) that
     // generates the rest.
     if (recurrence != null) {
@@ -702,8 +733,11 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       await _cancelReminder(item.id);
       await _syncReminder(updated);
     }
-    ref.invalidate(dayEntriesProvider(updated.day));
+    final d = DateTime(updated.day.year, updated.day.month, updated.day.day);
+    ref.invalidate(dayEntriesProvider(d));
+    ref.invalidate(dayEntriesProvider);
     ref.invalidate(rangeEntriesProvider);
+    ref.invalidate(monthEntriesProvider);
     invalidateDashboard(ref);
   }
 
@@ -806,6 +840,8 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       }
     }
     ref.invalidate(dayEntriesProvider);
+    ref.invalidate(rangeEntriesProvider);
+    ref.invalidate(monthEntriesProvider);
     invalidateDashboard(ref);
     showTopBannerOverlay(
       overlay,
@@ -845,6 +881,8 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           }
         }
         ref.invalidate(dayEntriesProvider);
+        ref.invalidate(rangeEntriesProvider);
+        ref.invalidate(monthEntriesProvider);
         invalidateDashboard(ref);
       },
     );
@@ -2068,46 +2106,6 @@ final class _TimelineItemCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Pushed navbar destination hosting the embeddable [GoalsView] (priorities
-/// bar + goal list) under its own app bar.
-final class _GoalsScreen extends ConsumerWidget {
-  const _GoalsScreen();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.plannerViewGoals)),
-      body: const GoalsView(),
-      floatingActionButton: FloatingActionButton(
-        tooltip: l10n.goalsNew,
-        onPressed: () async {
-          await Navigator.of(context).push<bool>(
-            MaterialPageRoute(builder: (_) => const GoalFormScreen()),
-          );
-          ref.invalidate(goalListProvider);
-        },
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-/// Pushed navbar destination hosting the embeddable [ExperimentsView] under
-/// its own app bar.
-final class _ExperimentsScreen extends StatelessWidget {
-  const _ExperimentsScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.experimentsFab)),
-      body: const ExperimentsView(),
     );
   }
 }

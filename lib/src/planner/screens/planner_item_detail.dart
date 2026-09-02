@@ -102,7 +102,11 @@ final class _PlannerItemDetailScreenState
       await _cancelReminder(updated.id);
     }
     invalidateDashboard(ref);
-    ref.invalidate(dayEntriesProvider(updated.day));
+    final d = DateTime(updated.day.year, updated.day.month, updated.day.day);
+    ref.invalidate(dayEntriesProvider(d));
+    ref.invalidate(dayEntriesProvider);
+    ref.invalidate(rangeEntriesProvider);
+    ref.invalidate(monthEntriesProvider);
     if (mounted) setState(() => _item = updated);
   }
 
@@ -181,6 +185,9 @@ final class _PlannerItemDetailScreenState
       );
     }
     ref.invalidate(dayEntriesProvider(item.day));
+    ref.invalidate(dayEntriesProvider);
+    ref.invalidate(rangeEntriesProvider);
+    ref.invalidate(monthEntriesProvider);
     final destination = movedDay ?? item.day;
     if (destination != item.day) {
       ref.invalidate(dayEntriesProvider(destination));
@@ -229,6 +236,9 @@ final class _PlannerItemDetailScreenState
       await repo.delete(item.id);
     }
     invalidateDashboard(ref);
+    ref.invalidate(dayEntriesProvider);
+    ref.invalidate(rangeEntriesProvider);
+    ref.invalidate(monthEntriesProvider);
     if (mounted) Navigator.of(context).pop();
   }
 

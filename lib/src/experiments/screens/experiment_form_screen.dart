@@ -10,8 +10,10 @@ import '../../notes/providers/notes.dart';
 import '../../tags/providers/tags.dart';
 import '../../planner/providers/planner.dart'
     show
-        linksRepositoryProvider,
         dayEntriesProvider,
+        linksRepositoryProvider,
+        monthEntriesProvider,
+        rangeEntriesProvider,
         taskRepositoryProvider;
 import '../../planner/repositories/task_repository.dart';
 import '../../planner/screens/planner_item_form.dart';
@@ -234,6 +236,15 @@ final class _ExperimentFormScreenState
       await ref
           .read(experimentRepositoryProvider)
           .delete(widget.experimentId!, cascadeTasks: cascade);
+      ref.invalidate(experimentListProvider);
+      ref.invalidate(experimentByIdProvider(widget.experimentId!));
+      ref.invalidate(experimentCheckinsProvider(widget.experimentId!));
+      ref.invalidate(experimentLinkedTasksProvider(widget.experimentId!));
+      if (cascade) {
+        ref.invalidate(dayEntriesProvider);
+        ref.invalidate(rangeEntriesProvider);
+        ref.invalidate(monthEntriesProvider);
+      }
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {

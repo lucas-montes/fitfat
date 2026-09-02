@@ -13,6 +13,8 @@ import 'dart:developer' as developer;
 import '../../l10n/app_localizations.dart';
 import '../dashboard/providers/dashboard.dart';
 import '../database/database_provider.dart';
+import '../experiments/notifications/experiment_reminder.dart';
+import '../experiments/providers/experiments_repository.dart';
 import '../notifications/notification_plugin.dart';
 import '../notifications/rest_alarm.dart';
 import '../goals/notifications/goal_reminder.dart';
@@ -118,16 +120,22 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
     }
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    ref.invalidate(dayEntriesProvider);
     ref.invalidate(dayEntriesProvider(today));
+    ref.invalidate(rangeEntriesProvider);
+    ref.invalidate(monthEntriesProvider);
     ref.invalidate(monthEntriesProvider(today));
     invalidateDashboard(ref);
   }
 
   Future<void> _run() async {
     if (_ran || !mounted) return;
-    _ran = true;
     final l10n = AppLocalizations.of(context);
-    if (l10n == null) return;
+    if (l10n == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _run());
+      return;
+    }
+    _ran = true;
 
     final prefs = await ref.read(sharedPreferencesReadyProvider.future);
     developer.Timeline.instantSync('startup.db.warmup.start');
@@ -189,11 +197,17 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
       l10n.restAlarmBodyWithDuration('{duration}'),
     );
 
-    // Planner reminders for pending future timed tasks (no-op when off).
-    // Timezone data is initialized lazily here — only when we actually
-    // schedule — so it no longer blocks every cold start.
-    if (ref.read(settingsProvider).plannerNotifications) {
+    final settings = ref.read(settingsProvider);
+    final goals = await ref.read(goalRepositoryProvider).getGoals();
+    final needsTimezone =
+        settings.plannerNotifications ||
+        settings.experimentRemindersEnabled ||
+        goals.any((g) => g.isActive && g.reminderEnabled);
+    if (needsTimezone) {
       await _initTimeZone();
+    }
+
+    if (settings.plannerNotifications) {
       await ref
           .read(taskReminderSchedulerProvider)
           .reschedulePending(
@@ -201,16 +215,29 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
             dueSoonText: l10n.taskReminderDueSoon,
             dueNowText: l10n.taskReminderDueNow,
           );
-      // Daily goal reminders for active goals (the scheduler itself skips
-      // non-active / per-goal-disabled rows).
-      final goals = await ref.read(goalRepositoryProvider).getGoals();
-      for (final goal in goals) {
+    }
+
+    for (final goal in goals) {
+      await ref
+          .read(goalReminderSchedulerProvider)
+          .scheduleForGoal(
+            goal,
+            title: goal.title,
+            body: l10n.goalsReminderSubtitle,
+          );
+    }
+
+    if (settings.experimentRemindersEnabled) {
+      final experiments = await ref
+          .read(experimentRepositoryProvider)
+          .getAll();
+      for (final exp in experiments) {
         await ref
-            .read(goalReminderSchedulerProvider)
-            .scheduleForGoal(
-              goal,
-              title: goal.title,
-              body: l10n.goalsReminderSubtitle,
+            .read(experimentReminderSchedulerProvider)
+            .scheduleForExperiment(
+              exp,
+              title: l10n.experimentReminderTitle(exp.name),
+              body: l10n.experimentReminderBody,
             );
       }
     }

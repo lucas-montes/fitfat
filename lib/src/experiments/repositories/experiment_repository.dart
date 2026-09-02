@@ -100,6 +100,9 @@ final class ExperimentRepository {
         cascadeIds = links.map((e) => e.taskId).toList();
         for (final taskId in cascadeIds) {
           await (_database.delete(
+            _database.taskExperiments,
+          )..where((t) => t.taskId.equals(taskId))).go();
+          await (_database.delete(
             _database.taskTags,
           )..where((t) => t.taskId.equals(taskId))).go();
           await (_database.delete(

@@ -94,6 +94,9 @@ final class GoalRepository {
             _database.taskExperiments,
           )..where((t) => t.taskId.equals(taskId))).go();
           await (_database.delete(
+            _database.taskGoals,
+          )..where((t) => t.taskId.equals(taskId))).go();
+          await (_database.delete(
             _database.taskNotes,
           )..where((t) => t.taskId.equals(taskId))).go();
           await (_database.delete(
