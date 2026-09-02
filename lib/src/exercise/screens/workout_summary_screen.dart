@@ -11,6 +11,7 @@ import '../../ui/units.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../../ui/widgets/top_banner.dart';
+import '../providers/workout_templates.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
 import 'workout_form.dart';
@@ -99,9 +100,11 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
   Future<void> _saveAsTemplate(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
     try {
-      await ref
+      final templateId = await ref
           .read(workoutRepositoryProvider)
           .saveAsTemplate(workoutId: detail.workout.id);
+      ref.invalidate(workoutTemplateListProvider);
+      ref.invalidate(workoutTemplateDetailsProvider(templateId));
       if (!context.mounted) return;
       showTopBanner(context, message: l10n.templatesSavedAsTemplate);
     } catch (e) {

@@ -11,6 +11,7 @@ import '../../experiments/providers/experiments_repository.dart';
 import '../../goals/notifications/goal_reminder.dart';
 import '../../models/experiment.dart';
 import '../../models/goal.dart';
+import '../../planner/providers/dismissed.dart';
 import '../../planner/providers/planner.dart';
 import '../../settings/providers/settings.dart';
 import '../../ui/cascade_delete_dialog.dart';
@@ -62,14 +63,17 @@ final class _InitiativesViewState extends ConsumerState<InitiativesView> {
     final l10n = AppLocalizations.of(context)!;
     final experimentsAsync = ref.watch(experimentListProvider);
     final goalsAsync = ref.watch(goalListProvider);
+    final dismissed = ref.watch(dismissedTaskIdsProvider);
 
     final experiments = experimentsAsync.value ?? const <Experiment>[];
     final goals = goalsAsync.value ?? const <Goal>[];
 
-    if (experimentsAsync.isLoading || goalsAsync.isLoading) {
+    if ((experimentsAsync.isLoading && !experimentsAsync.hasValue) ||
+        (goalsAsync.isLoading && !goalsAsync.hasValue)) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (experimentsAsync.hasError || goalsAsync.hasError) {
+    if ((experimentsAsync.hasError && !experimentsAsync.hasValue) ||
+        (goalsAsync.hasError && !goalsAsync.hasValue)) {
       final error =
           experimentsAsync.error ?? goalsAsync.error ?? Object();
       return Center(child: Text(l10n.errorWithMessage('$error')));
@@ -105,12 +109,13 @@ final class _InitiativesViewState extends ConsumerState<InitiativesView> {
       final bStart = b.start ?? DateTime(0);
       return aStart.compareTo(bStart);
     });
+    final filtered = items.where((it) => !dismissed.contains(it.id)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: items.isEmpty
+          child: filtered.isEmpty
               ? EmptyState(
                   icon: Icons.explore_outlined,
                   title: l10n.initiativesEmptyAllTitle,
@@ -119,8 +124,8 @@ final class _InitiativesViewState extends ConsumerState<InitiativesView> {
                   onCtaPressed: widget.onAdd,
                 )
               : ListView.builder(
-                  itemCount: items.length,
-                  itemBuilder: (ctx, i) => _InitiativeCard(item: items[i]),
+                  itemCount: filtered.length,
+                  itemBuilder: (ctx, i) => _InitiativeCard(item: filtered[i]),
                 ),
         ),
       ],
@@ -172,6 +177,7 @@ final class _InitiativeCard extends ConsumerWidget {
         );
         if (choice == null || choice == CascadeChoice.cancel) return false;
         final cascade = choice == CascadeChoice.cascade;
+        ref.read(dismissedTaskIdsProvider.notifier).add(item.id);
         try {
           if (isExperiment) {
             await ref
@@ -208,6 +214,7 @@ final class _InitiativeCard extends ConsumerWidget {
             }
           }
         } catch (e) {
+          ref.read(dismissedTaskIdsProvider.notifier).remove(item.id);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(l10n.errorWithMessage('$e'))),

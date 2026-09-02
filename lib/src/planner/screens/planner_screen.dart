@@ -13,6 +13,7 @@ import '../../exercise/providers/workout_templates.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../experiments/providers/experiments.dart';
 import '../../experiments/screens/experiment_detail_screen.dart';
+import '../providers/dismissed.dart';
 import '../../experiments/screens/experiment_form_screen.dart';
 import '../../goals/screens/goal_form_screen.dart';
 import '../../models/experiment.dart';
@@ -774,6 +775,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         // lifecycle (pending or done).
         onAction: () async {
           await ref.read(taskRepositoryProvider).update(item);
+          ref.read(dismissedTaskIdsProvider.notifier).remove(item.id);
           await _cancelReminder(item.id);
           if (!item.done) await _syncReminder(item);
           _invalidatePlannerForDay(ref, item.day);
@@ -849,6 +851,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       message: l10n.plannerDeleted(item.title),
       actionLabel: l10n.commonUndo,
       onAction: () async {
+        ref.read(dismissedTaskIdsProvider.notifier).remove(item.id);
         if (wasAnchor && item.seriesId != null) {
           await repo.restore(item);
           await repo.materializeUpTo(item.day.add(_plannerHorizon));
@@ -1031,6 +1034,7 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
     final l10n = AppLocalizations.of(context)!;
     final material = MaterialLocalizations.of(context);
     final entriesAsync = ref.watch(dayEntriesProvider(widget.day));
+    final dismissed = ref.watch(dismissedTaskIdsProvider);
     final cbs = widget.callbacks;
 
     // The union provider already merges tasks and experiments for this day.
@@ -1042,11 +1046,9 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
       for (final entry in entriesAsync.value ?? const <PlannerEntry>[])
         if (entry is ExperimentEntry) entry.experiment,
     ];
-    // Cancelled tasks are dropped from the planning surfaces (recoverable
-    // via the cancel Undo banner or the detail screen).
     final visibleTasks = [
       for (final t in allTasks)
-        if (!t.isCancelled) t,
+        if (!t.isCancelled && !dismissed.contains(t.id)) t,
     ];
 
     return Column(
@@ -1174,10 +1176,16 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
               item: it,
               l10n: l10n,
               onToggleDone: () => cbs.onToggleDone(it),
-              onToggleCancelled: () => cbs.onToggleCancelled(it),
+              onToggleCancelled: () {
+                ref.read(dismissedTaskIdsProvider.notifier).add(it.id);
+                cbs.onToggleCancelled(it);
+              },
               onOpenDetail: () => cbs.onOpenDetail(it),
               onEdit: () => cbs.onEditItem(it),
-              onDelete: () => cbs.onDeleteItem(it),
+              onDelete: () {
+                ref.read(dismissedTaskIdsProvider.notifier).add(it.id);
+                cbs.onDeleteItem(it);
+              },
               onOpenWorkout: () => cbs.onOpenWorkout(it),
             ),
           ),
@@ -1244,11 +1252,16 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
                                 l10n: l10n,
                                 timeLabel: _timeLabel(material, it),
                                 onToggleDone: () => cbs.onToggleDone(it),
-                                onToggleCancelled: () =>
-                                    cbs.onToggleCancelled(it),
+                                onToggleCancelled: () {
+                                  ref.read(dismissedTaskIdsProvider.notifier).add(it.id);
+                                  cbs.onToggleCancelled(it);
+                                },
                                 onOpenDetail: () => cbs.onOpenDetail(it),
                                 onEdit: () => cbs.onEditItem(it),
-                                onDelete: () => cbs.onDeleteItem(it),
+                                onDelete: () {
+                                  ref.read(dismissedTaskIdsProvider.notifier).add(it.id);
+                                  cbs.onDeleteItem(it);
+                                },
                                 onOpenWorkout: () => cbs.onOpenWorkout(it),
                               ),
                             ),
@@ -1509,7 +1522,7 @@ final class _WeekPage extends ConsumerWidget {
 }
 
 /// One day column inside [_WeekPage].
-final class _WeekDayColumn extends StatelessWidget {
+final class _WeekDayColumn extends ConsumerWidget {
   final DateTime day;
   final List<Task> tasks;
   final List<Experiment> experiments;
@@ -1523,16 +1536,22 @@ final class _WeekDayColumn extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final material = MaterialLocalizations.of(context);
     final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final isToday = _startOf(day) == _startOf(now);
+    final dismissed = ref.watch(dismissedTaskIdsProvider);
 
     // Cancelled tasks are dropped from the planning surfaces.
     final dayTasks = tasks
-        .where((it) => _startOf(it.day) == _startOf(day) && !it.isCancelled)
+        .where(
+          (it) =>
+              _startOf(it.day) == _startOf(day) &&
+              !it.isCancelled &&
+              !dismissed.contains(it.id),
+        )
         .toList();
     final dayExperiments = experiments
         .where((e) => _experimentCoversDay(e, day))
