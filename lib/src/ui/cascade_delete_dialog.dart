@@ -21,7 +21,9 @@ Future<CascadeChoice?> showCascadeDeleteDialog(
   return showDialog<CascadeChoice>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(title),
+      title: Text(
+        linkedTaskCount > 0 ? l10n.cascadeDeleteTitleWithTasks : title,
+      ),
       content: Text(
         linkedTaskCount > 0
             ? l10n.cascadeDeleteBodyWithTasks(linkedTaskCount)
@@ -34,7 +36,7 @@ Future<CascadeChoice?> showCascadeDeleteDialog(
         ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(CascadeChoice.deleteOnly),
-          child: Text(l10n.cascadeDeleteOnly),
+          child: Text(l10n.cascadeDeleteKeepTasks),
         ),
         if (linkedTaskCount > 0)
           FilledButton(

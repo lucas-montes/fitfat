@@ -1727,5 +1727,7 @@
   "settingsCascadeAlways": "Always delete tasks",
   "settingsCascadeNever": "Never delete tasks",
   "templatesDuplicate": "Duplicate",
-  "templatesDuplicated": "Template duplicated"
+  "templatesDuplicated": "Template duplicated",
+  "cascadeDeleteTitleWithTasks": "Delete linked tasks?",
+  "cascadeDeleteKeepTasks": "Keep tasks"
 }

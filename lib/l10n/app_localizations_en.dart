@@ -2838,4 +2838,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get templatesDuplicated => 'Template duplicated';
+
+  @override
+  String get cascadeDeleteTitleWithTasks => 'Delete linked tasks?';
+
+  @override
+  String get cascadeDeleteKeepTasks => 'Keep tasks';
 }

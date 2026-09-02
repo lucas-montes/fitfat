@@ -5169,6 +5169,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Template duplicated'**
   String get templatesDuplicated;
+
+  /// No description provided for @cascadeDeleteTitleWithTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete linked tasks?'**
+  String get cascadeDeleteTitleWithTasks;
+
+  /// No description provided for @cascadeDeleteKeepTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep tasks'**
+  String get cascadeDeleteKeepTasks;
 }
 
 class _AppLocalizationsDelegate

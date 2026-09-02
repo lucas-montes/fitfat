@@ -1068,7 +1068,9 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
         ),
         const Divider(height: 1),
         Expanded(
-          child: entriesAsync.isLoading
+          child: entriesAsync.hasError && !entriesAsync.hasValue
+              ? Center(child: Text(entriesAsync.error.toString()))
+              : entriesAsync.isLoading && !entriesAsync.hasValue
               ? const Center(child: CircularProgressIndicator())
               : visibleTasks.isEmpty && activeExperiments.isEmpty
               ? EmptyState(
@@ -1079,8 +1081,8 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
                   onCtaPressed: cbs.onAddItem,
                 )
               : _ErrorGuard(
-                  hasError: entriesAsync.hasError,
-                  message: entriesAsync.error?.toString(),
+                  hasError: false,
+                  message: null,
                   child: ListView(
                     controller: _scrollController,
                     children: _buildChildren(
@@ -1463,10 +1465,17 @@ final class _WeekPage extends ConsumerWidget {
         ),
         const Divider(height: 1),
         Expanded(
-          child: entriesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
-            data: (entries) {
+          child: Builder(
+            builder: (context) {
+              final entries = entriesAsync.value ?? const <PlannerEntry>[];
+              if (entriesAsync.isLoading && !entriesAsync.hasValue) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (entriesAsync.hasError && !entriesAsync.hasValue) {
+                return Center(
+                  child: Text(l10n.errorWithMessage('${entriesAsync.error}')),
+                );
+              }
               final weekTasks = [
                 for (final entry in entries)
                   if (entry is TaskEntry) entry.task,

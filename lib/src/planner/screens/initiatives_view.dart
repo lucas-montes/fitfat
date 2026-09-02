@@ -196,9 +196,16 @@ final class _InitiativeCard extends ConsumerWidget {
             ref.invalidate(tasksByGoalProvider(item.id));
           }
           if (cascade) {
-            ref.invalidate(dayEntriesProvider);
-            ref.invalidate(rangeEntriesProvider);
-            ref.invalidate(monthEntriesProvider);
+            for (final link in links) {
+              final d = link.item.day;
+              ref.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
+              final utc = DateTime.utc(d.year, d.month, d.day);
+              final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
+              final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
+              final weekEnd = weekStart.add(const Duration(days: 6));
+              ref.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
+              ref.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+            }
           }
         } catch (e) {
           if (context.mounted) {
