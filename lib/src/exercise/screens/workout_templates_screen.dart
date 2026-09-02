@@ -100,6 +100,16 @@ final class _TemplateTile extends ConsumerWidget {
             ),
           ),
           PopupMenuItem(
+            value: () => _duplicate(context, ref),
+            child: Row(
+              children: [
+                const Icon(Icons.content_copy_outlined, size: 18),
+                const SizedBox(width: 8),
+                Text(l10n.templatesDuplicate),
+              ],
+            ),
+          ),
+          PopupMenuItem(
             value: () => _delete(context, ref),
             child: Row(
               children: [
@@ -151,6 +161,17 @@ final class _TemplateTile extends ConsumerWidget {
         builder: (_) => WorkoutDetailScreen(workoutId: workout.id),
       ),
     );
+  }
+
+  Future<void> _duplicate(BuildContext context, WidgetRef ref) async {
+    await ref.read(workoutTemplateRepositoryProvider).duplicate(template.id);
+    ref.invalidate(workoutTemplateListProvider);
+    if (context.mounted) {
+      showTopBanner(
+        context,
+        message: AppLocalizations.of(context)!.templatesDuplicated,
+      );
+    }
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
@@ -433,7 +454,7 @@ class _WorkoutTemplateFormScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? l10n.goalsEdit : l10n.templatesNew),
+        title: Text(_isEditing ? l10n.templatesEdit : l10n.templatesNew),
         actions: [
           FilledButton(
             onPressed: _saving ? null : _save,

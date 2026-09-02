@@ -156,6 +156,29 @@ final class WorkoutTemplateRepository {
     });
   }
 
+  /// Duplicates a template blueprint-only (new id, name "(Copy)", no schedule).
+  Future<WorkoutTemplate> duplicate(String id) async {
+    final details = await getWithDetails(id);
+    if (details == null) throw StateError('Template not found');
+    final orig = details.template;
+    final newId = const Uuid().v7();
+    final now = DateTime.now();
+    final copy = WorkoutTemplate(
+      id: newId,
+      name: '${orig.name} (Copy)',
+      notes: orig.notes,
+      startDate: now,
+      recurrence: null,
+      excludedDates: null,
+      sourceRoutineId: null,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await upsert(copy);
+    await replaceBlueprint(newId, details.blocks);
+    return copy;
+  }
+
   /// Deletes a template and its blueprint. Sessions instantiated from it are
   /// left untouched (they only lose their provenance pointer's target).
   Future<void> delete(String id) async {

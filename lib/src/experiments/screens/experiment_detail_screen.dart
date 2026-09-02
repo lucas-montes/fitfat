@@ -8,7 +8,10 @@ import '../../diet/providers/meals.dart';
 import '../../models/experiment.dart';
 import '../../models/task.dart';
 import '../../planner/providers/planner.dart';
+import '../../planner/repositories/task_repository.dart';
+import '../../planner/screens/planner_item_form.dart';
 import '../../settings/providers/settings.dart';
+import '../../ui/cascade_delete_dialog.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/status_badge.dart';
@@ -51,6 +54,20 @@ final class _ExperimentDetailScreenState
             tooltip: l10n.experimentFormTitleEdit,
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => _openEditor(context),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (v) {
+              if (v == 'delete') _deleteExperiment(context, ref);
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: const Icon(Icons.delete_outline),
+                  title: Text(l10n.commonDelete),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -97,6 +114,44 @@ final class _ExperimentDetailScreenState
       ref.invalidate(experimentByIdProvider(widget.experimentId));
       ref.invalidate(experimentListProvider);
       ref.invalidate(experimentCheckinsProvider(widget.experimentId));
+    }
+  }
+
+  Future<void> _deleteExperiment(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final behavior = ref.read(settingsProvider).cascadeDeleteBehavior;
+    final links = await ref
+        .read(linksRepositoryProvider)
+        .tasksForExperiment(widget.experimentId);
+    final choice = await showCascadeDeleteDialog(
+      context,
+      title: l10n.experimentFormDeleteConfirmTitle,
+      behavior: behavior,
+      linkedTaskCount: links.length,
+    );
+    if (choice == null || choice == CascadeChoice.cancel) return;
+    final cascade = choice == CascadeChoice.cascade;
+    try {
+      await ref
+          .read(experimentReminderSchedulerProvider)
+          .cancelForExperiment(widget.experimentId);
+      await ref
+          .read(experimentRepositoryProvider)
+          .delete(widget.experimentId, cascadeTasks: cascade);
+      ref.invalidate(experimentListProvider);
+      ref.invalidate(experimentByIdProvider(widget.experimentId));
+      if (cascade) {
+        ref.invalidate(dayEntriesProvider);
+        ref.invalidate(rangeEntriesProvider);
+        ref.invalidate(monthEntriesProvider);
+      }
+      if (context.mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.errorWithMessage('$e'))),
+        );
+      }
     }
   }
 
@@ -294,6 +349,49 @@ final class _LinkedTasksSection extends ConsumerWidget {
     ref.invalidate(experimentLinkedTasksProvider(experimentId));
   }
 
+  Future<void> _createAndLink(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showPlannerItemDialog(
+      context,
+      dialogTitle: l10n.plannerAddTask,
+      initialDueDate: DateTime.now(),
+    );
+    if (result == null || !context.mounted) return;
+    final (
+      title,
+      dueDate,
+      startTimeMinutes,
+      endTimeMinutes,
+      notes,
+      workoutId,
+      tags,
+      recurrence,
+      carryOver,
+    ) = result;
+    final task = newTask(
+      day: dueDate ?? DateTime.now(),
+      title: title,
+      startTimeMinutes: startTimeMinutes,
+      endTimeMinutes: endTimeMinutes,
+      notes: notes,
+      workoutId: workoutId,
+      tags: tags,
+      recurrence: recurrence,
+      carryOver: carryOver,
+    );
+    final repo = ref.read(taskRepositoryProvider);
+    await repo.insert(task);
+    if (recurrence != null) {
+      await repo.update(task.copyWith(seriesId: task.id));
+    }
+    await ref
+        .read(linksRepositoryProvider)
+        .linkTaskExperiment(task.id, experimentId);
+    if (!context.mounted) return;
+    ref.invalidate(dayEntriesProvider(task.day));
+    ref.invalidate(experimentLinkedTasksProvider(experimentId));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
@@ -317,10 +415,20 @@ final class _LinkedTasksSection extends ConsumerWidget {
                     ),
                   ),
                 ),
-                ActionChip(
-                  avatar: const Icon(Icons.link, size: 18),
-                  label: Text(l10n.experimentLinkTask),
-                  onPressed: () => _openPicker(context, ref),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ActionChip(
+                      avatar: const Icon(Icons.link, size: 18),
+                      label: Text(l10n.experimentLinkTask),
+                      onPressed: () => _openPicker(context, ref),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.add, size: 18),
+                      label: Text(l10n.plannerAddTask),
+                      onPressed: () => _createAndLink(context, ref),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -815,6 +923,7 @@ final class _CategoryChart extends ConsumerWidget {
         experiment: experiment,
         baselineStart: baselineStart,
       ),
+      ExperimentCategory.budget => const SizedBox.shrink(),
     };
   }
 }

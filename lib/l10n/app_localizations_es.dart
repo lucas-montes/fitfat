@@ -447,6 +447,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get templatesNew => 'Nueva plantilla';
 
   @override
+  String get templatesEdit => 'Editar plantilla';
+
+  @override
   String get templatesStartToday => 'Empezar hoy';
 
   @override
@@ -1153,6 +1156,45 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get notesVoiceRecord => 'Añadir nota de voz';
+
+  @override
+  String notesVoiceRecording(String elapsed) {
+    return 'Grabando $elapsed';
+  }
+
+  @override
+  String get notesVoiceStopPlayback => 'Detener reproducción';
+
+  @override
+  String get notesVoicePlay => 'Reproducir';
+
+  @override
+  String get notesVoiceRemove => 'Eliminar nota de voz';
+
+  @override
+  String get notesVoicePermissionDenied =>
+      'Se necesita permiso de micrófono para grabar notas de voz.';
+
+  @override
+  String get notesVoiceNone => 'Aún no hay notas de voz';
+
+  @override
+  String notesVoiceClipLabel(int index) {
+    return 'Clip $index';
+  }
+
+  @override
+  String notesVoiceCount(int count) {
+    return '$count nota de voz';
+  }
+
+  @override
+  String notesVoiceCount_plural(Object count) {
+    return '$count notas de voz';
+  }
+
+  @override
   String get settingsAppBar => 'Ajustes';
 
   @override
@@ -1376,6 +1418,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonCancel => 'Cancelar';
 
   @override
+  String get commonContinue => 'Continuar';
+
+  @override
   String get commonSave => 'Guardar';
 
   @override
@@ -1550,6 +1595,103 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get syncServerNotConfigured =>
       'La URL del servidor de sincronización no está configurada';
+
+  @override
+  String get syncExercisesHelp =>
+      'Descarga el catálogo de ejercicios compartido y sus medios desde el servidor.';
+
+  @override
+  String get syncIngredientsHelp =>
+      'Descarga el catálogo compartido de ingredientes, tiendas y precios desde el servidor.';
+
+  @override
+  String get syncCurrenciesHelp =>
+      'Descarga los tipos de cambio más recientes desde el servidor.';
+
+  @override
+  String get settingsSyncEndpoints => 'Puntos de acceso';
+
+  @override
+  String get settingsSyncEndpointsHint =>
+      'Sustituye la ruta del servidor para cada operación. Deja el valor predeterminado salvo que tu servidor use rutas distintas.';
+
+  @override
+  String get endpointReset => 'Restablecer';
+
+  @override
+  String get pushAllData => 'Enviar todos los datos';
+
+  @override
+  String get pushAllDataTooltip =>
+      'Sube todos los datos locales al servidor (unidireccional)';
+
+  @override
+  String get pushAllSuccess => 'Todos los datos enviados al servidor.';
+
+  @override
+  String get exportServer => 'Exportar base de datos al servidor';
+
+  @override
+  String get exportServerTooltip =>
+      'Sube una copia completa de tu base de datos local al servidor';
+
+  @override
+  String get importServer => 'Importar base de datos del servidor';
+
+  @override
+  String get importServerTooltip =>
+      'Reemplaza tu base de datos local con la copia del servidor';
+
+  @override
+  String get importConfirmTitle => '¿Reemplazar los datos locales?';
+
+  @override
+  String get importConfirmBody =>
+      'Esto reemplaza todos los datos locales con la copia del servidor. No se puede deshacer.';
+
+  @override
+  String get importSuccess =>
+      'Base de datos importada. Reinicia la app para cargarla.';
+
+  @override
+  String get importFailed => 'Error al importar';
+
+  @override
+  String get importNothing => 'Nada que importar';
+
+  @override
+  String get exportSuccess => 'Base de datos exportada.';
+
+  @override
+  String get exportFailed => 'Error al exportar';
+
+  @override
+  String get pushAllDataHelp =>
+      'Sube todos tus datos locales al servidor (copia unidireccional).';
+
+  @override
+  String get exportServerHelp =>
+      'Sube una copia completa de tu archivo de base de datos local al servidor.';
+
+  @override
+  String get importServerHelp =>
+      'Reemplaza tu base de datos local con la copia del servidor. Pide confirmación primero.';
+
+  @override
+  String get settingsPlanner => 'Planificador';
+
+  @override
+  String get settingsPlannerSubtitle =>
+      'Entrenamientos, experimentos, tareas y metas';
+
+  @override
+  String get settingsNutrition => 'Nutrición';
+
+  @override
+  String get settingsNutritionSubtitle => 'Unidades y objetivos calóricos';
+
+  @override
+  String get settingsBudgetCurrencySubtitle => 'Divisa base y tipos de cambio';
 
   @override
   String get settingsUnits => 'Unidades';
@@ -2304,6 +2446,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get experimentCategorySteps => 'Pasos';
 
   @override
+  String get experimentCategoryBudget => 'Presupuesto';
+
+  @override
   String get experimentFormTitleNew => 'Nuevo experimento';
 
   @override
@@ -2450,16 +2595,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get plannerViewGoals => 'Vista de metas';
 
   @override
-  String get prioritiesTitle => 'Prioridades';
+  String get plannerModeTimeline => 'Cronología';
 
   @override
-  String get prioritiesManage => 'Gestionar prioridades';
+  String get plannerModeInitiatives => 'Iniciativas';
 
   @override
-  String get prioritiesAdd => 'Añadir prioridad';
+  String get prioritiesTitle => 'Tags';
 
   @override
-  String get prioritiesRename => 'Renombrar prioridad';
+  String get prioritiesManage => 'Gestionar tags';
+
+  @override
+  String get prioritiesAdd => 'Añadir tag';
+
+  @override
+  String get prioritiesRename => 'Renombrar tag';
 
   @override
   String get prioritiesNameLabel => 'Nombre';
@@ -2468,14 +2619,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get prioritiesNameRequired => 'Introduce un nombre';
 
   @override
-  String get prioritiesAlreadyExists =>
-      'Ya existe una prioridad con este nombre.';
+  String get prioritiesAlreadyExists => 'Ya existe un tag con este nombre.';
 
   @override
   String get prioritiesColor => 'Color';
 
   @override
-  String get prioritiesDeleteConfirmTitle => '¿Eliminar prioridad?';
+  String get prioritiesDeleteConfirmTitle => '¿Eliminar tag?';
 
   @override
   String prioritiesDeleteConfirmBody(num count, Object name) {
@@ -2490,7 +2640,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get prioritiesEmpty =>
-      'Aún no hay prioridades. Crea una para organizar tus metas, tareas y notas.';
+      'Aún no hay tags. Crea uno para organizar tus metas, tareas y notas.';
 
   @override
   String prioritiesUsageCount(num count) {
@@ -2503,6 +2653,23 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get tagsFilterAll => 'Todos';
+
+  @override
+  String get initiativesEmptyAllTitle => 'Aún no hay experimentos ni metas';
+
+  @override
+  String get initiativesEmptyAll =>
+      'Crea un experimento para seguir un hábito, o una meta a lograr.';
+
+  @override
+  String get initiativesEmptyFilterTitle => 'No hay iniciativas que coincidan';
+
+  @override
+  String get initiativesEmptyFilter =>
+      'Ningún experimento ni meta lleva los tags seleccionados.';
 
   @override
   String get goalsNew => 'Nueva meta';
@@ -2654,4 +2821,40 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get goalsEmptyFilter =>
       'Ninguna meta lleva las prioridades seleccionadas.';
+
+  @override
+  String get cascadeDeleteBody => 'This will be permanently deleted.';
+
+  @override
+  String cascadeDeleteBodyWithTasks(int count) {
+    return 'Also delete $count linked task(s)? You can keep them or delete them together.';
+  }
+
+  @override
+  String get cascadeDeleteOnly => 'Delete only';
+
+  @override
+  String get cascadeDeleteWithTasks => 'Delete with tasks';
+
+  @override
+  String get settingsCascadeDeleteLabel => 'Delete behavior';
+
+  @override
+  String get settingsCascadeDeleteHelp =>
+      'When deleting experiments/goals, choose whether to also delete linked tasks.';
+
+  @override
+  String get settingsCascadeAsk => 'Ask each time';
+
+  @override
+  String get settingsCascadeAlways => 'Always delete tasks';
+
+  @override
+  String get settingsCascadeNever => 'Never delete tasks';
+
+  @override
+  String get templatesDuplicate => 'Duplicate';
+
+  @override
+  String get templatesDuplicated => 'Template duplicated';
 }

@@ -236,6 +236,7 @@
   "templatesEmptyTitle": "No templates yet",
   "templatesEmptyBody": "Create a reusable routine, or save a past workout as a template.",
   "templatesNew": "New template",
+  "templatesEdit": "Edit template",
   "templatesStartToday": "Start today",
   "templatesExercisesCount": "{count, plural, =0{No exercises} =1{1 exercise} other{{count} exercises}}",
   "templatesScheduleOff": "Not scheduled",
@@ -244,7 +245,7 @@
   "templatesScheduleInterval": "Every {days} days",
   "templatesSavedAsTemplate": "Workout saved as template",
   "templatesDeleteConfirmTitle": "Delete template?",
-  "templatesDeleteConfirmBody": "The blueprint will be deleted. Sessions you already started are kept.",
+  "templatesDeleteConfirmBody": "The blueprint will be deleted. Workouts you already started are kept.",
   "templatesAddSet": "Add set",
   "workoutListManageBtn": "Manage Exercises",
   "emptyWorkoutsTitle": "No workouts yet",
@@ -589,6 +590,31 @@
   "notesDelete": "Delete note",
   "notesDeleteConfirmTitle": "Delete note?",
   "notesDeleteConfirmBody": "“{title}” will be permanently deleted. This can’t be undone.",
+  "notesVoiceRecord": "Add voice note",
+  "notesVoiceRecording": "Recording {elapsed}",
+  "@notesVoiceRecording": {
+    "placeholders": {
+      "elapsed": { "type": "String" }
+    }
+  },
+  "notesVoiceStopPlayback": "Stop playback",
+  "notesVoicePlay": "Play",
+  "notesVoiceRemove": "Remove voice note",
+  "notesVoicePermissionDenied": "Microphone permission is required to record voice notes.",
+  "notesVoiceNone": "No voice notes yet",
+  "notesVoiceClipLabel": "Clip {index}",
+  "@notesVoiceClipLabel": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "notesVoiceCount": "{count} voice note",
+  "notesVoiceCount_plural": "{count} voice notes",
+  "@notesVoiceCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
 
   "settingsAppBar": "Settings",
   "settingsProfile": "Profile",
@@ -662,6 +688,7 @@
   "exerciseTypeCardio": "Cardio",
 
   "commonCancel": "Cancel",
+  "commonContinue": "Continue",
   "commonSave": "Save",
   "commonEdit": "Edit",
   "commonUndo": "Undo",
@@ -767,6 +794,34 @@
   "syncCurrenciesTooltip": "Sync currencies",
   "syncPushIngredientTooltip": "Push to shared catalogue",
   "syncServerNotConfigured": "Sync server URL is not configured",
+  "syncExercisesHelp": "Download the shared exercise catalogue and its media from the server.",
+  "syncIngredientsHelp": "Download the shared ingredient, store and price catalogue from the server.",
+  "syncCurrenciesHelp": "Download the latest currency exchange rates from the server.",
+  "settingsSyncEndpoints": "Endpoints",
+  "settingsSyncEndpointsHint": "Override the server path used for each operation. Leave a field at its default unless your server uses different paths.",
+  "endpointReset": "Reset to default",
+  "pushAllData": "Push all data",
+  "pushAllDataTooltip": "Upload all local data to the server (one-way)",
+  "pushAllSuccess": "All data pushed to the server.",
+  "exportServer": "Export database to server",
+  "exportServerTooltip": "Upload a full copy of your local database to the server",
+  "importServer": "Import database from server",
+  "importServerTooltip": "Replace your local database with the server's copy",
+  "importConfirmTitle": "Replace local data?",
+  "importConfirmBody": "This replaces all local data with the server copy. This cannot be undone.",
+  "importSuccess": "Imported database. Restart the app to load it.",
+  "importFailed": "Import failed",
+  "importNothing": "Nothing to import",
+  "exportSuccess": "Database exported.",
+  "exportFailed": "Export failed",
+  "pushAllDataHelp": "Upload all your local data to the server (one-way copy).",
+  "exportServerHelp": "Upload a full copy of your local database file to the server.",
+  "importServerHelp": "Replace your local database with the server copy. Asks for confirmation first.",
+  "settingsPlanner": "Planner",
+  "settingsPlannerSubtitle": "Workouts, experiments, tasks and goals",
+  "settingsNutrition": "Nutrition",
+  "settingsNutritionSubtitle": "Units and calorie targets",
+  "settingsBudgetCurrencySubtitle": "Base currency and exchange rates",
   "settingsUnits": "Units",
   "settingsWeightUnitLabel": "Weight",
   "settingsLengthUnitLabel": "Height",
@@ -1572,6 +1627,7 @@
   "experimentCategoryDiet": "Diet",
   "experimentCategoryBody": "Body",
   "experimentCategorySteps": "Steps",
+  "experimentCategoryBudget": "Budget",
   "experimentFormTitleNew": "New experiment",
   "experimentFormTitleEdit": "Edit experiment",
   "experimentFormNameLabel": "Name",
@@ -1641,18 +1697,25 @@
   "experimentReminderCancelled": "Daily reminder disabled.",
 
   "plannerViewGoals": "Goals view",
-  "prioritiesTitle": "Priorities",
-  "prioritiesManage": "Manage priorities",
-  "prioritiesAdd": "Add priority",
-  "prioritiesRename": "Rename priority",
+  "plannerModeTimeline": "Timeline",
+  "plannerModeInitiatives": "Initiatives",
+  "prioritiesTitle": "Tags",
+  "prioritiesManage": "Manage tags",
+  "prioritiesAdd": "Add tag",
+  "prioritiesRename": "Rename tag",
   "prioritiesNameLabel": "Name",
   "prioritiesNameRequired": "Enter a name",
-  "prioritiesAlreadyExists": "A priority with this name already exists.",
+  "prioritiesAlreadyExists": "A tag with this name already exists.",
   "prioritiesColor": "Color",
-  "prioritiesDeleteConfirmTitle": "Delete priority?",
+  "prioritiesDeleteConfirmTitle": "Delete tag?",
   "prioritiesDeleteConfirmBody": "“{name}” will be removed from {count, plural, =0{no items} other{{count} items}}.",
-  "prioritiesEmpty": "No priorities yet. Create one to start organizing your goals, tasks and notes.",
+  "prioritiesEmpty": "No tags yet. Create one to start organizing your goals, tasks and notes.",
   "prioritiesUsageCount": "{count, plural, =0{unused} =1{1 item} other{{count} items}}",
+  "tagsFilterAll": "All",
+  "initiativesEmptyAllTitle": "No experiments or goals yet",
+  "initiativesEmptyAll": "Create an experiment to track a habit, or a goal to aim at an outcome.",
+  "initiativesEmptyFilterTitle": "No matching initiatives",
+  "initiativesEmptyFilter": "No experiments or goals carry the selected tags.",
 
   "goalsNew": "New goal",
   "goalsEdit": "Edit goal",
@@ -1700,7 +1763,26 @@
   "goalsLogTitle": "Log",
   "goalsNoProgressYet": "Nothing recorded yet.",
   "goalsEmptyAllTitle": "No goals yet",
-  "goalsEmptyAll": "Set a long-term outcome to work toward and link it to your priorities.",
+  "goalsEmptyAll": "Set a long-term outcome to work toward and link it to your tags.",
   "goalsEmptyFilterTitle": "No goals here",
-  "goalsEmptyFilter": "No goals carry the selected priorities."
+  "goalsEmptyFilter": "No goals carry the selected tags.",
+
+  "cascadeDeleteBody": "This will be permanently deleted.",
+  "cascadeDeleteBodyWithTasks": "Also delete {count} linked task(s)? You can keep them or delete them together.",
+  "@cascadeDeleteBodyWithTasks": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "cascadeDeleteOnly": "Delete only",
+  "cascadeDeleteWithTasks": "Delete with tasks",
+
+  "settingsCascadeDeleteLabel": "Delete behavior",
+  "settingsCascadeDeleteHelp": "When deleting experiments/goals, choose whether to also delete linked tasks.",
+  "settingsCascadeAsk": "Ask each time",
+  "settingsCascadeAlways": "Always delete tasks",
+  "settingsCascadeNever": "Never delete tasks",
+
+  "templatesDuplicate": "Duplicate",
+  "templatesDuplicated": "Template duplicated"
 }

@@ -3,8 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/goal.dart';
-import '../../planner/providers/planner.dart' show linksRepositoryProvider;
+import '../../models/task.dart';
+import '../../planner/providers/planner.dart'
+    show
+        dayEntriesProvider,
+        linksRepositoryProvider,
+        monthEntriesProvider,
+        rangeEntriesProvider,
+        taskRepositoryProvider;
+import '../../planner/repositories/task_repository.dart';
+import '../../planner/screens/planner_item_form.dart';
+import '../../settings/providers/settings.dart';
 import '../../tags/widgets/tag_picker.dart';
+import '../../ui/cascade_delete_dialog.dart';
 import '../../ui/tokens.dart';
 import '../notifications/goal_reminder.dart';
 import '../providers/goals.dart';
@@ -76,27 +87,26 @@ final class GoalDetailScreen extends ConsumerWidget {
         ref.invalidate(goalByIdProvider(goalId));
         ref.invalidate(goalListProvider);
       case 'delete':
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(l10n.goalsDeleteConfirmTitle),
-            content: Text(l10n.goalsDeleteConfirmBody),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: Text(l10n.commonCancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: Text(l10n.commonDelete),
-              ),
-            ],
-          ),
+        final behavior = ref.read(settingsProvider).cascadeDeleteBehavior;
+        final links = await ref
+            .read(linksRepositoryProvider)
+            .tasksForGoal(goalId);
+        final choice = await showCascadeDeleteDialog(
+          context,
+          title: l10n.goalsDeleteConfirmTitle,
+          behavior: behavior,
+          linkedTaskCount: links.length,
         );
-        if (confirmed != true || !context.mounted) return;
+        if (choice == null || choice == CascadeChoice.cancel) return;
+        final cascade = choice == CascadeChoice.cascade;
         await ref.read(goalReminderSchedulerProvider).cancelForGoal(goalId);
-        await repo.deleteGoal(goalId);
+        await repo.deleteGoal(goalId, cascadeTasks: cascade);
         ref.invalidate(goalListProvider);
+        if (cascade) {
+          ref.invalidate(dayEntriesProvider);
+          ref.invalidate(rangeEntriesProvider);
+          ref.invalidate(monthEntriesProvider);
+        }
         if (context.mounted) Navigator.of(context).pop(true);
     }
   }
@@ -361,8 +371,6 @@ final class _GoalDetailViewState extends ConsumerState<_GoalDetailView> {
         const Divider(height: FitFatTokens.spaceXl),
         _GoalRelatedTasks(goalId: goal.id, onChanged: _refresh),
         const Divider(height: FitFatTokens.spaceXl),
-        _GoalRelatedTasks(goalId: goal.id, onChanged: _refresh),
-        const Divider(height: FitFatTokens.spaceXl),
         Wrap(
           spacing: FitFatTokens.spaceS,
           runSpacing: FitFatTokens.spaceS,
@@ -518,6 +526,23 @@ final class _GoalRelatedTasks extends ConsumerWidget {
       children: [
         Text(l10n.goalsRelatedTasks, style: theme.textTheme.titleMedium),
         const SizedBox(height: FitFatTokens.spaceS),
+        Wrap(
+          spacing: FitFatTokens.spaceS,
+          runSpacing: FitFatTokens.spaceS,
+          children: [
+            ActionChip(
+              avatar: const Icon(Icons.link, size: 18),
+              label: Text(l10n.experimentLinkTask),
+              onPressed: () => _openPicker(context, ref),
+            ),
+            ActionChip(
+              avatar: const Icon(Icons.add, size: 18),
+              label: Text(l10n.plannerAddTask),
+              onPressed: () => _createAndLink(context, ref),
+            ),
+          ],
+        ),
+        const SizedBox(height: FitFatTokens.spaceS),
         tasksAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.symmetric(vertical: FitFatTokens.spaceL),
@@ -576,6 +601,164 @@ final class _GoalRelatedTasks extends ConsumerWidget {
                 ),
         ),
       ],
+    );
+  }
+
+  Future<void> _openPicker(BuildContext context, WidgetRef ref) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => _GoalTaskPickerSheet(goalId: goalId),
+    );
+    ref.invalidate(tasksByGoalProvider(goalId));
+  }
+
+  Future<void> _createAndLink(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showPlannerItemDialog(
+      context,
+      dialogTitle: l10n.plannerAddTask,
+      initialDueDate: DateTime.now(),
+    );
+    if (result == null || !context.mounted) return;
+    final (
+      title,
+      dueDate,
+      startTimeMinutes,
+      endTimeMinutes,
+      notes,
+      workoutId,
+      tags,
+      recurrence,
+      carryOver,
+    ) = result;
+    final task = newTask(
+      day: dueDate ?? DateTime.now(),
+      title: title,
+      startTimeMinutes: startTimeMinutes,
+      endTimeMinutes: endTimeMinutes,
+      notes: notes,
+      workoutId: workoutId,
+      tags: tags,
+      recurrence: recurrence,
+      carryOver: carryOver,
+    );
+    final repo = ref.read(taskRepositoryProvider);
+    await repo.insert(task);
+    if (recurrence != null) {
+      await repo.update(task.copyWith(seriesId: task.id));
+    }
+    await ref.read(linksRepositoryProvider).linkTaskGoal(task.id, goalId);
+    if (!context.mounted) return;
+    ref.invalidate(dayEntriesProvider(task.day));
+    ref.invalidate(tasksByGoalProvider(goalId));
+  }
+}
+
+final class _GoalTaskPickerSheet extends ConsumerStatefulWidget {
+  final String goalId;
+
+  const _GoalTaskPickerSheet({required this.goalId});
+
+  @override
+  ConsumerState<_GoalTaskPickerSheet> createState() => _GoalTaskPickerSheetState();
+}
+
+final class _GoalTaskPickerSheetState extends ConsumerState<_GoalTaskPickerSheet> {
+  final _controller = TextEditingController();
+  List<Task>? _results;
+  Set<String> _linkedIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _search();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search() async {
+    final results =
+        await ref.read(taskRepositoryProvider).searchTasks(_controller.text);
+    final linked =
+        await ref.read(linksRepositoryProvider).tasksForGoal(widget.goalId);
+    if (!mounted) return;
+    setState(() {
+      _results = results;
+      _linkedIds = {for (final t in linked) t.item.id};
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: l10n.experimentSearchTasksHint,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  onChanged: (_) => _search(),
+                ),
+              ),
+              Expanded(
+                child: _results == null
+                    ? const Center(child: CircularProgressIndicator())
+                    : _results!.isEmpty
+                        ? Center(child: Text(l10n.goalsNoLinkedTasks))
+                        : ListView(
+                            children: [
+                              for (final task in _results!)
+                                ListTile(
+                                  leading: Icon(
+                                    _linkedIds.contains(task.id)
+                                        ? Icons.link
+                                        : Icons.add_link,
+                                    size: 20,
+                                  ),
+                                  title: Text(
+                                    task.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onTap: () async {
+                                    final nav = Navigator.of(context);
+                                    await ref
+                                        .read(linksRepositoryProvider)
+                                        .linkTaskGoal(task.id, widget.goalId);
+                                    if (!mounted) return;
+                                    ref.invalidate(tasksByGoalProvider(widget.goalId));
+                                    nav.pop();
+                                  },
+                                ),
+                            ],
+                          ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

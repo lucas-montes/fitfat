@@ -1,10 +1,9 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
 import '../../models/goal.dart';
+import '../../tags/repositories/tag_repository.dart';
 
 final class GoalRepository {
   final db.AppDatabase _database;
@@ -20,14 +19,15 @@ final class GoalRepository {
               ),
             ]))
             .get();
-    return rows.map(_toDomain).toList();
+    return _attachTags(rows.map(_toDomain).toList());
   }
 
   Future<Goal?> getGoalById(String id) async {
     final row = await (_database.select(
       _database.goals,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
-    return row == null ? null : _toDomain(row);
+    if (row == null) return null;
+    return (await _attachTags([_toDomain(row)])).first;
   }
 
   Future<void> upsertGoal(Goal goal) async {
@@ -35,7 +35,6 @@ final class GoalRepository {
       id: goal.id,
       title: goal.title,
       description: Value(goal.description),
-      tags: Value(_encode(goal.tags)),
       startDate: _startOfDay(goal.startDate).millisecondsSinceEpoch,
       endDate: Value(
         goal.endDate == null
@@ -62,6 +61,9 @@ final class GoalRepository {
         _database.goals,
       )..where((t) => t.id.equals(goal.id))).write(companion);
     }
+    if (goal.tags != null) {
+      await TagRepository(_database).setGoalTags(goal.id, goal.tags!);
+    }
   }
 
   Future<void> setGoalStatus(String id, GoalStatus status) async {
@@ -76,8 +78,29 @@ final class GoalRepository {
   }
 
   /// Deletes a goal plus its progress entries and link-table rows.
-  Future<void> deleteGoal(String id) async {
+  /// When [cascadeTasks] is true, also deletes tasks linked via `task_goals`.
+  Future<void> deleteGoal(String id, {bool cascadeTasks = false}) async {
     await _database.transaction(() async {
+      if (cascadeTasks) {
+        final links = await (_database.select(
+          _database.taskGoals,
+        )..where((t) => t.goalId.equals(id))).get();
+        for (final link in links) {
+          final taskId = link.taskId;
+          await (_database.delete(
+            _database.taskTags,
+          )..where((t) => t.taskId.equals(taskId))).go();
+          await (_database.delete(
+            _database.taskExperiments,
+          )..where((t) => t.taskId.equals(taskId))).go();
+          await (_database.delete(
+            _database.taskNotes,
+          )..where((t) => t.taskId.equals(taskId))).go();
+          await (_database.delete(
+            _database.tasks,
+          )..where((t) => t.id.equals(taskId))).go();
+        }
+      }
       await (_database.delete(
         _database.goalProgressEntries,
       )..where((t) => t.goalId.equals(id))).go();
@@ -86,6 +109,9 @@ final class GoalRepository {
       )..where((t) => t.goalId.equals(id))).go();
       await (_database.delete(
         _database.experimentGoals,
+      )..where((t) => t.goalId.equals(id))).go();
+      await (_database.delete(
+        _database.goalTags,
       )..where((t) => t.goalId.equals(id))).go();
       await (_database.delete(
         _database.goalNotes,
@@ -176,7 +202,7 @@ final class GoalRepository {
     id: row.id,
     title: row.title,
     description: row.description,
-    tags: _decode(row.tags),
+    tags: null,
     startDate: DateTime.fromMillisecondsSinceEpoch(row.startDate),
     endDate: row.endDate == null
         ? null
@@ -203,17 +229,13 @@ final class GoalRepository {
 
   static DateTime _startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  static String? _encode(List<String>? values) {
-    if (values == null || values.isEmpty) return null;
-    return jsonEncode(values);
-  }
+  /// Tag (priority) access for this goal table.
+  TagRepository get _tags => TagRepository(_database);
 
-  static List<String>? _decode(String? raw) {
-    if (raw == null || raw.isEmpty) return null;
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is List) return decoded.cast<String>();
-    } catch (_) {}
-    return null;
+  /// Populates [Goal.tags] for a batch of goals in one lookup.
+  Future<List<Goal>> _attachTags(List<Goal> items) async {
+    if (items.isEmpty) return items;
+    final map = await _tags.tagNamesForGoals(items.map((g) => g.id).toList());
+    return [for (final g in items) g.copyWith(tags: map[g.id] ?? const [])];
   }
 }

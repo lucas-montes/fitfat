@@ -7,6 +7,8 @@ import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
 import '../../models/units.dart';
 
+enum CascadeDeleteBehavior { ask, alwaysCascade, neverCascade }
+
 final class SharedPreferencesHolder extends Notifier<SharedPreferences?> {
   @override
   SharedPreferences? build() => null;
@@ -111,6 +113,7 @@ final class SettingsState {
   final int reminderLeadMinutes;
   // Sync HTTP request timeout in seconds (default 15).
   final int apiTimeoutSeconds;
+  final CascadeDeleteBehavior cascadeDeleteBehavior;
 
   const SettingsState({
     this.themeMode = ThemeMode.system,
@@ -152,6 +155,7 @@ final class SettingsState {
     this.defaultRestSeconds = 0,
     this.reminderLeadMinutes = 30,
     this.apiTimeoutSeconds = 15,
+    this.cascadeDeleteBehavior = CascadeDeleteBehavior.ask,
   });
 
   SettingsState copyWith({
@@ -200,6 +204,7 @@ final class SettingsState {
     int? defaultRestSeconds,
     int? reminderLeadMinutes,
     int? apiTimeoutSeconds,
+    CascadeDeleteBehavior? cascadeDeleteBehavior,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     locale: clearLocale ? null : (locale ?? this.locale),
@@ -250,6 +255,7 @@ final class SettingsState {
     defaultRestSeconds: defaultRestSeconds ?? this.defaultRestSeconds,
     reminderLeadMinutes: reminderLeadMinutes ?? this.reminderLeadMinutes,
     apiTimeoutSeconds: apiTimeoutSeconds ?? this.apiTimeoutSeconds,
+    cascadeDeleteBehavior: cascadeDeleteBehavior ?? this.cascadeDeleteBehavior,
   );
 }
 
@@ -285,14 +291,14 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _endpointGoalsKey = 'settings_endpoint_goals';
   static const _endpointMealsKey = 'settings_endpoint_meals';
   static const _endpointTransactionsKey = 'settings_endpoint_transactions';
-  static const _endpointBudgetAccountsKey =
-      'settings_endpoint_budget_accounts';
+  static const _endpointBudgetAccountsKey = 'settings_endpoint_budget_accounts';
   static const _endpointReceiptPicturesKey =
       'settings_endpoint_receipt_pictures';
   static const _plannerHorizonDaysKey = 'settings_planner_horizon_days';
   static const _calorieGoalAdjustmentKey = 'settings_calorie_goal_adjustment';
   static const _experimentBaselineDaysKey = 'settings_experiment_baseline_days';
   static const _defaultRestSecondsKey = 'settings_default_rest_seconds';
+  static const _cascadeDeleteKey = 'settings_cascade_delete';
 
   /// Public so the reminder scheduler can read the lead time directly from
   /// prefs (it receives SharedPreferences, not the settings notifier).
@@ -332,18 +338,14 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       remoteSyncBaseUrl: prefs.getString(_remoteSyncBaseUrlKey) ?? '',
       remoteSyncApiKey: prefs.getString(_remoteSyncApiKeyKey) ?? '',
       endpointExport: prefs.getString(_endpointExportKey) ?? '/backup',
-      endpointImport:
-          prefs.getString(_endpointImportKey) ?? '/backup/latest',
-      endpointExercises:
-          prefs.getString(_endpointExercisesKey) ?? '/exercises',
+      endpointImport: prefs.getString(_endpointImportKey) ?? '/backup/latest',
+      endpointExercises: prefs.getString(_endpointExercisesKey) ?? '/exercises',
       endpointIngredients:
           prefs.getString(_endpointIngredientsKey) ?? '/ingredients',
       endpointCurrencies:
           prefs.getString(_endpointCurrenciesKey) ?? '/fx-rates',
-      endpointWorkouts:
-          prefs.getString(_endpointWorkoutsKey) ?? '/workouts',
-      endpointTemplates:
-          prefs.getString(_endpointTemplatesKey) ?? '/templates',
+      endpointWorkouts: prefs.getString(_endpointWorkoutsKey) ?? '/workouts',
+      endpointTemplates: prefs.getString(_endpointTemplatesKey) ?? '/templates',
       endpointNotes: prefs.getString(_endpointNotesKey) ?? '/notes',
       endpointTasks: prefs.getString(_endpointTasksKey) ?? '/tasks',
       endpointGoals: prefs.getString(_endpointGoalsKey) ?? '/goals',
@@ -361,6 +363,9 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       defaultRestSeconds: prefs.getInt(_defaultRestSecondsKey) ?? 0,
       reminderLeadMinutes: prefs.getInt(reminderLeadMinutesKey) ?? 30,
       apiTimeoutSeconds: prefs.getInt(_apiTimeoutSecondsKey) ?? 15,
+      cascadeDeleteBehavior: _cascadeFromName(
+        prefs.getString(_cascadeDeleteKey),
+      ),
     );
   }
 
@@ -703,6 +708,13 @@ final class SettingsNotifier extends Notifier<SettingsState> {
     state = state.copyWith(apiTimeoutSeconds: clamped);
   }
 
+  Future<void> setCascadeDeleteBehavior(CascadeDeleteBehavior value) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_cascadeDeleteKey, value.name);
+    state = state.copyWith(cascadeDeleteBehavior: value);
+  }
+
   WeightUnit _weightUnitFromName(String? name) =>
       name == 'lb' ? WeightUnit.lb : WeightUnit.kg;
 
@@ -741,4 +753,10 @@ final class SettingsNotifier extends Notifier<SettingsState> {
     }
     return null;
   }
+
+  CascadeDeleteBehavior _cascadeFromName(String? name) =>
+      CascadeDeleteBehavior.values.firstWhere(
+        (v) => v.name == name,
+        orElse: () => CascadeDeleteBehavior.ask,
+      );
 }

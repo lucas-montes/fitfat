@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
 import '../../models/experiment.dart';
+import '../../tags/repositories/tag_repository.dart';
 
 /// Data access for experiments (schema v27: the standalone `experiments`
 /// table, un-merged from planner items). Check-ins live here too.
@@ -22,14 +23,15 @@ final class ExperimentRepository {
               ),
             ]))
             .get();
-    return rows.map(_toDomain).toList();
+    return _attachTags(rows.map(_toDomain).toList());
   }
 
   Future<Experiment?> getById(String id) async {
     final row = await (_database.select(
       _database.experiments,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
-    return row == null ? null : _toDomain(row);
+    if (row == null) return null;
+    return (await _attachTags([_toDomain(row)])).first;
   }
 
   /// Experiments whose [startDate .. endDate] span intersects the inclusive
@@ -46,7 +48,7 @@ final class ExperimentRepository {
                   (t.endDate.isNull() | t.endDate.isBiggerOrEqualValue(fromMs)),
             ))
             .get();
-    return rows.map(_toDomain).toList();
+    return _attachTags(rows.map(_toDomain).toList());
   }
 
   /// Experiments active on [day] (span contains it).
@@ -67,7 +69,6 @@ final class ExperimentRepository {
       ),
       status: Value(experiment.status.storage),
       categories: Value(_encodeCategories(experiment.categories)),
-      tags: Value(_encode(experiment.tags)),
       reminderEnabled: Value(experiment.reminderEnabled),
       reminderTimeMinutes: Value(experiment.reminderTimeMinutes),
       createdAt: experiment.createdAt.millisecondsSinceEpoch,
@@ -79,12 +80,39 @@ final class ExperimentRepository {
         _database.experiments,
       )..where((t) => t.id.equals(experiment.id))).write(companion);
     }
+    if (experiment.tags != null) {
+      await TagRepository(
+        _database,
+      ).setExperimentTags(experiment.id, experiment.tags!);
+    }
   }
 
   /// Deletes an experiment plus its check-ins and link-table rows in one
-  /// transaction.
-  Future<void> delete(String id) async {
+  /// transaction. When [cascadeTasks] is true, also deletes tasks linked
+  /// via `task_experiments`.
+  Future<void> delete(String id, {bool cascadeTasks = false}) async {
     await _database.transaction(() async {
+      List<String> cascadeIds = const [];
+      if (cascadeTasks) {
+        final links = await (_database.select(
+          _database.taskExperiments,
+        )..where((t) => t.experimentId.equals(id))).get();
+        cascadeIds = links.map((e) => e.taskId).toList();
+        for (final taskId in cascadeIds) {
+          await (_database.delete(
+            _database.taskTags,
+          )..where((t) => t.taskId.equals(taskId))).go();
+          await (_database.delete(
+            _database.taskGoals,
+          )..where((t) => t.taskId.equals(taskId))).go();
+          await (_database.delete(
+            _database.taskNotes,
+          )..where((t) => t.taskId.equals(taskId))).go();
+          await (_database.delete(
+            _database.tasks,
+          )..where((t) => t.id.equals(taskId))).go();
+        }
+      }
       await (_database.delete(
         _database.experimentCheckins,
       )..where((t) => t.experimentId.equals(id))).go();
@@ -93,6 +121,9 @@ final class ExperimentRepository {
       )..where((t) => t.experimentId.equals(id))).go();
       await (_database.delete(
         _database.experimentGoals,
+      )..where((t) => t.experimentId.equals(id))).go();
+      await (_database.delete(
+        _database.experimentTags,
       )..where((t) => t.experimentId.equals(id))).go();
       await (_database.delete(
         _database.experimentNotes,
@@ -175,9 +206,16 @@ final class ExperimentRepository {
   /// stable query key, matching how dates are stored.
   DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
 
-  static String? _encode(List<String>? values) {
-    if (values == null || values.isEmpty) return null;
-    return jsonEncode(values);
+  /// Tag (priority) access for this experiment table.
+  TagRepository get _tags => TagRepository(_database);
+
+  /// Populates [Experiment.tags] for a batch of experiments in one lookup.
+  Future<List<Experiment>> _attachTags(List<Experiment> items) async {
+    if (items.isEmpty) return items;
+    final map = await _tags.tagNamesForExperiments(
+      items.map((e) => e.id).toList(),
+    );
+    return [for (final e in items) e.copyWith(tags: map[e.id] ?? const [])];
   }
 }
 
@@ -198,7 +236,7 @@ Experiment experimentFromRow(db.Experiment row) => Experiment(
     _ => ExperimentStatus.planned,
   },
   categories: _decodeCategoriesTopLevel(row.categories),
-  tags: _decodeTagsTopLevel(row.tags),
+  tags: null,
   reminderEnabled: row.reminderEnabled,
   reminderTimeMinutes: row.reminderTimeMinutes,
   createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
@@ -219,13 +257,4 @@ List<ExperimentCategory> _decodeCategoriesTopLevel(String? raw) {
   } on Object {
     return const [];
   }
-}
-
-List<String>? _decodeTagsTopLevel(String? raw) {
-  if (raw == null || raw.isEmpty) return null;
-  try {
-    final decoded = jsonDecode(raw);
-    if (decoded is List) return decoded.cast<String>();
-  } catch (_) {}
-  return null;
 }

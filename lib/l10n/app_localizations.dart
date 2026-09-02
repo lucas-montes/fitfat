@@ -886,6 +886,12 @@ abstract class AppLocalizations {
   /// **'New template'**
   String get templatesNew;
 
+  /// No description provided for @templatesEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit template'**
+  String get templatesEdit;
+
   /// No description provided for @templatesStartToday.
   ///
   /// In en, this message translates to:
@@ -937,7 +943,7 @@ abstract class AppLocalizations {
   /// No description provided for @templatesDeleteConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'The blueprint will be deleted. Sessions you already started are kept.'**
+  /// **'The blueprint will be deleted. Workouts you already started are kept.'**
   String get templatesDeleteConfirmBody;
 
   /// No description provided for @templatesAddSet.
@@ -2116,6 +2122,66 @@ abstract class AppLocalizations {
   /// **'“{title}” will be permanently deleted. This can’t be undone.'**
   String notesDeleteConfirmBody(Object title);
 
+  /// No description provided for @notesVoiceRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Add voice note'**
+  String get notesVoiceRecord;
+
+  /// No description provided for @notesVoiceRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording {elapsed}'**
+  String notesVoiceRecording(String elapsed);
+
+  /// No description provided for @notesVoiceStopPlayback.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop playback'**
+  String get notesVoiceStopPlayback;
+
+  /// No description provided for @notesVoicePlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get notesVoicePlay;
+
+  /// No description provided for @notesVoiceRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove voice note'**
+  String get notesVoiceRemove;
+
+  /// No description provided for @notesVoicePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission is required to record voice notes.'**
+  String get notesVoicePermissionDenied;
+
+  /// No description provided for @notesVoiceNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No voice notes yet'**
+  String get notesVoiceNone;
+
+  /// No description provided for @notesVoiceClipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip {index}'**
+  String notesVoiceClipLabel(int index);
+
+  /// No description provided for @notesVoiceCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} voice note'**
+  String notesVoiceCount(int count);
+
+  /// No description provided for @notesVoiceCount_plural.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} voice notes'**
+  String notesVoiceCount_plural(Object count);
+
   /// No description provided for @settingsAppBar.
   ///
   /// In en, this message translates to:
@@ -2524,6 +2590,12 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get commonCancel;
 
+  /// No description provided for @commonContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get commonContinue;
+
   /// No description provided for @commonSave.
   ///
   /// In en, this message translates to:
@@ -2823,6 +2895,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync server URL is not configured'**
   String get syncServerNotConfigured;
+
+  /// No description provided for @syncExercisesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the shared exercise catalogue and its media from the server.'**
+  String get syncExercisesHelp;
+
+  /// No description provided for @syncIngredientsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the shared ingredient, store and price catalogue from the server.'**
+  String get syncIngredientsHelp;
+
+  /// No description provided for @syncCurrenciesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the latest currency exchange rates from the server.'**
+  String get syncCurrenciesHelp;
+
+  /// No description provided for @settingsSyncEndpoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoints'**
+  String get settingsSyncEndpoints;
+
+  /// No description provided for @settingsSyncEndpointsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Override the server path used for each operation. Leave a field at its default unless your server uses different paths.'**
+  String get settingsSyncEndpointsHint;
+
+  /// No description provided for @endpointReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get endpointReset;
+
+  /// No description provided for @pushAllData.
+  ///
+  /// In en, this message translates to:
+  /// **'Push all data'**
+  String get pushAllData;
+
+  /// No description provided for @pushAllDataTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload all local data to the server (one-way)'**
+  String get pushAllDataTooltip;
+
+  /// No description provided for @pushAllSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'All data pushed to the server.'**
+  String get pushAllSuccess;
+
+  /// No description provided for @exportServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Export database to server'**
+  String get exportServer;
+
+  /// No description provided for @exportServerTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a full copy of your local database to the server'**
+  String get exportServerTooltip;
+
+  /// No description provided for @importServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Import database from server'**
+  String get importServer;
+
+  /// No description provided for @importServerTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace your local database with the server\'s copy'**
+  String get importServerTooltip;
+
+  /// No description provided for @importConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace local data?'**
+  String get importConfirmTitle;
+
+  /// No description provided for @importConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces all local data with the server copy. This cannot be undone.'**
+  String get importConfirmBody;
+
+  /// No description provided for @importSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported database. Restart the app to load it.'**
+  String get importSuccess;
+
+  /// No description provided for @importFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed'**
+  String get importFailed;
+
+  /// No description provided for @importNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to import'**
+  String get importNothing;
+
+  /// No description provided for @exportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Database exported.'**
+  String get exportSuccess;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed'**
+  String get exportFailed;
+
+  /// No description provided for @pushAllDataHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload all your local data to the server (one-way copy).'**
+  String get pushAllDataHelp;
+
+  /// No description provided for @exportServerHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a full copy of your local database file to the server.'**
+  String get exportServerHelp;
+
+  /// No description provided for @importServerHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace your local database with the server copy. Asks for confirmation first.'**
+  String get importServerHelp;
+
+  /// No description provided for @settingsPlanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Planner'**
+  String get settingsPlanner;
+
+  /// No description provided for @settingsPlannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts, experiments, tasks and goals'**
+  String get settingsPlannerSubtitle;
+
+  /// No description provided for @settingsNutrition.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition'**
+  String get settingsNutrition;
+
+  /// No description provided for @settingsNutritionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Units and calorie targets'**
+  String get settingsNutritionSubtitle;
+
+  /// No description provided for @settingsBudgetCurrencySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Base currency and exchange rates'**
+  String get settingsBudgetCurrencySubtitle;
 
   /// No description provided for @settingsUnits.
   ///
@@ -4186,6 +4426,12 @@ abstract class AppLocalizations {
   /// **'Steps'**
   String get experimentCategorySteps;
 
+  /// No description provided for @experimentCategoryBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get experimentCategoryBudget;
+
   /// No description provided for @experimentFormTitleNew.
   ///
   /// In en, this message translates to:
@@ -4450,28 +4696,40 @@ abstract class AppLocalizations {
   /// **'Goals view'**
   String get plannerViewGoals;
 
+  /// No description provided for @plannerModeTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get plannerModeTimeline;
+
+  /// No description provided for @plannerModeInitiatives.
+  ///
+  /// In en, this message translates to:
+  /// **'Initiatives'**
+  String get plannerModeInitiatives;
+
   /// No description provided for @prioritiesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Priorities'**
+  /// **'Tags'**
   String get prioritiesTitle;
 
   /// No description provided for @prioritiesManage.
   ///
   /// In en, this message translates to:
-  /// **'Manage priorities'**
+  /// **'Manage tags'**
   String get prioritiesManage;
 
   /// No description provided for @prioritiesAdd.
   ///
   /// In en, this message translates to:
-  /// **'Add priority'**
+  /// **'Add tag'**
   String get prioritiesAdd;
 
   /// No description provided for @prioritiesRename.
   ///
   /// In en, this message translates to:
-  /// **'Rename priority'**
+  /// **'Rename tag'**
   String get prioritiesRename;
 
   /// No description provided for @prioritiesNameLabel.
@@ -4489,7 +4747,7 @@ abstract class AppLocalizations {
   /// No description provided for @prioritiesAlreadyExists.
   ///
   /// In en, this message translates to:
-  /// **'A priority with this name already exists.'**
+  /// **'A tag with this name already exists.'**
   String get prioritiesAlreadyExists;
 
   /// No description provided for @prioritiesColor.
@@ -4501,7 +4759,7 @@ abstract class AppLocalizations {
   /// No description provided for @prioritiesDeleteConfirmTitle.
   ///
   /// In en, this message translates to:
-  /// **'Delete priority?'**
+  /// **'Delete tag?'**
   String get prioritiesDeleteConfirmTitle;
 
   /// No description provided for @prioritiesDeleteConfirmBody.
@@ -4513,7 +4771,7 @@ abstract class AppLocalizations {
   /// No description provided for @prioritiesEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No priorities yet. Create one to start organizing your goals, tasks and notes.'**
+  /// **'No tags yet. Create one to start organizing your goals, tasks and notes.'**
   String get prioritiesEmpty;
 
   /// No description provided for @prioritiesUsageCount.
@@ -4521,6 +4779,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{unused} =1{1 item} other{{count} items}}'**
   String prioritiesUsageCount(num count);
+
+  /// No description provided for @tagsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get tagsFilterAll;
+
+  /// No description provided for @initiativesEmptyAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No experiments or goals yet'**
+  String get initiativesEmptyAllTitle;
+
+  /// No description provided for @initiativesEmptyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an experiment to track a habit, or a goal to aim at an outcome.'**
+  String get initiativesEmptyAll;
+
+  /// No description provided for @initiativesEmptyFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching initiatives'**
+  String get initiativesEmptyFilterTitle;
+
+  /// No description provided for @initiativesEmptyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No experiments or goals carry the selected tags.'**
+  String get initiativesEmptyFilter;
 
   /// No description provided for @goalsNew.
   ///
@@ -4801,7 +5089,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalsEmptyAll.
   ///
   /// In en, this message translates to:
-  /// **'Set a long-term outcome to work toward and link it to your priorities.'**
+  /// **'Set a long-term outcome to work toward and link it to your tags.'**
   String get goalsEmptyAll;
 
   /// No description provided for @goalsEmptyFilterTitle.
@@ -4813,8 +5101,74 @@ abstract class AppLocalizations {
   /// No description provided for @goalsEmptyFilter.
   ///
   /// In en, this message translates to:
-  /// **'No goals carry the selected priorities.'**
+  /// **'No goals carry the selected tags.'**
   String get goalsEmptyFilter;
+
+  /// No description provided for @cascadeDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will be permanently deleted.'**
+  String get cascadeDeleteBody;
+
+  /// No description provided for @cascadeDeleteBodyWithTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Also delete {count} linked task(s)? You can keep them or delete them together.'**
+  String cascadeDeleteBodyWithTasks(int count);
+
+  /// No description provided for @cascadeDeleteOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete only'**
+  String get cascadeDeleteOnly;
+
+  /// No description provided for @cascadeDeleteWithTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete with tasks'**
+  String get cascadeDeleteWithTasks;
+
+  /// No description provided for @settingsCascadeDeleteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete behavior'**
+  String get settingsCascadeDeleteLabel;
+
+  /// No description provided for @settingsCascadeDeleteHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'When deleting experiments/goals, choose whether to also delete linked tasks.'**
+  String get settingsCascadeDeleteHelp;
+
+  /// No description provided for @settingsCascadeAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask each time'**
+  String get settingsCascadeAsk;
+
+  /// No description provided for @settingsCascadeAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always delete tasks'**
+  String get settingsCascadeAlways;
+
+  /// No description provided for @settingsCascadeNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never delete tasks'**
+  String get settingsCascadeNever;
+
+  /// No description provided for @templatesDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get templatesDuplicate;
+
+  /// No description provided for @templatesDuplicated.
+  ///
+  /// In en, this message translates to:
+  /// **'Template duplicated'**
+  String get templatesDuplicated;
 }
 
 class _AppLocalizationsDelegate
