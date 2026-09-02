@@ -11,6 +11,7 @@ import '../../experiments/providers/experiments_repository.dart';
 import '../../goals/notifications/goal_reminder.dart';
 import '../../models/experiment.dart';
 import '../../models/goal.dart';
+import '../../models/task.dart';
 import '../../planner/providers/dismissed.dart';
 import '../../planner/providers/planner.dart';
 import '../../settings/providers/settings.dart';
@@ -20,6 +21,7 @@ import '../../ui/haptics.dart';
 import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
+import '../../ui/widgets/top_banner.dart';
 
 /// One row in the merged Initiatives list (experiments + goals unified).
 final class _Initiative {
@@ -168,63 +170,184 @@ final class _InitiativeCard extends ConsumerWidget {
                 .tasksForExperiment(item.id)
             : await container.read(linksRepositoryProvider).tasksForGoal(item.id);
         if (!context.mounted) return false;
-        final title = isExperiment
-            ? l10n.experimentFormDeleteConfirmTitle
-            : l10n.goalsDeleteConfirmTitle;
-        final choice = await showCascadeDeleteDialog(
-          context,
-          title: title,
-          behavior: behavior,
-          linkedTaskCount: links.length,
-        );
-        if (choice == null || choice == CascadeChoice.cancel) return false;
-        final cascade = choice == CascadeChoice.cascade;
-        container.read(dismissedTaskIdsProvider.notifier).add(item.id);
-        try {
-          if (isExperiment) {
-            await container
-                .read(experimentReminderSchedulerProvider)
-                .cancelForExperiment(item.id);
-            await container
-                .read(experimentRepositoryProvider)
-                .delete(item.id, cascadeTasks: cascade);
-            container.invalidate(experimentListProvider);
-            container.invalidate(experimentByIdProvider(item.id));
-            container.invalidate(experimentCheckinsProvider(item.id));
-            container.invalidate(experimentLinkedTasksProvider(item.id));
-            container.invalidate(goalsByExperimentProvider(item.id));
-            container.invalidate(notesByExperimentProvider(item.id));
-          } else {
-            await container.read(goalReminderSchedulerProvider).cancelForGoal(item.id);
-            await container.read(goalRepositoryProvider).deleteGoal(item.id, cascadeTasks: cascade);
-            container.invalidate(goalListProvider);
-            container.invalidate(goalByIdProvider(item.id));
-            container.invalidate(goalProgressProvider(item.id));
-            container.invalidate(latestGoalProgressProvider(item.id));
-            container.invalidate(tasksByGoalProvider(item.id));
-          }
+        if (behavior == CascadeDeleteBehavior.ask) {
+          final title = isExperiment
+              ? l10n.experimentFormDeleteConfirmTitle
+              : l10n.goalsDeleteConfirmTitle;
+          final choice = await showCascadeDeleteDialog(
+            context,
+            title: title,
+            behavior: behavior,
+            linkedTaskCount: links.length,
+          );
+          if (choice == null || choice == CascadeChoice.cancel) return false;
+          final cascade = choice == CascadeChoice.cascade;
+          container.read(dismissedTaskIdsProvider.notifier).add(item.id);
           if (cascade) {
-            for (final link in links) {
-              final d = link.item.day;
-              container.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
-              final utc = DateTime.utc(d.year, d.month, d.day);
-              final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
-              final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
-              final weekEnd = weekStart.add(const Duration(days: 6));
-              container.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
-              container.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+            for (final t in links) {
+              container.read(dismissedTaskIdsProvider.notifier).add(t.item.id);
             }
           }
-        } catch (e) {
-          container.read(dismissedTaskIdsProvider.notifier).remove(item.id);
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.errorWithMessage('$e'))),
-            );
+          try {
+            if (isExperiment) {
+              await container
+                  .read(experimentReminderSchedulerProvider)
+                  .cancelForExperiment(item.id);
+              await container
+                  .read(experimentRepositoryProvider)
+                  .delete(item.id, cascadeTasks: cascade);
+              container.invalidate(experimentListProvider);
+              container.invalidate(experimentByIdProvider(item.id));
+              container.invalidate(experimentCheckinsProvider(item.id));
+              container.invalidate(experimentLinkedTasksProvider(item.id));
+              container.invalidate(goalsByExperimentProvider(item.id));
+              container.invalidate(notesByExperimentProvider(item.id));
+            } else {
+              await container.read(goalReminderSchedulerProvider).cancelForGoal(item.id);
+              await container.read(goalRepositoryProvider).deleteGoal(item.id, cascadeTasks: cascade);
+              container.invalidate(goalListProvider);
+              container.invalidate(goalByIdProvider(item.id));
+              container.invalidate(goalProgressProvider(item.id));
+              container.invalidate(latestGoalProgressProvider(item.id));
+              container.invalidate(tasksByGoalProvider(item.id));
+            }
+            if (cascade) {
+              for (final link in links) {
+                final d = link.item.day;
+                container.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
+                final utc = DateTime.utc(d.year, d.month, d.day);
+                final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
+                final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
+                final weekEnd = weekStart.add(const Duration(days: 6));
+                container.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
+                container.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+              }
+            }
+          } catch (e) {
+            container.read(dismissedTaskIdsProvider.notifier).remove(item.id);
+            if (cascade) {
+              for (final t in links) {
+                container.read(dismissedTaskIdsProvider.notifier).remove(t.item.id);
+              }
+            }
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.errorWithMessage('$e'))),
+              );
+            }
+            return false;
           }
-          return false;
+          return true;
+        } else {
+          final cascade = behavior == CascadeDeleteBehavior.alwaysCascade;
+          final expSnapshot = isExperiment
+              ? await container.read(experimentRepositoryProvider).getById(item.id)
+              : null;
+          final goalSnapshot = isExperiment
+              ? null
+              : await container.read(goalRepositoryProvider).getGoalById(item.id);
+          final snapshotTasks = cascade ? links.map((e) => e.item).toList() : <Task>[];
+          final overlay = Overlay.of(context);
+          container.read(dismissedTaskIdsProvider.notifier).add(item.id);
+          for (final t in snapshotTasks) {
+            container.read(dismissedTaskIdsProvider.notifier).add(t.id);
+          }
+          try {
+            if (isExperiment) {
+              await container
+                  .read(experimentReminderSchedulerProvider)
+                  .cancelForExperiment(item.id);
+              await container
+                  .read(experimentRepositoryProvider)
+                  .delete(item.id, cascadeTasks: cascade);
+              container.invalidate(experimentListProvider);
+              container.invalidate(experimentByIdProvider(item.id));
+              container.invalidate(experimentCheckinsProvider(item.id));
+              container.invalidate(experimentLinkedTasksProvider(item.id));
+              container.invalidate(goalsByExperimentProvider(item.id));
+              container.invalidate(notesByExperimentProvider(item.id));
+            } else {
+              await container.read(goalReminderSchedulerProvider).cancelForGoal(item.id);
+              await container.read(goalRepositoryProvider).deleteGoal(item.id, cascadeTasks: cascade);
+              container.invalidate(goalListProvider);
+              container.invalidate(goalByIdProvider(item.id));
+              container.invalidate(goalProgressProvider(item.id));
+              container.invalidate(latestGoalProgressProvider(item.id));
+              container.invalidate(tasksByGoalProvider(item.id));
+            }
+            if (cascade) {
+              for (final link in links) {
+                final d = link.item.day;
+                container.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
+                final utc = DateTime.utc(d.year, d.month, d.day);
+                final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
+                final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
+                final weekEnd = weekStart.add(const Duration(days: 6));
+                container.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
+                container.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+              }
+            }
+          } catch (e) {
+            container.read(dismissedTaskIdsProvider.notifier).remove(item.id);
+            for (final t in snapshotTasks) {
+              container.read(dismissedTaskIdsProvider.notifier).remove(t.id);
+            }
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.errorWithMessage('$e'))),
+              );
+            }
+            return false;
+          }
+          if (!context.mounted) return true;
+          final message = isExperiment
+              ? l10n.experimentDeleted(item.title)
+              : l10n.goalDeleted(item.title);
+          showTopBannerOverlay(
+            overlay,
+            message: message,
+            actionLabel: l10n.commonUndo,
+            onAction: () async {
+              if (isExperiment && expSnapshot != null) {
+                await container.read(experimentRepositoryProvider).upsert(expSnapshot);
+                for (final task in snapshotTasks) {
+                  await container.read(taskRepositoryProvider).insert(task);
+                  await container.read(linksRepositoryProvider).linkTaskExperiment(task.id, item.id);
+                }
+              } else if (goalSnapshot != null) {
+                await container.read(goalRepositoryProvider).upsertGoal(goalSnapshot);
+                for (final task in snapshotTasks) {
+                  await container.read(taskRepositoryProvider).insert(task);
+                  await container.read(linksRepositoryProvider).linkTaskGoal(task.id, item.id);
+                }
+              }
+              container.read(dismissedTaskIdsProvider.notifier).remove(item.id);
+              for (final t in snapshotTasks) {
+                container.read(dismissedTaskIdsProvider.notifier).remove(t.id);
+              }
+              if (isExperiment) {
+                container.invalidate(experimentListProvider);
+                container.invalidate(experimentByIdProvider(item.id));
+              } else {
+                container.invalidate(goalListProvider);
+                container.invalidate(goalByIdProvider(item.id));
+              }
+              if (cascade) {
+                for (final t in snapshotTasks) {
+                  final d = t.day;
+                  container.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
+                  final utc = DateTime.utc(d.year, d.month, d.day);
+                  final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
+                  final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
+                  final weekEnd = weekStart.add(const Duration(days: 6));
+                  container.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
+                  container.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+                }
+              }
+            },
+          );
+          return true;
         }
-        return true;
       },
       background: Container(
         alignment: Alignment.centerRight,

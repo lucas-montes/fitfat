@@ -1714,5 +1714,21 @@
   "templatesDuplicate": "Duplicate",
   "templatesDuplicated": "Template duplicated",
   "cascadeDeleteTitleWithTasks": "Delete linked tasks?",
-  "cascadeDeleteKeepTasks": "Keep tasks"
+  "cascadeDeleteKeepTasks": "Keep tasks",
+  "experimentDeleted": "Experiment \"{name}\" deleted",
+  "@experimentDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "goalDeleted": "Goal \"{name}\" deleted",
+  "@goalDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

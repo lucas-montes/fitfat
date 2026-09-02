@@ -5181,6 +5181,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep tasks'**
   String get cascadeDeleteKeepTasks;
+
+  /// No description provided for @experimentDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Experiment \"{name}\" deleted'**
+  String experimentDeleted(String name);
+
+  /// No description provided for @goalDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal \"{name}\" deleted'**
+  String goalDeleted(String name);
 }
 
 class _AppLocalizationsDelegate

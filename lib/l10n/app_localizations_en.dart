@@ -2844,4 +2844,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cascadeDeleteKeepTasks => 'Keep tasks';
+
+  @override
+  String experimentDeleted(String name) {
+    return 'Experiment \"$name\" deleted';
+  }
+
+  @override
+  String goalDeleted(String name) {
+    return 'Goal \"$name\" deleted';
+  }
 }
