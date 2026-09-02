@@ -1,16 +1,13 @@
 {
   "@@locale": "es",
   "@@last_modified": "2026-07-02",
-
   "appTitle": "FitFat",
-
   "tabDashboard": "Panel",
   "tabExercise": "Ejercicio",
   "tabDiet": "Dieta",
   "tabSettings": "Ajustes",
   "tabPlan": "Plan",
   "tabNotes": "Notas",
-
   "dashboardAppBar": "Panel",
   "dashboardTodayCalories": "Calorías de hoy",
   "dashboardLatestWorkout": "Último entrenamiento",
@@ -25,7 +22,9 @@
   "dashboardError": "Error: {message}",
   "@dashboardError": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "dashboardGreetingMorning": "Buenos días",
@@ -41,22 +40,32 @@
   "dashboardConsumedOfTarget": "{consumed} / {target} kcal",
   "@dashboardConsumedOfTarget": {
     "placeholders": {
-      "consumed": { "type": "String" },
-      "target": { "type": "String" }
+      "consumed": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
     }
   },
   "dashboardOverTarget": "{kcal} kcal por encima del objetivo",
   "@dashboardOverTarget": {
     "placeholders": {
-      "kcal": { "type": "String" }
+      "kcal": {
+        "type": "String"
+      }
     }
   },
   "dashboardMacroTargets": "Objetivos de macros",
   "dashboardMacroProgress": "{consumed} / {target} g",
   "@dashboardMacroProgress": {
     "placeholders": {
-      "consumed": { "type": "String" },
-      "target": { "type": "String" }
+      "consumed": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
     }
   },
   "dashboardWeightTrend": "Evolución del peso",
@@ -65,7 +74,9 @@
   "dashboardVolumeKg": "{volume} {unit}",
   "@dashboardVolumeKg": {
     "placeholders": {
-      "volume": { "type": "String" }
+      "volume": {
+        "type": "String"
+      }
     }
   },
   "dashboardMinutes": "Minutos",
@@ -74,10 +85,11 @@
   "dashboardSeeAllTasks": "Ver las {count} tareas",
   "@dashboardSeeAllTasks": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
-
   "exerciseListAppBar": "Ejercicios",
   "exerciseListManageBtn": "Gestionar ejercicios",
   "exerciseListSearchHint": "Buscar ejercicios",
@@ -107,7 +119,9 @@
   "activeWorkoutPlannedSetsTitle": "Series planificadas para {exercise}",
   "@activeWorkoutPlannedSetsTitle": {
     "placeholders": {
-      "exercise": { "type": "String" }
+      "exercise": {
+        "type": "String"
+      }
     }
   },
   "activeWorkoutPlannedRepsLabel": "Repeticiones",
@@ -122,13 +136,14 @@
   "activeWorkoutExerciseInfo": "Info del ejercicio",
   "activeWorkoutExerciseNotesDialogTitle": "Notas sobre el ejercicio",
   "activeWorkoutExerciseNotesHint": "Anota qué repetir o cambiar la próxima vez (series, peso, dificultad)…",
-
   "exerciseUsedTitle": "Ejercicio en uso",
   "exerciseUsedBody": "Utilizado en {count} entrenamiento. Elimina primero el entrenamiento para quitar este ejercicio.",
   "exerciseUsedBody_plural": "Utilizado en {count} entrenamientos. Elimina primero los entrenamientos para quitar este ejercicio.",
   "@exerciseUsedBody": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "exerciseDetailAppBar": "Ejercicio",
@@ -157,13 +172,17 @@
   "exerciseDetailAdherenceValue": "{percent}%",
   "@exerciseDetailAdherenceValue": {
     "placeholders": {
-      "percent": { "type": "String" }
+      "percent": {
+        "type": "String"
+      }
     }
   },
   "exerciseDetailSetNumber": "Serie {number}",
   "@exerciseDetailSetNumber": {
     "placeholders": {
-      "number": { "type": "int" }
+      "number": {
+        "type": "int"
+      }
     }
   },
   "exerciseDetailSetCompleted": "Completada",
@@ -172,33 +191,45 @@
   "exerciseDetailRepsDelta": "{delta} rep.",
   "@exerciseDetailRepsDelta": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": {
+        "type": "String"
+      }
     }
   },
   "exerciseDetailWeightDelta": "{delta} {unit}",
   "@exerciseDetailWeightDelta": {
     "placeholders": {
-      "delta": { "type": "String" }
+      "delta": {
+        "type": "String"
+      }
     }
   },
   "exerciseDetailSetRest": "descanso {rest}",
   "@exerciseDetailSetRest": {
     "placeholders": {
-      "rest": { "type": "String" }
+      "rest": {
+        "type": "String"
+      }
     }
   },
   "exerciseDetailSetRestTook": "(tomó {rest})",
   "@exerciseDetailSetRestTook": {
     "placeholders": {
-      "rest": { "type": "String" }
+      "rest": {
+        "type": "String"
+      }
     }
   },
   "exerciseDetailTrendSame": "igual que el entrenamiento anterior",
   "exerciseDetailTrendDelta": "{delta} {unit} vs el entrenamiento anterior",
   "@exerciseDetailTrendDelta": {
     "placeholders": {
-      "delta": { "type": "String" },
-      "unit": { "type": "String" }
+      "delta": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
     }
   },
   "exerciseDetailPrBadge": "Récord",
@@ -209,7 +240,6 @@
   "exerciseDetailSetHeaderRest": "Descanso",
   "exerciseDetailWeightTrend": "Peso máximo con el tiempo",
   "exerciseDetailRepsTrend": "Repeticiones con el tiempo",
-
   "exerciseFormNewTitle": "Nuevo ejercicio",
   "exerciseFormEditTitle": "Editar ejercicio",
   "exerciseFormNameLabel": "Nombre del ejercicio",
@@ -218,12 +248,12 @@
   "exerciseFormTypeLabel": "Tipo",
   "exerciseFormSave": "Guardar",
   "exerciseFormSaving": "Guardando…",
-
   "workoutListAppBar": "Entrenamientos",
   "templatesTitle": "Plantillas",
   "templatesEmptyTitle": "Aún no hay plantillas",
   "templatesEmptyBody": "Crea una rutina reutilizable o guarda un entrenamiento pasado como plantilla.",
   "templatesNew": "Nueva plantilla",
+  "templatesEdit": "Editar plantilla",
   "templatesStartToday": "Empezar hoy",
   "templatesExercisesCount": "{count, plural, =0{Sin ejercicios} =1{1 ejercicio} other{{count} ejercicios}}",
   "templatesScheduleOff": "Sin programar",
@@ -241,7 +271,9 @@
   "workoutDeleted": "Entrenamiento «{name}» eliminado",
   "@workoutDeleted": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "workoutFormTitle": "Nuevo entrenamiento",
@@ -269,7 +301,6 @@
   "workoutFormSetIncomplete": "Completa cada serie añadida (valores y tiempo de descanso) o elimínala",
   "workoutFormRemoveExercise": "Quitar ejercicio",
   "workoutFormCreateExercise": "Crear ejercicio «{query}»",
-
   "workoutDetailAppBar": "Entrenamiento",
   "workoutDetailNotFound": "Entrenamiento no encontrado",
   "workoutDetailBtnStart": "Iniciar",
@@ -282,8 +313,12 @@
   "workoutDetailSetChipRest": "{planned} · {rest}",
   "@workoutDetailSetChipRest": {
     "placeholders": {
-      "planned": { "type": "String" },
-      "rest": { "type": "String" }
+      "planned": {
+        "type": "String"
+      },
+      "rest": {
+        "type": "String"
+      }
     }
   },
   "workoutDetailSetActualsTitle": "Serie {number} — Real",
@@ -293,13 +328,11 @@
   "workoutDetailActualDistanceLabel": "Distancia (m)",
   "workoutDetailSetCount": "{count} serie",
   "workoutDetailSetCount_plural": "{count} series",
-
   "ingredientListAppBar": "Ingredientes",
   "emptyIngredientsTitle": "Aún no hay ingredientes",
   "emptyIngredientsBody": "Añade tu primer ingrediente para empezar a crear comidas.",
   "emptyIngredientsCta": "Añadir ingrediente",
   "ingredientArchived": "Ingrediente «{name}» archivado",
-
   "ingredientFormNewTitle": "Nuevo ingrediente",
   "ingredientFormEditTitle": "Editar ingrediente",
   "ingredientFormNameLabel": "Nombre",
@@ -322,7 +355,6 @@
   "ingredientFormFieldRequired": "{label} es obligatorio",
   "ingredientFormFieldPositive": "{label} debe ser positivo",
   "ingredientFormFieldNonNegative": "{label} no puede ser negativo",
-
   "mealListAppBar": "Comidas",
   "mealListManageBtn": "Gestionar ingredientes",
   "emptyMealsTitle": "Aún no hay comidas",
@@ -331,14 +363,15 @@
   "mealDeleted": "Comida «{name}» eliminada",
   "@mealDeleted": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "mealListIngredientCount": "{count} ingrediente",
   "mealListIngredientCount_plural": "{count} ingredientes",
   "mealListCaloriesValue": "{calories} kcal",
   "mealListMacroFormat": "{grams}g  ·  {calories} kcal  ·  P {protein}g  ·  C {carbs}g  ·  G {fat}g",
-
   "mealFormNewTitle": "Nueva comida",
   "mealFormEditTitle": "Editar comida",
   "mealFormNameLabel": "Nombre de la comida",
@@ -351,7 +384,6 @@
   "mealFormGramsLabel": "g",
   "mealFormSave": "Guardar",
   "mealFormSaving": "Guardando…",
-
   "plannerAppBar": "Plan diario",
   "plannerToday": "Hoy",
   "plannerPreviousDay": "Día anterior",
@@ -393,13 +425,17 @@
   "plannerDeleted": "Tarea «{title}» eliminada",
   "@plannerDeleted": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "plannerCancelled": "Tarea «{title}» cancelada",
   "@plannerCancelled": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "plannerCopyPrevious": "Copiar desde ayer",
@@ -428,22 +464,30 @@
   "@plannerDetailUpdatedAt": {
     "description": "plannerDetailUpdatedAt",
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "plannerDetailDueDate": "Vence el {date}",
   "@plannerDetailDueDate": {
     "description": "plannerDetailDueDate",
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "plannerDetailTimeRange": "{start} – {end}",
   "@plannerDetailTimeRange": {
     "description": "plannerDetailTimeRange",
     "placeholders": {
-      "start": { "type": "String" },
-      "end": { "type": "String" }
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
     }
   },
   "plannerDetailNotes": "Notas",
@@ -457,7 +501,9 @@
   "@plannerDetailDeleteBody": {
     "description": "plannerDetailDeleteBody",
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "plannerRepeatSummaryDaily": "Todos los días",
@@ -465,35 +511,45 @@
   "@plannerRepeatSummaryWeekly": {
     "description": "plannerRepeatSummaryWeekly",
     "placeholders": {
-      "days": { "type": "String" }
+      "days": {
+        "type": "String"
+      }
     }
   },
   "plannerRepeatSummaryInterval": "Cada {count} días",
   "@plannerRepeatSummaryInterval": {
     "description": "plannerRepeatSummaryInterval",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "plannerRepeatSummaryMonthly": "Mensual el día {day}",
   "@plannerRepeatSummaryMonthly": {
     "description": "plannerRepeatSummaryMonthly",
     "placeholders": {
-      "day": { "type": "int" }
+      "day": {
+        "type": "int"
+      }
     }
   },
   "plannerRepeatSummaryEndsDate": " · hasta el {date}",
   "@plannerRepeatSummaryEndsDate": {
     "description": "plannerRepeatSummaryEndsDate",
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "plannerRepeatSummaryEndsCount": " · {count} apariciones",
   "@plannerRepeatSummaryEndsCount": {
     "description": "plannerRepeatSummaryEndsCount",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "plannerCopyConfirmTitle": "¿Copiar tareas pendientes?",
@@ -501,7 +557,9 @@
   "plannerCopyConfirmBody_plural": "{count} tareas pendientes de ayer se copiarán hoy.",
   "@plannerCopyConfirmBody": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "plannerRepeatLabel": "Repetir",
@@ -519,7 +577,6 @@
   "plannerRepeatEndsOnDate": "En la fecha",
   "plannerRepeatEndsAfter": "Después de",
   "plannerRepeatOccurrences": "veces",
-
   "notesAppBar": "Notas",
   "notesEmptyTitle": "Aún no hay notas",
   "notesEmptyBody": "Anota cualquier cosa que tengas en mente — rutinas, recetas, aprendizajes de un entrenamiento. Las notas son privadas de este dispositivo.",
@@ -534,7 +591,37 @@
   "notesDelete": "Eliminar nota",
   "notesDeleteConfirmTitle": "¿Eliminar nota?",
   "notesDeleteConfirmBody": "«{title}» se eliminará permanentemente. Esta acción no se puede deshacer.",
-
+  "notesVoiceRecord": "Añadir nota de voz",
+  "notesVoiceRecording": "Grabando {elapsed}",
+  "@notesVoiceRecording": {
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
+  "notesVoiceStopPlayback": "Detener reproducción",
+  "notesVoicePlay": "Reproducir",
+  "notesVoiceRemove": "Eliminar nota de voz",
+  "notesVoicePermissionDenied": "Se necesita permiso de micrófono para grabar notas de voz.",
+  "notesVoiceNone": "Aún no hay notas de voz",
+  "notesVoiceClipLabel": "Clip {index}",
+  "@notesVoiceClipLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "notesVoiceCount": "{count} nota de voz",
+  "notesVoiceCount_plural": "{count} notas de voz",
+  "@notesVoiceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsAppBar": "Ajustes",
   "settingsProfile": "Perfil",
   "settingsAgeLabel": "Edad (años)",
@@ -595,37 +682,29 @@
   "settingsResetDataConfirmTitle": "¿Restablecer todos los datos?",
   "settingsResetDataConfirmBody": "Esto elimina permanentemente todos tus datos y restablece tus ajustes. No se puede deshacer.",
   "settingsResetDataConfirmAction": "Eliminar todo",
-
   "taskReminderDueSoon": "Vence en 30 minutos",
   "taskReminderDueNow": "Vence ahora",
-
   "statusCompleted": "Completado",
   "statusActive": "Activo",
   "statusPending": "Pendiente",
-
   "exerciseTypeWeightlifting": "Musculación",
   "exerciseTypeCardio": "Cardio",
-
   "commonCancel": "Cancelar",
+  "commonContinue": "Continuar",
   "commonSave": "Guardar",
   "commonEdit": "Editar",
   "commonUndo": "Deshacer",
   "commonOk": "Aceptar",
   "commonSaving": "Guardando…",
   "commonSearch": "Buscar",
-
   "errorWithMessage": "Error: {message}",
   "errorLoadingResource": "Error al cargar {resource}: {message}",
-
   "macroGrams": "{value}g",
   "macroKcal": "{value} kcal",
-
   "ingredientMacroRow": "{grams}g  ·  {calories} kcal  ·  P {protein}g  ·  C {carbs}g  ·  G {fat}g",
-
   "ingredientNutrientSodium": "Na {value}mg",
   "ingredientNutrientFiber": "Fibra {value}g",
   "ingredientNutrientSugar": "Azúcar {value}g",
-
   "ingredientFormBrandLabel": "Marca",
   "ingredientFormBarcodeLabel": "Código de barras",
   "ingredientFormScanTile": "Escanear código de barras",
@@ -637,7 +716,9 @@
   "ingredientDetailCostPerKg": "{value} /kg",
   "@ingredientDetailCostPerKg": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "ingredientPriceAdd": "Añadir precio",
@@ -652,7 +733,6 @@
   "storeManagerAddTile": "Añadir tienda",
   "storeNameLabel": "Nombre de la tienda",
   "storeNameRequired": "El nombre es obligatorio",
-
   "settingsFxAutoRefresh": "Actualización automática de tasas",
   "settingsFxAutoRefreshSubtitle": "Obtiene las tasas de cambio en segundo plano",
   "settingsFxRefreshInterval": "Intervalo de actualización",
@@ -667,6 +747,34 @@
   "syncCurrenciesTooltip": "Sincronizar divisas",
   "syncPushIngredientTooltip": "Publicar en el catálogo compartido",
   "syncServerNotConfigured": "La URL del servidor de sincronización no está configurada",
+  "syncExercisesHelp": "Descarga el catálogo de ejercicios compartido y sus medios desde el servidor.",
+  "syncIngredientsHelp": "Descarga el catálogo compartido de ingredientes, tiendas y precios desde el servidor.",
+  "syncCurrenciesHelp": "Descarga los tipos de cambio más recientes desde el servidor.",
+  "settingsSyncEndpoints": "Puntos de acceso",
+  "settingsSyncEndpointsHint": "Sustituye la ruta del servidor para cada operación. Deja el valor predeterminado salvo que tu servidor use rutas distintas.",
+  "endpointReset": "Restablecer",
+  "pushAllData": "Enviar todos los datos",
+  "pushAllDataTooltip": "Sube todos los datos locales al servidor (unidireccional)",
+  "pushAllSuccess": "Todos los datos enviados al servidor.",
+  "exportServer": "Exportar base de datos al servidor",
+  "exportServerTooltip": "Sube una copia completa de tu base de datos local al servidor",
+  "importServer": "Importar base de datos del servidor",
+  "importServerTooltip": "Reemplaza tu base de datos local con la copia del servidor",
+  "importConfirmTitle": "¿Reemplazar los datos locales?",
+  "importConfirmBody": "Esto reemplaza todos los datos locales con la copia del servidor. No se puede deshacer.",
+  "importSuccess": "Base de datos importada. Reinicia la app para cargarla.",
+  "importFailed": "Error al importar",
+  "importNothing": "Nada que importar",
+  "exportSuccess": "Base de datos exportada.",
+  "exportFailed": "Error al exportar",
+  "pushAllDataHelp": "Sube todos tus datos locales al servidor (copia unidireccional).",
+  "exportServerHelp": "Sube una copia completa de tu archivo de base de datos local al servidor.",
+  "importServerHelp": "Reemplaza tu base de datos local con la copia del servidor. Pide confirmación primero.",
+  "settingsPlanner": "Planificador",
+  "settingsPlannerSubtitle": "Entrenamientos, experimentos, tareas y metas",
+  "settingsNutrition": "Nutrición",
+  "settingsNutritionSubtitle": "Unidades y objetivos calóricos",
+  "settingsBudgetCurrencySubtitle": "Divisa base y tipos de cambio",
   "settingsUnits": "Unidades",
   "settingsWeightUnitLabel": "Peso",
   "settingsLengthUnitLabel": "Altura",
@@ -678,7 +786,6 @@
   "workoutSummaryDoAgain": "Repetir",
   "workoutActionReplay": "Repetir sesión",
   "workoutActionDuplicate": "Duplicar",
-
   "workoutDetailPlannedSetReps": "{reps} × {weight} {unit}",
   "workoutDetailPlannedSetDuration": "{minutes} min",
   "workoutDetailPlannedSetEmpty": "—",
@@ -689,7 +796,6 @@
   "workoutDetailActualSetDistance": "{distance} m",
   "workoutDetailActualSetTime": "{value} · {time}",
   "workoutDetailActualSetEmpty": "—",
-
   "bodyMetricsTitle": "Medidas corporales",
   "bodyMetricsAddWeight": "Añadir peso",
   "bodyMetricsAddHeight": "Añadir altura",
@@ -704,40 +810,51 @@
   "bodyMetricsLatestWeight": "Último: {value} {unit}",
   "@bodyMetricsLatestWeight": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "bodyMetricsLatestHeight": "Última: {value} {unit}",
   "@bodyMetricsLatestHeight": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "bodyMetricsValueKg": "{value} {unit}",
   "@bodyMetricsValueKg": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "bodyMetricsValueCm": "{value} cm",
   "@bodyMetricsValueCm": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "bodyMetricsGoal": "Objetivo: {goal}",
   "@bodyMetricsGoal": {
     "placeholders": {
-      "goal": { "type": "String" }
+      "goal": {
+        "type": "String"
+      }
     }
   },
-
   "restTimerTitle": "Temporizador de descanso",
   "restTimerCancel": "Cancelar descanso",
   "restTimerMinutes": "{minutes} min",
   "@restTimerMinutes": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "activeWorkoutElapsedLabel": "Transcurrido",
@@ -748,10 +865,11 @@
   "restAlarmBodyWithDuration": "Tu descanso planificado de {duration} ha terminado.",
   "@restAlarmBodyWithDuration": {
     "placeholders": {
-      "duration": { "type": "String" }
+      "duration": {
+        "type": "String"
+      }
     }
   },
-
   "workoutSummaryAppBar": "Resumen",
   "workoutSummaryDone": "Hecho",
   "workoutSummaryDurationLabel": "Duración",
@@ -764,44 +882,56 @@
   "workoutSummaryValueKg": "{value} {unit}",
   "@workoutSummaryValueKg": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "workoutSummaryDistanceValue": "{distance} m",
   "@workoutSummaryDistanceValue": {
     "placeholders": {
-      "distance": { "type": "String" }
+      "distance": {
+        "type": "String"
+      }
     }
   },
   "settingsRateRow": "{base} → {target}: {rate}",
   "@settingsRateRow": {
-  "description": "settingsRateRow",
-  "placeholders": {
-    "target": {
-      "type": "String"
-    },
-    "rate": {
-      "type": "num"
-    },
-    "base": {
-      "type": "String"
+    "description": "settingsRateRow",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "num"
+      },
+      "base": {
+        "type": "String"
+      }
     }
-  }
-},
+  },
   "settingsRateInverse": "1 {base} = {rate} {code}",
   "@settingsRateInverse": {
     "description": "settingsRateInverse",
     "placeholders": {
-      "base": { "type": "String" },
-      "rate": { "type": "String" },
-      "code": { "type": "String" }
+      "base": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
     }
   },
   "settingsRateUpdated": "Actualizado el {date}",
   "@settingsRateUpdated": {
     "description": "settingsRateUpdated",
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "settingsRateManual": "Manual",
@@ -812,53 +942,59 @@
   "@transactionRateUsed": {
     "description": "transactionRateUsed",
     "placeholders": {
-      "rate": { "type": "String" },
-      "base": { "type": "String" },
-      "code": { "type": "String" }
+      "rate": {
+        "type": "String"
+      },
+      "base": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
     }
   },
   "accountDeleteBlockedBody": "Esta cuenta es usada por {count} transacción(es) y no puede eliminarse.",
   "@accountDeleteBlockedBody": {
-  "description": "accountDeleteBlockedBody",
-  "placeholders": {
-    "count": {
-      "type": "int"
+    "description": "accountDeleteBlockedBody",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
     }
-  }
-},
+  },
   "accountDeleteBlockedTitle": "Cuenta en uso",
   "@accountDeleteBlockedTitle": {
-  "description": "accountDeleteBlockedTitle"
-},
+    "description": "accountDeleteBlockedTitle"
+  },
   "accountDeleteConfirmBody": "Eliminar la cuenta '{name}' también eliminará sus transacciones y recibos.",
   "@accountDeleteConfirmBody": {
-  "description": "accountDeleteConfirmBody",
-  "placeholders": {
-    "name": {
-      "type": "String"
+    "description": "accountDeleteConfirmBody",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
     }
-  }
-},
+  },
   "accountDeleteConfirmTitle": "¿Eliminar la cuenta?",
   "@accountDeleteConfirmTitle": {
-  "description": "accountDeleteConfirmTitle"
-},
+    "description": "accountDeleteConfirmTitle"
+  },
   "accountFormEditTitle": "Editar cuenta",
   "@accountFormEditTitle": {
-  "description": "accountFormEditTitle"
-},
+    "description": "accountFormEditTitle"
+  },
   "accountFormNameLabel": "Nombre",
   "@accountFormNameLabel": {
-  "description": "accountFormNameLabel"
-},
+    "description": "accountFormNameLabel"
+  },
   "accountFormNameRequired": "Escribe un nombre",
   "@accountFormNameRequired": {
-  "description": "accountFormNameRequired"
-},
+    "description": "accountFormNameRequired"
+  },
   "accountFormNewTitle": "Nueva cuenta",
   "@accountFormNewTitle": {
-  "description": "accountFormNewTitle"
-},
+    "description": "accountFormNewTitle"
+  },
   "accountFormOpeningHelper": "Importe ya presente en esta cuenta cuando empezaste a registrarla. Deja 0 si no estás seguro.",
   "@accountFormOpeningHelper": {
     "description": "accountFormOpeningHelper"
@@ -867,300 +1003,299 @@
   "@accountFormIntro": {
     "description": "accountFormIntro"
   },
-
   "accountFormNoteLabel": "Account Form Note Label",
   "@accountFormNoteLabel": {
-  "description": "accountFormNoteLabel"
-},
+    "description": "accountFormNoteLabel"
+  },
   "accountFormOpeningLabel": "Saldo inicial",
   "@accountFormOpeningLabel": {
-  "description": "accountFormOpeningLabel"
-},
+    "description": "accountFormOpeningLabel"
+  },
   "accountFormTypeLabel": "Tipo",
   "@accountFormTypeLabel": {
-  "description": "accountFormTypeLabel"
-},
+    "description": "accountFormTypeLabel"
+  },
   "accountOpeningLabel": "Saldo inicial: {value}",
   "@accountOpeningLabel": {
-  "description": "accountOpeningLabel",
-  "placeholders": {
-    "value": {
-      "type": "String"
+    "description": "accountOpeningLabel",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
     }
-  }
-},
+  },
   "accountReceipts": "Recibos",
   "@accountReceipts": {
-  "description": "accountReceipts"
-},
+    "description": "accountReceipts"
+  },
   "accountTransactions": "Transacciones",
   "@accountTransactions": {
-  "description": "accountTransactions"
-},
+    "description": "accountTransactions"
+  },
   "accountTypeBank": "Cuenta bancaria",
   "@accountTypeBank": {
-  "description": "accountTypeBank"
-},
+    "description": "accountTypeBank"
+  },
   "accountTypeCash": "Efectivo",
   "@accountTypeCash": {
-  "description": "accountTypeCash"
-},
+    "description": "accountTypeCash"
+  },
   "accountTypeCredit": "Tarjeta de crédito",
   "@accountTypeCredit": {
-  "description": "accountTypeCredit"
-},
+    "description": "accountTypeCredit"
+  },
   "accountTypeInvestment": "Inversión",
   "@accountTypeInvestment": {
-  "description": "accountTypeInvestment"
-},
+    "description": "accountTypeInvestment"
+  },
   "accountTypeOther": "Otro",
   "@accountTypeOther": {
-  "description": "accountTypeOther"
-},
+    "description": "accountTypeOther"
+  },
   "accountTypeSavings": "Ahorros",
   "@accountTypeSavings": {
-  "description": "accountTypeSavings"
-},
+    "description": "accountTypeSavings"
+  },
   "budgetAccounts": "Cuentas",
   "@budgetAccounts": {
-  "description": "budgetAccounts"
-},
+    "description": "budgetAccounts"
+  },
   "budgetAdd": "Budget Add",
   "@budgetAdd": {
-  "description": "budgetAdd"
-},
+    "description": "budgetAdd"
+  },
   "budgetEmptyBody": "Budget Empty Body",
   "@budgetEmptyBody": {
-  "description": "budgetEmptyBody"
-},
+    "description": "budgetEmptyBody"
+  },
   "budgetEmptyTitle": "Budget Empty Title",
   "@budgetEmptyTitle": {
-  "description": "budgetEmptyTitle"
-},
+    "description": "budgetEmptyTitle"
+  },
   "budgetFabAccount": "Budget Fab Account",
   "@budgetFabAccount": {
-  "description": "budgetFabAccount"
-},
+    "description": "budgetFabAccount"
+  },
   "budgetFabExpense": "Budget Fab Expense",
   "@budgetFabExpense": {
-  "description": "budgetFabExpense"
-},
+    "description": "budgetFabExpense"
+  },
   "budgetFabIncome": "Budget Fab Income",
   "@budgetFabIncome": {
-  "description": "budgetFabIncome"
-},
+    "description": "budgetFabIncome"
+  },
   "budgetFabTransfer": "Budget Fab Transfer",
   "@budgetFabTransfer": {
-  "description": "budgetFabTransfer"
-},
+    "description": "budgetFabTransfer"
+  },
   "budgetMonthExpense": "Gastos del mes",
   "@budgetMonthExpense": {
-  "description": "budgetMonthExpense"
-},
+    "description": "budgetMonthExpense"
+  },
   "budgetMonthIncome": "Ingresos del mes",
   "@budgetMonthIncome": {
-  "description": "budgetMonthIncome"
-},
+    "description": "budgetMonthIncome"
+  },
   "budgetNoReceipts": "Aún no hay recibos",
   "@budgetNoReceipts": {
-  "description": "budgetNoReceipts"
-},
+    "description": "budgetNoReceipts"
+  },
   "budgetNoTransactions": "Aún no hay transacciones",
   "@budgetNoTransactions": {
-  "description": "budgetNoTransactions"
-},
+    "description": "budgetNoTransactions"
+  },
   "budgetPendingReceipts": "{count} recibo(s) pendiente(s)",
   "@budgetPendingReceipts": {
-  "description": "budgetPendingReceipts",
-  "placeholders": {
-    "count": {
-      "type": "int"
+    "description": "budgetPendingReceipts",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
     }
-  }
-},
+  },
   "budgetRecentTransactions": "Transacciones recientes",
   "@budgetRecentTransactions": {
-  "description": "budgetRecentTransactions"
-},
+    "description": "budgetRecentTransactions"
+  },
   "budgetThisMonth": "Budget This Month",
   "@budgetThisMonth": {
-  "description": "budgetThisMonth"
-},
+    "description": "budgetThisMonth"
+  },
   "budgetViewAll": "Ver todo",
   "@budgetViewAll": {
-  "description": "budgetViewAll"
-},
+    "description": "budgetViewAll"
+  },
   "commonDelete": "Common Delete",
   "@commonDelete": {
-  "description": "commonDelete"
-},
+    "description": "commonDelete"
+  },
   "receiptAppBar": "Recibo",
   "@receiptAppBar": {
-  "description": "receiptAppBar"
-},
+    "description": "receiptAppBar"
+  },
   "receiptCreateDraft": "Crear borrador",
   "@receiptCreateDraft": {
-  "description": "receiptCreateDraft"
-},
+    "description": "receiptCreateDraft"
+  },
   "receiptDeleteConfirmBody": "¿Eliminar este recibo?",
   "@receiptDeleteConfirmBody": {
-  "description": "receiptDeleteConfirmBody"
-},
+    "description": "receiptDeleteConfirmBody"
+  },
   "receiptDeleteConfirmTitle": "¿Eliminar el recibo?",
   "@receiptDeleteConfirmTitle": {
-  "description": "receiptDeleteConfirmTitle"
-},
+    "description": "receiptDeleteConfirmTitle"
+  },
   "receiptEmptyBody": "Aún no hay recibos. Toma una foto de un recibo para empezar a registrar.",
   "@receiptEmptyBody": {
-  "description": "receiptEmptyBody"
-},
+    "description": "receiptEmptyBody"
+  },
   "receiptListAppBar": "Recibos",
   "@receiptListAppBar": {
-  "description": "receiptListAppBar"
-},
+    "description": "receiptListAppBar"
+  },
   "receiptNotFound": "Recibo no encontrado",
   "@receiptNotFound": {
-  "description": "receiptNotFound"
-},
+    "description": "receiptNotFound"
+  },
   "receiptNotParsed": "Aún sin analizar",
   "@receiptNotParsed": {
-  "description": "receiptNotParsed"
-},
+    "description": "receiptNotParsed"
+  },
   "receiptParsed": "Analizado",
   "@receiptParsed": {
-  "description": "receiptParsed"
-},
+    "description": "receiptParsed"
+  },
   "receiptParsedData": "Datos analizados",
   "@receiptParsedData": {
-  "description": "receiptParsedData"
-},
+    "description": "receiptParsedData"
+  },
   "receiptPickGallery": "Desde la galería",
   "@receiptPickGallery": {
-  "description": "receiptPickGallery"
-},
+    "description": "receiptPickGallery"
+  },
   "receiptReviewDraft": "Revisar borrador",
   "@receiptReviewDraft": {
-  "description": "receiptReviewDraft"
-},
+    "description": "receiptReviewDraft"
+  },
   "receiptStatusLabel": "{status}",
   "@receiptStatusLabel": {
-  "description": "receiptStatusLabel",
-  "placeholders": {
-    "status": {
-      "type": "String"
+    "description": "receiptStatusLabel",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
     }
-  }
-},
+  },
   "receiptStatusShort": "{status}",
   "@receiptStatusShort": {
-  "description": "receiptStatusShort",
-  "placeholders": {
-    "status": {
-      "type": "String"
+    "description": "receiptStatusShort",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
     }
-  }
-},
+  },
   "receiptTakePhoto": "Tomar foto",
   "@receiptTakePhoto": {
-  "description": "receiptTakePhoto"
-},
+    "description": "receiptTakePhoto"
+  },
   "receiptUpload": "Subir",
   "@receiptUpload": {
-  "description": "receiptUpload"
-},
+    "description": "receiptUpload"
+  },
   "settingsCurrencyBudget": "Moneda del presupuesto",
   "@settingsCurrencyBudget": {
-  "description": "settingsCurrencyBudget"
-},
+    "description": "settingsCurrencyBudget"
+  },
   "settingsFxRates": "Tasas de cambio",
   "@settingsFxRates": {
-  "description": "settingsFxRates"
-},
+    "description": "settingsFxRates"
+  },
   "settingsFxRatesEmpty": "No hay tasas de cambio configuradas",
   "@settingsFxRatesEmpty": {
-  "description": "settingsFxRatesEmpty"
-},
+    "description": "settingsFxRatesEmpty"
+  },
   "settingsFxRefresh": "Actualizar tasas",
   "@settingsFxRefresh": {
-  "description": "settingsFxRefresh"
-},
+    "description": "settingsFxRefresh"
+  },
   "settingsRateEdit": "Editar tasa",
   "@settingsRateEdit": {
-  "description": "settingsRateEdit"
-},
+    "description": "settingsRateEdit"
+  },
   "transactionAmountInvalid": "Escribe un importe válido",
   "@transactionAmountInvalid": {
-  "description": "transactionAmountInvalid"
-},
+    "description": "transactionAmountInvalid"
+  },
   "transactionCategoryLabel": "Categoría",
   "@transactionCategoryLabel": {
-  "description": "transactionCategoryLabel"
-},
+    "description": "transactionCategoryLabel"
+  },
   "transactionConvertedLabel": "≈ {amount} en moneda base",
   "@transactionConvertedLabel": {
-  "description": "transactionConvertedLabel",
-  "placeholders": {
-    "amount": {
-      "type": "String"
+    "description": "transactionConvertedLabel",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
     }
-  }
-},
+  },
   "transactionDraft": "Borrador",
   "@transactionDraft": {
-  "description": "transactionDraft"
-},
+    "description": "transactionDraft"
+  },
   "transactionDraftHint": "Borrador de un recibo escaneado: revisa los datos antes de guardar",
   "@transactionDraftHint": {
-  "description": "transactionDraftHint"
-},
+    "description": "transactionDraftHint"
+  },
   "transactionHasReceipt": "Recibo adjunto",
   "@transactionHasReceipt": {
-  "description": "transactionHasReceipt"
-},
+    "description": "transactionHasReceipt"
+  },
   "transactionListAppBar": "Transacciones",
   "@transactionListAppBar": {
-  "description": "transactionListAppBar"
-},
+    "description": "transactionListAppBar"
+  },
   "transactionTypeExpense": "Gasto",
   "@transactionTypeExpense": {
-  "description": "transactionTypeExpense"
-},
+    "description": "transactionTypeExpense"
+  },
   "transactionTypeIncome": "Ingreso",
   "@transactionTypeIncome": {
-  "description": "transactionTypeIncome"
-},
+    "description": "transactionTypeIncome"
+  },
   "transactionTypeTransfer": "Transferencia",
   "@transactionTypeTransfer": {
-  "description": "transactionTypeTransfer"
-},
+    "description": "transactionTypeTransfer"
+  },
   "budgetAppBar": "Presupuesto",
   "@budgetAppBar": {
-  "description": "budgetAppBar"
-},
+    "description": "budgetAppBar"
+  },
   "budgetSubtitle": "Cuentas, transacciones y recibos",
   "@budgetSubtitle": {
-  "description": "budgetSubtitle"
-},
+    "description": "budgetSubtitle"
+  },
   "budgetTotalBalance": "Saldo total",
   "@budgetTotalBalance": {
-  "description": "budgetTotalBalance"
-},
+    "description": "budgetTotalBalance"
+  },
   "budgetNetWorth": "Patrimonio neto",
   "@budgetNetWorth": {
-  "description": "budgetNetWorth"
-},
+    "description": "budgetNetWorth"
+  },
   "budgetIncomeLabel": "Ingresos",
   "@budgetIncomeLabel": {
-  "description": "budgetIncomeLabel"
-},
+    "description": "budgetIncomeLabel"
+  },
   "budgetExpenseLabel": "Gastos",
   "@budgetExpenseLabel": {
-  "description": "budgetExpenseLabel"
-},
+    "description": "budgetExpenseLabel"
+  },
   "budgetEmptyAccounts": "Aún no hay cuentas. Agrega una para empezar.",
   "@budgetEmptyAccounts": {
-  "description": "budgetEmptyAccounts"
-},
+    "description": "budgetEmptyAccounts"
+  },
   "budgetAddAccount": "Agregar cuenta",
   "@budgetAddAccount": {
     "description": "budgetAddAccount"
@@ -1171,225 +1306,224 @@
   },
   "accountFormTitleNew": "Nueva cuenta",
   "@accountFormTitleNew": {
-  "description": "accountFormTitleNew"
-},
+    "description": "accountFormTitleNew"
+  },
   "accountFormTitleEdit": "Editar cuenta",
   "@accountFormTitleEdit": {
-  "description": "accountFormTitleEdit"
-},
+    "description": "accountFormTitleEdit"
+  },
   "accountNameLabel": "Nombre",
   "@accountNameLabel": {
-  "description": "accountNameLabel"
-},
+    "description": "accountNameLabel"
+  },
   "accountTypeLabel": "Tipo",
   "@accountTypeLabel": {
-  "description": "accountTypeLabel"
-},
+    "description": "accountTypeLabel"
+  },
   "accountCurrencyLabel": "Moneda",
   "@accountCurrencyLabel": {
-  "description": "accountCurrencyLabel"
-},
+    "description": "accountCurrencyLabel"
+  },
   "accountInitialBalanceLabel": "Saldo inicial",
   "@accountInitialBalanceLabel": {
-  "description": "accountInitialBalanceLabel"
-},
+    "description": "accountInitialBalanceLabel"
+  },
   "accountSave": "Guardar",
   "@accountSave": {
-  "description": "accountSave"
-},
+    "description": "accountSave"
+  },
   "accountDetailTitle": "Cuenta",
   "@accountDetailTitle": {
-  "description": "accountDetailTitle"
-},
+    "description": "accountDetailTitle"
+  },
   "accountDelete": "Eliminar cuenta",
   "@accountDelete": {
-  "description": "accountDelete"
-},
+    "description": "accountDelete"
+  },
   "accountTransactionsTitle": "Transacciones",
   "@accountTransactionsTitle": {
-  "description": "accountTransactionsTitle"
-},
+    "description": "accountTransactionsTitle"
+  },
   "accountBalanceLabel": "Saldo",
   "@accountBalanceLabel": {
-  "description": "accountBalanceLabel"
-},
+    "description": "accountBalanceLabel"
+  },
   "accountEdit": "Editar",
   "@accountEdit": {
-  "description": "accountEdit"
-},
+    "description": "accountEdit"
+  },
   "transactionFormNewExpenseTitle": "Nuevo gasto",
   "@transactionFormNewExpenseTitle": {
-  "description": "transactionFormNewExpenseTitle"
-},
+    "description": "transactionFormNewExpenseTitle"
+  },
   "transactionFormNewIncomeTitle": "Nuevo ingreso",
   "@transactionFormNewIncomeTitle": {
-  "description": "transactionFormNewIncomeTitle"
-},
+    "description": "transactionFormNewIncomeTitle"
+  },
   "transactionFormTransferTitle": "Transferencia",
   "@transactionFormTransferTitle": {
-  "description": "transactionFormTransferTitle"
-},
+    "description": "transactionFormTransferTitle"
+  },
   "transactionFormEditTitle": "Editar transacción",
   "@transactionFormEditTitle": {
-  "description": "transactionFormEditTitle"
-},
+    "description": "transactionFormEditTitle"
+  },
   "transactionTypeLabel": "Tipo",
   "@transactionTypeLabel": {
-  "description": "transactionTypeLabel"
-},
+    "description": "transactionTypeLabel"
+  },
   "transactionAmountLabel": "Monto",
   "@transactionAmountLabel": {
-  "description": "transactionAmountLabel"
-},
+    "description": "transactionAmountLabel"
+  },
   "transactionCurrencyLabel": "Moneda",
   "@transactionCurrencyLabel": {
-  "description": "transactionCurrencyLabel"
-},
+    "description": "transactionCurrencyLabel"
+  },
   "transactionDateLabel": "Fecha",
   "@transactionDateLabel": {
-  "description": "transactionDateLabel"
-},
+    "description": "transactionDateLabel"
+  },
   "transactionNoteLabel": "Nota",
   "@transactionNoteLabel": {
-  "description": "transactionNoteLabel"
-},
+    "description": "transactionNoteLabel"
+  },
   "transactionAccountLabel": "Cuenta",
   "@transactionAccountLabel": {
-  "description": "transactionAccountLabel"
-},
+    "description": "transactionAccountLabel"
+  },
   "transactionToAccountLabel": "A la cuenta",
   "@transactionToAccountLabel": {
-  "description": "transactionToAccountLabel"
-},
+    "description": "transactionToAccountLabel"
+  },
   "transactionReceiptLabel": "Recibo",
   "@transactionReceiptLabel": {
-  "description": "transactionReceiptLabel"
-},
+    "description": "transactionReceiptLabel"
+  },
   "transactionSave": "Guardar",
   "@transactionSave": {
-  "description": "transactionSave"
-},
+    "description": "transactionSave"
+  },
   "transactionDelete": "Eliminar",
   "@transactionDelete": {
-  "description": "transactionDelete"
-},
+    "description": "transactionDelete"
+  },
   "transactionDraftBadge": "Borrador",
   "@transactionDraftBadge": {
-  "description": "transactionDraftBadge"
-},
+    "description": "transactionDraftBadge"
+  },
   "transactionConfirmDraft": "Confirmar",
   "@transactionConfirmDraft": {
-  "description": "transactionConfirmDraft"
-},
+    "description": "transactionConfirmDraft"
+  },
   "transactionTransferSameAccount": "La transferencia requiere dos cuentas distintas.",
   "@transactionTransferSameAccount": {
-  "description": "transactionTransferSameAccount"
-},
+    "description": "transactionTransferSameAccount"
+  },
   "transactionAccountRequired": "Se requiere una cuenta.",
   "@transactionAccountRequired": {
-  "description": "transactionAccountRequired"
-},
+    "description": "transactionAccountRequired"
+  },
   "transactionTransferAccountsRequired": "Ambas cuentas son requeridas para una transferencia.",
   "@transactionTransferAccountsRequired": {
-  "description": "transactionTransferAccountsRequired"
-},
+    "description": "transactionTransferAccountsRequired"
+  },
   "transactionAmountPositive": "El monto debe ser mayor que cero.",
   "@transactionAmountPositive": {
-  "description": "transactionAmountPositive"
-},
+    "description": "transactionAmountPositive"
+  },
   "receiptListTitle": "Recibos",
   "@receiptListTitle": {
-  "description": "receiptListTitle"
-},
+    "description": "receiptListTitle"
+  },
   "receiptCapture": "Capturar recibo",
   "@receiptCapture": {
-  "description": "receiptCapture"
-},
+    "description": "receiptCapture"
+  },
   "receiptCaptureStandalone": "Recibo independiente",
   "@receiptCaptureStandalone": {
-  "description": "receiptCaptureStandalone"
-},
+    "description": "receiptCaptureStandalone"
+  },
   "receiptUploadSuccess": "Recibo enviado",
   "@receiptUploadSuccess": {
-  "description": "receiptUploadSuccess"
-},
+    "description": "receiptUploadSuccess"
+  },
   "receiptUploadError": "Error al enviar el recibo",
   "@receiptUploadError": {
-  "description": "receiptUploadError"
-},
+    "description": "receiptUploadError"
+  },
   "receiptViewTitle": "Recibo",
   "@receiptViewTitle": {
-  "description": "receiptViewTitle"
-},
+    "description": "receiptViewTitle"
+  },
   "receiptStatusLocal": "Local",
   "@receiptStatusLocal": {
-  "description": "receiptStatusLocal"
-},
+    "description": "receiptStatusLocal"
+  },
   "receiptStatusUploading": "Enviando",
   "@receiptStatusUploading": {
-  "description": "receiptStatusUploading"
-},
+    "description": "receiptStatusUploading"
+  },
   "receiptStatusUploaded": "Enviado",
   "@receiptStatusUploaded": {
-  "description": "receiptStatusUploaded"
-},
+    "description": "receiptStatusUploaded"
+  },
   "receiptStatusError": "Error",
   "@receiptStatusError": {
-  "description": "receiptStatusError"
-},
+    "description": "receiptStatusError"
+  },
   "receiptAttach": "Adjuntar a la transacción",
   "@receiptAttach": {
-  "description": "receiptAttach"
-},
+    "description": "receiptAttach"
+  },
   "receiptChooseSource": "Elegir origen",
   "@receiptChooseSource": {
-  "description": "receiptChooseSource"
-},
+    "description": "receiptChooseSource"
+  },
   "receiptFromCamera": "Cámara",
   "@receiptFromCamera": {
-  "description": "receiptFromCamera"
-},
+    "description": "receiptFromCamera"
+  },
   "receiptFromGallery": "Galería",
   "@receiptFromGallery": {
-  "description": "receiptFromGallery"
-},
+    "description": "receiptFromGallery"
+  },
   "commonRetry": "Reintentar",
   "@commonRetry": {
-  "description": "commonRetry"
-},
+    "description": "commonRetry"
+  },
   "settingsBaseCurrency": "Moneda base",
   "@settingsBaseCurrency": {
-  "description": "settingsBaseCurrency"
-},
+    "description": "settingsBaseCurrency"
+  },
   "settingsCategoryFx": "Tipos de cambio",
   "@settingsCategoryFx": {
-  "description": "settingsCategoryFx"
-},
+    "description": "settingsCategoryFx"
+  },
   "settingsRefreshRates": "Actualizar tasas",
   "@settingsRefreshRates": {
-  "description": "settingsRefreshRates"
-},
+    "description": "settingsRefreshRates"
+  },
   "settingsEditRate": "Editar tasa",
   "@settingsEditRate": {
-  "description": "settingsEditRate"
-},
+    "description": "settingsEditRate"
+  },
   "settingsRateBase": "Por 1 {base}",
   "@settingsRateBase": {
-  "description": "settingsRateBase"
-},
+    "description": "settingsRateBase"
+  },
   "settingsRateInvalid": "Ingrese una tasa positiva.",
   "@settingsRateInvalid": {
-  "description": "settingsRateInvalid"
-},
+    "description": "settingsRateInvalid"
+  },
   "tabBudget": "Presupuesto",
   "@tabBudget": {
-  "description": "tabBudget"
-},
+    "description": "tabBudget"
+  },
   "tabExperiments": "Experimentos",
   "@tabExperiments": {
-  "description": "tabExperiments"
-},
-
+    "description": "tabExperiments"
+  },
   "experimentsAppBar": "Experimentos",
   "experimentsFab": "Nuevo experimento",
   "plannerViewDay": "Vista de día",
@@ -1403,7 +1537,9 @@
   "@experimentDaysElapsed": {
     "description": "experimentDaysElapsed",
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
   "experimentStatusPlanned": "Planificado",
@@ -1414,6 +1550,7 @@
   "experimentCategoryDiet": "Dieta",
   "experimentCategoryBody": "Cuerpo",
   "experimentCategorySteps": "Pasos",
+  "experimentCategoryBudget": "Presupuesto",
   "experimentFormTitleNew": "Nuevo experimento",
   "experimentFormTitleEdit": "Editar experimento",
   "experimentFormNameLabel": "Nombre",
@@ -1450,14 +1587,18 @@
   "@experimentDetailCheckinCount": {
     "description": "experimentDetailCheckinCount",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "experimentRatingOf5": "{rating}/5",
   "@experimentRatingOf5": {
     "description": "experimentRatingOf5",
     "placeholders": {
-      "rating": { "type": "int" }
+      "rating": {
+        "type": "int"
+      }
     }
   },
   "experimentChartWorkout": "Volumen de entrenamiento (kg)",
@@ -1469,7 +1610,9 @@
   "@experimentReminderTitle": {
     "description": "experimentReminderTitle",
     "placeholders": {
-      "experiment": { "type": "String" }
+      "experiment": {
+        "type": "String"
+      }
     }
   },
   "experimentReminderBody": "Valora tu día para este experimento.",
@@ -1477,25 +1620,32 @@
   "@experimentReminderScheduled": {
     "description": "experimentReminderScheduled",
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "experimentReminderCancelled": "Recordatorio diario desactivado.",
-
   "plannerViewGoals": "Vista de metas",
-  "prioritiesTitle": "Prioridades",
-  "prioritiesManage": "Gestionar prioridades",
-  "prioritiesAdd": "Añadir prioridad",
-  "prioritiesRename": "Renombrar prioridad",
+  "plannerModeTimeline": "Cronología",
+  "plannerModeInitiatives": "Iniciativas",
+  "prioritiesTitle": "Tags",
+  "prioritiesManage": "Gestionar tags",
+  "prioritiesAdd": "Añadir tag",
+  "prioritiesRename": "Renombrar tag",
   "prioritiesNameLabel": "Nombre",
   "prioritiesNameRequired": "Introduce un nombre",
-  "prioritiesAlreadyExists": "Ya existe una prioridad con este nombre.",
+  "prioritiesAlreadyExists": "Ya existe un tag con este nombre.",
   "prioritiesColor": "Color",
-  "prioritiesDeleteConfirmTitle": "¿Eliminar prioridad?",
+  "prioritiesDeleteConfirmTitle": "¿Eliminar tag?",
   "prioritiesDeleteConfirmBody": "«{name}» se quitará de {count, plural, =0{ningún elemento} other{{count} elementos}}.",
-  "prioritiesEmpty": "Aún no hay prioridades. Crea una para organizar tus metas, tareas y notas.",
+  "prioritiesEmpty": "Aún no hay tags. Crea uno para organizar tus metas, tareas y notas.",
   "prioritiesUsageCount": "{count, plural, =0{sin uso} =1{1 elemento} other{{count} elementos}}",
-
+  "tagsFilterAll": "Todos",
+  "initiativesEmptyAllTitle": "Aún no hay experimentos ni metas",
+  "initiativesEmptyAll": "Crea un experimento para seguir un hábito, o una meta a lograr.",
+  "initiativesEmptyFilterTitle": "No hay iniciativas que coincidan",
+  "initiativesEmptyFilter": "Ningún experimento ni meta lleva los tags seleccionados.",
   "goalsNew": "Nueva meta",
   "goalsEdit": "Editar meta",
   "goalsMissing": "Meta no encontrada.",
@@ -1544,5 +1694,23 @@
   "goalsEmptyAllTitle": "Aún no hay metas",
   "goalsEmptyAll": "Define un resultado a largo plazo y vincúlalo a tus prioridades.",
   "goalsEmptyFilterTitle": "No hay metas aquí",
-  "goalsEmptyFilter": "Ninguna meta lleva las prioridades seleccionadas."
+  "goalsEmptyFilter": "Ninguna meta lleva las prioridades seleccionadas.",
+  "cascadeDeleteBody": "This will be permanently deleted.",
+  "cascadeDeleteBodyWithTasks": "Also delete {count} linked task(s)? You can keep them or delete them together.",
+  "@cascadeDeleteBodyWithTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cascadeDeleteOnly": "Delete only",
+  "cascadeDeleteWithTasks": "Delete with tasks",
+  "settingsCascadeDeleteLabel": "Delete behavior",
+  "settingsCascadeDeleteHelp": "When deleting experiments/goals, choose whether to also delete linked tasks.",
+  "settingsCascadeAsk": "Ask each time",
+  "settingsCascadeAlways": "Always delete tasks",
+  "settingsCascadeNever": "Never delete tasks",
+  "templatesDuplicate": "Duplicate",
+  "templatesDuplicated": "Template duplicated"
 }
