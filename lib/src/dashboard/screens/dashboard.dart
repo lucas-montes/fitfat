@@ -13,13 +13,14 @@ import '../../diet/screens/ingredient_form.dart';
 import '../../diet/screens/meal_form.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../exercise/screens/workout_form.dart';
+import '../../settings/providers/settings.dart';
+import 'wizard.dart';
 import '../../models/body_metrics_entry.dart';
 import '../../models/body_weight_goal.dart';
 import '../../models/task.dart';
 import '../../models/units.dart';
 import '../../planner/screens/planner_item_detail.dart';
 import '../../models/workout.dart';
-import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/units.dart';
 import '../../ui/theme_extensions.dart';
@@ -37,11 +38,13 @@ final class DashboardScreen extends ConsumerWidget {
     final mealsAsync = ref.watch(mealListProvider);
     final workoutsAsync = ref.watch(workoutListProvider);
 
-    // First-run state: the welcome hub replaces the data cards when there
-    // is no meal and no workout at all.
     final hasNoData =
         (mealsAsync.value?.isEmpty ?? false) &&
         (workoutsAsync.value?.isEmpty ?? false);
+    final settings = ref.watch(settingsProvider);
+    if (!settings.hasSeenWizard && hasNoData) {
+      return const OnboardingWizardScreen();
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -67,21 +70,17 @@ final class DashboardScreen extends ConsumerWidget {
                 children: [
                   _GreetingHeader(now: DateTime.now()),
                   const SizedBox(height: FitFatTokens.spaceL),
-                  if (hasNoData)
-                    const _WelcomeHub()
-                  else ...[
-                    const _CalorieRingCard(),
-                    const SizedBox(height: FitFatTokens.spaceL),
-                    const _MacroTargetsCard(),
-                    const SizedBox(height: FitFatTokens.spaceL),
-                    const _WeightTrendCard(),
-                    const SizedBox(height: FitFatTokens.spaceL),
-                    const _WeeklyWorkoutCard(),
-                    const SizedBox(height: FitFatTokens.spaceL),
-                    const _UpcomingTasksCard(),
-                    const SizedBox(height: FitFatTokens.spaceL),
-                    const _LatestWorkoutCard(),
-                  ],
+                  const _CalorieRingCard(),
+                  const SizedBox(height: FitFatTokens.spaceL),
+                  const _MacroTargetsCard(),
+                  const SizedBox(height: FitFatTokens.spaceL),
+                  const _WeightTrendCard(),
+                  const SizedBox(height: FitFatTokens.spaceL),
+                  const _WeeklyWorkoutCard(),
+                  const SizedBox(height: FitFatTokens.spaceL),
+                  const _UpcomingTasksCard(),
+                  const SizedBox(height: FitFatTokens.spaceL),
+                  const _LatestWorkoutCard(),
                 ],
               ),
             ),
@@ -147,8 +146,32 @@ final class _CalorieRingCard extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (e, _) => Text(l10n.dashboardError('$e')),
       data: (target) {
-        // Hidden until age/gender/weight/height are present.
-        if (target == null) return const SizedBox.shrink();
+        if (target == null) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(FitFatTokens.spaceL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.local_fire_department, size: 20, color: theme.colorScheme.primary),
+                      const SizedBox(width: FitFatTokens.spaceS),
+                      Text(l10n.dashboardCalorieTarget, style: theme.textTheme.titleMedium),
+                    ],
+                  ),
+                  const SizedBox(height: FitFatTokens.spaceM),
+                  Text(l10n.dashboardCalorieTargetEmptyBody, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: FitFatTokens.spaceM),
+                  FilledButton(
+                    onPressed: () => context.go('/settings'),
+                    child: Text(l10n.dashboardCalorieTargetEmptyCta),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(FitFatTokens.spaceL),
@@ -280,7 +303,32 @@ final class _MacroTargetsCard extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (e, _) => Text(l10n.dashboardError('$e')),
       data: (targets) {
-        if (targets == null) return const SizedBox.shrink();
+        if (targets == null) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(FitFatTokens.spaceL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.pie_chart_outline, size: 20, color: theme.colorScheme.primary),
+                      const SizedBox(width: FitFatTokens.spaceS),
+                      Text(l10n.dashboardMacroTargets, style: theme.textTheme.titleMedium),
+                    ],
+                  ),
+                  const SizedBox(height: FitFatTokens.spaceM),
+                  Text(l10n.dashboardMacroEmptyBody, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: FitFatTokens.spaceM),
+                  FilledButton(
+                    onPressed: () => context.go('/settings'),
+                    child: Text(l10n.dashboardMacroEmptyCta),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(FitFatTokens.spaceL),
@@ -734,28 +782,56 @@ final class _WeeklyWorkoutCard extends ConsumerWidget {
             statsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text(l10n.dashboardError('$e')),
-              data: (stats) => Row(
-                children: [
-                  Expanded(
-                    child: MetricCard(
-                      icon: Icons.calculate_outlined,
-                      title: l10n.dashboardVolume,
-                      value: l10n.dashboardVolumeKg(
-                        formatWeightValue(stats.totalVolumeKg, weightUnit),
-                        weightUnitLabel(weightUnit),
+              data: (stats) {
+                if (stats.totalVolumeKg == 0 && stats.totalMinutes == 0) {
+                  final hasSync = ref.watch(settingsProvider).remoteSyncBaseUrl.isNotEmpty;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.dashboardWeeklyEmptyBody, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      const SizedBox(height: FitFatTokens.spaceM),
+                      Wrap(
+                        spacing: FitFatTokens.spaceS,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () => context.go('/exercise'),
+                            icon: const Icon(Icons.fitness_center, size: 18),
+                            label: Text(l10n.dashboardWeeklyEmptyCtaCreate),
+                          ),
+                          if (hasSync)
+                            OutlinedButton.icon(
+                              onPressed: () => context.go('/exercise'),
+                              icon: const Icon(Icons.sync, size: 18),
+                              label: Text(l10n.dashboardWeeklyEmptyCtaSync),
+                            ),
+                        ],
+                      ),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(
+                      child: MetricCard(
+                        icon: Icons.calculate_outlined,
+                        title: l10n.dashboardVolume,
+                        value: l10n.dashboardVolumeKg(
+                          formatWeightValue(stats.totalVolumeKg, weightUnit),
+                          weightUnitLabel(weightUnit),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: FitFatTokens.spaceS),
-                  Expanded(
-                    child: MetricCard(
-                      icon: Icons.timer_outlined,
-                      title: l10n.dashboardMinutes,
-                      value: stats.totalMinutes.toString(),
+                    const SizedBox(width: FitFatTokens.spaceS),
+                    Expanded(
+                      child: MetricCard(
+                        icon: Icons.timer_outlined,
+                        title: l10n.dashboardMinutes,
+                        value: stats.totalMinutes.toString(),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -801,11 +877,22 @@ final class _UpcomingTasksCard extends ConsumerWidget {
               error: (e, _) => Text(l10n.dashboardError('$e')),
               data: (tasks) {
                 if (tasks.isEmpty) {
-                  return Text(
-                    l10n.dashboardNoUpcomingTasks,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.dashboardNoUpcomingTasks,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: FitFatTokens.spaceM),
+                      FilledButton.icon(
+                        onPressed: () => context.go('/plan'),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(l10n.dashboardUpcomingEmptyCta),
+                      ),
+                    ],
                   );
                 }
                 final today = DateTime.now();
@@ -973,11 +1060,34 @@ final class _LatestWorkoutCard extends ConsumerWidget {
                 error: (e, _) => Text(l10n.dashboardError('$e')),
                 data: (workout) {
                   if (workout == null) {
-                    return Text(
-                      l10n.dashboardNoWorkouts,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                    final hasSync = ref.watch(settingsProvider).remoteSyncBaseUrl.isNotEmpty;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.dashboardNoWorkouts,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: FitFatTokens.spaceM),
+                        Wrap(
+                          spacing: FitFatTokens.spaceS,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: () => context.go('/exercise'),
+                              icon: const Icon(Icons.fitness_center, size: 18),
+                              label: Text(l10n.dashboardLatestEmptyCta),
+                            ),
+                            if (hasSync)
+                              OutlinedButton.icon(
+                                onPressed: () => context.go('/exercise'),
+                                icon: const Icon(Icons.sync, size: 18),
+                                label: Text(l10n.dashboardWeeklyEmptyCtaSync),
+                              ),
+                          ],
+                        ),
+                      ],
                     );
                   }
                   return _WorkoutCardBody(
@@ -1093,6 +1203,7 @@ final class _WorkoutCardBody extends StatelessWidget {
 
 /// First-run welcome hub shown on the dashboard when there are no meals and no
 /// workouts. Three quick actions push the respective create forms.
+// ignore: unused_element
 final class _WelcomeHub extends ConsumerWidget {
   const _WelcomeHub();
 

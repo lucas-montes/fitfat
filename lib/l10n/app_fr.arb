@@ -1745,5 +1745,17 @@
         "type": "String"
       }
     }
-  }
+  },
+  "dashboardCalorieTargetEmptyTitle": "Complete your profile",
+  "dashboardCalorieTargetEmptyBody": "Add your age, gender, weight and height to see your daily calorie target.",
+  "dashboardCalorieTargetEmptyCta": "Complete profile",
+  "dashboardMacroEmptyTitle": "Complete your profile",
+  "dashboardMacroEmptyBody": "Add your profile details to see macro targets.",
+  "dashboardMacroEmptyCta": "Complete profile",
+  "dashboardWeeklyEmptyTitle": "No workouts yet",
+  "dashboardWeeklyEmptyBody": "Log your first workout or sync from server.",
+  "dashboardWeeklyEmptyCtaCreate": "Add workout",
+  "dashboardWeeklyEmptyCtaSync": "Sync exercises",
+  "dashboardUpcomingEmptyCta": "Add task",
+  "dashboardLatestEmptyCta": "Add workout"
 }

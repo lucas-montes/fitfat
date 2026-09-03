@@ -346,6 +346,78 @@ abstract class AppLocalizations {
   /// **'See all {count} tasks'**
   String dashboardSeeAllTasks(String count);
 
+  /// No description provided for @dashboardCalorieTargetEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your profile'**
+  String get dashboardCalorieTargetEmptyTitle;
+
+  /// No description provided for @dashboardCalorieTargetEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your age, gender, weight and height to see your daily calorie target.'**
+  String get dashboardCalorieTargetEmptyBody;
+
+  /// No description provided for @dashboardCalorieTargetEmptyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete profile'**
+  String get dashboardCalorieTargetEmptyCta;
+
+  /// No description provided for @dashboardMacroEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your profile'**
+  String get dashboardMacroEmptyTitle;
+
+  /// No description provided for @dashboardMacroEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your profile details to see macro targets.'**
+  String get dashboardMacroEmptyBody;
+
+  /// No description provided for @dashboardMacroEmptyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete profile'**
+  String get dashboardMacroEmptyCta;
+
+  /// No description provided for @dashboardWeeklyEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No workouts yet'**
+  String get dashboardWeeklyEmptyTitle;
+
+  /// No description provided for @dashboardWeeklyEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Log your first workout or sync from server.'**
+  String get dashboardWeeklyEmptyBody;
+
+  /// No description provided for @dashboardWeeklyEmptyCtaCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add workout'**
+  String get dashboardWeeklyEmptyCtaCreate;
+
+  /// No description provided for @dashboardWeeklyEmptyCtaSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync exercises'**
+  String get dashboardWeeklyEmptyCtaSync;
+
+  /// No description provided for @dashboardUpcomingEmptyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Add task'**
+  String get dashboardUpcomingEmptyCta;
+
+  /// No description provided for @dashboardLatestEmptyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Add workout'**
+  String get dashboardLatestEmptyCta;
+
   /// No description provided for @exerciseListAppBar.
   ///
   /// In en, this message translates to:

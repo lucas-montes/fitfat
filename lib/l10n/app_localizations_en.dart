@@ -149,6 +149,45 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dashboardCalorieTargetEmptyTitle => 'Complete your profile';
+
+  @override
+  String get dashboardCalorieTargetEmptyBody =>
+      'Add your age, gender, weight and height to see your daily calorie target.';
+
+  @override
+  String get dashboardCalorieTargetEmptyCta => 'Complete profile';
+
+  @override
+  String get dashboardMacroEmptyTitle => 'Complete your profile';
+
+  @override
+  String get dashboardMacroEmptyBody =>
+      'Add your profile details to see macro targets.';
+
+  @override
+  String get dashboardMacroEmptyCta => 'Complete profile';
+
+  @override
+  String get dashboardWeeklyEmptyTitle => 'No workouts yet';
+
+  @override
+  String get dashboardWeeklyEmptyBody =>
+      'Log your first workout or sync from server.';
+
+  @override
+  String get dashboardWeeklyEmptyCtaCreate => 'Add workout';
+
+  @override
+  String get dashboardWeeklyEmptyCtaSync => 'Sync exercises';
+
+  @override
+  String get dashboardUpcomingEmptyCta => 'Add task';
+
+  @override
+  String get dashboardLatestEmptyCta => 'Add workout';
+
+  @override
   String get exerciseListAppBar => 'Exercises';
 
   @override

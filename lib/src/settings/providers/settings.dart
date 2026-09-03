@@ -114,6 +114,7 @@ final class SettingsState {
   // Sync HTTP request timeout in seconds (default 15).
   final int apiTimeoutSeconds;
   final CascadeDeleteBehavior cascadeDeleteBehavior;
+  final bool hasSeenWizard;
 
   const SettingsState({
     this.themeMode = ThemeMode.system,
@@ -156,7 +157,14 @@ final class SettingsState {
     this.reminderLeadMinutes = 30,
     this.apiTimeoutSeconds = 15,
     this.cascadeDeleteBehavior = CascadeDeleteBehavior.ask,
+    this.hasSeenWizard = false,
   });
+
+  bool get isProfileFull =>
+      age != null &&
+      gender != null &&
+      bodyWeightGoal != null &&
+      activityLevel != null;
 
   SettingsState copyWith({
     ThemeMode? themeMode,
@@ -205,6 +213,7 @@ final class SettingsState {
     int? reminderLeadMinutes,
     int? apiTimeoutSeconds,
     CascadeDeleteBehavior? cascadeDeleteBehavior,
+    bool? hasSeenWizard,
   }) => SettingsState(
     themeMode: themeMode ?? this.themeMode,
     locale: clearLocale ? null : (locale ?? this.locale),
@@ -256,6 +265,7 @@ final class SettingsState {
     reminderLeadMinutes: reminderLeadMinutes ?? this.reminderLeadMinutes,
     apiTimeoutSeconds: apiTimeoutSeconds ?? this.apiTimeoutSeconds,
     cascadeDeleteBehavior: cascadeDeleteBehavior ?? this.cascadeDeleteBehavior,
+    hasSeenWizard: hasSeenWizard ?? this.hasSeenWizard,
   );
 }
 
@@ -299,6 +309,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _experimentBaselineDaysKey = 'settings_experiment_baseline_days';
   static const _defaultRestSecondsKey = 'settings_default_rest_seconds';
   static const _cascadeDeleteKey = 'settings_cascade_delete';
+  static const _hasSeenWizardKey = 'settings_has_seen_wizard';
 
   /// Public so the reminder scheduler can read the lead time directly from
   /// prefs (it receives SharedPreferences, not the settings notifier).
@@ -366,6 +377,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       cascadeDeleteBehavior: _cascadeFromName(
         prefs.getString(_cascadeDeleteKey),
       ),
+      hasSeenWizard: prefs.getBool(_hasSeenWizardKey) ?? false,
     );
   }
 
@@ -713,6 +725,11 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setString(_cascadeDeleteKey, value.name);
     state = state.copyWith(cascadeDeleteBehavior: value);
+  }
+
+  Future<void> setHasSeenWizard(bool value) async {
+    await ref.read(sharedPreferencesProvider).setBool(_hasSeenWizardKey, value);
+    state = state.copyWith(hasSeenWizard: value);
   }
 
   WeightUnit _weightUnitFromName(String? name) =>
