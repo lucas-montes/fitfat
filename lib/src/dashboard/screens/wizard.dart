@@ -63,7 +63,6 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
       ref.invalidate(latestBodyMetricsProvider);
     }
     await notifier.setHasSeenWizard(true);
-    if (mounted) Navigator.of(context).pop(true);
   }
 
   void _next() {
@@ -86,19 +85,21 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settingsAppBar),
-        leading: _page > 0
-            ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: _back)
-            : null,
-        actions: [
-          TextButton(
-            onPressed: () => _complete(skipped: true),
-            child: const Text('Skip'),
-          ),
-        ],
-      ),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.settingsAppBar),
+          leading: _page > 0
+              ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: _back)
+              : null,
+          actions: [
+            TextButton(
+              onPressed: () => _complete(skipped: true),
+              child: const Text('Skip'),
+            ),
+          ],
+        ),
       body: Column(
         children: [
           LinearProgressIndicator(value: (_page + 1) / 4, minHeight: 4),
@@ -127,6 +128,7 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
           ),
         ],
       ),
+    ),
     );
   }
 
