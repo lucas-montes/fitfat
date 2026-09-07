@@ -1,46 +1,52 @@
 # Dashboard
 
-"Today at a glance" read-only summary view (reworked in T05): greeting + locale date, calorie progress ring (consumed vs target), macro-targets progress, body-weight trend (owns Add weight/height entry), weekly workout volume/minutes, upcoming timed tasks, and the latest workout card. The 7-day calorie chart, today's-plan strip, and the bottom `BodyMetricsCard` were removed.
+Redesigned Today-first actionable view (dashboard-redesign): horizontal Today strip (tasks + goals + experiments, priority-sorted, inline toggle), nutrition hero (calorie ring + macros with maintenance fallback when profile incomplete, Estimated badge), weight trend with deltas (7d/30d) and goal projection, unified workout hero (latest/Continue + weekly volume/minutes), goals overview (active goals with progressFrom bars), experiments nudge, and budget mini (net worth + month income/expense when accounts exist). Greeting header removed.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `lib/src/dashboard/providers/dashboard.dart` | Riverpod providers: today's calories/macros, latest workout, weekly volume/minutes, upcoming timed tasks |
-| `lib/src/dashboard/screens/dashboard.dart` | Dashboard UI: greeting header, the card set below, welcome hub (no-data) |
+| `lib/src/dashboard/providers/dashboard.dart` | Riverpod providers: today's calories/macros, latest workout, weekly volume/minutes, upcoming tasks (used by Today strip priority sorting) |
+| `lib/src/dashboard/screens/dashboard.dart` | Dashboard UI: Today strip, nutrition hero, weight trend, workout hero, goals, experiments, budget mini, welcome hub |
+| `lib/src/diet/providers/calories.dart` | `calorieTargetMetaProvider` (fallback 70kg/170cm/30y/male/moderate, `isEstimated`), `calorieTargetProvider` (non-nullable), `macroTargetsProvider`/`macroTargetsMetaProvider` |
 
 ## Providers
 
 - **`todayCaloriesProvider`** (`FutureProvider<double>`): filters all meals by today's start-of-day window, sums their `totalCalories`.
 - **`todayMacrosProvider`** (`FutureProvider<TodayMacros>`; typedef `({double protein, double carbs, double fat})`): same today-window filter, sums per-item `MealIngredient` P/C/F grams.
-- **`latestWorkoutProvider`** (`FutureProvider<Workout?>`): completed workouts only, most recent (date desc); `null` when none.
-- **`weeklyWorkoutStatsProvider`** (`FutureProvider<WeeklyWorkoutStats>`; typedef `({double totalVolumeKg, int totalMinutes})`): for completed workouts whose `completedAt` is within the last 7 days, sums Σ set `totalVolume` (kg) and the workout durations (minutes).
-- **`upcomingTimedTasksProvider`** (`FutureProvider<List<PlannerItem>>`): pending planner tasks with a due time, due today or later, via `PlannerRepository.getUpcomingWithDueTime(today)`.
-- `DashboardScreen` also watches the cross-domain `mealListProvider` (diet) and `workoutListProvider` (exercise) to detect the first-run state, and `activeWorkoutProvider` (exercise) for the latest-card active state.
+- **`calorieTargetMetaProvider`** (`FutureProvider<CalorieTargetMeta>`; `({double target, bool isEstimated})`): computes TDEE with fallback defaults when age/gender/weight/height missing; `isEstimated` true when any input was fallback.
+- **`calorieTargetProvider`** (`FutureProvider<double>`): `meta.target` (always present, maintenance fallback).
+- **`macroTargetsProvider`** (`FutureProvider<MacroTargets>`): `macroTargetsFor(target)` always present.
+- **`latestWorkoutProvider`** (`FutureProvider<Workout?>`): completed workouts only, most recent.
+- **`weeklyWorkoutStatsProvider`** (`FutureProvider<WeeklyWorkoutStats>`; `({double totalVolumeKg, int totalMinutes})`): last 7 days completed workouts bulk via `getVolumeAndMinutesSince`.
+- **`upcomingTasksProvider`** (`FutureProvider<List<Task>>`): pending tasks on/after today, sorted by day then time; Today strip re-sorts by `tags.length` priority then startTimeMinutes.
+- `DashboardScreen` also watches `mealListProvider`/`workoutListProvider` for first-run, `activeWorkoutProvider` for workout hero, `goalListProvider`/`latestGoalProgressProvider` for goals card, `budgetOverviewProvider` for budget mini.
 
 ## Screens
 
-`DashboardScreen` (`ConsumerWidget`): AppBar shows the app title with a settings `IconButton` (tooltip `settingsAppBar`) → `context.go('/settings')`. Body: `ListView` → `Center` → `ConstrainedBox(maxWidth: 600)`. Column:
+`DashboardScreen` (`ConsumerWidget`): AppBar with settings → `context.go('/settings')`. Body: `ListView` → `Center` → `ConstrainedBox(maxWidth:600)`. Column:
 
-- **`_GreetingHeader`** — time-based greeting (morning < 12 / afternoon < 18 / evening) + locale date via `DateFormats.formatDate`.
-- **Welcome hub** (`_WelcomeHub`) when there are no meals AND no workouts: rocket tonal circle + three action rows (ingredient / meal / workout forms).
-- Otherwise the data cards:
-  - **`_CalorieRingCard`** — watches `todayCaloriesProvider` (consumed) + `calorieTargetProvider` (from `lib/src/diet/providers/calories.dart`); renders `_CalorieRing` (progress ring of consumed/target) + remaining kcal (`dashboardRemaining` / `dashboardConsumedOfTarget` / `dashboardOverTarget`). **Hidden until the calorie-profile inputs exist** (age/gender/weight/height), i.e. when the target is unavailable.
-  - **`_MacroTargetsCard`** — `todayMacrosProvider` vs `macroTargetsProvider` (P/C/F = 30/40/30% of the calorie target); three `_MacroTargetRow`s with label, grams progress (`dashboardMacroProgress`), percent.
-  - **`_WeightTrendCard`** — watches `bodyMetricsProvider` + `latestBodyMetricsProvider` + `settingsProvider`; renders the weight-over-time `_WeightLineChart` (custom painter) with Add weight / Add height buttons (moved here from the removed `BodyMetricsCard`; see [body-metrics.md](../body/body-metrics.md)). Goal badge when `bodyWeightGoal` set.
-  - **`_WeeklyWorkoutCard`** — `weeklyWorkoutStatsProvider`; shows total volume (`dashboardVolumeKg`) and total minutes (`dashboardMinutes`).
-  - **`_UpcomingTasksCard`** — `upcomingTimedTasksProvider`; lists pending timed tasks (title + due date/time), "See all" → `context.go('/plan')`. Empty state `dashboardNoUpcomingTasks`.
-  - **`_LatestWorkoutCard`** — when `activeWorkoutProvider` is non-null renders the "Continue workout" active body (→ `context.go('/active-workout')`); otherwise the latest completed workout (name + `StatusBadge` + date + duration, "Open workout" → workout detail/summary) or `dashboardNoWorkouts`.
+- **Welcome hub** (`_WelcomeHub`) when no meals AND no workouts (unchanged).
+- Otherwise:
+  - **`_TodayStrip`** — `upcomingTasksProvider` sorted by `tags.length` desc then `startTimeMinutes` asc; horizontal `ListView.separated` of `_TodayTaskChip` (200px card: checkbox inline via `taskRepositoryProvider.update` + `invalidate(upcomingTasksProvider)`, tags, due time, workout icon, tap → `PlannerItemDetailScreen`).
+  - **`_NutritionHeroCard`** — `calorieTargetMetaProvider` + `todayCaloriesProvider` + `todayMacrosProvider` + `macroTargetsProvider`; `_CalorieRing` + divider + 3× `_MacroTargetRow`; Estimated badge + Complete profile CTA when `isEstimated`.
+  - **`_WeightTrendCard`** — `bodyMetricsProvider` + `latestBodyMetricsProvider` + `settingsProvider`; Add weight/height buttons, latest values, `_WeightEvolution` (chart + deltas 7d/30d via `_computeDelta` + projection via `_computeProjection` when goal set).
+  - **`_WorkoutHeroCard`** — `activeWorkoutProvider` (Continue) or `latestWorkoutProvider` + `weeklyWorkoutStatsProvider` (volume/minutes) in one Card with Divider.
+  - **`_GoalsOverviewCard`** — `goalListProvider` filtered `isActive` take 3 + `latestGoalProgressProvider` per goal, `progressFrom` bar.
+  - **`_ExperimentsNudgeCard`** — placeholder CTA to `/plan` (active experiments surface via Plan tab).
+  - **`_BudgetMiniCard`** — `budgetOverviewProvider`; hidden when `accounts.isEmpty`; shows net worth + month income/expense + recent count.
 
 ## Repositories used
 
-- `MealRepository.getAll()` — today calories, today macros.
-- `WorkoutRepository.getAll()` + `workoutDetailProvider` — latest + weekly stats.
-- `PlannerRepository.getUpcomingWithDueTime(today)` — upcoming timed tasks.
-- `BodyMetricsRepository` — weight trend card.
+- `MealRepository.getAll()` — today calories/macros.
+- `WorkoutRepository.getAll()` + `getVolumeAndMinutesSince` — workout hero.
+- `TaskRepository.getUpcoming` / `getByDay` — Today strip.
+- `GoalRepository.getGoals` + `getLatestProgressValue` — goals overview.
+- `BodyMetricsRepository` — weight trend.
+- `AccountRepository`/`TransactionRepository` via `budgetOverviewProvider` — budget mini.
 
 ## Wiring
 
-`DashboardTab` (`lib/src/app/tabs/dashboard_tab.dart`) renders `DashboardScreen` as the root of the Dashboard route branch. Cross-tab navigation uses `context.go('/plan')` / `context.go('/settings')` — go_router 15 `StatefulShellRoute` switches the active branch when `go` targets a route inside another branch.
+`DashboardTab` renders `DashboardScreen`. Cross-tab navigation via `context.go('/plan')` / `/exercise` / `/budget` / `/settings` (StatefulShellRoute).
 
 See also: [overview.md](../overview.md), [architecture.md](../architecture.md), [meal-crud.md](../diet/meal-crud.md), [workout-crud.md](../exercise/workout-crud.md), [planner.md](../planner/planner.md), [body-metrics.md](../body/body-metrics.md), [settings.md](../settings/settings.md)

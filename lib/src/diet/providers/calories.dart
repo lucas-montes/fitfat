@@ -135,35 +135,41 @@ Future<double> _todayWorkoutKcal(Ref ref, double weight) async {
   return total;
 }
 
-// ---------------------------------------------------------------------------
-// Calorie target
-// ---------------------------------------------------------------------------
+const double _fallbackWeightKg = 70;
+const double _fallbackHeightCm = 170;
+const int _fallbackAge = 30;
+const Gender _fallbackGender = Gender.male;
 
-/// The daily calorie target (kcal/day), or `null` when inputs are incomplete
-/// (missing age / gender / latest weight / height).
-final calorieTargetProvider = FutureProvider<double?>((ref) async {
+typedef CalorieTargetMeta = ({double target, bool isEstimated});
+
+final calorieTargetMetaProvider = FutureProvider<CalorieTargetMeta>((
+  ref,
+) async {
   final settings = ref.watch(settingsProvider);
   final latest = await ref.watch(latestBodyMetricsProvider.future);
   final weight = latest?.weightKg;
   final height = latest?.heightCm;
   final age = settings.age;
   final gender = settings.gender;
-  if (weight == null || height == null || age == null || gender == null) {
-    return null;
-  }
+  final isEstimated =
+      weight == null || height == null || age == null || gender == null;
+  final effectiveWeight = weight ?? _fallbackWeightKg;
+  final effectiveHeight = height ?? _fallbackHeightCm;
+  final effectiveAge = age ?? _fallbackAge;
+  final effectiveGender = gender ?? _fallbackGender;
 
   final double bmr;
   if (settings.trackBodyFat && settings.bodyFatPercent != null) {
     bmr = katchMcardleBmr(
-      weightKg: weight,
+      weightKg: effectiveWeight,
       bodyFatPercent: settings.bodyFatPercent!,
     );
   } else {
     bmr = mifflinBmr(
-      gender: gender,
-      weightKg: weight,
-      heightCm: height,
-      age: age,
+      gender: effectiveGender,
+      weightKg: effectiveWeight,
+      heightCm: effectiveHeight,
+      age: effectiveAge,
     );
   }
 
@@ -176,17 +182,27 @@ final calorieTargetProvider = FutureProvider<double?>((ref) async {
     tdee = bmr * level.multiplier;
   }
 
-  return adjustForGoal(
+  final target = adjustForGoal(
     tdee,
     settings.bodyWeightGoal,
     adjustment: settings.calorieGoalAdjustment,
   );
+  return (target: target, isEstimated: isEstimated);
 });
 
-/// P/C/F gram targets derived from the daily calorie target, or `null` when
-/// the target cannot be computed.
-final macroTargetsProvider = FutureProvider<MacroTargets?>((ref) async {
+final calorieTargetProvider = FutureProvider<double>((ref) async {
+  final meta = await ref.watch(calorieTargetMetaProvider.future);
+  return meta.target;
+});
+
+final macroTargetsProvider = FutureProvider<MacroTargets>((ref) async {
   final target = await ref.watch(calorieTargetProvider.future);
-  if (target == null) return null;
   return macroTargetsFor(target);
+});
+
+final macroTargetsMetaProvider = FutureProvider<({MacroTargets targets, bool isEstimated})>((
+  ref,
+) async {
+  final meta = await ref.watch(calorieTargetMetaProvider.future);
+  return (targets: macroTargetsFor(meta.target), isEstimated: meta.isEstimated);
 });
