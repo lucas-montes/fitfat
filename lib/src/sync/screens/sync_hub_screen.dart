@@ -9,6 +9,7 @@ import '../../network/api_client.dart';
 import '../../database/database_provider.dart' as db;
 import '../../ui/tokens.dart';
 import '../../settings/providers/settings.dart';
+import '../data_push_service.dart';
 import '../local_backup.dart';
 import '../sync_service.dart';
 import '../sync_state_store.dart';
@@ -127,8 +128,9 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
   Future<List<Map<String,dynamic>>> _fetchServerItems(String base, String key, String endpoint) async {
     if (base.isEmpty) throw StateError('Server URL not configured');
     final client = HttpApiClient(http.Client(), baseUrl: base);
-    final data = await client.getJson(endpoint, headers: authHeaders(key), query: {'since': '0'});
-    final items = (data['items'] as List?)?.cast<Map<String,dynamic>>() ?? const [];
+    final raw = await client.getJson(endpoint, headers: authHeaders(key), query: {'since': '0'});
+    final data = raw as Map<String, dynamic>;
+    final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
     return items;
   }
   Future<void> _showExercisePicker(BuildContext context, WidgetRef ref) async {
@@ -165,16 +167,10 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     showTopBanner(context, message: 'Syncing ${selected.length} selected exercises from server…');
     try {
       final client = HttpApiClient(http.Client(), baseUrl: base);
-      final data = await client.getJson(settings.endpointExercises, headers: authHeaders(key), query: {'since': '0'});
-      final items = (data['items'] as List?)?.cast<Map<String,dynamic>>() ?? [];
+      final raw = await client.getJson(settings.endpointExercises, headers: authHeaders(key), query: {'since': '0'});
+      final data = raw as Map<String, dynamic>;
+      final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
       final filtered = items.where((e) => selected.contains(e['id'] as String)).toList();
-      // Reuse sync client but with filtered data: manually upsert
-      final repo = ref.read(exerciseRepositoryProvider);
-      for (final item in filtered) {
-        final ex = ref.read(exerciseRepositoryProvider);
-        // Use existing sync client logic: upsert via repository
-        // For now, just show banner — full filtered upsert will be in next iteration
-      }
       if (mounted) showTopBanner(context, message: 'Selected ${selected.length} exercises ready to sync (filtered ${filtered.length} from server)');
     } catch (e) { if (mounted) showTopBanner(context, message: 'Sync failed: $e'); }
   }
@@ -229,7 +225,7 @@ final class _PersonalPoolSectionState extends ConsumerState<_PersonalPoolSection
       final res = await pushDataType(ref, type);
       if (!mounted) return;
       showTopBanner(context, message: res.ok ? 'Pushed $entity' : 'Push $entity failed: ${res.error}');
-    } finally { _setBusy(entity, false); }
+    } finally { if (mounted) _setBusy(entity, false); }
   }
   String _entityToType(String e) => switch (e) {
     'Tasks' => 'tasks',
