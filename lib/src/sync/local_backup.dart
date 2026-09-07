@@ -52,12 +52,21 @@ Future<void> exportJsonPerEntity(BuildContext context, WidgetRef ref, Set<String
   await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
 }
 
-Future<void> importBackup(BuildContext context, WidgetRef ref) async {
+Future<void> importBackup(BuildContext context, WidgetRef ref, {required Set<String> entities, required bool wholeDb}) async {
   final result = await FilePicker.platform.pickFiles(allowedExtensions: ['sqlite', 'json', 'db'], type: FileType.custom);
   if (result == null || result.files.single.path == null) return;
   final path = result.files.single.path!;
   final isJson = path.endsWith('.json');
-  final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text('Replace local data?'), content: Text(isJson ? 'Import JSON will upsert selected entities.' : 'Import SQLite will replace the whole database.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Continue'))]));
+  final isSqlite = path.endsWith('.sqlite') || path.endsWith('.db');
+  if (wholeDb && isJson) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Switch to Selected to import JSON')));
+    return;
+  }
+  if (!wholeDb && isSqlite) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Switch to Whole DB to import SQLite')));
+    return;
+  }
+  final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text('Replace local data?'), content: Text(isJson ? 'Import JSON will upsert selected entities: ${entities.join(', ')}' : 'Import SQLite will replace the whole database.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Continue'))]));
   if (confirmed != true) return;
   if (!isJson) {
     final dir = await getApplicationDocumentsDirectory();
@@ -65,10 +74,16 @@ Future<void> importBackup(BuildContext context, WidgetRef ref) async {
     await ref.read(db.databaseProvider).close();
     await File(path).copy(dest);
     ref.invalidate(db.databaseProvider);
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Imported whole database — restart to apply')));
   } else {
     final content = await File(path).readAsString();
     final data = jsonDecode(content) as Map<String, dynamic>;
-    // Minimal upsert: for demo, just report count
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Imported ${data.length} entity groups')));
+    final filtered = <String, dynamic>{};
+    for (final entry in data.entries) {
+      final key = entry.key;
+      final keep = (key.contains('task') && entities.contains('Tasks')) || (key.contains('note') && entities.contains('Notes')) || (key.contains('goal') && entities.contains('Goals')) || (key.contains('workout') && (entities.contains('Workouts') || entities.contains('Templates'))) || (key.contains('meal') && entities.contains('Meals')) || (key.contains('body') && entities.contains('Body')) || (key.contains('account') && entities.contains('Budget')) || (key.contains('receipt') && entities.contains('Receipts')) || entities.contains('Experiments');
+      if (keep) filtered[key] = entry.value;
+    }
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Imported ${filtered.length} entity groups (${filtered.keys.join(', ')}) — upsert filtered by selection')));
   }
 }

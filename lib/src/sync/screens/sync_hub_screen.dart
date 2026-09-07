@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../database/database_provider.dart' as db;
+import '../../diet/providers/ingredients.dart';
+import '../../exercise/providers/exercises.dart';
 import '../../ui/tokens.dart';
 import '../../settings/providers/settings.dart';
+import '../data_push_service.dart';
+import '../local_backup.dart';
 import '../sync_service.dart';
 import '../sync_state_store.dart';
 import '../sync_models.dart';
@@ -16,8 +21,10 @@ final class SyncHubScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.settingsAppBar), leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go('/dashboard'))),
+      appBar: AppBar(title: const Text('Sync & Backup'), leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go('/dashboard'))),
       body: ListView(padding: const EdgeInsets.all(FitFatTokens.spaceL), children: [
+        _ServerConfigCard(),
+        const SizedBox(height: FitFatTokens.spaceL),
         _SectionCard(icon: Icons.cloud_download_outlined, title: 'Global pool', subtitle: 'Pull shared exercises, ingredients and currencies', child: _GlobalPoolSection()),
         const SizedBox(height: FitFatTokens.spaceL),
         _SectionCard(icon: Icons.cloud_upload_outlined, title: 'Personal pool', subtitle: 'Push/pull your tasks, notes, goals, workouts, templates, experiments, meals, body, budget', child: _PersonalPoolSection()),
@@ -25,6 +32,38 @@ final class SyncHubScreen extends ConsumerWidget {
         _SectionCard(icon: Icons.backup_outlined, title: 'Local backup', subtitle: 'Export to file or restore from file', child: _LocalBackupSection()),
       ]),
     );
+  }
+}
+
+final class _ServerConfigCard extends ConsumerStatefulWidget {
+  const _ServerConfigCard();
+  @override
+  ConsumerState<_ServerConfigCard> createState() => _ServerConfigCardState();
+}
+final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
+  late final TextEditingController _urlCtrl;
+  late final TextEditingController _keyCtrl;
+  @override
+  void initState() {
+    super.initState();
+    final s = ref.read(settingsProvider);
+    _urlCtrl = TextEditingController(text: s.remoteSyncBaseUrl);
+    _keyCtrl = TextEditingController(text: s.remoteSyncApiKey);
+  }
+  @override
+  void dispose() { _urlCtrl.dispose(); _keyCtrl.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [Icon(Icons.settings_outlined, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Server', style: theme.textTheme.titleMedium)]),
+      const SizedBox(height: FitFatTokens.spaceM),
+      TextField(controller: _urlCtrl, decoration: const InputDecoration(labelText: 'Server URL', hintText: 'https://your-server.com'), onChanged: (v) => ref.read(settingsProvider.notifier).setRemoteSyncBaseUrl(v)),
+      const SizedBox(height: FitFatTokens.spaceS),
+      TextField(controller: _keyCtrl, decoration: const InputDecoration(labelText: 'API key', hintText: 'Bearer token'), obscureText: true, onChanged: (v) => ref.read(settingsProvider.notifier).setRemoteSyncApiKey(v)),
+      const SizedBox(height: FitFatTokens.spaceS),
+      Text('Same URL/key is used for Global and Personal pools. Currencies stays in Global.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+    ])));
   }
 }
 
@@ -57,6 +96,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       final result = await fn();
       if (!mounted) return;
       if (!result.ok && result.error != null) showTopBanner(context, message: result.error!);
+      else if (result.ok) setState(() {});
     } finally { if (mounted) setBusy(false); }
   }
   @override
@@ -79,39 +119,218 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       ListTile(contentPadding: EdgeInsets.zero, title: const Text('Ingredients'), subtitle: Text('Last sync: ${last(SyncResource.ingredients)}'), trailing: _busyIng ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.sync), onPressed: () => _run(() => ref.read(syncServiceProvider).syncIngredients(base, key, endpoint: settings.endpointIngredients), (v) => setState(() => _busyIng = v)))),
       ListTile(contentPadding: EdgeInsets.zero, title: const Text('Currencies'), subtitle: Text('Last sync: ${last(SyncResource.currencies)}'), trailing: _busyFx ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.sync), onPressed: () => _run(() => ref.read(syncServiceProvider).syncCurrencies(base, key, settings.baseCurrency, endpoint: settings.endpointCurrencies), (v) => setState(() => _busyFx = v)))),
       const SizedBox(height: FitFatTokens.spaceS),
-      OutlinedButton.icon(onPressed: () => showTopBanner(context, message: 'Select exercises to sync — per-item picker coming in T04'), icon: const Icon(Icons.checklist, size: 18), label: const Text('Select exercises…')),
+      OutlinedButton.icon(onPressed: () => _showExercisePicker(context, ref), icon: const Icon(Icons.checklist, size: 18), label: const Text('Select exercises…')),
       const SizedBox(height: FitFatTokens.spaceS),
-      OutlinedButton.icon(onPressed: () => showTopBanner(context, message: 'Select ingredients to sync — per-item picker coming in T04'), icon: const Icon(Icons.checklist, size: 18), label: const Text('Select ingredients…')),
+      OutlinedButton.icon(onPressed: () => _showIngredientPicker(context, ref), icon: const Icon(Icons.checklist, size: 18), label: const Text('Select ingredients…')),
     ]);
+  }
+  Future<void> _showExercisePicker(BuildContext context, WidgetRef ref) async {
+    final exercises = await ref.read(exerciseListProvider.future);
+    if (!context.mounted) return;
+    final selected = <String>{};
+    await showModalBottomSheet(context: context, isScrollControlled: true, builder: (ctx) {
+      String query = '';
+      return StatefulBuilder(builder: (ctx, setSt) {
+        final filtered = exercises.where((e) => query.isEmpty || e.name.toLowerCase().contains(query.toLowerCase())).toList();
+        return DraggableScrollableSheet(expand: false, initialChildSize: 0.8, builder: (_, ctrl) => Column(children: [
+          Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: TextField(decoration: const InputDecoration(labelText: 'Search exercises', prefixIcon: Icon(Icons.search)), onChanged: (v) => setSt(() => query = v))),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL), child: Row(children: [Text('${filtered.length} exercises'), const Spacer(), TextButton(onPressed: () => setSt(() { if (selected.length == filtered.length) selected.clear(); else selected.addAll(filtered.map((e) => e.id)); }), child: Text(selected.length == filtered.length ? 'Clear' : 'Select all'))])),
+          Expanded(child: ListView.builder(controller: ctrl, itemCount: filtered.length, itemBuilder: (_, i) {
+            final ex = filtered[i];
+            return CheckboxListTile(value: selected.contains(ex.id), onChanged: (v) => setSt(() { if (v == true) selected.add(ex.id); else selected.remove(ex.id); }), title: Text(ex.name), subtitle: Text(ex.exerciseType));
+          })),
+          Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.pop(ctx, selected), child: Text('Sync selected (${selected.length})')))),
+        ]));
+      });
+    });
+    if (selected.isEmpty) return;
+    if (!context.mounted) return;
+    showTopBanner(context, message: 'Selected ${selected.length} exercises — selective sync will filter server items before upsert (coming: filter items[] by id)');
+  }
+  Future<void> _showIngredientPicker(BuildContext context, WidgetRef ref) async {
+    final ingredients = await ref.read(ingredientListProvider.future);
+    if (!context.mounted) return;
+    final selected = <String>{};
+    await showModalBottomSheet(context: context, isScrollControlled: true, builder: (ctx) {
+      String query = '';
+      return StatefulBuilder(builder: (ctx, setSt) {
+        final filtered = ingredients.where((e) => query.isEmpty || e.name.toLowerCase().contains(query.toLowerCase())).toList();
+        return DraggableScrollableSheet(expand: false, initialChildSize: 0.8, builder: (_, ctrl) => Column(children: [
+          Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: TextField(decoration: const InputDecoration(labelText: 'Search ingredients', prefixIcon: Icon(Icons.search)), onChanged: (v) => setSt(() => query = v))),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL), child: Row(children: [Text('${filtered.length} ingredients'), const Spacer(), TextButton(onPressed: () => setSt(() { if (selected.length == filtered.length) selected.clear(); else selected.addAll(filtered.map((e) => e.id)); }), child: Text(selected.length == filtered.length ? 'Clear' : 'Select all'))])),
+          Expanded(child: ListView.builder(controller: ctrl, itemCount: filtered.length, itemBuilder: (_, i) {
+            final ing = filtered[i];
+            return CheckboxListTile(value: selected.contains(ing.id), onChanged: (v) => setSt(() { if (v == true) selected.add(ing.id); else selected.remove(ing.id); }), title: Text(ing.name));
+          })),
+          Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.pop(ctx, selected), child: Text('Sync selected (${selected.length})')))),
+        ]));
+      });
+    });
+    if (selected.isEmpty) return;
+    if (!context.mounted) return;
+    showTopBanner(context, message: 'Selected ${selected.length} ingredients — selective sync will filter server items before upsert');
   }
 }
 
-final class _PersonalPoolSection extends ConsumerWidget {
+final class _PersonalPoolSection extends ConsumerStatefulWidget {
   const _PersonalPoolSection();
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Wrap(spacing: FitFatTokens.spaceS, children: [for (final e in ['Tasks','Notes','Goals','Workouts','Templates','Experiments','Meals','Body','Budget','Receipts']) FilterChip(label: Text(e), selected: true, onSelected: (_) {})]),
-      const SizedBox(height: FitFatTokens.spaceM),
-      Wrap(spacing: FitFatTokens.spaceS, children: [
-        FilledButton.icon(onPressed: () => showTopBanner(context, message: 'Push all — coming in T03'), icon: const Icon(Icons.cloud_upload, size: 18), label: const Text('Push all')),
-        OutlinedButton.icon(onPressed: () => showTopBanner(context, message: 'Push selected — coming in T03'), icon: const Icon(Icons.upload, size: 18), label: const Text('Push selected')),
-        OutlinedButton.icon(onPressed: () => showTopBanner(context, message: 'Pull — coming in T03'), icon: const Icon(Icons.cloud_download, size: 18), label: const Text('Pull')),
-      ]),
-    ]);
+  ConsumerState<_PersonalPoolSection> createState() => _PersonalPoolSectionState();
+}
+final class _PersonalPoolSectionState extends ConsumerState<_PersonalPoolSection> {
+  final Set<String> _selected = {'Tasks','Notes','Goals','Workouts','Templates','Experiments','Meals','Body','Budget','Receipts'};
+  final Map<String, bool> _busy = {};
+  bool _isBusy(String key) => _busy[key] ?? false;
+  void _setBusy(String key, bool v) => setState(() => _busy[key] = v);
+  Future<void> _pushOne(String entity) async {
+    _setBusy(entity, true);
+    try {
+      final type = _entityToType(entity);
+      final res = await pushDataType(ref, type);
+      if (!mounted) return;
+      showTopBanner(context, message: res.ok ? 'Pushed $entity' : 'Push $entity failed: ${res.error}');
+    } finally { _setBusy(entity, false); }
+  }
+  String _entityToType(String e) => switch (e) {
+    'Tasks' => 'tasks',
+    'Notes' => 'notes',
+    'Goals' => 'goals',
+    'Workouts' => 'workouts',
+    'Templates' => 'templates',
+    'Experiments' => 'tasks',
+    'Meals' => 'meals',
+    'Body' => 'workouts',
+    'Budget' => 'budgetAccounts',
+    'Receipts' => 'receiptPictures',
+    _ => 'tasks',
+  };
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String,int>>(
+      future: _counts(ref),
+      builder: (ctx, snap) {
+        final counts = snap.data ?? {};
+        const entities = [
+          ('Tasks', Icons.checklist),
+          ('Notes', Icons.note_alt_outlined),
+          ('Goals', Icons.flag_outlined),
+          ('Workouts', Icons.fitness_center),
+          ('Templates', Icons.view_module_outlined),
+          ('Experiments', Icons.science_outlined),
+          ('Meals', Icons.restaurant_outlined),
+          ('Body', Icons.monitor_weight_outlined),
+          ('Budget', Icons.account_balance_wallet_outlined),
+          ('Receipts', Icons.receipt_long_outlined),
+        ];
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          for (final (name, icon) in entities) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+              title: Text('$name · ${counts[name] ?? 0}'),
+              subtitle: const Text('Last sync: never'),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                Checkbox(value: _selected.contains(name), onChanged: (v) => setState(() { if (v == true) _selected.add(name); else _selected.remove(name); })),
+                const SizedBox(width: 4),
+                _isBusy(name) ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.sync), tooltip: 'Sync $name', onPressed: () => _pushOne(name)),
+              ]),
+            ),
+            const Divider(height: 1),
+          ],
+          const SizedBox(height: FitFatTokens.spaceM),
+          Wrap(spacing: FitFatTokens.spaceS, runSpacing: FitFatTokens.spaceS, children: [
+            FilledButton.icon(onPressed: () async {
+              for (final e in _selected.toList()) { await _pushOne(e); }
+            }, icon: const Icon(Icons.cloud_upload, size: 18), label: Text('Push all (${_selected.length})')),
+            OutlinedButton.icon(onPressed: _selected.isEmpty ? null : () async { for (final e in _selected) await _pushOne(e); }, icon: const Icon(Icons.upload, size: 18), label: const Text('Push selected')),
+            OutlinedButton.icon(onPressed: _selected.isEmpty ? null : () => showTopBanner(context, message: 'Pull selected — coming soon'), icon: const Icon(Icons.cloud_download, size: 18), label: const Text('Pull')),
+          ]),
+        ]);
+      },
+    );
+  }
+  Future<Map<String,int>> _counts(WidgetRef ref) async {
+    final dbInst = ref.read(db.databaseProvider);
+    final tasks = await dbInst.select(dbInst.tasks).get();
+    final notes = await dbInst.select(dbInst.notes).get();
+    final goals = await dbInst.select(dbInst.goals).get();
+    final workouts = await dbInst.select(dbInst.workouts).get();
+    final templates = await dbInst.select(dbInst.workoutTemplates).get();
+    final meals = await dbInst.select(dbInst.meals).get();
+    final body = await dbInst.select(dbInst.bodyMetrics).get();
+    final accounts = await dbInst.select(dbInst.accounts).get();
+    final receipts = await dbInst.select(dbInst.receipts).get();
+    return {'Tasks': tasks.length, 'Notes': notes.length, 'Goals': goals.length, 'Workouts': workouts.length, 'Templates': templates.length, 'Experiments': 0, 'Meals': meals.length, 'Body': body.length, 'Budget': accounts.length, 'Receipts': receipts.length};
   }
 }
 
-final class _LocalBackupSection extends ConsumerWidget {
+final class _LocalBackupSection extends ConsumerStatefulWidget {
   const _LocalBackupSection();
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LocalBackupSection> createState() => _LocalBackupSectionState();
+}
+final class _LocalBackupSectionState extends ConsumerState<_LocalBackupSection> {
+  bool _wholeDb = true;
+  final Set<String> _selected = {'Tasks','Notes','Goals','Workouts','Templates','Experiments','Meals','Body','Budget','Receipts'};
+  bool _busyExport = false;
+  bool _busyImport = false;
+  static const _prefsKey = 'local_backup_selected';
+  static const _wholeKey = 'local_backup_whole';
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final savedWhole = prefs.getBool(_wholeKey);
+      final saved = prefs.getStringList(_prefsKey);
+      if (!mounted) return;
+      setState(() {
+        if (savedWhole != null) _wholeDb = savedWhole;
+        if (saved != null && saved.isNotEmpty) { _selected.clear(); _selected.addAll(saved); }
+      });
+    });
+  }
+  void _persist() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setBool(_wholeKey, _wholeDb);
+    prefs.setStringList(_prefsKey, _selected.toList());
+  }
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      SegmentedButton<bool>(segments: const [ButtonSegment(value: true, label: Text('Whole DB')), ButtonSegment(value: false, label: Text('Selected'))], selected: const {true}, onSelectionChanged: (_) {}),
+      SegmentedButton<bool>(segments: const [ButtonSegment(value: true, label: Text('Whole DB')), ButtonSegment(value: false, label: Text('Selected'))], selected: {_wholeDb}, onSelectionChanged: (s) => setState(() { _wholeDb = s.first; _persist(); })),
+      const SizedBox(height: FitFatTokens.spaceS),
+      Text(_wholeDb ? 'Whole DB → .sqlite (full file)' : 'Selected → .json (filtered by selection)', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      if (!_wholeDb) ...[
+        const SizedBox(height: FitFatTokens.spaceM),
+        Wrap(spacing: FitFatTokens.spaceS, children: [for (final e in ['Tasks','Notes','Goals','Workouts','Templates','Experiments','Meals','Body','Budget','Receipts']) FilterChip(label: Text(e), selected: _selected.contains(e), onSelected: (v) => setState(() { if (v) _selected.add(e); else _selected.remove(e); _persist(); }))]),
+        Text('Selected (${_selected.length}/10) — applies to both Export and Import', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      ],
       const SizedBox(height: FitFatTokens.spaceM),
-      Wrap(spacing: FitFatTokens.spaceS, children: [
-        FilledButton.icon(onPressed: () => showTopBanner(context, message: 'Export — coming in T02'), icon: const Icon(Icons.ios_share, size: 18), label: const Text('Export')),
-        OutlinedButton.icon(onPressed: () => showTopBanner(context, message: 'Import — coming in T02'), icon: const Icon(Icons.file_open, size: 18), label: const Text('Import')),
+      Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('Export', style: theme.textTheme.labelMedium), const SizedBox(height: 4),
+          FilledButton.icon(onPressed: _busyExport ? null : () async {
+            setState(() => _busyExport = true);
+            try {
+              if (_wholeDb) await exportWholeDb(context);
+              else {
+                if (_selected.isEmpty) { showTopBanner(context, message: 'Select at least one entity'); return; }
+                await exportJsonPerEntity(context, ref, _selected);
+              }
+            } catch (e) { if (mounted) showTopBanner(context, message: '$e'); }
+            finally { if (mounted) setState(() => _busyExport = false); }
+          }, icon: _busyExport ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.ios_share, size: 18), label: Text(_wholeDb ? 'Export DB' : 'Export JSON (${_selected.length})')),
+        ])),
+        const SizedBox(width: FitFatTokens.spaceM),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('Import', style: theme.textTheme.labelMedium), const SizedBox(height: 4),
+          OutlinedButton.icon(onPressed: _busyImport ? null : () async {
+            setState(() => _busyImport = true);
+            try { await importBackup(context, ref, entities: _selected, wholeDb: _wholeDb); } catch (e) { if (mounted) showTopBanner(context, message: '$e'); } finally { if (mounted) setState(() => _busyImport = false); }
+          }, icon: _busyImport ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.file_open, size: 18), label: Text(_wholeDb ? 'Import DB' : 'Import JSON')),
+        ])),
       ]),
     ]);
   }

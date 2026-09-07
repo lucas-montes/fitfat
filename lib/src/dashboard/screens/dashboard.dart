@@ -23,7 +23,12 @@ import '../../planner/providers/planner.dart';
 import '../../planner/screens/planner_item_detail.dart';
 import '../../models/workout.dart';
 import '../../settings/providers/settings.dart';
+import '../../sync/local_backup.dart';
+import '../../sync/sync_models.dart';
+import '../../sync/sync_state_store.dart';
+import '../../sync/sync_service.dart';
 import '../../ui/date_formats.dart';
+import '../../ui/widgets/top_banner.dart';
 import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
 import '../../ui/units.dart';
@@ -84,19 +89,69 @@ final class DashboardScreen extends ConsumerWidget {
   }
 }
 
-final class _SyncHubCard extends StatelessWidget {
+final class _SyncHubCard extends ConsumerStatefulWidget {
   const _SyncHubCard();
+  @override
+  ConsumerState<_SyncHubCard> createState() => _SyncHubCardState();
+}
+final class _SyncHubCardState extends ConsumerState<_SyncHubCard> {
+  bool _busySync = false;
+  bool _busyBackup = false;
+  String _lastSyncText() {
+    final state = SyncStateStore(ref.watch(sharedPreferencesProvider));
+    final times = [state.getLastSyncedAt(SyncResource.exercises), state.getLastSyncedAt(SyncResource.ingredients), state.getLastSyncedAt(SyncResource.currencies)].where((v) => v > 0).toList();
+    if (times.isEmpty) return 'never';
+    final last = times.reduce((a, b) => a > b ? a : b);
+    final diff = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(last));
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+  Future<void> _syncNow() async {
+    if (_busySync) return;
+    setState(() => _busySync = true);
+    try {
+      final s = ref.read(settingsProvider);
+      if (s.remoteSyncBaseUrl.isEmpty) {
+        if (mounted) showTopBanner(context, message: 'Sync server not configured — open Sync & Backup to set URL');
+        return;
+      }
+      final svc = ref.read(syncServiceProvider);
+      final results = await Future.wait([
+        svc.syncExercises(s.remoteSyncBaseUrl, s.remoteSyncApiKey, endpoint: s.endpointExercises),
+        svc.syncIngredients(s.remoteSyncBaseUrl, s.remoteSyncApiKey, endpoint: s.endpointIngredients),
+        svc.syncCurrencies(s.remoteSyncBaseUrl, s.remoteSyncApiKey, s.baseCurrency, endpoint: s.endpointCurrencies),
+      ]);
+      final errors = results.where((r) => !r.ok && r.error != null).map((r) => r.error!).toList();
+      if (!mounted) return;
+      if (errors.isNotEmpty) showTopBanner(context, message: errors.join('\n'));
+      setState(() {});
+    } finally {
+      if (mounted) setState(() => _busySync = false);
+    }
+  }
+  Future<void> _backupNow() async {
+    if (_busyBackup) return;
+    setState(() => _busyBackup = true);
+    try {
+      await exportWholeDb(context);
+    } catch (e) {
+      if (mounted) showTopBanner(context, message: '$e');
+    } finally {
+      if (mounted) setState(() => _busyBackup = false);
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [Icon(Icons.sync, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Sync & Backup', style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/sync'), icon: const Icon(Icons.chevron_right, size: 18), label: const Text('Open'))]),
       const SizedBox(height: FitFatTokens.spaceS),
-      Text('Global pool, personal data and local backups', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      Text('Last sync: ${_lastSyncText()}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       const SizedBox(height: FitFatTokens.spaceM),
-      Wrap(spacing: FitFatTokens.spaceS, children: [
-        FilledButton.icon(onPressed: () => context.go('/sync'), icon: const Icon(Icons.cloud_sync, size: 18), label: const Text('Sync')),
-        OutlinedButton.icon(onPressed: () => context.go('/sync'), icon: const Icon(Icons.backup, size: 18), label: const Text('Backup')),
+      Wrap(spacing: FitFatTokens.spaceS, runSpacing: FitFatTokens.spaceS, children: [
+        FilledButton.icon(onPressed: _busySync ? null : _syncNow, icon: _busySync ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.cloud_sync, size: 18), label: const Text('Sync now')),
+        OutlinedButton.icon(onPressed: _busyBackup ? null : _backupNow, icon: _busyBackup ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.backup, size: 18), label: const Text('Backup')),
       ]),
     ])));
   }
