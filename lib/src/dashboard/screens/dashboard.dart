@@ -72,6 +72,8 @@ final class DashboardScreen extends ConsumerWidget {
                   const _ExperimentsNudgeCard(),
                   const SizedBox(height: FitFatTokens.spaceL),
                   const _BudgetMiniCard(),
+                  const SizedBox(height: FitFatTokens.spaceL),
+                  const _SyncHubCard(),
                 ],
               ),
             ),
@@ -79,6 +81,24 @@ final class DashboardScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+final class _SyncHubCard extends StatelessWidget {
+  const _SyncHubCard();
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [Icon(Icons.sync, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Sync & Backup', style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/sync'), icon: const Icon(Icons.chevron_right, size: 18), label: const Text('Open'))]),
+      const SizedBox(height: FitFatTokens.spaceS),
+      Text('Global pool, personal data and local backups', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      const SizedBox(height: FitFatTokens.spaceM),
+      Wrap(spacing: FitFatTokens.spaceS, children: [
+        FilledButton.icon(onPressed: () => context.go('/sync'), icon: const Icon(Icons.cloud_sync, size: 18), label: const Text('Sync')),
+        OutlinedButton.icon(onPressed: () => context.go('/sync'), icon: const Icon(Icons.backup, size: 18), label: const Text('Backup')),
+      ]),
+    ])));
   }
 }
 

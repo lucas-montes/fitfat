@@ -1125,27 +1125,7 @@ final class _DataScreenState extends ConsumerState<_DataScreen> {
             ),
           ],
         ),
-        const SizedBox(height: FitFatTokens.spaceL),
-        SettingsSection(
-          title: l10n.settingsSyncServer,
-          subtitle: l10n.settingsSyncServerHint,
-          children: [
-            _settingsField(
-              context: context,
-              controller: _timeoutCtrl,
-              label: l10n.settingsApiTimeoutLabel,
-              help: l10n.settingsApiTimeoutHelp,
-              validator: (v) => _validatePositiveInt(context, v),
-              onSave: () => _saveIfValid(_timeoutCtrl, () {
-                ref
-                    .read(settingsProvider.notifier)
-                    .setApiTimeoutSeconds(int.parse(_timeoutCtrl.text));
-              }),
-            ),
-            const SizedBox(height: FitFatTokens.spaceS),
-            const _SyncServerCard(),
-          ],
-        ),
+
       ],
     );
     if (widget.embed) return SettingsBody(child: body);

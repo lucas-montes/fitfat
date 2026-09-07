@@ -19,6 +19,7 @@ import '../exercise/screens/workout_summary_screen.dart';
 import '../models/workout.dart';
 import '../notifications/rest_timer.dart';
 import '../settings/screens/settings_screen.dart';
+import '../sync/screens/sync_hub_screen.dart';
 import '../ui/tokens.dart';
 import '../ui/theme_extensions.dart';
 import '../ui/widgets/status_badge.dart';
@@ -139,6 +140,7 @@ final GoRouter appRouter = GoRouter(
       ],
     ),
     GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+    GoRoute(path: '/sync', builder: (_, _) => const SyncHubScreen()),
     GoRoute(
       path: '/active-workout',
       builder: (_, _) => const ActiveWorkoutScreen(),
