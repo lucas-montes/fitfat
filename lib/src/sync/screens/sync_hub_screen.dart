@@ -12,6 +12,7 @@ import '../../settings/providers/settings.dart';
 import '../data_push_service.dart';
 import '../local_backup.dart';
 import '../sync_service.dart';
+import 'qr_scan_sheet.dart';
 import '../sync_state_store.dart';
 import '../sync_models.dart';
 import '../../ui/widgets/top_banner.dart';
@@ -44,6 +45,8 @@ final class _ServerConfigCard extends ConsumerStatefulWidget {
 final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
   late final TextEditingController _urlCtrl;
   late final TextEditingController _keyCtrl;
+  String? _testStatus;
+  bool _testing = false;
   @override
   void initState() {
     super.initState();
@@ -53,15 +56,47 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
   }
   @override
   void dispose() { _urlCtrl.dispose(); _keyCtrl.dispose(); super.dispose(); }
+  Future<void> _autoTest(String url, String key) async {
+    setState(() { _testing = true; _testStatus = null; });
+    try {
+      final client = HttpApiClient(http.Client(), baseUrl: url);
+      await client.getJson('/health', headers: authHeaders(key));
+      if (!mounted) return;
+      setState(() => _testStatus = '✓ Connected');
+    } catch (e) {
+      try {
+        final client = HttpApiClient(http.Client(), baseUrl: url);
+        await client.getJson('/exercises', headers: authHeaders(key), query: {'since': '0'});
+        if (!mounted) return;
+        setState(() => _testStatus = '✓ Connected');
+      } catch (e2) {
+        if (!mounted) return;
+        setState(() => _testStatus = null);
+        showTopBanner(context, message: 'Connection failed: $e2');
+      }
+    } finally {
+      if (mounted) setState(() => _testing = false);
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Icon(Icons.settings_outlined, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Server', style: theme.textTheme.titleMedium)]),
+      Row(children: [Icon(Icons.settings_outlined, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Server', style: theme.textTheme.titleMedium), const Spacer(), if (_testing) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)), if (_testStatus != null) Padding(padding: const EdgeInsets.only(left: 8), child: Text(_testStatus!, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)))]),
       const SizedBox(height: FitFatTokens.spaceM),
       TextField(controller: _urlCtrl, decoration: const InputDecoration(labelText: 'Server URL', hintText: 'https://your-server.com'), onChanged: (v) => ref.read(settingsProvider.notifier).setRemoteSyncBaseUrl(v)),
       const SizedBox(height: FitFatTokens.spaceS),
       TextField(controller: _keyCtrl, decoration: const InputDecoration(labelText: 'API key', hintText: 'Bearer token'), obscureText: true, onChanged: (v) => ref.read(settingsProvider.notifier).setRemoteSyncApiKey(v)),
+      const SizedBox(height: FitFatTokens.spaceM),
+      SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () async {
+        final result = await showQrScanSheet(context);
+        if (result == null || !mounted) return;
+        _urlCtrl.text = result.url;
+        _keyCtrl.text = result.apiKey;
+        await ref.read(settingsProvider.notifier).setRemoteSyncBaseUrl(result.url);
+        await ref.read(settingsProvider.notifier).setRemoteSyncApiKey(result.apiKey);
+        await _autoTest(result.url, result.apiKey);
+      }, icon: const Icon(Icons.qr_code_scanner, size: 18), label: const Text('Scan QR'))),
       const SizedBox(height: FitFatTokens.spaceS),
       Text('Same URL/key is used for Global and Personal pools. Currencies stays in Global.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
     ])));
