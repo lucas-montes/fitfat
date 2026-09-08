@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import '../../sync/screens/sync_hub_screen.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -111,7 +112,7 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           icon: Icons.sync_outlined,
           label: 'Sync',
           subtitle: 'Servers & backup — open Sync & Backup',
-          build: ({required embed}) => _SyncLinkScreen(embed: embed),
+          build: ({required embed}) => const SyncHubScreen(),
         ),
         _HubDestination(
           icon: Icons.delete_forever_outlined,
