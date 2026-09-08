@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../models/activity_level.dart';
 import '../../models/body_weight_goal.dart';
@@ -8,6 +12,15 @@ import '../../models/gender.dart';
 import '../../models/units.dart';
 
 enum CascadeDeleteBehavior { ask, alwaysCascade, neverCascade }
+
+final class ServerProfile {
+  final String id;
+  final String url;
+  final String label;
+  const ServerProfile({required this.id, required this.url, required this.label});
+  Map<String, dynamic> toJson() => {'id': id, 'url': url, 'label': label};
+  factory ServerProfile.fromJson(Map<String, dynamic> json) => ServerProfile(id: json['id'] as String, url: json['url'] as String, label: json['label'] as String? ?? json['url'] as String);
+}
 
 final class SharedPreferencesHolder extends Notifier<SharedPreferences?> {
   @override
@@ -76,9 +89,11 @@ final class SettingsState {
 
   // Base URL of the user's sync server (exercises/ingredients/currencies).
   // Empty until configured; the sync clients refuse to run without it.
-  final String remoteSyncBaseUrl; // default ''
+  final String remoteSyncBaseUrl; // default '' (derived from active server if multi)
   // API key sent as a Bearer token on every sync request.
-  final String remoteSyncApiKey; // default ''
+  final String remoteSyncApiKey; // default '' (derived)
+  final List<ServerProfile> servers;
+  final String? activeServerId;
 
   // Configurable server endpoints (paths appended to [remoteSyncBaseUrl]).
   // Defaults assume a conventional REST layout; override any that differ.
@@ -136,6 +151,8 @@ final class SettingsState {
     this.replayPrefill = 'planned',
     this.remoteSyncBaseUrl = '',
     this.remoteSyncApiKey = '',
+    this.servers = const [],
+    this.activeServerId,
     this.endpointExport = '/backup',
     this.endpointImport = '/backup/latest',
     this.endpointExercises = '/exercises',
@@ -166,6 +183,12 @@ final class SettingsState {
       bodyWeightGoal != null &&
       activityLevel != null;
 
+  ServerProfile? get activeServer {
+    if (servers.isEmpty) return null;
+    if (activeServerId == null) return servers.first;
+    return servers.firstWhere((s) => s.id == activeServerId, orElse: () => servers.first);
+  }
+
   SettingsState copyWith({
     ThemeMode? themeMode,
     Locale? locale,
@@ -192,6 +215,9 @@ final class SettingsState {
     String? replayPrefill,
     String? remoteSyncBaseUrl,
     String? remoteSyncApiKey,
+    List<ServerProfile>? servers,
+    String? activeServerId,
+    bool clearActiveServerId = false,
     String? endpointExport,
     String? endpointImport,
     String? endpointExercises,
@@ -241,6 +267,8 @@ final class SettingsState {
     replayPrefill: replayPrefill ?? this.replayPrefill,
     remoteSyncBaseUrl: remoteSyncBaseUrl ?? this.remoteSyncBaseUrl,
     remoteSyncApiKey: remoteSyncApiKey ?? this.remoteSyncApiKey,
+    servers: servers ?? this.servers,
+    activeServerId: clearActiveServerId ? null : (activeServerId ?? this.activeServerId),
     endpointExport: endpointExport ?? this.endpointExport,
     endpointImport: endpointImport ?? this.endpointImport,
     endpointExercises: endpointExercises ?? this.endpointExercises,
@@ -310,6 +338,9 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _defaultRestSecondsKey = 'settings_default_rest_seconds';
   static const _cascadeDeleteKey = 'settings_cascade_delete';
   static const _hasSeenWizardKey = 'settings_has_seen_wizard';
+  static const _serversKey = 'settings_sync_servers';
+  static const _activeServerIdKey = 'settings_sync_active_id';
+  static const _secureStorage = FlutterSecureStorage();
 
   /// Public so the reminder scheduler can read the lead time directly from
   /// prefs (it receives SharedPreferences, not the settings notifier).
@@ -346,8 +377,10 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       replayPrefill: prefs.getString(_replayPrefillKey) == 'actuals'
           ? 'actuals'
           : 'planned',
-      remoteSyncBaseUrl: prefs.getString(_remoteSyncBaseUrlKey) ?? '',
-      remoteSyncApiKey: prefs.getString(_remoteSyncApiKeyKey) ?? '',
+      servers: _loadServers(prefs),
+      activeServerId: prefs.getString(_activeServerIdKey),
+      remoteSyncBaseUrl: _resolveBaseUrl(prefs),
+      remoteSyncApiKey: _resolveApiKey(prefs),
       endpointExport: prefs.getString(_endpointExportKey) ?? '/backup',
       endpointImport: prefs.getString(_endpointImportKey) ?? '/backup/latest',
       endpointExercises: prefs.getString(_endpointExercisesKey) ?? '/exercises',
@@ -379,6 +412,108 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       ),
       hasSeenWizard: prefs.getBool(_hasSeenWizardKey) ?? false,
     );
+  }
+
+  static List<ServerProfile> _loadServers(SharedPreferences prefs) {
+    final raw = prefs.getString(_serversKey);
+    if (raw == null || raw.isEmpty) {
+      final base = prefs.getString(_remoteSyncBaseUrlKey) ?? '';
+      final key = prefs.getString(_remoteSyncApiKeyKey) ?? '';
+      if (base.isEmpty && key.isEmpty) return const [];
+      final label = Uri.tryParse(base)?.host ?? base;
+      return [ServerProfile(id: const Uuid().v7(), url: base, label: label.isEmpty ? base : label)];
+    }
+    try {
+      final list = jsonDecode(raw) as List;
+      return list.map((e) => ServerProfile.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) { return const []; }
+  }
+
+  static String _resolveBaseUrl(SharedPreferences prefs) {
+    final servers = _loadServers(prefs);
+    if (servers.isEmpty) return prefs.getString(_remoteSyncBaseUrlKey) ?? '';
+    final activeId = prefs.getString(_activeServerIdKey);
+    final active = activeId == null ? servers.first : servers.firstWhere((s) => s.id == activeId, orElse: () => servers.first);
+    return active.url;
+  }
+
+  static String _resolveApiKey(SharedPreferences prefs) {
+    final raw = prefs.getString(_serversKey);
+    if (raw == null || raw.isEmpty) return prefs.getString(_remoteSyncApiKeyKey) ?? '';
+    try {
+      final list = jsonDecode(raw) as List;
+      // ApiKey stored alongside url for now (secure storage migration later)
+      final serversWithKey = list.map((e) => e as Map<String, dynamic>).toList();
+      final activeId = prefs.getString(_activeServerIdKey);
+      final active = activeId == null ? serversWithKey.first : serversWithKey.firstWhere((s) => s['id'] == activeId, orElse: () => serversWithKey.first);
+      return active['apiKey'] as String? ?? prefs.getString(_remoteSyncApiKeyKey) ?? '';
+    } catch (_) { return prefs.getString(_remoteSyncApiKeyKey) ?? ''; }
+  }
+
+  Future<void> addServer(String url, String apiKey) async {
+    final normalized = url.trim().replaceAll(RegExp(r'/+$'), '');
+    if (normalized.isEmpty || apiKey.trim().isEmpty) return;
+    final prefs = ref.read(sharedPreferencesProvider);
+    final existing = _loadServers(prefs);
+    if (existing.any((s) => s.url == normalized)) return;
+    final label = Uri.tryParse(normalized)?.host ?? normalized;
+    final profile = ServerProfile(id: const Uuid().v7(), url: normalized, label: label);
+    final updated = [...existing, profile];
+    // Store with apiKey for now
+    final jsonList = updated.map((s) => s.id == profile.id ? {'id': s.id, 'url': s.url, 'label': s.label, 'apiKey': apiKey.trim()} : {'id': s.id, 'url': s.url, 'label': s.label, 'apiKey': _apiKeyForSync(s.id) ?? ''}).toList();
+    // Need to preserve existing keys
+    final rawOld = prefs.getString(_serversKey);
+    List<Map<String,dynamic>> oldList = [];
+    if (rawOld != null && rawOld.isNotEmpty) { try { oldList = (jsonDecode(rawOld) as List).cast<Map<String,dynamic>>(); } catch (_) {} }
+    final merged = <String, String>{};
+    for (final e in oldList) { if (e['id'] != null && e['apiKey'] != null) merged[e['id'] as String] = e['apiKey'] as String; }
+    merged[profile.id] = apiKey.trim();
+    final finalList = updated.map((s) => {'id': s.id, 'url': s.url, 'label': s.label, 'apiKey': merged[s.id] ?? ''}).toList();
+    await prefs.setString(_serversKey, jsonEncode(finalList));
+    await prefs.setString(_activeServerIdKey, profile.id);
+    await prefs.setString(_remoteSyncBaseUrlKey, normalized);
+    await prefs.setString(_remoteSyncApiKeyKey, apiKey.trim());
+    state = state.copyWith(servers: updated, activeServerId: profile.id, remoteSyncBaseUrl: normalized, remoteSyncApiKey: apiKey.trim());
+  }
+
+  String? _apiKeyForSync(String id) {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final raw = prefs.getString(_serversKey);
+    if (raw == null) return null;
+    try { final list = (jsonDecode(raw) as List).cast<Map<String,dynamic>>(); final e = list.firstWhere((x) => x['id'] == id, orElse: () => {}); return e['apiKey'] as String?; } catch (_) { return null; }
+  }
+
+  Future<void> deleteServer(String id) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final existing = _loadServers(prefs);
+    if (existing.length <= 1) return;
+    final updated = existing.where((s) => s.id != id).toList();
+    final rawOld = prefs.getString(_serversKey);
+    List<Map<String,dynamic>> oldList = [];
+    if (rawOld != null && rawOld.isNotEmpty) { try { oldList = (jsonDecode(rawOld) as List).cast<Map<String,dynamic>>(); } catch (_) {} }
+    final filtered = oldList.where((e) => e['id'] != id).toList();
+    await prefs.setString(_serversKey, jsonEncode(filtered));
+    final activeId = prefs.getString(_activeServerIdKey);
+    String? newActive = activeId;
+    if (activeId == id) newActive = updated.isNotEmpty ? updated.first.id : null;
+    if (newActive != null) await prefs.setString(_activeServerIdKey, newActive); else await prefs.remove(_activeServerIdKey);
+    final newBase = updated.isNotEmpty ? updated.firstWhere((s) => s.id == newActive, orElse: () => updated.first).url : '';
+    final newKey = newActive != null ? (filtered.firstWhere((e) => e['id'] == newActive, orElse: () => {})['apiKey'] as String? ?? '') : '';
+    await prefs.setString(_remoteSyncBaseUrlKey, newBase);
+    await prefs.setString(_remoteSyncApiKeyKey, newKey);
+    state = state.copyWith(servers: updated, activeServerId: newActive, clearActiveServerId: newActive == null, remoteSyncBaseUrl: newBase, remoteSyncApiKey: newKey);
+  }
+
+  Future<void> setActiveServer(String id) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final existing = _loadServers(prefs);
+    if (!existing.any((s) => s.id == id)) return;
+    await prefs.setString(_activeServerIdKey, id);
+    final active = existing.firstWhere((s) => s.id == id);
+    final key = _apiKeyForSync(id) ?? '';
+    await prefs.setString(_remoteSyncBaseUrlKey, active.url);
+    await prefs.setString(_remoteSyncApiKeyKey, key);
+    state = state.copyWith(activeServerId: id, remoteSyncBaseUrl: active.url, remoteSyncApiKey: key);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {

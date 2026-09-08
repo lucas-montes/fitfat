@@ -47,20 +47,9 @@ final class _ServerConfigCard extends ConsumerStatefulWidget {
   ConsumerState<_ServerConfigCard> createState() => _ServerConfigCardState();
 }
 final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
-  late final TextEditingController _urlCtrl;
-  late final TextEditingController _keyCtrl;
   String? _testStatus;
   bool _testing = false;
   final _log = Logger('SyncHub.Server');
-  @override
-  void initState() {
-    super.initState();
-    final s = ref.read(settingsProvider);
-    _urlCtrl = TextEditingController(text: s.remoteSyncBaseUrl);
-    _keyCtrl = TextEditingController(text: s.remoteSyncApiKey);
-  }
-  @override
-  void dispose() { _urlCtrl.dispose(); _keyCtrl.dispose(); super.dispose(); }
   Future<void> _autoTest(String url, String key) async {
     setState(() { _testing = true; _testStatus = null; });
     final normalizedUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
@@ -125,36 +114,82 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
     }
     if (mounted) setState(() => _testing = false);
   }
+  Future<void> _addServerDialog() async {
+    final urlCtrl = TextEditingController();
+    final keyCtrl = TextEditingController();
+    final result = await showDialog<({String url, String apiKey})>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Add server'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: urlCtrl, decoration: const InputDecoration(labelText: 'Server URL', hintText: 'http://127.0.0.1:3030'), autofocus: true),
+        const SizedBox(height: 12),
+        TextField(controller: keyCtrl, decoration: const InputDecoration(labelText: 'API key'), obscureText: true),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        FilledButton(onPressed: () {
+          final url = urlCtrl.text.trim();
+          final key = keyCtrl.text.trim();
+          if (url.isEmpty || key.isEmpty) return;
+          Navigator.pop(ctx, (url: url, apiKey: key));
+        }, child: const Text('Add')),
+      ],
+    ));
+    if (result == null) return;
+    final normalized = result.url.trim().replaceAll(RegExp(r'/+$'), '');
+    final uri = Uri.tryParse(normalized);
+    if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) { showTopBanner(context, message: 'Invalid URL'); return; }
+    if (result.apiKey.isEmpty) { showTopBanner(context, message: 'API key required'); return; }
+    final notifier = ref.read(settingsProvider.notifier);
+    if (ref.read(settingsProvider).servers.any((s) => s.url == normalized)) { showTopBanner(context, message: 'Server already exists'); return; }
+    await notifier.addServer(normalized, result.apiKey);
+    await _autoTest(normalized, result.apiKey);
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final settings = ref.watch(settingsProvider);
+    final servers = settings.servers;
+    final activeId = settings.activeServerId;
     return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Icon(Icons.settings_outlined, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Server', style: theme.textTheme.titleMedium), const Spacer(), if (_testing) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)), if (_testStatus != null) Padding(padding: const EdgeInsets.only(left: 8), child: Text(_testStatus!, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)))]),
-      const SizedBox(height: FitFatTokens.spaceM),
-      TextField(controller: _urlCtrl, decoration: const InputDecoration(labelText: 'Server URL', hintText: 'https://your-server.com'), onChanged: (v) => ref.read(settingsProvider.notifier).setRemoteSyncBaseUrl(v)),
+      Row(children: [Icon(Icons.settings_outlined, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Servers', style: theme.textTheme.titleMedium), const Spacer(), if (_testing) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)), if (_testStatus != null) Padding(padding: const EdgeInsets.only(left: 8), child: Text(_testStatus!, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)))]),
       const SizedBox(height: FitFatTokens.spaceS),
-      TextField(controller: _keyCtrl, decoration: const InputDecoration(labelText: 'API key', hintText: 'Bearer token'), obscureText: true, onChanged: (v) => ref.read(settingsProvider.notifier).setRemoteSyncApiKey(v)),
+      Text('Add multiple server URL + API key pairs. Select active to sync. Keep adb reverse + http://127.0.0.1:3030 for hotspot.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      const SizedBox(height: FitFatTokens.spaceM),
+      if (servers.isEmpty) Padding(padding: const EdgeInsets.only(bottom: 12), child: Text('No servers yet — add one via Scan QR or Add', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
+      for (final s in servers) ...[
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Radio<String>(value: s.id, groupValue: activeId ?? (servers.isNotEmpty ? servers.first.id : null), onChanged: (v) async { if (v != null) await ref.read(settingsProvider.notifier).setActiveServer(v); }),
+          title: Text(s.label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+          subtitle: Text(s.url, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          trailing: IconButton(icon: const Icon(Icons.delete_outline), tooltip: 'Remove', onPressed: servers.length <= 1 ? null : () async {
+            final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text('Remove server?'), content: Text('Remove ${s.label}?'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Remove'))]));
+            if (confirmed == true) await ref.read(settingsProvider.notifier).deleteServer(s.id);
+          }),
+          onTap: () async => await ref.read(settingsProvider.notifier).setActiveServer(s.id),
+        ),
+        const Divider(height: 1),
+      ],
       const SizedBox(height: FitFatTokens.spaceM),
       Row(children: [
+        Expanded(child: FilledButton.icon(onPressed: _addServerDialog, icon: const Icon(Icons.add, size: 18), label: const Text('Add'))),
+        const SizedBox(width: FitFatTokens.spaceS),
         Expanded(child: FilledButton.icon(onPressed: () async {
           final result = await showQrScanSheet(context);
           if (result == null || !mounted) return;
-          _urlCtrl.text = result.url;
-          _keyCtrl.text = result.apiKey;
-          await ref.read(settingsProvider.notifier).setRemoteSyncBaseUrl(result.url);
-          await ref.read(settingsProvider.notifier).setRemoteSyncApiKey(result.apiKey);
-          await _autoTest(result.url, result.apiKey);
+          final normalized = result.url.trim().replaceAll(RegExp(r'/+$'), '');
+          if (ref.read(settingsProvider).servers.any((s) => s.url == normalized)) { showTopBanner(context, message: 'Server already exists'); return; }
+          await ref.read(settingsProvider.notifier).addServer(normalized, result.apiKey);
+          await _autoTest(normalized, result.apiKey);
         }, icon: const Icon(Icons.qr_code_scanner, size: 18), label: const Text('Scan QR'))),
-        const SizedBox(width: FitFatTokens.spaceS),
-        Expanded(child: OutlinedButton.icon(onPressed: _testing ? null : () async {
-          final url = _urlCtrl.text.trim();
-          final key = _keyCtrl.text.trim();
-          if (url.isEmpty) { showTopBanner(context, message: 'Enter server URL first'); return; }
-          await _autoTest(url, key);
-        }, icon: _testing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.wifi_tethering, size: 18), label: const Text('Test /health'))),
       ]),
       const SizedBox(height: FitFatTokens.spaceS),
-      Text('Same URL/key is used for Global and Personal pools. Currencies stays in Global.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: () async {
+        final active = settings.activeServer;
+        if (active == null) { showTopBanner(context, message: 'No active server'); return; }
+        final key = ref.read(settingsProvider).remoteSyncApiKey;
+        await _autoTest(active.url, key);
+      }, icon: _testing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.wifi_tethering, size: 18), label: const Text('Test /health'))),
     ])));
   }
 }

@@ -108,6 +108,12 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           build: ({required embed}) => const TagManagerScreen(),
         ),
         _HubDestination(
+          icon: Icons.sync_outlined,
+          label: 'Sync',
+          subtitle: 'Servers & backup — open Sync & Backup',
+          build: ({required embed}) => _SyncLinkScreen(embed: embed),
+        ),
+        _HubDestination(
           icon: Icons.delete_forever_outlined,
           iconColor: scheme.error,
           titleColor: scheme.error,
@@ -1011,6 +1017,19 @@ final class _BudgetCurrencyScreen extends ConsumerWidget {
   }
 }
 
+
+final class _SyncLinkScreen extends StatelessWidget {
+  final bool embed;
+  const _SyncLinkScreen({this.embed = false});
+  @override
+  Widget build(BuildContext context) {
+    final body = ListView(padding: const EdgeInsets.all(FitFatTokens.spaceL), children: [
+      Card(child: ListTile(leading: const Icon(Icons.sync), title: const Text('Open Sync & Backup'), subtitle: const Text('Servers, global & personal pools, local backup — same as Dashboard → Sync & Backup'), trailing: const Icon(Icons.chevron_right), onTap: () => context.go('/sync'))),
+    ]);
+    if (embed) return SettingsBody(child: body);
+    return SettingsSubScreenScaffold(title: 'Sync', body: body);
+  }
+}
 
 /// Data: destructive reset-all with its confirm dialog.
 final class _DataScreen extends ConsumerStatefulWidget {
