@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:logging/logging.dart';
 
 import '../budget/providers/fx_rates.dart';
 import '../budget/repositories/fx_repository.dart';
@@ -27,6 +28,7 @@ final class SyncService {
   final IngredientRepository ingredients;
   final FxRepository currencies;
   final SyncStateStore state;
+  static final _log = Logger('SyncService');
 
   const SyncService({
     required this.exercises,
@@ -46,14 +48,20 @@ final class SyncService {
     final httpClient = http.Client();
     final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
     try {
+      _log.info('syncExercises since=$since base=$normalizedBase endpoint=$endpoint timeout=${timeout?.inSeconds ?? 15}s');
       final result = await ExerciseSyncClient(
         client,
         exercises,
       ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
-    if (result.ok && result.serverTime > 0) {
-      await state.setLastSyncedAt(SyncResource.exercises, result.serverTime);
-    }
+      if (!result.ok) _log.warning('syncExercises failed: ${result.error} base=$normalizedBase endpoint=$endpoint');
+      else _log.info('syncExercises ok updated=${result.updated} deleted=${result.deleted} serverTime=${result.serverTime}');
+      if (result.ok && result.serverTime > 0) {
+        await state.setLastSyncedAt(SyncResource.exercises, result.serverTime);
+      }
       return result;
+    } catch (e, st) {
+      _log.severe('syncExercises exception base=$normalizedBase endpoint=$endpoint', e, st);
+      rethrow;
     } finally {
       httpClient.close();
     }
@@ -70,14 +78,20 @@ final class SyncService {
     final httpClient = http.Client();
     final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
     try {
+      _log.info('syncIngredients since=$since base=$normalizedBase endpoint=$endpoint timeout=${timeout?.inSeconds ?? 15}s');
       final result = await IngredientSyncClient(
         client,
         ingredients,
       ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
-    if (result.ok && result.serverTime > 0) {
-      await state.setLastSyncedAt(SyncResource.ingredients, result.serverTime);
-    }
+      if (!result.ok) _log.warning('syncIngredients failed: ${result.error} base=$normalizedBase endpoint=$endpoint');
+      else _log.info('syncIngredients ok updated=${result.updated} deleted=${result.deleted} serverTime=${result.serverTime}');
+      if (result.ok && result.serverTime > 0) {
+        await state.setLastSyncedAt(SyncResource.ingredients, result.serverTime);
+      }
       return result;
+    } catch (e, st) {
+      _log.severe('syncIngredients exception base=$normalizedBase endpoint=$endpoint', e, st);
+      rethrow;
     } finally {
       httpClient.close();
     }
@@ -95,6 +109,7 @@ final class SyncService {
     final httpClient = http.Client();
     final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
     try {
+      _log.info('syncCurrencies since=$since base=$normalizedBase endpoint=$endpoint baseCode=$baseCode timeout=${timeout?.inSeconds ?? 15}s');
       final result = await CurrencySyncClient(
         client,
         currencies,
@@ -105,10 +120,15 @@ final class SyncService {
         date: _today(),
         endpoint: endpoint,
       );
+      if (!result.ok) _log.warning('syncCurrencies failed: ${result.error} base=$normalizedBase endpoint=$endpoint');
+      else _log.info('syncCurrencies ok updated=${result.updated} serverTime=${result.serverTime}');
       if (result.ok && result.serverTime > 0) {
         await state.setLastSyncedAt(SyncResource.currencies, result.serverTime);
       }
       return result;
+    } catch (e, st) {
+      _log.severe('syncCurrencies exception base=$normalizedBase endpoint=$endpoint', e, st);
+      rethrow;
     } finally {
       httpClient.close();
     }
@@ -128,12 +148,19 @@ final class SyncService {
     final httpClient = http.Client();
     final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
     try {
-      return await IngredientSyncClient(client, ingredients).push(
+      _log.info('pushIngredient id=${ingredient.id} base=$normalizedBase endpoint=/ingredients');
+      final res = await IngredientSyncClient(client, ingredients).push(
         ingredient: ingredient,
         pictures: pictures,
         prices: prices,
         apiKey: apiKey,
       );
+      if (!res.ok) _log.warning('pushIngredient failed: ${res.error}');
+      else _log.info('pushIngredient ok');
+      return res;
+    } catch (e, st) {
+      _log.severe('pushIngredient exception base=$normalizedBase', e, st);
+      rethrow;
     } finally {
       httpClient.close();
     }

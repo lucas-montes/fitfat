@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'src/app/app.dart';
@@ -14,6 +16,11 @@ import 'src/settings/providers/settings.dart';
 
 Future<void> main() async {
   developer.Timeline.instantSync('startup.main.start');
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((r) {
+    debugPrint('${r.level.name} ${r.loggerName}: ${r.message} ${r.error ?? ''} ${r.stackTrace ?? ''}');
+    developer.log(r.message, name: r.loggerName, error: r.error, stackTrace: r.stackTrace, level: r.level.value);
+  });
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   FlutterForegroundTask.initCommunicationPort();

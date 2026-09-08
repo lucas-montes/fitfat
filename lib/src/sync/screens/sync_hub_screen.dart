@@ -6,6 +6,8 @@ import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
+import 'package:logging/logging.dart';
+
 import '../../../l10n/app_localizations.dart';
 import '../../network/api_client.dart';
 import '../../database/database_provider.dart' as db;
@@ -49,6 +51,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
   late final TextEditingController _keyCtrl;
   String? _testStatus;
   bool _testing = false;
+  final _log = Logger('SyncHub.Server');
   @override
   void initState() {
     super.initState();
@@ -62,6 +65,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
     setState(() { _testing = true; _testStatus = null; });
     final normalizedUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
     final timeout = Duration(seconds: ref.read(settingsProvider).apiTimeoutSeconds);
+    _log.info('autoTest url=$normalizedUrl timeout=${timeout.inSeconds}s');
     Future<void> tryHealth() async {
       final httpClient = http.Client();
       final client = HttpApiClient(httpClient, baseUrl: normalizedUrl, timeout: timeout);
@@ -79,14 +83,17 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
     try {
       await tryHealth();
       if (!mounted) return;
+      _log.info('autoTest health ok url=$normalizedUrl');
       setState(() => _testStatus = '✓ Connected');
-    } catch (e) {
-      final msg = e.toString().contains('TimeoutException') ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${timeout.inSeconds}s)' : e.toString();
+    } catch (e, st) {
+      _log.warning('autoTest health failed url=$normalizedUrl', e, st);
       try {
         await tryExercises();
         if (!mounted) return;
+        _log.info('autoTest exercises ok url=$normalizedUrl');
         setState(() => _testStatus = '✓ Connected');
-      } catch (e2) {
+      } catch (e2, st2) {
+        _log.severe('autoTest failed url=$normalizedUrl', e2, st2);
         if (!mounted) return;
         setState(() => _testStatus = null);
         final msg2 = e2.toString().contains('TimeoutException') ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${timeout.inSeconds}s)' : e2.toString();
@@ -144,15 +151,23 @@ final class _GlobalPoolSection extends ConsumerStatefulWidget {
 }
 final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
   bool _busyEx = false; bool _busyIng = false; bool _busyFx = false; bool _busyPickerEx = false; bool _busyPickerIng = false;
+  final _log = Logger('SyncHub.Global');
   Future<void> _run(Future<SyncResult> Function() fn, void Function(bool) setBusy) async {
     setBusy(true);
     try {
       final result = await fn();
       if (!mounted) return;
       if (!result.ok && result.error != null) {
+        _log.warning('sync failed: ${result.error}');
         final msg = result.error!.contains('TimeoutException') ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${ref.read(settingsProvider).apiTimeoutSeconds}s)' : result.error!;
         showTopBanner(context, message: msg);
-      } else if (result.ok) setState(() {});
+      } else if (result.ok) {
+        _log.info('sync ok updated=${result.updated} deleted=${result.deleted}');
+        setState(() {});
+      }
+    } catch (e, st) {
+      _log.severe('sync exception', e, st);
+      if (mounted) showTopBanner(context, message: '$e');
     } finally { if (mounted) setBusy(false); }
   }
   @override
@@ -185,15 +200,21 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     if (base.isEmpty) throw StateError('Server URL not configured');
     final normalizedBase = base.trim().replaceAll(RegExp(r'/+$'), '');
     final timeout = Duration(seconds: ref.read(settingsProvider).apiTimeoutSeconds);
+    _log.info('fetchServerItems base=$normalizedBase endpoint=$endpoint timeout=${timeout.inSeconds}s');
     final httpClient = http.Client();
     final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout);
     try {
       final raw = await client.getJson(endpoint, headers: authHeaders(key), query: {'since': '0'});
       final data = raw as Map<String, dynamic>;
       final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+      _log.info('fetchServerItems ok base=$normalizedBase endpoint=$endpoint count=${items.length}');
       return items;
-    } on TimeoutException {
+    } on TimeoutException catch (e, st) {
+      _log.warning('fetchServerItems timeout base=$normalizedBase endpoint=$endpoint', e, st);
       throw TimeoutException('Server not reachable — check URL/key or increase timeout in Settings → Advanced (${timeout.inSeconds}s)');
+    } catch (e, st) {
+      _log.warning('fetchServerItems failed base=$normalizedBase endpoint=$endpoint', e, st);
+      rethrow;
     } finally {
       httpClient.close();
     }
