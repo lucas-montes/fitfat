@@ -39,34 +39,48 @@ final class SyncService {
     String baseUrl,
     String apiKey, {
     String endpoint = '/exercises',
+    Duration? timeout,
   }) async {
     final since = state.getLastSyncedAt(SyncResource.exercises);
-    final client = HttpApiClient(http.Client(), baseUrl: baseUrl);
-    final result = await ExerciseSyncClient(
-      client,
-      exercises,
-    ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
+    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final httpClient = http.Client();
+    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    try {
+      final result = await ExerciseSyncClient(
+        client,
+        exercises,
+      ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
     if (result.ok && result.serverTime > 0) {
       await state.setLastSyncedAt(SyncResource.exercises, result.serverTime);
     }
-    return result;
+      return result;
+    } finally {
+      httpClient.close();
+    }
   }
 
   Future<SyncResult> syncIngredients(
     String baseUrl,
     String apiKey, {
     String endpoint = '/ingredients',
+    Duration? timeout,
   }) async {
     final since = state.getLastSyncedAt(SyncResource.ingredients);
-    final client = HttpApiClient(http.Client(), baseUrl: baseUrl);
-    final result = await IngredientSyncClient(
-      client,
-      ingredients,
-    ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
+    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final httpClient = http.Client();
+    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    try {
+      final result = await IngredientSyncClient(
+        client,
+        ingredients,
+      ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
     if (result.ok && result.serverTime > 0) {
       await state.setLastSyncedAt(SyncResource.ingredients, result.serverTime);
     }
-    return result;
+      return result;
+    } finally {
+      httpClient.close();
+    }
   }
 
   Future<SyncResult> syncCurrencies(
@@ -74,23 +88,30 @@ final class SyncService {
     String apiKey,
     String baseCode, {
     String endpoint = '/fx-rates',
+    Duration? timeout,
   }) async {
     final since = state.getLastSyncedAt(SyncResource.currencies);
-    final client = HttpApiClient(http.Client(), baseUrl: baseUrl);
-    final result = await CurrencySyncClient(
-      client,
-      currencies,
-    ).sync(
-      since: since,
-      apiKey: apiKey,
-      baseCode: baseCode,
-      date: _today(),
-      endpoint: endpoint,
-    );
-    if (result.ok && result.serverTime > 0) {
-      await state.setLastSyncedAt(SyncResource.currencies, result.serverTime);
+    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final httpClient = http.Client();
+    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    try {
+      final result = await CurrencySyncClient(
+        client,
+        currencies,
+      ).sync(
+        since: since,
+        apiKey: apiKey,
+        baseCode: baseCode,
+        date: _today(),
+        endpoint: endpoint,
+      );
+      if (result.ok && result.serverTime > 0) {
+        await state.setLastSyncedAt(SyncResource.currencies, result.serverTime);
+      }
+      return result;
+    } finally {
+      httpClient.close();
     }
-    return result;
   }
 
   /// Contributes the given ingredient (with its pictures and prices) to the
@@ -101,14 +122,21 @@ final class SyncService {
     required Ingredient ingredient,
     required List<IngredientPicture> pictures,
     required List<IngredientPrice> prices,
+    Duration? timeout,
   }) async {
-    final client = HttpApiClient(http.Client(), baseUrl: baseUrl);
-    return IngredientSyncClient(client, ingredients).push(
-      ingredient: ingredient,
-      pictures: pictures,
-      prices: prices,
-      apiKey: apiKey,
-    );
+    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final httpClient = http.Client();
+    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    try {
+      return await IngredientSyncClient(client, ingredients).push(
+        ingredient: ingredient,
+        pictures: pictures,
+        prices: prices,
+        apiKey: apiKey,
+      );
+    } finally {
+      httpClient.close();
+    }
   }
 }
 

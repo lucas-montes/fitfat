@@ -117,12 +117,16 @@ final class _SyncHubCardState extends ConsumerState<_SyncHubCard> {
         return;
       }
       final svc = ref.read(syncServiceProvider);
+      final timeout = Duration(seconds: s.apiTimeoutSeconds);
       final results = await Future.wait([
-        svc.syncExercises(s.remoteSyncBaseUrl, s.remoteSyncApiKey, endpoint: s.endpointExercises),
-        svc.syncIngredients(s.remoteSyncBaseUrl, s.remoteSyncApiKey, endpoint: s.endpointIngredients),
-        svc.syncCurrencies(s.remoteSyncBaseUrl, s.remoteSyncApiKey, s.baseCurrency, endpoint: s.endpointCurrencies),
+        svc.syncExercises(s.remoteSyncBaseUrl, s.remoteSyncApiKey, endpoint: s.endpointExercises, timeout: timeout),
+        svc.syncIngredients(s.remoteSyncBaseUrl, s.remoteSyncApiKey, endpoint: s.endpointIngredients, timeout: timeout),
+        svc.syncCurrencies(s.remoteSyncBaseUrl, s.remoteSyncApiKey, s.baseCurrency, endpoint: s.endpointCurrencies, timeout: timeout),
       ]);
-      final errors = results.where((r) => !r.ok && r.error != null).map((r) => r.error!).toList();
+      final errors = results.where((r) => !r.ok && r.error != null).map((r) {
+        final e = r.error!;
+        return e.contains('TimeoutException') ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${s.apiTimeoutSeconds}s)' : e;
+      }).toList();
       if (!mounted) return;
       if (errors.isNotEmpty) showTopBanner(context, message: errors.join('\n'));
       setState(() {});

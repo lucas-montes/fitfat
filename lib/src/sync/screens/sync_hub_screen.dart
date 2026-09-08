@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'dart:async';
+
 import 'package:http/http.dart' as http;
 
 import '../../../l10n/app_localizations.dart';
@@ -58,21 +60,37 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
   void dispose() { _urlCtrl.dispose(); _keyCtrl.dispose(); super.dispose(); }
   Future<void> _autoTest(String url, String key) async {
     setState(() { _testing = true; _testStatus = null; });
+    final normalizedUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
+    final timeout = Duration(seconds: ref.read(settingsProvider).apiTimeoutSeconds);
+    Future<void> tryHealth() async {
+      final httpClient = http.Client();
+      final client = HttpApiClient(httpClient, baseUrl: normalizedUrl, timeout: timeout);
+      try {
+        await client.getJson('/health', headers: authHeaders(key));
+      } finally { httpClient.close(); }
+    }
+    Future<void> tryExercises() async {
+      final httpClient = http.Client();
+      final client = HttpApiClient(httpClient, baseUrl: normalizedUrl, timeout: timeout);
+      try {
+        await client.getJson('/exercises', headers: authHeaders(key), query: {'since': '0'});
+      } finally { httpClient.close(); }
+    }
     try {
-      final client = HttpApiClient(http.Client(), baseUrl: url);
-      await client.getJson('/health', headers: authHeaders(key));
+      await tryHealth();
       if (!mounted) return;
       setState(() => _testStatus = '✓ Connected');
     } catch (e) {
+      final msg = e.toString().contains('TimeoutException') ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${timeout.inSeconds}s)' : e.toString();
       try {
-        final client = HttpApiClient(http.Client(), baseUrl: url);
-        await client.getJson('/exercises', headers: authHeaders(key), query: {'since': '0'});
+        await tryExercises();
         if (!mounted) return;
         setState(() => _testStatus = '✓ Connected');
       } catch (e2) {
         if (!mounted) return;
         setState(() => _testStatus = null);
-        showTopBanner(context, message: 'Connection failed: $e2');
+        final msg2 = e2.toString().contains('TimeoutException') ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${timeout.inSeconds}s)' : e2.toString();
+        showTopBanner(context, message: 'Connection failed: $msg2');
       }
     } finally {
       if (mounted) setState(() => _testing = false);
@@ -125,14 +143,16 @@ final class _GlobalPoolSection extends ConsumerStatefulWidget {
   ConsumerState<_GlobalPoolSection> createState() => _GlobalPoolSectionState();
 }
 final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
-  bool _busyEx = false; bool _busyIng = false; bool _busyFx = false;
+  bool _busyEx = false; bool _busyIng = false; bool _busyFx = false; bool _busyPickerEx = false; bool _busyPickerIng = false;
   Future<void> _run(Future<SyncResult> Function() fn, void Function(bool) setBusy) async {
     setBusy(true);
     try {
       final result = await fn();
       if (!mounted) return;
-      if (!result.ok && result.error != null) showTopBanner(context, message: result.error!);
-      else if (result.ok) setState(() {});
+      if (!result.ok && result.error != null) {
+        final msg = result.error!.contains('TimeoutException') ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${ref.read(settingsProvider).apiTimeoutSeconds}s)' : result.error!;
+        showTopBanner(context, message: msg);
+      } else if (result.ok) setState(() {});
     } finally { if (mounted) setBusy(false); }
   }
   @override
@@ -150,33 +170,45 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       if (diff.inHours < 24) return '${diff.inHours}h ago';
       return '${diff.inDays}d ago';
     }
+    final timeout = Duration(seconds: settings.apiTimeoutSeconds);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      ListTile(contentPadding: EdgeInsets.zero, title: const Text('Exercises'), subtitle: Text('Last sync: ${last(SyncResource.exercises)}'), trailing: _busyEx ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.sync), onPressed: () => _run(() => ref.read(syncServiceProvider).syncExercises(base, key, endpoint: settings.endpointExercises), (v) => setState(() => _busyEx = v)))),
-      ListTile(contentPadding: EdgeInsets.zero, title: const Text('Ingredients'), subtitle: Text('Last sync: ${last(SyncResource.ingredients)}'), trailing: _busyIng ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.sync), onPressed: () => _run(() => ref.read(syncServiceProvider).syncIngredients(base, key, endpoint: settings.endpointIngredients), (v) => setState(() => _busyIng = v)))),
-      ListTile(contentPadding: EdgeInsets.zero, title: const Text('Currencies'), subtitle: Text('Last sync: ${last(SyncResource.currencies)}'), trailing: _busyFx ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.sync), onPressed: () => _run(() => ref.read(syncServiceProvider).syncCurrencies(base, key, settings.baseCurrency, endpoint: settings.endpointCurrencies), (v) => setState(() => _busyFx = v)))),
+      ListTile(contentPadding: EdgeInsets.zero, title: const Text('Exercises'), subtitle: Text('Last sync: ${last(SyncResource.exercises)}'), trailing: _busyEx ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.sync), onPressed: () => _run(() => ref.read(syncServiceProvider).syncExercises(base, key, endpoint: settings.endpointExercises, timeout: timeout), (v) => setState(() => _busyEx = v)))),
+      ListTile(contentPadding: EdgeInsets.zero, title: const Text('Ingredients'), subtitle: Text('Last sync: ${last(SyncResource.ingredients)}'), trailing: _busyIng ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.sync), onPressed: () => _run(() => ref.read(syncServiceProvider).syncIngredients(base, key, endpoint: settings.endpointIngredients, timeout: timeout), (v) => setState(() => _busyIng = v)))),
+      ListTile(contentPadding: EdgeInsets.zero, title: const Text('Currencies'), subtitle: Text('Last sync: ${last(SyncResource.currencies)}'), trailing: _busyFx ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : IconButton(icon: const Icon(Icons.sync), onPressed: () => _run(() => ref.read(syncServiceProvider).syncCurrencies(base, key, settings.baseCurrency, endpoint: settings.endpointCurrencies, timeout: timeout), (v) => setState(() => _busyFx = v)))),
       const SizedBox(height: FitFatTokens.spaceS),
-      OutlinedButton.icon(onPressed: () => _showExercisePicker(context, ref), icon: const Icon(Icons.checklist, size: 18), label: const Text('Select exercises…')),
+      OutlinedButton.icon(onPressed: _busyPickerEx ? null : () => _showExercisePicker(context, ref), icon: _busyPickerEx ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.checklist, size: 18), label: Text(_busyPickerEx ? 'Loading…' : 'Select exercises…')),
       const SizedBox(height: FitFatTokens.spaceS),
-      OutlinedButton.icon(onPressed: () => _showIngredientPicker(context, ref), icon: const Icon(Icons.checklist, size: 18), label: const Text('Select ingredients…')),
+      OutlinedButton.icon(onPressed: _busyPickerIng ? null : () => _showIngredientPicker(context, ref), icon: _busyPickerIng ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.checklist, size: 18), label: Text(_busyPickerIng ? 'Loading…' : 'Select ingredients…')),
     ]);
   }
   Future<List<Map<String,dynamic>>> _fetchServerItems(String base, String key, String endpoint) async {
     if (base.isEmpty) throw StateError('Server URL not configured');
-    final client = HttpApiClient(http.Client(), baseUrl: base);
-    final raw = await client.getJson(endpoint, headers: authHeaders(key), query: {'since': '0'});
-    final data = raw as Map<String, dynamic>;
-    final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
-    return items;
+    final normalizedBase = base.trim().replaceAll(RegExp(r'/+$'), '');
+    final timeout = Duration(seconds: ref.read(settingsProvider).apiTimeoutSeconds);
+    final httpClient = http.Client();
+    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout);
+    try {
+      final raw = await client.getJson(endpoint, headers: authHeaders(key), query: {'since': '0'});
+      final data = raw as Map<String, dynamic>;
+      final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+      return items;
+    } on TimeoutException {
+      throw TimeoutException('Server not reachable — check URL/key or increase timeout in Settings → Advanced (${timeout.inSeconds}s)');
+    } finally {
+      httpClient.close();
+    }
   }
   Future<void> _showExercisePicker(BuildContext context, WidgetRef ref) async {
     final settings = ref.read(settingsProvider);
     final base = settings.remoteSyncBaseUrl;
     final key = settings.remoteSyncApiKey;
     if (base.isEmpty) { showTopBanner(context, message: 'Server URL not configured'); return; }
+    setState(() => _busyPickerEx = true);
     List<Map<String,dynamic>> serverItems;
     try {
       serverItems = await _fetchServerItems(base, key, settings.endpointExercises);
-    } catch (e) { if (mounted) showTopBanner(context, message: 'Failed to fetch server exercises: $e'); return; }
+    } catch (e) { if (mounted) { showTopBanner(context, message: 'Failed to fetch server exercises: $e'); setState(() => _busyPickerEx = false); } return; }
+    if (mounted) setState(() => _busyPickerEx = false);
     if (!context.mounted) return;
     if (serverItems.isEmpty) { showTopBanner(context, message: 'No exercises on server'); return; }
     final selected = <String>{};
@@ -201,12 +233,17 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     // Filtered sync: fetch again and upsert only selected ids via ExerciseSyncClient with filtered items
     showTopBanner(context, message: 'Syncing ${selected.length} selected exercises from server…');
     try {
-      final client = HttpApiClient(http.Client(), baseUrl: base);
-      final raw = await client.getJson(settings.endpointExercises, headers: authHeaders(key), query: {'since': '0'});
-      final data = raw as Map<String, dynamic>;
-      final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      final filtered = items.where((e) => selected.contains(e['id'] as String)).toList();
-      if (mounted) showTopBanner(context, message: 'Selected ${selected.length} exercises ready to sync (filtered ${filtered.length} from server)');
+      final normalizedBase = base.trim().replaceAll(RegExp(r'/+$'), '');
+      final timeout = Duration(seconds: ref.read(settingsProvider).apiTimeoutSeconds);
+      final httpClient = http.Client();
+      final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout);
+      try {
+        final raw = await client.getJson(settings.endpointExercises, headers: authHeaders(key), query: {'since': '0'});
+        final data = raw as Map<String, dynamic>;
+        final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+        final filtered = items.where((e) => selected.contains(e['id'] as String)).toList();
+        if (mounted) showTopBanner(context, message: 'Selected ${selected.length} exercises ready to sync (filtered ${filtered.length} from server)');
+      } finally { httpClient.close(); }
     } catch (e) { if (mounted) showTopBanner(context, message: 'Sync failed: $e'); }
   }
   Future<void> _showIngredientPicker(BuildContext context, WidgetRef ref) async {
@@ -214,10 +251,12 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     final base = settings.remoteSyncBaseUrl;
     final key = settings.remoteSyncApiKey;
     if (base.isEmpty) { showTopBanner(context, message: 'Server URL not configured'); return; }
+    setState(() => _busyPickerIng = true);
     List<Map<String,dynamic>> serverItems;
     try {
       serverItems = await _fetchServerItems(base, key, settings.endpointIngredients);
-    } catch (e) { if (mounted) showTopBanner(context, message: 'Failed to fetch server ingredients: $e'); return; }
+    } catch (e) { if (mounted) { showTopBanner(context, message: 'Failed to fetch server ingredients: $e'); setState(() => _busyPickerIng = false); } return; }
+    if (mounted) setState(() => _busyPickerIng = false);
     if (!context.mounted) return;
     if (serverItems.isEmpty) { showTopBanner(context, message: 'No ingredients on server'); return; }
     final selected = <String>{};

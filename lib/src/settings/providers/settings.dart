@@ -535,7 +535,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   }
 
   Future<void> setRemoteSyncBaseUrl(String value) async {
-    final trimmed = value.trim();
+    final trimmed = value.trim().replaceAll(RegExp(r'/+$'), '');
     await ref
         .read(sharedPreferencesProvider)
         .setString(_remoteSyncBaseUrlKey, trimmed);
