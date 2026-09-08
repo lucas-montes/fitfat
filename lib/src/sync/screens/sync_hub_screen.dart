@@ -65,8 +65,15 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
     setState(() { _testing = true; _testStatus = null; });
     final normalizedUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
     final timeout = Duration(seconds: ref.read(settingsProvider).apiTimeoutSeconds);
-    _log.info('autoTest url=$normalizedUrl timeout=${timeout.inSeconds}s');
-    Future<void> tryHealth() async {
+    _log.info('autoTest url=$normalizedUrl timeout=${timeout.inSeconds}s key=${key.isEmpty ? 'empty' : '***'}');
+    Future<void> tryHealthNoAuth() async {
+      final httpClient = http.Client();
+      final client = HttpApiClient(httpClient, baseUrl: normalizedUrl, timeout: timeout);
+      try {
+        await client.getJson('/health');
+      } finally { httpClient.close(); }
+    }
+    Future<void> tryHealthAuth() async {
       final httpClient = http.Client();
       final client = HttpApiClient(httpClient, baseUrl: normalizedUrl, timeout: timeout);
       try {
@@ -80,28 +87,43 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
         await client.getJson('/exercises', headers: authHeaders(key), query: {'since': '0'});
       } finally { httpClient.close(); }
     }
+    bool success = false;
     try {
-      await tryHealth();
+      await tryHealthNoAuth();
       if (!mounted) return;
-      _log.info('autoTest health ok url=$normalizedUrl');
-      setState(() => _testStatus = '✓ Connected');
+      _log.info('autoTest health (no auth) ok url=$normalizedUrl');
+      setState(() => _testStatus = '✓ Connected ($normalizedUrl)');
+      success = true;
     } catch (e, st) {
-      _log.warning('autoTest health failed url=$normalizedUrl', e, st);
+      _log.warning('autoTest health (no auth) failed url=$normalizedUrl', e, st);
+    }
+    if (!success) {
+      try {
+        await tryHealthAuth();
+        if (!mounted) return;
+        _log.info('autoTest health (auth) ok url=$normalizedUrl');
+        setState(() => _testStatus = '✓ Connected ($normalizedUrl)');
+        success = true;
+      } catch (e, st) {
+        _log.warning('autoTest health (auth) failed url=$normalizedUrl', e, st);
+      }
+    }
+    if (!success) {
       try {
         await tryExercises();
         if (!mounted) return;
         _log.info('autoTest exercises ok url=$normalizedUrl');
-        setState(() => _testStatus = '✓ Connected');
+        setState(() => _testStatus = '✓ Connected ($normalizedUrl)');
+        success = true;
       } catch (e2, st2) {
         _log.severe('autoTest failed url=$normalizedUrl', e2, st2);
         if (!mounted) return;
         setState(() => _testStatus = null);
-        final msg2 = e2.toString().contains('TimeoutException') ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${timeout.inSeconds}s)' : e2.toString();
+        final msg2 = e2.toString().contains('TimeoutException') ? 'Server not reachable at $normalizedUrl — check WiFi/firewall or increase timeout in Settings → Advanced (${timeout.inSeconds}s). Phone must reach $normalizedUrl (try curl from phone: adb shell curl -v $normalizedUrl/health)' : e2.toString();
         showTopBanner(context, message: 'Connection failed: $msg2');
       }
-    } finally {
-      if (mounted) setState(() => _testing = false);
     }
+    if (mounted) setState(() => _testing = false);
   }
   @override
   Widget build(BuildContext context) {
@@ -113,15 +135,24 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
       const SizedBox(height: FitFatTokens.spaceS),
       TextField(controller: _keyCtrl, decoration: const InputDecoration(labelText: 'API key', hintText: 'Bearer token'), obscureText: true, onChanged: (v) => ref.read(settingsProvider.notifier).setRemoteSyncApiKey(v)),
       const SizedBox(height: FitFatTokens.spaceM),
-      SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () async {
-        final result = await showQrScanSheet(context);
-        if (result == null || !mounted) return;
-        _urlCtrl.text = result.url;
-        _keyCtrl.text = result.apiKey;
-        await ref.read(settingsProvider.notifier).setRemoteSyncBaseUrl(result.url);
-        await ref.read(settingsProvider.notifier).setRemoteSyncApiKey(result.apiKey);
-        await _autoTest(result.url, result.apiKey);
-      }, icon: const Icon(Icons.qr_code_scanner, size: 18), label: const Text('Scan QR'))),
+      Row(children: [
+        Expanded(child: FilledButton.icon(onPressed: () async {
+          final result = await showQrScanSheet(context);
+          if (result == null || !mounted) return;
+          _urlCtrl.text = result.url;
+          _keyCtrl.text = result.apiKey;
+          await ref.read(settingsProvider.notifier).setRemoteSyncBaseUrl(result.url);
+          await ref.read(settingsProvider.notifier).setRemoteSyncApiKey(result.apiKey);
+          await _autoTest(result.url, result.apiKey);
+        }, icon: const Icon(Icons.qr_code_scanner, size: 18), label: const Text('Scan QR'))),
+        const SizedBox(width: FitFatTokens.spaceS),
+        Expanded(child: OutlinedButton.icon(onPressed: _testing ? null : () async {
+          final url = _urlCtrl.text.trim();
+          final key = _keyCtrl.text.trim();
+          if (url.isEmpty) { showTopBanner(context, message: 'Enter server URL first'); return; }
+          await _autoTest(url, key);
+        }, icon: _testing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.wifi_tethering, size: 18), label: const Text('Test /health'))),
+      ]),
       const SizedBox(height: FitFatTokens.spaceS),
       Text('Same URL/key is used for Global and Personal pools. Currencies stays in Global.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
     ])));
