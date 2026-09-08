@@ -151,7 +151,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
     final servers = settings.servers;
     final activeId = settings.activeServerId;
     return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Icon(Icons.settings_outlined, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Servers', style: theme.textTheme.titleMedium), const Spacer(), if (_testing) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)), if (_testStatus != null) Padding(padding: const EdgeInsets.only(left: 8), child: Text(_testStatus!, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)))]),
+      Row(children: [Icon(Icons.settings_outlined, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Servers', style: theme.textTheme.titleMedium), const Spacer(), if (_testing) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)), if (_testStatus != null) Flexible(child: Padding(padding: const EdgeInsets.only(left: 8), child: Text(_testStatus!, maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold))))]),
       const SizedBox(height: FitFatTokens.spaceS),
       Text('Add multiple server URL + API key pairs. Select active to sync. Keep adb reverse + http://127.0.0.1:3030 for hotspot.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       const SizedBox(height: FitFatTokens.spaceM),
