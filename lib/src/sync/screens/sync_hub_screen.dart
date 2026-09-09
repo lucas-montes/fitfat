@@ -11,6 +11,7 @@ import 'package:logging/logging.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../network/api_client.dart';
 import '../../database/database_provider.dart' as db;
+import '../../exercise/widgets/select_sheet.dart';
 import '../../ui/tokens.dart';
 import '../../settings/providers/settings.dart';
 import '../data_push_service.dart';
@@ -298,26 +299,22 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     if (mounted) setState(() => _busyPickerEx = false);
     if (!context.mounted) return;
     if (serverItems.isEmpty) { showTopBanner(context, message: 'No exercises on server'); return; }
-    final selected = <String>{};
-    await showModalBottomSheet(context: context, isScrollControlled: true, builder: (ctx) {
-      String query = '';
-      return StatefulBuilder(builder: (ctx, setSt) {
-        final filtered = serverItems.where((e) => query.isEmpty || (e['name'] as String? ?? '').toLowerCase().contains(query.toLowerCase())).toList();
-        return DraggableScrollableSheet(expand: false, initialChildSize: 0.8, builder: (_, ctrl) => Column(children: [
-          Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: TextField(decoration: const InputDecoration(labelText: 'Search server exercises', prefixIcon: Icon(Icons.search)), onChanged: (v) => setSt(() => query = v))),
-          Padding(padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL), child: Row(children: [Text('${filtered.length} on server'), const Spacer(), TextButton(onPressed: () => setSt(() { if (selected.length == filtered.length) selected.clear(); else selected.addAll(filtered.map((e) => e['id'] as String)); }), child: Text(selected.length == filtered.length ? 'Clear' : 'Select all'))])),
-          Expanded(child: ListView.builder(controller: ctrl, itemCount: filtered.length, itemBuilder: (_, i) {
-            final ex = filtered[i];
-            final id = ex['id'] as String;
-            return CheckboxListTile(value: selected.contains(id), onChanged: (v) => setSt(() { if (v == true) selected.add(id); else selected.remove(id); }), title: Text(ex['name'] as String? ?? id), subtitle: Text(ex['exerciseType'] as String? ?? ''));
-          })),
-          Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.pop(ctx, selected), child: Text('Sync selected (${selected.length})')))),
-        ]));
-      });
-    });
-    if (selected.isEmpty) return;
+    final displayItems = serverItems.map((e) {
+      final id = e['id'] as String;
+      final name = e['name'] as String? ?? id;
+      final type = e['exerciseType'] as String? ?? '';
+      final hasImage = e['hasImage'] == true;
+      String? imagePath;
+      if (hasImage) {
+        // Try to find local image for this exercise if already synced
+        // For server-only, show fallback icon
+        imagePath = null;
+      }
+      return DisplayItem(id: id, name: name, imagePath: imagePath, subtitle: type.isEmpty ? id : type);
+    }).toList();
+    final selected = await showSelectSheet(context, items: displayItems, initialSelected: {}, title: 'Select server exercises', hint: 'Search server exercises');
+    if (selected == null || selected.isEmpty) return;
     if (!context.mounted) return;
-    // Filtered sync: fetch again and upsert only selected ids via ExerciseSyncClient with filtered items
     showTopBanner(context, message: 'Syncing ${selected.length} selected exercises from server…');
     try {
       final normalizedBase = base.trim().replaceAll(RegExp(r'/+$'), '');
@@ -346,24 +343,19 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     if (mounted) setState(() => _busyPickerIng = false);
     if (!context.mounted) return;
     if (serverItems.isEmpty) { showTopBanner(context, message: 'No ingredients on server'); return; }
-    final selected = <String>{};
-    await showModalBottomSheet(context: context, isScrollControlled: true, builder: (ctx) {
-      String query = '';
-      return StatefulBuilder(builder: (ctx, setSt) {
-        final filtered = serverItems.where((e) => query.isEmpty || (e['name'] as String? ?? '').toLowerCase().contains(query.toLowerCase())).toList();
-        return DraggableScrollableSheet(expand: false, initialChildSize: 0.8, builder: (_, ctrl) => Column(children: [
-          Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: TextField(decoration: const InputDecoration(labelText: 'Search server ingredients', prefixIcon: Icon(Icons.search)), onChanged: (v) => setSt(() => query = v))),
-          Padding(padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL), child: Row(children: [Text('${filtered.length} on server'), const Spacer(), TextButton(onPressed: () => setSt(() { if (selected.length == filtered.length) selected.clear(); else selected.addAll(filtered.map((e) => e['id'] as String)); }), child: Text(selected.length == filtered.length ? 'Clear' : 'Select all'))])),
-          Expanded(child: ListView.builder(controller: ctrl, itemCount: filtered.length, itemBuilder: (_, i) {
-            final ing = filtered[i];
-            final id = ing['id'] as String;
-            return CheckboxListTile(value: selected.contains(id), onChanged: (v) => setSt(() { if (v == true) selected.add(id); else selected.remove(id); }), title: Text(ing['name'] as String? ?? id));
-          })),
-          Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.pop(ctx, selected), child: Text('Sync selected (${selected.length})')))),
-        ]));
-      });
-    });
-    if (selected.isEmpty) return;
+    final displayItems = serverItems.map((e) {
+      final id = e['id'] as String;
+      final name = e['name'] as String? ?? id;
+      final pics = e['pictures'] as List?;
+      String? imagePath;
+      if (pics != null && pics.isNotEmpty) {
+        final first = pics.first as Map<String,dynamic>?;
+        imagePath = first?['imagePath'] as String?;
+      }
+      return DisplayItem(id: id, name: name, imagePath: imagePath, subtitle: id);
+    }).toList();
+    final selected = await showSelectSheet(context, items: displayItems, initialSelected: {}, title: 'Select server ingredients', hint: 'Search server ingredients');
+    if (selected == null || selected.isEmpty) return;
     if (!context.mounted) return;
     showTopBanner(context, message: 'Selected ${selected.length} ingredients from server — selective sync will filter before upsert');
   }
