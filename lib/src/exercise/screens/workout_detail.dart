@@ -143,7 +143,7 @@ final class _WorkoutDetailContent extends StatelessWidget {
     String id,
   ) async {
     final startedAt = DateTime.now();
-    await ref
+    final notificationUp = await ref
         .read(activeWorkoutNotifierProvider)
         .startWorkoutNotification(
           workoutName: detail.workout.name,
@@ -159,6 +159,16 @@ final class _WorkoutDetailContent extends StatelessWidget {
       Navigator.of(context).pop();
       // Replace with the active view (no back to planning).
       router.go('/active-workout');
+      if (!notificationUp) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Workout started, but the notification could not be shown. '
+              'Allow notifications and set battery to Unrestricted.',
+            ),
+          ),
+        );
+      }
     }
   }
 

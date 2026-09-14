@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -15,6 +14,7 @@ import '../dashboard/providers/dashboard.dart';
 import '../database/database_provider.dart';
 import '../experiments/notifications/experiment_reminder.dart';
 import '../experiments/providers/experiments_repository.dart';
+import '../notifications/active_workout_notifier.dart';
 import '../notifications/notification_plugin.dart';
 import '../notifications/rest_alarm.dart';
 import '../goals/notifications/goal_reminder.dart';
@@ -22,6 +22,7 @@ import '../goals/providers/goals.dart';
 import '../notifications/task_reminders.dart';
 import '../planner/providers/planner.dart';
 import '../settings/providers/settings.dart';
+import '../sync/sync_service.dart';
 import 'router.dart';
 import 'startup_gate.dart';
 import 'theme.dart';
@@ -107,6 +108,33 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
     super.dispose();
   }
 
+  /// Refreshes the selective-sync catalog in the background (best-effort,
+  /// silent, cursor-free). Throttled to every 15 minutes so resumes don't
+  /// hammer the server; a missing server configuration is a no-op.
+  Future<void> _refreshSelectiveCatalogs() async {
+    try {
+      final prefs = ref.read(sharedPreferencesHolderProvider);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final last = prefs?.getInt('selective_catalog_last_refresh') ?? 0;
+      if (now - last < const Duration(minutes: 15).inMilliseconds) return;
+      final settings = ref.read(settingsProvider);
+      final base = settings.remoteSyncBaseUrl;
+      if (base.isEmpty) return;
+      await ref
+          .read(syncServiceProvider)
+          .refreshSelectiveCatalogs(
+            base,
+            settings.remoteSyncApiKey,
+            exercisesEndpoint: '${settings.endpointExercises}/catalog',
+            ingredientsEndpoint: '${settings.endpointIngredients}/catalog',
+            timeout: Duration(seconds: settings.apiTimeoutSeconds),
+          );
+      await prefs?.setInt('selective_catalog_last_refresh', now);
+    } catch (_) {
+      return; // Background refresh must never surface errors.
+    }
+  }
+
   /// Moves past pending carry-over tasks to today (others become cancelled)
   /// and refreshes the affected providers. Runs on cold start and on every
   /// resume so a day that passes while the app sits in the background is
@@ -157,33 +185,10 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
     // Native plugin init (independent — run concurrently). The foreground-task
     // channel is HIGH priority + public visibility so the ongoing-workout
     // notification alerts on a locked screen; the notification plugin init
-    // wires the tap handlers.
+    // wires the tap handlers. Foreground init is shared/idempotent with
+    // ActiveWorkoutNotifier so an early workout start never races startup.
     await Future.wait([
-      Future(
-        () => FlutterForegroundTask.init(
-          androidNotificationOptions: AndroidNotificationOptions(
-            channelId: 'active_workout',
-            channelName: 'Active Workout',
-            channelDescription:
-                'Shows workout duration and rest timer while a workout is active.',
-            onlyAlertOnce: true,
-            channelImportance: NotificationChannelImportance.HIGH,
-            priority: NotificationPriority.HIGH,
-            visibility: NotificationVisibility.VISIBILITY_PUBLIC,
-          ),
-          iosNotificationOptions: const IOSNotificationOptions(
-            showNotification: false,
-            playSound: false,
-          ),
-          foregroundTaskOptions: ForegroundTaskOptions(
-            eventAction: ForegroundTaskEventAction.repeat(1000),
-            autoRunOnBoot: false,
-            autoRunOnMyPackageReplaced: false,
-            allowWakeLock: true,
-            allowWifiLock: false,
-          ),
-        ),
-      ),
+      ensureForegroundServiceInitialized(),
       initializeNotifications(
         plugin: ref.read(flutterLocalNotificationsProvider),
         onTapPlan: () => appRouter.go('/plan'),
@@ -192,6 +197,10 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
         onTapExperiments: () => appRouter.go('/plan'),
       ),
     ]);
+
+    // Recover an ongoing workout session after a process kill / reboot
+    // (autoRunOnBoot is false, so the service is gone but prefs persist).
+    await restoreWorkoutServiceIfNeeded(prefs);
 
     // Cache the localized rest-alarm text for the scheduler (it schedules from
     // contexts without `AppLocalizations`, e.g. the rest-timer notifier).
@@ -249,12 +258,14 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
     }
 
     await _rollover();
+    unawaited(_refreshSelectiveCatalogs());
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_rollover());
+      unawaited(_refreshSelectiveCatalogs());
     }
   }
 

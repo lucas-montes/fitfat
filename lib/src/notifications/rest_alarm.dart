@@ -1,5 +1,9 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'notification_plugin.dart';
 
@@ -35,19 +39,19 @@ int _stableHash(String value) {
 /// Schedules and cancels the one-shot rest alarm for a set's rest period.
 /// Shares the single app [FlutterLocalNotificationsPlugin] so the tap handler
 /// stays unique; sound/vibration come from settings per schedule call.
+///
+/// This is the fallback path: the foreground task handler posts the "rest is
+/// over" popup within ~1s when the service is alive, and cancels this
+/// scheduled fallback when it fires. When the service is dead/stalled (Doze,
+/// OEM kill), this inexact alarm still delivers the alert (possibly late)
+/// instead of dropping it entirely.
 final class RestAlarmScheduler {
   RestAlarmScheduler(this._plugin);
 
   final FlutterLocalNotificationsPlugin _plugin;
 
   /// Schedules an alarm at [fireAt] (wall-clock, local zone) for [setId].
-  ///
-  /// NOTE: this one-shot alarm is intentionally a no-op. The "rest is over"
-  /// popup is now driven by [ActiveWorkoutTaskHandler] (which ticks every
-  /// second with a wake lock while the workout foreground service runs), so
-  /// the alert fires within ~1s of the planned rest instead of being delayed
-  /// by Android Doze / inexact alarms. Keeping this method avoids churn at the
-  /// call site in [RestTimerNotifier.startRest].
+  /// Replaces any previous alarm for the same set. Never throws.
   Future<void> schedule({
     required String setId,
     required DateTime fireAt,
@@ -55,7 +59,45 @@ final class RestAlarmScheduler {
     required bool vibrate,
     required int plannedSeconds,
   }) async {
-    // The foreground task handler posts the popup; nothing to schedule here.
+    try {
+      await _ensureTimeZone();
+      await cancel(setId);
+      final prefs = await SharedPreferences.getInstance();
+      final title = prefs.getString(restAlarmTitleKey) ?? 'Rest is over';
+      final template = prefs.getString('rest_alarm_body_with_duration');
+      final fallbackBody =
+          prefs.getString(restAlarmBodyKey) ?? 'Your planned rest is complete.';
+      final body = template != null
+          ? template.replaceAll('{duration}', _formatSeconds(plannedSeconds))
+          : fallbackBody;
+      final now = tz.TZDateTime.now(tz.local);
+      final tzFire = tz.TZDateTime.from(fireAt, tz.local);
+      if (!tzFire.isAfter(now)) return;
+      await _plugin.zonedSchedule(
+        notificationId(setId),
+        title,
+        body,
+        tzFire,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            restAlarmChannelId,
+            restAlarmChannelName,
+            channelDescription: restAlarmChannelDescription,
+            importance: Importance.high,
+            priority: Priority.high,
+            visibility: NotificationVisibility.public,
+            category: AndroidNotificationCategory.alarm,
+            playSound: sound,
+            enableVibration: vibrate,
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: restAlarmPayload,
+      );
+    } catch (_) {}
   }
 
   /// Cancels the alarm for [setId] (rest replaced, cancelled, or workout
@@ -67,7 +109,37 @@ final class RestAlarmScheduler {
   }
 
   /// Notification id for [setId].
-  int notificationId(String setId) => _stableHash(setId) & 0x3FFFFFFF;
+  int notificationId(String setId) => restAlarmNotificationId(setId);
+}
+
+/// Stable notification id for the scheduled fallback alarm of [setId].
+/// Distinct from the foreground-handler popup id (424242) so the handler can
+/// cancel a pending fallback when it fires first.
+int restAlarmNotificationId(String setId) => _stableHash(setId) & 0x3FFFFFFF;
+
+String _formatSeconds(int totalSeconds) {
+  final m = totalSeconds ~/ 60;
+  final s = totalSeconds % 60;
+  final mm = m.toString().padLeft(2, '0');
+  final ss = s.toString().padLeft(2, '0');
+  return '$mm:$ss';
+}
+
+bool _tzInitialized = false;
+
+Future<void> _ensureTimeZone() async {
+  if (_tzInitialized) return;
+  try {
+    tzdata.initializeTimeZones();
+    try {
+      tz.setLocalLocation(
+        tz.getLocation((await FlutterTimezone.getLocalTimezone()).identifier),
+      );
+    } catch (_) {
+      tz.setLocalLocation(tz.getLocation('UTC'));
+    }
+    _tzInitialized = true;
+  } catch (_) {}
 }
 
 final restAlarmSchedulerProvider = Provider<RestAlarmScheduler>((ref) {
