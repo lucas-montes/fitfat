@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -97,7 +98,9 @@ final class RestAlarmScheduler {
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: restAlarmPayload,
       );
-    } catch (_) {}
+    } catch (e) {
+      Logger('RestAlarm').warning('rest fallback schedule failed', e);
+    }
   }
 
   /// Cancels the alarm for [setId] (rest replaced, cancelled, or workout

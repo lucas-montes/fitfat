@@ -1621,6 +1621,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncServerNotConfigured => 'Sync server URL is not configured';
 
   @override
+  String get syncAll => 'Sync all';
+
+  @override
+  String get syncSelect => 'Select…';
+
+  @override
+  String get selectServerExercises => 'Select server exercises';
+
+  @override
+  String get selectServerIngredients => 'Select server ingredients';
+
+  @override
+  String get syncNothingNew =>
+      'Nothing new on the server — everything is already imported';
+
+  @override
+  String get ingredientListSearchHint => 'Search ingredients';
+
+  @override
+  String get refreshList => 'Refresh list';
+
+  @override
+  String get syncServerUnreachable =>
+      'Server not reachable — check the URL/key or increase the timeout in Settings';
+
+  @override
   String get syncExercisesHelp =>
       'Download the shared exercise catalogue and its media from the server.';
 

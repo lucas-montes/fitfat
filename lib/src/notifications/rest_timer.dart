@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logging/logging.dart';
 
 import '../exercise/providers/workouts.dart';
 import '../settings/providers/settings.dart';
@@ -66,8 +67,14 @@ final class RestTimerNotifier extends Notifier<RestTimerState> {
 
   Future<void> startRest(Duration duration, {String? setId}) async {
     // Finalize any running rest first so its actual elapsed time is recorded
-    // and its alarm is cancelled before the timer is replaced.
-    await cancelRest();
+    // and its alarm is cancelled before the timer is replaced. Guarded: a
+    // recording failure must never abort the new rest (which would leave no
+    // rest line and no rest-over alert anywhere).
+    try {
+      await cancelRest();
+    } catch (e) {
+      Logger('RestTimer').warning('finalizing previous rest failed', e);
+    }
     final startedAt = DateTime.now();
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(restStartedAtKey, startedAt.millisecondsSinceEpoch);

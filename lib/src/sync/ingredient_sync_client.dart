@@ -57,57 +57,7 @@ final class IngredientSyncClient {
       if (items is List) {
         for (final raw in items) {
           if (raw is! Map) continue;
-          final ingredient = _parseIngredient(raw, serverTime);
-          if (ingredient == null) continue;
-          await _repo.upsert(ingredient);
-
-          final pictures = raw['pictures'];
-          if (pictures is List) {
-            for (final p in pictures) {
-              if (p is! Map) continue;
-              final pid = p['id'];
-              final iid = p['ingredientId'] ?? ingredient.id;
-              if (pid is String && iid is String) {
-                await _repo.upsertPicture(
-                  IngredientPicture(
-                    id: pid,
-                    ingredientId: iid,
-                    imagePath: p['imagePath'] as String? ?? '',
-                    sortOrder: (p['sortOrder'] as num?)?.toInt() ?? 0,
-                    createdAt: toSyncDateTime(p['updated_at'], serverTime),
-                  ),
-                );
-              }
-            }
-          }
-
-          final prices = raw['prices'];
-          if (prices is List) {
-            for (final pr in prices) {
-              if (pr is! Map) continue;
-              final pid = pr['id'];
-              final storeId = pr['storeId'];
-              final currencyCode = pr['currencyCode'];
-              final price = pr['price'];
-              if (pid is String &&
-                  storeId is String &&
-                  currencyCode is String &&
-                  price is num) {
-                await _repo.upsertPrice(
-                  IngredientPrice(
-                    id: pid,
-                    ingredientId: ingredient.id,
-                    storeId: storeId,
-                    price: price.toDouble(),
-                    currencyCode: currencyCode,
-                    packageGrams: (pr['packageGrams'] as num?)?.toDouble(),
-                    recordedAt: toSyncDateTime(pr['recorded_at'], serverTime),
-                  ),
-                );
-              }
-            }
-          }
-          updated++;
+          if (await upsertAggregate(raw, serverTime)) updated++;
         }
       }
 
@@ -197,7 +147,68 @@ final class IngredientSyncClient {
     'Authorization': 'Bearer $apiKey',
   };
 
-  static Ingredient? _parseIngredient(
+  /// Upserts one server row with its nested `pictures`/`prices` (bulk or
+  /// selective). The minimal selective shape carries no `prices`, which the
+  /// loop below tolerates. Returns false when the row is unparseable. Shared
+  /// by the bulk pull and the selective import path.
+  Future<bool> upsertAggregate(
+    Map<Object?, Object?> raw,
+    int serverTime,
+  ) async {
+    final ingredient = parseIngredient(raw, serverTime);
+    if (ingredient == null) return false;
+    await _repo.upsert(ingredient);
+
+    final pictures = raw['pictures'];
+    if (pictures is List) {
+      for (final p in pictures) {
+        if (p is! Map) continue;
+        final pid = p['id'];
+        final iid = p['ingredientId'] ?? ingredient.id;
+        if (pid is String && iid is String) {
+          await _repo.upsertPicture(
+            IngredientPicture(
+              id: pid,
+              ingredientId: iid,
+              imagePath: p['imagePath'] as String? ?? '',
+              sortOrder: (p['sortOrder'] as num?)?.toInt() ?? 0,
+              createdAt: toSyncDateTime(p['updated_at'], serverTime),
+            ),
+          );
+        }
+      }
+    }
+
+    final prices = raw['prices'];
+    if (prices is List) {
+      for (final pr in prices) {
+        if (pr is! Map) continue;
+        final pid = pr['id'];
+        final storeId = pr['storeId'];
+        final currencyCode = pr['currencyCode'];
+        final price = pr['price'];
+        if (pid is String &&
+            storeId is String &&
+            currencyCode is String &&
+            price is num) {
+          await _repo.upsertPrice(
+            IngredientPrice(
+              id: pid,
+              ingredientId: ingredient.id,
+              storeId: storeId,
+              price: price.toDouble(),
+              currencyCode: currencyCode,
+              packageGrams: (pr['packageGrams'] as num?)?.toDouble(),
+              recordedAt: toSyncDateTime(pr['recorded_at'], serverTime),
+            ),
+          );
+        }
+      }
+    }
+    return true;
+  }
+
+  static Ingredient? parseIngredient(
     Map<Object?, Object?> raw,
     int serverTime,
   ) {

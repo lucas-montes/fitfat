@@ -301,7 +301,9 @@ class _WorkoutTemplateFormScreenState
                 _SetDraft()
                   ..reps.text = set.reps?.toString() ?? ''
                   ..weightKg.text = _num(set.weightKg)
-                  ..restSeconds.text = set.restSeconds?.toString() ?? ''
+                  ..restSeconds.text = set.restSeconds == null
+                      ? ''
+                      : (set.restSeconds! / 60).toString()
                   ..durationMinutes.text = set.durationMinutes?.toString() ?? ''
                   ..distanceMeters.text = _num(set.distanceMeters),
             ]),
@@ -319,6 +321,16 @@ class _WorkoutTemplateFormScreenState
   int? _parseInt(String raw) => int.tryParse(raw.trim());
   double? _parseDouble(String raw) =>
       double.tryParse(raw.trim().replaceAll(',', '.'));
+
+  /// Parses the rest field (minutes, decimal allowed) into seconds, mirroring
+  /// the workout session form. Empty or unparseable input → null.
+  int? _parseRestMinutes(String raw) {
+    final t = raw.trim().replaceAll(',', '.');
+    if (t.isEmpty) return null;
+    final minutes = double.tryParse(t);
+    if (minutes == null || minutes <= 0) return null;
+    return (minutes * 60).round();
+  }
 
   void _addExercises() async {
     final picked = await showExercisePickerSheet(
@@ -420,7 +432,7 @@ class _WorkoutTemplateFormScreenState
                   setNumber: 0,
                   reps: _parseInt(set.reps.text),
                   weightKg: _parseDouble(set.weightKg.text),
-                  restSeconds: _parseInt(set.restSeconds.text),
+                  restSeconds: _parseRestMinutes(set.restSeconds.text),
                   durationMinutes: _parseInt(set.durationMinutes.text),
                   distanceMeters: _parseDouble(set.distanceMeters.text),
                 ),
@@ -663,10 +675,12 @@ final class _BlockCard extends StatelessWidget {
                     Expanded(
                       child: TextFormField(
                         controller: set.restSeconds,
-                        keyboardType: const TextInputType.numberWithOptions(),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
                           isDense: true,
-                          labelText: 'Rest s',
+                          labelText: 'Rest min',
                         ),
                         onChanged: (_) => onChanged(),
                       ),

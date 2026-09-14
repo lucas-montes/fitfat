@@ -2968,6 +2968,54 @@ abstract class AppLocalizations {
   /// **'Sync server URL is not configured'**
   String get syncServerNotConfigured;
 
+  /// No description provided for @syncAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync all'**
+  String get syncAll;
+
+  /// No description provided for @syncSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select…'**
+  String get syncSelect;
+
+  /// No description provided for @selectServerExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Select server exercises'**
+  String get selectServerExercises;
+
+  /// No description provided for @selectServerIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'Select server ingredients'**
+  String get selectServerIngredients;
+
+  /// No description provided for @syncNothingNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing new on the server — everything is already imported'**
+  String get syncNothingNew;
+
+  /// No description provided for @ingredientListSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search ingredients'**
+  String get ingredientListSearchHint;
+
+  /// No description provided for @refreshList.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh list'**
+  String get refreshList;
+
+  /// No description provided for @syncServerUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Server not reachable — check the URL/key or increase the timeout in Settings'**
+  String get syncServerUnreachable;
+
   /// No description provided for @syncExercisesHelp.
   ///
   /// In en, this message translates to:

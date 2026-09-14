@@ -49,27 +49,10 @@ final class ExerciseSyncClient {
       if (items is List) {
         for (final raw in items) {
           if (raw is! Map) continue;
-          final parsed = parseExercise(raw, serverTime);
-          if (parsed == null) continue;
-          final (incoming, hasImage, hasVideo) = parsed;
-          final existing = await _repo.getById(incoming.id);
-          final saved = await _reconciled(
-            incoming,
-            existing,
-            hasImage: hasImage,
-            hasVideo: hasVideo,
-          );
-          await _repo.upsert(saved);
+          final (imported, mediaOk) = await importItem(raw, serverTime, apiKey);
+          if (!imported) continue;
           updated++;
-          if (!await _applyMedia(
-            existing,
-            saved,
-            hasImage: hasImage,
-            hasVideo: hasVideo,
-            apiKey: apiKey,
-          )) {
-            mediaFailed = true;
-          }
+          if (!mediaOk) mediaFailed = true;
         }
       }
 
@@ -104,6 +87,37 @@ final class ExerciseSyncClient {
     } catch (e) {
       return SyncResult(error: e.toString());
     }
+  }
+
+  /// Imports one server row (bulk or selective): parses, reconciles
+  /// client-local media state, upserts, and downloads advertised media missing
+  /// from disk. Returns `(imported, mediaOk)` — `imported` is false when the
+  /// row is unparseable; `mediaOk` is false when any download failed. Shared
+  /// by the bulk pull and the selective import path.
+  Future<(bool, bool)> importItem(
+    Map<Object?, Object?> raw,
+    int serverTime,
+    String apiKey,
+  ) async {
+    final parsed = parseExercise(raw, serverTime);
+    if (parsed == null) return (false, true);
+    final (incoming, hasImage, hasVideo) = parsed;
+    final existing = await _repo.getById(incoming.id);
+    final saved = await _reconciled(
+      incoming,
+      existing,
+      hasImage: hasImage,
+      hasVideo: hasVideo,
+    );
+    await _repo.upsert(saved);
+    final mediaOk = await _applyMedia(
+      existing,
+      saved,
+      hasImage: hasImage,
+      hasVideo: hasVideo,
+      apiKey: apiKey,
+    );
+    return (true, mediaOk);
   }
 
   /// Merges server metadata with the locally-downloaded media state: keep a

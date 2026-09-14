@@ -250,6 +250,31 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
   - v21 → v22: rebuilds `fx_rates` around a daily-snapshot dimension — adds `rate_date` (`'YYYY-MM-DD'`, default `'0001-01-01'`) and a composite PK `(code, base_code, rate_date)` so sync can keep per-day history instead of overwriting the latest rate. Existing rows are backfilled as a single `'0001-01-01'` snapshot. No data is dropped.
   - v22 → v23: drops `exercises.is_locked` (the bundled exercise catalog is gone — data now arrives via the sync client). Drift cannot drop a column in place, so `exercises` is rebuilt via rename → recreate → backfill → drop-old. Only the dead column is removed.
   - v23 → v24: folds experiments into `planner_items` — adds `kind` (`'task'` default), `end_date`, `purpose`, `status`, `categories` (JSON), `reminder_enabled`, `reminder_time_minutes`, and child-link `experiment_id`; copies each `experiments` row into a `planner_items` row **preserving ids** (`date = start_date`, open-ended rows get `end_date = start_date + 7d`); rebuilds `experiment_checkins` without its FK to the dropped table; then drops `experiments`. No data is lost.
+  - v24 → v30: (undocumented here — see `lib/src/database/app_database.dart` `onUpgrade`: tasks/goals/tags/templates/link-table + note-audio steps).
+  - v30 → v31: creates the selective-sync catalog tables — `exercise_catalog` (`id`, `name`) and `ingredient_catalog` (`id`, `name`, nullable `barcode`). New tables only — no existing-table changes. No data is dropped.
+  - v31 → v32: adds `has_image` (`NOT NULL DEFAULT 0`) to `exercise_catalog` so the picker can skip thumbnail fetches for imageless rows. Additive column only — no data is dropped.
+
+## Selective-sync catalog tables (v31)
+
+Lightweight available-data index for selective import (selective-sync-catalog T01). No FK to user tables; no media stored here (picker thumbnails are live server fetches; offline assets are written only on bulk sync / selective import).
+
+### exercise_catalog
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | server row id |
+| name | TEXT | display name |
+| has_image | INTEGER (bool) | v32 — server `has_image` hint; picker skips thumbnail fetch when false |
+
+### ingredient_catalog
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | server row id |
+| name | TEXT | display name |
+| barcode | TEXT? | nullable — selective match key alongside name |
+
+Repositories (`lib/src/sync/repositories/catalog_repository.dart`): `getAll` (name-ordered), `upsertAll` (whole-cache replace in one batch transaction), `clear`, and `searchHideImported(query)` — a single SQL query (`NOT IN` subquery against `exercises` / `ingredients`, `LIKE ... ESCAPE '\'` matching picker `contains` semantics) returning picker-ready rows (ingredient subtitle = barcode, no stored image paths; exercise entries carry `hasImage`, added to the table in v32).
 
 ## Generated code
 

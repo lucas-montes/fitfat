@@ -8,6 +8,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart'
 import 'package:flutter_foreground_task/flutter_foreground_task.dart' as fft;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logging/logging.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,6 +43,17 @@ const _watchdogStartedAtKey = 'active_workout_watchdog_started_at';
 
 bool _foregroundServiceInitialized = false;
 Future<void>? _foregroundInitFuture;
+
+/// Visible in logcat (`flutter logs` / `adb logcat`) — every service
+/// start/update failure is logged here with its error instead of being
+/// swallowed, so a device that refuses the service leaves a trace.
+final _log = Logger('ActiveWorkout');
+
+/// Foreground-service type for workout tracking. `health` is the declared
+/// type for exercise timers on Android 14+ (manifest declares
+/// `dataSync|health` + `FOREGROUND_SERVICE_HEALTH`); `dataSync` falls under
+/// API 35+ quota/timeout restrictions that don't apply to workouts.
+const _serviceTypes = [ForegroundServiceTypes.health];
 
 /// Idempotent foreground-service channel init. Safe to call from startup and
 /// from [ActiveWorkoutNotifier.startWorkoutNotification] (which awaits it, so
@@ -96,13 +108,17 @@ Future<void> restoreWorkoutServiceIfNeeded(SharedPreferences prefs) async {
             DateTime.now().millisecondsSinceEpoch - startedAtMillis,
       ),
     );
-    await FlutterForegroundTask.startService(
+    final result = await FlutterForegroundTask.startService(
       serviceId: _serviceId,
+      serviceTypes: _serviceTypes,
       notificationTitle: name,
       notificationText: '$elapsedLabel $elapsed',
       notificationInitialRoute: '/active-workout',
       callback: activeWorkoutTaskCallback,
     );
+    if (result is ServiceRequestFailure) {
+      _log.warning('restoreWorkoutServiceIfNeeded failed', result.error);
+    }
   } catch (_) {}
 }
 
@@ -155,12 +171,16 @@ Future<void> refreshActiveWorkoutNotification() async {
     await prefs.reload();
     final snapshot = buildActiveWorkoutNotificationText(prefs);
     if (snapshot == null) return;
-    await FlutterForegroundTask.updateService(
+    final result = await FlutterForegroundTask.updateService(
       notificationTitle: snapshot.title,
       notificationText: snapshot.text,
     );
-  } catch (_) {
+    if (result is ServiceRequestFailure) {
+      _log.warning('refreshActiveWorkoutNotification failed', result.error);
+    }
+  } catch (e) {
     // Best-effort: never let a notification refresh break app logic.
+    _log.warning('refreshActiveWorkoutNotification threw', e);
   }
 }
 
@@ -353,6 +373,9 @@ final class ActiveWorkoutNotifier {
         await Permission.notification.request();
       }
       final notificationsAllowed = await Permission.notification.isGranted;
+      if (!notificationsAllowed) {
+        _log.warning('POST_NOTIFICATIONS denied — ongoing notification hidden');
+      }
       // Ask the OS to exclude us from Doze / battery optimization so the
       // foreground ticker isn't suspended (keeps the elapsed timer alive,
       // including on the lock screen). MIUI/HyperOS needs this plus manual
@@ -365,32 +388,46 @@ final class ActiveWorkoutNotifier {
         // Best-effort: some devices/ROMs reject this; ignore.
       }
       try {
+        ServiceRequestResult startResult;
         if (await FlutterForegroundTask.isRunningService) {
-          await FlutterForegroundTask.restartService();
+          startResult = await FlutterForegroundTask.restartService();
         } else {
-          await FlutterForegroundTask.startService(
+          startResult = await FlutterForegroundTask.startService(
             serviceId: _serviceId,
+            serviceTypes: _serviceTypes,
             notificationTitle: workoutName,
             notificationText: '${l10n.activeWorkoutElapsedLabel} 00:00',
             notificationInitialRoute: '/active-workout',
             callback: activeWorkoutTaskCallback,
           );
         }
-      } catch (_) {}
+        if (startResult is ServiceRequestFailure) {
+          _log.warning('workout service start failed', startResult.error);
+        }
+      } catch (e) {
+        _log.warning('workout service start threw', e);
+      }
       var running = false;
       try {
         running = await FlutterForegroundTask.isRunningService;
         if (!running) {
-          await FlutterForegroundTask.startService(
+          final retry = await FlutterForegroundTask.startService(
             serviceId: _serviceId,
+            serviceTypes: _serviceTypes,
             notificationTitle: workoutName,
             notificationText: '${l10n.activeWorkoutElapsedLabel} 00:00',
             notificationInitialRoute: '/active-workout',
             callback: activeWorkoutTaskCallback,
           );
+          if (retry is ServiceRequestFailure) {
+            _log.warning('workout service retry failed', retry.error);
+          }
           running = await FlutterForegroundTask.isRunningService;
         }
-      } catch (_) {}
+      } catch (e) {
+        _log.warning('workout service retry threw', e);
+      }
+      _log.info('workout service running=$running allowed=$notificationsAllowed');
       _lastWorkoutName = workoutName;
       _lastStartedAt = startedAt;
       _startWatchdog();
@@ -462,17 +499,24 @@ final class ActiveWorkoutNotifier {
               await ensureForegroundServiceInitialized();
             } catch (_) {}
             try {
-              await FlutterForegroundTask.startService(
+              final result = await FlutterForegroundTask.startService(
                 serviceId: _serviceId,
+                serviceTypes: _serviceTypes,
                 notificationTitle: name,
                 notificationText: name,
                 notificationInitialRoute: '/active-workout',
                 callback: activeWorkoutTaskCallback,
               );
-              _lastWorkoutName = name;
-              _lastStartedAt =
-                  DateTime.fromMillisecondsSinceEpoch(startedAtMillis);
-            } catch (_) {}
+              if (result is ServiceRequestFailure) {
+                _log.warning('watchdog service restart failed', result.error);
+              } else {
+                _lastWorkoutName = name;
+                _lastStartedAt =
+                    DateTime.fromMillisecondsSinceEpoch(startedAtMillis);
+              }
+            } catch (e) {
+              _log.warning('watchdog service restart threw', e);
+            }
           }
           return;
         }
@@ -480,7 +524,10 @@ final class ActiveWorkoutNotifier {
         final now = DateTime.now().millisecondsSinceEpoch;
         if (last != null && now - last > 15000) {
           // Service is alive but the ticker has stalled — restart it.
-          await FlutterForegroundTask.restartService();
+          final restarted = await FlutterForegroundTask.restartService();
+          if (restarted is ServiceRequestFailure) {
+            _log.warning('watchdog stalled-tick restart failed', restarted.error);
+          }
         }
       } catch (_) {
         // Never let the watchdog break app logic.

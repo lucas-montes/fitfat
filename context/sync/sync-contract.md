@@ -336,9 +336,13 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
  }
  ```
 
- **Exercise media (2026-08-25).** The payload never carries media paths or
- binaries. Media lives on the sync server at URLs *derived* from the exercise
- id, fetched with the same Bearer API key:
+  **Exercise media (2026-08-25; public since 2026-09-14).** The payload never carries media paths or
+  binaries. Media lives on the sync server at URLs *derived* from the exercise
+  id. Plain `<img>` / `<video>` tags cannot send an `Authorization` header, so
+  `GET /media/*` and `GET /exercises/*.{jpg,mp4}` are exempt from Bearer auth
+  (shared catalog assets, not user data); every JSON route stays protected.
+  Authenticated clients may keep sending the key — it is simply not required
+  for these two shapes:
 
  - image: `GET <baseUrl>/exercises/<id>.jpg`
  - video: `GET <baseUrl>/exercises/<id>.mp4`
@@ -447,8 +451,48 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
  - Repository seams: `ExerciseRepository.delete` / `upsert`,
    `IngredientRepository.upsert` / `upsertStore` / `upsertPicture` /
    `upsertPrice` / `archive`, `FxRepository.upsertRate`.
- - Schema: `fx_rates` now carries `rateDate` and a composite PK
-   `(code, baseCode, rateDate)` (migration v22 rebuilds the table).
+  - Schema: `fx_rates` now carries `rateDate` and a composite PK
+    `(code, baseCode, rateDate)` (migration v22 rebuilds the table).
+
+### 11.5 Selective catalog + per-id fetch (selective-sync-catalog T02)
+
+  Thin-client selective import reads a lightweight server index, then fetches
+  only chosen rows. All calls use the same Bearer key as §11.1:
+
+  | Resource | Endpoint | Shape |
+  |----------|----------|-------|
+  | exercise catalog | `GET /exercises/catalog` | `{server_time, items: [{id, name, has_image}]}` (name-ordered, excludes soft-deleted; no `since`, no `deleted`; `has_image` lets the picker skip thumbnail fetches for imageless rows) |
+  | ingredient catalog | `GET /ingredients/catalog` | `{server_time, items: [{id, name, barcode?}]}` (same semantics) |
+  | exercise item | `GET /exercises/item/:id` | single full exercise shape incl. `hasImage`/`hasVideo`; `404 {message}` when missing or soft-deleted |
+  | ingredient item | `GET /ingredients/item/:id` | minimal selective shape (full scalar columns + `pictures`, no `prices`/`stores`); `404 {message}` when missing or soft-deleted |
+
+  Notes:
+
+  - Item routes live at `/item/:id` because `/exercises/:id` is already the
+    media route (`GET /exercises/<id>.jpg|.mp4`, Bearer, `404` when absent —
+    unchanged, and the stable thumbnail URL the picker fetches live).
+  - Bulk pulls (`GET /exercises`, `GET /ingredients` with `?since=` +
+    `deleted[]`) are unchanged; selective import ignores server `deleted[]`
+    and local selective deletions are never pushed.
+  - Ingredient picture `imagePath` values remain metadata strings in V1 (no
+    binary upload/serving); the client persists them as-is.
+
+  **Client engine (selective-sync-catalog T03).** `CatalogSyncClient`
+  (`lib/src/sync/catalog_sync_client.dart`) owns refresh (cache replace, no
+  user-table/media/cursor touch) and per-id import (upsert + offline-asset
+  download only at import time; `404` ids skipped). Bulk loops share
+  `ExerciseSyncClient.importItem` / `IngredientSyncClient.upsertAggregate`.
+  `SyncService` exposes `refreshExerciseCatalog` / `refreshIngredientCatalog`
+  / `importSelectedExercises` / `importSelectedIngredients` — none of which
+  calls `setLastSyncedAt` — plus silent `refreshSelectiveCatalogs`.
+  `_BackgroundStartup` fires throttled (15 min) background refresh on start +
+  resume; an unconfigured server is a no-op. The picker tap path never
+  downloads the catalog: it pings `GET /health` (unreachable → blocking
+  banner, preserving offline-block), reads `searchHideImported` from cache,
+  and offers on-demand refresh via the sheet's refresh button (single-transaction
+  batch rewrite). Picker thumbnails are live server fetches for `has_image`
+  rows only, so the picker blocks with an unreachable banner when the
+  server is down.
 
 ---
 

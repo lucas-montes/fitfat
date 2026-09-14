@@ -1636,6 +1636,33 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'URL du serveur de synchronisation n\'est pas configurée';
 
   @override
+  String get syncAll => 'Tout synchroniser';
+
+  @override
+  String get syncSelect => 'Sélectionner…';
+
+  @override
+  String get selectServerExercises => 'Sélectionner des exercices du serveur';
+
+  @override
+  String get selectServerIngredients =>
+      'Sélectionner des ingrédients du serveur';
+
+  @override
+  String get syncNothingNew =>
+      'Rien de nouveau sur le serveur — tout est déjà importé';
+
+  @override
+  String get ingredientListSearchHint => 'Rechercher des ingrédients';
+
+  @override
+  String get refreshList => 'Actualiser la liste';
+
+  @override
+  String get syncServerUnreachable =>
+      'Serveur injoignable — vérifiez l\'URL/clé ou augmentez le délai dans Réglages';
+
+  @override
   String get syncExercisesHelp =>
       'Télécharge le catalogue d\'exercices partagé et ses médias depuis le serveur.';
 

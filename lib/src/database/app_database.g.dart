@@ -16912,6 +16912,532 @@ class NoteAudioCompanion extends UpdateCompanion<NoteAudioData> {
   }
 }
 
+class $ExerciseCatalogTable extends ExerciseCatalog
+    with TableInfo<$ExerciseCatalogTable, ExerciseCatalogData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExerciseCatalogTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hasImageMeta = const VerificationMeta(
+    'hasImage',
+  );
+  @override
+  late final GeneratedColumn<bool> hasImage = GeneratedColumn<bool>(
+    'has_image',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("has_image" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, hasImage];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'exercise_catalog';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExerciseCatalogData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('has_image')) {
+      context.handle(
+        _hasImageMeta,
+        hasImage.isAcceptableOrUnknown(data['has_image']!, _hasImageMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ExerciseCatalogData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExerciseCatalogData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      hasImage: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}has_image'],
+      )!,
+    );
+  }
+
+  @override
+  $ExerciseCatalogTable createAlias(String alias) {
+    return $ExerciseCatalogTable(attachedDatabase, alias);
+  }
+}
+
+class ExerciseCatalogData extends DataClass
+    implements Insertable<ExerciseCatalogData> {
+  final String id;
+  final String name;
+  final bool hasImage;
+  const ExerciseCatalogData({
+    required this.id,
+    required this.name,
+    required this.hasImage,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['has_image'] = Variable<bool>(hasImage);
+    return map;
+  }
+
+  ExerciseCatalogCompanion toCompanion(bool nullToAbsent) {
+    return ExerciseCatalogCompanion(
+      id: Value(id),
+      name: Value(name),
+      hasImage: Value(hasImage),
+    );
+  }
+
+  factory ExerciseCatalogData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExerciseCatalogData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      hasImage: serializer.fromJson<bool>(json['hasImage']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'hasImage': serializer.toJson<bool>(hasImage),
+    };
+  }
+
+  ExerciseCatalogData copyWith({String? id, String? name, bool? hasImage}) =>
+      ExerciseCatalogData(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        hasImage: hasImage ?? this.hasImage,
+      );
+  ExerciseCatalogData copyWithCompanion(ExerciseCatalogCompanion data) {
+    return ExerciseCatalogData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      hasImage: data.hasImage.present ? data.hasImage.value : this.hasImage,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExerciseCatalogData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('hasImage: $hasImage')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, hasImage);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExerciseCatalogData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.hasImage == this.hasImage);
+}
+
+class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<bool> hasImage;
+  final Value<int> rowid;
+  const ExerciseCatalogCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.hasImage = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExerciseCatalogCompanion.insert({
+    required String id,
+    required String name,
+    this.hasImage = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name);
+  static Insertable<ExerciseCatalogData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<bool>? hasImage,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (hasImage != null) 'has_image': hasImage,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExerciseCatalogCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<bool>? hasImage,
+    Value<int>? rowid,
+  }) {
+    return ExerciseCatalogCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      hasImage: hasImage ?? this.hasImage,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (hasImage.present) {
+      map['has_image'] = Variable<bool>(hasImage.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExerciseCatalogCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('hasImage: $hasImage, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $IngredientCatalogTable extends IngredientCatalog
+    with TableInfo<$IngredientCatalogTable, IngredientCatalogData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IngredientCatalogTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _barcodeMeta = const VerificationMeta(
+    'barcode',
+  );
+  @override
+  late final GeneratedColumn<String> barcode = GeneratedColumn<String>(
+    'barcode',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, barcode];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ingredient_catalog';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IngredientCatalogData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('barcode')) {
+      context.handle(
+        _barcodeMeta,
+        barcode.isAcceptableOrUnknown(data['barcode']!, _barcodeMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  IngredientCatalogData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IngredientCatalogData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      barcode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}barcode'],
+      ),
+    );
+  }
+
+  @override
+  $IngredientCatalogTable createAlias(String alias) {
+    return $IngredientCatalogTable(attachedDatabase, alias);
+  }
+}
+
+class IngredientCatalogData extends DataClass
+    implements Insertable<IngredientCatalogData> {
+  final String id;
+  final String name;
+  final String? barcode;
+  const IngredientCatalogData({
+    required this.id,
+    required this.name,
+    this.barcode,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || barcode != null) {
+      map['barcode'] = Variable<String>(barcode);
+    }
+    return map;
+  }
+
+  IngredientCatalogCompanion toCompanion(bool nullToAbsent) {
+    return IngredientCatalogCompanion(
+      id: Value(id),
+      name: Value(name),
+      barcode: barcode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(barcode),
+    );
+  }
+
+  factory IngredientCatalogData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IngredientCatalogData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      barcode: serializer.fromJson<String?>(json['barcode']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'barcode': serializer.toJson<String?>(barcode),
+    };
+  }
+
+  IngredientCatalogData copyWith({
+    String? id,
+    String? name,
+    Value<String?> barcode = const Value.absent(),
+  }) => IngredientCatalogData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    barcode: barcode.present ? barcode.value : this.barcode,
+  );
+  IngredientCatalogData copyWithCompanion(IngredientCatalogCompanion data) {
+    return IngredientCatalogData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      barcode: data.barcode.present ? data.barcode.value : this.barcode,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngredientCatalogData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('barcode: $barcode')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, barcode);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IngredientCatalogData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.barcode == this.barcode);
+}
+
+class IngredientCatalogCompanion
+    extends UpdateCompanion<IngredientCatalogData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String?> barcode;
+  final Value<int> rowid;
+  const IngredientCatalogCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.barcode = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  IngredientCatalogCompanion.insert({
+    required String id,
+    required String name,
+    this.barcode = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name);
+  static Insertable<IngredientCatalogData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? barcode,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (barcode != null) 'barcode': barcode,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  IngredientCatalogCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String?>? barcode,
+    Value<int>? rowid,
+  }) {
+    return IngredientCatalogCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      barcode: barcode ?? this.barcode,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (barcode.present) {
+      map['barcode'] = Variable<String>(barcode.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IngredientCatalogCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('barcode: $barcode, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -16972,6 +17498,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GoalTagsTable goalTags = $GoalTagsTable(this);
   late final $NoteTagsTable noteTags = $NoteTagsTable(this);
   late final $NoteAudioTable noteAudio = $NoteAudioTable(this);
+  late final $ExerciseCatalogTable exerciseCatalog = $ExerciseCatalogTable(
+    this,
+  );
+  late final $IngredientCatalogTable ingredientCatalog =
+      $IngredientCatalogTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -17015,6 +17546,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     goalTags,
     noteTags,
     noteAudio,
+    exerciseCatalog,
+    ingredientCatalog,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -34015,6 +34548,353 @@ typedef $$NoteAudioTableProcessedTableManager =
       NoteAudioData,
       PrefetchHooks Function({bool noteId})
     >;
+typedef $$ExerciseCatalogTableCreateCompanionBuilder =
+    ExerciseCatalogCompanion Function({
+      required String id,
+      required String name,
+      Value<bool> hasImage,
+      Value<int> rowid,
+    });
+typedef $$ExerciseCatalogTableUpdateCompanionBuilder =
+    ExerciseCatalogCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<bool> hasImage,
+      Value<int> rowid,
+    });
+
+class $$ExerciseCatalogTableFilterComposer
+    extends Composer<_$AppDatabase, $ExerciseCatalogTable> {
+  $$ExerciseCatalogTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hasImage => $composableBuilder(
+    column: $table.hasImage,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ExerciseCatalogTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExerciseCatalogTable> {
+  $$ExerciseCatalogTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hasImage => $composableBuilder(
+    column: $table.hasImage,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExerciseCatalogTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExerciseCatalogTable> {
+  $$ExerciseCatalogTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<bool> get hasImage =>
+      $composableBuilder(column: $table.hasImage, builder: (column) => column);
+}
+
+class $$ExerciseCatalogTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExerciseCatalogTable,
+          ExerciseCatalogData,
+          $$ExerciseCatalogTableFilterComposer,
+          $$ExerciseCatalogTableOrderingComposer,
+          $$ExerciseCatalogTableAnnotationComposer,
+          $$ExerciseCatalogTableCreateCompanionBuilder,
+          $$ExerciseCatalogTableUpdateCompanionBuilder,
+          (
+            ExerciseCatalogData,
+            BaseReferences<
+              _$AppDatabase,
+              $ExerciseCatalogTable,
+              ExerciseCatalogData
+            >,
+          ),
+          ExerciseCatalogData,
+          PrefetchHooks Function()
+        > {
+  $$ExerciseCatalogTableTableManager(
+    _$AppDatabase db,
+    $ExerciseCatalogTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExerciseCatalogTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExerciseCatalogTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExerciseCatalogTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<bool> hasImage = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExerciseCatalogCompanion(
+                id: id,
+                name: name,
+                hasImage: hasImage,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<bool> hasImage = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExerciseCatalogCompanion.insert(
+                id: id,
+                name: name,
+                hasImage: hasImage,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ExerciseCatalogTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExerciseCatalogTable,
+      ExerciseCatalogData,
+      $$ExerciseCatalogTableFilterComposer,
+      $$ExerciseCatalogTableOrderingComposer,
+      $$ExerciseCatalogTableAnnotationComposer,
+      $$ExerciseCatalogTableCreateCompanionBuilder,
+      $$ExerciseCatalogTableUpdateCompanionBuilder,
+      (
+        ExerciseCatalogData,
+        BaseReferences<
+          _$AppDatabase,
+          $ExerciseCatalogTable,
+          ExerciseCatalogData
+        >,
+      ),
+      ExerciseCatalogData,
+      PrefetchHooks Function()
+    >;
+typedef $$IngredientCatalogTableCreateCompanionBuilder =
+    IngredientCatalogCompanion Function({
+      required String id,
+      required String name,
+      Value<String?> barcode,
+      Value<int> rowid,
+    });
+typedef $$IngredientCatalogTableUpdateCompanionBuilder =
+    IngredientCatalogCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String?> barcode,
+      Value<int> rowid,
+    });
+
+class $$IngredientCatalogTableFilterComposer
+    extends Composer<_$AppDatabase, $IngredientCatalogTable> {
+  $$IngredientCatalogTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get barcode => $composableBuilder(
+    column: $table.barcode,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$IngredientCatalogTableOrderingComposer
+    extends Composer<_$AppDatabase, $IngredientCatalogTable> {
+  $$IngredientCatalogTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get barcode => $composableBuilder(
+    column: $table.barcode,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$IngredientCatalogTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IngredientCatalogTable> {
+  $$IngredientCatalogTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get barcode =>
+      $composableBuilder(column: $table.barcode, builder: (column) => column);
+}
+
+class $$IngredientCatalogTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IngredientCatalogTable,
+          IngredientCatalogData,
+          $$IngredientCatalogTableFilterComposer,
+          $$IngredientCatalogTableOrderingComposer,
+          $$IngredientCatalogTableAnnotationComposer,
+          $$IngredientCatalogTableCreateCompanionBuilder,
+          $$IngredientCatalogTableUpdateCompanionBuilder,
+          (
+            IngredientCatalogData,
+            BaseReferences<
+              _$AppDatabase,
+              $IngredientCatalogTable,
+              IngredientCatalogData
+            >,
+          ),
+          IngredientCatalogData,
+          PrefetchHooks Function()
+        > {
+  $$IngredientCatalogTableTableManager(
+    _$AppDatabase db,
+    $IngredientCatalogTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IngredientCatalogTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IngredientCatalogTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$IngredientCatalogTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> barcode = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IngredientCatalogCompanion(
+                id: id,
+                name: name,
+                barcode: barcode,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<String?> barcode = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => IngredientCatalogCompanion.insert(
+                id: id,
+                name: name,
+                barcode: barcode,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$IngredientCatalogTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IngredientCatalogTable,
+      IngredientCatalogData,
+      $$IngredientCatalogTableFilterComposer,
+      $$IngredientCatalogTableOrderingComposer,
+      $$IngredientCatalogTableAnnotationComposer,
+      $$IngredientCatalogTableCreateCompanionBuilder,
+      $$IngredientCatalogTableUpdateCompanionBuilder,
+      (
+        IngredientCatalogData,
+        BaseReferences<
+          _$AppDatabase,
+          $IngredientCatalogTable,
+          IngredientCatalogData
+        >,
+      ),
+      IngredientCatalogData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -34097,4 +34977,8 @@ class $AppDatabaseManager {
       $$NoteTagsTableTableManager(_db, _db.noteTags);
   $$NoteAudioTableTableManager get noteAudio =>
       $$NoteAudioTableTableManager(_db, _db.noteAudio);
+  $$ExerciseCatalogTableTableManager get exerciseCatalog =>
+      $$ExerciseCatalogTableTableManager(_db, _db.exerciseCatalog);
+  $$IngredientCatalogTableTableManager get ingredientCatalog =>
+      $$IngredientCatalogTableTableManager(_db, _db.ingredientCatalog);
 }

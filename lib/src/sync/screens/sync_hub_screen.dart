@@ -12,6 +12,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../network/api_client.dart';
 import '../../database/database_provider.dart' as db;
 import '../../exercise/widgets/select_sheet.dart';
+import '../repositories/catalog_repository.dart';
 import '../../ui/tokens.dart';
 import '../../settings/providers/settings.dart';
 import '../data_push_service.dart';
@@ -263,72 +264,78 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       OutlinedButton.icon(onPressed: _busyPickerIng ? null : () => _showIngredientPicker(context, ref), icon: _busyPickerIng ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.checklist, size: 18), label: Text(_busyPickerIng ? 'Loading…' : 'Select ingredients…')),
     ]);
   }
-  Future<List<Map<String,dynamic>>> _fetchServerItems(String base, String key, String endpoint) async {
-    if (base.isEmpty) throw StateError('Server URL not configured');
-    final normalizedBase = base.trim().replaceAll(RegExp(r'/+$'), '');
-    final timeout = Duration(seconds: ref.read(settingsProvider).apiTimeoutSeconds);
-    _log.info('fetchServerItems base=$normalizedBase endpoint=$endpoint timeout=${timeout.inSeconds}s');
-    final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout);
-    try {
-      final raw = await client.getJson(endpoint, headers: authHeaders(key), query: {'since': '0'});
-      final data = raw as Map<String, dynamic>;
-      final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
-      _log.info('fetchServerItems ok base=$normalizedBase endpoint=$endpoint count=${items.length}');
-      return items;
-    } on TimeoutException catch (e, st) {
-      _log.warning('fetchServerItems timeout base=$normalizedBase endpoint=$endpoint', e, st);
-      throw TimeoutException('Server not reachable — check URL/key or increase timeout in Settings → Advanced (${timeout.inSeconds}s)');
-    } catch (e, st) {
-      _log.warning('fetchServerItems failed base=$normalizedBase endpoint=$endpoint', e, st);
-      rethrow;
-    } finally {
-      httpClient.close();
-    }
-  }
   Future<void> _showExercisePicker(BuildContext context, WidgetRef ref) async {
     final settings = ref.read(settingsProvider);
     final base = settings.remoteSyncBaseUrl;
     final key = settings.remoteSyncApiKey;
     if (base.isEmpty) { showTopBanner(context, message: 'Server URL not configured'); return; }
     setState(() => _busyPickerEx = true);
-    List<Map<String,dynamic>> serverItems;
     try {
-      serverItems = await _fetchServerItems(base, key, settings.endpointExercises);
-    } catch (e) { if (mounted) { showTopBanner(context, message: 'Failed to fetch server exercises: $e'); setState(() => _busyPickerEx = false); } return; }
-    if (mounted) setState(() => _busyPickerEx = false);
-    if (!context.mounted) return;
-    if (serverItems.isEmpty) { showTopBanner(context, message: 'No exercises on server'); return; }
-    final displayItems = serverItems.map((e) {
-      final id = e['id'] as String;
-      final name = e['name'] as String? ?? id;
-      final type = e['exerciseType'] as String? ?? '';
-      final hasImage = e['hasImage'] == true;
-      String? imagePath;
-      if (hasImage) {
-        // Try to find local image for this exercise if already synced
-        // For server-only, show fallback icon
-        imagePath = null;
+      final svc = ref.read(syncServiceProvider);
+      final timeout = Duration(seconds: settings.apiTimeoutSeconds);
+      if (!await svc.pingServer(base, key, timeout: timeout)) {
+        if (mounted) {
+          showTopBanner(context, message: 'Server not reachable — check URL/key or increase timeout');
+        }
+        return;
       }
-      return DisplayItem(id: id, name: name, imagePath: imagePath, subtitle: type.isEmpty ? id : type);
-    }).toList();
-    final selected = await showSelectSheet(context, items: displayItems, initialSelected: {}, title: 'Select server exercises', hint: 'Search server exercises');
-    if (selected == null || selected.isEmpty) return;
-    if (!context.mounted) return;
-    showTopBanner(context, message: 'Syncing ${selected.length} selected exercises from server…');
-    try {
-      final normalizedBase = base.trim().replaceAll(RegExp(r'/+$'), '');
-      final timeout = Duration(seconds: ref.read(settingsProvider).apiTimeoutSeconds);
-      final httpClient = http.Client();
-      final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout);
-      try {
-        final raw = await client.getJson(settings.endpointExercises, headers: authHeaders(key), query: {'since': '0'});
-        final data = raw as Map<String, dynamic>;
-        final items = (data['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-        final filtered = items.where((e) => selected.contains(e['id'] as String)).toList();
-        if (mounted) showTopBanner(context, message: 'Selected ${selected.length} exercises ready to sync (filtered ${filtered.length} from server)');
-      } finally { httpClient.close(); }
-    } catch (e) { if (mounted) showTopBanner(context, message: 'Sync failed: $e'); }
+      Future<List<DisplayItem>> loadDisplay() async {
+        final normalizedBase = base.trim().replaceAll(RegExp(r'/+$'), '');
+        final headers = authHeaders(key);
+        final entries = await ref
+            .read(exerciseCatalogRepositoryProvider)
+            .searchHideImported('');
+        return [
+          for (final d in entries)
+            DisplayItem(
+              id: d.id,
+              name: d.name,
+              imagePath: d.hasImage ? '$normalizedBase/exercises/${d.id}.jpg' : null,
+              imageHeaders: d.hasImage ? headers : null,
+            ),
+        ];
+      }
+
+      Future<List<DisplayItem>?> refreshDisplay() async {
+        final refreshed = await svc.refreshExerciseCatalog(
+          base,
+          key,
+          endpoint: '${settings.endpointExercises}/catalog',
+          timeout: timeout,
+        );
+        if (!mounted) return null;
+        if (!refreshed.ok) {
+          showTopBanner(context, message: refreshed.error!);
+          return null;
+        }
+        return loadDisplay();
+      }
+
+      final displayItems = await loadDisplay();
+      if (!mounted) return;
+      if (displayItems.isEmpty) {
+        showTopBanner(context, message: 'No exercises on server');
+        return;
+      }
+      final selected = await showSelectSheet(context, items: displayItems, initialSelected: const {}, title: 'Select server exercises', hint: 'Search server exercises', refreshTooltip: 'Refresh list', onRefresh: refreshDisplay);
+      if (selected == null || selected.isEmpty) return;
+      if (!context.mounted) return;
+      final result = await svc.importSelectedExercises(
+        base,
+        key,
+        selected,
+        endpoint: settings.endpointExercises,
+        timeout: timeout,
+      );
+      if (!mounted) return;
+      if (!result.ok && result.error != null) {
+        showTopBanner(context, message: result.error!);
+        return;
+      }
+      setState(() {});
+    } finally {
+      if (mounted) setState(() => _busyPickerEx = false);
+    }
   }
   Future<void> _showIngredientPicker(BuildContext context, WidgetRef ref) async {
     final settings = ref.read(settingsProvider);
@@ -336,28 +343,57 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     final key = settings.remoteSyncApiKey;
     if (base.isEmpty) { showTopBanner(context, message: 'Server URL not configured'); return; }
     setState(() => _busyPickerIng = true);
-    List<Map<String,dynamic>> serverItems;
     try {
-      serverItems = await _fetchServerItems(base, key, settings.endpointIngredients);
-    } catch (e) { if (mounted) { showTopBanner(context, message: 'Failed to fetch server ingredients: $e'); setState(() => _busyPickerIng = false); } return; }
-    if (mounted) setState(() => _busyPickerIng = false);
-    if (!context.mounted) return;
-    if (serverItems.isEmpty) { showTopBanner(context, message: 'No ingredients on server'); return; }
-    final displayItems = serverItems.map((e) {
-      final id = e['id'] as String;
-      final name = e['name'] as String? ?? id;
-      final pics = e['pictures'] as List?;
-      String? imagePath;
-      if (pics != null && pics.isNotEmpty) {
-        final first = pics.first as Map<String,dynamic>?;
-        imagePath = first?['imagePath'] as String?;
+      final svc = ref.read(syncServiceProvider);
+      final timeout = Duration(seconds: settings.apiTimeoutSeconds);
+      if (!await svc.pingServer(base, key, timeout: timeout)) {
+        if (mounted) {
+          showTopBanner(context, message: 'Server not reachable — check URL/key or increase timeout');
+        }
+        return;
       }
-      return DisplayItem(id: id, name: name, imagePath: imagePath, subtitle: id);
-    }).toList();
-    final selected = await showSelectSheet(context, items: displayItems, initialSelected: {}, title: 'Select server ingredients', hint: 'Search server ingredients');
-    if (selected == null || selected.isEmpty) return;
-    if (!context.mounted) return;
-    showTopBanner(context, message: 'Selected ${selected.length} ingredients from server — selective sync will filter before upsert');
+      Future<List<DisplayItem>?> refreshDisplay() async {
+        final refreshed = await svc.refreshIngredientCatalog(
+          base,
+          key,
+          endpoint: '${settings.endpointIngredients}/catalog',
+          timeout: timeout,
+        );
+        if (!mounted) return null;
+        if (!refreshed.ok) {
+          showTopBanner(context, message: refreshed.error!);
+          return null;
+        }
+        return ref.read(ingredientCatalogRepositoryProvider).searchHideImported('');
+      }
+
+      final displayItems = await ref
+          .read(ingredientCatalogRepositoryProvider)
+          .searchHideImported('');
+      if (!mounted) return;
+      if (displayItems.isEmpty) {
+        showTopBanner(context, message: 'No ingredients on server');
+        return;
+      }
+      final selected = await showSelectSheet(context, items: displayItems, initialSelected: const {}, title: 'Select server ingredients', hint: 'Search server ingredients', refreshTooltip: 'Refresh list', onRefresh: refreshDisplay);
+      if (selected == null || selected.isEmpty) return;
+      if (!context.mounted) return;
+      final result = await svc.importSelectedIngredients(
+        base,
+        key,
+        selected,
+        endpoint: settings.endpointIngredients,
+        timeout: timeout,
+      );
+      if (!mounted) return;
+      if (!result.ok && result.error != null) {
+        showTopBanner(context, message: result.error!);
+        return;
+      }
+      setState(() {});
+    } finally {
+      if (mounted) setState(() => _busyPickerIng = false);
+    }
   }
 }
 

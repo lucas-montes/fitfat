@@ -722,3 +722,29 @@ class ExperimentCheckins extends Table {
     {experimentId, day},
   ];
 }
+
+// ---------------------------------------------------------------------------
+// Selective-sync catalog tables (v31) — lightweight available-data index.
+// No FK to user tables; picker hides rows already present in exercises /
+// ingredients. No media stored here; thumbnails are live server fetches.
+// ---------------------------------------------------------------------------
+
+class ExerciseCatalog extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  // Whether the server advertises media for this row (v32). Lets the picker
+  // render the fallback icon with zero round trips when false.
+  BoolColumn get hasImage => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class IngredientCatalog extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn? get barcode => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

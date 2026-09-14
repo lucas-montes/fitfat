@@ -51,6 +51,8 @@ part 'app_database.g.dart';
     GoalTags,
     NoteTags,
     NoteAudio,
+    ExerciseCatalog,
+    IngredientCatalog,
   ],
 )
 final class AppDatabase extends _$AppDatabase {
@@ -59,7 +61,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 32;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -718,6 +720,18 @@ final class AppDatabase extends _$AppDatabase {
       if (from < 30) {
         // v30: voice clips attached to notes (one audio file per clip).
         await m.createTable(noteAudio);
+      }
+
+      if (from < 31) {
+        // v31: selective-sync catalog index (no FK, no media stored here).
+        await m.createTable(exerciseCatalog);
+        await m.createTable(ingredientCatalog);
+      }
+
+      if (from < 32) {
+        // v32: `has_image` hint on the exercise catalog so the picker can
+        // skip thumbnail fetches for imageless rows (default false).
+        await m.addColumn(exerciseCatalog, exerciseCatalog.hasImage);
       }
     },
   );

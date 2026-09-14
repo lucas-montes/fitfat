@@ -6,14 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
-import '../../sync/sync_button.dart';
+import '../../network/api_client.dart';
+import '../../sync/repositories/catalog_repository.dart';
 import '../../sync/sync_service.dart';
 import '../../ui/haptics.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
+import '../../ui/widgets/top_banner.dart';
 import '../exercise_filter.dart';
 import '../providers/exercises.dart';
 import '../../settings/providers/settings.dart';
+import '../widgets/select_sheet.dart';
 import 'exercise_detail_screen.dart';
 import 'exercise_form.dart';
 
@@ -140,6 +143,121 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
     if (mounted) ref.invalidate(exerciseListProvider);
   }
 
+  bool _syncing = false;
+
+  Future<void> _syncAll() async {
+    final s = ref.read(settingsProvider);
+    setState(() => _syncing = true);
+    try {
+      final result = await ref
+          .read(syncServiceProvider)
+          .syncExercises(s.remoteSyncBaseUrl, s.remoteSyncApiKey);
+      if (!mounted) return;
+      ref.invalidate(exerciseListProvider);
+      if (!result.ok && result.error != null) {
+        showTopBanner(context, message: result.error!);
+      }
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
+  /// Maps hide-imported catalog entries to picker rows. Live thumbnails only
+  /// for rows the server flags with an image — the rest render the fallback
+  /// icon with zero round trips.
+  Future<List<DisplayItem>> _loadExerciseDisplay() async {
+    final s = ref.read(settingsProvider);
+    final normalizedBase = s.remoteSyncBaseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final headers = authHeaders(s.remoteSyncApiKey);
+    final entries = await ref
+        .read(exerciseCatalogRepositoryProvider)
+        .searchHideImported('');
+    return [
+      for (final e in entries)
+        DisplayItem(
+          id: e.id,
+          name: e.name,
+          imagePath: e.hasImage ? '$normalizedBase/exercises/${e.id}.jpg' : null,
+          imageHeaders: e.hasImage ? headers : null,
+        ),
+    ];
+  }
+
+  /// On-demand cache refresh for the sheet's refresh button. Banners on
+  /// failure and returns null so the sheet keeps its current rows.
+  Future<List<DisplayItem>?> _refreshExerciseDisplay() async {
+    final s = ref.read(settingsProvider);
+    final refreshed = await ref.read(syncServiceProvider).refreshExerciseCatalog(
+          s.remoteSyncBaseUrl,
+          s.remoteSyncApiKey,
+          endpoint: '${s.endpointExercises}/catalog',
+          timeout: Duration(seconds: s.apiTimeoutSeconds),
+        );
+    if (!mounted) return null;
+    if (!refreshed.ok) {
+      showTopBanner(context, message: refreshed.error!);
+      return null;
+    }
+    return _loadExerciseDisplay();
+  }
+
+  /// Selective sync: fast `/health` gate (blocks with a banner when the
+  /// server is unreachable), then pick instantly from the local cache with
+  /// live thumbnails, importing only the checked set for offline use. The
+  /// full catalog download happens in the background and on explicit
+  /// refresh — never on tap.
+  Future<void> _selectiveSync() async {
+    final l10n = AppLocalizations.of(context)!;
+    final s = ref.read(settingsProvider);
+    final base = s.remoteSyncBaseUrl;
+    final key = s.remoteSyncApiKey;
+    if (base.isEmpty) {
+      showTopBanner(context, message: l10n.syncServerNotConfigured);
+      return;
+    }
+    setState(() => _syncing = true);
+    try {
+      final svc = ref.read(syncServiceProvider);
+      final timeout = Duration(seconds: s.apiTimeoutSeconds);
+      if (!await svc.pingServer(base, key, timeout: timeout)) {
+        if (!mounted) return;
+        showTopBanner(context, message: l10n.syncServerUnreachable);
+        return;
+      }
+      final display = await _loadExerciseDisplay();
+      if (!mounted) return;
+      if (display.isEmpty) {
+        showTopBanner(context, message: l10n.syncNothingNew);
+        return;
+      }
+      final selected = await showSelectSheet(
+        context,
+        items: display,
+        initialSelected: const {},
+        title: l10n.selectServerExercises,
+        hint: l10n.exerciseListSearchHint,
+        refreshTooltip: l10n.refreshList,
+        onRefresh: _refreshExerciseDisplay,
+      );
+      if (!mounted) return;
+      if (selected == null || selected.isEmpty) return;
+      final result = await svc.importSelectedExercises(
+        base,
+        key,
+        selected,
+        endpoint: s.endpointExercises,
+        timeout: timeout,
+      );
+      if (!mounted) return;
+      ref.invalidate(exerciseListProvider);
+      if (!result.ok && result.error != null) {
+        showTopBanner(context, message: result.error!);
+      }
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -149,15 +267,31 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
       appBar: AppBar(
         title: Text(l10n.exerciseListAppBar),
         actions: [
-          SyncButton(
-            tooltip: l10n.syncExercisesTooltip,
-            run: () {
-              final s = ref.read(settingsProvider);
-              return ref
-                  .read(syncServiceProvider)
-                  .syncExercises(s.remoteSyncBaseUrl, s.remoteSyncApiKey);
-            },
-          ),
+          if (_syncing)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            PopupMenuButton<String>(
+              tooltip: l10n.syncExercisesTooltip,
+              icon: const Icon(Icons.sync),
+              onSelected: (v) {
+                if (v == 'all') {
+                  unawaited(_syncAll());
+                } else {
+                  unawaited(_selectiveSync());
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'all', child: Text(l10n.syncAll)),
+                PopupMenuItem(value: 'select', child: Text(l10n.syncSelect)),
+              ],
+            ),
         ],
       ),
       body: exercisesAsync.when(
