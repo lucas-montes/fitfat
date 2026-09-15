@@ -17,6 +17,7 @@ import '../network/api_client.dart';
 import 'catalog_sync_client.dart';
 import 'currency_sync_client.dart';
 import 'exercise_sync_client.dart';
+import 'ingredient_lookup_client.dart';
 import 'ingredient_sync_client.dart';
 import 'repositories/catalog_repository.dart';
 import 'sync_models.dart';
@@ -293,6 +294,46 @@ final class SyncService {
     } catch (e, st) {
       _log.warning('importSelectedIngredients failed base=$normalizedBase endpoint=$endpoint', e, st);
       return SyncResult(error: e.toString());
+    } finally {
+      httpClient.close();
+    }
+  }
+
+  /// Looks up a barcode on the server: local DB first, then OpenFoodFacts.
+  /// Returns the raw lookup result (local item, OFF draft, or none + link).
+  Future<IngredientLookupResult> lookupIngredientByBarcode(
+    String baseUrl,
+    String apiKey,
+    String barcode, {
+    Duration? timeout,
+  }) async {
+    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final httpClient = http.Client();
+    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    try {
+      return await IngredientLookupClient(
+        client,
+      ).lookup(barcode: barcode, apiKey: apiKey);
+    } finally {
+      httpClient.close();
+    }
+  }
+
+  /// Asks the server to download/persist the OFF product for [barcode] and
+  /// returns the stored ingredient row, ready for `importSelectedIngredients`.
+  Future<Map<String, Object?>> importIngredientFromBarcode(
+    String baseUrl,
+    String apiKey,
+    String barcode, {
+    Duration? timeout,
+  }) async {
+    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final httpClient = http.Client();
+    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    try {
+      return await IngredientLookupClient(
+        client,
+      ).importFromBarcode(barcode: barcode, apiKey: apiKey);
     } finally {
       httpClient.close();
     }

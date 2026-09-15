@@ -8,17 +8,19 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:share_plus/share_plus.dart';
+
 import '../../../l10n/app_localizations.dart';
 import '../../models/ingredient.dart';
 import '../../models/store.dart';
 import '../../settings/providers/settings.dart';
+import '../../sync/ingredient_lookup_client.dart';
+import '../../sync/sync_service.dart';
 import '../../ui/widgets/top_banner.dart';
 import '../providers/ingredients.dart';
 import '../repositories/ingredient_repository.dart';
+import 'barcode_scan_sheet.dart';
 import 'store_manager_screen.dart';
-
-/// Simulated barcode capture (mock until a real scanner dependency lands).
-const _mockScannedBarcode = '3017620422003';
 
 final class IngredientFormScreen extends ConsumerStatefulWidget {
   final Ingredient? ingredient;
@@ -55,6 +57,7 @@ final class _IngredientFormScreenState
   String? _selectedStoreId;
   bool _saving = false;
   bool _scanning = false;
+  bool _lookingUp = false;
 
   final _picker = ImagePicker();
   final List<_PictureDraft> _pictures = [];
@@ -201,14 +204,14 @@ final class _IngredientFormScreenState
               child: ListTile(
                 leading: const Icon(Icons.qr_code_scanner),
                 title: Text(l10n.ingredientFormScanTile),
-                trailing: _scanning
+                trailing: (_scanning || _lookingUp)
                     ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : null,
-                onTap: _scanning ? null : _scanBarcode,
+                onTap: (_scanning || _lookingUp) ? null : _scanBarcode,
               ),
             ),
             const SizedBox(height: 16),
@@ -592,18 +595,164 @@ final class _IngredientFormScreenState
   }
 
   // ---------------------------------------------------------------------------
-  // Mock barcode scan
+  // Barcode scan + server lookup (local DB, else OpenFoodFacts draft)
   // ---------------------------------------------------------------------------
 
-  /// Simulated capture: a short delay then a fake EAN fills the field.
   Future<void> _scanBarcode() async {
     setState(() => _scanning = true);
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    final code = await showBarcodeScanSheet(context);
     if (!mounted) return;
-    setState(() {
-      _barcodeCtrl.text = _mockScannedBarcode;
-      _scanning = false;
-    });
+    setState(() => _scanning = false);
+    if (code == null || code.isEmpty) return;
+    setState(() => _barcodeCtrl.text = code);
+    await _lookupAfterScan(code);
+  }
+
+  Future<void> _lookupAfterScan(String code) async {
+    final settings = ref.read(settingsProvider);
+    if (settings.remoteSyncBaseUrl.isEmpty) return;
+    setState(() => _lookingUp = true);
+    try {
+      final svc = ref.read(syncServiceProvider);
+      final result = await svc.lookupIngredientByBarcode(
+        settings.remoteSyncBaseUrl,
+        settings.remoteSyncApiKey,
+        code,
+        timeout: Duration(seconds: settings.apiTimeoutSeconds),
+      );
+      if (!mounted) return;
+      switch (result.source) {
+        case LookupSource.local:
+          final item = result.item;
+          if (item != null) {
+            _applyMap(item, overwriteName: false);
+            showTopBanner(
+              context,
+              message: '${item['name'] ?? code}',
+            );
+          }
+        case LookupSource.openfoodfacts:
+          final draft = result.draft;
+          if (draft != null) {
+            await _showOffPreview(draft, result.openfoodUrl, code);
+          }
+        case LookupSource.none:
+          showTopBanner(
+            context,
+            message: AppLocalizations.of(
+              context,
+            )!.errorWithMessage(result.openfoodUrl),
+          );
+      }
+    } catch (e) {
+      if (mounted) {
+        showTopBanner(
+          context,
+          message: AppLocalizations.of(context)!.errorWithMessage('$e'),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _lookingUp = false);
+    }
+  }
+
+  void _applyMap(Map<String, Object?> map, {bool overwriteName = true}) {
+    String? s(Object? v) => v is String && v.trim().isNotEmpty ? v.trim() : null;
+    String fmt(Object? v) =>
+        v is num ? (v.toDouble().toStringAsFixed(1)) : '';
+    void fillIfEmpty(TextEditingController c, String v) {
+      if (v.isEmpty) return;
+      if (c.text.trim().isEmpty) c.text = v;
+    }
+
+    final name = s(map['name']);
+    if (name != null && (overwriteName || _nameCtrl.text.trim().isEmpty)) {
+      _nameCtrl.text = name;
+    }
+    fillIfEmpty(_brandCtrl, s(map['brand']) ?? '');
+    fillIfEmpty(_caloriesCtrl, fmt(map['caloriesPer100g']));
+    fillIfEmpty(_proteinCtrl, fmt(map['proteinPer100g']));
+    fillIfEmpty(_carbsCtrl, fmt(map['carbsPer100g']));
+    fillIfEmpty(_fatCtrl, fmt(map['fatPer100g']));
+    fillIfEmpty(_sodiumCtrl, fmt(map['sodiumPer100g']));
+    fillIfEmpty(_fiberCtrl, fmt(map['fiberPer100g']));
+    fillIfEmpty(_sugarCtrl, fmt(map['sugarPer100g']));
+    setState(() {});
+  }
+
+  Future<void> _showOffPreview(
+    Map<String, Object?> draft,
+    String openfoodUrl,
+    String code,
+  ) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text('${draft['name'] ?? code}'),
+              subtitle: Text(
+                '${draft['brand'] ?? ''}\n$openfoodUrl',
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.check),
+              title: const Text('Apply to form'),
+              onTap: () => Navigator.of(ctx).pop('apply'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_download_outlined),
+              title: const Text('Save to server & apply'),
+              onTap: () => Navigator.of(ctx).pop('import'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Share OpenFoodFacts link'),
+              onTap: () => Navigator.of(ctx).pop('share'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (action == 'apply') {
+      _applyMap(draft);
+    } else if (action == 'share') {
+      await SharePlus.instance.share(ShareParams(text: openfoodUrl));
+    } else if (action == 'import') {
+      await _importFromServer(code, draft);
+    }
+  }
+
+  Future<void> _importFromServer(
+    String code,
+    Map<String, Object?> draft,
+  ) async {
+    final settings = ref.read(settingsProvider);
+    setState(() => _lookingUp = true);
+    try {
+      final svc = ref.read(syncServiceProvider);
+      final row = await svc.importIngredientFromBarcode(
+        settings.remoteSyncBaseUrl,
+        settings.remoteSyncApiKey,
+        code,
+        timeout: Duration(seconds: settings.apiTimeoutSeconds),
+      );
+      if (!mounted) return;
+      _applyMap(row, overwriteName: false);
+      _applyMap(draft);
+    } catch (e) {
+      if (mounted) {
+        showTopBanner(
+          context,
+          message: AppLocalizations.of(context)!.errorWithMessage('$e'),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _lookingUp = false);
+    }
   }
 
   // ---------------------------------------------------------------------------
