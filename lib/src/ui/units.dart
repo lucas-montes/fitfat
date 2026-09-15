@@ -11,6 +11,12 @@ double weightFromKg(double kg, WeightUnit unit) => switch (unit) {
   WeightUnit.lb => kg / _kgPerLb,
 };
 
+/// Converts a display-unit weight back into stored kg.
+double weightToKg(double value, WeightUnit unit) => switch (unit) {
+  WeightUnit.kg => value,
+  WeightUnit.lb => value * _kgPerLb,
+};
+
 /// Converts a stored cm value into the display unit.
 double lengthFromCm(double cm, LengthUnit unit) => switch (unit) {
   LengthUnit.cm => cm,

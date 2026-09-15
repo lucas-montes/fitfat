@@ -327,6 +327,163 @@ final class WorkoutRepository {
     );
   }
 
+  /// Updates the planned values of one set, preserving ids, actuals and
+  /// completion state. Safe to call on active workouts (unlike
+  /// [replaceExercises], which wipes logged data).
+  Future<void> updatePlannedSet({
+    required String setId,
+    int? reps,
+    double? weightKg,
+    int? restSeconds,
+    int? durationMinutes,
+    double? distanceMeters,
+  }) async {
+    await (_database.update(
+      _database.exerciseSets,
+    )..where((t) => t.id.equals(setId))).write(
+      db.ExerciseSetsCompanion(
+        reps: reps != null ? Value(reps) : const Value.absent(),
+        weightKg: weightKg != null ? Value(weightKg) : const Value.absent(),
+        restSeconds: restSeconds != null
+            ? Value(restSeconds)
+            : const Value.absent(),
+        durationMinutes: durationMinutes != null
+            ? Value(durationMinutes)
+            : const Value.absent(),
+        distanceMeters: distanceMeters != null
+            ? Value(distanceMeters)
+            : const Value.absent(),
+      ),
+    );
+  }
+
+  /// Appends a planned set to an exercise (numbered max + 1). Actuals stay
+  /// null until the set is logged.
+  Future<void> insertPlannedSet({
+    required String workoutExerciseId,
+    int? reps,
+    double? weightKg,
+    int? restSeconds,
+    int? durationMinutes,
+    double? distanceMeters,
+  }) async {
+    final existing =
+        await (_database.select(_database.exerciseSets)
+              ..where((t) => t.workoutExerciseId.equals(workoutExerciseId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.setNumber,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    final nextNumber = existing.isEmpty ? 1 : existing.first.setNumber + 1;
+    await _database
+        .into(_database.exerciseSets)
+        .insert(
+          db.ExerciseSetsCompanion.insert(
+            id: const Uuid().v7(),
+            workoutExerciseId: workoutExerciseId,
+            setNumber: nextNumber,
+            reps: Value(reps),
+            weightKg: Value(weightKg),
+            restSeconds: Value(restSeconds),
+            durationMinutes: Value(durationMinutes),
+            distanceMeters: Value(distanceMeters),
+          ),
+        );
+  }
+
+  /// Deletes one set and renumbers the remaining sets of its exercise 1..n.
+  Future<void> deletePlannedSet(String setId) async {
+    await _database.transaction(() async {
+      final row =
+          await (_database.select(_database.exerciseSets)
+                ..where((t) => t.id.equals(setId)))
+              .getSingleOrNull();
+      if (row == null) return;
+      await (_database.delete(
+        _database.exerciseSets,
+      )..where((t) => t.id.equals(setId))).go();
+      await _renumberSets(row.workoutExerciseId);
+    });
+  }
+
+  /// Deletes a workout exercise with all its sets and compacts the remaining
+  /// `sortOrder` values of the workout.
+  Future<void> deleteWorkoutExercise(String workoutExerciseId) async {
+    await _database.transaction(() async {
+      final row =
+          await (_database.select(_database.workoutExercises)
+                ..where((t) => t.id.equals(workoutExerciseId)))
+              .getSingleOrNull();
+      if (row == null) return;
+      await (_database.delete(
+        _database.exerciseSets,
+      )..where((t) => t.workoutExerciseId.equals(workoutExerciseId))).go();
+      await (_database.delete(
+        _database.workoutExercises,
+      )..where((t) => t.id.equals(workoutExerciseId))).go();
+      final remaining =
+          await (_database.select(_database.workoutExercises)
+                ..where((t) => t.workoutId.equals(row.workoutId))
+                ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+              .get();
+      for (var i = 0; i < remaining.length; i++) {
+        await (_database.update(
+          _database.workoutExercises,
+        )..where((t) => t.id.equals(remaining[i].id))).write(
+          db.WorkoutExercisesCompanion(sortOrder: Value(i)),
+        );
+      }
+    });
+  }
+
+  /// Persists a new exercise order; [orderedIds] holds every workout-exercise
+  /// id of the workout in the desired order.
+  Future<void> reorderExercises(List<String> orderedIds) async {
+    await _database.transaction(() async {
+      for (var i = 0; i < orderedIds.length; i++) {
+        await (_database.update(
+          _database.workoutExercises,
+        )..where((t) => t.id.equals(orderedIds[i]))).write(
+          db.WorkoutExercisesCompanion(sortOrder: Value(i)),
+        );
+      }
+    });
+  }
+
+  /// Persists a new set order within one exercise; [orderedSetIds] holds every
+  /// set id of the exercise in the desired order (renumbered 1..n).
+  Future<void> reorderSets(List<String> orderedSetIds) async {
+    await _database.transaction(() async {
+      for (var i = 0; i < orderedSetIds.length; i++) {
+        await (_database.update(
+          _database.exerciseSets,
+        )..where((t) => t.id.equals(orderedSetIds[i]))).write(
+          db.ExerciseSetsCompanion(setNumber: Value(i + 1)),
+        );
+      }
+    });
+  }
+
+  Future<void> _renumberSets(String workoutExerciseId) async {
+    final rows =
+        await (_database.select(_database.exerciseSets)
+              ..where((t) => t.workoutExerciseId.equals(workoutExerciseId))
+              ..orderBy([(t) => OrderingTerm(expression: t.setNumber)]))
+            .get();
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].setNumber != i + 1) {
+        await (_database.update(
+          _database.exerciseSets,
+        )..where((t) => t.id.equals(rows[i].id))).write(
+          db.ExerciseSetsCompanion(setNumber: Value(i + 1)),
+        );
+      }
+    }
+  }
+
   // -- Internal helpers -----------------------------------------------------
 
   Future<List<ExerciseBlock>> _getExerciseBlocks(String workoutId) async {

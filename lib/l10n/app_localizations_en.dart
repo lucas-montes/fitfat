@@ -259,6 +259,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activeWorkoutPlannedWeightLabel => 'Weight';
 
   @override
+  String get activeWorkoutReorderSets => 'Reorder sets';
+
+  @override
+  String get activeWorkoutEditPlannedTitle => 'Edit planned set';
+
+  @override
   String get commonRemove => 'Remove';
 
   @override

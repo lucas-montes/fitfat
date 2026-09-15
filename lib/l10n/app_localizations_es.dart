@@ -260,6 +260,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get activeWorkoutPlannedWeightLabel => 'Peso';
 
   @override
+  String get activeWorkoutReorderSets => 'Reordenar series';
+
+  @override
+  String get activeWorkoutEditPlannedTitle => 'Editar serie planificada';
+
+  @override
   String get commonRemove => 'Quitar';
 
   @override

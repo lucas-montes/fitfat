@@ -550,6 +550,18 @@ abstract class AppLocalizations {
   /// **'Weight'**
   String get activeWorkoutPlannedWeightLabel;
 
+  /// No description provided for @activeWorkoutReorderSets.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder sets'**
+  String get activeWorkoutReorderSets;
+
+  /// No description provided for @activeWorkoutEditPlannedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit planned set'**
+  String get activeWorkoutEditPlannedTitle;
+
   /// No description provided for @commonRemove.
   ///
   /// In en, this message translates to:

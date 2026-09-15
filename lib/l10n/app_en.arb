@@ -136,6 +136,8 @@
   },
   "activeWorkoutPlannedRepsLabel": "Reps",
   "activeWorkoutPlannedWeightLabel": "Weight",
+  "activeWorkoutReorderSets": "Reorder sets",
+  "activeWorkoutEditPlannedTitle": "Edit planned set",
   "commonRemove": "Remove",
   "activeWorkoutPrevExercise": "Previous exercise",
   "activeWorkoutNextExercise": "Next exercise",

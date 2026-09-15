@@ -260,6 +260,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get activeWorkoutPlannedWeightLabel => 'Poids';
 
   @override
+  String get activeWorkoutReorderSets => 'Réordonner les séries';
+
+  @override
+  String get activeWorkoutEditPlannedTitle => 'Modifier la série prévue';
+
+  @override
   String get commonRemove => 'Retirer';
 
   @override

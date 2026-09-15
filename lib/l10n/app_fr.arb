@@ -129,6 +129,8 @@
   },
   "activeWorkoutPlannedRepsLabel": "Répétitions",
   "activeWorkoutPlannedWeightLabel": "Poids",
+  "activeWorkoutReorderSets": "Réordonner les séries",
+  "activeWorkoutEditPlannedTitle": "Modifier la série prévue",
   "commonRemove": "Retirer",
   "activeWorkoutPrevExercise": "Exercice précédent",
   "activeWorkoutNextExercise": "Exercice suivant",

@@ -166,6 +166,9 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
   // Start time of the rest whose completion already triggered a pager jump
   // (one-shot per rest session, T05).
   DateTime? _lastJumpedRestStart;
+  // When true the pager is replaced by a reorderable exercise list (with
+  // per-exercise delete) so the running workout stays fully editable.
+  bool _reorderExercises = false;
 
   Workout get _workout => widget.workout;
   WorkoutWithDetails get _detail => widget.detail;
@@ -185,6 +188,7 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
     final count = _detail.exercises.length;
     if (count == 0) {
       _page = 0;
+      _reorderExercises = false;
     } else if (_page >= count) {
       _page = count - 1;
       _pageController.jumpToPage(_page);
@@ -227,6 +231,15 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
             tooltip: l10n.activeWorkoutAddExerciseTooltip,
             icon: const Icon(Icons.add),
             onPressed: () => _showAddExerciseSheet(context),
+          ),
+          IconButton(
+            tooltip: l10n.workoutFormReorderExercises,
+            icon: Icon(_reorderExercises ? Icons.check : Icons.reorder),
+            onPressed: detail.exercises.length < 2 && !_reorderExercises
+                ? null
+                : () => setState(
+                    () => _reorderExercises = !_reorderExercises,
+                  ),
           ),
           TextButton.icon(
             onPressed: () => _completeWorkout(context, _ref, workout.id),
@@ -289,7 +302,16 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
               ),
             ),
           ),
-          if (detail.exercises.isEmpty)
+          if (_reorderExercises && detail.exercises.isNotEmpty)
+            Expanded(
+              child: _ExerciseReorderList(
+                detail: detail,
+                workout: workout,
+                l10n: l10n,
+                ref: _ref,
+              ),
+            )
+          else if (detail.exercises.isEmpty)
             Expanded(
               child: EmptyState(
                 icon: Icons.fitness_center,
@@ -428,6 +450,107 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
     // Invalidate to refresh the workout detail if exercises were added
     _ref.invalidate(workoutDetailProvider(_workout.id));
   }
+}
+
+/// Reorderable exercise list replacing the pager in exercise-reorder mode.
+/// Drag handles persist the new order; the delete button removes the exercise
+/// (with confirmation) after cancelling a rest that belongs to it.
+final class _ExerciseReorderList extends StatelessWidget {
+  final WorkoutWithDetails detail;
+  final Workout workout;
+  final AppLocalizations l10n;
+  final WidgetRef ref;
+
+  const _ExerciseReorderList({
+    required this.detail,
+    required this.workout,
+    required this.l10n,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      itemCount: detail.exercises.length,
+      onReorder: (oldIndex, newIndex) => _move(context, oldIndex, newIndex),
+      itemBuilder: (context, index) {
+        final block = detail.exercises[index];
+        return Card(
+          key: ValueKey(block.exercise.id),
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: ReorderableDragStartListener(
+              index: index,
+              child: const Icon(Icons.drag_handle),
+            ),
+            title: Text(
+              block.exercise.exerciseName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(l10n.workoutDetailSetCount(block.sets.length)),
+            trailing: IconButton(
+              tooltip: l10n.workoutFormRemoveExercise,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () =>
+                  confirmDeleteWorkoutExercise(context, ref, block, workout, l10n),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _move(BuildContext context, int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) newIndex -= 1;
+    final ids = detail.exercises.map((b) => b.exercise.id).toList();
+    final moved = ids.removeAt(oldIndex);
+    ids.insert(newIndex, moved);
+    await ref
+        .read(workoutRepositoryProvider)
+        .reorderExercises(ids);
+    ref.invalidate(workoutDetailProvider(workout.id));
+  }
+}
+
+/// Confirms, then deletes an exercise (with all its sets) from a running
+/// workout. A rest belonging to the removed exercise is cancelled first so no
+/// orphan rest timer or rest-over alert survives.
+Future<void> confirmDeleteWorkoutExercise(
+  BuildContext context,
+  WidgetRef ref,
+  ExerciseBlock block,
+  Workout workout,
+  AppLocalizations l10n,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l10n.workoutFormRemoveExercise),
+      content: Text(block.exercise.exerciseName),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text(l10n.commonRemove),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  final rest = ref.read(restTimerProvider);
+  if (rest.isResting &&
+      block.sets.any((s) => s.id == rest.setId)) {
+    await ref.read(restTimerProvider.notifier).cancelRest();
+  }
+  await ref
+      .read(workoutRepositoryProvider)
+      .deleteWorkoutExercise(block.exercise.id);
+  ref.invalidate(workoutDetailProvider(workout.id));
 }
 
 /// Slim rest strip under the workout header: shows the elapsed rest time
@@ -569,7 +692,9 @@ final class _RestLineState extends ConsumerState<_RestLine> {
 /// a scrollable list of its sets with a completion progress bar. Only a single
 /// exercise is shown at a time — swipe up/down in the pager (or the ↑/↓
 /// buttons) to move between them.
-final class _ExercisePage extends ConsumerWidget {
+enum _ExerciseMenu { addSet, reorderSets, removeExercise }
+
+final class _ExercisePage extends ConsumerStatefulWidget {
   final ExerciseBlock block;
   final Workout workout;
   final AppLocalizations l10n;
@@ -581,7 +706,41 @@ final class _ExercisePage extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ExercisePage> createState() => _ExercisePageState();
+}
+
+final class _ExercisePageState extends ConsumerState<_ExercisePage> {
+  // When true the set list becomes reorderable (drag handles) instead of
+  // tappable rows, so the running workout's sets can be rearranged.
+  bool _reorderingSets = false;
+
+  ExerciseBlock get block => widget.block;
+  Workout get workout => widget.workout;
+  AppLocalizations get l10n => widget.l10n;
+
+  // Field layout for the set editors comes from the exercise type, not the
+  // set's current values — value-less sets must still offer weight/reps (or
+  // duration for cardio). Falls back to value inference when the exercise row
+  // is unavailable.
+  bool get _isWeightlifting {
+    final exercise =
+        ref.read(exerciseByIdProvider(block.exercise.exerciseId)).value;
+    return exercise?.isWeightlifting ??
+        block.sets.any((s) => s.reps != null || s.weightKg != null);
+  }
+
+  bool get _isCardio {
+    final exercise =
+        ref.read(exerciseByIdProvider(block.exercise.exerciseId)).value;
+    return exercise?.isCardio ??
+        block.sets.any(
+          (s) => s.durationMinutes != null || s.distanceMeters != null,
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     final theme = Theme.of(context);
     final unit = ref.watch(settingsProvider).weightUnit;
     final exercise = ref
@@ -589,6 +748,8 @@ final class _ExercisePage extends ConsumerWidget {
         .value;
     final completedSets = block.sets.where((s) => s.isCompleted).length;
     final note = block.exercise.notes;
+    final isWeightlifting = _isWeightlifting;
+    final isCardio = _isCardio;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -652,6 +813,25 @@ final class _ExercisePage extends ConsumerWidget {
                           ),
                           onPressed: () => _editNote(context, ref),
                         ),
+                        PopupMenuButton<_ExerciseMenu>(
+                          onSelected: (value) =>
+                              _onMenu(context, ref, value),
+                          itemBuilder: (ctx) => [
+                            PopupMenuItem(
+                              value: _ExerciseMenu.addSet,
+                              child: Text(l10n.workoutFormAddSet),
+                            ),
+                            PopupMenuItem(
+                              value: _ExerciseMenu.reorderSets,
+                              enabled: block.sets.length > 1,
+                              child: Text(l10n.activeWorkoutReorderSets),
+                            ),
+                            PopupMenuItem(
+                              value: _ExerciseMenu.removeExercise,
+                              child: Text(l10n.workoutFormRemoveExercise),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                     if (note != null && note.trim().isNotEmpty) ...[
@@ -686,13 +866,15 @@ final class _ExercisePage extends ConsumerWidget {
               ),
               const Divider(height: 8),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  children: [
-                    _SetsProgressBar(
-                      completed: completedSets,
-                      total: block.sets.length,
-                    ),
+                child: _reorderingSets
+                    ? _buildSetReorderList(context, ref)
+                    : ListView(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        children: [
+                          _SetsProgressBar(
+                            completed: completedSets,
+                            total: block.sets.length,
+                          ),
                     for (final set in block.sets)
                       _SetRow(
                         set: set,
@@ -700,9 +882,11 @@ final class _ExercisePage extends ConsumerWidget {
                         l10n: l10n,
                         ref: ref,
                         unit: unit,
+                        isWeightlifting: isWeightlifting,
+                        isCardio: isCardio,
                       ),
-                  ],
-                ),
+                        ],
+                      ),
               ),
             ],
           ),
@@ -724,6 +908,102 @@ final class _ExercisePage extends ConsumerWidget {
           workoutExerciseId: block.exercise.id,
           notes: result.isEmpty ? null : result,
         );
+    ref.invalidate(workoutDetailProvider(workout.id));
+  }
+
+  Future<void> _onMenu(
+    BuildContext context,
+    WidgetRef ref,
+    _ExerciseMenu value,
+  ) async {
+    switch (value) {
+      case _ExerciseMenu.addSet:
+        await _addSet(context, ref);
+      case _ExerciseMenu.reorderSets:
+        setState(() => _reorderingSets = true);
+      case _ExerciseMenu.removeExercise:
+        await confirmDeleteWorkoutExercise(context, ref, block, workout, l10n);
+    }
+  }
+
+  /// Appends a planned set via the same editor used for existing sets.
+  Future<void> _addSet(BuildContext context, WidgetRef ref) async {
+    final unit = ref.read(settingsProvider).weightUnit;
+    final result = await showDialog<_PlannedSetResult>(
+      context: context,
+      builder: (ctx) => _EditPlannedSetDialog(
+        set: null,
+        unit: unit,
+        l10n: l10n,
+        isWeightlifting: _isWeightlifting,
+        isCardio: _isCardio,
+      ),
+    );
+    if (result == null || result.deleted || !context.mounted) return;
+    await ref
+        .read(workoutRepositoryProvider)
+        .insertPlannedSet(
+          workoutExerciseId: block.exercise.id,
+          reps: result.reps,
+          weightKg: result.weightKg,
+          restSeconds: result.restSeconds,
+          durationMinutes: result.durationMinutes,
+        );
+    ref.invalidate(workoutDetailProvider(workout.id));
+  }
+
+  /// Reorderable set list with a done affordance; persists the new order.
+  Widget _buildSetReorderList(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.activeWorkoutReorderSets,
+                style: theme.textTheme.labelLarge,
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.commonSave,
+              icon: const Icon(Icons.check),
+              onPressed: () => setState(() => _reorderingSets = false),
+            ),
+          ],
+        ),
+        Expanded(
+          child: ReorderableListView.builder(
+            itemCount: block.sets.length,
+            onReorder: (oldIndex, newIndex) =>
+                _moveSet(ref, oldIndex, newIndex),
+            itemBuilder: (context, index) {
+              final set = block.sets[index];
+              return ListTile(
+                key: ValueKey(set.id),
+                leading: ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(Icons.drag_handle),
+                ),
+                title: Text(
+                  l10n.exerciseDetailSetNumber(set.setNumber),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _moveSet(WidgetRef ref, int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) newIndex -= 1;
+    final ids = block.sets.map((s) => s.id).toList();
+    final moved = ids.removeAt(oldIndex);
+    ids.insert(newIndex, moved);
+    await ref.read(workoutRepositoryProvider).reorderSets(ids);
     ref.invalidate(workoutDetailProvider(workout.id));
   }
 
@@ -778,6 +1058,8 @@ final class _SetRow extends StatelessWidget {
   final AppLocalizations l10n;
   final WidgetRef ref;
   final WeightUnit unit;
+  final bool isWeightlifting;
+  final bool isCardio;
 
   const _SetRow({
     required this.set,
@@ -785,6 +1067,8 @@ final class _SetRow extends StatelessWidget {
     required this.l10n,
     required this.ref,
     required this.unit,
+    required this.isWeightlifting,
+    required this.isCardio,
   });
 
   @override
@@ -843,10 +1127,69 @@ final class _SetRow extends StatelessWidget {
                 ],
               ),
             ),
+            // Planned-values editor (works on pending and completed sets;
+            // actuals stay editable via the row tap).
+            IconButton(
+              tooltip: l10n.commonEdit,
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              onPressed: () => _editPlanned(context),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _editPlanned(BuildContext context) async {
+    final result = await showDialog<_PlannedSetResult>(
+      context: context,
+      builder: (ctx) => _EditPlannedSetDialog(
+        set: set,
+        unit: unit,
+        l10n: l10n,
+        isWeightlifting: isWeightlifting,
+        isCardio: isCardio,
+      ),
+    );
+    if (result == null || !context.mounted) return;
+    if (result.deleted) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.workoutFormRemoveSet),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(l10n.commonRemove),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+      final rest = ref.read(restTimerProvider);
+      if (rest.isResting && rest.setId == set.id) {
+        await ref.read(restTimerProvider.notifier).cancelRest();
+      }
+      await ref
+          .read(workoutRepositoryProvider)
+          .deletePlannedSet(set.id);
+      ref.invalidate(workoutDetailProvider(workout.id));
+      return;
+    }
+    await ref
+        .read(workoutRepositoryProvider)
+        .updatePlannedSet(
+          setId: set.id,
+          reps: result.reps,
+          weightKg: result.weightKg,
+          restSeconds: result.restSeconds,
+          durationMinutes: result.durationMinutes,
+        );
+    ref.invalidate(workoutDetailProvider(workout.id));
   }
 
   String _plannedString(BuildContext context) {
@@ -911,7 +1254,12 @@ final class _SetRow extends StatelessWidget {
   Future<void> _editActuals(BuildContext context) async {
     final result = await showDialog<_SetActuals>(
       context: context,
-      builder: (ctx) => _SetActualsDialog(set: set, l10n: l10n),
+      builder: (ctx) => _SetActualsDialog(
+        set: set,
+        l10n: l10n,
+        isWeightlifting: isWeightlifting,
+        isCardio: isCardio,
+      ),
     );
     if (result == null) return;
 
@@ -951,6 +1299,182 @@ final class _SetRow extends StatelessWidget {
   }
 }
 
+/// Editor result for planned values (weight in stored kg). [deleted] marks a
+/// delete request instead of a save; null fields mean "leave unchanged".
+final class _PlannedSetResult {
+  final int? reps;
+  final double? weightKg;
+  final int? durationMinutes;
+  final int? restSeconds;
+  final bool deleted;
+
+  const _PlannedSetResult({
+    this.reps,
+    this.weightKg,
+    this.durationMinutes,
+    this.restSeconds,
+    this.deleted = false,
+  });
+}
+
+/// Edits one set's planned values mid-workout (or seeds them when adding a
+/// set with [set] null). Field layout mirrors the workout form: weight/reps
+/// or duration plus rest in minutes; weight is entered in the display unit.
+final class _EditPlannedSetDialog extends StatefulWidget {
+  final ExerciseSet? set;
+  final WeightUnit unit;
+  final AppLocalizations l10n;
+  final bool isWeightlifting;
+  final bool isCardio;
+
+  const _EditPlannedSetDialog({
+    required this.set,
+    required this.unit,
+    required this.l10n,
+    required this.isWeightlifting,
+    required this.isCardio,
+  });
+
+  @override
+  State<_EditPlannedSetDialog> createState() => _EditPlannedSetDialogState();
+}
+
+final class _EditPlannedSetDialogState
+    extends State<_EditPlannedSetDialog> {
+  late final TextEditingController _repsCtrl;
+  late final TextEditingController _weightCtrl;
+  late final TextEditingController _durationCtrl;
+  late final TextEditingController _restCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.set;
+    _repsCtrl = TextEditingController(text: s?.reps?.toString() ?? '');
+    _weightCtrl = TextEditingController(
+      text: s?.weightKg == null
+          ? ''
+          : formatWeightValue(s!.weightKg!, widget.unit),
+    );
+    _durationCtrl = TextEditingController(
+      text: s?.durationMinutes?.toString() ?? '',
+    );
+    _restCtrl = TextEditingController(
+      text: s?.restSeconds == null ? '' : (s!.restSeconds! / 60).toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _repsCtrl.dispose();
+    _weightCtrl.dispose();
+    _durationCtrl.dispose();
+    _restCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    final s = widget.set;
+    // Never render a field-less dialog: when the exercise type is unknown
+    // for both modalities, default to weightlifting fields.
+    final isWeightlifting = widget.isWeightlifting || !widget.isCardio;
+    final isCardio = widget.isCardio;
+    return AlertDialog(
+      title: Text(
+        s == null
+            ? l10n.workoutFormAddSet
+            : l10n.activeWorkoutEditPlannedTitle,
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isWeightlifting) ...[
+              TextField(
+                controller: _weightCtrl,
+                decoration: InputDecoration(
+                  labelText:
+                      '${l10n.workoutFormWeightLabel} (${weightUnitLabel(widget.unit)})',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _repsCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.workoutFormRepsLabel,
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (isCardio) ...[
+              TextField(
+                controller: _durationCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.workoutFormDurationLabel,
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 8),
+            ],
+            TextField(
+              controller: _restCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.workoutFormRestLabel,
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        if (s != null)
+          TextButton(
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(const _PlannedSetResult(deleted: true)),
+            child: Text(l10n.commonRemove),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.commonCancel),
+        ),
+        FilledButton(onPressed: _save, child: Text(l10n.commonSave)),
+      ],
+    );
+  }
+
+  void _save() {
+    final weightValue = double.tryParse(_weightCtrl.text.trim());
+    Navigator.of(context).pop(
+      _PlannedSetResult(
+        reps: int.tryParse(_repsCtrl.text.trim()),
+        weightKg: weightValue == null
+            ? null
+            : weightToKg(weightValue, widget.unit),
+        durationMinutes: int.tryParse(_durationCtrl.text.trim()),
+        restSeconds: _parseRestMinutes(_restCtrl.text),
+      ),
+    );
+  }
+
+  /// Rest field is entered in minutes (decimals allowed), stored in seconds.
+  int? _parseRestMinutes(String v) {
+    final t = v.trim();
+    if (t.isEmpty) return null;
+    final minutes = double.tryParse(t);
+    if (minutes == null || minutes <= 0) return null;
+    return (minutes * 60).round();
+  }
+}
+
 final class _SetActuals {
   final int? reps;
   final double? weightKg;
@@ -967,7 +1491,14 @@ final class _SetActuals {
 final class _SetActualsDialog extends StatefulWidget {
   final ExerciseSet set;
   final AppLocalizations l10n;
-  const _SetActualsDialog({required this.set, required this.l10n});
+  final bool isWeightlifting;
+  final bool isCardio;
+  const _SetActualsDialog({
+    required this.set,
+    required this.l10n,
+    required this.isWeightlifting,
+    required this.isCardio,
+  });
 
   @override
   State<_SetActualsDialog> createState() => _SetActualsDialogState();
@@ -1010,8 +1541,8 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
     final s = widget.set;
-    final isWeightlifting = s.reps != null || s.weightKg != null;
-    final isCardio = s.durationMinutes != null || s.distanceMeters != null;
+    final isWeightlifting = widget.isWeightlifting || !widget.isCardio;
+    final isCardio = widget.isCardio;
 
     return AlertDialog(
       title: Text(l10n.workoutDetailSetActualsTitle(s.setNumber)),
@@ -1081,15 +1612,20 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
 final class _PlannedSetRow {
   final TextEditingController repsCtrl = TextEditingController();
   final TextEditingController weightCtrl = TextEditingController();
+  final TextEditingController durationCtrl = TextEditingController();
+  final TextEditingController restCtrl = TextEditingController();
 
   void dispose() {
     repsCtrl.dispose();
     weightCtrl.dispose();
+    durationCtrl.dispose();
+    restCtrl.dispose();
   }
 }
 
-/// Editor for one [_PlannedSetRow]: planned reps + weight, with an optional
-/// remove affordance (hidden when it is the only row).
+/// Editor for one [_PlannedSetRow]: planned reps + weight with an optional
+/// duration, plus rest in minutes (drives the auto-rest timer), and an
+/// optional remove affordance (hidden when it is the only row).
 final class _PlannedSetRowEditor extends StatelessWidget {
   final int index;
   final _PlannedSetRow row;
@@ -1107,37 +1643,70 @@ final class _PlannedSetRowEditor extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: TextField(
-              controller: row.repsCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.activeWorkoutPlannedRepsLabel,
-                isDense: true,
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: row.repsCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.activeWorkoutPlannedRepsLabel,
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
               ),
-              keyboardType: TextInputType.number,
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: row.weightCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.activeWorkoutPlannedWeightLabel,
+                    isDense: true,
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+              ),
+              if (onRemove != null)
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: l10n.commonRemove,
+                  onPressed: onRemove,
+                ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: row.weightCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.activeWorkoutPlannedWeightLabel,
-                isDense: true,
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: row.durationCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.workoutFormDurationLabel,
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
               ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: row.restCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.workoutFormRestLabel,
+                    isDense: true,
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
               ),
-            ),
+              if (onRemove != null) const SizedBox(width: 48),
+            ],
           ),
-          if (onRemove != null)
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline),
-              tooltip: l10n.commonRemove,
-              onPressed: onRemove,
-            ),
         ],
       ),
     );
@@ -1145,8 +1714,9 @@ final class _PlannedSetRowEditor extends StatelessWidget {
 }
 
 /// Dialog shown when adding an exercise to an active workout so the user can
-/// seed planned sets (reps + weight) up front. Returns `null` when cancelled or
-/// a non-empty list of [PlannedSet] (one per row) when confirmed.
+/// seed planned sets (reps + weight, optional duration + rest) up front.
+/// Returns `null` when cancelled or a non-empty list of [PlannedSet] (one per
+/// row) when confirmed.
 final class _PlannedSetsDialog extends StatefulWidget {
   final AppLocalizations l10n;
   final String exerciseName;
@@ -1204,8 +1774,12 @@ final class _PlannedSetsDialogState extends State<_PlannedSetsDialog> {
             final sets = _rows
                 .map(
                   (r) => PlannedSet(
-                    reps: int.tryParse(r.repsCtrl.text),
-                    weightKg: double.tryParse(r.weightCtrl.text),
+                    reps: int.tryParse(r.repsCtrl.text.trim()),
+                    weightKg: double.tryParse(r.weightCtrl.text.trim()),
+                    durationMinutes: int.tryParse(
+                      r.durationCtrl.text.trim(),
+                    ),
+                    restSeconds: _parseRestMinutes(r.restCtrl.text),
                   ),
                 )
                 .toList();
@@ -1215,6 +1789,15 @@ final class _PlannedSetsDialogState extends State<_PlannedSetsDialog> {
         ),
       ],
     );
+  }
+
+  /// Rest field is entered in minutes (decimals allowed), stored in seconds.
+  int? _parseRestMinutes(String v) {
+    final t = v.trim();
+    if (t.isEmpty) return null;
+    final minutes = double.tryParse(t);
+    if (minutes == null || minutes <= 0) return null;
+    return (minutes * 60).round();
   }
 }
 
