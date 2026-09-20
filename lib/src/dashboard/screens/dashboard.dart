@@ -181,13 +181,31 @@ final class _NutritionHeroCard extends ConsumerWidget {
             Row(children: [
               Icon(Icons.local_fire_department, size: 20, color: theme.colorScheme.primary),
               const SizedBox(width: FitFatTokens.spaceS),
-              Text(l10n.dashboardCalorieTarget, style: theme.textTheme.titleMedium),
-              if (meta.isEstimated) ...[
-                const SizedBox(width: FitFatTokens.spaceS),
-                Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(FitFatTokens.radiusFull)), child: Text('Estimated', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
-              ],
-              const Spacer(),
-              if (meta.isEstimated) TextButton(onPressed: () => context.go('/settings'), child: Text(l10n.dashboardCalorieTargetEmptyCta)),
+              Expanded(
+                child: Wrap(
+                  spacing: FitFatTokens.spaceS,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(l10n.dashboardCalorieTarget, style: theme.textTheme.titleMedium),
+                    if (meta.isEstimated)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(FitFatTokens.radiusFull),
+                        ),
+                        child: Text('Estimated', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      ),
+                  ],
+                ),
+              ),
+              if (meta.isEstimated)
+                TextButton(
+                  onPressed: () => context.go('/settings'),
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 8)),
+                  child: Text(l10n.dashboardCalorieTargetEmptyCta),
+                ),
             ]),
             const SizedBox(height: FitFatTokens.spaceM),
             consumedAsync.when(loading: () => const Center(child: CircularProgressIndicator()), error: (e, _) => Text(l10n.dashboardError('$e')), data: (consumed) => _CalorieRing(consumed: consumed, target: meta.target)),
