@@ -277,13 +277,26 @@ final class WorkoutRepository {
   }
 
   Future<void> complete(String id) async {
-    await (_database.update(
-      _database.workouts,
-    )..where((t) => t.id.equals(id))).write(
-      db.WorkoutsCompanion(
-        completedAt: Value(DateTime.now().millisecondsSinceEpoch),
-      ),
-    );
+    await _database.transaction(() async {
+      await (_database.update(
+        _database.workouts,
+      )..where((t) => t.id.equals(id))).write(
+        db.WorkoutsCompanion(
+          completedAt: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
+      // Mark the linked planner task (tasks.workout_id) as done so
+      // completing a workout clears its "do this workout" entry. No-op when
+      // the workout has no linked task.
+      await (_database.update(
+        _database.tasks,
+      )..where((t) => t.workoutId.equals(id))).write(
+        db.TasksCompanion(
+          done: const Value(1),
+          taskStatus: Value(TaskStatus.done.storage),
+        ),
+      );
+    });
   }
 
   // -- Sets -----------------------------------------------------------------

@@ -27,6 +27,7 @@ import '../exercise_filter.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+import '../../planner/providers/planner.dart';
 
 /// Guards against a second "Complete" tap racing the first (the teardown of
 /// the foreground notification service used to throw and abort completion).
@@ -408,10 +409,14 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
     _completingWorkout = true;
     try {
       // Persist completion first so the workout is stopped even if the
-      // best-effort notification teardown below fails.
+      // best-effort notification teardown below fails. complete() also marks
+      // the linked planner task done, so refresh planner timelines too.
       await ref.read(workoutRepositoryProvider).complete(id);
       ref.invalidate(workoutDetailProvider(id));
       ref.invalidate(workoutListProvider);
+      ref.invalidate(dayEntriesProvider);
+      ref.invalidate(rangeEntriesProvider);
+      ref.invalidate(monthEntriesProvider);
       invalidateDashboard(ref);
       if (context.mounted) {
         // Redirect to the completed workout's summary (T07). Done before the
@@ -1467,7 +1472,7 @@ final class _EditPlannedSetDialogState
 
   /// Rest field is entered in minutes (decimals allowed), stored in seconds.
   int? _parseRestMinutes(String v) {
-    final t = v.trim();
+    final t = v.trim().replaceAll(',', '.');
     if (t.isEmpty) return null;
     final minutes = double.tryParse(t);
     if (minutes == null || minutes <= 0) return null;
@@ -1608,12 +1613,26 @@ final class _SetActualsDialogState extends State<_SetActualsDialog> {
   }
 }
 
+/// Formats default rest seconds as minutes for the rest text field.
+/// Empty when no default is set (0), matching the workout form prefill.
+String _formatRestMinutes(int defaultRestSeconds) {
+  if (defaultRestSeconds <= 0) return '';
+  if (defaultRestSeconds % 60 == 0) return '${defaultRestSeconds ~/ 60}';
+  return (defaultRestSeconds / 60).toString();
+}
+
 /// A single planned-set row's text controllers (disposed with the dialog).
 final class _PlannedSetRow {
-  final TextEditingController repsCtrl = TextEditingController();
-  final TextEditingController weightCtrl = TextEditingController();
-  final TextEditingController durationCtrl = TextEditingController();
-  final TextEditingController restCtrl = TextEditingController();
+  final TextEditingController repsCtrl;
+  final TextEditingController weightCtrl;
+  final TextEditingController durationCtrl;
+  final TextEditingController restCtrl;
+
+  _PlannedSetRow({String initialRest = ''})
+    : repsCtrl = TextEditingController(),
+      weightCtrl = TextEditingController(),
+      durationCtrl = TextEditingController(),
+      restCtrl = TextEditingController(text: initialRest);
 
   void dispose() {
     repsCtrl.dispose();
@@ -1633,6 +1652,7 @@ final class _PlannedSetRowEditor extends StatelessWidget {
   final VoidCallback? onRemove;
 
   const _PlannedSetRowEditor({
+    super.key,
     required this.index,
     required this.row,
     required this.l10n,
@@ -1720,15 +1740,22 @@ final class _PlannedSetRowEditor extends StatelessWidget {
 final class _PlannedSetsDialog extends StatefulWidget {
   final AppLocalizations l10n;
   final String exerciseName;
+  final String initialRest;
 
-  const _PlannedSetsDialog({required this.l10n, required this.exerciseName});
+  const _PlannedSetsDialog({
+    required this.l10n,
+    required this.exerciseName,
+    this.initialRest = '',
+  });
 
   @override
   State<_PlannedSetsDialog> createState() => _PlannedSetsDialogState();
 }
 
 final class _PlannedSetsDialogState extends State<_PlannedSetsDialog> {
-  final List<_PlannedSetRow> _rows = [_PlannedSetRow()];
+  late final List<_PlannedSetRow> _rows = [
+    _PlannedSetRow(initialRest: widget.initialRest),
+  ];
 
   @override
   void dispose() {
@@ -1736,6 +1763,13 @@ final class _PlannedSetsDialogState extends State<_PlannedSetsDialog> {
       r.dispose();
     }
     super.dispose();
+  }
+
+  void _removeRow(int index) {
+    setState(() {
+      final removed = _rows.removeAt(index);
+      removed.dispose();
+    });
   }
 
   @override
@@ -1749,15 +1783,18 @@ final class _PlannedSetsDialogState extends State<_PlannedSetsDialog> {
           children: [
             for (var i = 0; i < _rows.length; i++)
               _PlannedSetRowEditor(
+                key: ValueKey(_rows[i]),
                 index: i,
                 row: _rows[i],
                 l10n: l10n,
-                onRemove: _rows.length > 1
-                    ? () => setState(() => _rows.removeAt(i))
-                    : null,
+                onRemove: _rows.length > 1 ? () => _removeRow(i) : null,
               ),
             TextButton.icon(
-              onPressed: () => setState(() => _rows.add(_PlannedSetRow())),
+              onPressed: () => setState(
+                () => _rows.add(
+                  _PlannedSetRow(initialRest: widget.initialRest),
+                ),
+              ),
               icon: const Icon(Icons.add),
               label: Text(l10n.workoutFormAddSet),
             ),
@@ -1793,7 +1830,7 @@ final class _PlannedSetsDialogState extends State<_PlannedSetsDialog> {
 
   /// Rest field is entered in minutes (decimals allowed), stored in seconds.
   int? _parseRestMinutes(String v) {
-    final t = v.trim();
+    final t = v.trim().replaceAll(',', '.');
     if (t.isEmpty) return null;
     final minutes = double.tryParse(t);
     if (minutes == null || minutes <= 0) return null;
@@ -2129,10 +2166,14 @@ final class _ActiveWorkoutExerciseSearchSheetState
   }
 
   Future<void> _addExercise(BuildContext context, Exercise exercise) async {
+    final defaultRest = ref.read(settingsProvider).defaultRestSeconds;
     final sets = await showDialog<List<PlannedSet>>(
       context: context,
-      builder: (ctx) =>
-          _PlannedSetsDialog(l10n: widget.l10n, exerciseName: exercise.name),
+      builder: (ctx) => _PlannedSetsDialog(
+        l10n: widget.l10n,
+        exerciseName: exercise.name,
+        initialRest: _formatRestMinutes(defaultRest),
+      ),
     );
     if (sets == null || !context.mounted) return;
     final repo = ref.read(workoutRepositoryProvider);
