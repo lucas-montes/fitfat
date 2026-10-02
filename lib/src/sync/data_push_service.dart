@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 
 import '../database/database_provider.dart' as db;
 import '../network/api_client.dart';
@@ -102,15 +103,19 @@ final class DataPushService {
         final data = r.toJson();
         final path = data['audioPath'] as String?;
         Uint8List? bytes;
+        String? filename;
         if (path != null && path.isNotEmpty) {
           final file = File(path);
-          if (await file.exists()) bytes = await file.readAsBytes();
+          if (await file.exists()) {
+            bytes = await file.readAsBytes();
+            filename = p.basename(path);
+          }
         }
         if (bytes != null) {
           await client.postMultipart(
             endpoint,
             fields: {'noteAudio': jsonEncode(data)},
-            files: {'audio': bytes},
+            files: {'audio': MultipartFilePart.fromFilename(filename!, bytes)},
             headers: authHeaders(apiKey),
           );
         } else {
@@ -188,17 +193,26 @@ final class DataPushService {
       var pushed = 0;
       for (final r in rows) {
         final data = r.toJson();
-        final path = data['picturePath'] as String?;
+        // The Drift column is `localPath`; reading `picturePath` (which never
+        // existed) meant the multipart branch below was unreachable and every
+        // receipt pushed as metadata-only JSON.
+        final path = data['localPath'] as String?;
         Uint8List? bytes;
+        String? filename;
         if (path != null && path.isNotEmpty) {
           final file = File(path);
-          if (await file.exists()) bytes = await file.readAsBytes();
+          if (await file.exists()) {
+            bytes = await file.readAsBytes();
+            filename = p.basename(path);
+          }
         }
         if (bytes != null) {
+          // Field names must match the server's `parse_multipart`, which looks
+          // for `receipt` (JSON) + `picture` (binary).
           await client.postMultipart(
             endpoint,
             fields: {'receipt': jsonEncode(data)},
-            files: {'picture': bytes},
+            files: {'picture': MultipartFilePart.fromFilename(filename!, bytes)},
             headers: authHeaders(apiKey),
           );
         } else {

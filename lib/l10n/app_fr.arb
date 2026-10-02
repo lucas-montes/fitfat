@@ -678,12 +678,14 @@
   "settingsExperimentBaselineLabel": "Référence des expériences (jours)",
   "settingsDefaultRestLabel": "Repos par défaut entre séries (min)",
   "settingsReminderLeadLabel": "Délai du rappel anticipé (min)",
+  "settingsUntimedReminderLabel": "Défaut sans heure (min)",
   "settingsApiTimeoutLabel": "Délai d'attente de synchronisation (s)",
   "settingsPlannerHorizonHelp": "Combien de jours à l'avance les tâches récurrentes sont pré-créées dans le planning.",
   "settingsCalorieAdjustmentHelp": "Kcal ajoutées (prise) ou retranchées (perte) à votre objectif calorique quotidien.",
   "settingsExperimentBaselineHelp": "Jours d'historique avant le début d'une expérience, servant de référence.",
   "settingsDefaultRestHelp": "Préremplit le champ de repos lors de l'ajout d'une nouvelle série. Laisser vide pour aucun.",
   "settingsReminderLeadHelp": "Minutes avant l'heure de début d'une tâche où la notification anticipée se déclenche.",
+  "settingsUntimedReminderHelp": "Heure des rappels des tâches sans heure, en minutes après minuit (540 = 09h00).",
   "settingsApiTimeoutHelp": "Durée pendant laquelle les requêtes de synchronisation attendent le serveur.",
   "settingsValueInvalid": "Saisissez un nombre valide positif ou nul.",
   "settingsResetDataSubtitle": "Effacer tous les entraînements, repas, mesures, tâches du plan et notes, et rétablir les réglages par défaut.",
@@ -1189,6 +1191,10 @@
   "receiptParsed": "Analysé",
   "@receiptParsed": {
     "description": "receiptParsed"
+  },
+  "receiptParsing": "Analyse du reçu en cours\u2026",
+  "@receiptParsing": {
+    "description": "Shown while the server-side OCR job is running on a receipt"
   },
   "receiptParsedData": "Données analysées",
   "@receiptParsedData": {

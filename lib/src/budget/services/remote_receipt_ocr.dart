@@ -13,14 +13,25 @@ final class ReceiptParseResult {
   const ReceiptParseResult(this.data);
 }
 
-/// Abstraction over a remote receipt-OCR backend. The app uploads a local
-/// image and later fetches the parsed result; the actual OCR runs server-side
-/// (never on device). Swapped for a real implementation later via the provider.
+/// Abstraction over the server-side receipt-OCR backend.
+///
+/// The app uploads a local image and later fetches the parsed result; the OCR
+/// itself always runs server-side, never on device. Two implementations exist:
+/// [HttpRemoteReceiptOcrService] (the real backend) and
+/// [MockRemoteReceiptOcrService] (offline/dev/tests). Wired in via
+/// `remoteReceiptOcrProvider`.
 abstract class RemoteReceiptOcrService {
-  /// Uploads the image at [localPath] and returns its remote identifier/path.
-  Future<ReceiptUploadResult> upload(String localPath);
+  /// Uploads the image at [localPath] for the receipt [receiptId] and returns
+  /// its server-side identifier.
+  ///
+  /// [receiptId] is sent so the row id stays identical on both sides — the
+  /// `GET /receipt-pictures?since=` pull depends on that.
+  Future<ReceiptUploadResult> upload(String receiptId, String localPath);
 
-  /// Fetches the parsed result for a previously uploaded receipt.
+  /// Waits for and returns the parsed result for a previously uploaded receipt.
+  ///
+  /// Implementations poll until the server reports a terminal state, so callers
+  /// can treat this as a single blocking call.
   Future<ReceiptParseResult> fetchParse(String remoteId);
 }
 
@@ -30,10 +41,10 @@ final class MockRemoteReceiptOcrService implements RemoteReceiptOcrService {
   final Random _random = Random();
 
   @override
-  Future<ReceiptUploadResult> upload(String localPath) async {
+  Future<ReceiptUploadResult> upload(String receiptId, String localPath) async {
     await Future<void>.delayed(const Duration(milliseconds: 600));
     final name = localPath.split('/').last;
-    return ReceiptUploadResult('remote://ocr/$name');
+    return ReceiptUploadResult(receiptId.isEmpty ? 'remote://ocr/$name' : receiptId);
   }
 
   @override

@@ -1381,6 +1381,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsReminderLeadLabel => 'Pre-reminder lead (min)';
 
   @override
+  String get settingsUntimedReminderLabel => 'Untimed default (min)';
+
+  @override
   String get settingsApiTimeoutLabel => 'Sync request timeout (s)';
 
   @override
@@ -1402,6 +1405,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsReminderLeadHelp =>
       'Minutes before a task\'s start time when the advance notification fires.';
+
+  @override
+  String get settingsUntimedReminderHelp =>
+      'Time of day for untimed task reminders, as minutes after midnight (540 = 09:00).';
 
   @override
   String get settingsApiTimeoutHelp =>
@@ -2131,6 +2138,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get receiptParsed => 'Parsed';
+
+  @override
+  String get receiptParsing => 'Parsing receipt…';
 
   @override
   String get receiptParsedData => 'Parsed data';

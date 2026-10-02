@@ -1,17 +1,22 @@
 import 'package:uuid/uuid.dart';
 
 /// Receipt upload / parse lifecycle.
-/// 0 local | 1 uploading | 2 uploaded | 3 error
+/// 0 local | 1 uploading | 2 uploaded | 3 error | 4 parsing
 enum ReceiptStatus {
   local,
   uploading,
   uploaded,
-  error;
+  error,
+  /// The image is on the server and a background OCR job is running. Added for
+  /// the server-side parse pipeline; the codes above keep their original values
+  /// so existing rows stay valid.
+  parsing;
 
   static ReceiptStatus fromCode(int code) => switch (code) {
     1 => ReceiptStatus.uploading,
     2 => ReceiptStatus.uploaded,
     3 => ReceiptStatus.error,
+    4 => ReceiptStatus.parsing,
     _ => ReceiptStatus.local,
   };
 
@@ -20,7 +25,13 @@ enum ReceiptStatus {
     ReceiptStatus.uploading => 1,
     ReceiptStatus.uploaded => 2,
     ReceiptStatus.error => 3,
+    ReceiptStatus.parsing => 4,
   };
+
+  /// True while work is still expected to complete on its own, so the UI shows
+  /// progress rather than offering a retry.
+  bool get isPending =>
+      this == ReceiptStatus.uploading || this == ReceiptStatus.parsing;
 }
 
 final class Receipt {

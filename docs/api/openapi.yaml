@@ -382,6 +382,121 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         default:
           $ref: '#/components/responses/Error'
+  /receipt-pictures/upload:
+    post:
+      tags: [Receipts]
+      operationId: uploadReceiptPicture
+      summary: Upload a receipt image and start the server-side OCR parse
+      description: >-
+        Persists the image under `<db_dir>/receipt_pictures/<id><ext>`, records
+        the receipt row, and spawns a background vision job. Responds `202`
+        immediately — the client then polls `/{id}/parse` until the status is
+        terminal (`parsed` or `error`). The parse runs server-side, never on the
+        device. `receiptId` is the client's own UUID so the row id matches on
+        both sides, which the `?since=` pull relies on; omit it to have the
+        server generate a UUID v7.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [picture]
+              properties:
+                receiptId:
+                  type: string
+                  description: Optional client-generated id. Must be path-safe.
+                picture:
+                  type: string
+                  format: binary
+                  description: Receipt image bytes (jpeg, png, webp, heic).
+      responses:
+        '202':
+          description: Image stored; parse started.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [parsing]
+                  server_time:
+                    type: integer
+                    format: int64
+        '400':
+          description: Missing/empty `picture`, or an unsafe `receiptId`.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: No vision-model key configured on the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /receipt-pictures/{id}/parse:
+    get:
+      tags: [Receipts]
+      operationId: getReceiptParse
+      summary: Poll the state of a receipt parse
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: >-
+            `pending`/`parsing` are transient; `parsed` and `error` are
+            terminal.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [pending, parsing, parsed, error]
+                  parsed:
+                    allOf:
+                      - $ref: '#/components/schemas/ParsedReceipt'
+                    nullable: true
+                  error:
+                    type: string
+                    nullable: true
+                  server_time:
+                    type: integer
+                    format: int64
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /receipt-pictures/{id}/picture:
+    get:
+      tags: [Receipts]
+      operationId: getReceiptPicture
+      summary: Download the stored receipt image
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Image bytes.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /backup:
     post:
       tags: [Backup]
@@ -1318,7 +1433,7 @@ components:
         uploadStatus:
           type: integer
           format: int64
-          description: 0 local | 1 uploading | 2 uploaded | 3 error
+          description: 0 local | 1 uploading | 2 uploaded | 3 error | 4 parsing
         parsed:
           type: boolean
         parsedJson:
@@ -1331,6 +1446,48 @@ components:
           type: integer
           format: int64
       required: [id, localPath, uploadStatus, parsed, createdAt]
+    ParsedReceipt:
+      type: object
+      description: >-
+        Structured output requested from the vision model. Field names are the
+        contract with `BudgetSyncService._createDraftFromParsed`, which reads
+        `merchant`, `total`, `currency` and `date`.
+      properties:
+        merchant:
+          type: string
+          description: Name of the store or merchant that issued the receipt.
+        date:
+          type: string
+          description: Purchase date-time as printed, e.g. '2026-08-15 14:30:00'.
+        total:
+          type: number
+          format: double
+        currency:
+          type: string
+          description: ISO 4217 code.
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              price:
+                type: number
+                format: double
+              currency:
+                type: string
+        discounts:
+          type: array
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              amount:
+                type: number
+                format: double
+      required: [merchant, date, total, currency, items, discounts]
     IngredientContribution:
       type: object
       properties:

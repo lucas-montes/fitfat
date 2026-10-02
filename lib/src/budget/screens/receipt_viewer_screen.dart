@@ -28,6 +28,8 @@ final class ReceiptViewerScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final receiptAsync = ref.watch(receiptByIdProvider(receiptId));
+    // Retry this receipt if its upload/parse never finished.
+    ref.watch(receiptResumeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -63,7 +65,24 @@ final class ReceiptViewerScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               _StatusRow(receipt: receipt),
               const SizedBox(height: 12),
-              if (!receipt.parsed ||
+              // While the server-side parse is running, show progress instead of
+              // offering to re-upload an image that is already there.
+              if (receipt.status == ReceiptStatus.parsing) ...[
+                Row(
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      l10n.receiptParsing,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ] else if (!receipt.parsed ||
                   receipt.status == ReceiptStatus.local ||
                   receipt.status == ReceiptStatus.error)
                 FilledButton.icon(
@@ -217,6 +236,7 @@ final class _StatusRow extends StatelessWidget {
     final color = switch (receipt.status) {
       ReceiptStatus.local => theme.colorScheme.outline,
       ReceiptStatus.uploading => theme.colorScheme.primary,
+      ReceiptStatus.parsing => theme.colorScheme.primary,
       ReceiptStatus.uploaded => Colors.green,
       ReceiptStatus.error => theme.colorScheme.error,
     };

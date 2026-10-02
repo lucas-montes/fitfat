@@ -2554,6 +2554,12 @@ abstract class AppLocalizations {
   /// **'Pre-reminder lead (min)'**
   String get settingsReminderLeadLabel;
 
+  /// No description provided for @settingsUntimedReminderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Untimed default (min)'**
+  String get settingsUntimedReminderLabel;
+
   /// No description provided for @settingsApiTimeoutLabel.
   ///
   /// In en, this message translates to:
@@ -2589,6 +2595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Minutes before a task\'s start time when the advance notification fires.'**
   String get settingsReminderLeadHelp;
+
+  /// No description provided for @settingsUntimedReminderHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Time of day for untimed task reminders, as minutes after midnight (540 = 09:00).'**
+  String get settingsUntimedReminderHelp;
 
   /// No description provided for @settingsApiTimeoutHelp.
   ///
@@ -3855,6 +3867,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Parsed'**
   String get receiptParsed;
+
+  /// Shown while the server-side OCR job is running on a receipt
+  ///
+  /// In en, this message translates to:
+  /// **'Parsing receipt…'**
+  String get receiptParsing;
 
   /// receiptParsedData
   ///

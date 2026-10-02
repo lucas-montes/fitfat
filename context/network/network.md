@@ -50,7 +50,7 @@ apiClientProvider.overrideWithValue(MockApiClient(onRequest: ...))
 - Expected payload: `{"base": "<base>", "rates": {"<CODE>": rate, …}}` at
   `{baseUrl}/rates?base=<base>`.
 - `MockRemoteFxService` is retained for tests.
-- `remoteReceiptOcrProvider` is still a mock (unchanged).
+- `remoteReceiptOcrProvider` returns `HttpRemoteReceiptOcrService` (real backend). It POSTs the image to `/receipt-pictures/upload` and polls `/receipt-pictures/{id}/parse` until the status is terminal. `MockRemoteReceiptOcrService` is retained for tests/offline dev.
 
 ## Tests
 

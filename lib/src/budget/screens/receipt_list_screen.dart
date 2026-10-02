@@ -25,6 +25,8 @@ final class ReceiptListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final receiptsAsync = ref.watch(receiptListProvider);
+    // Retry any receipt whose upload/parse was cut short last time.
+    ref.watch(receiptResumeProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.receiptListAppBar)),

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 
 import '../settings/providers/settings.dart';
 
@@ -11,6 +12,52 @@ import '../settings/providers/settings.dart';
 /// tests). Higher-level services (FX rates, future sync) depend on this so
 /// they can be unit-tested without a socket; swap it in `ProviderScope` via
 /// [apiClientProvider].
+/// A file part of a `multipart/form-data` request.
+///
+/// [filename] and [contentType] matter to the server: without a filename the
+/// part is indistinguishable from a plain text field, and most multipart
+/// parsers (including axum's) use the declared type to build a file.
+class MultipartFilePart {
+  const MultipartFilePart({
+    required this.bytes,
+    required this.filename,
+    this.contentType,
+  });
+
+  final Uint8List bytes;
+  final String filename;
+  final String? contentType;
+
+  /// Best-effort content type from [filename]'s extension.
+  factory MultipartFilePart.fromFilename(String filename, Uint8List bytes) {
+    return MultipartFilePart(
+      bytes: bytes,
+      filename: filename,
+      contentType: contentTypeForExtension(filename),
+    );
+  }
+}
+
+/// Maps a filename extension to a MIME type, defaulting to
+/// `application/octet-stream` for unknown ones.
+String? contentTypeForExtension(String filename) {
+  final dot = filename.lastIndexOf('.');
+  if (dot < 0 || dot == filename.length - 1) return null;
+  return switch (filename.substring(dot + 1).toLowerCase()) {
+    'jpg' || 'jpeg' => 'image/jpeg',
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    'heic' => 'image/heic',
+    'heif' => 'image/heif',
+    'gif' => 'image/gif',
+    'mp3' => 'audio/mpeg',
+    'm4a' || 'aac' => 'audio/mp4',
+    'mp4' => 'video/mp4',
+    'json' => 'application/json',
+    _ => 'application/octet-stream',
+  };
+}
+
 abstract class ApiClient {
   Future<Object?> getJson(
     String path, {
@@ -32,7 +79,7 @@ abstract class ApiClient {
   Future<Object?> postMultipart(
     String path, {
     required Map<String, String> fields,
-    required Map<String, Uint8List> files,
+    required Map<String, MultipartFilePart> files,
     Map<String, String>? headers,
   });
 
@@ -173,13 +220,24 @@ final class HttpApiClient implements ApiClient {
   Future<Object?> postMultipart(
     String path, {
     required Map<String, String> fields,
-    required Map<String, Uint8List> files,
+    required Map<String, MultipartFilePart> files,
     Map<String, String>? headers,
   }) async {
     final request = http.MultipartRequest('POST', _uri(path));
     request.headers.addAll({..._headers, ...?headers});
     fields.forEach((k, v) => request.fields[k] = v);
-    files.forEach((k, v) => request.files.add(http.MultipartFile.fromBytes(k, v)));
+    files.forEach((k, part) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          k,
+          part.bytes,
+          filename: part.filename,
+          contentType: part.contentType == null
+              ? null
+              : MediaType.parse(part.contentType!),
+        ),
+      );
+    });
     final streamed = await request.send().timeout(timeout);
     final response = await http.Response.fromStream(streamed);
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -280,10 +338,21 @@ final class MockApiClient implements ApiClient {
   Future<Object?> postMultipart(
     String path, {
     required Map<String, String> fields,
-    required Map<String, Uint8List> files,
+    required Map<String, MultipartFilePart> files,
     Map<String, String>? headers,
   }) =>
-      _handle('POST', path, {'fields': fields, 'files': files.keys.toList()});
+      _handle('POST', path, {
+        'fields': fields,
+        // Surface the part metadata too, so tests can assert filenames and
+        // content types without inspecting a real socket.
+        'files': files.map(
+          (k, part) => MapEntry(k, {
+            'filename': part.filename,
+            'contentType': part.contentType,
+            'length': part.bytes.length,
+          }),
+        ),
+      });
 }
 
 /// Standard `Bearer` auth header for sync/export/import requests.

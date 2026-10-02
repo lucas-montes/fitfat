@@ -1391,6 +1391,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsReminderLeadLabel => 'Délai du rappel anticipé (min)';
 
   @override
+  String get settingsUntimedReminderLabel => 'Défaut sans heure (min)';
+
+  @override
   String get settingsApiTimeoutLabel =>
       'Délai d\'attente de synchronisation (s)';
 
@@ -1413,6 +1416,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsReminderLeadHelp =>
       'Minutes avant l\'heure de début d\'une tâche où la notification anticipée se déclenche.';
+
+  @override
+  String get settingsUntimedReminderHelp =>
+      'Heure des rappels des tâches sans heure, en minutes après minuit (540 = 09h00).';
 
   @override
   String get settingsApiTimeoutHelp =>
@@ -2153,6 +2160,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get receiptParsed => 'Analysé';
+
+  @override
+  String get receiptParsing => 'Analyse du reçu en cours…';
 
   @override
   String get receiptParsedData => 'Données analysées';

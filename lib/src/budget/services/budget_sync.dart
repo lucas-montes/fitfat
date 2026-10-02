@@ -41,13 +41,15 @@ final class BudgetSyncService {
     );
 
     try {
-      final uploaded = await _ocr.upload(receipt.localPath);
+      final uploaded = await _ocr.upload(receiptId, receipt.localPath);
+      // The server answers 202 immediately and parses in the background, so the
+      // row is `parsing` until the poll returns.
       await (_database.update(
         _database.receipts,
       )..where((t) => t.id.equals(receiptId))).write(
         db.ReceiptsCompanion(
           remotePath: Value(uploaded.remotePath),
-          uploadStatus: Value(ReceiptStatus.uploaded.code),
+          uploadStatus: Value(ReceiptStatus.parsing.code),
         ),
       );
 
@@ -66,6 +68,7 @@ final class BudgetSyncService {
         db.ReceiptsCompanion(
           parsed: const Value(true),
           parsedJson: Value(jsonString),
+          uploadStatus: Value(ReceiptStatus.uploaded.code),
         ),
       );
 
