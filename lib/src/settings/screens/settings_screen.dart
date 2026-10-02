@@ -1,14 +1,18 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import '../../sync/screens/sync_hub_screen.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../../l10n/app_localizations.dart';
 import '../../database/database_provider.dart';
@@ -499,6 +503,20 @@ final class _NotificationsScreenState extends ConsumerState<_NotificationsScreen
       await ref.read(taskReminderSchedulerProvider).cancelAll();
     } else {
       final l10n = AppLocalizations.of(context)!;
+      // Timezone must be ready before any zonedSchedule (startup skips init
+      // when the toggle was off, so toggle-on is the first schedule).
+      try {
+        tzdata.initializeTimeZones();
+        try {
+          tz.setLocalLocation(
+            tz.getLocation(
+              (await FlutterTimezone.getLocalTimezone()).identifier,
+            ),
+          );
+        } catch (_) {
+          tz.setLocalLocation(tz.getLocation('UTC'));
+        }
+      } catch (_) {}
       await ref
           .read(taskReminderSchedulerProvider)
           .reschedulePending(
@@ -753,6 +771,7 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
   late final TextEditingController _horizonCtrl;
   late final TextEditingController _restCtrl;
   late final TextEditingController _leadCtrl;
+  late final TextEditingController _untimedCtrl;
   late final TextEditingController _baselineCtrl;
 
   @override
@@ -770,6 +789,9 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
     _leadCtrl = TextEditingController(
       text: settings.reminderLeadMinutes.toString(),
     );
+    _untimedCtrl = TextEditingController(
+      text: settings.untimedReminderMinutes.toString(),
+    );
     _baselineCtrl = TextEditingController(
       text: settings.experimentBaselineDays.toString(),
     );
@@ -780,8 +802,26 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
     _horizonCtrl.dispose();
     _restCtrl.dispose();
     _leadCtrl.dispose();
+    _untimedCtrl.dispose();
     _baselineCtrl.dispose();
     super.dispose();
+  }
+
+  /// Persists the untimed default then re-times future untimed reminders
+  /// (silent bulk reschedule, never prompts).
+  Future<void> _saveUntimedDefault(
+    SettingsNotifier notifier,
+    AppLocalizations l10n,
+  ) async {
+    await notifier.setUntimedReminderMinutes(int.parse(_untimedCtrl.text));
+    if (!ref.read(settingsProvider).plannerNotifications) return;
+    try {
+      await ref.read(taskReminderSchedulerProvider).reschedulePending(
+            repository: ref.read(taskRepositoryProvider),
+            dueSoonText: l10n.taskReminderDueSoon,
+            dueNowText: l10n.taskReminderDueNow,
+          );
+    } catch (_) {}
   }
 
   @override
@@ -826,6 +866,16 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
               validator: (v) => _validateNonNegative(context, v),
               onSave: () => _saveIfValid(_leadCtrl, () {
                 notifier.setReminderLeadMinutes(int.parse(_leadCtrl.text));
+              }),
+            ),
+            _settingsField(
+              context: context,
+              controller: _untimedCtrl,
+              label: l10n.settingsUntimedReminderLabel,
+              help: l10n.settingsUntimedReminderHelp,
+              validator: (v) => _validateNonNegative(context, v),
+              onSave: () => _saveIfValid(_untimedCtrl, () {
+                unawaited(_saveUntimedDefault(notifier, l10n));
               }),
             ),
             _settingsField(

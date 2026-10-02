@@ -28,8 +28,43 @@ void main() {
       expect(times.first, DateTime(2026, 8, 11, 14, 30));
     });
 
-    test('returns empty when there is no start time', () {
+    test('returns empty when there is no start time (past default)', () {
+      // Default 09:00 is already past at 10:00 same day.
       expect(plannerReminderTimes(item(), now: now), isEmpty);
+    });
+
+    test('schedules untimed task at the settings default', () {
+      final tomorrow = Task(
+        id: 'task-untimed',
+        day: DateTime(2026, 8, 12),
+        title: 'Anytime errand',
+        done: false,
+        sortOrder: 0,
+        createdAt: DateTime(2026, 8, 10, 8, 0),
+      );
+      final times = plannerReminderTimes(tomorrow, now: now);
+      expect(times, hasLength(2));
+      expect(times.last, DateTime(2026, 8, 12, 9, 0));
+      expect(times.first, DateTime(2026, 8, 12, 8, 30));
+    });
+
+    test('returns empty for untimed when the default is disabled', () {
+      final tomorrow = Task(
+        id: 'task-untimed',
+        day: DateTime(2026, 8, 12),
+        title: 'Anytime errand',
+        done: false,
+        sortOrder: 0,
+        createdAt: DateTime(2026, 8, 10, 8, 0),
+      );
+      expect(
+        plannerReminderTimes(
+          tomorrow,
+          now: now,
+          untimedDefaultMinutes: null,
+        ),
+        isEmpty,
+      );
     });
 
     test('never schedules for a done task', () {
@@ -40,6 +75,20 @@ void main() {
         ),
         isEmpty,
       );
+    });
+
+    test('never schedules for a cancelled task', () {
+      final cancelled = Task(
+        id: 'task-cancelled',
+        day: DateTime(2026, 8, 11),
+        title: 'Cancelled run',
+        done: false,
+        taskStatus: TaskStatus.cancelled,
+        sortOrder: 0,
+        startTimeMinutes: 15 * 60,
+        createdAt: DateTime(2026, 8, 10, 8, 0),
+      );
+      expect(plannerReminderTimes(cancelled, now: now), isEmpty);
     });
 
     test('never schedules a past-due task', () {

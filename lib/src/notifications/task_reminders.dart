@@ -43,20 +43,28 @@ int _stableHash(String value) {
   return hash;
 }
 
+/// Default time of day for untimed task reminders, as minutes after midnight
+/// (09:00). Overridden by the `untimedReminderMinutes` setting in the
+/// scheduler path; the pure helper keeps a default for testability.
+const defaultUntimedReminderMinutes = 540;
+
 /// The absolute local wall-clock instants at which reminders for [item]
 /// should fire — `[pre-reminder, start-time]` when both are in the future,
 /// `[start-time]` when only the start time is (the pre-reminder would
-/// fall in the past), or empty when the task is done, has no start time, or is
-/// already past due (past-due tasks never schedule). The reminder anchors to
-/// the task's own day plus its start time-of-day. [lead] is how long before
-/// the start time the advance reminder fires.
+/// fall in the past), or empty when the task is done/cancelled or already
+/// past due (past-due tasks never schedule). Timed tasks anchor to their
+/// start time; untimed tasks anchor to [untimedDefaultMinutes] (null disables
+/// untimed reminders). The reminder anchors to the task's own day plus its
+/// time-of-day. [lead] is how long before the start time the advance reminder
+/// fires.
 List<DateTime> plannerReminderTimes(
   Task item, {
   DateTime? now,
   Duration lead = const Duration(minutes: preReminderMinutes),
+  int? untimedDefaultMinutes = defaultUntimedReminderMinutes,
 }) {
-  final minutes = item.startTimeMinutes;
-  if (minutes == null || item.done) return const [];
+  final minutes = item.startTimeMinutes ?? untimedDefaultMinutes;
+  if (minutes == null || item.done || item.isCancelled) return const [];
 
   final day = item.day;
   final dueAt = DateTime(
@@ -107,37 +115,78 @@ final class TaskReminderScheduler {
   /// happens in context; startup rescheduling never prompts.
   Future<void> requestPermissions() async {
     if (kIsWeb) return;
-    if (defaultTargetPlatform == TargetPlatform.android) {
+    try {
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        await _plugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.requestNotificationsPermission();
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await _plugin
+            .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin
+            >()
+            ?.requestPermissions(alert: true, badge: true, sound: true);
+      }
+    } catch (_) {}
+  }
+
+  /// Best-effort exact-alarm permission request (Android 12+,
+  /// `SCHEDULE_EXACT_ALARM`, declared in the manifest). Called from
+  /// user-initiated scheduling flows only; startup/resume/toggle resyncs never
+  /// prompt. When denied or revoked, scheduling silently falls back to
+  /// inexact — no banner, per user decision.
+  Future<void> requestExactAlarmsPermission() async {
+    if (kIsWeb) return;
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    try {
       await _plugin
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >()
-          ?.requestNotificationsPermission();
-    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-      await _plugin
+          ?.requestExactAlarmsPermission();
+    } catch (_) {}
+  }
+
+  /// Resolves the Android schedule mode: exact when the OS granted
+  /// `SCHEDULE_EXACT_ALARM`, silent inexact fallback otherwise (denied,
+  /// revoked, non-Android, or check failure). Never throws.
+  Future<AndroidScheduleMode> _resolveScheduleMode() async {
+    try {
+      final granted = await _plugin
           .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin
+            AndroidFlutterLocalNotificationsPlugin
           >()
-          ?.requestPermissions(alert: true, badge: true, sound: true);
-    }
+          ?.canScheduleExactNotifications();
+      if (granted == true) return AndroidScheduleMode.exactAllowWhileIdle;
+    } catch (_) {}
+    return AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
   /// Schedules (or replaces in place) the due-time + pre-reminder for [item].
-  /// A no-op when the task is done, has no due date/time, or is already past
-  /// due. [dueSoonText]/[dueNowText] are the localized notification bodies.
+  /// Timed tasks anchor to their start time; untimed tasks anchor to the
+  /// `untimedReminderMinutes` setting (default 09:00). A no-op when the task
+  /// is done/cancelled or already past due. [dueSoonText]/[dueNowText] are
+  /// the localized notification bodies.
   Future<void> scheduleForItem(
     Task item, {
     required String dueSoonText,
     required String dueNowText,
   }) async {
-    // The pre-reminder lead is user-configurable; read it straight from prefs
-    // since the scheduler only receives SharedPreferences.
+    // The pre-reminder lead and untimed default are user-configurable; read
+    // them straight from prefs since the scheduler only receives
+    // SharedPreferences.
     final leadMinutes =
         _prefs.getInt(SettingsNotifier.reminderLeadMinutesKey) ??
         preReminderMinutes;
+    final untimedDefault =
+        _prefs.getInt(SettingsNotifier.untimedReminderMinutesKey) ??
+        defaultUntimedReminderMinutes;
     final times = plannerReminderTimes(
       item,
       lead: Duration(minutes: leadMinutes),
+      untimedDefaultMinutes: untimedDefault,
     );
     if (times.isEmpty) return;
 
@@ -153,6 +202,8 @@ final class TaskReminderScheduler {
       iOS: DarwinNotificationDetails(),
     );
 
+    // Exact when granted, silent inexact fallback otherwise (denied/revoked).
+    final mode = await _resolveScheduleMode();
     // The due-time reminder is always the last (and only when pre-reminder
     // falls in the past) scheduled instant.
     await _plugin.zonedSchedule(
@@ -161,7 +212,7 @@ final class TaskReminderScheduler {
       dueNowText,
       tzDue,
       details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: mode,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       payload: plannerReminderPayload,
@@ -173,7 +224,7 @@ final class TaskReminderScheduler {
         dueSoonText,
         tz.TZDateTime.from(times.first, tz.local),
         details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: mode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: plannerReminderPayload,

@@ -26,8 +26,11 @@ final class TaskRepository {
     return _attachTags(rows.map(_toDomain).toList());
   }
 
-  /// Pending tasks with a start time, on or after [from] (inclusive), ordered
-  /// by day then start time. Used by the dashboard's upcoming timed-tasks card.
+  /// Pending tasks on or after [from] (inclusive), ordered by day then start
+  /// time (untimed sort after timed of the same day). Feeds the reminder
+  /// scheduler: timed tasks anchor to their start time, untimed to the
+  /// `untimedReminderMinutes` setting; past-due/done/cancelled are skipped by
+  /// `plannerReminderTimes` at schedule time.
   Future<List<Task>> getUpcomingWithStartTime(DateTime from) async {
     final fromStart = _startOfDay(from);
     final rows =
@@ -38,7 +41,6 @@ final class TaskRepository {
                     // Cancelled tasks are neither upcoming nor copyable.
                     (t.taskStatus.isNull() |
                         t.taskStatus.isNotIn([TaskStatus.cancelled.storage])) &
-                    t.startTimeMinutes.isNotNull() &
                     t.date.isBiggerOrEqualValue(
                       fromStart.millisecondsSinceEpoch,
                     ),

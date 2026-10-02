@@ -69,9 +69,8 @@ final class _PlannerItemDetailScreenState
     if (!ref.read(settingsProvider).plannerNotifications) return;
     final l10n = AppLocalizations.of(context)!;
     final scheduler = ref.read(taskReminderSchedulerProvider);
-    if (item.startTimeMinutes != null) {
-      await scheduler.requestPermissions();
-    }
+    await scheduler.requestPermissions();
+    await scheduler.requestExactAlarmsPermission();
     await scheduler.scheduleForItem(
       item,
       dueSoonText: l10n.taskReminderDueSoon,

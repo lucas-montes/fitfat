@@ -126,6 +126,9 @@ final class SettingsState {
   // Minutes before a task's start time at which the advance reminder fires
   // (default 30).
   final int reminderLeadMinutes;
+  // Time of day for untimed task reminders, as minutes after midnight
+  // (default 540 = 09:00).
+  final int untimedReminderMinutes;
   // Sync HTTP request timeout in seconds (default 15).
   final int apiTimeoutSeconds;
   final CascadeDeleteBehavior cascadeDeleteBehavior;
@@ -172,6 +175,7 @@ final class SettingsState {
     this.experimentBaselineDays = 14,
     this.defaultRestSeconds = 0,
     this.reminderLeadMinutes = 30,
+    this.untimedReminderMinutes = 540,
     this.apiTimeoutSeconds = 15,
     this.cascadeDeleteBehavior = CascadeDeleteBehavior.ask,
     this.hasSeenWizard = false,
@@ -237,6 +241,7 @@ final class SettingsState {
     int? experimentBaselineDays,
     int? defaultRestSeconds,
     int? reminderLeadMinutes,
+    int? untimedReminderMinutes,
     int? apiTimeoutSeconds,
     CascadeDeleteBehavior? cascadeDeleteBehavior,
     bool? hasSeenWizard,
@@ -291,6 +296,8 @@ final class SettingsState {
         experimentBaselineDays ?? this.experimentBaselineDays,
     defaultRestSeconds: defaultRestSeconds ?? this.defaultRestSeconds,
     reminderLeadMinutes: reminderLeadMinutes ?? this.reminderLeadMinutes,
+    untimedReminderMinutes:
+        untimedReminderMinutes ?? this.untimedReminderMinutes,
     apiTimeoutSeconds: apiTimeoutSeconds ?? this.apiTimeoutSeconds,
     cascadeDeleteBehavior: cascadeDeleteBehavior ?? this.cascadeDeleteBehavior,
     hasSeenWizard: hasSeenWizard ?? this.hasSeenWizard,
@@ -345,6 +352,10 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   /// Public so the reminder scheduler can read the lead time directly from
   /// prefs (it receives SharedPreferences, not the settings notifier).
   static const reminderLeadMinutesKey = 'settings_reminder_lead_minutes';
+
+  /// Public so the reminder scheduler can read the untimed default directly
+  /// from prefs. Minutes after midnight, default 540 (09:00).
+  static const untimedReminderMinutesKey = 'settings_untimed_reminder_minutes';
   static const _apiTimeoutSecondsKey = 'settings_api_timeout_seconds';
 
   @override
@@ -406,6 +417,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       experimentBaselineDays: prefs.getInt(_experimentBaselineDaysKey) ?? 14,
       defaultRestSeconds: prefs.getInt(_defaultRestSecondsKey) ?? 0,
       reminderLeadMinutes: prefs.getInt(reminderLeadMinutesKey) ?? 30,
+      untimedReminderMinutes: prefs.getInt(untimedReminderMinutesKey) ?? 540,
       apiTimeoutSeconds: prefs.getInt(_apiTimeoutSecondsKey) ?? 15,
       cascadeDeleteBehavior: _cascadeFromName(
         prefs.getString(_cascadeDeleteKey),
@@ -845,6 +857,14 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setInt(reminderLeadMinutesKey, clamped);
     state = state.copyWith(reminderLeadMinutes: clamped);
+  }
+
+  Future<void> setUntimedReminderMinutes(int minutes) async {
+    final clamped = minutes < 0 ? 0 : (minutes > 1439 ? 1439 : minutes);
+    await ref
+        .read(sharedPreferencesProvider)
+        .setInt(untimedReminderMinutesKey, clamped);
+    state = state.copyWith(untimedReminderMinutes: clamped);
   }
 
   Future<void> setApiTimeoutSeconds(int seconds) async {

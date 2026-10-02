@@ -127,11 +127,11 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     if (!ref.read(settingsProvider).plannerNotifications) return;
     final l10n = AppLocalizations.of(context)!;
     final scheduler = ref.read(taskReminderSchedulerProvider);
-    // Prompt for the notification permission only when the task actually gets
-    // a reminder (user-initiated flow), never on bulk startup reschedules.
-    if (item.startTimeMinutes != null) {
-      await scheduler.requestPermissions();
-    }
+    // Prompt for notification + exact-alarm permissions on user-initiated
+    // scheduling (timed and untimed alike), never on bulk startup reschedules.
+    // Exact denial silently falls back to inexact.
+    await scheduler.requestPermissions();
+    await scheduler.requestExactAlarmsPermission();
     await scheduler.scheduleForItem(
       item,
       dueSoonText: l10n.taskReminderDueSoon,

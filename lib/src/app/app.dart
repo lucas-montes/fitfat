@@ -138,28 +138,25 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
   /// Moves past pending carry-over tasks to today (others become cancelled)
   /// and refreshes the affected providers. Runs on cold start and on every
   /// resume so a day that passes while the app sits in the background is
-  /// still rolled over.
-  Future<void> _rollover() async {
+  /// still rolled over. Returns the affected row count so callers can chain
+  /// (e.g. reschedule reminders after the move).
+  Future<int> _rollover() async {
+    int moved;
     try {
-      final moved = await ref.read(taskRepositoryProvider).rolloverPastTasks();
-      if (moved == 0 || !mounted) return;
+      moved = await ref.read(taskRepositoryProvider).rolloverPastTasks();
+      if (moved == 0 || !mounted) return moved;
     } catch (_) {
-      return; // Rollover must never block startup.
+      return 0; // Rollover must never block startup.
     }
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    ref.invalidate(dayEntriesProvider(today));
-    final weekStartUtc = DateTime.utc(today.year, today.month, today.day)
-        .subtract(Duration(days: today.weekday - 1));
-    final weekStart = DateTime(
-      weekStartUtc.year,
-      weekStartUtc.month,
-      weekStartUtc.day,
-    );
-    final weekEnd = weekStart.add(const Duration(days: 6));
-    ref.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
-    ref.invalidate(monthEntriesProvider(DateTime(today.year, today.month, 1)));
+    // Invalidate every planner family (not just today): moved rows leave
+    // source-day keys stale, and already-built PageView pages keep snapshots
+    // until a manual create/edit. Dropping all instances forces Day/Week/Month
+    // to reload without user action.
+    ref.invalidate(dayEntriesProvider);
+    ref.invalidate(rangeEntriesProvider);
+    ref.invalidate(monthEntriesProvider);
     invalidateDashboard(ref);
+    return moved;
   }
 
   Future<void> _run() async {
@@ -212,6 +209,11 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
       l10n.restAlarmBodyWithDuration('{duration}'),
     );
 
+    // Rollover first: carried tasks must already be on today before the
+    // reminder reschedule queries upcoming rows (T01 repro: reschedule-before-
+    // rollover missed yesterday timed tasks, leaving them without reminders).
+    await _rollover();
+
     final settings = ref.read(settingsProvider);
     final goals = await ref.read(goalRepositoryProvider).getGoals();
     final needsTimezone =
@@ -257,14 +259,35 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
       }
     }
 
-    await _rollover();
     unawaited(_refreshSelectiveCatalogs());
+  }
+
+  /// Resume resync: rollover may have moved timed tasks to today; re-schedule
+  /// their reminders (silent, never prompts — permission only happens on
+  /// user-initiated add/edit). No-op when the toggle is off or l10n is gone.
+  Future<void> _resyncTaskRemindersAfterRollover() async {
+    if (!mounted) return;
+    if (!ref.read(settingsProvider).plannerNotifications) return;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return;
+    try {
+      await _initTimeZone();
+      await ref
+          .read(taskReminderSchedulerProvider)
+          .reschedulePending(
+            repository: ref.read(taskRepositoryProvider),
+            dueSoonText: l10n.taskReminderDueSoon,
+            dueNowText: l10n.taskReminderDueNow,
+          );
+    } catch (_) {
+      return; // Reminder resync must never break resume.
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(_rollover());
+      unawaited(_rollover().then((_) => _resyncTaskRemindersAfterRollover()));
       unawaited(_refreshSelectiveCatalogs());
     }
   }
