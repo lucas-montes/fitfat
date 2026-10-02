@@ -223,7 +223,13 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
       }
     }
 
+    // Never shrink for the keyboard: every editor on this screen (note,
+    // set, info) is a modal dialog, so resizing the exercise pager for the
+    // keyboard only squeezes the Card Column until its RenderFlex overflows
+    // (sub-pixel overflow when writing a note). The dialogs handle insets
+    // themselves.
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(workout.name),
         leading: _activeWorkoutBackButton(context),
@@ -856,6 +862,10 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
                               Expanded(
                                 child: Text(
                                   note.trim(),
+                                  // Keep the header bounded: an uncapped note
+                                  // grows the Card Column until it overflows.
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
@@ -2880,14 +2890,18 @@ final class _NoteDialogState extends State<_NoteDialog> {
     final l10n = widget.l10n;
     return AlertDialog(
       title: Text(l10n.activeWorkoutExerciseNotesDialogTitle),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        maxLines: 4,
-        minLines: 2,
-        textCapitalization: TextCapitalization.sentences,
-        decoration: InputDecoration(
-          hintText: l10n.activeWorkoutExerciseNotesHint,
+      // Scrollable so the autofocus keyboard can't push the dialog itself
+      // into a RenderFlex overflow on short viewports.
+      content: SingleChildScrollView(
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          maxLines: 4,
+          minLines: 2,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            hintText: l10n.activeWorkoutExerciseNotesHint,
+          ),
         ),
       ),
       actions: [
