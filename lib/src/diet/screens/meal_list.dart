@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/meal_entry.dart';
-import '../../models/meal_ingredient.dart';
+import '../../models/meal_food.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/haptics.dart';
 import '../../ui/tokens.dart';
@@ -50,7 +50,8 @@ final class MealListScreen extends ConsumerWidget {
               )
             : _buildMealList(context, ref, meals, l10n),
       ),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => _openForm(context, ref, null),
         child: const Icon(Icons.add),
       ),
@@ -247,7 +248,7 @@ final class _MealTileState extends State<_MealTile> {
           onExpansionChanged: (expanded) =>
               setState(() => _expanded = expanded),
           children: meal.items
-              .map((item) => _IngredientItemTile(item: item, l10n: l10n))
+              .map((item) => _FoodItemTile(item: item, l10n: l10n))
               .toList(),
         ),
       ),
@@ -255,18 +256,18 @@ final class _MealTileState extends State<_MealTile> {
   }
 }
 
-final class _IngredientItemTile extends StatelessWidget {
-  final MealIngredient item;
+final class _FoodItemTile extends StatelessWidget {
+  final MealFood item;
   final AppLocalizations l10n;
-  const _IngredientItemTile({required this.item, required this.l10n});
+  const _FoodItemTile({required this.item, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      title: Text(item.ingredientName),
+      title: Text(item.foodName),
       subtitle: Text(
         l10n.mealListMacroFormat(
-          item.grams.toStringAsFixed(0),
+          item.amount.toStringAsFixed(0),
           item.calories.toStringAsFixed(0),
           item.protein.toStringAsFixed(1),
           item.carbs.toStringAsFixed(1),

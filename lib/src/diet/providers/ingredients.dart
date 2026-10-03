@@ -2,10 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../database/database_provider.dart';
 import '../../models/ingredient.dart';
+
 import '../../models/ingredient_picture.dart';
 import '../../models/ingredient_price.dart';
 import '../../models/store.dart';
 import '../repositories/ingredient_repository.dart';
+import 'foods.dart';
 
 // ---------------------------------------------------------------------------
 // Repository provider
@@ -49,3 +51,14 @@ final ingredientPricesProvider = FutureProvider.autoDispose
     .family<List<(IngredientPrice, Store)>, String>((ref, ingredientId) async {
       return ref.watch(ingredientRepositoryProvider).getPrices(ingredientId);
     });
+
+/// Invalidates the ingredient surface after an edit.
+///
+/// Also invalidates the foods list: foods resolve their nutrition **live** from
+/// ingredient rows, so a macro or name change has to reach the foods list and
+/// the meal picker too.
+void invalidateIngredients(WidgetRef ref) {
+  ref.invalidate(ingredientListProvider);
+  ref.invalidate(foodListProvider);
+  ref.invalidate(foodCombinationProvider);
+}

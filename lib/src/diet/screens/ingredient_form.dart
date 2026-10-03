@@ -527,10 +527,7 @@ final class _IngredientFormScreenState
       final picked = source == ImageSource.gallery
           ? await _picker.pickMultiImage(imageQuality: 85)
           : [
-              await _picker.pickImage(
-                source: source,
-                imageQuality: 85,
-              ),
+              await _picker.pickImage(source: source, imageQuality: 85),
             ].whereType<XFile>().toList();
       if (picked.isEmpty || !mounted) return;
       final dir = await getApplicationDocumentsDirectory();
@@ -626,10 +623,7 @@ final class _IngredientFormScreenState
           final item = result.item;
           if (item != null) {
             _applyMap(item, overwriteName: false);
-            showTopBanner(
-              context,
-              message: '${item['name'] ?? code}',
-            );
+            showTopBanner(context, message: '${item['name'] ?? code}');
           }
         case LookupSource.openfoodfacts:
           final draft = result.draft;
@@ -657,9 +651,9 @@ final class _IngredientFormScreenState
   }
 
   void _applyMap(Map<String, Object?> map, {bool overwriteName = true}) {
-    String? s(Object? v) => v is String && v.trim().isNotEmpty ? v.trim() : null;
-    String fmt(Object? v) =>
-        v is num ? (v.toDouble().toStringAsFixed(1)) : '';
+    String? s(Object? v) =>
+        v is String && v.trim().isNotEmpty ? v.trim() : null;
+    String fmt(Object? v) => v is num ? (v.toDouble().toStringAsFixed(1)) : '';
     void fillIfEmpty(TextEditingController c, String v) {
       if (v.isEmpty) return;
       if (c.text.trim().isEmpty) c.text = v;
@@ -693,9 +687,7 @@ final class _IngredientFormScreenState
           children: [
             ListTile(
               title: Text('${draft['name'] ?? code}'),
-              subtitle: Text(
-                '${draft['brand'] ?? ''}\n$openfoodUrl',
-              ),
+              subtitle: Text('${draft['brand'] ?? ''}\n$openfoodUrl'),
             ),
             ListTile(
               leading: const Icon(Icons.check),

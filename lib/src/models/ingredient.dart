@@ -16,6 +16,7 @@ final class Ingredient {
   // Shopping metadata (v20): brand name + barcode as printed on the package.
   final String? brand;
   final String? barcode;
+
   final DateTime createdAt;
 
   const Ingredient({

@@ -80,7 +80,9 @@ tuned dark surfaces — both ≥ 4.5:1. "Pending"/neutral statuses use M3 `color
 
 - **StatusBadge** — `StatusBadge(label, color)`: pill text on a 15% alpha tint of the status color,
   `AnimatedContainer` color flip over `motionFast`. Used by `workout_list.dart` and
-  `workout_detail.dart` (status pills); pending neutral = `colorScheme.outline`.
+  `workout_detail.dart` (status pills); pending neutral = `colorScheme.outline`. Also used outside
+  status semantics for informational tags — the ingredient list marks composites with
+  `colorScheme.primary` — so a bare icon is not the fallback for "this row is special".
 - **EmptyState** — `EmptyState(icon, title, description, {ctaLabel, onCtaPressed})`: tonal-circle
   icon + title + description + optional primary CTA. Since T03 it is the empty state for every list
   screen — ingredients (`soup_kitchen_outlined`), meals (`restaurant_outlined`), exercises
@@ -101,6 +103,21 @@ banners may ever appear** — deletion-undo banners (Undo action, generous ~3.5 
 banners (`errorWithMessage`, form validations, blocked-action warnings). All success/confirmation
 noise was removed; the default duration is 2 s. Do not add new confirmation banners without a
 reason.
+
+## Pinned summary rows (`Column` + `Expanded`, not slivers)
+
+When a screen needs a derived readout that stays visible while a long form scrolls, put it in a
+`Column` above `Expanded(<scrollable>)` rather than a `SliverPersistentHeader` or
+`SliverAppBar.bottom`. Both sliver options take a **fixed extent**, but these readouts vary (an
+optional line appears or disappears) and scale with the user's text size — so the extent has to be
+hand-computed and can be wrong. A `Column` sibling takes its height from the child, so both cases
+just work, `Form`/`validate()` stay untouched, and there is no `NestedScrollView` to fight the
+keyboard.
+
+Reference implementation: the composite-ingredient nutrition band in `diet/screens/ingredient_form.dart`.
+
+**Cost:** the row permanently occupies vertical space. Keep it to ~2–3 short lines and prefer
+compact text over a tall `Card` (which adds 16px of padding on every side).
 
 ## Number formatting (`lib/src/ui/format.dart`)
 
@@ -146,6 +163,19 @@ platform does not support haptics (T04).
   T01); status colors come from `FitFatColors`, neutrals from `colorScheme`.
 - No manual `padLeft(2, '0')` date/time formatting outside `date_formats.dart` (grep-clean, verified
   in T02); calendar dates and clock times render per locale via `DateFormats`.
+- **No hardcoded user-facing strings.** Every label goes through an ARB key in all three locales,
+  and every number through `formatDecimal` / `formatFxRate` rather than `toStringAsFixed`. Composite
+  work regressed both (bare `'P '`/`'F '`/`'Na '` prefixes and a `'—'` placeholder) and had to be
+  corrected — `ingredientNutrientSodium/Fiber/Sugar` already covered the nutriments in fr/es.
+- **No dead ARB keys.** A key created but never rendered is a defect, not a harmless extra (the
+  ingredient-metadata plan recorded "dead keys avoided" as a convention). Sweep after any l10n
+  change — `commonDelete` was literally rendering as the tooltip "Common Delete", and four composite
+  keys had zero call sites:
+  ```bash
+  for k in $(grep -o '"\(ingredient\|common\)[A-Za-z]*"' lib/l10n/app_en.arb | tr -d '"' | sort -u); do
+    grep -rq "\.$k\b" lib/src --include=*.dart || echo "DEAD: $k"
+  done
+  ```
 
 See also: [architecture.md](../architecture.md), [overview.md](../overview.md),
 [context-map.md](../context-map.md).

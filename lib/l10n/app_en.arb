@@ -431,6 +431,18 @@
   "mealFormIngredients": "Ingredients",
   "mealFormNoIngredients": "No ingredients available. Add some first.",
   "mealFormAddIngredient": "Add at least one ingredient with grams",
+  "mealFormFoods": "Foods",
+  "mealFormNoFoods": "No foods available yet. Add ingredients first — each one becomes a food you can log on its own.",
+  "mealFormAddFood": "Add at least one food with grams",
+  "mealFormFoodUnresolved": "One of the selected foods has ingredients that are missing, so its nutrition cannot be calculated. Sync or add those ingredients first.",
+  "mealFormFoodCalories": "{portion} kcal for this portion · {per100g}/100g",
+  "@mealFormFoodCalories": {
+    "placeholders": {
+      "portion": { "type": "String" },
+      "per100g": { "type": "String" }
+    }
+  },
+  "mealFormTotals": "Meal total",
   "mealFormGramsLabel": "g",
   "mealFormSave": "Save",
   "mealFormSaving": "Saving…",

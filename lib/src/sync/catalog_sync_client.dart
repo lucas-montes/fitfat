@@ -40,7 +40,8 @@ final class CatalogSyncClient {
     String endpoint = exerciseCatalogPath,
   }) async {
     final payload = await _api.getJson(endpoint, headers: authHeaders(apiKey));
-    if (payload is! Map) throw StateError('Unexpected exercise catalog payload');
+    if (payload is! Map)
+      throw StateError('Unexpected exercise catalog payload');
     final entries = <ExerciseCatalogEntry>[];
     final items = payload['items'];
     if (items is List) {
@@ -119,13 +120,19 @@ final class CatalogSyncClient {
         if (!mediaOk) mediaFailed = true;
       } on ApiException catch (e) {
         if (e.statusCode == 404) continue;
-        return SyncResult(error: 'Sync failed (HTTP ${e.statusCode})', updated: updated);
+        return SyncResult(
+          error: 'Sync failed (HTTP ${e.statusCode})',
+          updated: updated,
+        );
       } catch (e) {
         return SyncResult(error: e.toString(), updated: updated);
       }
     }
     if (mediaFailed) {
-      return SyncResult(error: 'Exercise media download failed', updated: updated);
+      return SyncResult(
+        error: 'Exercise media download failed',
+        updated: updated,
+      );
     }
     return SyncResult(updated: updated);
   }
@@ -150,7 +157,10 @@ final class CatalogSyncClient {
         if (await client.upsertAggregate(raw, now)) updated++;
       } on ApiException catch (e) {
         if (e.statusCode == 404) continue;
-        return SyncResult(error: 'Sync failed (HTTP ${e.statusCode})', updated: updated);
+        return SyncResult(
+          error: 'Sync failed (HTTP ${e.statusCode})',
+          updated: updated,
+        );
       } catch (e) {
         return SyncResult(error: e.toString(), updated: updated);
       }

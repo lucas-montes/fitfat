@@ -16,7 +16,8 @@ final class StoreManagerScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.storeManagerTitle)),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => _addStore(context, ref),
         child: const Icon(Icons.add),
       ),

@@ -1,6 +1,6 @@
 # FitFat — Database Schema
 
-19 tables defined in `lib/src/database/tables.dart`. Drift generates row classes, companions, and table info classes using default singularization (no `@DataClass` annotations).
+20 tables defined in `lib/src/database/tables.dart`. Drift generates row classes, companions, and table info classes using default singularization (no `@DataClass` annotations).
 
 ## Diet tables
 
@@ -43,6 +43,23 @@ Multiple pictures per ingredient (like receipts; v20).
 | image_path | TEXT | local filesystem path (`<docs>/ingredient_pictures/<uuid>.ext`) |
 | sort_order | INTEGER | gallery ordering; renumbered densely on reorder |
 | created_at | INTEGER | epoch milliseconds |
+
+### ingredient_components
+
+Components of a composite (recipe) ingredient, each with a gram amount (v33). Mirrors `meal_ingredients`: a self-referencing junction carrying `grams`.
+
+Rows exist **only** for composite ingredients — an atomic ingredient has none, which is what `Ingredient.isComposite` is derived from.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | UUID v7, regenerated on every save (the recipe is replaced wholesale) |
+| ingredient_id | TEXT FK → ingredients | `ON DELETE CASCADE` — removing the composite drops its recipe |
+| component_id | TEXT FK → ingredients | **no cascade** — a part is never implicitly detached; must be atomic (recipes are flat) |
+| grams | REAL | amount used in the recipe |
+| sort_order | INTEGER | display order, renumbered densely; indexed with `ingredient_id`/`component_id` via `idx_ingredient_components_*` (idempotent, `beforeOpen`) |
+| created_at | INTEGER | epoch milliseconds |
+
+The composite's per-100g macros are **materialized** into its own `ingredients` row by `saveComponents`/`clearComponents`, which is what lets `meal_ingredients` keep joining the single `ingredients` row for macros regardless of atomic/composite.
 
 ### ingredient_prices
 
@@ -226,7 +243,7 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
 - All primary keys are UUID v7 strings (generated via the `uuid` package).
 - Timestamps are stored as epoch milliseconds (integers) and converted to `DateTime` in domain models.
 - `exercise_type` is stored as plain text rather than an enum to keep the schema simple.
-- Schema version is 23. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `beforeOpen` idempotently creates the barcode and routine lookup indexes; `onUpgrade` runs stepwise:
+- Schema version is 33. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `beforeOpen` idempotently creates the barcode, routine and recipe-component lookup indexes; `onUpgrade` runs stepwise:
   - v1 → v2: creates `planner_items`.
   - v2 → v3: adds nullable `sodium_per100g`/`fiber_per100g`/`sugar_per100g` to `ingredients`, adds nullable `due_date` to `planner_items`, creates `body_metrics`, and deletes orphaned `meal_ingredients` rows (rows whose `meal_id` has no matching `meals` row — leftover from the pre-T02 new-meal bug). No data is dropped.
   - v3 → v4: adds `is_archived` to `ingredients` (`NOT NULL DEFAULT 0` — ingredient soft-archive). No data is dropped.
@@ -253,6 +270,7 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
   - v24 → v30: (undocumented here — see `lib/src/database/app_database.dart` `onUpgrade`: tasks/goals/tags/templates/link-table + note-audio steps).
   - v30 → v31: creates the selective-sync catalog tables — `exercise_catalog` (`id`, `name`) and `ingredient_catalog` (`id`, `name`, nullable `barcode`). New tables only — no existing-table changes. No data is dropped.
   - v31 → v32: adds `has_image` (`NOT NULL DEFAULT 0`) to `exercise_catalog` so the picker can skip thumbnail fetches for imageless rows. Additive column only — no data is dropped.
+  - v32 → v33: creates `ingredient_components` for composite (recipe) ingredients. New table only — atomic ingredients are unaffected and keep their stored macros. No data is dropped.
 
 ## Selective-sync catalog tables (v31)
 

@@ -41,7 +41,7 @@ Table names match `context/database/schema.md` exactly.
 |-----------|--------|-------|
 | workout | `workouts`, `workout_exercises`, `exercise_sets` | synced as one atomic unit keyed by `workouts.id`; includes v21 `routine_id` lineage when it lands |
 | exercise | `exercises` | user edits + user-created rows; see OQ-5 for locked catalog rows |
-| ingredient | `ingredients`, `ingredient_pictures`, `ingredient_prices` | pictures sync metadata only (§2.2); prices reference `stores.id` |
+| ingredient | `ingredients`, `ingredient_pictures`, `ingredient_prices`, `ingredient_components` | pictures sync metadata only (§2.2); prices reference `stores.id`; `ingredient_components` is the recipe of a composite ingredient, applied with replace semantics (§11.3) |
 | store | `stores` | create + rename only (no delete exists) |
 | meal | `meals`, `meal_ingredients` | atomic per meal |
 | planner_item | `planner_items` | recurrence JSON round-trips verbatim |
@@ -365,21 +365,47 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
    image/video means deleting the exercise (or flipping its flag) and
    re-advertising it, until a future contract version adds content hashing.
 
- Ingredients return full item rows with **nested** `pictures[]` and `prices[]`,
- plus a top-level `stores[]` array the items reference:
+ Ingredients return full item rows with **nested** `pictures[]`, `prices[]` and
+ `components[]`, plus a top-level `stores[]` array the items reference:
 
  ```json
  {
    "items": [ {
      "id": "id-1", "name": "Oats", "updated_at": 1755850000000, "…",
      "pictures": [ { "id": "p-1", "ingredientId": "id-1", "imagePath": "…", "sortOrder": 0, "createdAt": 1755850000000 } ],
-     "prices": [ { "id": "pr-1", "ingredientId": "id-1", "storeId": "s-1", "price": 2.4, "currencyCode": "EUR", "packageGrams": 500, "recordedAt": 1755850000000 } ]
+     "prices": [ { "id": "pr-1", "ingredientId": "id-1", "storeId": "s-1", "price": 2.4, "currencyCode": "EUR", "packageGrams": 500, "recordedAt": 1755850000000 } ],
+     "components": [ { "id": "c-1", "ingredientId": "id-1", "componentId": "id-2", "grams": 80, "sortOrder": 0, "createdAt": 1755850000000 } ]
    } ],
    "stores": [ { "id": "s-1", "name": "Carrefour", "updated_at": 1755850000000 } ],
    "deleted": [ "id-9" ],
    "server_time": 1755850000000
  }
  ```
+
+ **`components[]` (composite/recipe ingredients, 2026-10-03):** present and empty
+ for atomic ingredients. A composite's per-100g macros are **materialized** into
+ its own `ingredients` row by the client, so the aggregate is self-sufficient —
+ a consumer never has to expand the recipe to get the nutrition, which is why
+ this rides the existing `/ingredients` endpoint instead of a new one.
+
+ - **No component tombstones.** The nested list is the *whole* recipe and both
+   sides apply it with replace semantics, so removing a part travels by
+   omission. The client's `replaceComponentsFromServer` only replaces when the
+   `components` key is present; an absent key (older rows) leaves the local
+   recipe alone, while an explicit `[]` clears it.
+ - **Server macros win.** `replaceComponentsFromServer` deliberately does *not*
+   re-derive macros from the pulled rows — the pushed aggregate already carries
+   the server's values.
+ - **Unsynced parts are skipped, not fatal.** If a component's ingredient is not
+   present locally, the row is dropped: the composite still lands with correct
+   macros, just not expandable. The server does the same on push, because
+   `PRAGMA foreign_keys` is ON and push unwraps — an unknown part would otherwise
+   500 the whole request.
+ - **Recipes are flat.** Only atomic ingredients are valid components; enforced
+   on the client, on the server's push, and by the desktop commands.
+ - `GET /ingredients/catalog` stays minimal — `{id, name, barcode?}`, no
+   `components` key. `GET /ingredients/item/:id` **does** include `components`
+   (macros already ride the row) but still omits `prices`/`stores`.
 
  Currencies are pulled per **day** (a full day's rate table), so each request
  carries `date=YYYY-MM-DD` and rows are keyed by that date:
@@ -414,11 +440,11 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
    flag for the exact `(code, baseCode, date)` row, so a hand-edited rate is
    never overwritten by a sync. Snapshots are daily, so `rateDate` history is
    retained.
- - **Ingredient push:** `POST /ingredients` (Bearer) with the full ingredient
-   plus nested `pictures[]` and `prices[]`; idempotent by ingredient `id` so
-   re-pushing the same ingredient is safe. Triggered from the ingredient detail
-   screen ("Push to shared catalogue" action). This is how a user contributes
-   a new ingredient to the shared pool.
+- **Ingredient push:** `POST /ingredients` (Bearer) with the full ingredient
+  plus nested `pictures[]`, `prices[]` and `components[]`; idempotent by
+  ingredient `id` so re-pushing the same ingredient is safe. Triggered from the
+  ingredient detail screen ("Push to shared catalogue" action). This is how a
+  user contributes a new ingredient to the shared pool.
  - **Idempotency:** safe to replay — content resources re-request only `since`
    the last persisted cursor; currencies re-request the current `date`.
  - **Errors:** network/HTTP failures return a `SyncResult.error`; the UI shows a

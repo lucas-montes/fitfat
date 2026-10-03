@@ -58,17 +58,14 @@ final class Experiment {
   }) => Experiment(
     id: id ?? this.id,
     name: name ?? this.name,
-    purpose: identical(purpose, _unset)
-        ? this.purpose
-        : purpose as String?,
+    purpose: identical(purpose, _unset) ? this.purpose : purpose as String?,
     startDate: startDate ?? this.startDate,
     endDate: endDate ?? this.endDate,
     status: status ?? this.status,
     categories: categories ?? this.categories,
     tags: identical(tags, _unset) ? this.tags : tags as List<String>?,
     reminderEnabled: reminderEnabled ?? this.reminderEnabled,
-    reminderTimeMinutes:
-        reminderTimeMinutes ?? this.reminderTimeMinutes,
+    reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
     createdAt: createdAt ?? this.createdAt,
   );
 }

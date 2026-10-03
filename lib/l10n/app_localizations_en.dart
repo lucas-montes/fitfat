@@ -860,6 +860,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mealFormAddIngredient => 'Add at least one ingredient with grams';
 
   @override
+  String get mealFormFoods => 'Foods';
+
+  @override
+  String get mealFormNoFoods =>
+      'No foods available yet. Add ingredients first — each one becomes a food you can log on its own.';
+
+  @override
+  String get mealFormAddFood => 'Add at least one food with grams';
+
+  @override
+  String get mealFormFoodUnresolved =>
+      'One of the selected foods has ingredients that are missing, so its nutrition cannot be calculated. Sync or add those ingredients first.';
+
+  @override
+  String mealFormFoodCalories(String portion, String per100g) {
+    return '$portion kcal for this portion · $per100g/100g';
+  }
+
+  @override
+  String get mealFormTotals => 'Meal total';
+
+  @override
   String get mealFormGramsLabel => 'g';
 
   @override

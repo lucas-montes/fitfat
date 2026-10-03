@@ -20,7 +20,11 @@ final class IngredientCatalogEntry {
   final String id;
   final String name;
   final String? barcode;
-  const IngredientCatalogEntry({required this.id, required this.name, this.barcode});
+  const IngredientCatalogEntry({
+    required this.id,
+    required this.name,
+    this.barcode,
+  });
 }
 
 final class ExerciseCatalogRepository {
@@ -49,18 +53,14 @@ final class ExerciseCatalogRepository {
   Future<void> upsertAll(List<ExerciseCatalogEntry> entries) async {
     await _database.batch((b) {
       b.deleteAll(_database.exerciseCatalog);
-      b.insertAll(
-        _database.exerciseCatalog,
-        [
-          for (final e in entries)
-            db.ExerciseCatalogCompanion.insert(
-              id: e.id,
-              name: e.name,
-              hasImage: Value(e.hasImage),
-            ),
-        ],
-        mode: InsertMode.insertOrReplace,
-      );
+      b.insertAll(_database.exerciseCatalog, [
+        for (final e in entries)
+          db.ExerciseCatalogCompanion.insert(
+            id: e.id,
+            name: e.name,
+            hasImage: Value(e.hasImage),
+          ),
+      ], mode: InsertMode.insertOrReplace);
     });
   }
 
@@ -102,7 +102,13 @@ final class IngredientCatalogRepository {
             ]))
             .get();
     return rows
-        .map((r) => IngredientCatalogEntry(id: r.id, name: r.name, barcode: r.barcode))
+        .map(
+          (r) => IngredientCatalogEntry(
+            id: r.id,
+            name: r.name,
+            barcode: r.barcode,
+          ),
+        )
         .toList();
   }
 
@@ -110,18 +116,14 @@ final class IngredientCatalogRepository {
   Future<void> upsertAll(List<IngredientCatalogEntry> entries) async {
     await _database.batch((b) {
       b.deleteAll(_database.ingredientCatalog);
-      b.insertAll(
-        _database.ingredientCatalog,
-        [
-          for (final e in entries)
-            db.IngredientCatalogCompanion.insert(
-              id: e.id,
-              name: e.name,
-              barcode: Value(e.barcode),
-            ),
-        ],
-        mode: InsertMode.insertOrReplace,
-      );
+      b.insertAll(_database.ingredientCatalog, [
+        for (final e in entries)
+          db.IngredientCatalogCompanion.insert(
+            id: e.id,
+            name: e.name,
+            barcode: Value(e.barcode),
+          ),
+      ], mode: InsertMode.insertOrReplace);
     });
   }
 
@@ -159,10 +161,13 @@ final class IngredientCatalogRepository {
 String _escapeLike(String input) =>
     input.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
 
-final exerciseCatalogRepositoryProvider = Provider<ExerciseCatalogRepository>((ref) {
+final exerciseCatalogRepositoryProvider = Provider<ExerciseCatalogRepository>((
+  ref,
+) {
   return ExerciseCatalogRepository(ref.watch(databaseProvider));
 });
 
-final ingredientCatalogRepositoryProvider = Provider<IngredientCatalogRepository>((ref) {
-  return IngredientCatalogRepository(ref.watch(databaseProvider));
-});
+final ingredientCatalogRepositoryProvider =
+    Provider<IngredientCatalogRepository>((ref) {
+      return IngredientCatalogRepository(ref.watch(databaseProvider));
+    });

@@ -85,11 +85,89 @@ class Meals extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class MealIngredients extends Table {
+// ---------------------------------------------------------------------------
+// Diet tables (v34) — the meal → food → ingredient chain
+//
+// Ingredients own every nutrient fact and all product metadata; foods are a
+// composition (name + amounts); meals are occurrences. Nutrition is resolved by
+// walking down, so nothing is duplicated between the layers:
+//
+//   log time: food_per100g = Σ(ing.per100g × fi.amount) / Σ(fi.amount)
+//             portion      = food_per100g × mf.amount / 100
+//
+// A food with exactly one component needs no special case: with one term the
+// ratio collapses to that ingredient's per-100g values for any amount.
+// ---------------------------------------------------------------------------
+
+/// A loggable thing: 1..N ingredients with amounts.
+///
+/// Every ingredient gets an **auto-created 1:1 food** so a meal can reference
+/// ingredients uniformly. Derived foods use the id `'i:' || ingredientId`, which
+/// makes `isDerived` a prefix test with no extra query, and their `name` +
+/// `archived_at` are mirrors of the ingredient row written only by
+/// `IngredientRepository` — the single writer that keeps the pair in sync.
+class Foods extends Table {
   TextColumn get id => text()();
-  TextColumn get mealId => text().references(Meals, #id)();
+  TextColumn get name => text()();
+  IntColumn get createdAt => integer()();
+
+  /// Soft-delete marker; NULL means active. A timestamp rather than a bool
+  /// because `meal_foods` references this row: a food can only ever be hidden,
+  /// never removed out from under a past meal.
+  IntColumn? get archivedAt => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Composition of a food: which ingredients, and how much of each.
+///
+/// Composite primary key — an ingredient appears at most once in a food, so a
+/// duplicate is structurally impossible. No `sort_order`/`created_at`: the
+/// composition is displayed alphabetically by ingredient name, which falls out
+/// of the join the readers already do.
+///
+/// `ingredient_id` deliberately has **no CASCADE**: a part is never implicitly
+/// detached, only an explicit edit removes it. (Recipes are structurally flat —
+/// this column references `ingredients`, which carry no composition.)
+class FoodIngredients extends Table {
+  TextColumn get foodId =>
+      text().references(Foods, #id, onDelete: KeyAction.cascade)();
   TextColumn get ingredientId => text().references(Ingredients, #id)();
-  RealColumn get grams => real()();
+
+  /// Grams of this ingredient in the food.
+  RealColumn get amount => real()();
+
+  @override
+  Set<Column> get primaryKey => {foodId, ingredientId};
+}
+
+/// One food logged in a meal, with the amount eaten.
+///
+/// The macro columns are a **snapshot of this portion**, resolved from
+/// `foods → food_ingredients → ingredients` at log time and stored verbatim, so
+/// reading a meal is join-free and editing an ingredient later does not rewrite
+/// history. Numbers are frozen; the food's *name* is not (it stays live).
+///
+/// Changing only [grams] rescales these by `newAmount / oldAmount`, which is
+/// exact because the derivation is linear in the amount.
+class MealFoods extends Table {
+  TextColumn get id => text()();
+  TextColumn get mealId =>
+      text().references(Meals, #id, onDelete: KeyAction.cascade)();
+  TextColumn get foodId => text().references(Foods, #id)();
+
+  /// Grams of this food eaten in the meal.
+  RealColumn get amount => real()();
+
+  // Snapshot of the portion — read verbatim, never re-derived.
+  RealColumn get calories => real()();
+  RealColumn get protein => real()();
+  RealColumn get carbs => real()();
+  RealColumn get fat => real()();
+  RealColumn? get sodium => real().nullable()(); // mg
+  RealColumn? get fiber => real().nullable()(); // g
+  RealColumn? get sugar => real().nullable()(); // g
 
   @override
   Set<Column> get primaryKey => {id};
@@ -543,8 +621,10 @@ class NoteWorkouts extends Table {
 
 /// Priorities attached to a task (many tags per task, a tag across many tasks).
 class TaskTags extends Table {
-  TextColumn get tagId => text().references(Tags, #id, onDelete: KeyAction.cascade)();
-  TextColumn get taskId => text().references(Tasks, #id, onDelete: KeyAction.cascade)();
+  TextColumn get tagId =>
+      text().references(Tags, #id, onDelete: KeyAction.cascade)();
+  TextColumn get taskId =>
+      text().references(Tasks, #id, onDelete: KeyAction.cascade)();
 
   @override
   Set<Column> get primaryKey => {tagId, taskId};
@@ -552,8 +632,10 @@ class TaskTags extends Table {
 
 /// Priorities attached to an experiment.
 class ExperimentTags extends Table {
-  TextColumn get tagId => text().references(Tags, #id, onDelete: KeyAction.cascade)();
-  TextColumn get experimentId => text().references(Experiments, #id, onDelete: KeyAction.cascade)();
+  TextColumn get tagId =>
+      text().references(Tags, #id, onDelete: KeyAction.cascade)();
+  TextColumn get experimentId =>
+      text().references(Experiments, #id, onDelete: KeyAction.cascade)();
 
   @override
   Set<Column> get primaryKey => {tagId, experimentId};
@@ -561,8 +643,10 @@ class ExperimentTags extends Table {
 
 /// Priorities attached to a goal.
 class GoalTags extends Table {
-  TextColumn get tagId => text().references(Tags, #id, onDelete: KeyAction.cascade)();
-  TextColumn get goalId => text().references(Goals, #id, onDelete: KeyAction.cascade)();
+  TextColumn get tagId =>
+      text().references(Tags, #id, onDelete: KeyAction.cascade)();
+  TextColumn get goalId =>
+      text().references(Goals, #id, onDelete: KeyAction.cascade)();
 
   @override
   Set<Column> get primaryKey => {tagId, goalId};
@@ -570,8 +654,10 @@ class GoalTags extends Table {
 
 /// Priorities attached to a note.
 class NoteTags extends Table {
-  TextColumn get tagId => text().references(Tags, #id, onDelete: KeyAction.cascade)();
-  TextColumn get noteId => text().references(Notes, #id, onDelete: KeyAction.cascade)();
+  TextColumn get tagId =>
+      text().references(Tags, #id, onDelete: KeyAction.cascade)();
+  TextColumn get noteId =>
+      text().references(Notes, #id, onDelete: KeyAction.cascade)();
 
   @override
   Set<Column> get primaryKey => {tagId, noteId};
@@ -583,7 +669,8 @@ class NoteTags extends Table {
 
 class NoteAudio extends Table {
   TextColumn get id => text()();
-  TextColumn get noteId => text().references(Notes, #id, onDelete: KeyAction.cascade)();
+  TextColumn get noteId =>
+      text().references(Notes, #id, onDelete: KeyAction.cascade)();
   TextColumn get audioPath => text()();
   IntColumn get durationMs => integer().withDefault(const Constant(0))();
 

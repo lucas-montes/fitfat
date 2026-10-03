@@ -101,6 +101,7 @@ final class SettingsState {
   final String endpointImport; // default '/backup/latest'
   final String endpointExercises; // default '/exercises'
   final String endpointIngredients; // default '/ingredients'
+  final String endpointFoods; // default '/foods'
   final String endpointCurrencies; // default '/fx-rates'
   final String endpointWorkouts; // default '/workouts'
   final String endpointTemplates; // default '/templates'
@@ -160,6 +161,7 @@ final class SettingsState {
     this.endpointImport = '/backup/latest',
     this.endpointExercises = '/exercises',
     this.endpointIngredients = '/ingredients',
+    this.endpointFoods = '/foods',
     this.endpointCurrencies = '/fx-rates',
     this.endpointWorkouts = '/workouts',
     this.endpointTemplates = '/templates',
@@ -226,6 +228,7 @@ final class SettingsState {
     String? endpointImport,
     String? endpointExercises,
     String? endpointIngredients,
+    String? endpointFoods,
     String? endpointCurrencies,
     String? endpointWorkouts,
     String? endpointTemplates,
@@ -278,6 +281,7 @@ final class SettingsState {
     endpointImport: endpointImport ?? this.endpointImport,
     endpointExercises: endpointExercises ?? this.endpointExercises,
     endpointIngredients: endpointIngredients ?? this.endpointIngredients,
+    endpointFoods: endpointFoods ?? this.endpointFoods,
     endpointCurrencies: endpointCurrencies ?? this.endpointCurrencies,
     endpointWorkouts: endpointWorkouts ?? this.endpointWorkouts,
     endpointTemplates: endpointTemplates ?? this.endpointTemplates,

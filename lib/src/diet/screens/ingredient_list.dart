@@ -12,6 +12,7 @@ import '../../sync/repositories/catalog_repository.dart';
 import '../../sync/sync_service.dart';
 import '../../ui/haptics.dart';
 import '../../ui/widgets/empty_state.dart';
+import '../../ui/widgets/status_badge.dart';
 import '../providers/ingredients.dart';
 import 'ingredient_detail_screen.dart';
 import 'ingredient_form.dart';
@@ -49,7 +50,9 @@ final class _IngredientListScreenState
   /// failure and returns null so the sheet keeps its current rows.
   Future<List<DisplayItem>?> _refreshIngredientDisplay() async {
     final s = ref.read(settingsProvider);
-    final refreshed = await ref.read(syncServiceProvider).refreshIngredientCatalog(
+    final refreshed = await ref
+        .read(syncServiceProvider)
+        .refreshIngredientCatalog(
           s.remoteSyncBaseUrl,
           s.remoteSyncApiKey,
           endpoint: '${s.endpointIngredients}/catalog',
@@ -179,7 +182,8 @@ final class _IngredientListScreenState
                 ),
               ),
       ),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => _openForm(context, ref, null),
         child: const Icon(Icons.add),
       ),
@@ -263,7 +267,7 @@ final class _IngredientTile extends StatelessWidget {
       ),
       onDismissed: (_) => onDismissed(),
       child: ListTile(
-        title: Text(ingredient.name),
+        title: Text(ingredient.name, overflow: TextOverflow.ellipsis),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

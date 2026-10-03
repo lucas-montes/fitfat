@@ -41,18 +41,19 @@ final class DataPushService {
       if (baseUrl.isEmpty) {
         return const PushResult(count: 0, error: 'No server URL configured');
       }
-      await client.postJson(
-        endpoint,
-        body: body,
-        headers: authHeaders(apiKey),
-      );
+      await client.postJson(endpoint, body: body, headers: authHeaders(apiKey));
       return PushResult(count: 1);
     } catch (e) {
       return PushResult(count: 0, error: '$e');
     }
   }
 
-  Future<PushResult> pushWorkouts(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  Future<PushResult> pushWorkouts(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     final database = ref.read(db.databaseProvider);
     final workouts = await database.select(database.workouts).get();
     final exercises = await database.select(database.workoutExercises).get();
@@ -64,10 +65,17 @@ final class DataPushService {
     });
   }
 
-  Future<PushResult> pushTemplates(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  Future<PushResult> pushTemplates(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     final database = ref.read(db.databaseProvider);
     final templates = await database.select(database.workoutTemplates).get();
-    final exercises = await database.select(database.workoutTemplateExercises).get();
+    final exercises = await database
+        .select(database.workoutTemplateExercises)
+        .get();
     final sets = await database.select(database.workoutTemplateSets).get();
     return _pushObject(baseUrl, apiKey, endpoint, {
       'workoutTemplates': templates.map((e) => e.toJson()).toList(),
@@ -76,7 +84,12 @@ final class DataPushService {
     });
   }
 
-  Future<PushResult> pushNotes(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  Future<PushResult> pushNotes(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     final database = ref.read(db.databaseProvider);
     final notes = await database.select(database.notes).get();
     final tags = await database.select(database.noteTags).get();
@@ -91,7 +104,12 @@ final class DataPushService {
   /// Pushes each note voice-clip row as JSON and, when a local audio file
   /// exists, also uploads the bytes via multipart so the server gets the
   /// record + audio together (mirrors [pushReceiptPictures]).
-  Future<PushResult> pushNoteAudio(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  Future<PushResult> pushNoteAudio(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     try {
       if (baseUrl.isEmpty) {
         return const PushResult(count: 0, error: 'No server URL configured');
@@ -121,7 +139,9 @@ final class DataPushService {
         } else {
           await client.postJson(
             endpoint,
-            body: {'noteAudio': [data]},
+            body: {
+              'noteAudio': [data],
+            },
             headers: authHeaders(apiKey),
           );
         }
@@ -133,7 +153,12 @@ final class DataPushService {
     }
   }
 
-  Future<PushResult> pushTasks(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  Future<PushResult> pushTasks(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     final database = ref.read(db.databaseProvider);
     final tasks = await database.select(database.tasks).get();
     final tags = await database.select(database.taskTags).get();
@@ -143,7 +168,12 @@ final class DataPushService {
     });
   }
 
-  Future<PushResult> pushGoals(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  Future<PushResult> pushGoals(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     final database = ref.read(db.databaseProvider);
     final goals = await database.select(database.goals).get();
     final progress = await database.select(database.goalProgressEntries).get();
@@ -155,17 +185,33 @@ final class DataPushService {
     });
   }
 
-  Future<PushResult> pushMeals(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  /// Pushes every meal with its logged foods.
+  ///
+  /// The `mealFoods` rows carry a snapshot of the portion that was eaten, so the
+  /// server can total a meal without resolving the food/ingredient graph — which
+  /// it could not do before, when the payload only had `(mealId, ingredientId,
+  /// grams)`.
+  Future<PushResult> pushMeals(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     final database = ref.read(db.databaseProvider);
     final meals = await database.select(database.meals).get();
-    final items = await database.select(database.mealIngredients).get();
+    final items = await database.select(database.mealFoods).get();
     return _pushObject(baseUrl, apiKey, endpoint, {
       'meals': meals.map((e) => e.toJson()).toList(),
-      'mealIngredients': items.map((e) => e.toJson()).toList(),
+      'mealFoods': items.map((e) => e.toJson()).toList(),
     });
   }
 
-  Future<PushResult> pushTransactions(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  Future<PushResult> pushTransactions(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     final database = ref.read(db.databaseProvider);
     final rows = await database.select(database.transactions).get();
     return _pushObject(baseUrl, apiKey, endpoint, {
@@ -173,7 +219,12 @@ final class DataPushService {
     });
   }
 
-  Future<PushResult> pushBudgetAccounts(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  Future<PushResult> pushBudgetAccounts(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     final database = ref.read(db.databaseProvider);
     final rows = await database.select(database.accounts).get();
     return _pushObject(baseUrl, apiKey, endpoint, {
@@ -183,7 +234,12 @@ final class DataPushService {
 
   /// Pushes each receipt row as JSON and, when a local picture exists, also
   /// uploads the image via multipart so the server gets record + bytes.
-  Future<PushResult> pushReceiptPictures(WidgetRef ref, String baseUrl, String apiKey, String endpoint) async {
+  Future<PushResult> pushReceiptPictures(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
     try {
       if (baseUrl.isEmpty) {
         return const PushResult(count: 0, error: 'No server URL configured');
@@ -212,13 +268,17 @@ final class DataPushService {
           await client.postMultipart(
             endpoint,
             fields: {'receipt': jsonEncode(data)},
-            files: {'picture': MultipartFilePart.fromFilename(filename!, bytes)},
+            files: {
+              'picture': MultipartFilePart.fromFilename(filename!, bytes),
+            },
             headers: authHeaders(apiKey),
           );
         } else {
           await client.postJson(
             endpoint,
-            body: {'receipts': [data]},
+            body: {
+              'receipts': [data],
+            },
             headers: authHeaders(apiKey),
           );
         }

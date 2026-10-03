@@ -17,8 +17,10 @@ part 'app_database.g.dart';
     Stores,
     IngredientPictures,
     IngredientPrices,
+    Foods,
+    FoodIngredients,
     Meals,
-    MealIngredients,
+    MealFoods,
     Exercises,
     Workouts,
     WorkoutExercises,
@@ -61,7 +63,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 34;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -74,6 +76,25 @@ final class AppDatabase extends _$AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_ingredients_barcode '
         'ON ingredients (barcode)',
       );
+      // Diet chain (v34) lookup indexes. `food_ingredients` has a composite
+      // primary key `(food_id, ingredient_id)` whose leading column already
+      // serves the per-food load, so these cover the remaining access paths:
+      // the reverse "which foods use this ingredient?" lookup, and a meal's
+      // foods.
+      const dietIndexes = [
+        (
+          'idx_food_ingredients_ingredient',
+          'food_ingredients',
+          'ingredient_id',
+        ),
+        ('idx_meal_foods_food', 'meal_foods', 'food_id'),
+        ('idx_meal_foods_meal', 'meal_foods', 'meal_id'),
+      ];
+      for (final (name, table, column) in dietIndexes) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS $name ON $table ($column)',
+        );
+      }
       // Replay-lineage lookup index (v21) — same idempotent pattern.
       await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_workouts_routine '
@@ -650,9 +671,9 @@ final class AppDatabase extends _$AppDatabase {
         ) async {
           List<QueryRow> rows;
           try {
-            rows = await m.database.customSelect(
-              'SELECT id, id AS entity_id, tags FROM $table',
-            ).get();
+            rows = await m.database
+                .customSelect('SELECT id, id AS entity_id, tags FROM $table')
+                .get();
           } on Exception {
             // The `tags` column is absent on this table (cross-version
             // upgrade from a schema that never carried JSON tags here):
@@ -732,6 +753,31 @@ final class AppDatabase extends _$AppDatabase {
         // v32: `has_image` hint on the exercise catalog so the picker can
         // skip thumbnail fetches for imageless rows (default false).
         await m.addColumn(exerciseCatalog, exerciseCatalog.hasImage);
+      }
+
+      // v33 (composite recipe ingredients) is skipped: v34 supersedes it entirely
+      // and drops `ingredient_components` with `IF EXISTS`, so a v32 device
+      // upgrading straight to v34 lands on the same final schema.
+
+      if (from < 34) {
+        // v34: the diet chain is normalized to meal → food → ingredient.
+        //
+        // 1. `foods` / `food_ingredients` / `meal_foods` carry the new model:
+        //    foods are a composition, ingredients own every nutrient fact, and
+        //    each meal row carries a snapshot of the portion that was logged.
+        // 2. The two v33 composite tables are dropped. This is destructive and
+        //    intentionally un-migrated — the recipe data lives on in the new
+        //    `foods`/`food_ingredients` shape and old `meal_ingredients` rows
+        //    cannot be mapped (their grams were meal portions, not composition).
+        await m.createTable(foods);
+        await m.createTable(foodIngredients);
+        await m.createTable(mealFoods);
+        await m.database.customStatement(
+          'DROP TABLE IF EXISTS meal_ingredients',
+        );
+        await m.database.customStatement(
+          'DROP TABLE IF EXISTS ingredient_components',
+        );
       }
     },
   );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/startup_gate.dart';
 import '../../database/database_provider.dart';
 import '../../diet/repositories/meal_repository.dart';
+import '../../diet/services/food_nutrition.dart';
 import '../../exercise/repositories/workout_repository.dart';
 import '../../models/task.dart';
 import '../../models/workout.dart';
@@ -56,23 +57,39 @@ final _taskRepositoryProvider = Provider<TaskRepository>((ref) {
   return TaskRepository(ref.watch(databaseProvider));
 });
 
+/// Today's logged nutrition, straight from the `meal_foods` snapshots in a
+/// single aggregate query.
+///
+/// Shared by [todayCaloriesProvider] and [todayMacrosProvider] so the two
+/// hero-card numbers cost one query between them instead of each walking the
+/// entire meal history (which is what they used to do, twice).
+final todayNutritionProvider = FutureProvider<Nutrition>((ref) async {
+  ref.watch(dashboardRefreshProvider);
+  if (!ref.watch(startupGateProvider)) {
+    return (
+      calories: 0.0,
+      protein: 0.0,
+      carbs: 0.0,
+      fat: 0.0,
+      sodium: null,
+      fiber: null,
+      sugar: null,
+    );
+  }
+  final now = DateTime.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  return ref
+      .watch(_mealRepositoryProvider)
+      .totalsBetween(todayStart, todayStart.add(const Duration(days: 1)));
+});
+
 // ---------------------------------------------------------------------------
 // Today's total calories
 // ---------------------------------------------------------------------------
 
 final todayCaloriesProvider = FutureProvider<double>((ref) async {
-  ref.watch(dashboardRefreshProvider);
-  if (!ref.watch(startupGateProvider)) return 0.0;
-  final meals = await ref.watch(_mealRepositoryProvider).getAll();
-  final now = DateTime.now();
-  final todayStart = DateTime(now.year, now.month, now.day);
-  final todayEnd = todayStart.add(const Duration(days: 1));
-
-  final todayMeals = meals.where(
-    (m) => m.eatenAt.isAfter(todayStart) && m.eatenAt.isBefore(todayEnd),
-  );
-
-  return todayMeals.fold<double>(0.0, (sum, m) => sum + m.totalCalories);
+  final nutrition = await ref.watch(todayNutritionProvider.future);
+  return nutrition.calories;
 });
 
 // ---------------------------------------------------------------------------
@@ -80,30 +97,12 @@ final todayCaloriesProvider = FutureProvider<double>((ref) async {
 // ---------------------------------------------------------------------------
 
 final todayMacrosProvider = FutureProvider<TodayMacros>((ref) async {
-  ref.watch(dashboardRefreshProvider);
-  if (!ref.watch(startupGateProvider)) {
-    return (protein: 0.0, carbs: 0.0, fat: 0.0);
-  }
-  final meals = await ref.watch(_mealRepositoryProvider).getAll();
-  final now = DateTime.now();
-  final todayStart = DateTime(now.year, now.month, now.day);
-  final todayEnd = todayStart.add(const Duration(days: 1));
-
-  final todayMeals = meals.where(
-    (m) => m.eatenAt.isAfter(todayStart) && m.eatenAt.isBefore(todayEnd),
+  final nutrition = await ref.watch(todayNutritionProvider.future);
+  return (
+    protein: nutrition.protein,
+    carbs: nutrition.carbs,
+    fat: nutrition.fat,
   );
-
-  var protein = 0.0;
-  var carbs = 0.0;
-  var fat = 0.0;
-  for (final meal in todayMeals) {
-    for (final item in meal.items) {
-      protein += item.protein;
-      carbs += item.carbs;
-      fat += item.fat;
-    }
-  }
-  return (protein: protein, carbs: carbs, fat: fat);
 });
 
 // ---------------------------------------------------------------------------

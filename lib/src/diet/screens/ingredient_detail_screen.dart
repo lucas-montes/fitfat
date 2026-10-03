@@ -13,6 +13,8 @@ import '../../models/store.dart';
 import '../../settings/providers/settings.dart';
 import '../../sync/sync_service.dart';
 import '../../ui/date_formats.dart';
+import '../../ui/format.dart';
+import '../../ui/tokens.dart';
 import '../../ui/widgets/top_banner.dart';
 import '../providers/ingredients.dart';
 import '../repositories/ingredient_repository.dart';
@@ -499,9 +501,6 @@ String _formatGrams(double grams) =>
     grams % 1 == 0 ? grams.toStringAsFixed(0) : grams.toStringAsFixed(1);
 
 // ---------------------------------------------------------------------------
-// Price add/edit sheet
-// ---------------------------------------------------------------------------
-
 /// Bottom-sheet form to record a price observation: store, price + currency,
 /// package weight and date. Re-recording the same store on the same day
 /// overwrites the previous row (upsert).

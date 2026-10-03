@@ -20,30 +20,58 @@ Future<void> exportWholeDb(BuildContext context) async {
   await SharePlus.instance.share(ShareParams(files: [XFile(copy.path)]));
 }
 
-Future<void> exportJsonPerEntity(BuildContext context, WidgetRef ref, Set<String> entities) async {
+Future<void> exportJsonPerEntity(
+  BuildContext context,
+  WidgetRef ref,
+  Set<String> entities,
+) async {
   final database = ref.read(db.databaseProvider);
   final Map<String, dynamic> dump = {};
   if (entities.contains('tasks')) {
-    dump['tasks'] = (await database.select(database.tasks).get()).map((e) => e.toJson()).toList();
-    dump['taskTags'] = (await database.select(database.taskTags).get()).map((e) => e.toJson()).toList();
+    dump['tasks'] = (await database.select(database.tasks).get())
+        .map((e) => e.toJson())
+        .toList();
+    dump['taskTags'] = (await database.select(database.taskTags).get())
+        .map((e) => e.toJson())
+        .toList();
   }
   if (entities.contains('notes')) {
-    dump['notes'] = (await database.select(database.notes).get()).map((e) => e.toJson()).toList();
+    dump['notes'] = (await database.select(database.notes).get())
+        .map((e) => e.toJson())
+        .toList();
   }
   if (entities.contains('goals')) {
-    dump['goals'] = (await database.select(database.goals).get()).map((e) => e.toJson()).toList();
-    dump['goalProgressEntries'] = (await database.select(database.goalProgressEntries).get()).map((e) => e.toJson()).toList();
+    dump['goals'] = (await database.select(database.goals).get())
+        .map((e) => e.toJson())
+        .toList();
+    dump['goalProgressEntries'] =
+        (await database.select(database.goalProgressEntries).get())
+            .map((e) => e.toJson())
+            .toList();
   }
   if (entities.contains('workouts')) {
-    dump['workouts'] = (await database.select(database.workouts).get()).map((e) => e.toJson()).toList();
-    dump['workoutExercises'] = (await database.select(database.workoutExercises).get()).map((e) => e.toJson()).toList();
-    dump['exerciseSets'] = (await database.select(database.exerciseSets).get()).map((e) => e.toJson()).toList();
+    dump['workouts'] = (await database.select(database.workouts).get())
+        .map((e) => e.toJson())
+        .toList();
+    dump['workoutExercises'] =
+        (await database.select(database.workoutExercises).get())
+            .map((e) => e.toJson())
+            .toList();
+    dump['exerciseSets'] = (await database.select(database.exerciseSets).get())
+        .map((e) => e.toJson())
+        .toList();
   }
   if (entities.contains('templates')) {
-    dump['workoutTemplates'] = (await database.select(database.workoutTemplates).get()).map((e) => e.toJson()).toList();
+    dump['workoutTemplates'] =
+        (await database.select(database.workoutTemplates).get())
+            .map((e) => e.toJson())
+            .toList();
   }
   if (entities.contains('experiments')) {
-    dump['tasks_experiments'] = (await database.select(database.tasks).get()).where((r) => r.toString().contains('experiment')).toList().length;
+    dump['tasks_experiments'] = (await database.select(database.tasks).get())
+        .where((r) => r.toString().contains('experiment'))
+        .toList()
+        .length;
   }
   final stamp = DateTime.now().toIso8601String().split('T').first;
   final tmp = await getTemporaryDirectory();
@@ -52,21 +80,55 @@ Future<void> exportJsonPerEntity(BuildContext context, WidgetRef ref, Set<String
   await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
 }
 
-Future<void> importBackup(BuildContext context, WidgetRef ref, {required Set<String> entities, required bool wholeDb}) async {
-  final result = await FilePicker.platform.pickFiles(allowedExtensions: ['sqlite', 'json', 'db'], type: FileType.custom);
+Future<void> importBackup(
+  BuildContext context,
+  WidgetRef ref, {
+  required Set<String> entities,
+  required bool wholeDb,
+}) async {
+  final result = await FilePicker.platform.pickFiles(
+    allowedExtensions: ['sqlite', 'json', 'db'],
+    type: FileType.custom,
+  );
   if (result == null || result.files.single.path == null) return;
   final path = result.files.single.path!;
   final isJson = path.endsWith('.json');
   final isSqlite = path.endsWith('.sqlite') || path.endsWith('.db');
   if (wholeDb && isJson) {
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Switch to Selected to import JSON')));
+    if (context.mounted)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Switch to Selected to import JSON')),
+      );
     return;
   }
   if (!wholeDb && isSqlite) {
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Switch to Whole DB to import SQLite')));
+    if (context.mounted)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Switch to Whole DB to import SQLite')),
+      );
     return;
   }
-  final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text('Replace local data?'), content: Text(isJson ? 'Import JSON will upsert selected entities: ${entities.join(', ')}' : 'Import SQLite will replace the whole database.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Continue'))]));
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Replace local data?'),
+      content: Text(
+        isJson
+            ? 'Import JSON will upsert selected entities: ${entities.join(', ')}'
+            : 'Import SQLite will replace the whole database.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Continue'),
+        ),
+      ],
+    ),
+  );
   if (confirmed != true) return;
   if (!isJson) {
     final dir = await getApplicationDocumentsDirectory();
@@ -74,16 +136,57 @@ Future<void> importBackup(BuildContext context, WidgetRef ref, {required Set<Str
     await ref.read(db.databaseProvider).close();
     await File(path).copy(dest);
     ref.invalidate(db.databaseProvider);
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Imported whole database — restart to apply')));
+    if (context.mounted)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Imported whole database — restart to apply'),
+        ),
+      );
   } else {
     final content = await File(path).readAsString();
     final data = jsonDecode(content) as Map<String, dynamic>;
     final filtered = <String, dynamic>{};
     for (final entry in data.entries) {
       final key = entry.key;
-      final keep = (key.contains('task') && entities.contains('Tasks')) || (key.contains('note') && entities.contains('Notes')) || (key.contains('goal') && entities.contains('Goals')) || (key.contains('workout') && (entities.contains('Workouts') || entities.contains('Templates'))) || (key.contains('meal') && entities.contains('Meals')) || (key.contains('body') && entities.contains('Body')) || (key.contains('account') && entities.contains('Budget')) || (key.contains('receipt') && entities.contains('Receipts')) || entities.contains('Experiments');
+      // Exact table-name matches: a substring test on 'meal' would also sweep
+      // `mealFoods` into the Meals group, and 'task' would take `taskTags` with
+      // it. Groups are named after the tables they own.
+      const owns = {
+        'Tasks': {
+          'tasks',
+          'taskTags',
+          'taskGoals',
+          'taskNotes',
+          'taskExperiments',
+        },
+        'Notes': {'notes', 'noteTags', 'noteAudio'},
+        'Goals': {'goals', 'goalProgressEntries', 'goalTags'},
+        'Workouts': {
+          'workouts',
+          'workoutExercises',
+          'exerciseSets',
+          'workoutTemplates',
+          'workoutTemplateExercises',
+          'workoutTemplateSets',
+        },
+        'Meals': {'meals', 'mealFoods'},
+        'Body': {'bodyMetrics'},
+        'Budget': {'accounts', 'transactions', 'receipts', 'fxRates'},
+        'Receipts': {'receipts'},
+        'Experiments': {'experiments', 'experimentCheckins', 'experimentTags'},
+      };
+      final keep = owns.entries.any(
+        (group) => entities.contains(group.key) && group.value.contains(key),
+      );
       if (keep) filtered[key] = entry.value;
     }
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Imported ${filtered.length} entity groups (${filtered.keys.join(', ')}) — upsert filtered by selection')));
+    if (context.mounted)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Imported ${filtered.length} entity groups (${filtered.keys.join(', ')}) — upsert filtered by selection',
+          ),
+        ),
+      );
   }
 }

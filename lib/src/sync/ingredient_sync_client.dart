@@ -8,8 +8,8 @@ import 'sync_models.dart';
 
 /// Pulls ingredients from the sync server: `GET /ingredients?since=<cursor>`
 /// with a Bearer API key. Each item carries nested `pictures` and `prices`;
-/// referenced `stores` arrive in a top-level array. Changed rows are upserted
-/// (server authority) and deleted ids are soft-archived locally.
+/// referenced `stores` arrive in a top-level array. Changed rows are upserted (server authority) and
+/// deleted ids are soft-archived locally.
 final class IngredientSyncClient {
   final ApiClient _api;
   final IngredientRepository _repo;
@@ -87,6 +87,9 @@ final class IngredientSyncClient {
   /// Contributes a local ingredient (with its pictures and prices) to the shared
   /// pool: `POST /ingredients` with a Bearer API key. Idempotent by ingredient
   /// id, so re-pushing the same ingredient is safe.
+  ///
+  /// Recipes no longer ride this payload — they are foods and have their own
+  /// endpoint (see `FoodSyncClient`).
   Future<SyncResult> push({
     required Ingredient ingredient,
     required List<IngredientPicture> pictures,
@@ -147,10 +150,10 @@ final class IngredientSyncClient {
     'Authorization': 'Bearer $apiKey',
   };
 
-  /// Upserts one server row with its nested `pictures`/`prices` (bulk or
-  /// selective). The minimal selective shape carries no `prices`, which the
-  /// loop below tolerates. Returns false when the row is unparseable. Shared
-  /// by the bulk pull and the selective import path.
+  /// Upserts one server row with its nested `pictures` and `prices`
+  /// (bulk or selective). The minimal selective shape carries no `prices`,
+  /// which the loops below tolerate. Returns false when the row is
+  /// unparseable. Shared by the bulk pull and the selective import path.
   Future<bool> upsertAggregate(
     Map<Object?, Object?> raw,
     int serverTime,
@@ -205,6 +208,7 @@ final class IngredientSyncClient {
         }
       }
     }
+
     return true;
   }
 

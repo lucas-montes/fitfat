@@ -2,12 +2,29 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
+import '../../models/food.dart';
 import '../../models/ingredient.dart';
 import '../../models/ingredient_picture.dart';
 import '../../models/ingredient_price.dart';
 import '../../models/store.dart';
 
+/// Owns the `ingredients` table — and, deliberately, the **derived food** that
+/// wraps each ingredient.
+///
+/// Every ingredient gets an auto-created 1:1 food so meals can reference foods
+/// uniformly. Those derived rows mirror their ingredient's `name` and archive
+/// state, and this class is the *only* writer of them (the food repository
+/// refuses derived ids). That makes "a single food and its ingredient are
+/// always in sync" structural rather than a convention some future code could
+/// forget to honour.
 final class IngredientRepository {
+  /// Conventional composition amount for a derived (1:1) food.
+  ///
+  /// A single-component food resolves to exactly its ingredient at *any* amount
+  /// — the per-100g derivation collapses to the one term — so this value is a
+  /// convention that keeps the row uniform, not a meaningful weight.
+  static const double derivedFoodAmountGrams = 100;
+
   final db.AppDatabase _database;
   const IngredientRepository(this._database);
 
@@ -26,49 +43,62 @@ final class IngredientRepository {
     return _toDomain(row);
   }
 
+  /// Inserts an ingredient and creates its derived food in one transaction, so
+  /// an ingredient can never exist without the food a meal would reference.
   Future<void> insert(Ingredient ingredient) async {
-    await _database
-        .into(_database.ingredients)
-        .insert(
-          db.IngredientsCompanion.insert(
-            id: ingredient.id,
-            name: ingredient.name,
-            caloriesPer100g: ingredient.caloriesPer100g,
-            proteinPer100g: ingredient.proteinPer100g,
-            carbsPer100g: ingredient.carbsPer100g,
-            fatPer100g: ingredient.fatPer100g,
-            sodiumPer100g: Value(ingredient.sodiumPer100g),
-            fiberPer100g: Value(ingredient.fiberPer100g),
-            sugarPer100g: Value(ingredient.sugarPer100g),
-            brand: Value(ingredient.brand),
-            barcode: Value(ingredient.barcode),
-            createdAt: ingredient.createdAt.millisecondsSinceEpoch,
-          ),
-        );
+    await _database.transaction(() async {
+      await _database
+          .into(_database.ingredients)
+          .insert(
+            db.IngredientsCompanion.insert(
+              id: ingredient.id,
+              name: ingredient.name,
+              caloriesPer100g: ingredient.caloriesPer100g,
+              proteinPer100g: ingredient.proteinPer100g,
+              carbsPer100g: ingredient.carbsPer100g,
+              fatPer100g: ingredient.fatPer100g,
+              sodiumPer100g: Value(ingredient.sodiumPer100g),
+              fiberPer100g: Value(ingredient.fiberPer100g),
+              sugarPer100g: Value(ingredient.sugarPer100g),
+              brand: Value(ingredient.brand),
+              barcode: Value(ingredient.barcode),
+              createdAt: ingredient.createdAt.millisecondsSinceEpoch,
+            ),
+          );
+      await _syncDerivedFood(ingredient.id, ingredient.name, archived: false);
+    });
   }
 
+  /// Updates an ingredient, keeping its derived food's name in step.
+  ///
+  /// `isArchived` is deliberately **not** written here (pre-existing behaviour):
+  /// archive/restore go through [archive] and [restore], which also move the
+  /// derived food.
   Future<void> update(Ingredient ingredient) async {
-    await (_database.update(
-      _database.ingredients,
-    )..where((t) => t.id.equals(ingredient.id))).write(
-      db.IngredientsCompanion(
-        name: Value(ingredient.name),
-        caloriesPer100g: Value(ingredient.caloriesPer100g),
-        proteinPer100g: Value(ingredient.proteinPer100g),
-        carbsPer100g: Value(ingredient.carbsPer100g),
-        fatPer100g: Value(ingredient.fatPer100g),
-        sodiumPer100g: Value(ingredient.sodiumPer100g),
-        fiberPer100g: Value(ingredient.fiberPer100g),
-        sugarPer100g: Value(ingredient.sugarPer100g),
-        brand: Value(ingredient.brand),
-        barcode: Value(ingredient.barcode),
-      ),
-    );
+    await _database.transaction(() async {
+      await (_database.update(
+        _database.ingredients,
+      )..where((t) => t.id.equals(ingredient.id))).write(
+        db.IngredientsCompanion(
+          name: Value(ingredient.name),
+          caloriesPer100g: Value(ingredient.caloriesPer100g),
+          proteinPer100g: Value(ingredient.proteinPer100g),
+          carbsPer100g: Value(ingredient.carbsPer100g),
+          fatPer100g: Value(ingredient.fatPer100g),
+          sodiumPer100g: Value(ingredient.sodiumPer100g),
+          fiberPer100g: Value(ingredient.fiberPer100g),
+          sugarPer100g: Value(ingredient.sugarPer100g),
+          brand: Value(ingredient.brand),
+          barcode: Value(ingredient.barcode),
+        ),
+      );
+      await _syncDerivedFood(ingredient.id, ingredient.name, archived: false);
+    });
   }
 
-  /// Inserts a synced ingredient, or refreshes it in place when the id already
-  /// exists (server authority). Soft-deletes from the server arrive separately
-  /// via [archive].
+  /// Inserts a synced ingredient, or refreshes it when the id already exists
+  /// (server authority). Soft-deletes from the server arrive separately via
+  /// [archive].
   Future<void> upsert(Ingredient ingredient) async {
     final existing = await getById(ingredient.id);
     if (existing == null) {
@@ -79,19 +109,102 @@ final class IngredientRepository {
   }
 
   /// Soft-delete: hidden from list/picker via the `isArchived` flag. The row
-  /// stays so past meals keep rendering the ingredient name and macros.
+  /// stays so past meals keep rendering the ingredient name. The derived food
+  /// is archived with it, so it leaves the meal picker too.
   Future<void> archive(String id) async {
-    await (_database.update(_database.ingredients)
-          ..where((t) => t.id.equals(id)))
-        .write(db.IngredientsCompanion(isArchived: const Value(true)));
+    await _database.transaction(() async {
+      await (_database.update(_database.ingredients)
+            ..where((t) => t.id.equals(id)))
+          .write(db.IngredientsCompanion(isArchived: const Value(true)));
+      await _syncDerivedFood(id, null, archived: true);
+    });
   }
 
   /// Undo of [archive]: clears the flag so the ingredient reappears.
   Future<void> restore(String id) async {
-    await (_database.update(_database.ingredients)
-          ..where((t) => t.id.equals(id)))
-        .write(db.IngredientsCompanion(isArchived: const Value(false)));
+    await _database.transaction(() async {
+      await (_database.update(_database.ingredients)
+            ..where((t) => t.id.equals(id)))
+          .write(db.IngredientsCompanion(isArchived: const Value(false)));
+      await _syncDerivedFood(id, null, archived: false);
+    });
   }
+
+  /// The single writer of derived foods.
+  ///
+  /// Idempotent: the id is derived from the ingredient id, so this upserts
+  /// rather than duplicating, and the composition row is a fixed 100 g — a
+  /// single-component food resolves to exactly its ingredient at any logged
+  /// amount, so the number is conventional rather than meaningful.
+  ///
+  /// Callers must already hold a transaction (it is invoked from `insert`,
+  /// `update`, `archive` and `restore`). [name] may be null when only the archive
+  /// state changed, in which case the existing name is left alone.
+  Future<void> _syncDerivedFood(
+    String ingredientId,
+    String? name, {
+    required bool archived,
+  }) async {
+    final foodId = derivedFoodId(ingredientId);
+    final archivedAt = archived ? _now().millisecondsSinceEpoch : null;
+    final now = _now().millisecondsSinceEpoch;
+
+    final existing = await (_database.select(
+      _database.foods,
+    )..where((t) => t.id.equals(foodId))).getSingleOrNull();
+
+    if (existing == null) {
+      await _database
+          .into(_database.foods)
+          .insert(
+            db.FoodsCompanion.insert(
+              id: foodId,
+              name: name ?? '',
+              createdAt: now,
+              archivedAt: Value(archivedAt),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    } else {
+      await (_database.update(
+        _database.foods,
+      )..where((t) => t.id.equals(foodId))).write(
+        db.FoodsCompanion(
+          name: name == null ? const Value.absent() : Value(name),
+          archivedAt: Value(archivedAt),
+        ),
+      );
+    }
+
+    await _database
+        .into(_database.foodIngredients)
+        .insert(
+          db.FoodIngredientsCompanion.insert(
+            foodId: foodId,
+            ingredientId: ingredientId,
+            amount: derivedFoodAmountGrams,
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+  }
+
+  DateTime _now() => DateTime.now();
+
+  Ingredient _toDomain(db.Ingredient row) => Ingredient(
+    id: row.id,
+    name: row.name,
+    caloriesPer100g: row.caloriesPer100g,
+    proteinPer100g: row.proteinPer100g,
+    carbsPer100g: row.carbsPer100g,
+    fatPer100g: row.fatPer100g,
+    sodiumPer100g: row.sodiumPer100g,
+    fiberPer100g: row.fiberPer100g,
+    sugarPer100g: row.sugarPer100g,
+    isArchived: row.isArchived,
+    brand: row.brand,
+    barcode: row.barcode,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+  );
 
   // ---------------------------------------------------------------------------
   // Stores (v20)
@@ -179,15 +292,15 @@ final class IngredientRepository {
   /// Inserts a synced picture, or refreshes its fields when the id already
   /// exists.
   Future<void> upsertPicture(IngredientPicture picture) async {
-    final existing = await (_database.select(_database.ingredientPictures)
-          ..where((t) => t.id.equals(picture.id)))
-        .getSingleOrNull();
+    final existing = await (_database.select(
+      _database.ingredientPictures,
+    )..where((t) => t.id.equals(picture.id))).getSingleOrNull();
     if (existing == null) {
       await insertPicture(picture);
     } else {
-      await (_database.update(_database.ingredientPictures)
-            ..where((t) => t.id.equals(picture.id)))
-          .write(
+      await (_database.update(
+        _database.ingredientPictures,
+      )..where((t) => t.id.equals(picture.id))).write(
         db.IngredientPicturesCompanion(
           ingredientId: Value(picture.ingredientId),
           imagePath: Value(picture.imagePath),
@@ -277,22 +390,6 @@ final class IngredientRepository {
         if (seen.add(entry.$1.storeId)) entry,
     ];
   }
-
-  Ingredient _toDomain(db.Ingredient row) => Ingredient(
-    id: row.id,
-    name: row.name,
-    caloriesPer100g: row.caloriesPer100g,
-    proteinPer100g: row.proteinPer100g,
-    carbsPer100g: row.carbsPer100g,
-    fatPer100g: row.fatPer100g,
-    sodiumPer100g: row.sodiumPer100g,
-    fiberPer100g: row.fiberPer100g,
-    sugarPer100g: row.sugarPer100g,
-    isArchived: row.isArchived,
-    brand: row.brand,
-    barcode: row.barcode,
-    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
-  );
 
   Store _storeToDomain(db.Store row) => Store(
     id: row.id,

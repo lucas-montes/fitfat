@@ -2,12 +2,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
+import '../settings/providers/settings.dart';
+
 import '../budget/providers/fx_rates.dart';
 import '../budget/repositories/fx_repository.dart';
+import '../database/database_provider.dart';
+import '../database/app_database.dart' as db;
+import '../models/food.dart';
 import '../models/ingredient.dart';
 import '../models/ingredient_picture.dart';
 import '../models/ingredient_price.dart';
 import '../diet/providers/ingredients.dart';
+import '../diet/providers/foods.dart';
+import '../diet/repositories/food_repository.dart';
 import '../diet/repositories/ingredient_repository.dart';
 import '../exercise/providers/exercises.dart';
 import '../exercise/repositories/exercise_repository.dart';
@@ -20,6 +27,7 @@ import 'exercise_sync_client.dart';
 import 'ingredient_lookup_client.dart';
 import 'ingredient_sync_client.dart';
 import 'repositories/catalog_repository.dart';
+import 'food_sync_client.dart';
 import 'sync_models.dart';
 import 'sync_state_store.dart';
 
@@ -33,6 +41,15 @@ final class SyncService {
   final FxRepository currencies;
   final ExerciseCatalogRepository exerciseCatalog;
   final IngredientCatalogRepository ingredientCatalog;
+  final FoodRepository foods;
+  final db.AppDatabase database;
+  final SettingsState Function() settings;
+
+  /// Imports ingredient ids from the shared catalogue. Injected so the auto
+  /// import a pulled recipe needs does not make SyncService depend on Riverpod
+  /// container internals.
+  final Future<void> Function(ApiClient api, Set<String> ids, String apiKey)?
+  importIngredientsById;
   final SyncStateStore state;
   static final _log = Logger('SyncService');
 
@@ -42,7 +59,11 @@ final class SyncService {
     required this.currencies,
     required this.exerciseCatalog,
     required this.ingredientCatalog,
+    required this.foods,
+    required this.database,
+    required this.settings,
     required this.state,
+    this.importIngredientsById,
   });
 
   Future<SyncResult> syncExercises(
@@ -54,21 +75,37 @@ final class SyncService {
     final since = state.getLastSyncedAt(SyncResource.exercises);
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
-      _log.info('syncExercises since=$since base=$normalizedBase endpoint=$endpoint timeout=${timeout?.inSeconds ?? 15}s');
+      _log.info(
+        'syncExercises since=$since base=$normalizedBase endpoint=$endpoint timeout=${timeout?.inSeconds ?? 15}s',
+      );
       final result = await ExerciseSyncClient(
         client,
         exercises,
       ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
-      if (!result.ok) _log.warning('syncExercises failed: ${result.error} base=$normalizedBase endpoint=$endpoint');
-      else _log.info('syncExercises ok updated=${result.updated} deleted=${result.deleted} serverTime=${result.serverTime}');
+      if (!result.ok)
+        _log.warning(
+          'syncExercises failed: ${result.error} base=$normalizedBase endpoint=$endpoint',
+        );
+      else
+        _log.info(
+          'syncExercises ok updated=${result.updated} deleted=${result.deleted} serverTime=${result.serverTime}',
+        );
       if (result.ok && result.serverTime > 0) {
         await state.setLastSyncedAt(SyncResource.exercises, result.serverTime);
       }
       return result;
     } catch (e, st) {
-      _log.severe('syncExercises exception base=$normalizedBase endpoint=$endpoint', e, st);
+      _log.severe(
+        'syncExercises exception base=$normalizedBase endpoint=$endpoint',
+        e,
+        st,
+      );
       rethrow;
     } finally {
       httpClient.close();
@@ -84,21 +121,155 @@ final class SyncService {
     final since = state.getLastSyncedAt(SyncResource.ingredients);
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
-      _log.info('syncIngredients since=$since base=$normalizedBase endpoint=$endpoint timeout=${timeout?.inSeconds ?? 15}s');
+      _log.info(
+        'syncIngredients since=$since base=$normalizedBase endpoint=$endpoint timeout=${timeout?.inSeconds ?? 15}s',
+      );
       final result = await IngredientSyncClient(
         client,
         ingredients,
       ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
-      if (!result.ok) _log.warning('syncIngredients failed: ${result.error} base=$normalizedBase endpoint=$endpoint');
-      else _log.info('syncIngredients ok updated=${result.updated} deleted=${result.deleted} serverTime=${result.serverTime}');
+      if (!result.ok)
+        _log.warning(
+          'syncIngredients failed: ${result.error} base=$normalizedBase endpoint=$endpoint',
+        );
+      else
+        _log.info(
+          'syncIngredients ok updated=${result.updated} deleted=${result.deleted} serverTime=${result.serverTime}',
+        );
       if (result.ok && result.serverTime > 0) {
-        await state.setLastSyncedAt(SyncResource.ingredients, result.serverTime);
+        await state.setLastSyncedAt(
+          SyncResource.ingredients,
+          result.serverTime,
+        );
       }
       return result;
     } catch (e, st) {
-      _log.severe('syncIngredients exception base=$normalizedBase endpoint=$endpoint', e, st);
+      _log.severe(
+        'syncIngredients exception base=$normalizedBase endpoint=$endpoint',
+        e,
+        st,
+      );
+      rethrow;
+    } finally {
+      httpClient.close();
+    }
+  }
+
+  /// Pulls user-created foods (recipes) from the shared catalogue.
+  ///
+  /// **Run after [syncIngredients].** A recipe references ingredients by id and
+  /// the two resources have independent cursors, so a recipe can otherwise
+  /// arrive before the parts it needs. Any ingredient a pulled recipe needs but
+  /// this device does not have is imported from the same catalogue first.
+  Future<SyncResult> syncFoods(
+    String baseUrl,
+    String apiKey, {
+    String endpoint = '/foods',
+    Duration? timeout,
+  }) async {
+    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final httpClient = http.Client();
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
+    try {
+      _log.info('syncFoods base=$normalizedBase endpoint=$endpoint');
+      final result = await FoodSyncClient(client, database, state).sync(
+        apiKey: apiKey,
+        endpoint: endpoint,
+        resolveMissingIngredientIds: (ids) async {
+          if (ids.isEmpty) return;
+          _log.info(
+            'syncFoods auto-importing ${ids.length} missing ingredients',
+          );
+          await (importIngredientsById ?? (_) async {})(client, ids, apiKey);
+        },
+      );
+      if (!result.ok) {
+        _log.warning('syncFoods failed: ${result.error}');
+      } else {
+        _log.info(
+          'syncFoods ok updated=${result.updated} deleted=${result.deleted}',
+        );
+      }
+      return result;
+    } catch (e, st) {
+      _log.severe('syncFoods exception base=$normalizedBase', e, st);
+      rethrow;
+    } finally {
+      httpClient.close();
+    }
+  }
+
+  /// Ingredients then foods, in the order the chain requires.
+  ///
+  /// The single entry point for a full diet sync: doing it in the wrong order
+  /// would leave recipes referencing ingredients that have not landed yet.
+  Future<SyncResult> syncDiet(
+    String baseUrl,
+    String apiKey, {
+    Duration? timeout,
+  }) async {
+    final settings = this.settings();
+    final ingredientsResult = await syncIngredients(
+      baseUrl,
+      apiKey,
+      endpoint: settings.endpointIngredients,
+      timeout: timeout,
+    );
+    if (!ingredientsResult.ok) return ingredientsResult;
+    final foodsResult = await syncFoods(
+      baseUrl,
+      apiKey,
+      endpoint: settings.endpointFoods,
+      timeout: timeout,
+    );
+    return foodsResult;
+  }
+
+  /// Contributes local recipes to the shared catalogue.
+  Future<SyncResult> pushFoods(
+    String baseUrl,
+    String apiKey, {
+    Duration? timeout,
+  }) async {
+    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final httpClient = http.Client();
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
+    try {
+      final shareable = FoodSyncClient.shareable([
+        for (final e in await foods.getAllWithNutrition(includeArchived: true))
+          e.food,
+      ]);
+      final components = <List<FoodIngredient>>[
+        for (final food in shareable) await foods.getComponents(food.id),
+      ];
+      final result = await FoodSyncClient(client, database, state).push(
+        foods: shareable,
+        componentsByFoodId: components,
+        apiKey: apiKey,
+        endpoint: settings().endpointFoods,
+      );
+      if (!result.ok) {
+        _log.warning('pushFoods failed: ${result.error}');
+      } else {
+        _log.info('pushFoods ok count=${result.updated}');
+      }
+      return result;
+    } catch (e, st) {
+      _log.severe('pushFoods exception base=$normalizedBase', e, st);
       rethrow;
     } finally {
       httpClient.close();
@@ -115,27 +286,40 @@ final class SyncService {
     final since = state.getLastSyncedAt(SyncResource.currencies);
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
-      _log.info('syncCurrencies since=$since base=$normalizedBase endpoint=$endpoint baseCode=$baseCode timeout=${timeout?.inSeconds ?? 15}s');
-      final result = await CurrencySyncClient(
-        client,
-        currencies,
-      ).sync(
+      _log.info(
+        'syncCurrencies since=$since base=$normalizedBase endpoint=$endpoint baseCode=$baseCode timeout=${timeout?.inSeconds ?? 15}s',
+      );
+      final result = await CurrencySyncClient(client, currencies).sync(
         since: since,
         apiKey: apiKey,
         baseCode: baseCode,
         date: _today(),
         endpoint: endpoint,
       );
-      if (!result.ok) _log.warning('syncCurrencies failed: ${result.error} base=$normalizedBase endpoint=$endpoint');
-      else _log.info('syncCurrencies ok updated=${result.updated} serverTime=${result.serverTime}');
+      if (!result.ok)
+        _log.warning(
+          'syncCurrencies failed: ${result.error} base=$normalizedBase endpoint=$endpoint',
+        );
+      else
+        _log.info(
+          'syncCurrencies ok updated=${result.updated} serverTime=${result.serverTime}',
+        );
       if (result.ok && result.serverTime > 0) {
         await state.setLastSyncedAt(SyncResource.currencies, result.serverTime);
       }
       return result;
     } catch (e, st) {
-      _log.severe('syncCurrencies exception base=$normalizedBase endpoint=$endpoint', e, st);
+      _log.severe(
+        'syncCurrencies exception base=$normalizedBase endpoint=$endpoint',
+        e,
+        st,
+      );
       rethrow;
     } finally {
       httpClient.close();
@@ -152,9 +336,15 @@ final class SyncService {
   }) async {
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
-      _log.info('refreshExerciseCatalog base=$normalizedBase endpoint=$endpoint');
+      _log.info(
+        'refreshExerciseCatalog base=$normalizedBase endpoint=$endpoint',
+      );
       final count = await CatalogSyncClient(
         client,
         exerciseCatalog,
@@ -164,7 +354,11 @@ final class SyncService {
       ).refreshExercises(apiKey: apiKey, endpoint: endpoint);
       return SyncResult(updated: count);
     } catch (e, st) {
-      _log.warning('refreshExerciseCatalog failed base=$normalizedBase endpoint=$endpoint', e, st);
+      _log.warning(
+        'refreshExerciseCatalog failed base=$normalizedBase endpoint=$endpoint',
+        e,
+        st,
+      );
       return SyncResult(error: e.toString());
     } finally {
       httpClient.close();
@@ -181,9 +375,15 @@ final class SyncService {
   }) async {
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
-      _log.info('refreshIngredientCatalog base=$normalizedBase endpoint=$endpoint');
+      _log.info(
+        'refreshIngredientCatalog base=$normalizedBase endpoint=$endpoint',
+      );
       final count = await CatalogSyncClient(
         client,
         exerciseCatalog,
@@ -193,7 +393,11 @@ final class SyncService {
       ).refreshIngredients(apiKey: apiKey, endpoint: endpoint);
       return SyncResult(updated: count);
     } catch (e, st) {
-      _log.warning('refreshIngredientCatalog failed base=$normalizedBase endpoint=$endpoint', e, st);
+      _log.warning(
+        'refreshIngredientCatalog failed base=$normalizedBase endpoint=$endpoint',
+        e,
+        st,
+      );
       return SyncResult(error: e.toString());
     } finally {
       httpClient.close();
@@ -213,7 +417,11 @@ final class SyncService {
       return false;
     }
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
       await client.getJson('/health', headers: authHeaders(apiKey));
       return true;
@@ -237,8 +445,18 @@ final class SyncService {
     if (baseUrl.trim().isEmpty) {
       return;
     }
-    await refreshExerciseCatalog(baseUrl, apiKey, endpoint: exercisesEndpoint, timeout: timeout);
-    await refreshIngredientCatalog(baseUrl, apiKey, endpoint: ingredientsEndpoint, timeout: timeout);
+    await refreshExerciseCatalog(
+      baseUrl,
+      apiKey,
+      endpoint: exercisesEndpoint,
+      timeout: timeout,
+    );
+    await refreshIngredientCatalog(
+      baseUrl,
+      apiKey,
+      endpoint: ingredientsEndpoint,
+      timeout: timeout,
+    );
   }
 
   /// Imports exactly [ids] via per-id fetch → upsert + media download for
@@ -252,9 +470,15 @@ final class SyncService {
   }) async {
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
-      _log.info('importSelectedExercises ids=${ids.length} base=$normalizedBase endpoint=$endpoint');
+      _log.info(
+        'importSelectedExercises ids=${ids.length} base=$normalizedBase endpoint=$endpoint',
+      );
       return await CatalogSyncClient(
         client,
         exerciseCatalog,
@@ -263,7 +487,11 @@ final class SyncService {
         ingredients,
       ).importExercises(ids: ids, apiKey: apiKey, endpoint: endpoint);
     } catch (e, st) {
-      _log.warning('importSelectedExercises failed base=$normalizedBase endpoint=$endpoint', e, st);
+      _log.warning(
+        'importSelectedExercises failed base=$normalizedBase endpoint=$endpoint',
+        e,
+        st,
+      );
       return SyncResult(error: e.toString());
     } finally {
       httpClient.close();
@@ -281,9 +509,15 @@ final class SyncService {
   }) async {
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
-      _log.info('importSelectedIngredients ids=${ids.length} base=$normalizedBase endpoint=$endpoint');
+      _log.info(
+        'importSelectedIngredients ids=${ids.length} base=$normalizedBase endpoint=$endpoint',
+      );
       return await CatalogSyncClient(
         client,
         exerciseCatalog,
@@ -292,7 +526,11 @@ final class SyncService {
         ingredients,
       ).importIngredients(ids: ids, apiKey: apiKey, endpoint: endpoint);
     } catch (e, st) {
-      _log.warning('importSelectedIngredients failed base=$normalizedBase endpoint=$endpoint', e, st);
+      _log.warning(
+        'importSelectedIngredients failed base=$normalizedBase endpoint=$endpoint',
+        e,
+        st,
+      );
       return SyncResult(error: e.toString());
     } finally {
       httpClient.close();
@@ -309,7 +547,11 @@ final class SyncService {
   }) async {
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
       return await IngredientLookupClient(
         client,
@@ -329,7 +571,11 @@ final class SyncService {
   }) async {
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
       return await IngredientLookupClient(
         client,
@@ -351,17 +597,25 @@ final class SyncService {
   }) async {
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
-    final client = HttpApiClient(httpClient, baseUrl: normalizedBase, timeout: timeout ?? const Duration(seconds: 15));
+    final client = HttpApiClient(
+      httpClient,
+      baseUrl: normalizedBase,
+      timeout: timeout ?? const Duration(seconds: 15),
+    );
     try {
-      _log.info('pushIngredient id=${ingredient.id} base=$normalizedBase endpoint=/ingredients');
+      _log.info(
+        'pushIngredient id=${ingredient.id} base=$normalizedBase endpoint=/ingredients',
+      );
       final res = await IngredientSyncClient(client, ingredients).push(
         ingredient: ingredient,
         pictures: pictures,
         prices: prices,
         apiKey: apiKey,
       );
-      if (!res.ok) _log.warning('pushIngredient failed: ${res.error}');
-      else _log.info('pushIngredient ok');
+      if (!res.ok)
+        _log.warning('pushIngredient failed: ${res.error}');
+      else
+        _log.info('pushIngredient ok');
       return res;
     } catch (e, st) {
       _log.severe('pushIngredient exception base=$normalizedBase', e, st);
@@ -389,6 +643,18 @@ final syncServiceProvider = Provider<SyncService>((ref) {
     currencies: ref.watch(fxRepositoryProvider),
     exerciseCatalog: ref.watch(exerciseCatalogRepositoryProvider),
     ingredientCatalog: ref.watch(ingredientCatalogRepositoryProvider),
-    state: SyncStateStore(ref.watch(sharedPreferencesProvider)),
+    foods: ref.watch(foodRepositoryProvider),
+    database: ref.watch(databaseProvider),
+    settings: () => ref.read(settingsProvider),
+    importIngredientsById: (api, ids, apiKey) async {
+      await CatalogSyncClient(
+        api,
+        ref.read(exerciseCatalogRepositoryProvider),
+        ref.read(ingredientCatalogRepositoryProvider),
+        ref.read(exerciseRepositoryProvider),
+        ref.watch(ingredientRepositoryProvider),
+      ).importIngredients(ids: ids, apiKey: apiKey);
+    },
+    state: PrefsSyncStateStore(ref.watch(sharedPreferencesProvider)),
   );
 });

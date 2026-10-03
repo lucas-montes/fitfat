@@ -200,9 +200,11 @@ final macroTargetsProvider = FutureProvider<MacroTargets>((ref) async {
   return macroTargetsFor(target);
 });
 
-final macroTargetsMetaProvider = FutureProvider<({MacroTargets targets, bool isEstimated})>((
-  ref,
-) async {
-  final meta = await ref.watch(calorieTargetMetaProvider.future);
-  return (targets: macroTargetsFor(meta.target), isEstimated: meta.isEstimated);
-});
+final macroTargetsMetaProvider =
+    FutureProvider<({MacroTargets targets, bool isEstimated})>((ref) async {
+      final meta = await ref.watch(calorieTargetMetaProvider.future);
+      return (
+        targets: macroTargetsFor(meta.target),
+        isEstimated: meta.isEstimated,
+      );
+    });

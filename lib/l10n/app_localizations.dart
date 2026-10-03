@@ -1600,6 +1600,42 @@ abstract class AppLocalizations {
   /// **'Add at least one ingredient with grams'**
   String get mealFormAddIngredient;
 
+  /// No description provided for @mealFormFoods.
+  ///
+  /// In en, this message translates to:
+  /// **'Foods'**
+  String get mealFormFoods;
+
+  /// No description provided for @mealFormNoFoods.
+  ///
+  /// In en, this message translates to:
+  /// **'No foods available yet. Add ingredients first — each one becomes a food you can log on its own.'**
+  String get mealFormNoFoods;
+
+  /// No description provided for @mealFormAddFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one food with grams'**
+  String get mealFormAddFood;
+
+  /// No description provided for @mealFormFoodUnresolved.
+  ///
+  /// In en, this message translates to:
+  /// **'One of the selected foods has ingredients that are missing, so its nutrition cannot be calculated. Sync or add those ingredients first.'**
+  String get mealFormFoodUnresolved;
+
+  /// No description provided for @mealFormFoodCalories.
+  ///
+  /// In en, this message translates to:
+  /// **'{portion} kcal for this portion · {per100g}/100g'**
+  String mealFormFoodCalories(String portion, String per100g);
+
+  /// No description provided for @mealFormTotals.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal total'**
+  String get mealFormTotals;
+
   /// No description provided for @mealFormGramsLabel.
   ///
   /// In en, this message translates to:

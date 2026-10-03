@@ -98,7 +98,7 @@ final class _SyncHubCardState extends ConsumerState<_SyncHubCard> {
   bool _busySync = false;
   bool _busyBackup = false;
   String _lastSyncText() {
-    final state = SyncStateStore(ref.watch(sharedPreferencesProvider));
+    final state = PrefsSyncStateStore(ref.watch(sharedPreferencesProvider));
     final times = [state.getLastSyncedAt(SyncResource.exercises), state.getLastSyncedAt(SyncResource.ingredients), state.getLastSyncedAt(SyncResource.currencies)].where((v) => v > 0).toList();
     if (times.isEmpty) return 'never';
     final last = times.reduce((a, b) => a > b ? a : b);

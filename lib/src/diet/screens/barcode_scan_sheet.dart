@@ -94,9 +94,7 @@ final class _BarcodeScanSheetState extends State<_BarcodeScanSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 l10n.errorWithMessage(_error!),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
           Expanded(

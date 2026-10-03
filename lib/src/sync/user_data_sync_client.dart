@@ -8,7 +8,12 @@ final class UserDataSyncClient {
   final ApiClient client;
   const UserDataSyncClient(this.client);
 
-  Future<SyncResult> pushSelected(WidgetRef ref, String baseUrl, String apiKey, Set<String> entities) async {
+  Future<SyncResult> pushSelected(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    Set<String> entities,
+  ) async {
     final failures = <String>[];
     for (final e in entities) {
       final res = await pushDataType(ref, e);
@@ -18,7 +23,12 @@ final class UserDataSyncClient {
     return const SyncResult(updated: 1, serverTime: 0);
   }
 
-  Future<SyncResult> pullSelected(WidgetRef ref, String baseUrl, String apiKey, Set<String> entities) async {
+  Future<SyncResult> pullSelected(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    Set<String> entities,
+  ) async {
     // Placeholder: personal pull would mirror global pull with per-entity cursors
     return const SyncResult(updated: 0, serverTime: 0);
   }

@@ -1,5 +1,8 @@
-/// The three resources that can be pulled from the user's sync server.
-enum SyncResource { exercises, ingredients, currencies }
+/// The resources that can be pulled from the user's sync server.
+///
+/// `ingredients` must be pulled **before** `foods`: a recipe references
+/// ingredients by id and the two have independent cursors.
+enum SyncResource { exercises, ingredients, foods, currencies }
 
 /// Outcome of a single sync pull: how many rows were upserted / deleted, the
 /// server timestamp to persist as the next `since` cursor, and an error
