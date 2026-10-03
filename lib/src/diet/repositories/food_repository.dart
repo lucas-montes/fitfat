@@ -65,27 +65,38 @@ final class FoodRepository {
   /// `sort_order`, and ordering by name falls out of the join we already do to
   /// get the names.
   Future<List<FoodIngredient>> getComponents(String foodId) async {
-    final query =
-        _database.select(_database.foodIngredients).join([
-            innerJoin(
-              _database.ingredients,
-              _database.ingredients.id.equalsExp(
-                _database.foodIngredients.ingredientId,
-              ),
-            ),
-          ])
-          ..where(_database.foodIngredients.foodId.equals(foodId))
-          ..orderBy([OrderingTerm.asc(_database.ingredients.name)]);
+    final query = _database.select(_database.foodIngredients).join([
+      // Left join so a component whose ingredient is missing locally is
+      // still returned: the caller needs to see that the recipe is
+      // incomplete. Sorting is done in Dart because a missing row has no
+      // name to order by.
+      leftOuterJoin(
+        _database.ingredients,
+        _database.ingredients.id.equalsExp(
+          _database.foodIngredients.ingredientId,
+        ),
+      ),
+    ])..where(_database.foodIngredients.foodId.equals(foodId));
     final rows = await query.get();
-    return [
+    final components = [
       for (final row in rows)
         FoodIngredient(
           foodId: row.readTable(_database.foodIngredients).foodId,
           ingredientId: row.readTable(_database.foodIngredients).ingredientId,
-          ingredientName: row.readTable(_database.ingredients).name,
+          ingredientName:
+              row.readTableOrNull(_database.ingredients)?.name ?? '',
           amount: row.readTable(_database.foodIngredients).amount,
         ),
     ];
+    // Named parts first, then any unresolved ones, so a recipe always reads in
+    // a stable order regardless of what is synced.
+    components.sort((a, b) {
+      if (a.ingredientName.isEmpty != b.ingredientName.isEmpty) {
+        return a.ingredientName.isEmpty ? 1 : -1;
+      }
+      return a.ingredientName.compareTo(b.ingredientName);
+    });
+    return components;
   }
 
   /// The live per-100g profile of one food, or `null` when it cannot be
@@ -98,6 +109,13 @@ final class FoodRepository {
     final ingredients = await _ingredientsById(
       components.map((c) => c.ingredientId),
     );
+    // All-or-nothing, for the same reason as `_nutritionOf`: a part with no
+    // ingredient row would otherwise vanish from the weight denominator too,
+    // quietly inflating the remaining parts. This is the value a meal
+    // snapshots, so it must never be a partial sum.
+    if (components.any((c) => !ingredients.containsKey(c.ingredientId))) {
+      return null;
+    }
     final nutrition = resolveFoodPer100g([
       for (final component in components)
         if (ingredients[component.ingredientId] case final ingredient?)
@@ -270,24 +288,31 @@ final class FoodRepository {
       for (final row in componentRows) row.ingredientId,
     ]);
 
-    // Alphabetical within each food, matching `getComponents`.
+    // Every stored component, in name order. A component whose ingredient row
+    // is missing locally is still surfaced — with a placeholder name — so the
+    // foods list can show the recipe is incomplete and count it, rather than
+    // quietly presenting a one-ingredient recipe.
     final byFood = <String, List<FoodIngredient>>{};
     for (final row in componentRows) {
       final ingredient = ingredients[row.ingredientId];
-      if (ingredient == null) continue;
       byFood
           .putIfAbsent(row.foodId, () => [])
           .add(
             FoodIngredient(
               foodId: row.foodId,
               ingredientId: row.ingredientId,
-              ingredientName: ingredient.name,
+              ingredientName: ingredient?.name ?? '',
               amount: row.amount,
             ),
           );
     }
     for (final components in byFood.values) {
-      components.sort((a, b) => a.ingredientName.compareTo(b.ingredientName));
+      components.sort((a, b) {
+        if (a.ingredientName.isEmpty != b.ingredientName.isEmpty) {
+          return a.ingredientName.isEmpty ? 1 : -1;
+        }
+        return a.ingredientName.compareTo(b.ingredientName);
+      });
     }
 
     return [
@@ -304,6 +329,13 @@ final class FoodRepository {
     Map<String, Ingredient> ingredients,
   ) {
     if (components.isEmpty) return null;
+    // All-or-nothing: a food missing even one ingredient has no meaningful
+    // per-100g figure. Summing only the parts that happen to be present would
+    // report a confident-looking number for a recipe that is really missing an
+    // ingredient, and the meal snapshot would bake that error in permanently.
+    if (components.any((c) => !ingredients.containsKey(c.ingredientId))) {
+      return null;
+    }
     final resolved = resolveFoodPer100g([
       for (final component in components)
         if (ingredients[component.ingredientId] case final ingredient?)

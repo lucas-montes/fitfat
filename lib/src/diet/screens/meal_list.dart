@@ -13,6 +13,7 @@ import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/meals.dart';
 import '../../dashboard/providers/dashboard.dart';
+import 'food_list.dart';
 import 'ingredient_list.dart';
 import 'meal_form.dart' show MealFormScreen;
 
@@ -34,6 +35,13 @@ final class MealListScreen extends ConsumerWidget {
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const IngredientListScreen()),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu_book_outlined),
+            tooltip: l10n.foodListAppBar,
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const FoodListScreen())),
           ),
         ],
       ),

@@ -135,7 +135,8 @@ class FoodIngredients extends Table {
       text().references(Foods, #id, onDelete: KeyAction.cascade)();
   TextColumn get ingredientId => text().references(Ingredients, #id)();
 
-  /// Grams of this ingredient in the food.
+  /// How much of this ingredient goes into the food. The sum across a food's
+  /// components is the batch weight that its per-100g figures divide by.
   RealColumn get amount => real()();
 
   @override
@@ -149,7 +150,7 @@ class FoodIngredients extends Table {
 /// reading a meal is join-free and editing an ingredient later does not rewrite
 /// history. Numbers are frozen; the food's *name* is not (it stays live).
 ///
-/// Changing only [grams] rescales these by `newAmount / oldAmount`, which is
+/// Changing only [amount] rescales these by `newAmount / oldAmount`, which is
 /// exact because the derivation is linear in the amount.
 class MealFoods extends Table {
   TextColumn get id => text()();

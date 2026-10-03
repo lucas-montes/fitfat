@@ -860,6 +860,99 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mealFormAddIngredient => 'Add at least one ingredient with grams';
 
   @override
+  String get foodListAppBar => 'Recipes';
+
+  @override
+  String foodListPartCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ingredients',
+      one: '1 ingredient',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get foodListUnresolved =>
+      'Ingredients missing — nutrition cannot be calculated';
+
+  @override
+  String foodArchived(String name) {
+    return '$name archived';
+  }
+
+  @override
+  String get emptyFoodsTitle => 'No recipes yet';
+
+  @override
+  String get emptyFoodsBody =>
+      'Combine two or more ingredients into a food you can log in one go. Nutrition is worked out from the ingredients you add.';
+
+  @override
+  String get emptyFoodsCta => 'Create a recipe';
+
+  @override
+  String get foodFormNewTitle => 'New recipe';
+
+  @override
+  String get foodFormEditTitle => 'Edit recipe';
+
+  @override
+  String get foodFormNameLabel => 'Name';
+
+  @override
+  String get foodFormNameHint => 'e.g. Granola';
+
+  @override
+  String get foodFormNameRequired => 'Name is required';
+
+  @override
+  String get foodFormComposition => 'Ingredients';
+
+  @override
+  String get foodFormCompositionHint =>
+      'Amounts are how much of each ingredient goes in. They add up to the batch weight the per-100g figures are worked out from.';
+
+  @override
+  String get foodFormAddPart => 'Add an ingredient';
+
+  @override
+  String get foodFormNoMoreParts => 'No more ingredients to add.';
+
+  @override
+  String get foodFormRemovePart => 'Remove ingredient';
+
+  @override
+  String get foodFormAmountLabel => 'Amount';
+
+  @override
+  String get foodFormAmountPositive => 'Amounts must be greater than zero.';
+
+  @override
+  String get foodFormNeedsParts => 'Add at least one ingredient';
+
+  @override
+  String get foodFormPreview => 'Nutrition per 100g';
+
+  @override
+  String get foodFormPreviewEmpty => 'Add an ingredient to see the nutrition.';
+
+  @override
+  String get foodFormPer100g => 'Worked out from the amounts above.';
+
+  @override
+  String foodFormBatchTotal(String total) {
+    return 'Batch weighs $total';
+  }
+
+  @override
+  String get foodFormSave => 'Save recipe';
+
+  @override
+  String get foodFormSaving => 'Saving…';
+
+  @override
   String get mealFormFoods => 'Foods';
 
   @override

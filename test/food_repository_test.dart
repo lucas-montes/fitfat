@@ -266,7 +266,7 @@ void main() {
 
   group('server application', () {
     test(
-      'applyFromServer stores a recipe and tolerates unknown parts',
+      'applyFromServer keeps an unknown part, and the food stays unresolved',
       () async {
         final oats = await seedIngredient('Oats', calories: 400);
         final remote = Food(
@@ -292,10 +292,46 @@ void main() {
 
         final saved = (await foods.getById(remote.id))!;
         expect(saved.name, 'Remote granola');
-        // The unknown part was skipped; the row and name still landed.
-        expect(saved.components, hasLength(1));
-        expect(saved.components.single.ingredientId, oats);
+        // The unknown part is retained rather than dropped: the recipe on the
+        // server really does contain it, and discarding it would leave the two
+        // sides describing different foods. Once the ingredient arrives, the
+        // recipe resolves normally.
+        expect(saved.components, hasLength(2));
+        // All-or-nothing resolution — half a recipe has no meaningful per-100g,
+        // and reporting the resolved half would silently under-report every
+        // meal logged from this food.
+        expect(await foods.resolveNutrition(remote.id), isNull);
+        expect(
+          (await foods.getAllWithNutrition())
+              .singleWhere((e) => e.food.id == remote.id)
+              .nutrition,
+          isNull,
+        );
       },
     );
+
+    test('a part with no ingredient row does not resolve the food', () async {
+      final oats = await seedIngredient('Oats', calories: 400);
+      final granola = newFood(name: 'Granola');
+      await foods.insert(granola, [
+        FoodIngredient(
+          foodId: granola.id,
+          ingredientId: oats,
+          ingredientName: 'Oats',
+          amount: 50,
+        ),
+        // Points at an ingredient that does not exist locally.
+        const FoodIngredient(
+          foodId: 'unused',
+          ingredientId: 'ghost',
+          ingredientName: '',
+          amount: 50,
+        ),
+      ]);
+
+      // Both parts are present, so the weight denominator is complete, but one
+      // cannot contribute macros — the food must not resolve.
+      expect(await foods.resolveNutrition(granola.id), isNull);
+    });
   });
 }

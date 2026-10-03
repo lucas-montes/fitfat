@@ -867,6 +867,102 @@ class AppLocalizationsEs extends AppLocalizations {
       'Añada al menos un ingrediente con gramos';
 
   @override
+  String get foodListAppBar => 'Recetas';
+
+  @override
+  String foodListPartCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ingredientes',
+      one: '1 ingrediente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get foodListUnresolved =>
+      'Faltan ingredientes: no se puede calcular la nutrición';
+
+  @override
+  String foodArchived(String name) {
+    return '$name archivada';
+  }
+
+  @override
+  String get emptyFoodsTitle => 'Aún no hay recetas';
+
+  @override
+  String get emptyFoodsBody =>
+      'Combine dos o más ingredientes en un alimento que pueda registrar de una vez. La nutrición se calcula a partir de los ingredientes que añada.';
+
+  @override
+  String get emptyFoodsCta => 'Crear una receta';
+
+  @override
+  String get foodFormNewTitle => 'Nueva receta';
+
+  @override
+  String get foodFormEditTitle => 'Editar receta';
+
+  @override
+  String get foodFormNameLabel => 'Nombre';
+
+  @override
+  String get foodFormNameHint => 'p. ej. Granola';
+
+  @override
+  String get foodFormNameRequired => 'El nombre es obligatorio';
+
+  @override
+  String get foodFormComposition => 'Ingredientes';
+
+  @override
+  String get foodFormCompositionHint =>
+      'Las cantidades indican cuánto de cada ingrediente se incluye. Su suma es el peso del lote del que salen las cifras por 100g.';
+
+  @override
+  String get foodFormAddPart => 'Añadir un ingrediente';
+
+  @override
+  String get foodFormNoMoreParts => 'No hay más ingredientes que añadir.';
+
+  @override
+  String get foodFormRemovePart => 'Quitar ingrediente';
+
+  @override
+  String get foodFormAmountLabel => 'Cantidad';
+
+  @override
+  String get foodFormAmountPositive =>
+      'Las cantidades deben ser mayores que cero.';
+
+  @override
+  String get foodFormNeedsParts => 'Añada al menos un ingrediente';
+
+  @override
+  String get foodFormPreview => 'Nutrición por 100g';
+
+  @override
+  String get foodFormPreviewEmpty =>
+      'Añada un ingrediente para ver la nutrición.';
+
+  @override
+  String get foodFormPer100g =>
+      'Calculado a partir de las cantidades anteriores.';
+
+  @override
+  String foodFormBatchTotal(String total) {
+    return 'El lote pesa $total';
+  }
+
+  @override
+  String get foodFormSave => 'Guardar receta';
+
+  @override
+  String get foodFormSaving => 'Guardando…';
+
+  @override
   String get mealFormFoods => 'Alimentos';
 
   @override

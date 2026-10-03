@@ -1600,6 +1600,162 @@ abstract class AppLocalizations {
   /// **'Add at least one ingredient with grams'**
   String get mealFormAddIngredient;
 
+  /// No description provided for @foodListAppBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes'**
+  String get foodListAppBar;
+
+  /// No description provided for @foodListPartCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 ingredient} other{{count} ingredients}}'**
+  String foodListPartCount(int count);
+
+  /// No description provided for @foodListUnresolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients missing — nutrition cannot be calculated'**
+  String get foodListUnresolved;
+
+  /// No description provided for @foodArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} archived'**
+  String foodArchived(String name);
+
+  /// No description provided for @emptyFoodsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No recipes yet'**
+  String get emptyFoodsTitle;
+
+  /// No description provided for @emptyFoodsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Combine two or more ingredients into a food you can log in one go. Nutrition is worked out from the ingredients you add.'**
+  String get emptyFoodsBody;
+
+  /// No description provided for @emptyFoodsCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a recipe'**
+  String get emptyFoodsCta;
+
+  /// No description provided for @foodFormNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New recipe'**
+  String get foodFormNewTitle;
+
+  /// No description provided for @foodFormEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit recipe'**
+  String get foodFormEditTitle;
+
+  /// No description provided for @foodFormNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get foodFormNameLabel;
+
+  /// No description provided for @foodFormNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Granola'**
+  String get foodFormNameHint;
+
+  /// No description provided for @foodFormNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get foodFormNameRequired;
+
+  /// No description provided for @foodFormComposition.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients'**
+  String get foodFormComposition;
+
+  /// No description provided for @foodFormCompositionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Amounts are how much of each ingredient goes in. They add up to the batch weight the per-100g figures are worked out from.'**
+  String get foodFormCompositionHint;
+
+  /// No description provided for @foodFormAddPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an ingredient'**
+  String get foodFormAddPart;
+
+  /// No description provided for @foodFormNoMoreParts.
+  ///
+  /// In en, this message translates to:
+  /// **'No more ingredients to add.'**
+  String get foodFormNoMoreParts;
+
+  /// No description provided for @foodFormRemovePart.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove ingredient'**
+  String get foodFormRemovePart;
+
+  /// No description provided for @foodFormAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get foodFormAmountLabel;
+
+  /// No description provided for @foodFormAmountPositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Amounts must be greater than zero.'**
+  String get foodFormAmountPositive;
+
+  /// No description provided for @foodFormNeedsParts.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one ingredient'**
+  String get foodFormNeedsParts;
+
+  /// No description provided for @foodFormPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition per 100g'**
+  String get foodFormPreview;
+
+  /// No description provided for @foodFormPreviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an ingredient to see the nutrition.'**
+  String get foodFormPreviewEmpty;
+
+  /// No description provided for @foodFormPer100g.
+  ///
+  /// In en, this message translates to:
+  /// **'Worked out from the amounts above.'**
+  String get foodFormPer100g;
+
+  /// No description provided for @foodFormBatchTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch weighs {total}'**
+  String foodFormBatchTotal(String total);
+
+  /// No description provided for @foodFormSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save recipe'**
+  String get foodFormSave;
+
+  /// No description provided for @foodFormSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get foodFormSaving;
+
   /// No description provided for @mealFormFoods.
   ///
   /// In en, this message translates to:

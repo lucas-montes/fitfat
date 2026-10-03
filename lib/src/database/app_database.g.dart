@@ -2386,7 +2386,8 @@ class FoodIngredient extends DataClass implements Insertable<FoodIngredient> {
   final String foodId;
   final String ingredientId;
 
-  /// Grams of this ingredient in the food.
+  /// How much of this ingredient goes into the food. The sum across a food's
+  /// components is the batch weight that its per-100g figures divide by.
   final double amount;
   const FoodIngredient({
     required this.foodId,
