@@ -17,6 +17,22 @@ import 'food_list.dart';
 import 'ingredient_list.dart';
 import 'meal_form.dart' show MealFormScreen;
 
+/// The display name for a meal: its own name, or a generic label built from
+/// when it was eaten.
+///
+/// A blank name is legitimate — most meals do not need naming — so the fallback
+/// is a real label rather than an empty string, which would otherwise render as
+/// a blank title line.
+String _mealTitle(BuildContext context, MealEntry meal) {
+  final name = meal.name.trim();
+  if (name.isNotEmpty) return name;
+  final l10n = AppLocalizations.of(context)!;
+  return l10n.mealListUnnamedMeal(
+    DateFormats.formatShortDate(context, meal.eatenAt),
+    DateFormats.formatTime(context, TimeOfDay.fromDateTime(meal.eatenAt)),
+  );
+}
+
 final class MealListScreen extends ConsumerWidget {
   const MealListScreen({super.key});
 
@@ -127,7 +143,7 @@ final class MealListScreen extends ConsumerWidget {
     if (context.mounted) {
       showTopBanner(
         context,
-        message: l10n.mealDeleted(meal.name),
+        message: l10n.mealDeleted(_mealTitle(context, meal)),
         actionLabel: l10n.commonUndo,
         onAction: () async {
           await ref.read(mealRepositoryProvider).restore(meal);
@@ -241,9 +257,9 @@ final class _MealTileState extends State<_MealTile> {
         // taps still expand/collapse while a hold opens the edit form.
         onLongPress: widget.onTap,
         child: ExpansionTile(
-          title: Text(meal.name),
+          title: Text(_mealTitle(context, meal)),
           subtitle: Text(
-            '${l10n.mealListIngredientCount(meal.items.length)}  ·  '
+            '${l10n.mealListFoodCount(meal.items.length)}  ·  '
             '${l10n.mealListCaloriesValue(meal.totalCalories.toStringAsFixed(0))}',
           ),
           leading: const Icon(Icons.restaurant),

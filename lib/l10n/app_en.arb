@@ -387,6 +387,30 @@
     }
   },
 
+  "mealListUnnamedMeal": "Meal · {date} {time}",
+  "@mealListUnnamedMeal": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "foodPickerTitle": "Add foods",
+  "foodPickerSearchHint": "Search recipes and ingredients",
+  "foodPickerSectionRecipes": "Recipes",
+  "foodPickerSectionIngredients": "Single ingredients",
+  "foodPickerEmpty": "Nothing matches your search.",
+  "foodPickerNoFoods": "No foods yet. Add an ingredient to get started — every ingredient can be logged on its own.",
+  "foodPickerDone": "Done",
+  "mealFormSelectedSummary": "{count, plural, =0{No foods selected} =1{1 food selected} other{{count} foods selected}} · {calories} kcal",
+  "@mealFormSelectedSummary": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "calories": { "type": "String" }
+    }
+  },
+  "mealFormChooseFoods": "Choose foods",
+  "ingredientDetailOwnFoodTitle": "Loggable on its own",
+  "ingredientDetailOwnFoodBody": "This ingredient has a matching food, so you can log it directly without making a recipe. Its nutrition is the per-100g values above.",
   "mealListAppBar": "Meals",
   "mealListManageBtn": "Manage Ingredients",
   "emptyMealsTitle": "No meals yet",
@@ -398,8 +422,7 @@
       "name": { "type": "String" }
     }
   },
-  "mealListIngredientCount": "{count} ingredient",
-  "mealListIngredientCount_plural": "{count} ingredients",
+  "mealListFoodCount": "{count, plural, =0{no foods} =1{1 food} other{{count} foods}}",
   "@mealListIngredientCount": {
     "placeholders": {
       "count": { "type": "int" }
@@ -425,7 +448,8 @@
   "mealFormNewTitle": "New Meal",
   "mealFormEditTitle": "Edit Meal",
   "mealFormNameLabel": "Meal Name",
-  "mealFormNameHint": "e.g. Breakfast",
+  "mealFormNameHint": "Optional",
+  "mealFormNameOptionalHint": "Leave empty and it will be labelled by its date",
   "mealFormNameRequired": "Name is required",
   "mealFormDateTime": "Date & Time",
   "mealFormIngredients": "Ingredients",

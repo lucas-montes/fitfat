@@ -1480,6 +1480,78 @@ abstract class AppLocalizations {
   /// **'{label} cannot be negative'**
   String ingredientFormFieldNonNegative(String label);
 
+  /// No description provided for @mealListUnnamedMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal · {date} {time}'**
+  String mealListUnnamedMeal(String date, String time);
+
+  /// No description provided for @foodPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add foods'**
+  String get foodPickerTitle;
+
+  /// No description provided for @foodPickerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search recipes and ingredients'**
+  String get foodPickerSearchHint;
+
+  /// No description provided for @foodPickerSectionRecipes.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes'**
+  String get foodPickerSectionRecipes;
+
+  /// No description provided for @foodPickerSectionIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'Single ingredients'**
+  String get foodPickerSectionIngredients;
+
+  /// No description provided for @foodPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches your search.'**
+  String get foodPickerEmpty;
+
+  /// No description provided for @foodPickerNoFoods.
+  ///
+  /// In en, this message translates to:
+  /// **'No foods yet. Add an ingredient to get started — every ingredient can be logged on its own.'**
+  String get foodPickerNoFoods;
+
+  /// No description provided for @foodPickerDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get foodPickerDone;
+
+  /// No description provided for @mealFormSelectedSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No foods selected} =1{1 food selected} other{{count} foods selected}} · {calories} kcal'**
+  String mealFormSelectedSummary(int count, String calories);
+
+  /// No description provided for @mealFormChooseFoods.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose foods'**
+  String get mealFormChooseFoods;
+
+  /// No description provided for @ingredientDetailOwnFoodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loggable on its own'**
+  String get ingredientDetailOwnFoodTitle;
+
+  /// No description provided for @ingredientDetailOwnFoodBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This ingredient has a matching food, so you can log it directly without making a recipe. Its nutrition is the per-100g values above.'**
+  String get ingredientDetailOwnFoodBody;
+
   /// No description provided for @mealListAppBar.
   ///
   /// In en, this message translates to:
@@ -1516,17 +1588,11 @@ abstract class AppLocalizations {
   /// **'Meal \"{name}\" deleted'**
   String mealDeleted(String name);
 
-  /// No description provided for @mealListIngredientCount.
+  /// No description provided for @mealListFoodCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} ingredient'**
-  String mealListIngredientCount(int count);
-
-  /// No description provided for @mealListIngredientCount_plural.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} ingredients'**
-  String mealListIngredientCount_plural(Object count);
+  /// **'{count, plural, =0{no foods} =1{1 food} other{{count} foods}}'**
+  String mealListFoodCount(num count);
 
   /// No description provided for @mealListCaloriesValue.
   ///
@@ -1567,8 +1633,14 @@ abstract class AppLocalizations {
   /// No description provided for @mealFormNameHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g. Breakfast'**
+  /// **'Optional'**
   String get mealFormNameHint;
+
+  /// No description provided for @mealFormNameOptionalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty and it will be labelled by its date'**
+  String get mealFormNameOptionalHint;
 
   /// No description provided for @mealFormNameRequired.
   ///

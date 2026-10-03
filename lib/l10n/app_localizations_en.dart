@@ -785,6 +785,55 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String mealListUnnamedMeal(String date, String time) {
+    return 'Meal · $date $time';
+  }
+
+  @override
+  String get foodPickerTitle => 'Add foods';
+
+  @override
+  String get foodPickerSearchHint => 'Search recipes and ingredients';
+
+  @override
+  String get foodPickerSectionRecipes => 'Recipes';
+
+  @override
+  String get foodPickerSectionIngredients => 'Single ingredients';
+
+  @override
+  String get foodPickerEmpty => 'Nothing matches your search.';
+
+  @override
+  String get foodPickerNoFoods =>
+      'No foods yet. Add an ingredient to get started — every ingredient can be logged on its own.';
+
+  @override
+  String get foodPickerDone => 'Done';
+
+  @override
+  String mealFormSelectedSummary(int count, String calories) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count foods selected',
+      one: '1 food selected',
+      zero: 'No foods selected',
+    );
+    return '$_temp0 · $calories kcal';
+  }
+
+  @override
+  String get mealFormChooseFoods => 'Choose foods';
+
+  @override
+  String get ingredientDetailOwnFoodTitle => 'Loggable on its own';
+
+  @override
+  String get ingredientDetailOwnFoodBody =>
+      'This ingredient has a matching food, so you can log it directly without making a recipe. Its nutrition is the per-100g values above.';
+
+  @override
   String get mealListAppBar => 'Meals';
 
   @override
@@ -806,13 +855,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String mealListIngredientCount(int count) {
-    return '$count ingredient';
-  }
-
-  @override
-  String mealListIngredientCount_plural(Object count) {
-    return '$count ingredients';
+  String mealListFoodCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count foods',
+      one: '1 food',
+      zero: 'no foods',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -841,7 +892,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mealFormNameLabel => 'Meal Name';
 
   @override
-  String get mealFormNameHint => 'e.g. Breakfast';
+  String get mealFormNameHint => 'Optional';
+
+  @override
+  String get mealFormNameOptionalHint =>
+      'Leave empty and it will be labelled by its date';
 
   @override
   String get mealFormNameRequired => 'Name is required';

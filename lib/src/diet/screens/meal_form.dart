@@ -9,6 +9,8 @@ import '../../models/meal_food.dart';
 import '../../ui/date_formats.dart';
 import '../providers/meals.dart';
 import '../providers/foods.dart';
+import '../repositories/food_repository.dart' show ResolvedFood;
+import '../widgets/food_picker_sheet.dart';
 import '../../dashboard/providers/dashboard.dart';
 import '../../ui/widgets/top_banner.dart';
 
@@ -34,10 +36,13 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
   /// Maps food id → grams eaten. A value > 0 means selected.
   late Map<String, double> _amounts;
 
-  /// Live per-100g profile per selected food id, captured when the picker
-  /// renders so `_buildItem` can hand the repository a real profile to
-  /// snapshot instead of a zeroed placeholder.
+  /// Live per-100g profile per food id, captured when the picker renders so
+  /// `_buildItem` can hand the repository a real profile to snapshot instead of
+  /// a zeroed placeholder.
   final Map<String, FoodNutrition?> _profiles = {};
+
+  /// Food name per id, for labelling the current selection.
+  final Map<String, String> _names = {};
 
   bool get _isEditing => widget.meal != null;
 
@@ -121,16 +126,16 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Name
+            // Name — optional. Most meals do not need one, and forcing a name
+            // meant inventing filler. A blank name is stored as an empty string
+            // (the column is NOT NULL) and the list falls back to a date label.
             TextFormField(
               controller: _nameCtrl,
               decoration: InputDecoration(
                 labelText: l10n.mealFormNameLabel,
                 hintText: l10n.mealFormNameHint,
+                helperText: l10n.mealFormNameOptionalHint,
               ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? l10n.mealFormNameRequired
-                  : null,
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 16),
@@ -148,7 +153,10 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Food selection
+            // Food selection. The list lives in a debounced, virtualized
+            // sheet rather than inline: it holds every food, which is one per
+            // ingredient plus every recipe, and rendering that in the form's own
+            // ListView rebuilt hundreds of rows on every keystroke.
             Text(
               l10n.mealFormFoods,
               style: Theme.of(context).textTheme.titleSmall,
@@ -166,51 +174,42 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
                 for (final entry in resolved) {
                   _profiles[entry.food.id] = entry.nutrition;
                 }
-                final foods =
-                    [
-                      for (final entry in resolved)
-                        if (entry.nutrition != null) entry.food,
-                    ]..sort(
-                      (a, b) =>
-                          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-                    );
-                if (foods.isEmpty) {
-                  return Text(l10n.mealFormNoFoods);
-                }
-                final query = _filter.trim().toLowerCase();
-                final visible = query.isEmpty
-                    ? foods
-                    : foods
-                          .where((f) => f.name.toLowerCase().contains(query))
-                          .toList();
                 return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextField(
-                      controller: _searchCtrl,
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search),
-                        hintText: l10n.commonSearch,
-                        isDense: true,
-                      ),
-                      onChanged: (v) => setState(() => _filter = v),
+                    OutlinedButton.icon(
+                      onPressed: () => _pickFoods(context, resolved),
+                      icon: const Icon(Icons.restaurant_menu),
+                      label: Text(l10n.mealFormChooseFoods),
                     ),
-                    const SizedBox(height: 8),
-                    ...visible.map(
-                      (food) => _FoodRow(
-                        food: food,
-                        amount: _amounts[food.id] ?? 0,
-                        nutrition: _profiles[food.id],
-                        l10n: l10n,
-                        onChanged: (g) => setState(() {
-                          if (g > 0) {
-                            _amounts[food.id] = g;
-                          } else {
-                            _amounts.remove(food.id);
-                          }
-                        }),
-                      ),
-                    ),
+                    if (_amounts.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      for (final entry in _amounts.entries)
+                        if (_profiles[entry.key] case final nutrition?
+                            when nutrition.per100g != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _names[entry.key] ?? entry.key,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '${entry.value.toStringAsFixed(0)} g  ·  '
+                                  '${(nutrition.per100g.calories * entry.value / 100).toStringAsFixed(0)} kcal',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                    ],
                   ],
                 );
               },
@@ -255,6 +254,27 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
         time.minute,
       );
       _eatenTime = time;
+    });
+  }
+
+  Future<void> _pickFoods(
+    BuildContext context,
+    List<ResolvedFood> resolved,
+  ) async {
+    for (final entry in resolved) {
+      _names[entry.food.id] = entry.food.name;
+    }
+    final chosen = await showFoodPickerSheet(
+      context,
+      foods: resolved,
+      initialAmounts: _amounts,
+    );
+    // null means dismissed — keep whatever was already selected.
+    if (chosen == null || !mounted) return;
+    setState(() {
+      _amounts
+        ..clear()
+        ..addAll(chosen);
     });
   }
 

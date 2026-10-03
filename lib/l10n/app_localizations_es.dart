@@ -791,6 +791,55 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String mealListUnnamedMeal(String date, String time) {
+    return 'Comida · $date $time';
+  }
+
+  @override
+  String get foodPickerTitle => 'Añadir alimentos';
+
+  @override
+  String get foodPickerSearchHint => 'Buscar recetas e ingredientes';
+
+  @override
+  String get foodPickerSectionRecipes => 'Recetas';
+
+  @override
+  String get foodPickerSectionIngredients => 'Ingredientes sueltos';
+
+  @override
+  String get foodPickerEmpty => 'Nada coincide con su búsqueda.';
+
+  @override
+  String get foodPickerNoFoods =>
+      'Aún no hay alimentos. Añada un ingrediente para empezar: cada ingrediente se puede registrar por separado.';
+
+  @override
+  String get foodPickerDone => 'Listo';
+
+  @override
+  String mealFormSelectedSummary(int count, String calories) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alimentos seleccionados',
+      one: '1 alimento seleccionado',
+      zero: 'Sin alimentos seleccionados',
+    );
+    return '$_temp0 · $calories kcal';
+  }
+
+  @override
+  String get mealFormChooseFoods => 'Elegir alimentos';
+
+  @override
+  String get ingredientDetailOwnFoodTitle => 'Registrable por separado';
+
+  @override
+  String get ingredientDetailOwnFoodBody =>
+      'Este ingrediente tiene un alimento propio, así que puede registrarlo directamente sin crear una receta. Su nutrición son los valores por 100g de arriba.';
+
+  @override
   String get mealListAppBar => 'Comidas';
 
   @override
@@ -812,13 +861,15 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String mealListIngredientCount(int count) {
-    return '$count ingrediente';
-  }
-
-  @override
-  String mealListIngredientCount_plural(Object count) {
-    return '$count ingredientes';
+  String mealListFoodCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alimentos',
+      one: '1 alimento',
+      zero: 'sin alimentos',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -847,7 +898,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get mealFormNameLabel => 'Nombre de la comida';
 
   @override
-  String get mealFormNameHint => 'Ej.: Desayuno';
+  String get mealFormNameHint => 'Opcional';
+
+  @override
+  String get mealFormNameOptionalHint =>
+      'Déjelo vacío y se etiquetará por su fecha';
 
   @override
   String get mealFormNameRequired => 'El nombre es obligatorio';

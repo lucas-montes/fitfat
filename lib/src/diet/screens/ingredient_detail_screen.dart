@@ -200,6 +200,7 @@ final class _DetailBody extends ConsumerWidget {
                 ),
               ),
             ),
+          const _OwnFoodNote(),
           _PricesSection(ingredientId: ingredient.id),
         ],
       ),
@@ -324,6 +325,55 @@ final class _MacroCell extends StatelessWidget {
             unit == null ? value : '$value $unit',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Own-food note
+// ---------------------------------------------------------------------------
+
+/// Explains that this ingredient is loggable on its own.
+///
+/// `IngredientRepository` creates a matching 1:1 food (`i:<ingredient id>`,
+/// one component at 100 g) whenever an ingredient is written, which is what lets
+/// a meal reference a single ingredient through the same `meal → food →
+/// ingredient` chain a recipe uses. That pairing is otherwise invisible, so
+/// without this note the food picker's single-ingredient section looks like it
+/// was populated by something the user never did.
+///
+/// Read-only on purpose: this row is written only by the ingredient repository,
+/// and editing it here would let the two drift.
+final class _OwnFoodNote extends StatelessWidget {
+  const _OwnFoodNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceM,
+        FitFatTokens.spaceL,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.ingredientDetailOwnFoodTitle,
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: FitFatTokens.spaceXs),
+          Text(
+            l10n.ingredientDetailOwnFoodBody,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],

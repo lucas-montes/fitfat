@@ -788,6 +788,55 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String mealListUnnamedMeal(String date, String time) {
+    return 'Repas · $date $time';
+  }
+
+  @override
+  String get foodPickerTitle => 'Ajouter des aliments';
+
+  @override
+  String get foodPickerSearchHint => 'Rechercher recettes et ingrédients';
+
+  @override
+  String get foodPickerSectionRecipes => 'Recettes';
+
+  @override
+  String get foodPickerSectionIngredients => 'Ingrédients seuls';
+
+  @override
+  String get foodPickerEmpty => 'Aucun résultat.';
+
+  @override
+  String get foodPickerNoFoods =>
+      'Aucun aliment pour l’instant. Ajoutez un ingrédient pour commencer — chacun s’enregistre seul.';
+
+  @override
+  String get foodPickerDone => 'Terminé';
+
+  @override
+  String mealFormSelectedSummary(int count, String calories) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aliments sélectionnés',
+      one: '1 aliment sélectionné',
+      zero: 'Aucun aliment sélectionné',
+    );
+    return '$_temp0 · $calories kcal';
+  }
+
+  @override
+  String get mealFormChooseFoods => 'Choisir des aliments';
+
+  @override
+  String get ingredientDetailOwnFoodTitle => 'Enregistrable seul';
+
+  @override
+  String get ingredientDetailOwnFoodBody =>
+      'Cet ingrédient a son propre aliment : vous pouvez donc l’enregistrer directement sans créer de recette. Sa nutrition correspond aux valeurs pour 100g ci-dessus.';
+
+  @override
   String get mealListAppBar => 'Repas';
 
   @override
@@ -809,13 +858,15 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String mealListIngredientCount(int count) {
-    return '$count ingrédient';
-  }
-
-  @override
-  String mealListIngredientCount_plural(Object count) {
-    return '$count ingrédients';
+  String mealListFoodCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aliments',
+      one: '1 aliment',
+      zero: 'aucun aliment',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -844,7 +895,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get mealFormNameLabel => 'Nom du repas';
 
   @override
-  String get mealFormNameHint => 'Ex. : Petit-déjeuner';
+  String get mealFormNameHint => 'Facultatif';
+
+  @override
+  String get mealFormNameOptionalHint =>
+      'Laissez vide et il sera identifié par sa date';
 
   @override
   String get mealFormNameRequired => 'Le nom est requis';
