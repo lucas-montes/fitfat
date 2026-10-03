@@ -81,7 +81,7 @@ tuned dark surfaces — both ≥ 4.5:1. "Pending"/neutral statuses use M3 `color
 - **StatusBadge** — `StatusBadge(label, color)`: pill text on a 15% alpha tint of the status color,
   `AnimatedContainer` color flip over `motionFast`. Used by `workout_list.dart` and
   `workout_detail.dart` (status pills); pending neutral = `colorScheme.outline`. Also used outside
-  status semantics for informational tags — the ingredient list marks composites with
+  status semantics for informational tags — the ingredient list marks archived rows with
   `colorScheme.primary` — so a bare icon is not the fallback for "this row is special".
 - **EmptyState** — `EmptyState(icon, title, description, {ctaLabel, onCtaPressed})`: tonal-circle
   icon + title + description + optional primary CTA. Since T03 it is the empty state for every list
@@ -114,7 +114,8 @@ hand-computed and can be wrong. A `Column` sibling takes its height from the chi
 just work, `Form`/`validate()` stay untouched, and there is no `NestedScrollView` to fight the
 keyboard.
 
-Reference implementation: the composite-ingredient nutrition band in `diet/screens/ingredient_form.dart`.
+Reference implementation: the recipe nutrition preview in `diet/screens/food_form.dart`, which shows the
+resolved per-100g result while the amounts are being typed.
 
 **Cost:** the row permanently occupies vertical space. Keep it to ~2–3 short lines and prefer
 compact text over a tall `Card` (which adds 16px of padding on every side).

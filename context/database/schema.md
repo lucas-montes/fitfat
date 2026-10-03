@@ -44,22 +44,32 @@ Multiple pictures per ingredient (like receipts; v20).
 | sort_order | INTEGER | gallery ordering; renumbered densely on reorder |
 | created_at | INTEGER | epoch milliseconds |
 
-### ingredient_components
+### foods
 
-Components of a composite (recipe) ingredient, each with a gram amount (v33). Mirrors `meal_ingredients`: a self-referencing junction carrying `grams`.
-
-Rows exist **only** for composite ingredients — an atomic ingredient has none, which is what `Ingredient.isComposite` is derived from.
+A food is a named recipe: a collection of ingredients with amounts. Introduced in v34, replacing `ingredient_components`. It holds **no nutrition columns of its own** — see `Food` for why.
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | TEXT PK | UUID v7, regenerated on every save (the recipe is replaced wholesale) |
-| ingredient_id | TEXT FK → ingredients | `ON DELETE CASCADE` — removing the composite drops its recipe |
-| component_id | TEXT FK → ingredients | **no cascade** — a part is never implicitly detached; must be atomic (recipes are flat) |
-| grams | REAL | amount used in the recipe |
-| sort_order | INTEGER | display order, renumbered densely; indexed with `ingredient_id`/`component_id` via `idx_ingredient_components_*` (idempotent, `beforeOpen`) |
+| id | TEXT PK | UUID v7; derived foods use `"i:" + ingredientId` |
+| name | TEXT | copied from the ingredient for derived foods, free-text for user recipes |
 | created_at | INTEGER | epoch milliseconds |
+| archived_at | INTEGER? | set when archived; the row is kept so logged meals keep resolving |
 
-The composite's per-100g macros are **materialized** into its own `ingredients` row by `saveComponents`/`clearComponents`, which is what lets `meal_ingredients` keep joining the single `ingredients` row for macros regardless of atomic/composite.
+### food_ingredients
+
+The composition of a food (v34). Composite PK `(food_id, ingredient_id)`, so the same ingredient cannot appear twice in one food — the schema enforces it rather than the repository.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| food_id | TEXT PK/FK → foods | `ON DELETE CASCADE` |
+| ingredient_id | TEXT PK/FK → ingredients | **no cascade** — a part is never implicitly detached |
+| amount | REAL | absolute amount in the batch; the sum is the denominator of the food per-100g figures |
+
+No `sort_order`: components carry no meaningful order and are presented alphabetically by ingredient name.
+
+**Foods carry no macros.** `food_per100g = Σ(ingredient.per100g × amount) / Σ(amount)`, resolved on every read by `food_nutrition.dart`. A stored copy would go stale the moment an ingredient is edited.
+
+**Derived foods.** Every ingredient gets a 1:1 food (`id = "i:" + ingredientId`) with one component at `amount = 100`, so it stays individually loggable. `IngredientRepository` is the only writer; `FoodRepository` rejects derived ids so the pair cannot drift.
 
 ### ingredient_prices
 
@@ -86,16 +96,20 @@ Price history per ingredient per store (v20) — enables "same product sold at d
 | eaten_at | INTEGER | epoch milliseconds |
 | created_at | INTEGER | epoch milliseconds |
 
-### meal_ingredients
+### meal_foods
 
-Many-to-many join between meals and ingredients with gram amounts.
+One food logged in a meal, with the portion snapshot (v34). Replaces `meal_ingredients`.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | TEXT PK | UUID v7 |
-| meal_id | TEXT FK → meals | |
-| ingredient_id | TEXT FK → ingredients | |
-| grams | REAL | |
+| meal_id | TEXT FK → meals | `ON DELETE CASCADE` |
+| food_id | TEXT FK → foods | **no cascade** — an archived food stays referenced so its snapshot keeps rendering |
+| amount | REAL | grams of this food eaten |
+| calories, protein, carbs, fat | REAL | **snapshot of the portion**, resolved at log time and read verbatim |
+| sodium, fiber, sugar | REAL? | nullable; null only when no component ever provided a value |
+
+The snapshot is what makes history stable: editing an ingredient or a recipe cannot restate a meal that was already logged. The food **name** is deliberately not snapshotted — it is joined live, so renaming a recipe shows up in old meals.
 
 ## Exercise tables
 
@@ -270,7 +284,8 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
   - v24 → v30: (undocumented here — see `lib/src/database/app_database.dart` `onUpgrade`: tasks/goals/tags/templates/link-table + note-audio steps).
   - v30 → v31: creates the selective-sync catalog tables — `exercise_catalog` (`id`, `name`) and `ingredient_catalog` (`id`, `name`, nullable `barcode`). New tables only — no existing-table changes. No data is dropped.
   - v31 → v32: adds `has_image` (`NOT NULL DEFAULT 0`) to `exercise_catalog` so the picker can skip thumbnail fetches for imageless rows. Additive column only — no data is dropped.
-  - v32 → v33: creates `ingredient_components` for composite (recipe) ingredients. New table only — atomic ingredients are unaffected and keep their stored macros. No data is dropped.
+  - v32 → v33: creates `ingredient_components` for composite (recipe) ingredients. Superseded by v34 below.
+  - v33 → v34: **destructive and intentional.** Replaces the composite-ingredient design with `meal → food → ingredient`: creates `foods`, `food_ingredients` and `meal_foods` (carrying a portion macro snapshot), and drops `ingredient_components` and `meal_ingredients`. Existing meals and recipes are not carried over — the user confirmed there is nothing to migrate.
 
 ## Selective-sync catalog tables (v31)
 

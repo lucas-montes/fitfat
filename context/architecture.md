@@ -71,7 +71,9 @@ Local SQLite database managed by [Drift](https://drift.simonbinder.eu/).
 
 ```
 ingredients ──┐
-               ├── meal_ingredients ── meals
+               ├── food_ingredients ── foods ──┐
+               │                                  ├── meal_foods ── meals
+               └── (each also owns a 1:1 derived food)
 exercises  ──┐
               ├── workout_exercises ── workouts
               │         └── exercise_sets

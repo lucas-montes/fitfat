@@ -6,15 +6,19 @@
 > It has been trimmed to what is true today. Authoritative behaviour lives in
 > `context/diet/` — see `ingredient-crud.md` and `meal-crud.md`.
 
-## Composite ingredients
+## Meals log foods, not ingredients
 
-A composite ingredient is a recipe made from other ingredients. Each component has a gram amount; the composite's per-100g macros are computed by summing all component macros at their specified amounts and scaling to 100g.
+The chain is `meal → food → ingredient`. A **food** is a named recipe: a set of
+ingredients with amounts. Meals reference foods, so a recipe can be corrected
+later without rewriting what was already eaten.
 
-- Stored in the `ingredient_components` junction table (schema v33); presence of at least one row means the ingredient is composite. `Ingredient.isComposite` is **derived** from that table, not stored.
-- Components must be atomic — composites are flat, so a composite can never be a component of another. Archived components and duplicates are rejected.
-- The per-100g values are **materialized** into the composite's own `ingredients` row on every save. `meal_ingredients` stores only grams and joins that single row for macros, so nothing downstream needs to expand the recipe.
-- The ingredient form has a Simple / Recipe toggle; the recipe mode shows the calculated nutrition and a components editor. The detail screen lists what the recipe is made from.
-- `POST/GET /ingredients` round-trips a nested `components[]` array inside the existing aggregate (no new endpoint). The list is the whole recipe on both sides — replace semantics, so removing a part travels by omission rather than a tombstone.
+- `foods` (schema v34) holds a name and an archive flag and **no nutrition of its own**. Nutrition is resolved live through `foods → food_ingredients → ingredients`, so editing an ingredient is immediately visible in every food built from it.
+- `food_per100g = Σ(ingredient.per100g × amount) / Σ(amount)`. Amounts are absolute amounts in the batch and their sum is the denominator — there is no separate yield input.
+- `meal_foods` stores the amount eaten **plus a snapshot of that portion** (calories, protein, carbs, fat; sodium/fiber/sugar nullable). Reading a meal replays the snapshot, so editing an ingredient or recipe cannot restate history. The food name is joined live, so a rename shows up everywhere.
+- Resolution is **all-or-nothing**: a food missing one ingredient reports no nutrition rather than summing whatever is present. Half a recipe would under-report calories and would drop that part from the weight denominator, inflating the rest.
+- Every ingredient gets an auto-created 1:1 **derived food** (`id = "i:" + ingredientId`, one component at `amount = 100`) so it stays individually loggable. `IngredientRepository` is the only writer; `FoodRepository` rejects derived ids.
+- Components have no sort order — they are presented alphabetically by ingredient name.
+- Foods sync as their own resource (`GET/POST /foods`) with composition nested inside each food. Only user-created foods are pushed; derived ones mirror an ingredient.
 
 ## Archive/restore
 
@@ -27,9 +31,9 @@ Soft-delete mechanism that hides an ingredient without losing historical meal re
 
 ## Nutriment scope
 
-Sodium (mg), fiber (g) and sugar (g) are **ingredient-only** optional per-100g values. They are not snapshotted onto meal items.
+Sodium (mg), fiber (g) and sugar (g) are **ingredient-only** optional per-100g values. They carry through a food's composition and are snapshotted onto `meal_foods` alongside the macros, but stay null unless some component actually provided a value — components that omit them count as zero rather than nulling the total.
 
-`meal_ingredients` persists only `(id, mealId, ingredientId, grams)` and joins the live `ingredients` row on read. Editing an ingredient's macros — including editing a composite's components — therefore retroactively changes the nutrition of every past meal that used it. This is a known, pre-existing characteristic, not specific to composites.
+An ingredient's macros are the only place they are stored. There is no per-100g copy on a food, so nothing can go stale between an ingredient edit and the foods built from it.
 
 ## Localization
 

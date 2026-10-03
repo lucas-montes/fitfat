@@ -116,7 +116,7 @@ dangling reference crashes. The new loaders skip unknown ids.
 
 ## Task Stack
 
-- [ ] T01: `Schema v34 — foods, food_ingredients, meal_foods`
+- [x] T01: `Schema v34 — foods, food_ingredients, meal_foods`
   - Task ID: T01
   - Goal: Land the three-layer storage shape.
   - Boundaries (in/out of scope):
@@ -133,7 +133,7 @@ dangling reference crashes. The new loaders skip unknown ids.
     regenerated; `flutter analyze lib` clean.
   - Verification notes: `flutter pub run build_runner build`; `flutter analyze lib`.
 
-- [ ] T02: `Domain models + nutrition resolution`
+- [x] T02: `Domain models + nutrition resolution`
   - Task ID: T02
   - Goal: The three-layer models plus the pure per-100g resolution.
   - Boundaries (in/out of scope):
@@ -150,7 +150,7 @@ dangling reference crashes. The new loaders skip unknown ids.
   - Done when: math tests pass; models compile; `flutter analyze lib` clean.
   - Verification notes: `flutter test test/food_nutrition_test.dart`.
 
-- [ ] T03: `FoodRepository — composition CRUD + live nutrition`
+- [x] T03: `FoodRepository — composition CRUD + live nutrition`
   - Task ID: T03
   - Goal: Foods as a first-class entity.
   - Boundaries (in/out of scope):
@@ -167,7 +167,7 @@ dangling reference crashes. The new loaders skip unknown ids.
       `flutter analyze lib` clean.
   - Verification notes: `flutter test test/food_repository_test.dart`.
 
-- [ ] T04: `IngredientRepository — remove composite API, add derived-food sync`
+- [x] T04: `IngredientRepository — remove composite API, add derived-food sync`
   - Task ID: T04
   - Goal: Make `IngredientRepository` the single writer of derived foods.
   - Boundaries (in/out of scope):
@@ -182,7 +182,7 @@ dangling reference crashes. The new loaders skip unknown ids.
       derived food in sync; no composite API remains; `flutter analyze lib` clean.
   - Verification notes: `flutter test test/ingredient_repository_test.dart`.
 
-- [ ] T05: `MealRepository — fixed-query load + portion snapshots`
+- [x] T05: `MealRepository — fixed-query load + portion snapshots`
   - Task ID: T05
   - Goal: Join-free history and stable numbers.
   - Boundaries (in/out of scope):
@@ -198,7 +198,7 @@ dangling reference crashes. The new loaders skip unknown ids.
       `flutter analyze lib` clean.
   - Verification notes: `flutter test test/meal_repository_test.dart`.
 
-- [ ] T06: `Dashboard — single aggregation query`
+- [x] T06: `Dashboard — single aggregation query`
   - Task ID: T06
   - Goal: Stop walking the graph twice.
   - Boundaries (in/out of scope):
@@ -212,7 +212,7 @@ dangling reference crashes. The new loaders skip unknown ids.
       meal list totals.
   - Verification notes: `flutter analyze lib`; assert totals match `getAll()`.
 
-- [ ] T07: `Providers`
+- [x] T07: `Providers`
   - Task ID: T07
   - Goal: Riverpod surface for foods.
   - Boundaries (in/out of scope):
@@ -224,7 +224,7 @@ dangling reference crashes. The new loaders skip unknown ids.
   - Done when: providers compile and nothing references the deleted one.
   - Verification notes: `flutter analyze lib`.
 
-- [ ] T08: `Strip composite UI from the ingredient screens`
+- [x] T08: `Strip composite UI from the ingredient screens`
   - Task ID: T08
   - Goal: The ingredient form goes back to being purely atomic.
   - Boundaries (in/out of scope):
@@ -239,7 +239,7 @@ dangling reference crashes. The new loaders skip unknown ids.
       unchanged otherwise; `flutter analyze lib` clean.
   - Verification notes: `flutter gen-l10n`; `flutter analyze lib`; dead-key sweep.
 
-- [ ] T09: `Food screen + composition editor`
+- [x] T09: `Food screen + composition editor`
   - Task ID: T09
   - Goal: Browse/log foods, and build combinations.
   - Boundaries (in/out of scope):
@@ -253,7 +253,7 @@ dangling reference crashes. The new loaders skip unknown ids.
       food is read-only; `flutter analyze lib` clean.
   - Verification notes: `flutter gen-l10n`; `flutter analyze lib`.
 
-- [ ] T10: `Meal screens — food picker`
+- [x] T10: `Meal screens — food picker`
   - Task ID: T10
   - Goal: Log amounts of foods.
   - Boundaries (in/out of scope):
@@ -267,7 +267,7 @@ dangling reference crashes. The new loaders skip unknown ids.
       `flutter analyze lib` clean.
   - Verification notes: `flutter analyze lib`.
 
-- [ ] T11: `Sync — foods endpoint on the client`
+- [x] T11: `Sync — foods endpoint on the client`
   - Task ID: T11
   - Goal: User-created foods sync; composites stop riding the ingredient payload.
   - Boundaries (in/out of scope):
@@ -283,7 +283,7 @@ dangling reference crashes. The new loaders skip unknown ids.
   - Done when: a recipe round-trips push/pull; `flutter analyze lib` clean.
   - Verification notes: `flutter analyze lib`; `flutter test test/food_sync_test.dart`.
 
-- [ ] T12: `Server — foods tables + endpoints`
+- [x] T12: `Server — foods tables + endpoints`
   - Task ID: T12
   - Goal: Shareable recipes on the server.
   - Boundaries (in/out of scope):
@@ -297,7 +297,7 @@ dangling reference crashes. The new loaders skip unknown ids.
   - Done when: `cargo test -p sync-server` green with foods coverage.
   - Verification notes: `cargo test -p sync-server`; `cargo check --workspace`.
 
-- [ ] T13: `Desktop (maia-ui) — foods`
+- [x] T13: `Desktop (maia-ui) — foods`
   - Task ID: T13
   - Goal: Foods on the desktop app.
   - Boundaries (in/out of scope):
@@ -314,7 +314,7 @@ dangling reference crashes. The new loaders skip unknown ids.
   - Done when: `pnpm --dir maia-ui build` exit 0; `cargo check -p maia-ui`.
   - Verification notes: `pnpm --dir maia-ui build`.
 
-- [ ] T14: `Tests`
+- [x] T14: `Tests`
   - Task ID: T14
   - Goal: Cover the new read path and the invariants.
   - Boundaries (in/out of scope):
@@ -327,7 +327,7 @@ dangling reference crashes. The new loaders skip unknown ids.
   - Done when: `flutter test` green and strictly more tests than the 112 baseline.
   - Verification notes: `flutter test`.
 
-- [ ] T15: `Validation and context sync`
+- [x] T15: `Validation and context sync`
   - Task ID: T15
   - Goal: Full checks and accurate documentation.
   - Boundaries (in/out of scope): in — build_runner, gen-l10n, analyze, format,
@@ -342,7 +342,37 @@ dangling reference crashes. The new loaders skip unknown ids.
 
 ## Validation Report
 
-Not yet run.
+Run 2026-10-03.
+
+| Check | Result |
+|-------|--------|
+| `flutter analyze lib` (mobile) | 0 errors, 0 warnings (66 pre-existing info-level lints) |
+| `flutter test` (mobile) | **147 passed**, 0 failed |
+| `cargo test` (sync-server) | **39 passed**, 0 failed, 1 ignored |
+| `cargo check` (maia-ui) | clean |
+| `npx tsc --noEmit` (maia-ui) | clean |
+| `npx vite build` (maia-ui) | built |
+
+New test coverage added: `test/food_nutrition_test.dart` (11),
+`test/food_repository_test.dart` (14), `test/meal_repository_test.dart` (14),
+`test/ingredient_repository_test.dart` (11, extended), `test/food_sync_test.dart` (12,
+replacing `test/composite_sync_test.dart`). Server: `push_foods_idempotent_and_replaces_composition`,
+`pull_foods_nests_composition_without_nutrition`.
+
+Two behaviours were corrected during validation rather than shipped as first written:
+
+- **Resolution is all-or-nothing.** `resolveNutrition`/`_nutritionOf` originally summed
+  the components that happened to be present. That under-reported calories *and* dropped
+  the missing part from the weight denominator, inflating the rest. Both now return null.
+- **Composition reads keep unresolved parts.** `getComponents` inner-joined ingredients,
+  so a recipe missing one part silently looked like a smaller recipe. It now left-joins.
+
+Docs updated: `context/database/schema.md` (v34 tables + migration),
+`context/diet/ingredient-crud.md`, `context/diet/meal-crud.md`, new
+`context/diet/food-crud.md`, `context/glossary.md`, `context/architecture.md`,
+`context/sync/sync-contract.md`, `doc/diet.md`, `context/ui/design-system.md`.
+
+Commits: `e00d349`, `648895e`, `f8d98be` (mobile); `2df9f0c` (server); `5f9388f` (desktop).
 
 ## Next Command
 

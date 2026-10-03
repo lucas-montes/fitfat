@@ -41,9 +41,10 @@ Table names match `context/database/schema.md` exactly.
 |-----------|--------|-------|
 | workout | `workouts`, `workout_exercises`, `exercise_sets` | synced as one atomic unit keyed by `workouts.id`; includes v21 `routine_id` lineage when it lands |
 | exercise | `exercises` | user edits + user-created rows; see OQ-5 for locked catalog rows |
-| ingredient | `ingredients`, `ingredient_pictures`, `ingredient_prices`, `ingredient_components` | pictures sync metadata only (§2.2); prices reference `stores.id`; `ingredient_components` is the recipe of a composite ingredient, applied with replace semantics (§11.3) |
+| ingredient | `ingredients`, `ingredient_pictures`, `ingredient_prices` | pictures sync metadata only (§2.2); prices reference `stores.id`. An ingredient is a leaf again — it carries its own nutrition and no recipe |
+| food | `foods`, `food_ingredients` | a named recipe; composition is nested inside the food in the push, so one pull yields a usable recipe (§11.3) |
 | store | `stores` | create + rename only (no delete exists) |
-| meal | `meals`, `meal_ingredients` | atomic per meal |
+| meal | `meals`, `meal_foods` | atomic per meal; each `meal_foods` row carries the portion macro snapshot frozen at log time |
 | planner_item | `planner_items` | recurrence JSON round-trips verbatim |
 | note | `notes` | |
 | body_metric | `body_metrics` | upsert-by-day semantics preserved |
@@ -382,30 +383,49 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
  }
  ```
 
- **`components[]` (composite/recipe ingredients, 2026-10-03):** present and empty
- for atomic ingredients. A composite's per-100g macros are **materialized** into
- its own `ingredients` row by the client, so the aggregate is self-sufficient —
- a consumer never has to expand the recipe to get the nutrition, which is why
- this rides the existing `/ingredients` endpoint instead of a new one.
+ **`/foods` (recipes, 2026-10-03):** its own resource, because a food is a
+ first-class entity rather than a field on an ingredient. A food is a name plus
+ the ingredients it is built from — **no nutrition on the wire**, since that is
+ always resolved from the ingredients a client already holds, and a stored copy
+ would go stale the moment one is edited.
 
+ ```json
+ // POST /foods — composition nested per food
+ { "items": [ { "id": "f-1", "name": "Granola", "createdAt": 1755850000000,
+                "archivedAt": null,
+                "components": [ { "ingredientId": "i-2", "amount": 80.0 },
+                                { "ingredientId": "i-3", "amount": 20.0 } ] } ],
+   "deleted": [ "f-9" ] }
+ ```
+
+ ```json
+ // GET /foods?since=… — same nesting, components ordered by ingredient name
+ { "server_time": 1755850000000,
+   "items": [ { "id": "f-1", "name": "Granola", "createdAt": 1755850000000,
+                "archivedAt": null,
+                "components": [ { "ingredientId": "i-3", "amount": 20.0 },
+                                { "ingredientId": "i-2", "amount": 80.0 } ] } ],
+   "deleted": [] }
+ ```
+
+ - **Only user-created foods are pushed.** Each ingredient also has an
+   auto-created 1:1 derived food (`id = "i:" + ingredientId`) so it stays
+   individually loggable; those mirror an ingredient and are never shared.
+   `FoodSyncClient.shareable` filters them out, and both sides reject a derived
+   id arriving from the wire so a misbehaving server cannot hijack the wrapper
+   `IngredientRepository` owns.
  - **No component tombstones.** The nested list is the *whole* recipe and both
    sides apply it with replace semantics, so removing a part travels by
-   omission. The client's `replaceComponentsFromServer` only replaces when the
-   `components` key is present; an absent key (older rows) leaves the local
-   recipe alone, while an explicit `[]` clears it.
- - **Server macros win.** `replaceComponentsFromServer` deliberately does *not*
-   re-derive macros from the pulled rows — the pushed aggregate already carries
-   the server's values.
- - **Unsynced parts are skipped, not fatal.** If a component's ingredient is not
-   present locally, the row is dropped: the composite still lands with correct
-   macros, just not expandable. The server does the same on push, because
-   `PRAGMA foreign_keys` is ON and push unwraps — an unknown part would otherwise
-   500 the whole request.
- - **Recipes are flat.** Only atomic ingredients are valid components; enforced
-   on the client, on the server's push, and by the desktop commands.
- - `GET /ingredients/catalog` stays minimal — `{id, name, barcode?}`, no
-   `components` key. `GET /ingredients/item/:id` **does** include `components`
-   (macros already ride the row) but still omits `prices`/`stores`.
+   omission.
+ - **Ingredients land before foods.** A pull collects the ids it does not
+   have and asks for them first, because `food_ingredients` has a real FK.
+ - **Unsynced parts are kept, not fatal.** If a part is still missing after
+   that, the recipe is stored anyway and simply does not resolve — resolution
+   is all-or-nothing, so a half-imported recipe reports "cannot calculate"
+   rather than a confident wrong number. The server skips such parts on push,
+   because `PRAGMA foreign_keys` is ON and push unwraps.
+ - **`/ingredients` carries no recipe.** `GET /ingredients` and
+   `/ingredients/item/:id` omit any `components` key entirely.
 
  Currencies are pulled per **day** (a full day's rate table), so each request
  carries `date=YYYY-MM-DD` and rows are keyed by that date:

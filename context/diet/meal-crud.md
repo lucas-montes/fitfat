@@ -1,35 +1,63 @@
 # Meal CRUD — Diet Domain
 
-Feature: create, read, update, and delete meals (collections of ingredients with gram amounts).
+Feature: create, read, update, and delete meals (collections of **foods** with amounts eaten).
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `lib/src/diet/repositories/meal_repository.dart` | Drift DAO wrapping `meals` + `meal_ingredients` tables |
+| `lib/src/diet/repositories/meal_repository.dart` | Drift DAO wrapping `meals` + `meal_foods`; owns the portion snapshot |
 | `lib/src/diet/providers/meals.dart` | Riverpod providers (`mealRepositoryProvider`, `mealListProvider`) |
-| `lib/src/diet/screens/meal_list.dart` | Grouped by date, expandable tiles showing ingredient breakdown |
-| `lib/src/diet/screens/meal_form.dart` | Form with name, date/time picker, ingredient picker with gram input |
+| `lib/src/diet/screens/meal_list.dart` | Grouped by date, expandable tiles showing the logged foods |
+| `lib/src/diet/screens/meal_form.dart` | Form with name, date/time picker, food picker with amount input and live totals |
 
 ## Key behavior
 
-- **Repository** (`meal_repository.dart`): Loads meals with their ingredient items via two-step query (meal_ingredients then batch-load ingredients). Uses transactions for insert/update/delete. Delete cascades to `meal_ingredients` before deleting the meal. `restore(MealEntry)` (T06) re-inserts a deleted meal with all items and original ids — it delegates to `insert` so the create and undo paths share one code path.
-- **Helper** `newMeal()`: Creates a `MealEntry` with fresh UUID v7 and current timestamp, and stamps the generated meal id onto every item (fixes the pre-T02 bug where new-meal items kept `mealId: ''` and never loaded back).
-- **Providers** (`meals.dart`): `mealRepositoryProvider`, `mealListProvider` (FutureProvider). Reuses `databaseProvider` from `ingredients.dart`.
-- **List screen**: Groups meals by date (day-level). Each meal is an `ExpansionTile` showing ingredient breakdown with macro values. Shows daily calorie subtotal per date group. AppBar action navigates to `IngredientListScreen`. Swipe-to-delete → hard `delete` + `mealDeleted(name)` top banner with Undo (`commonUndo`) → `restore(MealEntry)` + invalidate; no confirm dialog (T07); `Haptics.mediumImpact` on delete (T04). Empty state = `EmptyState` (`restaurant_outlined`, `emptyMeals*` ARB keys) with a CTA that opens the meal form (T03).
-- **Meal tile**: `_MealTile` is stateful — tapping the tile expands/collapses the ingredient breakdown; the trailing is an `AnimatedRotation` chevron (`expand_more`, 180° when expanded) driven by `onExpansionChanged`; **long-pressing the tile opens the meal edit form** (the `ExpansionTile` is wrapped in a `GestureDetector(onLongPress: ...)` — `ExpansionTile` has no `onLongPress` in Flutter 3.38.3; there is no trailing edit icon, active-workout-flow T02).
-- **Form screen**: Name field, date/time picker (`showDatePicker` + `showTimePicker`), ingredient selection via checkboxes with gram input fields and a name-filter search box (case-insensitive `contains`, shown when the list is non-empty; filtering preserves selection). Validates name (required) and at least one ingredient with grams > 0. Calls `repo.insert()` or `repo.update()`; on success pops `true` (the list refreshes via provider invalidation — no extra toast).
+- **A meal logs foods, not ingredients.** The chain is `meal → food → ingredient`, so a
+  recipe can be corrected later without rewriting what was already eaten.
+- **The portion is snapshotted.** `meal_foods` stores calories/protein/carbs/fat (and
+  nullable sodium/fiber/sugar) resolved at log time and read verbatim. Reading a meal is
+  therefore join-free, and editing an ingredient or a recipe cannot restate a meal that was
+  already logged. The food **name** is not snapshotted — it is joined live, so a rename
+  shows up in old meals.
+- **Fixed-query history.** `getAll()` loads the entire meal history in **three queries**
+  (meals, then the `meal_foods` for all of them, then the food names) regardless of meal
+  count. This replaced a per-meal `meal_ingredients` + `ingredients` pair that was N+1.
+  A row whose food is missing is skipped rather than crashing the read.
+- **`insert` / `update` re-snapshot.** Callers hand in each food's **live** per-100g
+  profile (`MealFoodDraft`), which the repository scales to the amount and freezes.
+  Throws `ArgumentError` when a draft's nutrition is null — a food that cannot be resolved
+  would record a zero-calorie meal, so the log is refused instead.
+- **`updateAmounts` rescales instead.** Adjusting only the grams rescales the snapshot by
+  `newAmount / oldAmount`, which is exact because the derivation is linear in the amount.
+  This is deliberately *not* a re-snapshot: a portion tweak must not silently pick up a food
+  that changed since it was logged. Use `update` when the foods themselves were edited.
+- **Providers** (`meals.dart`): `mealRepositoryProvider`, `mealListProvider` (FutureProvider).
+- **List screen**: Groups meals by date (day-level). Each meal is an `ExpansionTile` showing
+  the logged foods. AppBar actions open `IngredientListScreen` and `FoodListScreen`.
+  Swipe-to-delete → hard `delete` + `mealDeleted(name)` top banner with Undo;
+  `Haptics.mediumImpact` on delete.
+- **Form screen**: Name field, date/time picker, then a **food** picker with checkbox
+  selection, amount input and a name-filter search. Foods whose composition does not resolve
+  are excluded from the picker, and the save is refused outright if any selected food is
+  unresolved — better no log than a silently wrong one. A totals card previews the meal
+  using the same pure resolver the repository snapshots from, so the preview cannot disagree
+  with what gets stored.
 
 ## Wiring
 
-The Diet tab (`lib/src/app/tabs/diet_tab.dart`) renders `MealListScreen`. Ingredient management is accessible via the AppBar action (`restaurant_menu` icon) which pushes `IngredientListScreen`.
+The Diet tab (`lib/src/app/tabs/diet_tab.dart`) renders `MealListScreen`. Ingredient and
+recipe management are reachable from its AppBar actions.
 
 ## Data model
 
 `MealEntry` (domain) maps to two database tables:
-- `meals` — stores id, name, eaten_at, created_at
-- `meal_ingredients` — stores the many-to-many relationship with gram amounts
+- `meals` — id, name, eaten_at, created_at
+- `meal_foods` — id, meal_id, food_id, amount, plus the frozen portion macros
 
-`MealIngredient` (domain) includes denormalized ingredient data (name, macros per 100g) loaded via join at query time. The `fromIngredient()` factory builds from an `Ingredient` domain model.
+`MealFood` carries the snapshot numbers and a **transient** `nutrition` field holding the
+live per-100g profile. It is null on anything read back from the database — re-deriving one
+would defeat the snapshot.
 
-See also: [overview.md](../overview.md), [architecture.md](../architecture.md), [database/schema.md](../database/schema.md), [ingredient-crud.md](ingredient-crud.md)
+See also: [food-crud.md](food-crud.md), [ingredient-crud.md](ingredient-crud.md),
+[database/schema.md](../database/schema.md)
