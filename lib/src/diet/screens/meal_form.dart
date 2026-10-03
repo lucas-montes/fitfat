@@ -10,8 +10,6 @@ import '../../ui/date_formats.dart';
 import '../providers/meals.dart';
 import '../providers/foods.dart';
 import '../../dashboard/providers/dashboard.dart';
-import '../repositories/meal_repository.dart';
-import '../services/food_nutrition.dart';
 import '../../ui/widgets/top_banner.dart';
 
 final class MealFormScreen extends ConsumerStatefulWidget {

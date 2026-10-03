@@ -9,7 +9,6 @@ import '../../ui/haptics.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/top_banner.dart';
 import '../providers/foods.dart';
-import '../repositories/food_repository.dart';
 import 'food_form.dart';
 
 /// Lists the foods a user created — the recipes — with their **live** per-100g
