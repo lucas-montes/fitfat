@@ -249,10 +249,16 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
                         trailing: IconButton(
                           icon: const Icon(Icons.add),
                           tooltip: l10n.foodFormAddPart,
-                          onPressed: () => setState(() {
-                            _parts[i.id] = i;
-                            _amounts[i.id] = 100;
-                          }),
+                          onPressed: () {
+                            setState(() {
+                              _parts[i.id] = i;
+                              _amounts[i.id] = 100;
+                            });
+                            // The row reads its field controller and error
+                            // notifier from these maps, so a part added from
+                            // here needs them before the next build.
+                            _syncControllers();
+                          },
                         ),
                       ),
                   ],
