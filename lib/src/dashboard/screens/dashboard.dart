@@ -23,6 +23,7 @@ import '../../planner/providers/planner.dart';
 import '../../planner/screens/planner_item_detail.dart';
 import '../../models/workout.dart';
 import '../../settings/providers/settings.dart';
+import '../../settings/screens/settings_screen.dart';
 import '../../sync/local_backup.dart';
 import '../../sync/sync_models.dart';
 import '../../sync/sync_state_store.dart';
@@ -182,27 +183,19 @@ final class _NutritionHeroCard extends ConsumerWidget {
               Icon(Icons.local_fire_department, size: 20, color: theme.colorScheme.primary),
               const SizedBox(width: FitFatTokens.spaceS),
               Expanded(
-                child: Wrap(
-                  spacing: FitFatTokens.spaceS,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(l10n.dashboardCalorieTarget, style: theme.textTheme.titleMedium),
-                    if (meta.isEstimated)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(FitFatTokens.radiusFull),
-                        ),
-                        child: Text('Estimated', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                      ),
-                  ],
-                ),
+                child: Text(l10n.dashboardCalorieTarget, style: theme.textTheme.titleMedium),
               ),
               if (meta.isEstimated)
                 TextButton(
-                  onPressed: () => context.go('/settings'),
+                  // Straight to Profile, not the settings hub: the hub is a
+                  // menu and this action names a specific page. Profile covers
+                  // age and gender — weight and height come from body metrics,
+                  // so the target stays estimated until those exist too.
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ProfileSettingsScreen(),
+                    ),
+                  ),
                   style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 8)),
                   child: Text(l10n.dashboardCalorieTargetEmptyCta),
                 ),
@@ -413,6 +406,22 @@ final class _WeightLinePainter extends CustomPainter {
   @override bool shouldRepaint(_WeightLinePainter oldDelegate) => oldDelegate.points != points || oldDelegate.color != color || oldDelegate.minY != minY || oldDelegate.maxY != maxY;
 }
 
+/// Renders a weekly duration in hours, keeping the minutes when they add
+/// something.
+///
+/// The decision to keep minutes: `0.8 h` is technically correct and much harder
+/// to read at a glance than `45 m`, and a sub-hour session is common enough to
+/// be worth the branch.
+String _formatHours(AppLocalizations l10n, int minutes) {
+  final hours = minutes ~/ 60;
+  final mins = minutes % 60;
+  if (hours == 0) {
+    return l10n.dashboardHoursTrainedHours((mins / 60).toStringAsFixed(1));
+  }
+  if (mins == 0) return l10n.dashboardHoursTrainedHours(hours.toString());
+  return l10n.dashboardHoursTrainedHoursMinutes(hours.toString(), mins.toString());
+}
+
 final class _WorkoutHeroCard extends ConsumerWidget {
   const _WorkoutHeroCard();
   void _openDetail(BuildContext context, Workout workout) {
@@ -457,9 +466,11 @@ final class _WorkoutHeroCard extends ConsumerWidget {
             return Text(l10n.dashboardWeeklyEmptyBody, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant));
           }
           return Row(children: [
-            Expanded(child: MetricCard(icon: Icons.calculate_outlined, title: l10n.dashboardVolume, value: l10n.dashboardVolumeKg(formatWeightValue(stats.totalVolumeKg, weightUnit), weightUnitLabel(weightUnit)))),
+            Expanded(child: MetricCard(icon: Icons.event_available_outlined, title: l10n.dashboardDaysTrained, value: l10n.dashboardDaysTrainedValue(stats.daysTrained))),
             const SizedBox(width: FitFatTokens.spaceS),
-            Expanded(child: MetricCard(icon: Icons.timer_outlined, title: l10n.dashboardMinutes, value: stats.totalMinutes.toString())),
+            Expanded(child: MetricCard(icon: Icons.timer_outlined, title: l10n.dashboardHoursTrained, value: _formatHours(l10n, stats.totalMinutes))),
+            const SizedBox(width: FitFatTokens.spaceS),
+            Expanded(child: MetricCard(icon: Icons.calculate_outlined, title: l10n.dashboardVolume, value: l10n.dashboardVolumeKg(formatWeightValue(stats.totalVolumeKg, weightUnit), weightUnitLabel(weightUnit)))),
           ]);
         },
       ),
@@ -541,14 +552,14 @@ final class _GoalsOverviewCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final goalsAsync = ref.watch(goalListProvider);
     return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Icon(Icons.flag_outlined, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Goals', style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.chevron_right, size: 18), label: const Text('Plan'))]),
+      Row(children: [Icon(Icons.flag_outlined, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text(l10n.dashboardGoalsTitle, style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.chevron_right, size: 18), label: Text(l10n.dashboardGoalsCta))]),
       const SizedBox(height: FitFatTokens.spaceM),
       goalsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Text(l10n.dashboardError('$e')),
         data: (goals) {
           final active = goals.where((g) => g.isActive).take(3).toList();
-          if (active.isEmpty) return Text('No active goals', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant));
+          if (active.isEmpty) return Text(l10n.dashboardGoalsEmpty, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant));
           return Column(children: [
             for (final goal in active) ...[
               _GoalRow(goal: goal),
@@ -589,12 +600,13 @@ final class _ExperimentsNudgeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Icon(Icons.science_outlined, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Experiments', style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.chevron_right, size: 18), label: const Text('Plan'))]),
+      Row(children: [Icon(Icons.science_outlined, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text(l10n.dashboardExperimentsTitle, style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.chevron_right, size: 18), label: Text(l10n.dashboardExperimentsCta))]),
       const SizedBox(height: FitFatTokens.spaceM),
-      Text('Track your experiments and daily check-ins from the Plan tab.', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      Text(l10n.dashboardExperimentsBody, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       const SizedBox(height: FitFatTokens.spaceM),
-      OutlinedButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.science, size: 18), label: const Text('Open experiments')),
+      OutlinedButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.science, size: 18), label: Text(l10n.dashboardExperimentsCta)),
     ])));
   }
 }

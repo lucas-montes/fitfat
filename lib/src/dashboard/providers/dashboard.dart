@@ -120,17 +120,21 @@ final latestWorkoutProvider = FutureProvider<Workout?>((ref) async {
 });
 
 // ---------------------------------------------------------------------------
-// Weekly workout volume + minutes (last 7 days, completed workouts)
+// Weekly workout stats (last 7 days, completed workouts)
 // ---------------------------------------------------------------------------
 
-typedef WeeklyWorkoutStats = ({double totalVolumeKg, int totalMinutes});
+typedef WeeklyWorkoutStats = ({
+  double totalVolumeKg,
+  int totalMinutes,
+  int daysTrained,
+});
 
 final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
   ref,
 ) async {
   ref.watch(dashboardRefreshProvider);
   if (!ref.watch(startupGateProvider)) {
-    return (totalVolumeKg: 0.0, totalMinutes: 0);
+    return (totalVolumeKg: 0.0, totalMinutes: 0, daysTrained: 0);
   }
   final now = DateTime.now();
   final weekStart = DateTime(now.year, now.month, now.day - 6);
@@ -140,7 +144,11 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
   final stats = await ref
       .watch(_workoutRepositoryProvider)
       .getVolumeAndMinutesSince(weekStart);
-  return (totalVolumeKg: stats.volumeKg, totalMinutes: stats.minutes);
+  return (
+    totalVolumeKg: stats.volumeKg,
+    totalMinutes: stats.minutes,
+    daysTrained: stats.daysTrained,
+  );
 });
 
 // ---------------------------------------------------------------------------

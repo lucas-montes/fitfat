@@ -74,7 +74,7 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           icon: Icons.person_outline,
           label: l10n.settingsProfile,
           subtitle: l10n.settingsProfileSubtitle,
-          build: ({required embed}) => _ProfileScreen(embed: embed),
+          build: ({required embed}) => ProfileSettingsScreen(embed: embed),
         ),
         _HubDestination(
           icon: Icons.event_note_outlined,
@@ -236,16 +236,22 @@ final class _HubTile extends StatelessWidget {
 }
 
 /// Profile: age, gender, activity source/level, body fat, body weight goal.
-final class _ProfileScreen extends ConsumerStatefulWidget {
+///
+/// Public because the dashboard links straight here: an estimated calorie target
+/// has a "Complete profile" action, and sending it to the settings *hub* left the
+/// user to find this page themselves. Push it with
+/// `MaterialPageRoute(builder: (_) => const ProfileSettingsScreen())` — with no
+/// [embed] it renders its own app bar and back button.
+final class ProfileSettingsScreen extends ConsumerStatefulWidget {
   final bool embed;
 
-  const _ProfileScreen({this.embed = false});
+  const ProfileSettingsScreen({this.embed = false});
 
   @override
-  ConsumerState<_ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
 }
 
-final class _ProfileScreenState extends ConsumerState<_ProfileScreen> {
+final class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _ageController;
   late final TextEditingController _bodyFatController;

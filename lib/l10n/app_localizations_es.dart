@@ -130,6 +130,64 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardVolume => 'Volumen';
 
   @override
+  String get dashboardDaysTrained => 'Días entrenados';
+
+  @override
+  String dashboardDaysTrainedValue(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count días',
+      one: '1 día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dashboardHoursTrained => 'Tiempo entrenado';
+
+  @override
+  String dashboardHoursTrainedHours(Object hours) {
+    return '$hours h';
+  }
+
+  @override
+  String dashboardHoursTrainedHoursMinutes(Object hours, Object minutes) {
+    return '$hours h $minutes m';
+  }
+
+  @override
+  String get dashboardGoalsTitle => 'Objetivos';
+
+  @override
+  String get dashboardGoalsEmpty => 'No hay objetivos activos';
+
+  @override
+  String get dashboardGoalsCta => 'Objetivos';
+
+  @override
+  String get dashboardExperimentsTitle => 'Experimentos';
+
+  @override
+  String get dashboardExperimentsBody =>
+      'Haga seguimiento de sus experimentos y registros diarios.';
+
+  @override
+  String get dashboardExperimentsCta => 'Experimentos';
+
+  @override
+  String get dashboardAddTitle => 'Añadir';
+
+  @override
+  String get dietAddMeal => 'Comida';
+
+  @override
+  String get dietAddRecipe => 'Receta';
+
+  @override
+  String get dietAddIngredient => 'Ingrediente';
+
+  @override
   String dashboardVolumeKg(String volume, String unit) {
     return '$volume $unit';
   }

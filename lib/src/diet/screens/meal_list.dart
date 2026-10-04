@@ -13,7 +13,11 @@ import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/meals.dart';
 import '../../dashboard/providers/dashboard.dart';
+import '../providers/foods.dart';
+import '../providers/ingredients.dart';
+import 'food_form.dart';
 import 'food_list.dart';
+import 'ingredient_form.dart';
 import 'ingredient_list.dart';
 import 'meal_form.dart' show MealFormScreen;
 
@@ -32,6 +36,9 @@ String _mealTitle(BuildContext context, MealEntry meal) {
     DateFormats.formatTime(context, TimeOfDay.fromDateTime(meal.eatenAt)),
   );
 }
+
+/// What the add sheet can open.
+enum _AddChoice { meal, recipe, ingredient }
 
 final class MealListScreen extends ConsumerWidget {
   const MealListScreen({super.key});
@@ -76,10 +83,66 @@ final class MealListScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: null,
-        onPressed: () => _openForm(context, ref, null),
+        tooltip: l10n.dashboardAddTitle,
+        onPressed: () => _showAddSheet(context, ref),
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  /// Offers the three things a meal can be built from.
+  ///
+  /// All three live on this tab, but only the meal form was reachable from here
+  /// — creating a recipe or an ingredient meant walking to another screen first,
+  /// even though you often need the ingredient before the recipe that uses it.
+  /// A sheet rather than a speed-dial because the three are peers here: there is
+  /// no sensible "primary" one to single out.
+  Future<void> _showAddSheet(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final choice = await showModalBottomSheet<_AddChoice>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.restaurant_outlined),
+              title: Text(l10n.dietAddMeal),
+              onTap: () => Navigator.of(sheetContext).pop(_AddChoice.meal),
+            ),
+            ListTile(
+              leading: const Icon(Icons.menu_book_outlined),
+              title: Text(l10n.dietAddRecipe),
+              onTap: () => Navigator.of(sheetContext).pop(_AddChoice.recipe),
+            ),
+            ListTile(
+              leading: const Icon(Icons.soup_kitchen_outlined),
+              title: Text(l10n.dietAddIngredient),
+              onTap: () =>
+                  Navigator.of(sheetContext).pop(_AddChoice.ingredient),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !context.mounted) return;
+
+    // Each form's providers are invalidated on save, copied from how the
+    // dashboard welcome card already wires them.
+    switch (choice) {
+      case _AddChoice.meal:
+        await _openForm(context, ref, null);
+      case _AddChoice.recipe:
+        final saved = await Navigator.of(
+          context,
+        ).push<bool>(MaterialPageRoute(builder: (_) => const FoodFormScreen()));
+        if (saved == true) invalidateFoods(ref);
+      case _AddChoice.ingredient:
+        final saved = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(builder: (_) => const IngredientFormScreen()),
+        );
+        if (saved == true) ref.invalidate(ingredientListProvider);
+    }
   }
 
   Widget _buildMealList(

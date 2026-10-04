@@ -316,6 +316,96 @@ abstract class AppLocalizations {
   /// **'Volume'**
   String get dashboardVolume;
 
+  /// No description provided for @dashboardDaysTrained.
+  ///
+  /// In en, this message translates to:
+  /// **'Days trained'**
+  String get dashboardDaysTrained;
+
+  /// No description provided for @dashboardDaysTrainedValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String dashboardDaysTrainedValue(num count);
+
+  /// No description provided for @dashboardHoursTrained.
+  ///
+  /// In en, this message translates to:
+  /// **'Time trained'**
+  String get dashboardHoursTrained;
+
+  /// No description provided for @dashboardHoursTrainedHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String dashboardHoursTrainedHours(Object hours);
+
+  /// No description provided for @dashboardHoursTrainedHoursMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} m'**
+  String dashboardHoursTrainedHoursMinutes(Object hours, Object minutes);
+
+  /// No description provided for @dashboardGoalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get dashboardGoalsTitle;
+
+  /// No description provided for @dashboardGoalsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No active goals'**
+  String get dashboardGoalsEmpty;
+
+  /// No description provided for @dashboardGoalsCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get dashboardGoalsCta;
+
+  /// No description provided for @dashboardExperimentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Experiments'**
+  String get dashboardExperimentsTitle;
+
+  /// No description provided for @dashboardExperimentsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Track your experiments and daily check-ins.'**
+  String get dashboardExperimentsBody;
+
+  /// No description provided for @dashboardExperimentsCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Experiments'**
+  String get dashboardExperimentsCta;
+
+  /// No description provided for @dashboardAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get dashboardAddTitle;
+
+  /// No description provided for @dietAddMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal'**
+  String get dietAddMeal;
+
+  /// No description provided for @dietAddRecipe.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipe'**
+  String get dietAddRecipe;
+
+  /// No description provided for @dietAddIngredient.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredient'**
+  String get dietAddIngredient;
+
   /// No description provided for @dashboardVolumeKg.
   ///
   /// In en, this message translates to:

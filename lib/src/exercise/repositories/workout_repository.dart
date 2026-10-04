@@ -629,7 +629,7 @@ final class WorkoutRepository {
   /// scan for duration) regardless of the number of workouts — the dashboard's
   /// weekly stats used to resolve `workoutDetailProvider` per workout
   /// (perf T03).
-  Future<({double volumeKg, int minutes})> getVolumeAndMinutesSince(
+  Future<({double volumeKg, int minutes, int daysTrained})> getVolumeAndMinutesSince(
     DateTime fromDay,
   ) async {
     final fromMillis = fromDay.millisecondsSinceEpoch;
@@ -663,11 +663,20 @@ final class WorkoutRepository {
       _database.workouts,
     )..where((t) => t.completedAt.isBiggerOrEqualValue(fromMillis))).get();
     var minutes = 0;
+    // Distinct calendar days, not workout count: two sessions on one day are
+    // one day trained. Derived from the rows already fetched for the minute
+    // sum, so it costs nothing extra.
+    final trainedDays = <DateTime>{};
     for (final row in workoutRows) {
-      minutes += _toDomain(row).duration.inMinutes;
+      final completed = _toDomain(row);
+      minutes += completed.duration.inMinutes;
+      final at = completed.completedAt;
+      if (at != null) {
+        trainedDays.add(DateTime(at.year, at.month, at.day));
+      }
     }
 
-    return (volumeKg: volumeKg, minutes: minutes);
+    return (volumeKg: volumeKg, minutes: minutes, daysTrained: trainedDays.length);
   }
 
   /// Completed-workout volume (kg) per day, oldest first, for workouts
