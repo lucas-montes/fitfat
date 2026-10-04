@@ -47,7 +47,6 @@
   "dashboardContinueWorkout": "Continue workout",
   "dashboardOpenWorkout": "Open workout",
   "dashboardCalorieTarget": "Daily calorie target",
-  "dashboardRemaining": "remaining",
   "dashboardConsumedOfTarget": "{consumed} / {target} kcal",
   "@dashboardConsumedOfTarget": {
     "placeholders": {
@@ -55,13 +54,6 @@
       "target": { "type": "String" }
     }
   },
-  "dashboardOverTarget": "{kcal} kcal over target",
-  "@dashboardOverTarget": {
-    "placeholders": {
-      "kcal": { "type": "String" }
-    }
-  },
-  "dashboardMacroTargets": "Macro targets",
   "dashboardMacroProgress": "{consumed} / {target} g",
   "@dashboardMacroProgress": {
     "placeholders": {

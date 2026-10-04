@@ -32,6 +32,7 @@ import '../../ui/widgets/top_banner.dart';
 import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
 import '../../ui/units.dart';
+import '../../ui/widgets/calorie_bar.dart';
 import '../../ui/widgets/metric_card.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../providers/dashboard.dart';
@@ -184,11 +185,11 @@ final class _NutritionHeroCard extends ConsumerWidget {
               Text(l10n.dashboardCalorieTarget, style: theme.textTheme.titleMedium),
             ]),
             const SizedBox(height: FitFatTokens.spaceM),
-            consumedAsync.when(loading: () => const Center(child: CircularProgressIndicator()), error: (e, _) => Text(l10n.dashboardError('$e')), data: (consumed) => _CalorieRing(consumed: consumed, target: meta.target)),
-            const SizedBox(height: FitFatTokens.spaceL),
-            const Divider(height: 1),
-            const SizedBox(height: FitFatTokens.spaceL),
-            Row(children: [Icon(Icons.pie_chart_outline, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text(l10n.dashboardMacroTargets, style: theme.textTheme.titleMedium)]),
+            consumedAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text(l10n.dashboardError('$e')),
+              data: (consumed) => CalorieBar(consumed: consumed, target: meta.target),
+            ),
             const SizedBox(height: FitFatTokens.spaceM),
             targetsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -209,29 +210,6 @@ final class _NutritionHeroCard extends ConsumerWidget {
         ),
       ),
     );
-  }
-}
-
-final class _CalorieRing extends StatelessWidget {
-  final double consumed;
-  final double target;
-  const _CalorieRing({required this.consumed, required this.target});
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final l10n = AppLocalizations.of(context)!;
-    final remaining = math.max(0.0, target - consumed);
-    final progress = (consumed / target).clamp(0.0, 1.0);
-    return Column(children: [
-      SizedBox(height: 180, width: 180, child: Stack(alignment: Alignment.center, children: [
-        SizedBox(width: 180, height: 180, child: CircularProgressIndicator(value: progress, strokeWidth: 14, strokeCap: StrokeCap.round, backgroundColor: scheme.surfaceContainerHighest)),
-        Column(mainAxisSize: MainAxisSize.min, children: [Text(l10n.dashboardRemaining, style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)), const SizedBox(height: FitFatTokens.spaceXs), Text('${remaining.toStringAsFixed(0)} kcal', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold))]),
-      ])),
-      const SizedBox(height: FitFatTokens.spaceM),
-      Text(l10n.dashboardConsumedOfTarget(consumed.toStringAsFixed(0), target.toStringAsFixed(0)), style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
-      if (consumed > target) ...[const SizedBox(height: FitFatTokens.spaceXs), Text(l10n.dashboardOverTarget((consumed - target).toStringAsFixed(0)), style: theme.textTheme.bodySmall?.copyWith(color: theme.extension<FitFatColors>()!.warning))],
-    ]);
   }
 }
 

@@ -268,29 +268,11 @@ abstract class AppLocalizations {
   /// **'Daily calorie target'**
   String get dashboardCalorieTarget;
 
-  /// No description provided for @dashboardRemaining.
-  ///
-  /// In en, this message translates to:
-  /// **'remaining'**
-  String get dashboardRemaining;
-
   /// No description provided for @dashboardConsumedOfTarget.
   ///
   /// In en, this message translates to:
   /// **'{consumed} / {target} kcal'**
   String dashboardConsumedOfTarget(String consumed, String target);
-
-  /// No description provided for @dashboardOverTarget.
-  ///
-  /// In en, this message translates to:
-  /// **'{kcal} kcal over target'**
-  String dashboardOverTarget(String kcal);
-
-  /// No description provided for @dashboardMacroTargets.
-  ///
-  /// In en, this message translates to:
-  /// **'Macro targets'**
-  String get dashboardMacroTargets;
 
   /// No description provided for @dashboardMacroProgress.
   ///

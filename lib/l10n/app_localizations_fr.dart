@@ -100,20 +100,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardCalorieTarget => 'Objectif calorique quotidien';
 
   @override
-  String get dashboardRemaining => 'restant';
-
-  @override
   String dashboardConsumedOfTarget(String consumed, String target) {
     return '$consumed / $target kcal';
   }
-
-  @override
-  String dashboardOverTarget(String kcal) {
-    return '$kcal kcal au-dessus de l\'objectif';
-  }
-
-  @override
-  String get dashboardMacroTargets => 'Objectifs macro';
 
   @override
   String dashboardMacroProgress(String consumed, String target) {
