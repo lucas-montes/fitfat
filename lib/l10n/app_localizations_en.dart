@@ -130,21 +130,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardVolume => 'Volume';
 
   @override
-  String get dashboardDaysTrained => 'Days trained';
+  String get dashboardDaysTrained => 'Days';
 
   @override
-  String dashboardDaysTrainedValue(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count days',
-      one: '1 day',
-    );
-    return '$_temp0';
+  String dashboardDaysTrainedValue(int count) {
+    return '$count/7';
   }
 
   @override
-  String get dashboardHoursTrained => 'Time trained';
+  String get dashboardHoursTrained => 'Time';
 
   @override
   String dashboardHoursTrainedHours(Object hours) {
@@ -186,11 +180,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dietAddIngredient => 'Ingredient';
-
-  @override
-  String dashboardVolumeKg(String volume, String unit) {
-    return '$volume $unit';
-  }
 
   @override
   String get dashboardMinutes => 'Minutes';

@@ -319,19 +319,19 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardDaysTrained.
   ///
   /// In en, this message translates to:
-  /// **'Days trained'**
+  /// **'Days'**
   String get dashboardDaysTrained;
 
   /// No description provided for @dashboardDaysTrainedValue.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 day} other{{count} days}}'**
-  String dashboardDaysTrainedValue(num count);
+  /// **'{count}/7'**
+  String dashboardDaysTrainedValue(int count);
 
   /// No description provided for @dashboardHoursTrained.
   ///
   /// In en, this message translates to:
-  /// **'Time trained'**
+  /// **'Time'**
   String get dashboardHoursTrained;
 
   /// No description provided for @dashboardHoursTrainedHours.
@@ -405,12 +405,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ingredient'**
   String get dietAddIngredient;
-
-  /// No description provided for @dashboardVolumeKg.
-  ///
-  /// In en, this message translates to:
-  /// **'{volume} {unit}'**
-  String dashboardVolumeKg(String volume, String unit);
 
   /// No description provided for @dashboardMinutes.
   ///

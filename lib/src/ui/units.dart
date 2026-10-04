@@ -42,3 +42,20 @@ String formatWeightValue(double kg, WeightUnit unit) =>
 /// Formats a stored cm value in the user's unit, e.g. "183.0".
 String formatLengthValue(double cm, LengthUnit unit) =>
     lengthFromCm(cm, unit).toStringAsFixed(1);
+
+/// Formats a stored kg **volume** — a total lifted, not a body weight.
+///
+/// Compacts to metric tonnes once it passes a tonne, because weekly tonnage
+/// runs into five and six figures and `48210.3 kg` is unreadable at a glance in
+/// a one-third-width tile. Below that it falls back to the user's chosen weight
+/// unit as usual.
+///
+/// The threshold is on the stored kg, not the displayed figure, so a lb user's
+/// 1000 kg compacts to `1.0 t` rather than waiting for 2205 lb — the compaction
+/// is about magnitude, not about which unit is displayed.
+String formatVolume(double kg, WeightUnit unit) {
+  if (kg.abs() >= 1000) {
+    return '${(kg / 1000).toStringAsFixed(1)} t';
+  }
+  return '${formatWeightValue(kg, unit)} ${weightUnitLabel(unit)}';
+}

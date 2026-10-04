@@ -13,6 +13,7 @@ final class MetricCard extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.child,
+    this.compact = false,
   });
 
   final String title;
@@ -25,6 +26,11 @@ final class MetricCard extends StatelessWidget {
   /// P/C/F composition bars).
   final Widget? child;
 
+  /// Tightens the type and padding for a row of three or more cards, where the
+  /// default `headlineSmall` value overflows a third of the width. Opt-in so the
+  /// hero cards that render one or two keep their full-size figures.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -32,19 +38,23 @@ final class MetricCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(FitFatTokens.spaceL),
+        padding: EdgeInsets.all(
+          compact ? FitFatTokens.spaceM : FitFatTokens.spaceL,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 20, color: scheme.primary),
+              Icon(icon, size: compact ? 16 : 20, color: scheme.primary),
               const SizedBox(height: FitFatTokens.spaceS),
             ],
             Text(
               title,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style:
+                  (compact
+                          ? theme.textTheme.labelSmall
+                          : theme.textTheme.labelMedium)
+                      ?.copyWith(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: FitFatTokens.spaceXs),
             Row(
@@ -55,9 +65,11 @@ final class MetricCard extends StatelessWidget {
                     child: Text(
                       value,
                       key: ValueKey(value),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          (compact
+                                  ? theme.textTheme.titleLarge
+                                  : theme.textTheme.headlineSmall)
+                              ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),

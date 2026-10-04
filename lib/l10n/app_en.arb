@@ -72,9 +72,14 @@
   "dashboardWeightTrend": "Weight trend",
   "dashboardWeeklyWorkout": "Weekly workout",
   "dashboardVolume": "Volume",
-  "dashboardDaysTrained": "Days trained",
-  "dashboardDaysTrainedValue": "{count, plural, =1{1 day} other{{count} days}}",
-  "dashboardHoursTrained": "Time trained",
+  "dashboardDaysTrained": "Days",
+  "dashboardDaysTrainedValue": "{count}/7",
+  "@dashboardDaysTrainedValue": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "dashboardHoursTrained": "Time",
   "dashboardHoursTrainedHours": "{hours} h",
   "dashboardHoursTrainedHoursMinutes": "{hours} h {minutes} m",
   "dashboardGoalsTitle": "Goals",
@@ -87,7 +92,6 @@
   "dietAddMeal": "Meal",
   "dietAddRecipe": "Recipe",
   "dietAddIngredient": "Ingredient",
-  "dashboardVolumeKg": "{volume} {unit}",
   "@dashboardVolumeKg": {
     "placeholders": {
       "volume": { "type": "String" },

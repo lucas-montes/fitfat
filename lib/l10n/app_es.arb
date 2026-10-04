@@ -71,9 +71,14 @@
   "dashboardWeightTrend": "Evolución del peso",
   "dashboardWeeklyWorkout": "Entrenamiento semanal",
   "dashboardVolume": "Volumen",
-  "dashboardDaysTrained": "Días entrenados",
-  "dashboardDaysTrainedValue": "{count, plural, =1{1 día} other{{count} días}}",
-  "dashboardHoursTrained": "Tiempo entrenado",
+  "dashboardDaysTrained": "Días",
+  "dashboardDaysTrainedValue": "{count}/7",
+  "@dashboardDaysTrainedValue": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "dashboardHoursTrained": "Tiempo",
   "dashboardHoursTrainedHours": "{hours} h",
   "dashboardHoursTrainedHoursMinutes": "{hours} h {minutes} m",
   "dashboardGoalsTitle": "Objetivos",
@@ -86,7 +91,6 @@
   "dietAddMeal": "Comida",
   "dietAddRecipe": "Receta",
   "dietAddIngredient": "Ingrediente",
-  "dashboardVolumeKg": "{volume} {unit}",
   "@dashboardVolumeKg": {
     "placeholders": {
       "volume": {

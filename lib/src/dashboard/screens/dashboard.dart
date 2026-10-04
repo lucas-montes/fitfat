@@ -465,12 +465,15 @@ final class _WorkoutHeroCard extends ConsumerWidget {
           if (stats.totalVolumeKg == 0 && stats.totalMinutes == 0) {
             return Text(l10n.dashboardWeeklyEmptyBody, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant));
           }
+          // Three tiles across a phone width, so all three use the compact
+          // metric type. Days reads as x/7 because the window is a rolling seven
+          // days — the denominator is what makes the number mean anything.
           return Row(children: [
-            Expanded(child: MetricCard(icon: Icons.event_available_outlined, title: l10n.dashboardDaysTrained, value: l10n.dashboardDaysTrainedValue(stats.daysTrained))),
+            Expanded(child: MetricCard(compact: true, icon: Icons.event_available_outlined, title: l10n.dashboardDaysTrained, value: l10n.dashboardDaysTrainedValue(stats.daysTrained))),
             const SizedBox(width: FitFatTokens.spaceS),
-            Expanded(child: MetricCard(icon: Icons.timer_outlined, title: l10n.dashboardHoursTrained, value: _formatHours(l10n, stats.totalMinutes))),
+            Expanded(child: MetricCard(compact: true, icon: Icons.timer_outlined, title: l10n.dashboardHoursTrained, value: _formatHours(l10n, stats.totalMinutes))),
             const SizedBox(width: FitFatTokens.spaceS),
-            Expanded(child: MetricCard(icon: Icons.calculate_outlined, title: l10n.dashboardVolume, value: l10n.dashboardVolumeKg(formatWeightValue(stats.totalVolumeKg, weightUnit), weightUnitLabel(weightUnit)))),
+            Expanded(child: MetricCard(compact: true, icon: Icons.calculate_outlined, title: l10n.dashboardVolume, value: formatVolume(stats.totalVolumeKg, weightUnit))),
           ]);
         },
       ),
