@@ -442,12 +442,6 @@ abstract class AppLocalizations {
   /// **'Add your age, gender, weight and height to see your daily calorie target.'**
   String get dashboardCalorieTargetEmptyBody;
 
-  /// No description provided for @dashboardCalorieTargetEmptyCta.
-  ///
-  /// In en, this message translates to:
-  /// **'Complete profile'**
-  String get dashboardCalorieTargetEmptyCta;
-
   /// No description provided for @dashboardMacroEmptyTitle.
   ///
   /// In en, this message translates to:

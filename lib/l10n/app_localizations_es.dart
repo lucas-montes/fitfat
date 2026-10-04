@@ -203,9 +203,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Add your age, gender, weight and height to see your daily calorie target.';
 
   @override
-  String get dashboardCalorieTargetEmptyCta => 'Complete profile';
-
-  @override
   String get dashboardMacroEmptyTitle => 'Complete your profile';
 
   @override

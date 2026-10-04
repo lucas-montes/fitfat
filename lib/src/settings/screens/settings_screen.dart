@@ -237,10 +237,8 @@ final class _HubTile extends StatelessWidget {
 
 /// Profile: age, gender, activity source/level, body fat, body weight goal.
 ///
-/// Public because the dashboard links straight here: an estimated calorie target
-/// has a "Complete profile" action, and sending it to the settings *hub* left the
-/// user to find this page themselves. Push it with
-/// `MaterialPageRoute(builder: (_) => const ProfileSettingsScreen())` — with no
+/// Public so it can be pushed directly rather than reached through the settings
+/// hub, which is a menu and makes the caller pick the right entry. With no
 /// [embed] it renders its own app bar and back button.
 final class ProfileSettingsScreen extends ConsumerStatefulWidget {
   final bool embed;

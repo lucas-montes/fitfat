@@ -23,7 +23,6 @@ import '../../planner/providers/planner.dart';
 import '../../planner/screens/planner_item_detail.dart';
 import '../../models/workout.dart';
 import '../../settings/providers/settings.dart';
-import '../../settings/screens/settings_screen.dart';
 import '../../sync/local_backup.dart';
 import '../../sync/sync_models.dart';
 import '../../sync/sync_state_store.dart';
@@ -182,23 +181,7 @@ final class _NutritionHeroCard extends ConsumerWidget {
             Row(children: [
               Icon(Icons.local_fire_department, size: 20, color: theme.colorScheme.primary),
               const SizedBox(width: FitFatTokens.spaceS),
-              Expanded(
-                child: Text(l10n.dashboardCalorieTarget, style: theme.textTheme.titleMedium),
-              ),
-              if (meta.isEstimated)
-                TextButton(
-                  // Straight to Profile, not the settings hub: the hub is a
-                  // menu and this action names a specific page. Profile covers
-                  // age and gender — weight and height come from body metrics,
-                  // so the target stays estimated until those exist too.
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const ProfileSettingsScreen(),
-                    ),
-                  ),
-                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 8)),
-                  child: Text(l10n.dashboardCalorieTargetEmptyCta),
-                ),
+              Text(l10n.dashboardCalorieTarget, style: theme.textTheme.titleMedium),
             ]),
             const SizedBox(height: FitFatTokens.spaceM),
             consumedAsync.when(loading: () => const Center(child: CircularProgressIndicator()), error: (e, _) => Text(l10n.dashboardError('$e')), data: (consumed) => _CalorieRing(consumed: consumed, target: meta.target)),
