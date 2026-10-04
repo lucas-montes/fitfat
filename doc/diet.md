@@ -14,7 +14,7 @@ later without rewriting what was already eaten.
 
 - `foods` (schema v34) holds a name and an archive flag and **no nutrition of its own**. Nutrition is resolved live through `foods → food_ingredients → ingredients`, so editing an ingredient is immediately visible in every food built from it.
 - `food_per100g = Σ(ingredient.per100g × amount) / Σ(amount)`. Amounts are absolute amounts in the batch and their sum is the denominator — there is no separate yield input.
-- `meal_foods` stores the amount eaten **plus a snapshot of that portion** (calories, protein, carbs, fat; sodium/fiber/sugar nullable). Reading a meal replays the snapshot, so editing an ingredient or recipe cannot restate history. The food name is joined live, so a rename shows up everywhere.
+- `meal_foods` stores the amount eaten **plus a snapshot of that portion** (calories, protein, carbs, fat; sodium/fiber/sugar nullable). Reading a meal replays the snapshot, so history reads need no join. The snapshot is refreshed when the food behind it changes, so editing an ingredient or recipe updates meals already logged. The food name is joined live, so a rename shows up everywhere.
 - Resolution is **all-or-nothing**: a food missing one ingredient reports no nutrition rather than summing whatever is present. Half a recipe would under-report calories and would drop that part from the weight denominator, inflating the rest.
 - Every ingredient gets an auto-created 1:1 **derived food** (`id = "i:" + ingredientId`, one component at `amount = 100`) so it stays individually loggable. `IngredientRepository` is the only writer; `FoodRepository` rejects derived ids.
 - Components have no sort order — they are presented alphabetically by ingredient name.

@@ -44,7 +44,7 @@ Table names match `context/database/schema.md` exactly.
 | ingredient | `ingredients`, `ingredient_pictures`, `ingredient_prices` | pictures sync metadata only (§2.2); prices reference `stores.id`. An ingredient is a leaf again — it carries its own nutrition and no recipe |
 | food | `foods`, `food_ingredients` | a named recipe; composition is nested inside the food in the push, so one pull yields a usable recipe (§11.3) |
 | store | `stores` | create + rename only (no delete exists) |
-| meal | `meals`, `meal_foods` | atomic per meal; each `meal_foods` row carries the portion macro snapshot frozen at log time |
+| meal | `meals`, `meal_foods` | atomic per meal; each `meal_foods` row carries the portion macros for the amount eaten, re-derived whenever the food behind it changes |
 | planner_item | `planner_items` | recurrence JSON round-trips verbatim |
 | note | `notes` | |
 | body_metric | `body_metrics` | upsert-by-day semantics preserved |

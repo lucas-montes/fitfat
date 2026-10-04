@@ -17,9 +17,12 @@ Feature: create, read, update, and delete meals (collections of **foods** with a
   recipe can be corrected later without rewriting what was already eaten.
 - **The portion is snapshotted.** `meal_foods` stores calories/protein/carbs/fat (and
   nullable sodium/fiber/sugar) resolved at log time and read verbatim. Reading a meal is
-  therefore join-free, and editing an ingredient or a recipe cannot restate a meal that was
-  already logged. The food **name** is not snapshotted — it is joined live, so a rename
+  therefore join-free. The food **name** is not snapshotted — it is joined live, so a rename
   shows up in old meals.
+- **The snapshot is a cache, not a record.** It is refreshed when the food behind it
+  changes, so editing an ingredient or a recipe *does* move the numbers on meals already
+  logged — see `meal_resnapshot.dart`. Keeping the columns anyway is what lets reads stay
+  one flat `SUM` instead of walking the ingredient graph on every dashboard load.
 - **Fixed-query history.** `getAll()` loads the entire meal history in **three queries**
   (meals, then the `meal_foods` for all of them, then the food names) regardless of meal
   count. This replaced a per-meal `meal_ingredients` + `ingredients` pair that was N+1.

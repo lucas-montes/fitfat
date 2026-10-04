@@ -7,6 +7,7 @@ import '../../models/ingredient.dart';
 import '../../models/ingredient_picture.dart';
 import '../../models/ingredient_price.dart';
 import '../../models/store.dart';
+import 'meal_resnapshot.dart';
 
 /// Owns the `ingredients` table — and, deliberately, the **derived food** that
 /// wraps each ingredient.
@@ -94,6 +95,15 @@ final class IngredientRepository {
       );
       await _syncDerivedFood(ingredient.id, ingredient.name, archived: false);
     });
+
+    // Correcting an ingredient's macros changes every food built from it — its
+    // own derived food plus every recipe listing it — and therefore every meal
+    // that logged one of those. Re-derive those portions so a stored meal shows
+    // the ingredient as it is now.
+    final resnapshot = MealResnapshot(_database);
+    await resnapshot.applyToFoods(
+      await resnapshot.foodsAffectedByIngredient(ingredient.id),
+    );
   }
 
   /// Inserts a synced ingredient, or refreshes it when the id already exists

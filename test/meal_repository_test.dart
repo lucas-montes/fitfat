@@ -74,36 +74,36 @@ void main() {
   }
 
   group('portion snapshots', () {
-    test(
-      'a logged portion is snapshotted from the food, not re-read later',
-      () async {
-        final oats = await seedIngredient(
-          'Oats',
-          calories: 400,
-          protein: 13,
-          carbs: 60,
-          fat: 7,
-        );
+    test('a logged portion follows a later ingredient edit', () async {
+      final oats = await seedIngredient(
+        'Oats',
+        calories: 400,
+        protein: 13,
+        carbs: 60,
+        fat: 7,
+      );
 
-        final meal = await logMeal('Breakfast', [
-          await draft(derivedFoodId(oats), 'Oats', 80),
-        ]);
+      await logMeal('Breakfast', [
+        await draft(derivedFoodId(oats), 'Oats', 80),
+      ]);
 
-        var stored = (await meals.getAll()).single;
-        expect(stored.items.single.calories, closeTo(320, 1e-9));
-        expect(stored.items.single.protein, closeTo(10.4, 1e-9));
-        expect(stored.totalCalories, closeTo(320, 1e-9));
+      var stored = (await meals.getAll()).single;
+      expect(stored.items.single.calories, closeTo(320, 1e-9));
+      expect(stored.items.single.protein, closeTo(10.4, 1e-9));
+      expect(stored.totalCalories, closeTo(320, 1e-9));
 
-        // Now change the ingredient. History must not move.
-        await ingredients.update(
-          (await ingredients.getById(oats))!.copyWith(caloriesPer100g: 250),
-        );
+      // Correcting the ingredient re-derives the portion that used it: the
+      // snapshot is a cache of the derivation, not an independent record of
+      // what was eaten. 80 g at 250 kcal/100g is 200.
+      await ingredients.update(
+        (await ingredients.getById(oats))!.copyWith(caloriesPer100g: 250),
+      );
 
-        stored = (await meals.getAll()).single;
-        expect(stored.items.single.calories, closeTo(320, 1e-9));
-        expect(stored.totalCalories, closeTo(320, 1e-9));
-      },
-    );
+      stored = (await meals.getAll()).single;
+      expect(stored.items.single.calories, closeTo(200, 1e-9));
+      expect(stored.items.single.protein, closeTo(10.4, 1e-9));
+      expect(stored.totalCalories, closeTo(200, 1e-9));
+    });
 
     test('a recipe portion snapshots the resolved combination', () async {
       final oats = await seedIngredient(
@@ -214,9 +214,10 @@ void main() {
         (await ingredients.getById(oats))!.copyWith(caloriesPer100g: 250),
       );
 
-      // A full re-snapshot is a fresh resolution, so it does see the change.
-      // Built directly rather than via newMeal(), which mints a fresh id — the
-      // edit path targets an existing meal.
+      // The cascade above has already refreshed this row, so this asserts the
+      // narrower thing: update() writes a fresh resolution rather than rescaling
+      // what is stored. Built directly rather than via newMeal(), which mints a
+      // fresh id — the edit path targets an existing meal.
       await meals.update(
         MealEntry(
           id: meal.id,

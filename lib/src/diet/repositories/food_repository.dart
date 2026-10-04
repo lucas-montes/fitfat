@@ -5,6 +5,7 @@ import '../../database/app_database.dart' as db;
 import '../../models/food.dart';
 import '../../models/ingredient.dart';
 import '../services/food_nutrition.dart';
+import 'meal_resnapshot.dart';
 
 /// A food plus its live per-100g profile — what the foods list and the meal
 /// picker both display.
@@ -185,6 +186,11 @@ final class FoodRepository {
       );
       await _replaceComponents(food.id, components);
     });
+
+    // A composition change invalidates every meal that logged this food. Re-derive
+    // those portions so the stored numbers match the recipe as it is now — the
+    // snapshot is a cache of this derivation, not an independent record.
+    await MealResnapshot(_database).applyToFoods({food.id});
   }
 
   /// Soft-delete. Meals that already reference the food keep rendering their
@@ -230,6 +236,8 @@ final class FoodRepository {
           );
       await _replaceComponents(food.id, components);
     });
+
+    await MealResnapshot(_database).applyToFoods({food.id});
   }
 
   /// Throws when a write targets a derived food.

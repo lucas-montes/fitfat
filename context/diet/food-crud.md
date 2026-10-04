@@ -88,6 +88,29 @@ they mirror an ingredient and are not something the user authored.
 | `archive` / `restore` | Soft-delete, so logged meals keep rendering from their snapshot |
 | `applyFromServer(food, components)` | Sync path: upsert the row, replace the composition |
 
+## Keeping logged portions honest
+
+`MealResnapshot` (repositories/meal_resnapshot.dart) re-derives the `meal_foods` rows
+that a change invalidates. It is triggered from three places, and only three:
+
+- `IngredientRepository.update` — the ingredient changed, so every food listing it
+  does, plus its own derived food
+- `FoodRepository.update`
+- `FoodRepository.applyFromServer`
+
+It deliberately is **not** in `insert` (a brand-new id cannot be referenced by a
+logged meal) or in `archive`/`restore` (resolution ignores the archived flag, so
+neither changes what a food resolves to).
+
+It lives outside `MealRepository` so `FoodRepository` and `IngredientRepository` can
+both reach it without making the import graph cyclic.
+
+**Degradation:** a food that stops resolving — a part whose ingredient row is gone, an
+emptied composition — leaves its rows at their last known numbers instead of being zeroed.
+Those figures still describe a portion that was genuinely eaten, whereas zero would
+invent a claim, and an unresolvable food has no new value to write anyway. The rows pick
+up correct numbers as soon as it resolves again.
+
 ## Sync
 
 `FoodSyncClient` treats foods as their own resource (`SyncResource.foods`, `/foods`) with

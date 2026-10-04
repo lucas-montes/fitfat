@@ -109,7 +109,7 @@ One food logged in a meal, with the portion snapshot (v34). Replaces `meal_ingre
 | calories, protein, carbs, fat | REAL | **snapshot of the portion**, resolved at log time and read verbatim |
 | sodium, fiber, sugar | REAL? | nullable; null only when no component ever provided a value |
 
-The snapshot is what makes history stable: editing an ingredient or a recipe cannot restate a meal that was already logged. The food **name** is deliberately not snapshotted — it is joined live, so renaming a recipe shows up in old meals.
+The snapshot makes history reads flat — a meal is replayed without touching the ingredient graph, and the dashboard total is one `SUM`. It is a cache rather than an independent record: `MealResnapshot` re-derives the affected rows when an ingredient or a food changes, so editing one does move the numbers on meals already logged. A food that stops resolving is left at its last known figures rather than zeroed. The food **name** is deliberately not snapshotted — it is joined live, so renaming a recipe shows up in old meals.
 
 ## Exercise tables
 
