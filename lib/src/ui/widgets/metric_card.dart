@@ -39,17 +39,27 @@ final class MetricCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: EdgeInsets.all(
-          compact ? FitFatTokens.spaceM : FitFatTokens.spaceL,
+          compact ? FitFatTokens.spaceS : FitFatTokens.spaceL,
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          // Compact tiles centre their contents: three of them in a row read as
+          // a set, and a left-aligned icon with centred text beside it looks
+          // misaligned.
+          crossAxisAlignment: compact
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: compact ? 16 : 20, color: scheme.primary),
-              const SizedBox(height: FitFatTokens.spaceS),
+              Icon(icon, size: compact ? 14 : 20, color: scheme.primary),
+              const SizedBox(height: FitFatTokens.spaceXs),
             ],
             Text(
               title,
+              textAlign: compact ? TextAlign.center : TextAlign.start,
+              // Only compact tiles are narrow enough to need clipping; the
+              // default ones wrap as they always have.
+              maxLines: compact ? 1 : null,
+              overflow: compact ? TextOverflow.ellipsis : null,
               style:
                   (compact
                           ? theme.textTheme.labelSmall
@@ -62,15 +72,29 @@ final class MetricCard extends StatelessWidget {
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: FitFatTokens.motionNormal,
-                    child: Text(
-                      value,
-                      key: ValueKey(value),
-                      style:
-                          (compact
-                                  ? theme.textTheme.titleLarge
-                                  : theme.textTheme.headlineSmall)
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
+                    child: compact
+                        // A third-width tile cannot hold a headline figure:
+                        // "999.9 kg" at titleLarge overflows. ScaleDown keeps
+                        // the whole value legible rather than ellipsing it, and
+                        // only shrinks when it has to.
+                        ? FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              value,
+                              key: ValueKey(value),
+                              maxLines: 1,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            value,
+                            key: ValueKey(value),
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 ?trailing,
