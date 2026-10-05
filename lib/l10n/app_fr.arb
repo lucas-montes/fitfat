@@ -379,6 +379,8 @@
   "foodPickerSectionIngredients": "Ingrédients seuls",
   "foodPickerEmpty": "Aucun résultat.",
   "foodPickerNoFoods": "Aucun aliment pour l’instant. Ajoutez un ingrédient pour commencer — chacun s’enregistre seul.",
+  "foodPickerNeedsAmount": "{name} a besoin d'une quantité avant d'enregistrer",
+  "mealListTotals": "{amount} g  ·  P {protein}  ·  C {carbs}  ·  F {fat}",
   "foodPickerDone": "Terminé",
   "mealFormSelectedSummary": "{count, plural, =0{Aucun aliment sélectionné} =1{1 aliment sélectionné} other{{count} aliments sélectionnés}} · {calories} kcal",
   "mealFormChooseFoods": "Choisir des aliments",

@@ -845,6 +845,21 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun aliment pour l’instant. Ajoutez un ingrédient pour commencer — chacun s’enregistre seul.';
 
   @override
+  String foodPickerNeedsAmount(String name) {
+    return '$name a besoin d\'une quantité avant d\'enregistrer';
+  }
+
+  @override
+  String mealListTotals(
+    String amount,
+    String protein,
+    String carbs,
+    String fat,
+  ) {
+    return '$amount g  ·  P $protein  ·  C $carbs  ·  F $fat';
+  }
+
+  @override
   String get foodPickerDone => 'Terminé';
 
   @override

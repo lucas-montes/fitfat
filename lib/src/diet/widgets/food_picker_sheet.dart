@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/food.dart';
+import '../../ui/tokens.dart';
 import '../repositories/food_repository.dart';
 
 /// Picks the foods logged in a meal, with an amount for each.
@@ -44,16 +45,46 @@ final class _FoodPickerSheet extends StatefulWidget {
 final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
   final _searchCtrl = TextEditingController();
 
-  /// Amount per food id. A value > 0 means selected, matching `MealRepository`.
+  /// Foods the user has ticked, which is **not** the same thing as having an
+  /// amount.
+  ///
+  /// These were conflated, and the conflation was the bug: `enabled` on the amount
+  /// field was derived from `amount > 0`, so backspacing `100` to `00` parsed to
+  /// zero and disabled the very field being typed into. That dropped its focus,
+  /// closed the keyboard, and read as the sheet closing — while also removing the
+  /// food from the meal. Selection now lives here and never moves because of
+  /// what the user is typing.
+  late final Set<String> _selected = {
+    for (final e in widget.initialAmounts.entries)
+      if (e.value > 0) e.key,
+  };
+
+  /// Parsed amount per selected food id. A ticked food with no valid amount is
+  /// simply absent here. `_done` refuses to close while that is the case, so the
+  /// result is always safe to use.
+  ///
+  /// Seeded from the incoming selection, so reopening the sheet for an existing
+  /// meal restores both the tick state and the amounts.
   late final Map<String, double> _amounts = {
     for (final e in widget.initialAmounts.entries)
       if (e.value > 0) e.key: e.value,
   };
 
+  /// The food blocking the Done button, or null. Inline rather than a banner: this is an
+  /// error the user has to act on, and a banner would auto-dismiss before they
+  /// had read which food was at fault.
+  String? _missingAmountFor;
+
   /// Per-row amount fields. Kept in a map because rows rebuild on every
   /// keystroke in the amount field itself, and a `TextFormField` rebuilt from a
   /// changing `initialValue` would drop the caret mid-edit.
   final Map<String, TextEditingController> _amountCtrls = {};
+
+  /// Food id -> display name, so the missing-amount error can name the food
+  /// without another lookup.
+  late final Map<String, String> _names = {
+    for (final e in widget.foods) e.food.id: e.food.name,
+  };
 
   Timer? _debounce;
   String _query = '';
@@ -68,15 +99,22 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
     super.dispose();
   }
 
-  TextEditingController _controllerFor(String id, double amount) =>
-      _amountCtrls.putIfAbsent(
-        id,
-        () => TextEditingController(
-          text: amount == amount.roundToDouble()
-              ? amount.toStringAsFixed(0)
-              : amount.toString(),
-        ),
-      );
+  TextEditingController _controllerFor(
+    String id,
+    double amount,
+  ) => _amountCtrls.putIfAbsent(
+    id,
+    // Empty by default: ticking a box must not invent a portion. Only a food
+    // that already had one gets its text back, so reopening the sheet for an
+    // existing meal is unchanged.
+    () => TextEditingController(
+      text: amount > 0
+          ? (amount == amount.roundToDouble()
+                ? amount.toStringAsFixed(0)
+                : amount.toString())
+          : '',
+    ),
+  );
 
   void _onSearchChanged(String v) {
     _debounce?.cancel();
@@ -87,21 +125,69 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
     });
   }
 
-  void _setAmount(String id, double amount) {
+  /// Records what the user typed, leaving the text itself alone.
+  ///
+  /// The controller keeps `00` or `80.` verbatim so the caret survives and the
+  /// user can finish typing — normalising it here used to fight them mid-edit.
+  /// Only a positive parse counts as an amount; anything else just means "not
+  /// filled in yet", which leaves the food ticked.
+  void _onAmountChanged(String id, String raw) {
+    final parsed = double.tryParse(raw.trim());
     setState(() {
-      if (amount > 0) {
-        _amounts[id] = amount;
+      if (parsed != null && parsed > 0) {
+        _amounts[id] = parsed;
+        _missingAmountFor = null;
       } else {
         _amounts.remove(id);
       }
     });
-    final c = _amountCtrls[id];
-    if (c != null && amount > 0) {
-      final text = amount == amount.roundToDouble()
-          ? amount.toStringAsFixed(0)
-          : amount.toString();
-      if (c.text != text) c.text = text;
+  }
+
+  void _toggle(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selected.add(id);
+        // No default portion — the field starts empty on purpose.
+        _amounts.remove(id);
+      } else {
+        _selected.remove(id);
+        _amounts.remove(id);
+        _amountCtrls.remove(id)?.dispose();
+      }
+      _missingAmountFor = null;
+    });
+  }
+
+  /// Ticked foods with no usable amount, in list order.
+  List<String> _missingAmounts() {
+    final names = <String>[];
+    for (final id in _selected) {
+      if ((_amounts[id] ?? 0) <= 0) names.add(id);
     }
+    names.sort();
+    return names;
+  }
+
+  /// Confirms the selection, or blocks and names the first food with no amount.
+  void _done() {
+    final missing = _missingAmounts();
+    if (missing.isNotEmpty) {
+      setState(() => _missingAmountFor = _nameOf(missing.first));
+      return;
+    }
+    Navigator.of(context).pop(Map.of(_amounts));
+  }
+
+  /// The blocking message, or null when nothing is wrong.
+  String? _errorText(AppLocalizations l10n) => _missingAmountFor == null
+      ? null
+      : l10n.foodPickerNeedsAmount(_missingAmountFor!);
+
+  /// The display name for a food id, falling back to the id so the error always
+  /// identifies *something*.
+  String _nameOf(String id) {
+    final name = _names[id];
+    return (name == null || name.isEmpty) ? id : name;
   }
 
   @override
@@ -142,7 +228,8 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
             scrollController: scrollController,
             title: l10n.foodPickerTitle,
             searchField: null,
-            onDone: () => Navigator.of(context).pop(_amounts),
+            onDone: _done,
+            error: _errorText(l10n),
             children: [
               Padding(
                 padding: const EdgeInsets.all(24),
@@ -200,7 +287,8 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
               onChanged: _onSearchChanged,
             ),
           ),
-          onDone: () => Navigator.of(context).pop(_amounts),
+          onDone: _done,
+          error: _errorText(l10n),
           // The section headers are already in `rows`, so a plain sliver list of
           // the rows keeps them sticky-free but virtualized — the whole point of
           // this sheet.
@@ -214,7 +302,7 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
     final l10n = AppLocalizations.of(context)!;
     final food = entry.food;
     final amount = _amounts[food.id] ?? 0;
-    final isSelected = amount > 0;
+    final isSelected = _selected.contains(food.id);
     final per100g = entry.nutrition!.per100g;
     final portion = per100g.calories * amount / 100;
     final theme = Theme.of(context);
@@ -223,7 +311,7 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
       dense: true,
       leading: Checkbox(
         value: isSelected,
-        onChanged: (v) => _setAmount(food.id, v == true ? 100 : 0),
+        onChanged: (v) => _toggle(food.id, v == true),
       ),
       title: Text(
         food.name,
@@ -249,7 +337,10 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
         width: 84,
         child: TextField(
           controller: controller,
-          enabled: isSelected,
+          // Never derived from the parsed amount: that made the field disable
+          // itself the moment the user cleared it, which dropped the keyboard
+          // and looked like the sheet closing.
+          enabled: true,
           textAlign: TextAlign.end,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
@@ -260,10 +351,7 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
             ),
             suffixText: 'g',
           ),
-          onChanged: (v) {
-            final parsed = double.tryParse(v);
-            _setAmount(food.id, parsed ?? 0);
-          },
+          onChanged: (v) => _onAmountChanged(food.id, v),
         ),
       ),
     );
@@ -279,12 +367,18 @@ final class _SheetShell extends StatelessWidget {
   final VoidCallback onDone;
   final List<Widget> children;
 
+  /// Blocking error shown under the header. Rendered inline rather than as a
+  /// banner so it stays until the user fixes it — the sheet cannot close until
+  /// they do.
+  final String? error;
+
   const _SheetShell({
     required this.scrollController,
     required this.title,
     required this.searchField,
     required this.onDone,
     required this.children,
+    this.error,
   });
 
   @override
@@ -303,6 +397,28 @@ final class _SheetShell extends StatelessWidget {
           ),
         ),
         if (searchField != null) searchField!,
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 16,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(width: FitFatTokens.spaceS),
+                Expanded(
+                  child: Text(
+                    error!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         const Divider(height: 1),
         Expanded(
           child: ListView.builder(

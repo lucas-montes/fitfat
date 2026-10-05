@@ -1582,6 +1582,23 @@ abstract class AppLocalizations {
   /// **'No foods yet. Add an ingredient to get started — every ingredient can be logged on its own.'**
   String get foodPickerNoFoods;
 
+  /// No description provided for @foodPickerNeedsAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} needs an amount before you can save'**
+  String foodPickerNeedsAmount(String name);
+
+  /// No description provided for @mealListTotals.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} g  ·  P {protein}  ·  C {carbs}  ·  F {fat}'**
+  String mealListTotals(
+    String amount,
+    String protein,
+    String carbs,
+    String fat,
+  );
+
   /// No description provided for @foodPickerDone.
   ///
   /// In en, this message translates to:

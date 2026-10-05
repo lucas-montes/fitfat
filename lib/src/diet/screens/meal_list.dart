@@ -321,9 +321,28 @@ final class _MealTileState extends State<_MealTile> {
         onLongPress: widget.onTap,
         child: ExpansionTile(
           title: Text(_mealTitle(context, meal)),
-          subtitle: Text(
-            '${l10n.mealListFoodCount(meal.items.length)}  ·  '
-            '${l10n.mealListCaloriesValue(meal.totalCalories.toStringAsFixed(0))}',
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${l10n.mealListFoodCount(meal.items.length)}  ·  '
+                '${l10n.mealListCaloriesValue(meal.totalCalories.toStringAsFixed(0))}',
+              ),
+              // The first line is the scannable summary; this carries the rest of
+              // the meal's totals, so a whole meal's weight and macros are
+              // readable without expanding it.
+              Text(
+                l10n.mealListTotals(
+                  meal.totalAmount.toStringAsFixed(0),
+                  meal.totalProtein.toStringAsFixed(1),
+                  meal.totalCarbs.toStringAsFixed(1),
+                  meal.totalFat.toStringAsFixed(1),
+                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
           leading: const Icon(Icons.restaurant),
           trailing: AnimatedRotation(
