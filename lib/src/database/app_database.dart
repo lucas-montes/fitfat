@@ -63,7 +63,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 34;
+  int get schemaVersion => 35;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -778,6 +778,33 @@ final class AppDatabase extends _$AppDatabase {
         await m.database.customStatement(
           'DROP TABLE IF EXISTS ingredient_components',
         );
+      }
+      if (from < 35) {
+        // v35: sodium/fiber/sugar become mandatory, zero-defaulted.
+        //
+        // They were nullable to mean "never recorded", and that null propagated
+        // into every aggregate touching them: a food whose components all lacked
+        // fiber produced a null fiber total, a meal summed across a mix of null
+        // and non-null parts, and every consumer had to special-case the result.
+        // Collapsing "unrecorded" to 0 removes that whole class of branch — at
+        // the cost of a missing value now reading as a real zero, which is the
+        // trade the user asked for.
+        //
+        // Backfill only; no table rebuild. SQLite cannot add a NOT NULL
+        // constraint to an existing column, and it would buy nothing here: the
+        // invariant that matters is the Dart type, and once no row holds a null
+        // the non-nullable getter is safe. Rebuilding would also drop and
+        // recreate every index for no additional guarantee.
+        for (final statement in [
+          'UPDATE ingredients SET sodium_per100g = 0 WHERE sodium_per100g IS NULL',
+          'UPDATE ingredients SET fiber_per100g = 0 WHERE fiber_per100g IS NULL',
+          'UPDATE ingredients SET sugar_per100g = 0 WHERE sugar_per100g IS NULL',
+          'UPDATE meal_foods SET sodium = 0 WHERE sodium IS NULL',
+          'UPDATE meal_foods SET fiber = 0 WHERE fiber IS NULL',
+          'UPDATE meal_foods SET sugar = 0 WHERE sugar IS NULL',
+        ]) {
+          await m.database.customStatement(statement);
+        }
       }
     },
   );

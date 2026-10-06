@@ -434,9 +434,9 @@ Ingredient newIngredient({
   required double proteinPer100g,
   required double carbsPer100g,
   required double fatPer100g,
-  double? sodiumPer100g,
-  double? fiberPer100g,
-  double? sugarPer100g,
+  double sodiumPer100g = 0,
+  double fiberPer100g = 0,
+  double sugarPer100g = 0,
   String? brand,
   String? barcode,
 }) => Ingredient(

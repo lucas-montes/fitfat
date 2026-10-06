@@ -13,9 +13,9 @@ export '../../models/food.dart'
 /// meal snapshot and the server.
 ///
 /// The denominator is the **sum of component amounts**; there is no separate
-/// yield/cook-weight input. An optional nutriment (sodium/fiber/sugar) stays
-/// null only when *no* component ever provided a value for it; otherwise
-/// components that omit it count as zero so the total stays meaningful.
+/// yield/cook-weight input. Sodium, fiber and sugar sum like the macros do —
+/// they are mandatory and zero-defaulted, so a component that has none recorded
+/// contributes a real zero rather than leaving the total undefined.
 ///
 /// Each term accumulates `per100g * amount`, an **absolute** amount, so dividing
 /// the totals by the total weight lands directly on a per-100g figure — there is
@@ -29,28 +29,20 @@ FoodNutrition resolveFoodPer100g(List<ComponentNutrition> components) {
   var sodium = 0.0;
   var fiber = 0.0;
   var sugar = 0.0;
-  var sawSodium = false;
-  var sawFiber = false;
-  var sawSugar = false;
 
+  // Every field accumulates the same way. There is no longer a "did any component
+  // provide this" flag to track: an unrecorded nutriment is stored as 0, so a
+  // component that omits it genuinely contributes nothing rather than leaving
+  // the total in an undefined state.
   for (final c in components) {
     totalAmount += c.amount;
     calories += c.caloriesPer100g * c.amount;
     protein += c.proteinPer100g * c.amount;
     carbs += c.carbsPer100g * c.amount;
     fat += c.fatPer100g * c.amount;
-    if (c.sodiumPer100g != null) {
-      sawSodium = true;
-      sodium += c.sodiumPer100g! * c.amount;
-    }
-    if (c.fiberPer100g != null) {
-      sawFiber = true;
-      fiber += c.fiberPer100g! * c.amount;
-    }
-    if (c.sugarPer100g != null) {
-      sawSugar = true;
-      sugar += c.sugarPer100g! * c.amount;
-    }
+    sodium += c.sodiumPer100g * c.amount;
+    fiber += c.fiberPer100g * c.amount;
+    sugar += c.sugarPer100g * c.amount;
   }
 
   if (totalAmount <= 0) {
@@ -60,9 +52,9 @@ FoodNutrition resolveFoodPer100g(List<ComponentNutrition> components) {
         protein: 0,
         carbs: 0,
         fat: 0,
-        sodium: sawSodium ? 0 : null,
-        fiber: sawFiber ? 0 : null,
-        sugar: sawSugar ? 0 : null,
+        sodium: 0,
+        fiber: 0,
+        sugar: 0,
       ),
       totalAmount: 0,
     );
@@ -75,9 +67,9 @@ FoodNutrition resolveFoodPer100g(List<ComponentNutrition> components) {
       protein: protein * factor,
       carbs: carbs * factor,
       fat: fat * factor,
-      sodium: sawSodium ? sodium * factor : null,
-      fiber: sawFiber ? fiber * factor : null,
-      sugar: sawSugar ? sugar * factor : null,
+      sodium: sodium * factor,
+      fiber: fiber * factor,
+      sugar: sugar * factor,
     ),
     totalAmount: totalAmount,
   );
@@ -95,9 +87,9 @@ Nutrition scaleToAmount(Nutrition profile, double amount) {
     protein: profile.protein * factor,
     carbs: profile.carbs * factor,
     fat: profile.fat * factor,
-    sodium: profile.sodium == null ? null : profile.sodium! * factor,
-    fiber: profile.fiber == null ? null : profile.fiber! * factor,
-    sugar: profile.sugar == null ? null : profile.sugar! * factor,
+    sodium: profile.sodium * factor,
+    fiber: profile.fiber * factor,
+    sugar: profile.sugar * factor,
   );
 }
 

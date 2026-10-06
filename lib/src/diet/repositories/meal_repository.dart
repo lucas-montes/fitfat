@@ -100,8 +100,11 @@ final class MealRepository {
           'COALESCE(SUM(mf.protein), 0) AS protein, '
           'COALESCE(SUM(mf.carbs), 0) AS carbs, '
           'COALESCE(SUM(mf.fat), 0) AS fat, '
-          'SUM(mf.sodium) AS sodium, SUM(mf.fiber) AS fiber, '
-          'SUM(mf.sugar) AS sugar '
+          // COALESCE still needed even though the columns are NOT NULL: SUM over
+          // an empty set is NULL in SQL regardless of what the columns allow.
+          'COALESCE(SUM(mf.sodium), 0) AS sodium, '
+          'COALESCE(SUM(mf.fiber), 0) AS fiber, '
+          'COALESCE(SUM(mf.sugar), 0) AS sugar '
           'FROM meal_foods mf INNER JOIN meals m ON m.id = mf.meal_id '
           'WHERE m.eaten_at >= ?1 AND m.eaten_at < ?2',
           variables: [
@@ -116,9 +119,9 @@ final class MealRepository {
       protein: row.read<double>('protein'),
       carbs: row.read<double>('carbs'),
       fat: row.read<double>('fat'),
-      sodium: row.readNullable<double>('sodium'),
-      fiber: row.readNullable<double>('fiber'),
-      sugar: row.readNullable<double>('sugar'),
+      sodium: row.read<double>('sodium'),
+      fiber: row.read<double>('fiber'),
+      sugar: row.read<double>('sugar'),
     );
   }
 
@@ -233,9 +236,9 @@ final class MealRepository {
             protein: Value(row.protein * factor),
             carbs: Value(row.carbs * factor),
             fat: Value(row.fat * factor),
-            sodium: Value(row.sodium == null ? null : row.sodium! * factor),
-            fiber: Value(row.fiber == null ? null : row.fiber! * factor),
-            sugar: Value(row.sugar == null ? null : row.sugar! * factor),
+            sodium: Value(row.sodium * factor),
+            fiber: Value(row.fiber * factor),
+            sugar: Value(row.sugar * factor),
           ),
         );
       }
@@ -310,9 +313,9 @@ MealEntry newMeal({
           protein: 0,
           carbs: 0,
           fat: 0,
-          sodium: draft.nutrition?.per100g.sodium,
-          fiber: draft.nutrition?.per100g.fiber,
-          sugar: draft.nutrition?.per100g.sugar,
+          sodium: 0,
+          fiber: 0,
+          sugar: 0,
           // Carried through so the repository can snapshot from it.
           nutrition: draft.nutrition,
         ),

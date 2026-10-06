@@ -310,10 +310,14 @@ void main() {
       expect(totals.calories, closeTo(600, 1e-9));
     });
 
-    test('an empty window totals to zero, not null', () async {
+    test('an empty window totals to zero for every field', () async {
       final totals = await meals.totalsBetween(DateTime(2020), DateTime(2021));
       expect(totals.calories, 0);
-      expect(totals.sodium, isNull);
+      // Was null while the fields were nullable; zero now, since an empty SUM is
+      // wrapped in COALESCE and every field is non-nullable.
+      expect(totals.sodium, 0);
+      expect(totals.fiber, 0);
+      expect(totals.sugar, 0);
     });
   });
 

@@ -78,9 +78,10 @@ class $IngredientsTable extends Ingredients
   late final GeneratedColumn<double> sodiumPer100g = GeneratedColumn<double>(
     'sodium_per100g',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.double,
     requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _fiberPer100gMeta = const VerificationMeta(
     'fiberPer100g',
@@ -89,9 +90,10 @@ class $IngredientsTable extends Ingredients
   late final GeneratedColumn<double> fiberPer100g = GeneratedColumn<double>(
     'fiber_per100g',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.double,
     requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _sugarPer100gMeta = const VerificationMeta(
     'sugarPer100g',
@@ -100,9 +102,10 @@ class $IngredientsTable extends Ingredients
   late final GeneratedColumn<double> sugarPer100g = GeneratedColumn<double>(
     'sugar_per100g',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.double,
     requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _isArchivedMeta = const VerificationMeta(
     'isArchived',
@@ -321,15 +324,15 @@ class $IngredientsTable extends Ingredients
       sodiumPer100g: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}sodium_per100g'],
-      ),
+      )!,
       fiberPer100g: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}fiber_per100g'],
-      ),
+      )!,
       sugarPer100g: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}sugar_per100g'],
-      ),
+      )!,
       isArchived: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_archived'],
@@ -362,9 +365,9 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
   final double proteinPer100g;
   final double carbsPer100g;
   final double fatPer100g;
-  final double? sodiumPer100g;
-  final double? fiberPer100g;
-  final double? sugarPer100g;
+  final double sodiumPer100g;
+  final double fiberPer100g;
+  final double sugarPer100g;
   final bool isArchived;
   final String? brand;
   final String? barcode;
@@ -376,9 +379,9 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
     required this.proteinPer100g,
     required this.carbsPer100g,
     required this.fatPer100g,
-    this.sodiumPer100g,
-    this.fiberPer100g,
-    this.sugarPer100g,
+    required this.sodiumPer100g,
+    required this.fiberPer100g,
+    required this.sugarPer100g,
     required this.isArchived,
     this.brand,
     this.barcode,
@@ -393,15 +396,9 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
     map['protein_per100g'] = Variable<double>(proteinPer100g);
     map['carbs_per100g'] = Variable<double>(carbsPer100g);
     map['fat_per100g'] = Variable<double>(fatPer100g);
-    if (!nullToAbsent || sodiumPer100g != null) {
-      map['sodium_per100g'] = Variable<double>(sodiumPer100g);
-    }
-    if (!nullToAbsent || fiberPer100g != null) {
-      map['fiber_per100g'] = Variable<double>(fiberPer100g);
-    }
-    if (!nullToAbsent || sugarPer100g != null) {
-      map['sugar_per100g'] = Variable<double>(sugarPer100g);
-    }
+    map['sodium_per100g'] = Variable<double>(sodiumPer100g);
+    map['fiber_per100g'] = Variable<double>(fiberPer100g);
+    map['sugar_per100g'] = Variable<double>(sugarPer100g);
     map['is_archived'] = Variable<bool>(isArchived);
     if (!nullToAbsent || brand != null) {
       map['brand'] = Variable<String>(brand);
@@ -421,15 +418,9 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
       proteinPer100g: Value(proteinPer100g),
       carbsPer100g: Value(carbsPer100g),
       fatPer100g: Value(fatPer100g),
-      sodiumPer100g: sodiumPer100g == null && nullToAbsent
-          ? const Value.absent()
-          : Value(sodiumPer100g),
-      fiberPer100g: fiberPer100g == null && nullToAbsent
-          ? const Value.absent()
-          : Value(fiberPer100g),
-      sugarPer100g: sugarPer100g == null && nullToAbsent
-          ? const Value.absent()
-          : Value(sugarPer100g),
+      sodiumPer100g: Value(sodiumPer100g),
+      fiberPer100g: Value(fiberPer100g),
+      sugarPer100g: Value(sugarPer100g),
       isArchived: Value(isArchived),
       brand: brand == null && nullToAbsent
           ? const Value.absent()
@@ -453,9 +444,9 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
       proteinPer100g: serializer.fromJson<double>(json['proteinPer100g']),
       carbsPer100g: serializer.fromJson<double>(json['carbsPer100g']),
       fatPer100g: serializer.fromJson<double>(json['fatPer100g']),
-      sodiumPer100g: serializer.fromJson<double?>(json['sodiumPer100g']),
-      fiberPer100g: serializer.fromJson<double?>(json['fiberPer100g']),
-      sugarPer100g: serializer.fromJson<double?>(json['sugarPer100g']),
+      sodiumPer100g: serializer.fromJson<double>(json['sodiumPer100g']),
+      fiberPer100g: serializer.fromJson<double>(json['fiberPer100g']),
+      sugarPer100g: serializer.fromJson<double>(json['sugarPer100g']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
       brand: serializer.fromJson<String?>(json['brand']),
       barcode: serializer.fromJson<String?>(json['barcode']),
@@ -472,9 +463,9 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
       'proteinPer100g': serializer.toJson<double>(proteinPer100g),
       'carbsPer100g': serializer.toJson<double>(carbsPer100g),
       'fatPer100g': serializer.toJson<double>(fatPer100g),
-      'sodiumPer100g': serializer.toJson<double?>(sodiumPer100g),
-      'fiberPer100g': serializer.toJson<double?>(fiberPer100g),
-      'sugarPer100g': serializer.toJson<double?>(sugarPer100g),
+      'sodiumPer100g': serializer.toJson<double>(sodiumPer100g),
+      'fiberPer100g': serializer.toJson<double>(fiberPer100g),
+      'sugarPer100g': serializer.toJson<double>(sugarPer100g),
       'isArchived': serializer.toJson<bool>(isArchived),
       'brand': serializer.toJson<String?>(brand),
       'barcode': serializer.toJson<String?>(barcode),
@@ -489,9 +480,9 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
     double? proteinPer100g,
     double? carbsPer100g,
     double? fatPer100g,
-    Value<double?> sodiumPer100g = const Value.absent(),
-    Value<double?> fiberPer100g = const Value.absent(),
-    Value<double?> sugarPer100g = const Value.absent(),
+    double? sodiumPer100g,
+    double? fiberPer100g,
+    double? sugarPer100g,
     bool? isArchived,
     Value<String?> brand = const Value.absent(),
     Value<String?> barcode = const Value.absent(),
@@ -503,11 +494,9 @@ class Ingredient extends DataClass implements Insertable<Ingredient> {
     proteinPer100g: proteinPer100g ?? this.proteinPer100g,
     carbsPer100g: carbsPer100g ?? this.carbsPer100g,
     fatPer100g: fatPer100g ?? this.fatPer100g,
-    sodiumPer100g: sodiumPer100g.present
-        ? sodiumPer100g.value
-        : this.sodiumPer100g,
-    fiberPer100g: fiberPer100g.present ? fiberPer100g.value : this.fiberPer100g,
-    sugarPer100g: sugarPer100g.present ? sugarPer100g.value : this.sugarPer100g,
+    sodiumPer100g: sodiumPer100g ?? this.sodiumPer100g,
+    fiberPer100g: fiberPer100g ?? this.fiberPer100g,
+    sugarPer100g: sugarPer100g ?? this.sugarPer100g,
     isArchived: isArchived ?? this.isArchived,
     brand: brand.present ? brand.value : this.brand,
     barcode: barcode.present ? barcode.value : this.barcode,
@@ -609,9 +598,9 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
   final Value<double> proteinPer100g;
   final Value<double> carbsPer100g;
   final Value<double> fatPer100g;
-  final Value<double?> sodiumPer100g;
-  final Value<double?> fiberPer100g;
-  final Value<double?> sugarPer100g;
+  final Value<double> sodiumPer100g;
+  final Value<double> fiberPer100g;
+  final Value<double> sugarPer100g;
   final Value<bool> isArchived;
   final Value<String?> brand;
   final Value<String?> barcode;
@@ -696,9 +685,9 @@ class IngredientsCompanion extends UpdateCompanion<Ingredient> {
     Value<double>? proteinPer100g,
     Value<double>? carbsPer100g,
     Value<double>? fatPer100g,
-    Value<double?>? sodiumPer100g,
-    Value<double?>? fiberPer100g,
-    Value<double?>? sugarPer100g,
+    Value<double>? sodiumPer100g,
+    Value<double>? fiberPer100g,
+    Value<double>? sugarPer100g,
     Value<bool>? isArchived,
     Value<String?>? brand,
     Value<String?>? barcode,
@@ -2945,27 +2934,30 @@ class $MealFoodsTable extends MealFoods
   late final GeneratedColumn<double> sodium = GeneratedColumn<double>(
     'sodium',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.double,
     requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _fiberMeta = const VerificationMeta('fiber');
   @override
   late final GeneratedColumn<double> fiber = GeneratedColumn<double>(
     'fiber',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.double,
     requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _sugarMeta = const VerificationMeta('sugar');
   @override
   late final GeneratedColumn<double> sugar = GeneratedColumn<double>(
     'sugar',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.double,
     requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -3116,15 +3108,15 @@ class $MealFoodsTable extends MealFoods
       sodium: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}sodium'],
-      ),
+      )!,
       fiber: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}fiber'],
-      ),
+      )!,
       sugar: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}sugar'],
-      ),
+      )!,
     );
   }
 
@@ -3145,9 +3137,9 @@ class MealFood extends DataClass implements Insertable<MealFood> {
   final double protein;
   final double carbs;
   final double fat;
-  final double? sodium;
-  final double? fiber;
-  final double? sugar;
+  final double sodium;
+  final double fiber;
+  final double sugar;
   const MealFood({
     required this.id,
     required this.mealId,
@@ -3157,9 +3149,9 @@ class MealFood extends DataClass implements Insertable<MealFood> {
     required this.protein,
     required this.carbs,
     required this.fat,
-    this.sodium,
-    this.fiber,
-    this.sugar,
+    required this.sodium,
+    required this.fiber,
+    required this.sugar,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3172,15 +3164,9 @@ class MealFood extends DataClass implements Insertable<MealFood> {
     map['protein'] = Variable<double>(protein);
     map['carbs'] = Variable<double>(carbs);
     map['fat'] = Variable<double>(fat);
-    if (!nullToAbsent || sodium != null) {
-      map['sodium'] = Variable<double>(sodium);
-    }
-    if (!nullToAbsent || fiber != null) {
-      map['fiber'] = Variable<double>(fiber);
-    }
-    if (!nullToAbsent || sugar != null) {
-      map['sugar'] = Variable<double>(sugar);
-    }
+    map['sodium'] = Variable<double>(sodium);
+    map['fiber'] = Variable<double>(fiber);
+    map['sugar'] = Variable<double>(sugar);
     return map;
   }
 
@@ -3194,15 +3180,9 @@ class MealFood extends DataClass implements Insertable<MealFood> {
       protein: Value(protein),
       carbs: Value(carbs),
       fat: Value(fat),
-      sodium: sodium == null && nullToAbsent
-          ? const Value.absent()
-          : Value(sodium),
-      fiber: fiber == null && nullToAbsent
-          ? const Value.absent()
-          : Value(fiber),
-      sugar: sugar == null && nullToAbsent
-          ? const Value.absent()
-          : Value(sugar),
+      sodium: Value(sodium),
+      fiber: Value(fiber),
+      sugar: Value(sugar),
     );
   }
 
@@ -3220,9 +3200,9 @@ class MealFood extends DataClass implements Insertable<MealFood> {
       protein: serializer.fromJson<double>(json['protein']),
       carbs: serializer.fromJson<double>(json['carbs']),
       fat: serializer.fromJson<double>(json['fat']),
-      sodium: serializer.fromJson<double?>(json['sodium']),
-      fiber: serializer.fromJson<double?>(json['fiber']),
-      sugar: serializer.fromJson<double?>(json['sugar']),
+      sodium: serializer.fromJson<double>(json['sodium']),
+      fiber: serializer.fromJson<double>(json['fiber']),
+      sugar: serializer.fromJson<double>(json['sugar']),
     );
   }
   @override
@@ -3237,9 +3217,9 @@ class MealFood extends DataClass implements Insertable<MealFood> {
       'protein': serializer.toJson<double>(protein),
       'carbs': serializer.toJson<double>(carbs),
       'fat': serializer.toJson<double>(fat),
-      'sodium': serializer.toJson<double?>(sodium),
-      'fiber': serializer.toJson<double?>(fiber),
-      'sugar': serializer.toJson<double?>(sugar),
+      'sodium': serializer.toJson<double>(sodium),
+      'fiber': serializer.toJson<double>(fiber),
+      'sugar': serializer.toJson<double>(sugar),
     };
   }
 
@@ -3252,9 +3232,9 @@ class MealFood extends DataClass implements Insertable<MealFood> {
     double? protein,
     double? carbs,
     double? fat,
-    Value<double?> sodium = const Value.absent(),
-    Value<double?> fiber = const Value.absent(),
-    Value<double?> sugar = const Value.absent(),
+    double? sodium,
+    double? fiber,
+    double? sugar,
   }) => MealFood(
     id: id ?? this.id,
     mealId: mealId ?? this.mealId,
@@ -3264,9 +3244,9 @@ class MealFood extends DataClass implements Insertable<MealFood> {
     protein: protein ?? this.protein,
     carbs: carbs ?? this.carbs,
     fat: fat ?? this.fat,
-    sodium: sodium.present ? sodium.value : this.sodium,
-    fiber: fiber.present ? fiber.value : this.fiber,
-    sugar: sugar.present ? sugar.value : this.sugar,
+    sodium: sodium ?? this.sodium,
+    fiber: fiber ?? this.fiber,
+    sugar: sugar ?? this.sugar,
   );
   MealFood copyWithCompanion(MealFoodsCompanion data) {
     return MealFood(
@@ -3342,9 +3322,9 @@ class MealFoodsCompanion extends UpdateCompanion<MealFood> {
   final Value<double> protein;
   final Value<double> carbs;
   final Value<double> fat;
-  final Value<double?> sodium;
-  final Value<double?> fiber;
-  final Value<double?> sugar;
+  final Value<double> sodium;
+  final Value<double> fiber;
+  final Value<double> sugar;
   final Value<int> rowid;
   const MealFoodsCompanion({
     this.id = const Value.absent(),
@@ -3420,9 +3400,9 @@ class MealFoodsCompanion extends UpdateCompanion<MealFood> {
     Value<double>? protein,
     Value<double>? carbs,
     Value<double>? fat,
-    Value<double?>? sodium,
-    Value<double?>? fiber,
-    Value<double?>? sugar,
+    Value<double>? sodium,
+    Value<double>? fiber,
+    Value<double>? sugar,
     Value<int>? rowid,
   }) {
     return MealFoodsCompanion(
@@ -18573,9 +18553,9 @@ typedef $$IngredientsTableCreateCompanionBuilder =
       required double proteinPer100g,
       required double carbsPer100g,
       required double fatPer100g,
-      Value<double?> sodiumPer100g,
-      Value<double?> fiberPer100g,
-      Value<double?> sugarPer100g,
+      Value<double> sodiumPer100g,
+      Value<double> fiberPer100g,
+      Value<double> sugarPer100g,
       Value<bool> isArchived,
       Value<String?> brand,
       Value<String?> barcode,
@@ -18590,9 +18570,9 @@ typedef $$IngredientsTableUpdateCompanionBuilder =
       Value<double> proteinPer100g,
       Value<double> carbsPer100g,
       Value<double> fatPer100g,
-      Value<double?> sodiumPer100g,
-      Value<double?> fiberPer100g,
-      Value<double?> sugarPer100g,
+      Value<double> sodiumPer100g,
+      Value<double> fiberPer100g,
+      Value<double> sugarPer100g,
       Value<bool> isArchived,
       Value<String?> brand,
       Value<String?> barcode,
@@ -19079,9 +19059,9 @@ class $$IngredientsTableTableManager
                 Value<double> proteinPer100g = const Value.absent(),
                 Value<double> carbsPer100g = const Value.absent(),
                 Value<double> fatPer100g = const Value.absent(),
-                Value<double?> sodiumPer100g = const Value.absent(),
-                Value<double?> fiberPer100g = const Value.absent(),
-                Value<double?> sugarPer100g = const Value.absent(),
+                Value<double> sodiumPer100g = const Value.absent(),
+                Value<double> fiberPer100g = const Value.absent(),
+                Value<double> sugarPer100g = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
                 Value<String?> brand = const Value.absent(),
                 Value<String?> barcode = const Value.absent(),
@@ -19111,9 +19091,9 @@ class $$IngredientsTableTableManager
                 required double proteinPer100g,
                 required double carbsPer100g,
                 required double fatPer100g,
-                Value<double?> sodiumPer100g = const Value.absent(),
-                Value<double?> fiberPer100g = const Value.absent(),
-                Value<double?> sugarPer100g = const Value.absent(),
+                Value<double> sodiumPer100g = const Value.absent(),
+                Value<double> fiberPer100g = const Value.absent(),
+                Value<double> sugarPer100g = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
                 Value<String?> brand = const Value.absent(),
                 Value<String?> barcode = const Value.absent(),
@@ -21370,9 +21350,9 @@ typedef $$MealFoodsTableCreateCompanionBuilder =
       required double protein,
       required double carbs,
       required double fat,
-      Value<double?> sodium,
-      Value<double?> fiber,
-      Value<double?> sugar,
+      Value<double> sodium,
+      Value<double> fiber,
+      Value<double> sugar,
       Value<int> rowid,
     });
 typedef $$MealFoodsTableUpdateCompanionBuilder =
@@ -21385,9 +21365,9 @@ typedef $$MealFoodsTableUpdateCompanionBuilder =
       Value<double> protein,
       Value<double> carbs,
       Value<double> fat,
-      Value<double?> sodium,
-      Value<double?> fiber,
-      Value<double?> sugar,
+      Value<double> sodium,
+      Value<double> fiber,
+      Value<double> sugar,
       Value<int> rowid,
     });
 
@@ -21753,9 +21733,9 @@ class $$MealFoodsTableTableManager
                 Value<double> protein = const Value.absent(),
                 Value<double> carbs = const Value.absent(),
                 Value<double> fat = const Value.absent(),
-                Value<double?> sodium = const Value.absent(),
-                Value<double?> fiber = const Value.absent(),
-                Value<double?> sugar = const Value.absent(),
+                Value<double> sodium = const Value.absent(),
+                Value<double> fiber = const Value.absent(),
+                Value<double> sugar = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MealFoodsCompanion(
                 id: id,
@@ -21781,9 +21761,9 @@ class $$MealFoodsTableTableManager
                 required double protein,
                 required double carbs,
                 required double fat,
-                Value<double?> sodium = const Value.absent(),
-                Value<double?> fiber = const Value.absent(),
-                Value<double?> sugar = const Value.absent(),
+                Value<double> sodium = const Value.absent(),
+                Value<double> fiber = const Value.absent(),
+                Value<double> sugar = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MealFoodsCompanion.insert(
                 id: id,

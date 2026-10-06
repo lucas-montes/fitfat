@@ -227,9 +227,11 @@ final class IngredientSyncClient {
       proteinPer100g: (raw['proteinPer100g'] as num?)?.toDouble() ?? 0,
       carbsPer100g: (raw['carbsPer100g'] as num?)?.toDouble() ?? 0,
       fatPer100g: (raw['fatPer100g'] as num?)?.toDouble() ?? 0,
-      sodiumPer100g: (raw['sodiumPer100g'] as num?)?.toDouble(),
-      fiberPer100g: (raw['fiberPer100g'] as num?)?.toDouble(),
-      sugarPer100g: (raw['sugarPer100g'] as num?)?.toDouble(),
+      // An older server omits these or sends null; both mean zero now that the
+      // fields are mandatory, so a mixed-version pair still syncs.
+      sodiumPer100g: (raw['sodiumPer100g'] as num?)?.toDouble() ?? 0,
+      fiberPer100g: (raw['fiberPer100g'] as num?)?.toDouble() ?? 0,
+      sugarPer100g: (raw['sugarPer100g'] as num?)?.toDouble() ?? 0,
       isArchived: (raw['isArchived'] as bool?) ?? false,
       brand: raw['brand'] as String?,
       barcode: raw['barcode'] as String?,

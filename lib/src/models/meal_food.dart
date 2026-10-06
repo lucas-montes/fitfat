@@ -25,9 +25,9 @@ final class MealFood {
   final double protein;
   final double carbs;
   final double fat;
-  final double? sodium;
-  final double? fiber;
-  final double? sugar;
+  final double sodium;
+  final double fiber;
+  final double sugar;
 
   /// The food's **live** per-100g profile at the moment of logging, used by
   /// `MealRepository` to produce the snapshot.
@@ -48,9 +48,9 @@ final class MealFood {
     required this.protein,
     required this.carbs,
     required this.fat,
-    this.sodium,
-    this.fiber,
-    this.sugar,
+    this.sodium = 0,
+    this.fiber = 0,
+    this.sugar = 0,
     this.nutrition,
   });
 
@@ -81,9 +81,9 @@ final class MealFood {
       protein: protein * factor,
       carbs: carbs * factor,
       fat: fat * factor,
-      sodium: sodium == null ? null : sodium! * factor,
-      fiber: fiber == null ? null : fiber! * factor,
-      sugar: sugar == null ? null : sugar! * factor,
+      sodium: sodium * factor,
+      fiber: fiber * factor,
+      sugar: sugar * factor,
     );
   }
 
@@ -110,9 +110,9 @@ final class MealFood {
     double? protein,
     double? carbs,
     double? fat,
-    Object? sodium = _unset,
-    Object? fiber = _unset,
-    Object? sugar = _unset,
+    double? sodium,
+    double? fiber,
+    double? sugar,
     FoodNutrition? nutrition,
   }) => MealFood(
     id: id ?? this.id,
@@ -124,9 +124,9 @@ final class MealFood {
     protein: protein ?? this.protein,
     carbs: carbs ?? this.carbs,
     fat: fat ?? this.fat,
-    sodium: identical(sodium, _unset) ? this.sodium : sodium as double?,
-    fiber: identical(fiber, _unset) ? this.fiber : fiber as double?,
-    sugar: identical(sugar, _unset) ? this.sugar : sugar as double?,
+    sodium: sodium ?? this.sodium,
+    fiber: fiber ?? this.fiber,
+    sugar: sugar ?? this.sugar,
     nutrition: nutrition ?? this.nutrition,
   );
 

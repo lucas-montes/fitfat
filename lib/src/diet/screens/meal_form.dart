@@ -74,7 +74,6 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
   Nutrition get _previewTotals {
     var calories = 0.0, protein = 0.0, carbs = 0.0, fat = 0.0;
     var sodium = 0.0, fiber = 0.0, sugar = 0.0;
-    var sawSodium = false, sawFiber = false, sawSugar = false;
     for (final entry in _amounts.entries) {
       if (entry.value <= 0) continue;
       final per100g = _profiles[entry.key]?.per100g;
@@ -86,27 +85,18 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
       protein += per100g.protein * f;
       carbs += per100g.carbs * f;
       fat += per100g.fat * f;
-      if (per100g.sodium != null) {
-        sawSodium = true;
-        sodium += per100g.sodium! * f;
-      }
-      if (per100g.fiber != null) {
-        sawFiber = true;
-        fiber += per100g.fiber! * f;
-      }
-      if (per100g.sugar != null) {
-        sawSugar = true;
-        sugar += per100g.sugar! * f;
-      }
+      sodium += per100g.sodium * f;
+      fiber += per100g.fiber * f;
+      sugar += per100g.sugar * f;
     }
     return (
       calories: calories,
       protein: protein,
       carbs: carbs,
       fat: fat,
-      sodium: sawSodium ? sodium : null,
-      fiber: sawFiber ? fiber : null,
-      sugar: sawSugar ? sugar : null,
+      sodium: sodium,
+      fiber: fiber,
+      sugar: sugar,
     );
   }
 

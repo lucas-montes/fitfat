@@ -8,9 +8,9 @@ ComponentNutrition component({
   double protein = 10,
   double carbs = 20,
   double fat = 5,
-  double? sodium,
-  double? fiber,
-  double? sugar,
+  double sodium = 0,
+  double fiber = 0,
+  double sugar = 0,
   required double amount,
 }) => (
   caloriesPer100g: calories,
@@ -73,27 +73,26 @@ void main() {
       }
     });
 
-    test(
-      'optional nutriments stay null only when no component provides them',
-      () {
-        final partial = resolveFoodPer100g([
-          component(sodium: 400, amount: 100),
-          component(amount: 100),
-        ]);
-        expect(partial.per100g.sodium, 200);
-        expect(partial.per100g.fiber, isNull);
-        expect(partial.per100g.sugar, isNull);
+    test('a nutriment only some components have averages like a macro', () {
+      // Unrecorded is 0, so a component that has none contributes a real zero
+      // rather than leaving the total in an undefined state.
+      final partial = resolveFoodPer100g([
+        component(sodium: 400, amount: 100),
+        component(amount: 100),
+      ]);
+      expect(partial.per100g.sodium, 200);
+      expect(partial.per100g.fiber, 0);
+      expect(partial.per100g.sugar, 0);
 
-        final noneAtAll = resolveFoodPer100g([component(amount: 100)]);
-        expect(noneAtAll.per100g.sodium, isNull);
-      },
-    );
+      final noneAtAll = resolveFoodPer100g([component(amount: 100)]);
+      expect(noneAtAll.per100g.sodium, 0);
+    });
 
     test('empty composition yields zeroes, not a division by zero', () {
       final result = resolveFoodPer100g(const []);
       expect(result.totalAmount, 0);
       expect(result.per100g.calories, 0);
-      expect(result.per100g.sodium, isNull);
+      expect(result.per100g.sodium, 0);
     });
 
     test('a zero-weight composition yields zeroes', () {
@@ -122,20 +121,14 @@ void main() {
       expect(scaleToAmount(profile, 0).calories, 0);
     });
 
-    test('preserves null optional nutriments', () {
-      const partial = (
-        calories: 100.0,
-        protein: 1.0,
-        carbs: 2.0,
-        fat: 3.0,
-        sodium: null,
-        fiber: 4.0,
-        sugar: null,
-      );
-      final scaled = scaleToAmount(partial, 200);
-      expect(scaled.sodium, isNull);
-      expect(scaled.sugar, isNull);
-      expect(scaled.fiber, closeTo(8, 1e-9));
+    test('scales every field, nutriments included', () {
+      final profile = resolveFoodPer100g([
+        component(sodium: 400, fiber: 30, sugar: 10, amount: 100),
+      ]).per100g;
+      final scaled = scaleToAmount(profile, 200);
+      expect(scaled.sodium, closeTo(profile.sodium * 2, 1e-9));
+      expect(scaled.fiber, closeTo(profile.fiber * 2, 1e-9));
+      expect(scaled.sugar, closeTo(profile.sugar * 2, 1e-9));
     });
 
     test('is linear, so rescaling a snapshot round-trips exactly', () {

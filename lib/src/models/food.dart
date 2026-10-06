@@ -11,9 +11,9 @@ typedef Nutrition = ({
   double protein,
   double carbs,
   double fat,
-  double? sodium,
-  double? fiber,
-  double? sugar,
+  double sodium,
+  double fiber,
+  double sugar,
 });
 
 /// One ingredient's contribution to a food: its per-100g profile plus the
@@ -23,9 +23,9 @@ typedef ComponentNutrition = ({
   double proteinPer100g,
   double carbsPer100g,
   double fatPer100g,
-  double? sodiumPer100g,
-  double? fiberPer100g,
-  double? sugarPer100g,
+  double sodiumPer100g,
+  double fiberPer100g,
+  double sugarPer100g,
   double amount,
 });
 

@@ -71,9 +71,9 @@ final todayNutritionProvider = FutureProvider<Nutrition>((ref) async {
       protein: 0.0,
       carbs: 0.0,
       fat: 0.0,
-      sodium: null,
-      fiber: null,
-      sugar: null,
+      sodium: 0.0,
+      fiber: 0.0,
+      sugar: 0.0,
     );
   }
   final now = DateTime.now();

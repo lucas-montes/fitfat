@@ -11,10 +11,13 @@ class Ingredients extends Table {
   RealColumn get proteinPer100g => real()();
   RealColumn get carbsPer100g => real()();
   RealColumn get fatPer100g => real()();
-  // Optional extra nutriments per 100g (v3). Ingredient-only; not propagated to meals.
-  RealColumn? get sodiumPer100g => real().nullable()(); // mg
-  RealColumn? get fiberPer100g => real().nullable()(); // g
-  RealColumn? get sugarPer100g => real().nullable()(); // g
+  // Extra nutriments per 100g. Mandatory and zero-defaulted since v35: they
+  // used to be nullable to mean "never recorded", which made every aggregate
+  // downstream carry a null case. A missing value is now an explicit 0, so
+  // sodium/fiber/sugar sum like the macros do.
+  RealColumn get sodiumPer100g => real().withDefault(const Constant(0))(); // mg
+  RealColumn get fiberPer100g => real().withDefault(const Constant(0))(); // g
+  RealColumn get sugarPer100g => real().withDefault(const Constant(0))(); // g
   // Soft-delete flag (v4). Archived ingredients are hidden from list and
   // picker but their rows stay so past meals keep rendering names/macros.
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
@@ -166,9 +169,11 @@ class MealFoods extends Table {
   RealColumn get protein => real()();
   RealColumn get carbs => real()();
   RealColumn get fat => real()();
-  RealColumn? get sodium => real().nullable()(); // mg
-  RealColumn? get fiber => real().nullable()(); // g
-  RealColumn? get sugar => real().nullable()(); // g
+  // Non-null since v35, matching the ingredient columns. See the note there on
+  // why "unrecorded" became 0 rather than staying a null case.
+  RealColumn get sodium => real().withDefault(const Constant(0))(); // mg
+  RealColumn get fiber => real().withDefault(const Constant(0))(); // g
+  RealColumn get sugar => real().withDefault(const Constant(0))(); // g
 
   @override
   Set<Column> get primaryKey => {id};

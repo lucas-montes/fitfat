@@ -761,9 +761,9 @@ final class _IngredientFormScreenState
       final protein = double.parse(_proteinCtrl.text);
       final carbs = double.parse(_carbsCtrl.text);
       final fat = double.parse(_fatCtrl.text);
-      final sodium = _parseOptional(_sodiumCtrl.text);
-      final fiber = _parseOptional(_fiberCtrl.text);
-      final sugar = _parseOptional(_sugarCtrl.text);
+      final sodium = _parseNutriment(_sodiumCtrl.text);
+      final fiber = _parseNutriment(_fiberCtrl.text);
+      final sugar = _parseNutriment(_sugarCtrl.text);
       final brand = _parseText(_brandCtrl.text);
       final barcode = _parseText(_barcodeCtrl.text);
 
@@ -876,9 +876,13 @@ final class _IngredientFormScreenState
   }
 
   /// Parses an optional numeric input; blank/whitespace maps to null.
-  double? _parseOptional(String text) {
+  /// Parses a nutriment input, treating a blank field as zero.
+  ///
+  /// These became mandatory in v35. A blank box is no longer "no value recorded"
+  /// — it is a zero, which is what an unfilled field has always meant to a user.
+  double _parseNutriment(String text) {
     final trimmed = text.trim();
-    if (trimmed.isEmpty) return null;
+    if (trimmed.isEmpty) return 0;
     return double.parse(trimmed);
   }
 
