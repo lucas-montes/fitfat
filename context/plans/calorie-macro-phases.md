@@ -114,7 +114,10 @@ Tests: `food_nutrition_test`, `food_repository_test`, `meal_repository_test`,
 
 ## Stage B — per-phase settings
 
-**Status:** NOT STARTED.
+DONE — `6ed9078d`. `DietPhase` + `PhaseConfig` (12 prefs, legacy ±500 still read as a
+seed), active phase derived from the stored body-weight goal, `applyPhaseAdjustment`,
+`macroTargetsFor` now bodyweight- and percentage-driven, `macrosExceedTarget` warning,
+`MealEntry.totalFiber`, phase cards in Settings → Nutrition. 11 new tests.
 
 Twelve new prefs. Three cards over the existing `BodyWeightGoal`; tapping selects the
 active phase and expands its four knobs.
@@ -138,7 +141,11 @@ Also extends `MealEntry` with `totalFiber`.
 
 ## Stage C — dashboard
 
-**Status:** NOT STARTED. Supersedes the intermediate `CalorieBar` from `2ec3ffe`.
+DONE. Supersedes the intermediate `CalorieBar` from `2ec3ffe`, which is deleted along
+with `calorie_bar_test.dart`. Five uniform rows via `_MacroTargetRow`; calories carry
+`overflowColor` so an overshoot shows as a full red bar. Fiber added as a fifth row and
+to the meal summary line. `macroRowState` extracted to keep the fill/overshoot logic
+covered without a database, in `dashboard_macro_row_test.dart`. BMR/TDEE footer added.
 
 Five uniform rows (Calories, Protein, Carbs, Fat, Fiber) in the existing
 `_MacroTargetRow` shape: label left, consumed/target right, bar below. The big

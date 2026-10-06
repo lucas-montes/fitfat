@@ -337,6 +337,7 @@ final class _MealTileState extends State<_MealTile> {
                   meal.totalProtein.toStringAsFixed(1),
                   meal.totalCarbs.toStringAsFixed(1),
                   meal.totalFat.toStringAsFixed(1),
+                  meal.totalFiber.toStringAsFixed(1),
                 ),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

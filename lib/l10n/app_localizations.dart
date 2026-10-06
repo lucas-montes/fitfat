@@ -232,6 +232,18 @@ abstract class AppLocalizations {
   /// **'Good evening'**
   String get dashboardGreetingEvening;
 
+  /// No description provided for @dashboardMacroCalories.
+  ///
+  /// In en, this message translates to:
+  /// **'Calories'**
+  String get dashboardMacroCalories;
+
+  /// No description provided for @dashboardMacroFiber.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiber'**
+  String get dashboardMacroFiber;
+
   /// No description provided for @dashboardMacroProtein.
   ///
   /// In en, this message translates to:
@@ -1591,12 +1603,13 @@ abstract class AppLocalizations {
   /// No description provided for @mealListTotals.
   ///
   /// In en, this message translates to:
-  /// **'{amount} g  ·  P {protein}  ·  C {carbs}  ·  F {fat}'**
+  /// **'{amount} g  ·  P {protein}  ·  C {carbs}  ·  F {fat}  ·  Fiber {fiber}'**
   String mealListTotals(
     String amount,
     String protein,
     String carbs,
     String fat,
+    String fiber,
   );
 
   /// No description provided for @foodPickerDone.

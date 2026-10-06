@@ -41,6 +41,8 @@
   "dashboardGreetingMorning": "Good morning",
   "dashboardGreetingAfternoon": "Good afternoon",
   "dashboardGreetingEvening": "Good evening",
+  "dashboardMacroCalories": "Calories",
+  "dashboardMacroFiber": "Fiber",
   "dashboardMacroProtein": "Protein",
   "dashboardMacroCarbs": "Carbs",
   "dashboardMacroFat": "Fat",
@@ -416,13 +418,14 @@
       "name": { "type": "String" }
     }
   },
-  "mealListTotals": "{amount} g  ·  P {protein}  ·  C {carbs}  ·  F {fat}",
+  "mealListTotals": "{amount} g  ·  P {protein}  ·  C {carbs}  ·  F {fat}  ·  Fiber {fiber}",
   "@mealListTotals": {
     "placeholders": {
       "amount": { "type": "String" },
       "protein": { "type": "String" },
       "carbs": { "type": "String" },
-      "fat": { "type": "String" }
+      "fat": { "type": "String" },
+      "fiber": { "type": "String" }
     }
   },
   "foodPickerDone": "Done",

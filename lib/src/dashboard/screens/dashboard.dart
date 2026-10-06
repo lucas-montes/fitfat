@@ -9,6 +9,7 @@ import '../../body/providers/body_metrics.dart';
 import '../../body/screens/body_metric_dialog.dart';
 import '../../budget/providers/budget_overview.dart';
 import '../../diet/providers/calories.dart';
+import '../../models/bmr_formula.dart';
 import '../../diet/providers/meals.dart';
 import '../../diet/screens/ingredient_form.dart';
 import '../../diet/screens/meal_form.dart';
@@ -32,7 +33,6 @@ import '../../ui/widgets/top_banner.dart';
 import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
 import '../../ui/units.dart';
-import '../../ui/widgets/calorie_bar.dart';
 import '../../ui/widgets/metric_card.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../providers/dashboard.dart';
@@ -162,8 +162,16 @@ final class _SyncHubCardState extends ConsumerState<_SyncHubCard> {
   }
 }
 
+/// Calories, P/C/F and fiber as five identical rows.
+///
+/// They used to differ: calories got a headline number, a target tick and
+/// headroom, macros got a plain bar. One shape for all five means a glance down
+/// the list compares like with like, and the only difference left is the one
+/// that matters — calories are the one row you can meaningfully overshoot, so
+/// only that bar changes colour.
 final class _NutritionHeroCard extends ConsumerWidget {
   const _NutritionHeroCard();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -188,7 +196,17 @@ final class _NutritionHeroCard extends ConsumerWidget {
             consumedAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Text(l10n.dashboardError('$e')),
-              data: (consumed) => CalorieBar(consumed: consumed, target: meta.target),
+              data: (consumed) => _MacroTargetRow(
+                label: l10n.dashboardMacroCalories,
+                color: theme.colorScheme.primary,
+                consumed: consumed,
+                target: meta.target,
+                unit: 'kcal',
+                // Calorie overshoot is information, not a failure state: a full
+                // red bar reads as "you are over", where a clamped bar would
+                // hide how far over.
+                overflowColor: theme.colorScheme.error,
+              ),
             ),
             const SizedBox(height: FitFatTokens.spaceM),
             targetsAsync.when(
@@ -203,9 +221,15 @@ final class _NutritionHeroCard extends ConsumerWidget {
                   _MacroTargetRow(label: l10n.dashboardMacroCarbs, color: theme.colorScheme.tertiary, consumed: macros.carbs, target: targets.carbs),
                   const SizedBox(height: FitFatTokens.spaceM),
                   _MacroTargetRow(label: l10n.dashboardMacroFat, color: theme.extension<FitFatColors>()!.warning, consumed: macros.fat, target: targets.fat),
+                  const SizedBox(height: FitFatTokens.spaceM),
+                  _MacroTargetRow(label: l10n.dashboardMacroFiber, color: theme.extension<FitFatColors>()!.success, consumed: macros.fiber, target: targets.fiber),
                 ]),
               ),
             ),
+            const SizedBox(height: FitFatTokens.spaceM),
+            const Divider(height: 1),
+            const SizedBox(height: FitFatTokens.spaceS),
+            _BmrTdeeFooter(meta: meta),
           ]),
         ),
       ),
@@ -213,21 +237,107 @@ final class _NutritionHeroCard extends ConsumerWidget {
   }
 }
 
+/// BMR, TDEE and — only when it is not the default equation — its name.
+final class _BmrTdeeFooter extends StatelessWidget {
+  final CalorieTargetMeta meta;
+
+  const _BmrTdeeFooter({required this.meta});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    return Row(children: [
+      Text(
+        '${l10n.settingsBmrLabel} ${meta.bmr.round()}  ·  '
+        '${l10n.settingsTdeeLabel} ${meta.tdee.round()}'
+        '${meta.formula == BmrFormula.katchMcArdle ? '  ·  ${meta.formula.label}' : ''}',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      const Spacer(),
+      Text(
+        // Estimated means the inputs are placeholders because nothing has been
+        // measured yet, which is worth saying next to the numbers themselves.
+        meta.isEstimated ? l10n.settingsEstimatedSuffix : '',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    ]);
+  }
+}
+
+/// The two decisions a progress row makes, extracted so they can be pinned
+/// without pumping a dashboard that needs a database.
+///
+/// [over] is deliberately separate from the fill: a row that is over its target
+/// clamps to a full bar like any other, but the caller needs to know it crossed
+/// so it can change colour. Collapsing the two would lose the overshoot.
+({double ratio, bool over}) macroRowState({
+  required double consumed,
+  required double target,
+}) => (
+  ratio: target <= 0 ? 0.0 : (consumed / target).clamp(0.0, 1.0),
+  over: target > 0 && consumed > target,
+);
+
 final class _MacroTargetRow extends StatelessWidget {
   final String label;
   final Color color;
   final double consumed;
   final double target;
-  const _MacroTargetRow({required this.label, required this.color, required this.consumed, required this.target});
+  final String? unit;
+
+  /// Paints the bar this colour once [consumed] passes [target]. Null keeps the
+  /// bar clamped at full, which is what the macro rows want.
+  final Color? overflowColor;
+
+  const _MacroTargetRow({
+    required this.label,
+    required this.color,
+    required this.consumed,
+    required this.target,
+    this.unit,
+    this.overflowColor,
+  });
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
-    final ratio = target <= 0 ? 0.0 : (consumed / target).clamp(0.0, 1.0);
+    final state = macroRowState(consumed: consumed, target: target);
+    final ratio = state.ratio;
+    final over = state.over;
+    final valueText = l10n.dashboardMacroProgress(
+      consumed.toStringAsFixed(0),
+      target.toStringAsFixed(0),
+    );
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Expanded(child: Text(label, style: theme.textTheme.bodyMedium)), Text(l10n.dashboardMacroProgress(consumed.toStringAsFixed(0), target.toStringAsFixed(0)), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant))]),
+      Row(children: [
+        Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+        Text(
+          unit == null ? valueText : '$valueText $unit',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: over && overflowColor != null
+                ? overflowColor
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ]),
       const SizedBox(height: FitFatTokens.spaceXs),
-      ClipRRect(borderRadius: BorderRadius.circular(FitFatTokens.radiusFull), child: LinearProgressIndicator(value: ratio, minHeight: 8, backgroundColor: theme.colorScheme.surfaceContainerHighest, valueColor: AlwaysStoppedAnimation(color))),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusFull),
+        child: LinearProgressIndicator(
+          value: ratio,
+          minHeight: 8,
+          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+          valueColor: AlwaysStoppedAnimation(
+            over && overflowColor != null ? overflowColor! : color,
+          ),
+        ),
+      ),
     ]);
   }
 }

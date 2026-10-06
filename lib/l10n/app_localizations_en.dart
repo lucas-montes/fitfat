@@ -82,6 +82,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardGreetingEvening => 'Good evening';
 
   @override
+  String get dashboardMacroCalories => 'Calories';
+
+  @override
+  String get dashboardMacroFiber => 'Fiber';
+
+  @override
   String get dashboardMacroProtein => 'Protein';
 
   @override
@@ -852,8 +858,9 @@ class AppLocalizationsEn extends AppLocalizations {
     String protein,
     String carbs,
     String fat,
+    String fiber,
   ) {
-    return '$amount g  ·  P $protein  ·  C $carbs  ·  F $fat';
+    return '$amount g  ·  P $protein  ·  C $carbs  ·  F $fat  ·  Fiber $fiber';
   }
 
   @override

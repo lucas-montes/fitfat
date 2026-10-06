@@ -10,7 +10,7 @@ import '../../models/workout.dart';
 import '../../planner/repositories/task_repository.dart';
 
 /// Today's macro totals in grams, read-only composition data for the hero card.
-typedef TodayMacros = ({double protein, double carbs, double fat});
+typedef TodayMacros = ({double protein, double carbs, double fat, double fiber});
 
 // ---------------------------------------------------------------------------
 // Dashboard refresh signal
@@ -93,7 +93,7 @@ final todayCaloriesProvider = FutureProvider<double>((ref) async {
 });
 
 // ---------------------------------------------------------------------------
-// Today's macros (P/C/F grams) — composition data for the hero card
+// Today's macros (P/C/F/fiber grams) — composition data for the hero card
 // ---------------------------------------------------------------------------
 
 final todayMacrosProvider = FutureProvider<TodayMacros>((ref) async {
@@ -102,6 +102,7 @@ final todayMacrosProvider = FutureProvider<TodayMacros>((ref) async {
     protein: nutrition.protein,
     carbs: nutrition.carbs,
     fat: nutrition.fat,
+    fiber: nutrition.fiber,
   );
 });
 
