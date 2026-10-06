@@ -4,6 +4,7 @@ import '../../body/providers/body_metrics.dart';
 import '../../exercise/providers/exercises.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../models/activity_level.dart';
+import '../../models/bmr_formula.dart';
 import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
 import '../../settings/providers/settings.dart';
@@ -57,6 +58,58 @@ double workoutKcal({
   required double weightKg,
   required int minutes,
 }) => met * weightKg * (minutes / 60);
+
+/// ① Basal metabolic rate, from whichever equation applies.
+///
+/// Katch-McArdle is preferred when body fat is being tracked and a percentage is
+/// set, because lean mass predicts resting burn better than weight does. Without
+/// it, Mifflin-St Jeor is used and [BmrFormula] says so, so the UI can stay quiet
+/// about the common case and speak up when the rarer one produced the number.
+///
+/// Returns the formula alongside the value so callers never have to re-derive
+/// which path ran.
+({double bmr, BmrFormula formula}) bmrFor({
+  required Gender gender,
+  required double weightKg,
+  required double heightCm,
+  required int age,
+  required double? bodyFatPercent,
+  required bool trackBodyFat,
+}) {
+  if (trackBodyFat && bodyFatPercent != null) {
+    return (
+      bmr: katchMcardleBmr(weightKg: weightKg, bodyFatPercent: bodyFatPercent),
+      formula: BmrFormula.katchMcArdle,
+    );
+  }
+  return (
+    bmr: mifflinBmr(
+      gender: gender,
+      weightKg: weightKg,
+      heightCm: heightCm,
+      age: age,
+    ),
+    formula: BmrFormula.mifflinStJeor,
+  );
+}
+
+/// ② Total daily energy expenditure: BMR plus activity.
+///
+/// Two modes, and they are genuinely different models rather than two ways of
+/// expressing one:
+///
+/// - **Computed** ([level] null): activity is measured, from workouts and steps,
+///   and added to BMR. This is the more accurate mode and costs a query.
+/// - **Static**: activity is a self-reported PAL multiplier on BMR, for when
+///   nothing is being measured.
+///
+/// [activityKcal] is ignored in static mode, and [level] is ignored in computed
+/// mode, so callers can pass both without branching.
+double tdeeFrom({
+  required double bmr,
+  required ActivityLevel? level,
+  required double activityKcal,
+}) => level == null ? bmr + activityKcal : bmr * level.multiplier;
 
 /// kcal burned walking [steps] for a person of [weightKg].
 double stepsKcal({required double weightKg, required int steps}) =>
@@ -140,54 +193,85 @@ const double _fallbackHeightCm = 170;
 const int _fallbackAge = 30;
 const Gender _fallbackGender = Gender.male;
 
-typedef CalorieTargetMeta = ({double target, bool isEstimated});
+/// ① BMR and which equation produced it.
+///
+/// Split out from the target so the derivation reads end to end and each step is
+/// independently testable. The inputs are unchanged; only the shape differs.
+final bmrMetaProvider =
+    FutureProvider<({double bmr, BmrFormula formula, bool isEstimated})>((
+      ref,
+    ) async {
+      final settings = ref.watch(settingsProvider);
+      final latest = await ref.watch(latestBodyMetricsProvider.future);
+      final weight = latest?.weightKg;
+      final height = latest?.heightCm;
+      final age = settings.age;
+      final gender = settings.gender;
+      final isEstimated =
+          weight == null || height == null || age == null || gender == null;
 
+      final result = bmrFor(
+        gender: gender ?? _fallbackGender,
+        weightKg: weight ?? _fallbackWeightKg,
+        heightCm: height ?? _fallbackHeightCm,
+        age: age ?? _fallbackAge,
+        bodyFatPercent: settings.bodyFatPercent,
+        trackBodyFat: settings.trackBodyFat,
+      );
+      return (
+        bmr: result.bmr,
+        formula: result.formula,
+        isEstimated: isEstimated,
+      );
+    });
+
+/// ② TDEE: BMR plus activity, measured or self-reported.
+final tdeeProvider = FutureProvider<double>((ref) async {
+  final settings = ref.watch(settingsProvider);
+  final bmr = (await ref.watch(bmrMetaProvider.future)).bmr;
+  // Computed mode measures activity, static mode applies a PAL multiplier. Only
+  // one of the two ever runs, so the unused one costs nothing.
+  if (settings.computeActivity) {
+    final activity = await ref.watch(dailyActivityKcalProvider.future);
+    return tdeeFrom(bmr: bmr, level: null, activityKcal: activity);
+  }
+  return tdeeFrom(
+    bmr: bmr,
+    level: settings.activityLevel ?? ActivityLevel.moderate,
+    activityKcal: 0,
+  );
+});
+
+typedef CalorieTargetMeta = ({
+  double bmr,
+  double tdee,
+  double target,
+  BmrFormula formula,
+  bool isEstimated,
+});
+
+/// ③ The daily target: TDEE adjusted for the user's body-weight goal.
+///
+/// Carries BMR and TDEE alongside the target so a consumer — the dashboard — can
+/// read every figure it displays from one provider rather than three.
 final calorieTargetMetaProvider = FutureProvider<CalorieTargetMeta>((
   ref,
 ) async {
   final settings = ref.watch(settingsProvider);
-  final latest = await ref.watch(latestBodyMetricsProvider.future);
-  final weight = latest?.weightKg;
-  final height = latest?.heightCm;
-  final age = settings.age;
-  final gender = settings.gender;
-  final isEstimated =
-      weight == null || height == null || age == null || gender == null;
-  final effectiveWeight = weight ?? _fallbackWeightKg;
-  final effectiveHeight = height ?? _fallbackHeightCm;
-  final effectiveAge = age ?? _fallbackAge;
-  final effectiveGender = gender ?? _fallbackGender;
-
-  final double bmr;
-  if (settings.trackBodyFat && settings.bodyFatPercent != null) {
-    bmr = katchMcardleBmr(
-      weightKg: effectiveWeight,
-      bodyFatPercent: settings.bodyFatPercent!,
-    );
-  } else {
-    bmr = mifflinBmr(
-      gender: effectiveGender,
-      weightKg: effectiveWeight,
-      heightCm: effectiveHeight,
-      age: effectiveAge,
-    );
-  }
-
-  final double tdee;
-  if (settings.computeActivity) {
-    final activity = await ref.watch(dailyActivityKcalProvider.future);
-    tdee = bmr + activity;
-  } else {
-    final level = settings.activityLevel ?? ActivityLevel.moderate;
-    tdee = bmr * level.multiplier;
-  }
-
+  final bmrMeta = await ref.watch(bmrMetaProvider.future);
+  final tdee = await ref.watch(tdeeProvider.future);
   final target = adjustForGoal(
     tdee,
     settings.bodyWeightGoal,
     adjustment: settings.calorieGoalAdjustment,
   );
-  return (target: target, isEstimated: isEstimated);
+  return (
+    bmr: bmrMeta.bmr,
+    tdee: tdee,
+    target: target,
+    formula: bmrMeta.formula,
+    isEstimated: bmrMeta.isEstimated,
+  );
 });
 
 final calorieTargetProvider = FutureProvider<double>((ref) async {
@@ -199,12 +283,3 @@ final macroTargetsProvider = FutureProvider<MacroTargets>((ref) async {
   final target = await ref.watch(calorieTargetProvider.future);
   return macroTargetsFor(target);
 });
-
-final macroTargetsMetaProvider =
-    FutureProvider<({MacroTargets targets, bool isEstimated})>((ref) async {
-      final meta = await ref.watch(calorieTargetMetaProvider.future);
-      return (
-        targets: macroTargetsFor(meta.target),
-        isEstimated: meta.isEstimated,
-      );
-    });
