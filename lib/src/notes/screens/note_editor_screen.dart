@@ -144,12 +144,13 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           _isEditing ? l10n.notesEditorEditTitle : l10n.notesEditorNewTitle,
         ),
         actions: [
-          if (_isEditing)
-            IconButton(
-              tooltip: l10n.notesDelete,
-              onPressed: _delete,
-              icon: const Icon(Icons.delete_outline),
-            ),
+          // Save is the primary action, so it lives here in both new and edit
+          // mode. It mirrors the state the bottom button used to carry:
+          // disabled while saving, with the in-flight label.
+          TextButton(
+            onPressed: _saving ? null : _save,
+            child: Text(_saving ? l10n.notesEditing : l10n.notesSave),
+          ),
         ],
       ),
       body: Form(
@@ -188,10 +189,21 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               onChanged: (clips) => setState(() => _clips = clips),
             ),
             const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: Text(_saving ? l10n.notesEditing : l10n.notesSave),
-            ),
+            // Delete takes the slot save vacated, at the bottom and well away
+            // from the app bar, so a destructive action is not one stray tap from
+            // the primary one. Still guarded by the confirmation dialog.
+            if (_isEditing) ...[
+              const Divider(),
+              TextButton.icon(
+                onPressed: _delete,
+                icon: const Icon(Icons.delete_outline),
+                label: Text(l10n.notesDelete),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  minimumSize: const Size.fromHeight(48),
+                ),
+              ),
+            ],
           ],
         ),
       ),
