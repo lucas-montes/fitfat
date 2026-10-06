@@ -37,6 +37,8 @@ until ingredients are backfilled.
 
 ## Stage A' — split BMR from TDEE
 
+**Status:** DONE — `f3330a2`. `BmrFormula`, `bmrFor`/`tdeeFrom`, `bmrMetaProvider`/`tdeeProvider`, 14 tests in `calorie_math_test.dart`. No dashboard number moved.
+
 Behaviour-preserving. No dashboard number moves. Done first so the rest is readable
 and so a regression here is unambiguously a refactor fault rather than a changed value.
 
@@ -85,6 +87,8 @@ weight, height, age, gender, body fat
 
 ## Stage A — nutriments non-null (schema v35)
 
+**Status:** DONE — mobile `b6128c9`, server/desktop `9133e2b`. Migration backfills six columns without a table rebuild; the COALESCE in `totalsBetween` survives because an empty SQL `SUM` is NULL regardless of column constraints.
+
 `sodium_per100g`, `fiber_per100g`, `sugar_per100g` → `NOT NULL DEFAULT 0`,
 backfilled with `COALESCE(col, 0)`. No data lost; unknown becomes an explicit zero.
 
@@ -110,6 +114,8 @@ Tests: `food_nutrition_test`, `food_repository_test`, `meal_repository_test`,
 
 ## Stage B — per-phase settings
 
+**Status:** NOT STARTED.
+
 Twelve new prefs. Three cards over the existing `BodyWeightGoal`; tapping selects the
 active phase and expands its four knobs.
 
@@ -131,6 +137,8 @@ Also extends `MealEntry` with `totalFiber`.
 ---
 
 ## Stage C — dashboard
+
+**Status:** NOT STARTED. Supersedes the intermediate `CalorieBar` from `2ec3ffe`.
 
 Five uniform rows (Calories, Protein, Carbs, Fat, Fiber) in the existing
 `_MacroTargetRow` shape: label left, consumed/target right, bar below. The big
@@ -157,6 +165,8 @@ that `_MacroTargetRow` fills red past 100%.
 ---
 
 ## Notes editor (unrelated, small)
+
+**Status:** DONE — `04e4d1a`.
 
 Pure swap: Save becomes the app bar action in a labelled `TextButton`, present in
 both new and edit mode, disabled while saving. The bottom filled Save is removed and
