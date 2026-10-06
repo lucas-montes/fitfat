@@ -29,6 +29,10 @@ import '../../notifications/task_reminders.dart';
 import '../../planner/providers/planner.dart';
 import '../../tags/screens/tag_manager_screen.dart';
 import '../../sync/sync_button.dart';
+import '../../body/providers/body_metrics.dart';
+import '../../models/bmr_formula.dart';
+import '../../models/diet_phase.dart';
+import '../../diet/providers/calories.dart';
 import '../../sync/sync_service.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
@@ -756,6 +760,17 @@ String? _validateNonNegative(BuildContext context, String? value) {
   return null;
 }
 
+/// Like [_validateNonNegative] but allows a leading minus, for the signed phase
+/// adjustment where a deficit is expressed as a negative number.
+String? _validateSignedNumber(BuildContext context, String? value) {
+  final text = value?.trim() ?? '';
+  if (text.isEmpty) return null;
+  if (double.tryParse(text) == null) {
+    return AppLocalizations.of(context)!.settingsValueInvalid;
+  }
+  return null;
+}
+
 void _saveIfValid(TextEditingController ctrl, VoidCallback commit) {
   if (ctrl.text.trim().isEmpty) return;
   commit();
@@ -936,7 +951,7 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
   }
 }
 
-/// Nutrition: display units + calorie goal adjustment.
+/// Nutrition: BMR/TDEE, per-phase calorie and macro targets, display units.
 final class _NutritionScreen extends ConsumerStatefulWidget {
   final bool embed;
 
@@ -947,20 +962,32 @@ final class _NutritionScreen extends ConsumerStatefulWidget {
 }
 
 final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
-  late final TextEditingController _adjustmentCtrl;
+  /// One controller per phase per knob, so an in-progress edit is not clobbered
+  /// by a rebuild triggered by something else.
+  final Map<DietPhase, Map<String, TextEditingController>> _controllers = {};
 
-  @override
-  void initState() {
-    super.initState();
-    final settings = ref.read(settingsProvider);
-    _adjustmentCtrl = TextEditingController(
-      text: settings.calorieGoalAdjustment.toStringAsFixed(0),
+  /// Which phase's knobs are open. Tapping a card also selects it, so the open
+  /// card is always the active one.
+  DietPhase? _expanded;
+
+  TextEditingController _ctrl(DietPhase phase, String knob, double value) {
+    final byKnob = _controllers.putIfAbsent(phase, () => {});
+    return byKnob.putIfAbsent(
+      knob,
+      () => TextEditingController(text: _formatKnob(value)),
     );
   }
 
+  static String _formatKnob(double value) =>
+      value == value.roundToDouble() ? value.toStringAsFixed(0) : '$value';
+
   @override
   void dispose() {
-    _adjustmentCtrl.dispose();
+    for (final byKnob in _controllers.values) {
+      for (final c in byKnob.values) {
+        c.dispose();
+      }
+    }
     super.dispose();
   }
 
@@ -973,21 +1000,43 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
     final body = ListView(
       padding: const EdgeInsets.all(FitFatTokens.spaceL),
       children: [
+        const _BmrTdeeLine(),
+        const SizedBox(height: FitFatTokens.spaceL),
         SettingsSection(
-          title: l10n.settingsCalorieAdjustmentLabel,
+          title: l10n.settingsPhasesLabel,
+          subtitle: l10n.settingsPhasesHelp,
           children: [
-            _settingsField(
-              context: context,
-              controller: _adjustmentCtrl,
-              label: l10n.settingsCalorieAdjustmentLabel,
-              help: l10n.settingsCalorieAdjustmentHelp,
-              validator: (v) => _validateNonNegative(context, v),
-              onSave: () => _saveIfValid(_adjustmentCtrl, () {
-                notifier.setCalorieGoalAdjustment(
-                  double.parse(_adjustmentCtrl.text),
-                );
-              }),
-            ),
+            for (final phase in DietPhase.values) ...[
+              _PhaseCard(
+                phase: phase,
+                label: switch (phase) {
+                  DietPhase.cutting => l10n.settingsGoalLose,
+                  DietPhase.bulking => l10n.settingsGoalGain,
+                  DietPhase.maintenance => l10n.settingsGoalMaintain,
+                },
+                expanded: _expanded == phase,
+                active: settings.activePhase == phase,
+                // Tapping both selects the phase and opens its knobs, so the
+                // active phase is always the one being edited.
+                onTap: () {
+                  notifier.setActivePhase(phase);
+                  setState(() => _expanded = phase);
+                },
+                child: _PhaseKnobs(
+                  phase: phase,
+                  config: settings.phaseConfigs[phase] ??
+                      kDefaultPhaseConfigs[phase]!,
+                  controllerFor: (knob, value) => _ctrl(phase, knob, value),
+                  saveAdjustment: (v) =>
+                      notifier.setPhaseAdjustment(phase, v),
+                  saveProtein: (v) => notifier.setPhaseProteinPerKg(phase, v),
+                  saveFat: (v) => notifier.setPhaseFatPercent(phase, v),
+                  saveFiber: (v) => notifier.setPhaseFiberTarget(phase, v),
+                ),
+              ),
+              if (phase != DietPhase.values.last)
+                const SizedBox(height: FitFatTokens.spaceS),
+            ],
           ],
         ),
         const SizedBox(height: FitFatTokens.spaceL),
@@ -1044,6 +1093,255 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
     return SettingsSubScreenScaffold(title: l10n.settingsNutrition, body: body);
   }
 }
+
+
+/// BMR and TDEE, with the equation named only when it is the lean-mass one.
+///
+/// Shown above the phase cards so the user can see what the targets are derived
+/// from before editing them.
+final class _BmrTdeeLine extends ConsumerWidget {
+  const _BmrTdeeLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final metaAsync = ref.watch(calorieTargetMetaProvider);
+
+    return SettingsSection(
+      title: l10n.settingsNutrition,
+      children: [
+        metaAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Text(l10n.dashboardError('$e')),
+          data: (meta) => Text(
+            '${l10n.settingsBmrLabel} ${meta.bmr.round()}'
+            '  ·  ${l10n.settingsTdeeLabel} ${meta.tdee.round()}'
+            // Katch-McArdle is worth naming because it depends on a measurement
+            // the user may not have; the default equation needs no explanation.
+            '${meta.formula == BmrFormula.katchMcArdle ? '  ·  ${meta.formula.label}' : ''}'
+            '${meta.isEstimated ? '  ·  ${l10n.settingsEstimatedSuffix}' : ''}',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One phase, collapsed to a row or expanded to its four knobs.
+final class _PhaseCard extends StatelessWidget {
+  final DietPhase phase;
+  final String label;
+  final bool expanded;
+  final bool active;
+  final VoidCallback onTap;
+  final Widget child;
+
+  const _PhaseCard({
+    required this.phase,
+    required this.label,
+    required this.expanded,
+    required this.active,
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Material(
+      color: active ? scheme.primaryContainer : scheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    switch (phase) {
+                      DietPhase.cutting => Icons.trending_down,
+                      DietPhase.bulking => Icons.trending_up,
+                      DietPhase.maintenance => Icons.trending_flat,
+                    },
+                    size: 20,
+                    color: active ? scheme.primary : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: FitFatTokens.spaceS),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 20,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              if (expanded) ...[
+                const SizedBox(height: FitFatTokens.spaceM),
+                child,
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The four knobs of one phase.
+final class _PhaseKnobs extends StatelessWidget {
+  final DietPhase phase;
+  final PhaseConfig config;
+  final TextEditingController Function(String knob, double value) controllerFor;
+  final ValueChanged<double> saveAdjustment;
+  final ValueChanged<double> saveProtein;
+  final ValueChanged<double> saveFat;
+  final ValueChanged<double> saveFiber;
+
+  const _PhaseKnobs({
+    required this.phase,
+    required this.config,
+    required this.controllerFor,
+    required this.saveAdjustment,
+    required this.saveProtein,
+    required this.saveFat,
+    required this.saveFiber,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _settingsField(
+          context: context,
+          controller: controllerFor('adjustment', config.adjustment),
+          label: l10n.settingsCalorieAdjustmentLabel,
+          help: l10n.settingsCalorieAdjustmentHelp,
+          // Signed: a negative adjustment is the point of a cutting phase, so
+          // this cannot be clamped at zero like the old goal adjustment was.
+          validator: (v) => _validateSignedNumber(context, v),
+          onSave: () => _saveIfValid(
+            controllerFor('adjustment', config.adjustment),
+            () => saveAdjustment(
+              double.parse(controllerFor('adjustment', config.adjustment).text),
+            ),
+          ),
+        ),
+        _settingsField(
+          context: context,
+          controller: controllerFor('proteinPerKg', config.proteinPerKg),
+          label: l10n.settingsPhaseProteinLabel,
+          help: l10n.settingsPhaseProteinHelp,
+          validator: (v) => _validateNonNegative(context, v),
+          onSave: () => _saveIfValid(
+            controllerFor('proteinPerKg', config.proteinPerKg),
+            () => saveProtein(
+              double.parse(
+                controllerFor('proteinPerKg', config.proteinPerKg).text,
+              ),
+            ),
+          ),
+        ),
+        _settingsField(
+          context: context,
+          controller: controllerFor('fatPercent', config.fatPercent),
+          label: l10n.settingsPhaseFatLabel,
+          help: l10n.settingsPhaseFatHelp,
+          validator: (v) => _validateNonNegative(context, v),
+          onSave: () => _saveIfValid(
+            controllerFor('fatPercent', config.fatPercent),
+            () => saveFat(
+              double.parse(controllerFor('fatPercent', config.fatPercent).text),
+            ),
+          ),
+        ),
+        _settingsField(
+          context: context,
+          controller: controllerFor('fiberTarget', config.fiberTarget),
+          label: l10n.settingsPhaseFiberLabel,
+          help: l10n.settingsPhaseFiberHelp,
+          validator: (v) => _validateNonNegative(context, v),
+          onSave: () => _saveIfValid(
+            controllerFor('fiberTarget', config.fiberTarget),
+            () => saveFiber(
+              double.parse(controllerFor('fiberTarget', config.fiberTarget).text),
+            ),
+          ),
+        ),
+        _MacroWarning(phase: phase),
+      ],
+    );
+  }
+}
+
+/// Warns when the active phase's protein and fat exceed its calorie target,
+/// which silently clamps carbs to zero.
+final class _MacroWarning extends ConsumerWidget {
+  final DietPhase phase;
+
+  const _MacroWarning({required this.phase});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final settings = ref.watch(settingsProvider);
+    if (settings.activePhase != phase) return const SizedBox.shrink();
+
+    return Consumer(
+      builder: (context, ref, _) {
+        final targetAsync = ref.watch(calorieTargetMetaProvider);
+        final metricsAsync = ref.watch(latestBodyMetricsProvider);
+        return targetAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
+          data: (meta) => metricsAsync.maybeWhen(
+            orElse: () => const SizedBox.shrink(),
+            data: (metrics) {
+              final config = settings.activePhaseConfig;
+              final protein =
+                  config.proteinPerKg * (metrics?.weightKg ?? _assumedWeightKg);
+              if (!macrosExceedTarget(
+                targetKcal: meta.target,
+                proteinGrams: protein,
+                fatPercent: config.fatPercent,
+              )) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  l10n.settingsMacrosExceedWarning,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Placeholder body weight when none is measured, matching the one BMR uses.
+const double _assumedWeightKg = 70;
 
 /// Budget & Currency: base currency + cached FX rates.
 final class _BudgetCurrencyScreen extends ConsumerWidget {

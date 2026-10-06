@@ -2871,6 +2871,78 @@ abstract class AppLocalizations {
   /// **'Planner look-ahead (days)'**
   String get settingsPlannerHorizonLabel;
 
+  /// No description provided for @settingsPhasesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Phase'**
+  String get settingsPhasesLabel;
+
+  /// No description provided for @settingsPhasesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your calorie and macro targets follow the phase you pick. Each phase keeps its own settings.'**
+  String get settingsPhasesHelp;
+
+  /// No description provided for @settingsPhaseProteinLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Protein (g per kg bodyweight)'**
+  String get settingsPhaseProteinLabel;
+
+  /// No description provided for @settingsPhaseProteinHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Body weight times this number gives your daily protein target.'**
+  String get settingsPhaseProteinHelp;
+
+  /// No description provided for @settingsPhaseFatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fat (% of calories)'**
+  String get settingsPhaseFatLabel;
+
+  /// No description provided for @settingsPhaseFatHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of your calorie target spent on fat. Carbs get whatever is left.'**
+  String get settingsPhaseFatHelp;
+
+  /// No description provided for @settingsPhaseFiberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiber (g)'**
+  String get settingsPhaseFiberLabel;
+
+  /// No description provided for @settingsPhaseFiberHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily fiber target for this phase.'**
+  String get settingsPhaseFiberHelp;
+
+  /// No description provided for @settingsMacrosExceedWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Protein and fat use more calories than your target, so carbs are set to 0.'**
+  String get settingsMacrosExceedWarning;
+
+  /// No description provided for @settingsBmrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BMR'**
+  String get settingsBmrLabel;
+
+  /// No description provided for @settingsTdeeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'TDEE'**
+  String get settingsTdeeLabel;
+
+  /// No description provided for @settingsEstimatedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'estimated'**
+  String get settingsEstimatedSuffix;
+
   /// No description provided for @settingsCalorieAdjustmentLabel.
   ///
   /// In en, this message translates to:
@@ -2916,7 +2988,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsCalorieAdjustmentHelp.
   ///
   /// In en, this message translates to:
-  /// **'kcal added to (gain) or subtracted from (lose) your daily calorie target.'**
+  /// **'kcal added to your daily target for this phase. Negative creates a deficit, positive a surplus.'**
   String get settingsCalorieAdjustmentHelp;
 
   /// No description provided for @settingsExperimentBaselineHelp.

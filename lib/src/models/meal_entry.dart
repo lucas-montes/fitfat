@@ -29,6 +29,8 @@ final class MealEntry {
 
   double get totalFat => items.fold(0.0, (sum, item) => sum + item.fat);
 
+  double get totalFiber => items.fold(0.0, (sum, item) => sum + item.fiber);
+
   /// Total grams eaten across the meal's foods.
   double get totalAmount => items.fold(0.0, (sum, item) => sum + item.amount);
 }

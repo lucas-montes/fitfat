@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../body/providers/body_metrics.dart';
@@ -6,6 +8,7 @@ import '../../exercise/providers/workouts.dart';
 import '../../models/activity_level.dart';
 import '../../models/bmr_formula.dart';
 import '../../models/body_weight_goal.dart';
+import '../../models/diet_phase.dart';
 import '../../models/gender.dart';
 import '../../settings/providers/settings.dart';
 import 'health_connect_steps.dart';
@@ -22,9 +25,10 @@ const double kCardioMet = 10.0;
 /// ~0.04 kcal per step for a 100 kg person).
 const double kKcalPerStepPerKg = 0.0004;
 
-/// kcal adjustment applied on top of TDEE for the body-weight goal
-/// (default; user-configurable via `settings.calorieGoalAdjustment`).
-const double kGoalAdjustment = 500;
+/// Energy density of each macronutrient (kcal per gram).
+const double kKcalPerGramProtein = 4;
+const double kKcalPerGramCarbs = 4;
+const double kKcalPerGramFat = 9;
 
 // ---------------------------------------------------------------------------
 // Pure formula helpers (unit-testable, no I/O)
@@ -115,23 +119,53 @@ double tdeeFrom({
 double stepsKcal({required double weightKg, required int steps}) =>
     steps * kKcalPerStepPerKg * weightKg;
 
-/// Applies the body-weight-goal adjustment on top of TDEE.
-/// lose → −[adjustment], gain → +[adjustment], maintain/unset → 0.
-double adjustForGoal(
-  double tdee,
-  BodyWeightGoal? goal, {
-  double adjustment = kGoalAdjustment,
-}) => switch (goal) {
-  BodyWeightGoal.lose => tdee - adjustment,
-  BodyWeightGoal.gain => tdee + adjustment,
-  BodyWeightGoal.maintain || null => tdee,
-};
+/// Applies a phase's signed adjustment on top of TDEE. A deficit is negative,
+/// so the sign travels with the number and there is no lose/gain switch to keep
+/// in sync with it.
+double applyPhaseAdjustment(double tdee, double adjustment) => tdee + adjustment;
 
-/// P/C/F gram targets from a daily calorie target (30/40/30 split).
-typedef MacroTargets = ({double protein, double carbs, double fat});
+/// Protein, carb, fat and fiber gram targets for one phase.
+///
+/// Protein is set per kg of body weight and fat as a share of the calorie
+/// target; carbs take whatever calories are left, because they are the one
+/// macronutrient a person can vary without a fixed physiological requirement.
+typedef MacroTargets = ({
+  double protein,
+  double carbs,
+  double fat,
+  double fiber,
+});
 
-MacroTargets macroTargetsFor(double kcal) =>
-    (protein: kcal * 0.30 / 4, carbs: kcal * 0.40 / 4, fat: kcal * 0.30 / 9);
+MacroTargets macroTargetsFor({
+  required double targetKcal,
+  required PhaseConfig config,
+  required double bodyweightKg,
+}) {
+  final protein = config.proteinPerKg * bodyweightKg;
+  final proteinKcal = protein * kKcalPerGramProtein;
+  final fatKcal = targetKcal * config.fatPercent / 100;
+  // Clamped, not allowed to go negative: if protein and fat already exceed the
+  // target there are no calories left for carbs, and a negative carb target
+  // would render as a nonsensical progress bar rather than an error.
+  final carbsKcal = math.max(0.0, targetKcal - proteinKcal - fatKcal);
+  return (
+    protein: protein,
+    carbs: carbsKcal / kKcalPerGramCarbs,
+    fat: fatKcal / kKcalPerGramFat,
+    fiber: config.fiberTarget,
+  );
+}
+
+/// True when protein and fat alone exceed the calorie target, leaving carbs at
+/// zero. The UI surfaces this as a warning — the configuration is usable, but
+/// the user probably did not intend it.
+bool macrosExceedTarget({
+  required double targetKcal,
+  required double proteinGrams,
+  required double fatPercent,
+}) =>
+    proteinGrams * kKcalPerGramProtein + targetKcal * fatPercent / 100 >
+    targetKcal;
 
 // ---------------------------------------------------------------------------
 // Steps provider
@@ -247,10 +281,11 @@ typedef CalorieTargetMeta = ({
   double tdee,
   double target,
   BmrFormula formula,
+  DietPhase phase,
   bool isEstimated,
 });
 
-/// ③ The daily target: TDEE adjusted for the user's body-weight goal.
+/// ③ The daily target: TDEE plus the active phase's signed adjustment.
 ///
 /// Carries BMR and TDEE alongside the target so a consumer — the dashboard — can
 /// read every figure it displays from one provider rather than three.
@@ -260,16 +295,16 @@ final calorieTargetMetaProvider = FutureProvider<CalorieTargetMeta>((
   final settings = ref.watch(settingsProvider);
   final bmrMeta = await ref.watch(bmrMetaProvider.future);
   final tdee = await ref.watch(tdeeProvider.future);
-  final target = adjustForGoal(
+  final target = applyPhaseAdjustment(
     tdee,
-    settings.bodyWeightGoal,
-    adjustment: settings.calorieGoalAdjustment,
+    settings.activePhaseConfig.adjustment,
   );
   return (
     bmr: bmrMeta.bmr,
     tdee: tdee,
     target: target,
     formula: bmrMeta.formula,
+    phase: settings.activePhase,
     isEstimated: bmrMeta.isEstimated,
   );
 });
@@ -279,7 +314,18 @@ final calorieTargetProvider = FutureProvider<double>((ref) async {
   return meta.target;
 });
 
+/// The active phase's macro targets.
+///
+/// Protein needs a body weight, so this cannot be a pure function of the calorie
+/// target alone — it reads the latest measurement and falls back to the same
+/// placeholder BMR uses, so the two never disagree about the assumed weight.
 final macroTargetsProvider = FutureProvider<MacroTargets>((ref) async {
+  final settings = ref.watch(settingsProvider);
   final target = await ref.watch(calorieTargetProvider.future);
-  return macroTargetsFor(target);
+  final latest = await ref.watch(latestBodyMetricsProvider.future);
+  return macroTargetsFor(
+    targetKcal: target,
+    config: settings.activePhaseConfig,
+    bodyweightKg: latest?.weightKg ?? _fallbackWeightKg,
+  );
 });

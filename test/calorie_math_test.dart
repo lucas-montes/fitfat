@@ -2,6 +2,8 @@ import 'package:fitfat/src/diet/providers/calories.dart';
 import 'package:fitfat/src/models/activity_level.dart';
 import 'package:fitfat/src/models/bmr_formula.dart';
 import 'package:fitfat/src/models/body_weight_goal.dart';
+import 'package:fitfat/src/models/diet_phase.dart';
+import 'package:fitfat/src/settings/providers/settings.dart';
 import 'package:fitfat/src/models/gender.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -149,33 +151,127 @@ void main() {
     });
   });
 
-  group('adjustForGoal', () {
-    // Still exercised here even though Stage B replaces it, so the refactor is
-    // pinned against the behaviour it preserved.
-    test('subtracts for lose, adds for gain, and is flat for maintain', () {
+  group('applyPhaseAdjustment', () {
+    test('adds the signed adjustment to TDEE', () {
       const tdee = 2400.0;
-      expect(
-        adjustForGoal(tdee, BodyWeightGoal.lose, adjustment: 500),
-        closeTo(1900, 1e-9),
-      );
-      expect(
-        adjustForGoal(tdee, BodyWeightGoal.gain, adjustment: 500),
-        closeTo(2900, 1e-9),
-      );
-      expect(
-        adjustForGoal(tdee, BodyWeightGoal.maintain, adjustment: 500),
-        closeTo(2400, 1e-9),
-      );
+      expect(applyPhaseAdjustment(tdee, -500), closeTo(1900, 1e-9));
+      expect(applyPhaseAdjustment(tdee, 500), closeTo(2900, 1e-9));
+      expect(applyPhaseAdjustment(tdee, 0), closeTo(2400, 1e-9));
     });
   });
 
   group('macroTargetsFor', () {
-    // Pinned until Stage B makes this bodyweight- and percentage-driven.
-    test('is a 30/40/30 split by calories', () {
-      final t = macroTargetsFor(2000);
-      expect(t.protein, closeTo(2000 * 0.30 / 4, 1e-9));
-      expect(t.carbs, closeTo(2000 * 0.40 / 4, 1e-9));
+    const config = (
+      adjustment: -500.0,
+      proteinPerKg: 2.0,
+      fatPercent: 30.0,
+      fiberTarget: 30.0,
+    );
+
+    test('protein is bodyweight times g/kg, fat is a share of calories', () {
+      final t = macroTargetsFor(
+        targetKcal: 2000,
+        config: config,
+        bodyweightKg: 70,
+      );
+      expect(t.protein, closeTo(140, 1e-9));
       expect(t.fat, closeTo(2000 * 0.30 / 9, 1e-9));
+      expect(t.fiber, closeTo(30, 1e-9));
+    });
+
+    test('carbs take the calories protein and fat leave behind', () {
+      final t = macroTargetsFor(
+        targetKcal: 2000,
+        config: config,
+        bodyweightKg: 70,
+      );
+      final expectedCarbs = (2000 - 140 * 4 - 2000 * 0.30) / 4;
+      expect(t.carbs, closeTo(expectedCarbs, 1e-9));
+    });
+
+    test('carbs clamp to zero rather than going negative', () {
+      // 120 kg at 2.0 g/kg is 240 g of protein = 960 kcal, and 30% fat on a 1200
+      // target is 360 kcal: together 1320, which overshoots.
+      final t = macroTargetsFor(
+        targetKcal: 1200,
+        config: config,
+        bodyweightKg: 120,
+      );
+      expect(t.carbs, 0);
+      expect(
+        macrosExceedTarget(
+          targetKcal: 1200,
+          proteinGrams: 240,
+          fatPercent: 30,
+        ),
+        isTrue,
+      );
+    });
+
+    test('macrosExceedTarget is false when carbs still have room', () {
+      expect(
+        macrosExceedTarget(
+          targetKcal: 2000,
+          proteinGrams: 140,
+          fatPercent: 30,
+        ),
+        isFalse,
+      );
+    });
+
+    test('a zero bodyweight yields zero protein, not a division error', () {
+      final t = macroTargetsFor(
+        targetKcal: 2000,
+        config: config,
+        bodyweightKg: 0,
+      );
+      expect(t.protein, 0);
+      expect(t.carbs, closeTo((2000 - 0 - 600) / 4, 1e-9));
+    });
+  });
+
+  group('phase defaults', () {
+    test('seed cutting and bulking at +/-500 and maintenance at 0', () {
+      expect(kDefaultCuttingAdjustment, -500);
+      expect(kDefaultBulkingAdjustment, 500);
+      expect(kDefaultMaintenanceAdjustment, 0);
+    });
+
+    test('every seeded phase uses the same protein, fat and fiber', () {
+      for (final phase in DietPhase.values) {
+        final config = kDefaultPhaseConfigs[phase]!;
+        expect(config.proteinPerKg, kDefaultProteinPerKg);
+        expect(config.fatPercent, kDefaultFatPercent);
+        expect(config.fiberTarget, kDefaultFiberTarget);
+      }
+    });
+
+    test('phase maps to and from the stored body-weight goal', () {
+      expect(DietPhase.fromGoal(BodyWeightGoal.lose), DietPhase.cutting);
+      expect(DietPhase.fromGoal(BodyWeightGoal.gain), DietPhase.bulking);
+      expect(
+        DietPhase.fromGoal(BodyWeightGoal.maintain),
+        DietPhase.maintenance,
+      );
+      // Unset means maintenance, the phase that changes nothing.
+      expect(DietPhase.fromGoal(null), DietPhase.maintenance);
+      expect(DietPhase.cutting.goal, BodyWeightGoal.lose);
+      expect(DietPhase.bulking.goal, BodyWeightGoal.gain);
+      expect(DietPhase.maintenance.goal, BodyWeightGoal.maintain);
+    });
+
+    test('copyWith changes one knob and leaves the rest', () {
+      const config = (
+        adjustment: -500.0,
+        proteinPerKg: 2.0,
+        fatPercent: 30.0,
+        fiberTarget: 30.0,
+      );
+      final updated = config.copyWith(fatPercent: 25);
+      expect(updated.fatPercent, 25);
+      expect(updated.adjustment, -500);
+      expect(updated.proteinPerKg, 2);
+      expect(updated.fiberTarget, 30);
     });
   });
 }

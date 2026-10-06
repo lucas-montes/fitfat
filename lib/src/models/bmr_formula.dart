@@ -4,4 +4,14 @@
 /// set — it needs lean mass, not height, age and gender. Mifflin-St Jeor is the
 /// default and needs no label, since it is what most people assume is being
 /// computed.
-enum BmrFormula { mifflinStJeor, katchMcArdle }
+enum BmrFormula {
+  mifflinStJeor,
+  katchMcArdle;
+
+  /// Display name. Only [katchMcArdle] is surfaced, and only as a literal
+  /// string in the UI — equations are named by convention, not translated.
+  String get label => switch (this) {
+    BmrFormula.mifflinStJeor => 'Mifflin-St Jeor',
+    BmrFormula.katchMcArdle => 'Katch-McArdle',
+  };
+}

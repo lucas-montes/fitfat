@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../models/activity_level.dart';
 import '../../models/body_weight_goal.dart';
+import '../../models/diet_phase.dart';
 import '../../models/gender.dart';
 import '../../models/units.dart';
 
@@ -51,6 +52,28 @@ final sharedPreferencesReadyProvider = FutureProvider<SharedPreferences>((
   ref.read(sharedPreferencesHolderProvider.notifier).set(prefs);
   return prefs;
 });
+
+/// Seed values for [SettingsState.phaseConfigs].
+const Map<DietPhase, PhaseConfig> kDefaultPhaseConfigs = {
+  DietPhase.cutting: (
+    adjustment: kDefaultCuttingAdjustment,
+    proteinPerKg: kDefaultProteinPerKg,
+    fatPercent: kDefaultFatPercent,
+    fiberTarget: kDefaultFiberTarget,
+  ),
+  DietPhase.bulking: (
+    adjustment: kDefaultBulkingAdjustment,
+    proteinPerKg: kDefaultProteinPerKg,
+    fatPercent: kDefaultFatPercent,
+    fiberTarget: kDefaultFiberTarget,
+  ),
+  DietPhase.maintenance: (
+    adjustment: kDefaultMaintenanceAdjustment,
+    proteinPerKg: kDefaultProteinPerKg,
+    fatPercent: kDefaultFatPercent,
+    fiberTarget: kDefaultFiberTarget,
+  ),
+};
 
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(
   SettingsNotifier.new,
@@ -116,8 +139,12 @@ final class SettingsState {
   // How many days ahead recurring planner tasks are materialized
   // (default 90).
   final int plannerHorizonDays;
-  // kcal adjustment applied on top of TDEE for lose/gain goals (default 500).
-  final double calorieGoalAdjustment;
+  // Per-phase calorie and macro configuration. Three phases x four knobs.
+  //
+  // The adjustment is signed: negative for a deficit, positive for a surplus.
+  // Cutting and bulking are seeded at +/-500 and maintenance at 0, which
+  // reproduces the old goal-based adjustment exactly.
+  final Map<DietPhase, PhaseConfig> phaseConfigs;
   // Length of the baseline phase shown on an experiment's chart, in days
   // (default 14).
   final int experimentBaselineDays;
@@ -173,7 +200,7 @@ final class SettingsState {
     this.endpointBudgetAccounts = '/budget-accounts',
     this.endpointReceiptPictures = '/receipt-pictures',
     this.plannerHorizonDays = 90,
-    this.calorieGoalAdjustment = 500,
+    Map<DietPhase, PhaseConfig>? phaseConfigs,
     this.experimentBaselineDays = 14,
     this.defaultRestSeconds = 0,
     this.reminderLeadMinutes = 30,
@@ -181,13 +208,25 @@ final class SettingsState {
     this.apiTimeoutSeconds = 15,
     this.cascadeDeleteBehavior = CascadeDeleteBehavior.ask,
     this.hasSeenWizard = false,
-  });
+  }) : phaseConfigs = phaseConfigs ?? kDefaultPhaseConfigs;
 
   bool get isProfileFull =>
       age != null &&
       gender != null &&
       bodyWeightGoal != null &&
       activityLevel != null;
+
+  /// The phase the user is currently in, derived from the body-weight goal.
+  DietPhase get activePhase => DietPhase.fromGoal(bodyWeightGoal);
+
+  /// The knobs that apply right now. Falls back to the maintenance seed if a
+  /// stored map is somehow missing a phase, rather than throwing deep in a
+  /// provider.
+  PhaseConfig get activePhaseConfig =>
+      phaseConfigs[activePhase] ?? kDefaultPhaseConfigs[activePhase]!;
+
+  /// The stored goal this phase corresponds to, for writing back.
+  BodyWeightGoal? get activePhaseGoal => activePhase.goal;
 
   ServerProfile? get activeServer {
     if (servers.isEmpty) return null;
@@ -240,7 +279,7 @@ final class SettingsState {
     String? endpointBudgetAccounts,
     String? endpointReceiptPictures,
     int? plannerHorizonDays,
-    double? calorieGoalAdjustment,
+    Map<DietPhase, PhaseConfig>? phaseConfigs,
     int? experimentBaselineDays,
     int? defaultRestSeconds,
     int? reminderLeadMinutes,
@@ -295,7 +334,7 @@ final class SettingsState {
     endpointReceiptPictures:
         endpointReceiptPictures ?? this.endpointReceiptPictures,
     plannerHorizonDays: plannerHorizonDays ?? this.plannerHorizonDays,
-    calorieGoalAdjustment: calorieGoalAdjustment ?? this.calorieGoalAdjustment,
+    phaseConfigs: phaseConfigs ?? this.phaseConfigs,
     experimentBaselineDays:
         experimentBaselineDays ?? this.experimentBaselineDays,
     defaultRestSeconds: defaultRestSeconds ?? this.defaultRestSeconds,
@@ -344,7 +383,14 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _endpointReceiptPicturesKey =
       'settings_endpoint_receipt_pictures';
   static const _plannerHorizonDaysKey = 'settings_planner_horizon_days';
-  static const _calorieGoalAdjustmentKey = 'settings_calorie_goal_adjustment';
+  // The pre-phase knob. Still read so an existing user's +/-500 magnitude
+  // seeds their cutting and bulking adjustments instead of snapping to a
+  // hardcoded value.
+  static const _legacyCalorieGoalAdjustmentKey =
+      'settings_calorie_goal_adjustment';
+
+  static String _phaseKey(DietPhase phase, String knob) =>
+      'settings_phase_${phase.name}_${knob}';
   static const _experimentBaselineDaysKey = 'settings_experiment_baseline_days';
   static const _defaultRestSecondsKey = 'settings_default_rest_seconds';
   static const _cascadeDeleteKey = 'settings_cascade_delete';
@@ -416,8 +462,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       endpointReceiptPictures:
           prefs.getString(_endpointReceiptPicturesKey) ?? '/receipt-pictures',
       plannerHorizonDays: prefs.getInt(_plannerHorizonDaysKey) ?? 90,
-      calorieGoalAdjustment:
-          prefs.getDouble(_calorieGoalAdjustmentKey) ?? 500.0,
+      phaseConfigs: _loadPhaseConfigs(prefs),
       experimentBaselineDays: prefs.getInt(_experimentBaselineDaysKey) ?? 14,
       defaultRestSeconds: prefs.getInt(_defaultRestSecondsKey) ?? 0,
       reminderLeadMinutes: prefs.getInt(reminderLeadMinutesKey) ?? 30,
@@ -831,12 +876,81 @@ final class SettingsNotifier extends Notifier<SettingsState> {
     state = state.copyWith(plannerHorizonDays: clamped);
   }
 
-  Future<void> setCalorieGoalAdjustment(double kcal) async {
-    final clamped = kcal < 0 ? 0.0 : kcal;
+  /// Selects the active phase. The body-weight goal is the stored selector, so
+  /// this also moves the weight-trend card's label.
+  Future<void> setActivePhase(DietPhase phase) async {
     await ref
         .read(sharedPreferencesProvider)
-        .setDouble(_calorieGoalAdjustmentKey, clamped);
-    state = state.copyWith(calorieGoalAdjustment: clamped);
+        .setString(_bodyWeightGoalKey, phase.goal.name);
+    state = state.copyWith(bodyWeightGoal: phase.goal);
+  }
+
+  /// Writes one knob of one phase, leaving the other three and every other
+  /// phase untouched.
+  Future<void> setPhaseAdjustment(DietPhase phase, double kcal) async {
+    await _updatePhase(phase, (c) => c.copyWith(adjustment: kcal));
+  }
+
+  Future<void> setPhaseProteinPerKg(DietPhase phase, double perKg) async {
+    final clamped = perKg < 0 ? 0.0 : perKg;
+    await _updatePhase(phase, (c) => c.copyWith(proteinPerKg: clamped));
+  }
+
+  Future<void> setPhaseFatPercent(DietPhase phase, double percent) async {
+    // Capped at 100: above that, fat alone would exceed any sane target.
+    final clamped = percent.clamp(0.0, 100.0);
+    await _updatePhase(phase, (c) => c.copyWith(fatPercent: clamped));
+  }
+
+  Future<void> setPhaseFiberTarget(DietPhase phase, double grams) async {
+    final clamped = grams < 0 ? 0.0 : grams;
+    await _updatePhase(phase, (c) => c.copyWith(fiberTarget: clamped));
+  }
+
+  Future<void> _updatePhase(
+    DietPhase phase,
+    PhaseConfig Function(PhaseConfig) transform,
+  ) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final updated = Map<DietPhase, PhaseConfig>.of(state.phaseConfigs);
+    final current = updated[phase] ?? kDefaultPhaseConfigs[phase]!;
+    final next = transform(current);
+    updated[phase] = next;
+
+    await prefs.setDouble(_phaseKey(phase, 'adjustment'), next.adjustment);
+    await prefs.setDouble(_phaseKey(phase, 'proteinPerKg'), next.proteinPerKg);
+    await prefs.setDouble(_phaseKey(phase, 'fatPercent'), next.fatPercent);
+    await prefs.setDouble(_phaseKey(phase, 'fiberTarget'), next.fiberTarget);
+
+    state = state.copyWith(phaseConfigs: updated);
+  }
+
+  /// Reads the twelve knobs, falling back per-value so a partially written map
+  /// still loads. Absent values take the seed for [phase], except the calorie
+  /// adjustment which inherits the legacy +/-500 magnitude.
+  Map<DietPhase, PhaseConfig> _loadPhaseConfigs(SharedPreferences prefs) {
+    final legacy = prefs.getDouble(_legacyCalorieGoalAdjustmentKey);
+    final configs = <DietPhase, PhaseConfig>{};
+    for (final phase in DietPhase.values) {
+      final seed = kDefaultPhaseConfigs[phase]!;
+      configs[phase] = (
+        adjustment:
+            prefs.getDouble(_phaseKey(phase, 'adjustment')) ??
+            (legacy != null && phase != DietPhase.maintenance
+                ? (phase == DietPhase.cutting ? -legacy : legacy)
+                : seed.adjustment),
+        proteinPerKg:
+            prefs.getDouble(_phaseKey(phase, 'proteinPerKg')) ??
+            seed.proteinPerKg,
+        fatPercent:
+            prefs.getDouble(_phaseKey(phase, 'fatPercent')) ??
+            seed.fatPercent,
+        fiberTarget:
+            prefs.getDouble(_phaseKey(phase, 'fiberTarget')) ??
+            seed.fiberTarget,
+      );
+    }
+    return configs;
   }
 
   Future<void> setExperimentBaselineDays(int days) async {

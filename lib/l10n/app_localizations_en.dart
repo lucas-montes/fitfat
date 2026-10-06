@@ -1587,6 +1587,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPlannerHorizonLabel => 'Planner look-ahead (days)';
 
   @override
+  String get settingsPhasesLabel => 'Phase';
+
+  @override
+  String get settingsPhasesHelp =>
+      'Your calorie and macro targets follow the phase you pick. Each phase keeps its own settings.';
+
+  @override
+  String get settingsPhaseProteinLabel => 'Protein (g per kg bodyweight)';
+
+  @override
+  String get settingsPhaseProteinHelp =>
+      'Body weight times this number gives your daily protein target.';
+
+  @override
+  String get settingsPhaseFatLabel => 'Fat (% of calories)';
+
+  @override
+  String get settingsPhaseFatHelp =>
+      'Share of your calorie target spent on fat. Carbs get whatever is left.';
+
+  @override
+  String get settingsPhaseFiberLabel => 'Fiber (g)';
+
+  @override
+  String get settingsPhaseFiberHelp => 'Daily fiber target for this phase.';
+
+  @override
+  String get settingsMacrosExceedWarning =>
+      'Protein and fat use more calories than your target, so carbs are set to 0.';
+
+  @override
+  String get settingsBmrLabel => 'BMR';
+
+  @override
+  String get settingsTdeeLabel => 'TDEE';
+
+  @override
+  String get settingsEstimatedSuffix => 'estimated';
+
+  @override
   String get settingsCalorieAdjustmentLabel => 'Calorie goal adjustment (kcal)';
 
   @override
@@ -1610,7 +1650,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCalorieAdjustmentHelp =>
-      'kcal added to (gain) or subtracted from (lose) your daily calorie target.';
+      'kcal added to your daily target for this phase. Negative creates a deficit, positive a surplus.';
 
   @override
   String get settingsExperimentBaselineHelp =>
