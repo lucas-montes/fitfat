@@ -11,7 +11,9 @@ import '../providers/meals.dart';
 import '../providers/foods.dart';
 import '../repositories/food_repository.dart' show ResolvedFood;
 import '../widgets/food_picker_sheet.dart';
+import '../widgets/meal_item_editor_sheet.dart';
 import '../../dashboard/providers/dashboard.dart';
+import '../../ui/tokens.dart';
 import '../../ui/widgets/top_banner.dart';
 
 final class MealFormScreen extends ConsumerStatefulWidget {
@@ -58,6 +60,8 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
     if (meal != null) {
       for (final item in meal.items) {
         _amounts[item.foodId] = item.amount;
+        // Seeded from the stored row so the first frame already has a name.
+        _names[item.foodId] = item.foodName;
       }
     }
   }
@@ -110,6 +114,16 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
         title: Text(
           _isEditing ? l10n.mealFormEditTitle : l10n.mealFormNewTitle,
         ),
+        // Save is the primary action and the form can be long, so it lives in
+        // the app bar rather than pinned below the food list. Mirrors the state
+        // the bottom button carried: disabled while saving, with the in-flight
+        // label.
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : _save,
+            child: Text(_saving ? l10n.mealFormSaving : l10n.mealFormSave),
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -143,6 +157,12 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Above the food list, not below it. The running total is what you
+            // are checking while adding and adjusting foods, and scrolling past
+            // them to read it defeats that.
+            _TotalsCard(totals: _previewTotals, l10n: l10n),
+            const SizedBox(height: FitFatTokens.spaceL),
+
             // Food selection. The list lives in a debounced, virtualized
             // sheet rather than inline: it holds every food, which is one per
             // ingredient plus every recipe, and rendering that in the form's own
@@ -163,6 +183,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
                 // stored macros in step with the current recipe.
                 for (final entry in resolved) {
                   _profiles[entry.food.id] = entry.nutrition;
+                  _names[entry.food.id] = entry.food.name;
                 }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -177,26 +198,17 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
                       for (final entry in _amounts.entries)
                         if (_profiles[entry.key] case final nutrition?
                             when nutrition.per100g != null)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _names[entry.key] ?? entry.key,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  '${entry.value.toStringAsFixed(0)} g  ·  '
-                                  '${(nutrition.per100g.calories * entry.value / 100).toStringAsFixed(0)} kcal',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+                          _DraftFoodRow(
+                            key: ValueKey(entry.key),
+                            name: _names[entry.key] ?? entry.key,
+                            grams: entry.value,
+                            calories:
+                                nutrition.per100g.calories * entry.value / 100,
+                            onTap: () => _editDraftFood(
+                              entry.key,
+                              name: _names[entry.key] ?? entry.key,
+                              grams: entry.value,
+                              per100g: nutrition.per100g,
                             ),
                           ),
                     ],
@@ -204,18 +216,49 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
                 );
               },
             ),
-
-            const SizedBox(height: 24),
-            _TotalsCard(totals: _previewTotals, l10n: l10n),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: Text(_saving ? l10n.mealFormSaving : l10n.mealFormSave),
-            ),
           ],
         ),
       ),
     );
+  }
+
+  /// Applies an amount change or a removal to this form's draft.
+  ///
+  /// Keyed by food id, which is also how [_amounts] is keyed: a food can only
+  /// appear once in a meal, so removing by id needs no further disambiguation.
+  ///
+  /// Deliberately does not touch the repository. This form owns an unsaved
+  /// draft and the existing Save persists the whole meal; writing through here
+  /// would change a row even if the user then backed out of the form.
+  Future<void> _editDraftFood(
+    String foodId, {
+    required String name,
+    required double grams,
+    required Nutrition per100g,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showMealItemEditorSheet(
+      context,
+      foodName: name,
+      currentGrams: grams,
+      currentSummary: l10n.mealListMacroFormat(
+        grams.toStringAsFixed(0),
+        (per100g.calories * grams / 100).toStringAsFixed(0),
+        (per100g.protein * grams / 100).toStringAsFixed(1),
+        (per100g.carbs * grams / 100).toStringAsFixed(1),
+        (per100g.fat * grams / 100).toStringAsFixed(1),
+      ),
+    );
+    // null = dismissed, keep the draft exactly as it was.
+    if (result == null) return;
+    setState(() {
+      switch (result) {
+        case MealItemAmountChanged(:final grams):
+          _amounts[foodId] = grams;
+        case MealItemRemoved():
+          _amounts.remove(foodId);
+      }
+    });
   }
 
   Future<void> _pickDateTime() async {
@@ -430,6 +473,55 @@ final class _FoodRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One food in the form's draft. Tappable, because adjusting a logged portion
+/// used to require finding the picker; the chevron is what makes that visible.
+final class _DraftFoodRow extends StatelessWidget {
+  final String name;
+  final double grams;
+  final double calories;
+  final VoidCallback onTap;
+
+  const _DraftFoodRow({
+    super.key,
+    required this.name,
+    required this.grams,
+    required this.calories,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Text(
+              '${grams.toStringAsFixed(0)} g  ·  ${calories.toStringAsFixed(0)} kcal',
+              style: theme.textTheme.bodySmall,
+            ),
+            Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
