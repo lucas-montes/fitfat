@@ -623,16 +623,28 @@ final class WorkoutRepository {
     return entries;
   }
 
-  /// Total lifted volume (kg) and total minutes across completed workouts
-  /// completed on/after [fromDay] (start-of-day). Exactly two queries (a
-  /// workouts→workout_exercises→exercise_sets join for volume, a workouts
-  /// scan for duration) regardless of the number of workouts — the dashboard's
-  /// weekly stats used to resolve `workoutDetailProvider` per workout
-  /// (perf T03).
-  Future<({double volumeKg, int minutes, int daysTrained})> getVolumeAndMinutesSince(
-    DateTime fromDay,
-  ) async {
+  /// Total lifted volume (kg), total minutes and distinct days trained
+  /// across workouts completed in [fromDay, untilDay) (both start-of-day,
+  /// local).
+  ///
+  /// Two queries regardless of workout count: a
+  /// workouts→workout_exercises→exercise_sets join that also carries the
+  /// per-workout logged set minutes, and a workouts scan for the header
+  /// timestamps. The dashboard's weekly stats used to resolve
+  /// `workoutDetailProvider` per workout (perf T03).
+  ///
+  /// [untilDay] is not optional. A window anchored to a calendar week has to
+  /// exclude the next one explicitly, because a `completedAt` written by
+  /// another device with a skewed clock can otherwise land in it.
+  Future<({double volumeKg, int minutes, int daysTrained})>
+      getVolumeAndMinutesBetween(DateTime fromDay, DateTime untilDay) async {
     final fromMillis = fromDay.millisecondsSinceEpoch;
+    final untilMillis = untilDay.millisecondsSinceEpoch;
+
+    final inWindow = _database.workouts.completedAt.isBiggerOrEqualValue(
+          fromMillis,
+        ) &
+        _database.workouts.completedAt.isSmallerThanValue(untilMillis);
 
     final joined =
         await (_database.select(_database.exerciseSets).join([
@@ -648,29 +660,46 @@ final class WorkoutRepository {
                   _database.workoutExercises.workoutId,
                 ),
               ),
-            ])..where(
-              _database.workouts.completedAt.isBiggerOrEqualValue(fromMillis),
-            ))
+            ])..where(inWindow))
             .get();
 
     var volumeKg = 0.0;
+    // Logged set minutes per workout, accumulated in the same pass as volume.
+    // Only consulted for workouts that have no startedAt — see below.
+    final setMinutesByWorkout = <String, int>{};
     for (final row in joined) {
       final set = row.readTable(_database.exerciseSets);
       volumeKg += (set.actualReps ?? 0) * (set.actualWeightKg ?? 0);
+      final workoutId = row.readTable(_database.workouts).id;
+      final logged = set.actualDurationMinutes ?? 0;
+      if (logged > 0) {
+        setMinutesByWorkout.update(
+          workoutId,
+          (sum) => sum + logged,
+          ifAbsent: () => logged,
+        );
+      }
     }
 
-    final workoutRows = await (_database.select(
-      _database.workouts,
-    )..where((t) => t.completedAt.isBiggerOrEqualValue(fromMillis))).get();
+    final workoutRows =
+        await (_database.select(_database.workouts)..where((t) => inWindow))
+            .get();
     var minutes = 0;
     // Distinct calendar days, not workout count: two sessions on one day are
     // one day trained. Derived from the rows already fetched for the minute
     // sum, so it costs nothing extra.
     final trainedDays = <DateTime>{};
     for (final row in workoutRows) {
-      final completed = _toDomain(row);
-      minutes += completed.duration.inMinutes;
-      final at = completed.completedAt;
+      // `complete()` sets completedAt without requiring startedAt, and
+      // Workout.duration is zero when startedAt is null — so a session finished
+      // outside the active-workout flow would otherwise contribute no time at
+      // all. Fall back to the logged set minutes; zero only when the session
+      // genuinely has no logged duration.
+      final workout = _toDomain(row);
+      minutes += workout.startedAt == null
+          ? (setMinutesByWorkout[workout.id] ?? 0)
+          : workout.duration.inMinutes;
+      final at = workout.completedAt;
       if (at != null) {
         trainedDays.add(DateTime(at.year, at.month, at.day));
       }

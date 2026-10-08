@@ -533,12 +533,16 @@ final class _WorkoutHeroCard extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Text(l10n.dashboardError('$e')),
         data: (stats) {
-          if (stats.totalVolumeKg == 0 && stats.totalMinutes == 0) {
+          // Empty means no completed workout, not "nothing summed". Volume is
+          // reps x weight, so a cardio-only week is always 0 volume, and
+          // keying off volume + minutes claimed such a week was empty.
+          if (stats.daysTrained == 0) {
             return Text(l10n.dashboardWeeklyEmptyBody, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant));
           }
           // Three tiles across a phone width, so all three use the compact
-          // metric type. Days reads as x/7 because the window is a rolling seven
-          // days — the denominator is what makes the number mean anything.
+          // metric type. Days reads as x/7 because the window is the current
+          // calendar week — the denominator is what makes the number mean
+          // anything.
           return Row(children: [
             Expanded(child: MetricCard(compact: true, icon: Icons.event_available_outlined, title: l10n.dashboardDaysTrained, value: l10n.dashboardDaysTrainedValue(stats.daysTrained))),
             const SizedBox(width: FitFatTokens.spaceS),

@@ -121,7 +121,7 @@ final latestWorkoutProvider = FutureProvider<Workout?>((ref) async {
 });
 
 // ---------------------------------------------------------------------------
-// Weekly workout stats (last 7 days, completed workouts)
+// Weekly workout stats (current calendar week, completed workouts)
 // ---------------------------------------------------------------------------
 
 typedef WeeklyWorkoutStats = ({
@@ -130,6 +130,20 @@ typedef WeeklyWorkoutStats = ({
   int daysTrained,
 });
 
+/// Monday 00:00 local of the week containing [now].
+///
+/// A calendar week, not a rolling seven days: the two differ on every day
+/// except the seventh, and a rolling window silently attributes last
+/// weekend's training to this week — which reads as "3/7 days" on a week
+/// where nothing was done.
+DateTime startOfCalendarWeek(DateTime now) =>
+    DateTime(now.year, now.month, now.day).subtract(
+      Duration(days: now.weekday - DateTime.monday),
+    );
+
+// Days trained renders as `x/7` (`dashboardDaysTrainedValue`). The denominator
+// is the whole week even on a Monday: the tile reads as progress toward a
+// weekly target, and `1/1` would report full marks on day one.
 final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
   ref,
 ) async {
@@ -137,14 +151,14 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
   if (!ref.watch(startupGateProvider)) {
     return (totalVolumeKg: 0.0, totalMinutes: 0, daysTrained: 0);
   }
-  final now = DateTime.now();
-  final weekStart = DateTime(now.year, now.month, now.day - 6);
+  final weekStart = startOfCalendarWeek(DateTime.now());
 
   // Bulk aggregate — no per-workout `workoutDetailProvider` resolution
   // (perf T03).
-  final stats = await ref
-      .watch(_workoutRepositoryProvider)
-      .getVolumeAndMinutesSince(weekStart);
+  final stats = await ref.watch(_workoutRepositoryProvider).getVolumeAndMinutesBetween(
+        weekStart,
+        weekStart.add(const Duration(days: 7)),
+      );
   return (
     totalVolumeKg: stats.volumeKg,
     totalMinutes: stats.minutes,
