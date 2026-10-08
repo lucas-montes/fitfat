@@ -207,6 +207,7 @@ final class _MealListScreenState extends ConsumerState<MealListScreen> {
           l10n: l10n,
           onTap: (meal) => _openForm(meal),
           onDelete: (meal) => _deleteMeal(context, meal),
+          onEditItem: (meal, item) => _editMealItem(context, meal, item),
         );
       },
     );
@@ -217,6 +218,44 @@ final class _MealListScreenState extends ConsumerState<MealListScreen> {
       MaterialPageRoute(builder: (_) => MealFormScreen(meal: existing)),
     );
     if (saved == true) ref.invalidate(mealListProvider);
+  }
+
+  /// Edits one food inside a meal: its amount, or its removal.
+  ///
+  /// Amount changes go through `updateAmounts`, which rescales linearly and
+  /// leaves the snapshot otherwise alone; a removal goes through `removeItem`,
+  /// which touches one row. Neither re-resolves the meal's other foods, so
+  /// fixing one row cannot rewrite what was eaten alongside it.
+  Future<void> _editMealItem(
+    BuildContext context,
+    MealEntry meal,
+    MealFood item,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showMealItemEditorSheet(
+      context,
+      foodName: item.foodName,
+      currentGrams: item.amount,
+      currentSummary: l10n.mealListMacroFormat(
+        item.amount.toStringAsFixed(0),
+        item.calories.toStringAsFixed(0),
+        item.protein.toStringAsFixed(1),
+        item.carbs.toStringAsFixed(1),
+        item.fat.toStringAsFixed(1),
+      ),
+    );
+    // null = dismissed, keep everything as it was.
+    if (result == null) return;
+
+    final repo = ref.read(mealRepositoryProvider);
+    switch (result) {
+      case _ItemAmountChanged(:final grams):
+        await repo.updateAmounts(meal.id, {item.id: grams});
+      case _ItemRemoved():
+        await repo.removeItem(meal.id, item.id);
+    }
+    ref.invalidate(mealListProvider);
+    invalidateDashboard(ref);
   }
 
   /// Swipe-to-delete.
@@ -256,12 +295,172 @@ final class _MealListScreenState extends ConsumerState<MealListScreen> {
   }
 }
 
+/// What the caller wants done with a meal food.
+sealed class _ItemEditResult {
+  const _ItemEditResult();
+}
+
+class _ItemAmountChanged extends _ItemEditResult {
+  final double grams;
+  const _ItemAmountChanged(this.grams);
+}
+
+class _ItemRemoved extends _ItemEditResult {
+  const _ItemRemoved();
+}
+
+/// Edits one food already logged in a meal: its amount, or its removal.
+///
+/// Opened from a food row in the meal list rather than the meal form, because
+/// the common correction is a single portion — "that was 80 g, not 800 g" — and
+/// making the user open the form and then find the picker to express it is what
+/// made these rows read as read-only.
+Future<_ItemEditResult?> showMealItemEditorSheet(
+  BuildContext context, {
+  required String foodName,
+  required double currentGrams,
+  required String currentSummary,
+}) {
+  return showModalBottomSheet<_ItemEditResult>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) => Padding(
+      // Lift the sheet above the keyboard so the amount field is not covered.
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+      ),
+      child: _MealItemEditor(
+        foodName: foodName,
+        currentGrams: currentGrams,
+        currentSummary: currentSummary,
+      ),
+    ),
+  );
+}
+
+final class _MealItemEditor extends StatefulWidget {
+  final String foodName;
+  final double currentGrams;
+  final String currentSummary;
+
+  const _MealItemEditor({
+    required this.foodName,
+    required this.currentGrams,
+    required this.currentSummary,
+  });
+
+  @override
+  State<_MealItemEditor> createState() => _MealItemEditorState();
+}
+
+final class _MealItemEditorState extends State<_MealItemEditor> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _amountCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountCtrl = TextEditingController(
+      text: widget.currentGrams.toStringAsFixed(0),
+    );
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.of(
+      context,
+    ).pop(_ItemAmountChanged(double.parse(_amountCtrl.text.trim())));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Form(
+        key: _formKey,
+        child: Padding(
+          padding: const EdgeInsets.all(FitFatTokens.spaceL),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.foodName,
+                style: theme.textTheme.titleMedium,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: FitFatTokens.spaceXs),
+              Text(
+                widget.currentSummary,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: FitFatTokens.spaceL),
+              TextFormField(
+                controller: _amountCtrl,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: l10n.mealItemEditorAmountLabel,
+                  suffixText: l10n.mealFormGramsLabel,
+                ),
+                // Same rule the picker and the form apply: a logged portion has
+                // to be a positive weight, so zero is a mistake rather than a
+                // way of expressing "remove it".
+                validator: (value) {
+                  final parsed = double.tryParse(value?.trim() ?? '');
+                  if (parsed == null || parsed <= 0) {
+                    return l10n.foodFormAmountPositive;
+                  }
+                  return null;
+                },
+                onFieldSubmitted: (_) => _submit(),
+              ),
+              const SizedBox(height: FitFatTokens.spaceL),
+              FilledButton(onPressed: _submit, child: Text(l10n.commonSave)),
+              const SizedBox(height: FitFatTokens.spaceS),
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pop(const _ItemRemoved()),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
+                child: Text(l10n.commonRemove),
+              ),
+              const SizedBox(height: FitFatTokens.spaceS),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.commonCancel),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 final class _DayGroup extends StatelessWidget {
   final DateTime date;
   final List<MealEntry> meals;
   final AppLocalizations l10n;
   final void Function(MealEntry) onTap;
   final void Function(MealEntry) onDelete;
+
+  /// Edits one food inside this group, with the meal it belongs to — the meal
+  /// id is what the repository writes against.
+  final void Function(MealEntry, MealFood) onEditItem;
 
   const _DayGroup({
     super.key,
@@ -270,6 +469,7 @@ final class _DayGroup extends StatelessWidget {
     required this.l10n,
     required this.onTap,
     required this.onDelete,
+    required this.onEditItem,
   });
 
   @override
@@ -306,10 +506,12 @@ final class _DayGroup extends StatelessWidget {
         ),
         for (final meal in meals)
           _MealTile(
+            key: ValueKey(meal.id),
             meal: meal,
             l10n: l10n,
             onTap: () => onTap(meal),
             onDelete: () => onDelete(meal),
+            onEditItem: (item) => onEditItem(meal, item),
           ),
         const Divider(height: 1),
       ],
@@ -327,11 +529,16 @@ final class _MealTile extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
+  /// Edits one of this meal's foods.
+  final void Function(MealFood) onEditItem;
+
   const _MealTile({
+    super.key,
     required this.meal,
     required this.l10n,
     required this.onTap,
     required this.onDelete,
+    required this.onEditItem,
   });
 
   @override
@@ -396,9 +603,15 @@ final class _MealTileState extends State<_MealTile> {
           ),
           onExpansionChanged: (expanded) =>
               setState(() => _expanded = expanded),
-          children: meal.items
-              .map((item) => _FoodItemTile(item: item, l10n: l10n))
-              .toList(),
+          children: [
+            for (final item in meal.items)
+              _FoodItemTile(
+                key: ValueKey(item.id),
+                item: item,
+                l10n: l10n,
+                onTap: () => widget.onEditItem(item),
+              ),
+          ].toList(),
         ),
       ),
     );
@@ -408,10 +621,17 @@ final class _MealTileState extends State<_MealTile> {
 final class _FoodItemTile extends StatelessWidget {
   final MealFood item;
   final AppLocalizations l10n;
-  const _FoodItemTile({required this.item, required this.l10n});
+  final VoidCallback onTap;
+  const _FoodItemTile({
+    super.key,
+    required this.item,
+    required this.l10n,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ListTile(
       title: Text(item.foodName),
       subtitle: Text(
@@ -422,6 +642,15 @@ final class _FoodItemTile extends StatelessWidget {
           item.carbs.toStringAsFixed(1),
           item.fat.toStringAsFixed(1),
         ),
+      ),
+      onTap: onTap,
+      // A trailing chevron, because a tappable row with no affordance is the
+      // same undiscoverable surface that made these read as read-only in the
+      // first place.
+      trailing: Icon(
+        Icons.chevron_right,
+        size: 18,
+        color: theme.colorScheme.onSurfaceVariant,
       ),
       dense: true,
       contentPadding: const EdgeInsets.only(left: 72, right: 16),

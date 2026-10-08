@@ -245,6 +245,19 @@ final class MealRepository {
     });
   }
 
+  /// Removes one logged food from a meal, leaving its siblings untouched.
+  ///
+  /// Deliberately not routed through [update]: that deletes and reinserts every
+  /// row, re-resolving the surviving foods against their *current* composition.
+  /// Correcting a past meal's contents must not rewrite what was recorded for
+  /// the foods that were not touched. Same reasoning as [updateAmounts], which
+  /// rescales rather than re-snapshots.
+  Future<void> removeItem(String mealId, String itemId) async {
+    await (_database.delete(
+      _database.mealFoods,
+    )..where((t) => t.mealId.equals(mealId) & t.id.equals(itemId))).go();
+  }
+
   Future<void> delete(String id) async {
     await _database.transaction(() async {
       await (_database.delete(

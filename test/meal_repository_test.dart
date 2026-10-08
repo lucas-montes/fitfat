@@ -204,6 +204,73 @@ void main() {
       expect(stored.items.last.calories, closeTo(150, 1e-9));
     });
 
+    test('removeItem drops one row and leaves its siblings alone', () async {
+      final oats = await seedIngredient('Oats', calories: 400);
+      final honey = await seedIngredient('Honey', calories: 300);
+      final meal = await logMeal('Lunch', [
+        await draft(derivedFoodId(oats), 'Oats', 100),
+        await draft(derivedFoodId(honey), 'Honey', 50),
+      ]);
+
+      await meals.removeItem(meal.id, meal.items.first.id);
+
+      final stored = (await meals.getAll()).single;
+      expect(stored.items, hasLength(1));
+      expect(stored.items.single.foodName, 'Honey');
+      expect(
+        stored.items.single.calories,
+        closeTo(150, 1e-9),
+        reason: 'the surviving food keeps its own snapshot',
+      );
+    });
+
+    test('removeItem leaves the survivors byte-identical', () async {
+      final oats = await seedIngredient('Oats', calories: 400);
+      final honey = await seedIngredient('Honey', calories: 300);
+      final meal = await logMeal('Lunch', [
+        await draft(derivedFoodId(oats), 'Oats', 100),
+        await draft(derivedFoodId(honey), 'Honey', 50),
+      ]);
+      final before = (await meals.getAll()).single.items.last;
+
+      await meals.removeItem(meal.id, meal.items.first.id);
+
+      final after = (await meals.getAll()).single.items.single;
+      expect(after.calories, before.calories);
+      expect(after.protein, before.protein);
+      expect(after.carbs, before.carbs);
+      expect(after.fat, before.fat);
+      expect(after.amount, before.amount);
+    });
+
+    test('removeItem on an unknown id is a no-op', () async {
+      final oats = await seedIngredient('Oats', calories: 400);
+      final meal = await logMeal('Snack', [
+        await draft(derivedFoodId(oats), 'Oats', 100),
+      ]);
+
+      await meals.removeItem(meal.id, 'no-such-row');
+
+      expect((await meals.getAll()).single.items, hasLength(1));
+    });
+
+    test('removeItem only touches the named meal', () async {
+      final oats = await seedIngredient('Oats', calories: 400);
+      final first = await logMeal('Breakfast', [
+        await draft(derivedFoodId(oats), 'Oats', 100),
+      ]);
+      final second = await logMeal('Lunch', [
+        await draft(derivedFoodId(oats), 'Oats', 100),
+      ]);
+
+      await meals.removeItem(first.id, first.items.single.id);
+
+      final all = await meals.getAll();
+      expect(all, hasLength(2));
+      final untouched = all.firstWhere((m) => m.id == second.id);
+      expect(untouched.items, hasLength(1));
+    });
+
     test('re-snapshot via update picks up an ingredient edit', () async {
       final oats = await seedIngredient('Oats', calories: 400);
       final meal = await logMeal('Breakfast', [
