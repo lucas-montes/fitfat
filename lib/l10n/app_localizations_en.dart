@@ -141,6 +141,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String dashboardHoursTrainedMinutes(String minutes) {
+    return '$minutes m';
+  }
+
+  @override
   String dashboardHoursTrainedHoursMinutes(Object hours, Object minutes) {
     return '$hours h $minutes m';
   }
@@ -1083,6 +1088,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mealFormTotals => 'Meal total';
+
+  @override
+  String get mealItemEditorAmountLabel => 'Amount';
 
   @override
   String get mealFormGramsLabel => 'g';

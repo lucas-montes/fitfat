@@ -483,14 +483,21 @@ final class _WeightLinePainter extends CustomPainter {
 /// The decision to keep minutes: `0.8 h` is technically correct and much harder
 /// to read at a glance than `45 m`, and a sub-hour session is common enough to
 /// be worth the branch.
-String _formatHours(AppLocalizations l10n, int minutes) {
+/// The weekly card's Time tile, as whole units.
+///
+/// Deliberately never a fraction of an hour: `0.9 h` had to be read back into
+/// 54 minutes, which is more work than the value it saved. Under an hour shows
+/// as minutes, over one shows hours and the remainder.
+///
+/// Public so it can be pinned. It is a presentation rule about the user's own
+/// time, so getting it wrong is immediately visible to them — the same reason
+/// `macroRowState` and `formatVolume` are public.
+String formatWeeklyDuration(AppLocalizations l10n, int minutes) {
   final hours = minutes ~/ 60;
   final mins = minutes % 60;
-  if (hours == 0) {
-    return l10n.dashboardHoursTrainedHours((mins / 60).toStringAsFixed(1));
-  }
-  if (mins == 0) return l10n.dashboardHoursTrainedHours(hours.toString());
-  return l10n.dashboardHoursTrainedHoursMinutes(hours.toString(), mins.toString());
+  if (hours == 0) return l10n.dashboardHoursTrainedMinutes('$mins');
+  if (mins == 0) return l10n.dashboardHoursTrainedHours('$hours');
+  return l10n.dashboardHoursTrainedHoursMinutes('$hours', '$mins');
 }
 
 final class _WorkoutHeroCard extends ConsumerWidget {
@@ -546,7 +553,7 @@ final class _WorkoutHeroCard extends ConsumerWidget {
           return Row(children: [
             Expanded(child: MetricCard(compact: true, icon: Icons.event_available_outlined, title: l10n.dashboardDaysTrained, value: l10n.dashboardDaysTrainedValue(stats.daysTrained))),
             const SizedBox(width: FitFatTokens.spaceS),
-            Expanded(child: MetricCard(compact: true, icon: Icons.timer_outlined, title: l10n.dashboardHoursTrained, value: _formatHours(l10n, stats.totalMinutes))),
+            Expanded(child: MetricCard(compact: true, icon: Icons.timer_outlined, title: l10n.dashboardHoursTrained, value: formatWeeklyDuration(l10n, stats.totalMinutes))),
             const SizedBox(width: FitFatTokens.spaceS),
             Expanded(child: MetricCard(compact: true, icon: Icons.calculate_outlined, title: l10n.dashboardVolume, value: formatVolume(stats.totalVolumeKg, weightUnit))),
           ]);

@@ -75,6 +75,12 @@
   },
   "dashboardHoursTrained": "Time",
   "dashboardHoursTrainedHours": "{hours} h",
+  "dashboardHoursTrainedMinutes": "{minutes} m",
+  "@dashboardHoursTrainedMinutes": {
+    "placeholders": {
+      "minutes": { "type": "String" }
+    }
+  },
   "dashboardHoursTrainedHoursMinutes": "{hours} h {minutes} m",
   "dashboardGoalsTitle": "Goals",
   "dashboardGoalsEmpty": "No active goals",
@@ -530,6 +536,7 @@
     }
   },
   "mealFormTotals": "Meal total",
+  "mealItemEditorAmountLabel": "Amount",
   "mealFormGramsLabel": "g",
   "mealFormSave": "Save",
   "mealFormSaving": "Saving…",

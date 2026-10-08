@@ -334,6 +334,12 @@ abstract class AppLocalizations {
   /// **'{hours} h'**
   String dashboardHoursTrainedHours(Object hours);
 
+  /// No description provided for @dashboardHoursTrainedMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} m'**
+  String dashboardHoursTrainedMinutes(String minutes);
+
   /// No description provided for @dashboardHoursTrainedHoursMinutes.
   ///
   /// In en, this message translates to:
@@ -1953,6 +1959,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Meal total'**
   String get mealFormTotals;
+
+  /// No description provided for @mealItemEditorAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get mealItemEditorAmountLabel;
 
   /// No description provided for @mealFormGramsLabel.
   ///

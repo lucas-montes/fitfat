@@ -72,6 +72,12 @@
   },
   "dashboardHoursTrained": "Temps",
   "dashboardHoursTrainedHours": "{hours} h",
+  "dashboardHoursTrainedMinutes": "{minutes} min",
+  "@dashboardHoursTrainedMinutes": {
+    "placeholders": {
+      "minutes": { "type": "String" }
+    }
+  },
   "dashboardHoursTrainedHoursMinutes": "{hours} h {minutes} m",
   "dashboardGoalsTitle": "Objectifs",
   "dashboardGoalsEmpty": "Aucun objectif actif",
@@ -446,6 +452,7 @@
   "mealFormFoodUnresolved": "L’un des aliments sélectionnés contient des ingrédients manquants, ses valeurs nutritionnelles ne peuvent donc pas être calculées. Synchronisez ou ajoutez ces ingrédients d’abord.",
   "mealFormFoodCalories": "{portion} kcal pour cette portion · {per100g}/100g",
   "mealFormTotals": "Total du repas",
+  "mealItemEditorAmountLabel": "Quantité",
   "mealFormGramsLabel": "g",
   "mealFormSave": "Enregistrer",
   "mealFormSaving": "Enregistrement…",
