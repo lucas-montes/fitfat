@@ -40,13 +40,41 @@ String _mealTitle(BuildContext context, MealEntry meal) {
 /// What the add sheet can open.
 enum _AddChoice { meal, recipe, ingredient }
 
-final class MealListScreen extends ConsumerWidget {
+final class MealListScreen extends ConsumerStatefulWidget {
   const MealListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MealListScreen> createState() => _MealListScreenState();
+}
+
+final class _MealListScreenState extends ConsumerState<MealListScreen> {
+  /// Meal ids swiped away but not yet reflected in the provider.
+  ///
+  /// Dismissible asserts if it is still in the tree once its dismiss animation
+  /// finishes, and neither the database delete nor the provider rebuild can
+  /// land in that same frame. Dropping the id from the rendered list
+  /// synchronously is what satisfies the contract; the id is retired once the
+  /// provider stops listing it.
+  ///
+  /// Held here rather than on the row because the row has no key and is
+  /// positional inside its day group: after an undo its element would be reused
+  /// with a stale "removed" flag and the restored meal would render invisible.
+  final Set<String> _pendingRemoval = {};
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final mealsAsync = ref.watch(mealListProvider);
+
+    // Retire ids the provider has caught up on. Guarded so a listener firing
+    // before the first data never calls setState needlessly.
+    ref.listen(mealListProvider, (previous, next) {
+      final ids = next.asData?.value.map((meal) => meal.id).toSet();
+      if (ids == null || _pendingRemoval.isEmpty) return;
+      if (_pendingRemoval.any((id) => !ids.contains(id))) {
+        setState(() => _pendingRemoval.removeWhere((id) => !ids.contains(id)));
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -77,14 +105,14 @@ final class MealListScreen extends ConsumerWidget {
                 title: l10n.emptyMealsTitle,
                 description: l10n.emptyMealsBody,
                 ctaLabel: l10n.emptyMealsCta,
-                onCtaPressed: () => _openForm(context, ref, null),
+                onCtaPressed: () => _openForm(null),
               )
-            : _buildMealList(context, ref, meals, l10n),
+            : _buildMealList(meals, l10n),
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: null,
         tooltip: l10n.dashboardAddTitle,
-        onPressed: () => _showAddSheet(context, ref),
+        onPressed: () => _showAddSheet(context),
         child: const Icon(Icons.add),
       ),
     );
@@ -97,7 +125,7 @@ final class MealListScreen extends ConsumerWidget {
   /// even though you often need the ingredient before the recipe that uses it.
   /// A sheet rather than a speed-dial because the three are peers here: there is
   /// no sensible "primary" one to single out.
-  Future<void> _showAddSheet(BuildContext context, WidgetRef ref) async {
+  Future<void> _showAddSheet(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final choice = await showModalBottomSheet<_AddChoice>(
       context: context,
@@ -131,7 +159,7 @@ final class MealListScreen extends ConsumerWidget {
     // dashboard welcome card already wires them.
     switch (choice) {
       case _AddChoice.meal:
-        await _openForm(context, ref, null);
+        await _openForm(null);
       case _AddChoice.recipe:
         final saved = await Navigator.of(
           context,
@@ -145,15 +173,16 @@ final class MealListScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildMealList(
-    BuildContext context,
-    WidgetRef ref,
-    List<MealEntry> meals,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildMealList(List<MealEntry> meals, AppLocalizations l10n) {
+    // A swiped meal is hidden immediately, before the delete lands, so the
+    // Dismissible leaves the tree in the frame its animation completes.
+    final visible = _pendingRemoval.isEmpty
+        ? meals
+        : meals.where((meal) => !_pendingRemoval.contains(meal.id)).toList();
+
     // Group meals by date (day only)
     final grouped = <DateTime, List<MealEntry>>{};
-    for (final meal in meals) {
+    for (final meal in visible) {
       final day = DateTime(
         meal.eatenAt.year,
         meal.eatenAt.month,
@@ -172,49 +201,58 @@ final class MealListScreen extends ConsumerWidget {
         final date = sortedDates[i];
         final dayMeals = grouped[date]!;
         return _DayGroup(
+          key: ValueKey(date),
           date: date,
           meals: dayMeals,
           l10n: l10n,
-          onTap: (meal) => _openForm(context, ref, meal),
-          onDelete: (meal) => _deleteMeal(context, ref, meal),
+          onTap: (meal) => _openForm(meal),
+          onDelete: (meal) => _deleteMeal(context, meal),
         );
       },
     );
   }
 
-  Future<void> _openForm(
-    BuildContext context,
-    WidgetRef ref,
-    MealEntry? existing,
-  ) async {
+  Future<void> _openForm(MealEntry? existing) async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => MealFormScreen(meal: existing)),
     );
     if (saved == true) ref.invalidate(mealListProvider);
   }
 
-  Future<void> _deleteMeal(
-    BuildContext context,
-    WidgetRef ref,
-    MealEntry meal,
-  ) async {
+  /// Swipe-to-delete.
+  ///
+  /// The row is hidden synchronously, before the delete is awaited, because
+  /// Dismissible has already finished its animation by the time this runs and
+  /// must not still be in the tree on the next build.
+  Future<void> _deleteMeal(BuildContext context, MealEntry meal) async {
     unawaited(Haptics.mediumImpact());
     final l10n = AppLocalizations.of(context)!;
-    await ref.read(mealRepositoryProvider).delete(meal.id);
+    setState(() => _pendingRemoval.add(meal.id));
+    try {
+      await ref.read(mealRepositoryProvider).delete(meal.id);
+    } catch (_) {
+      // Nothing was deleted, so the row has to come back rather than vanish
+      // silently while the meal still exists.
+      if (mounted) setState(() => _pendingRemoval.remove(meal.id));
+      return;
+    }
     ref.invalidate(mealListProvider);
     invalidateDashboard(ref);
-    if (context.mounted) {
-      showTopBanner(
-        context,
-        message: l10n.mealDeleted(_mealTitle(context, meal)),
-        actionLabel: l10n.commonUndo,
-        onAction: () async {
-          await ref.read(mealRepositoryProvider).restore(meal);
-          ref.invalidate(mealListProvider);
-          invalidateDashboard(ref);
-        },
-      );
-    }
+    if (!context.mounted) return;
+    showTopBanner(
+      context,
+      message: l10n.mealDeleted(_mealTitle(context, meal)),
+      actionLabel: l10n.commonUndo,
+      onAction: () async {
+        await ref.read(mealRepositoryProvider).restore(meal);
+        // Retire the id so the restored row is rendered again; the listener
+        // only clears ids the provider no longer lists, and an undo brings this
+        // one straight back.
+        if (mounted) setState(() => _pendingRemoval.remove(meal.id));
+        ref.invalidate(mealListProvider);
+        invalidateDashboard(ref);
+      },
+    );
   }
 }
 
@@ -226,6 +264,7 @@ final class _DayGroup extends StatelessWidget {
   final void Function(MealEntry) onDelete;
 
   const _DayGroup({
+    super.key,
     required this.date,
     required this.meals,
     required this.l10n,
@@ -235,6 +274,9 @@ final class _DayGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Every meal in this group may have been swiped away optimistically, in
+    // which case the group itself must not linger as an empty header.
+    if (meals.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final dateStr = DateFormats.formatDate(context, date);
 
