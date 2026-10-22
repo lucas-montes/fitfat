@@ -9,6 +9,7 @@ import '../../body/providers/body_metrics.dart';
 import '../../body/screens/body_metric_dialog.dart';
 import '../../budget/providers/budget_overview.dart';
 import '../../diet/providers/calories.dart';
+import '../../diet/services/calorie_calculator.dart';
 import '../../models/bmr_formula.dart';
 import '../../diet/providers/meals.dart';
 import '../../diet/screens/ingredient_form.dart';

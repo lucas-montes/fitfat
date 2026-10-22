@@ -1,331 +1,106 @@
-import 'dart:math' as math;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../body/providers/body_metrics.dart';
-import '../../exercise/providers/exercises.dart';
-import '../../exercise/providers/workouts.dart';
-import '../../models/activity_level.dart';
-import '../../models/bmr_formula.dart';
-import '../../models/body_weight_goal.dart';
-import '../../models/diet_phase.dart';
-import '../../models/gender.dart';
 import '../../settings/providers/settings.dart';
-import 'health_connect_steps.dart';
+import '../services/activity_factor_source.dart';
+import '../services/bmr_equation.dart';
+import '../services/calorie_calculator.dart';
+import '../services/calorie_inputs.dart';
+
+// The derivation itself lives in [CalorieCalculator] and its two strategies.
+// This file only wires them to the app's state: which body is measured, which
+// inputs the user has entered, and what the active phase asks for.
 
 // ---------------------------------------------------------------------------
-// Constants
+// Strategies
 // ---------------------------------------------------------------------------
 
-/// MET values used for computed activity (kcal = MET × weight_kg × hours).
-const double kWeightliftingMet = 6.0;
-const double kCardioMet = 10.0;
-
-/// kcal burned per step per kg of body weight (validated walking estimate,
-/// ~0.04 kcal per step for a 100 kg person).
-const double kKcalPerStepPerKg = 0.0004;
-
-/// Energy density of each macronutrient (kcal per gram).
-const double kKcalPerGramProtein = 4;
-const double kKcalPerGramCarbs = 4;
-const double kKcalPerGramFat = 9;
+/// The calculator the app runs on.
+///
+/// Mifflin-St Jeor is the default equation and [PalActivityFactor] the default
+/// activity term; both are constructor arguments so a measured-activity source
+/// or a different equation can replace one without touching the derivation.
+final calorieCalculatorProvider = Provider<CalorieCalculator>((ref) {
+  return const CalorieCalculator(
+    bmrEquation: MifflinStJeorEquation(),
+    activity: PalActivityFactor(),
+  );
+});
 
 // ---------------------------------------------------------------------------
-// Pure formula helpers (unit-testable, no I/O)
+// Input sources
 // ---------------------------------------------------------------------------
 
-/// Mifflin-St Jeor basal metabolic rate (kcal/day).
-double mifflinBmr({
-  required Gender gender,
-  required double weightKg,
-  required double heightCm,
-  required int age,
-}) {
-  final base = 10 * weightKg + 6.25 * heightCm - 5 * age;
-  return gender == Gender.male ? base + 5 : base - 161;
+/// The latest measured body, from the body-metrics table.
+final bodyProfileSourceProvider = Provider<BodyProfileSource>((ref) {
+  return _RiverpodBodyProfileSource(ref);
+});
+
+/// The self-reported calorie inputs, from settings.
+final userProfileSourceProvider = Provider<UserProfileSource>((ref) {
+  return _RiverpodUserProfileSource(ref);
+});
+
+final class _RiverpodBodyProfileSource implements BodyProfileSource {
+  final Ref _ref;
+  const _RiverpodBodyProfileSource(this._ref);
+
+  @override
+  Future<BodyProfile> latest() async {
+    final entry = await _ref.watch(latestBodyMetricsProvider.future);
+    return (weightKg: entry?.weightKg, heightCm: entry?.heightCm);
+  }
 }
 
-/// Katch-McArdle basal metabolic rate from lean body mass (kcal/day).
-/// [bodyFatPercent] is 0–70 (e.g. 20 = 20%).
-double katchMcardleBmr({
-  required double weightKg,
-  required double bodyFatPercent,
-}) {
-  final leanMass = weightKg * (1 - bodyFatPercent / 100);
-  return 370 + 21.6 * leanMass;
-}
+final class _RiverpodUserProfileSource implements UserProfileSource {
+  final Ref _ref;
+  const _RiverpodUserProfileSource(this._ref);
 
-/// kcal for a session of [minutes] at the given MET, for a person of
-/// [weightKg]. kcal = MET × kg × hours.
-double workoutKcal({
-  required double met,
-  required double weightKg,
-  required int minutes,
-}) => met * weightKg * (minutes / 60);
-
-/// ① Basal metabolic rate, from whichever equation applies.
-///
-/// Katch-McArdle is preferred when body fat is being tracked and a percentage is
-/// set, because lean mass predicts resting burn better than weight does. Without
-/// it, Mifflin-St Jeor is used and [BmrFormula] says so, so the UI can stay quiet
-/// about the common case and speak up when the rarer one produced the number.
-///
-/// Returns the formula alongside the value so callers never have to re-derive
-/// which path ran.
-({double bmr, BmrFormula formula}) bmrFor({
-  required Gender gender,
-  required double weightKg,
-  required double heightCm,
-  required int age,
-  required double? bodyFatPercent,
-  required bool trackBodyFat,
-}) {
-  if (trackBodyFat && bodyFatPercent != null) {
+  @override
+  CalorieInputs current() {
+    final settings = _ref.watch(settingsProvider);
     return (
-      bmr: katchMcardleBmr(weightKg: weightKg, bodyFatPercent: bodyFatPercent),
-      formula: BmrFormula.katchMcArdle,
+      age: settings.age,
+      gender: settings.gender,
+      bodyFatPercent: settings.bodyFatPercent,
+      trackBodyFat: settings.trackBodyFat,
+      activityLevel: settings.activityLevel,
     );
   }
-  return (
-    bmr: mifflinBmr(
-      gender: gender,
-      weightKg: weightKg,
-      heightCm: heightCm,
-      age: age,
-    ),
-    formula: BmrFormula.mifflinStJeor,
-  );
 }
 
-/// ② Total daily energy expenditure: BMR plus activity.
-///
-/// Two modes, and they are genuinely different models rather than two ways of
-/// expressing one:
-///
-/// - **Computed** ([level] null): activity is measured, from workouts and steps,
-///   and added to BMR. This is the more accurate mode and costs a query.
-/// - **Static**: activity is a self-reported PAL multiplier on BMR, for when
-///   nothing is being measured.
-///
-/// [activityKcal] is ignored in static mode, and [level] is ignored in computed
-/// mode, so callers can pass both without branching.
-double tdeeFrom({
-  required double bmr,
-  required ActivityLevel? level,
-  required double activityKcal,
-}) => level == null ? bmr + activityKcal : bmr * level.multiplier;
-
-/// kcal burned walking [steps] for a person of [weightKg].
-double stepsKcal({required double weightKg, required int steps}) =>
-    steps * kKcalPerStepPerKg * weightKg;
-
-/// Applies a phase's signed adjustment on top of TDEE. A deficit is negative,
-/// so the sign travels with the number and there is no lose/gain switch to keep
-/// in sync with it.
-double applyPhaseAdjustment(double tdee, double adjustment) => tdee + adjustment;
-
-/// Protein, carb, fat and fiber gram targets for one phase.
-///
-/// Protein is set per kg of body weight and fat as a share of the calorie
-/// target; carbs take whatever calories are left, because they are the one
-/// macronutrient a person can vary without a fixed physiological requirement.
-typedef MacroTargets = ({
-  double protein,
-  double carbs,
-  double fat,
-  double fiber,
-});
-
-MacroTargets macroTargetsFor({
-  required double targetKcal,
-  required PhaseConfig config,
-  required double bodyweightKg,
-}) {
-  final protein = config.proteinPerKg * bodyweightKg;
-  final proteinKcal = protein * kKcalPerGramProtein;
-  final fatKcal = targetKcal * config.fatPercent / 100;
-  // Clamped, not allowed to go negative: if protein and fat already exceed the
-  // target there are no calories left for carbs, and a negative carb target
-  // would render as a nonsensical progress bar rather than an error.
-  final carbsKcal = math.max(0.0, targetKcal - proteinKcal - fatKcal);
-  return (
-    protein: protein,
-    carbs: carbsKcal / kKcalPerGramCarbs,
-    fat: fatKcal / kKcalPerGramFat,
-    fiber: config.fiberTarget,
-  );
-}
-
-/// True when protein and fat alone exceed the calorie target, leaving carbs at
-/// zero. The UI surfaces this as a warning — the configuration is usable, but
-/// the user probably did not intend it.
-bool macrosExceedTarget({
-  required double targetKcal,
-  required double proteinGrams,
-  required double fatPercent,
-}) =>
-    proteinGrams * kKcalPerGramProtein + targetKcal * fatPercent / 100 >
-    targetKcal;
-
 // ---------------------------------------------------------------------------
-// Steps provider
+// Targets
 // ---------------------------------------------------------------------------
 
-/// Today's step count. Android reads it from Health Connect (T04); other
-/// platforms fall back to 0 (workouts-only activity).
-final stepsProvider = FutureProvider<int>((ref) async {
-  return ref.watch(todayStepsProvider.future);
-});
-
-// ---------------------------------------------------------------------------
-// Daily activity kcal (computed mode)
-// ---------------------------------------------------------------------------
-
-/// Today's activity kcal from workouts (MET × kg × hours) + daily steps.
-final dailyActivityKcalProvider = FutureProvider<double>((ref) async {
-  final latest = await ref.watch(latestBodyMetricsProvider.future);
-  final weight = latest?.weightKg ?? 0;
-  final workoutKcal = await _todayWorkoutKcal(ref, weight);
-  final steps = await ref.watch(stepsProvider.future);
-  return workoutKcal + stepsKcal(weightKg: weight, steps: steps);
-});
-
-Future<double> _todayWorkoutKcal(Ref ref, double weight) async {
-  if (weight <= 0) return 0;
-  final workouts = await ref.watch(workoutListProvider.future);
-  final exercises = await ref.watch(exerciseListProvider.future);
-  final typeById = {for (final e in exercises) e.id: e.exerciseType};
-
-  final now = DateTime.now();
-  final todayStart = DateTime(now.year, now.month, now.day);
-  final todayEnd = todayStart.add(const Duration(days: 1));
-
-  var total = 0.0;
-  for (final workout in workouts) {
-    if (!workout.isCompleted) continue;
-    final completed = workout.completedAt!;
-    final day = DateTime(completed.year, completed.month, completed.day);
-    if (day.isBefore(todayStart) || !day.isBefore(todayEnd)) continue;
-
-    final detail = await ref.watch(workoutDetailProvider(workout.id).future);
-    if (detail == null) continue;
-    for (final block in detail.exercises) {
-      final type = typeById[block.exercise.exerciseId];
-      final met = type == 'cardio' ? kCardioMet : kWeightliftingMet;
-      total += workoutKcal(
-        met: met,
-        weightKg: weight,
-        minutes: workout.duration.inMinutes,
-      );
-    }
-  }
-  return total;
-}
-
-const double _fallbackWeightKg = 70;
-const double _fallbackHeightCm = 170;
-const int _fallbackAge = 30;
-const Gender _fallbackGender = Gender.male;
-
-/// ① BMR and which equation produced it.
-///
-/// Split out from the target so the derivation reads end to end and each step is
-/// independently testable. The inputs are unchanged; only the shape differs.
-final bmrMetaProvider =
-    FutureProvider<({double bmr, BmrFormula formula, bool isEstimated})>((
-      ref,
-    ) async {
-      final settings = ref.watch(settingsProvider);
-      final latest = await ref.watch(latestBodyMetricsProvider.future);
-      final weight = latest?.weightKg;
-      final height = latest?.heightCm;
-      final age = settings.age;
-      final gender = settings.gender;
-      final isEstimated =
-          weight == null || height == null || age == null || gender == null;
-
-      final result = bmrFor(
-        gender: gender ?? _fallbackGender,
-        weightKg: weight ?? _fallbackWeightKg,
-        heightCm: height ?? _fallbackHeightCm,
-        age: age ?? _fallbackAge,
-        bodyFatPercent: settings.bodyFatPercent,
-        trackBodyFat: settings.trackBodyFat,
-      );
-      return (
-        bmr: result.bmr,
-        formula: result.formula,
-        isEstimated: isEstimated,
-      );
-    });
-
-/// ② TDEE: BMR plus activity, measured or self-reported.
-final tdeeProvider = FutureProvider<double>((ref) async {
-  final settings = ref.watch(settingsProvider);
-  final bmr = (await ref.watch(bmrMetaProvider.future)).bmr;
-  // Computed mode measures activity, static mode applies a PAL multiplier. Only
-  // one of the two ever runs, so the unused one costs nothing.
-  if (settings.computeActivity) {
-    final activity = await ref.watch(dailyActivityKcalProvider.future);
-    return tdeeFrom(bmr: bmr, level: null, activityKcal: activity);
-  }
-  return tdeeFrom(
-    bmr: bmr,
-    level: settings.activityLevel ?? ActivityLevel.moderate,
-    activityKcal: 0,
-  );
-});
-
-typedef CalorieTargetMeta = ({
-  double bmr,
-  double tdee,
-  double target,
-  BmrFormula formula,
-  DietPhase phase,
-  bool isEstimated,
-});
-
-/// ③ The daily target: TDEE plus the active phase's signed adjustment.
-///
-/// Carries BMR and TDEE alongside the target so a consumer — the dashboard — can
-/// read every figure it displays from one provider rather than three.
+/// Today's calorie target with BMR, TDEE and the equation that produced them.
 final calorieTargetMetaProvider = FutureProvider<CalorieTargetMeta>((
   ref,
 ) async {
   final settings = ref.watch(settingsProvider);
-  final bmrMeta = await ref.watch(bmrMetaProvider.future);
-  final tdee = await ref.watch(tdeeProvider.future);
-  final target = applyPhaseAdjustment(
-    tdee,
-    settings.activePhaseConfig.adjustment,
-  );
-  return (
-    bmr: bmrMeta.bmr,
-    tdee: tdee,
-    target: target,
-    formula: bmrMeta.formula,
+  return ref.watch(calorieCalculatorProvider).target(
+    profile: await ref.watch(bodyProfileSourceProvider).latest(),
+    inputs: ref.watch(userProfileSourceProvider).current(),
     phase: settings.activePhase,
-    isEstimated: bmrMeta.isEstimated,
+    config: settings.activePhaseConfig,
   );
 });
 
+/// The calorie target alone, for callers that only need the number.
 final calorieTargetProvider = FutureProvider<double>((ref) async {
   final meta = await ref.watch(calorieTargetMetaProvider.future);
   return meta.target;
 });
 
 /// The active phase's macro targets.
-///
-/// Protein needs a body weight, so this cannot be a pure function of the calorie
-/// target alone — it reads the latest measurement and falls back to the same
-/// placeholder BMR uses, so the two never disagree about the assumed weight.
 final macroTargetsProvider = FutureProvider<MacroTargets>((ref) async {
   final settings = ref.watch(settingsProvider);
   final target = await ref.watch(calorieTargetProvider.future);
-  final latest = await ref.watch(latestBodyMetricsProvider.future);
-  return macroTargetsFor(
-    targetKcal: target,
-    config: settings.activePhaseConfig,
-    bodyweightKg: latest?.weightKg ?? _fallbackWeightKg,
-  );
+  return ref
+      .watch(calorieCalculatorProvider)
+      .macros(
+        targetKcal: target,
+        config: settings.activePhaseConfig,
+        profile: await ref.watch(bodyProfileSourceProvider).latest(),
+      );
 });
