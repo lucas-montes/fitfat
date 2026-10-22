@@ -206,6 +206,38 @@ final class DataPushService {
     });
   }
 
+  /// Pushes every experiment plus its daily check-ins.
+  ///
+  /// Experiments are sent before their check-ins so the server's foreign key
+  /// always resolves.
+  Future<PushResult> pushExperiments(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final experiments = await database.select(database.experiments).get();
+    final checkins = await database.select(database.experimentCheckins).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'experiments': experiments.map((e) => e.toJson()).toList(),
+      'experimentCheckins': checkins.map((e) => e.toJson()).toList(),
+    });
+  }
+
+  Future<PushResult> pushBodyMetrics(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final rows = await database.select(database.bodyMetrics).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'bodyMetrics': rows.map((e) => e.toJson()).toList(),
+    });
+  }
+
   Future<PushResult> pushTransactions(
     WidgetRef ref,
     String baseUrl,
@@ -306,6 +338,20 @@ Future<PushResult> pushDataType(WidgetRef ref, String type) async {
   switch (type) {
     case 'workouts':
       return service.pushWorkouts(ref, base, key, settings.endpointWorkouts);
+    case 'experiments':
+      return service.pushExperiments(
+        ref,
+        base,
+        key,
+        settings.endpointExperiments,
+      );
+    case 'bodyMetrics':
+      return service.pushBodyMetrics(
+        ref,
+        base,
+        key,
+        settings.endpointBodyMetrics,
+      );
     case 'templates':
       return service.pushTemplates(ref, base, key, settings.endpointTemplates);
     case 'notes':

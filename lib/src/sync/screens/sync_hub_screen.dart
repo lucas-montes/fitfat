@@ -20,8 +20,61 @@ import '../local_backup.dart';
 import '../sync_service.dart';
 import 'qr_scan_sheet.dart';
 import '../sync_state_store.dart';
+import '../phone_log_shipper.dart';
 import '../sync_models.dart';
 import '../../ui/widgets/top_banner.dart';
+
+/// Translates raw sync/HTTP failures into the sentence a regular user can act
+/// on. Anything unrecognised is shown as-is for power users.
+String friendlySyncError(String url, String error) {
+  final e = error.toLowerCase();
+  final unreachable =
+      e.contains('timeoutexception') ||
+      e.contains('socketexception') ||
+      e.contains('connection refused') ||
+      e.contains('connection reset') ||
+      e.contains('connection closed') ||
+      e.contains('failed host lookup');
+  if (unreachable) {
+    return 'Cannot reach the server at $url. Check that the sync server is '
+        'running on the computer and that the phone is on the same Wi-Fi '
+        'network (or configured via adb reverse). Use "Test /health" above to '
+        'retry.';
+  }
+  if (e.contains('apiexception(405') || e.contains('apiexception(501')) {
+    return 'This server is an older version that cannot receive this data '
+        'yet. Update the sync server on the computer, then push again.';
+  }
+  if (e.contains('apiexception(404')) {
+    return 'The server does not recognise this sync operation — its version '
+        'may be too old. Update the sync server on the computer, then try '
+        'again.';
+  }
+  if (e.contains('apiexception(401') || e.contains('apiexception(403')) {
+    return 'The server rejected the API key. Check the key for this server '
+        '(remove it, then re-add or re-scan the QR code).';
+  }
+  if (e.contains('apiexception(413')) {
+    return 'This data set is too large for the server to accept in one go. '
+        'Push fewer categories at once (uncheck some boxes above).';
+  }
+  if (e.contains('apiexception(5')) {
+    return 'The server hit an internal problem while receiving this data. Its '
+        'recent activity was logged on the computer — check the server '
+        'console output.';
+  }
+  return error;
+}
+
+/// Ships the phone's recent log lines (including any error just recorded) to
+/// the configured server so they appear in the computer's console output.
+Future<void> shipPhoneLogs(WidgetRef ref) async {
+  final settings = ref.read(settingsProvider);
+  await PhoneLogShipper.instance.ship(
+    baseUrl: settings.remoteSyncBaseUrl,
+    apiKey: settings.remoteSyncApiKey,
+  );
+}
 
 final class SyncHubScreen extends ConsumerWidget {
   const SyncHubScreen({super.key});
@@ -172,10 +225,12 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
         _log.severe('autoTest failed url=$normalizedUrl', e2, st2);
         if (!mounted) return;
         setState(() => _testStatus = null);
-        final msg2 = e2.toString().contains('TimeoutException')
-            ? 'Server not reachable at $normalizedUrl — check WiFi/firewall or increase timeout in Settings → Advanced (${timeout.inSeconds}s). Phone must reach $normalizedUrl (try curl from phone: adb shell curl -v $normalizedUrl/health)'
-            : e2.toString();
-        showTopBanner(context, message: 'Connection failed: $msg2');
+        showTopBanner(
+          context,
+          message:
+              'Connection failed — '
+              '${friendlySyncError(normalizedUrl, e2.toString())}',
+        );
       }
     }
     if (mounted) setState(() => _testing = false);
@@ -503,9 +558,12 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       if (!mounted) return;
       if (!result.ok && result.error != null) {
         _log.warning('sync failed: ${result.error}');
-        final msg = result.error!.contains('TimeoutException')
-            ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${ref.read(settingsProvider).apiTimeoutSeconds}s)'
-            : result.error!;
+        final msg = friendlySyncError(
+          ref.read(settingsProvider).remoteSyncBaseUrl,
+          result.error!,
+        );
+        await shipPhoneLogs(ref);
+        if (!mounted) return;
         showTopBanner(context, message: msg);
       } else if (result.ok) {
         _log.info(
@@ -515,7 +573,16 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       }
     } catch (e, st) {
       _log.severe('sync exception', e, st);
-      if (mounted) showTopBanner(context, message: '$e');
+      await shipPhoneLogs(ref);
+      if (mounted) {
+        showTopBanner(
+          context,
+          message: friendlySyncError(
+            ref.read(settingsProvider).remoteSyncBaseUrl,
+            '$e',
+          ),
+        );
+      }
     } finally {
       if (mounted) setBusy(false);
     }
@@ -698,7 +765,10 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
         );
         if (!mounted) return null;
         if (!refreshed.ok) {
-          showTopBanner(context, message: refreshed.error!);
+          showTopBanner(
+            context,
+            message: friendlySyncError('server', refreshed.error!),
+          );
           return null;
         }
         return loadDisplay();
@@ -772,7 +842,10 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
         );
         if (!mounted) return null;
         if (!refreshed.ok) {
-          showTopBanner(context, message: refreshed.error!);
+          showTopBanner(
+            context,
+            message: friendlySyncError('server', refreshed.error!),
+          );
           return null;
         }
         return ref
@@ -847,13 +920,26 @@ final class _PersonalPoolSectionState
     try {
       final type = _entityToType(entity);
       final res = await pushDataType(ref, type);
+      // Ship diagnostics either way so a failure is visible on the computer.
+      await shipPhoneLogs(ref);
       if (!mounted) return;
       showTopBanner(
         context,
         message: res.ok
             ? 'Pushed $entity'
-            : 'Push $entity failed: ${res.error}',
+            : 'Could not push $entity — '
+                  '${friendlySyncError(ref.read(settingsProvider).remoteSyncBaseUrl, res.error ?? 'unknown error')}',
       );
+    } catch (e) {
+      await shipPhoneLogs(ref);
+      if (mounted)
+        showTopBanner(
+          context,
+          message: friendlySyncError(
+            ref.read(settingsProvider).remoteSyncBaseUrl,
+            '$e',
+          ),
+        );
     } finally {
       if (mounted) _setBusy(entity, false);
     }
@@ -865,9 +951,9 @@ final class _PersonalPoolSectionState
     'Goals' => 'goals',
     'Workouts' => 'workouts',
     'Templates' => 'templates',
-    'Experiments' => 'tasks',
+    'Experiments' => 'experiments',
     'Meals' => 'meals',
-    'Body' => 'workouts',
+    'Body' => 'bodyMetrics',
     'Budget' => 'budgetAccounts',
     'Receipts' => 'receiptPictures',
     _ => 'tasks',

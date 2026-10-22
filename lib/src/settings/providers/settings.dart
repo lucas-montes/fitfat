@@ -135,6 +135,8 @@ final class SettingsState {
   final String endpointTransactions; // default '/transactions'
   final String endpointBudgetAccounts; // default '/budget-accounts'
   final String endpointReceiptPictures; // default '/receipt-pictures'
+  final String endpointExperiments; // default '/experiments'
+  final String endpointBodyMetrics; // default '/body-metrics'
 
   // How many days ahead recurring planner tasks are materialized
   // (default 90).
@@ -199,6 +201,8 @@ final class SettingsState {
     this.endpointTransactions = '/transactions',
     this.endpointBudgetAccounts = '/budget-accounts',
     this.endpointReceiptPictures = '/receipt-pictures',
+    this.endpointExperiments = '/experiments',
+    this.endpointBodyMetrics = '/body-metrics',
     this.plannerHorizonDays = 90,
     Map<DietPhase, PhaseConfig>? phaseConfigs,
     this.experimentBaselineDays = 14,
@@ -278,6 +282,8 @@ final class SettingsState {
     String? endpointTransactions,
     String? endpointBudgetAccounts,
     String? endpointReceiptPictures,
+    String? endpointExperiments,
+    String? endpointBodyMetrics,
     int? plannerHorizonDays,
     Map<DietPhase, PhaseConfig>? phaseConfigs,
     int? experimentBaselineDays,
@@ -333,6 +339,8 @@ final class SettingsState {
         endpointBudgetAccounts ?? this.endpointBudgetAccounts,
     endpointReceiptPictures:
         endpointReceiptPictures ?? this.endpointReceiptPictures,
+    endpointExperiments: endpointExperiments ?? this.endpointExperiments,
+    endpointBodyMetrics: endpointBodyMetrics ?? this.endpointBodyMetrics,
     plannerHorizonDays: plannerHorizonDays ?? this.plannerHorizonDays,
     phaseConfigs: phaseConfigs ?? this.phaseConfigs,
     experimentBaselineDays:
@@ -382,6 +390,8 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _endpointBudgetAccountsKey = 'settings_endpoint_budget_accounts';
   static const _endpointReceiptPicturesKey =
       'settings_endpoint_receipt_pictures';
+  static const _endpointExperimentsKey = 'settings_endpoint_experiments';
+  static const _endpointBodyMetricsKey = 'settings_endpoint_body_metrics';
   static const _plannerHorizonDaysKey = 'settings_planner_horizon_days';
   // The pre-phase knob. Still read so an existing user's +/-500 magnitude
   // seeds their cutting and bulking adjustments instead of snapping to a
@@ -461,6 +471,10 @@ final class SettingsNotifier extends Notifier<SettingsState> {
           prefs.getString(_endpointBudgetAccountsKey) ?? '/budget-accounts',
       endpointReceiptPictures:
           prefs.getString(_endpointReceiptPicturesKey) ?? '/receipt-pictures',
+      endpointExperiments:
+          prefs.getString(_endpointExperimentsKey) ?? '/experiments',
+      endpointBodyMetrics:
+          prefs.getString(_endpointBodyMetricsKey) ?? '/body-metrics',
       plannerHorizonDays: prefs.getInt(_plannerHorizonDaysKey) ?? 90,
       phaseConfigs: _loadPhaseConfigs(prefs),
       experimentBaselineDays: prefs.getInt(_experimentBaselineDaysKey) ?? 14,
