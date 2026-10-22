@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import '../database/database_provider.dart' as db;
 import '../network/api_client.dart';
 import '../settings/providers/settings.dart';
+import 'sync_service.dart';
 
 /// Result of pushing one entity type to the server (push-only sync).
 final class PushResult {
@@ -264,6 +265,36 @@ final class DataPushService {
     });
   }
 
+  /// Pushes the shared tag vocabulary so the server has real tag names
+  /// (task/note/goal link pushes alone would name tags by id).
+  Future<PushResult> pushTags(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final rows = await database.select(database.tags).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'tags': rows.map((e) => e.toJson()).toList(),
+    });
+  }
+
+  /// Pushes store rows so the server keeps human names (its price-driven
+  /// auto-create path names stores by id).
+  Future<PushResult> pushStores(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final rows = await database.select(database.stores).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'stores': rows.map((e) => e.toJson()).toList(),
+    });
+  }
+
   /// Pushes each receipt row as JSON and, when a local picture exists, also
   /// uploads the image via multipart so the server gets record + bytes.
   Future<PushResult> pushReceiptPictures(
@@ -378,6 +409,17 @@ Future<PushResult> pushDataType(WidgetRef ref, String type) async {
         key,
         settings.endpointBudgetAccounts,
       );
+    case 'tags':
+      return service.pushTags(ref, base, key, '/tags');
+    case 'stores':
+      return service.pushStores(ref, base, key, '/stores');
+    case 'foods': {
+      // Delegated to SyncService: it decides which foods are shareable and
+      // resolves each food's ingredient components (see FoodSyncClient.push).
+      final sync = ref.read(syncServiceProvider);
+      final result = await sync.pushFoods(base, key);
+      return PushResult(count: result.updated, error: result.error);
+    }
     case 'receiptPictures':
       return service.pushReceiptPictures(
         ref,

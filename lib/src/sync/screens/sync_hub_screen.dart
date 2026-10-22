@@ -911,6 +911,9 @@ final class _PersonalPoolSectionState
     'Body',
     'Budget',
     'Receipts',
+    'Tags',
+    'Stores',
+    'Foods',
   };
   final Map<String, bool> _busy = {};
   bool _isBusy(String key) => _busy[key] ?? false;
@@ -956,6 +959,9 @@ final class _PersonalPoolSectionState
     'Body' => 'bodyMetrics',
     'Budget' => 'budgetAccounts',
     'Receipts' => 'receiptPictures',
+    'Tags' => 'tags',
+    'Stores' => 'stores',
+    'Foods' => 'foods',
     _ => 'tasks',
   };
   @override
