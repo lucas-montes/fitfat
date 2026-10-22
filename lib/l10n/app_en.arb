@@ -767,7 +767,6 @@
   "settingsActivityModerate": "Moderate",
   "settingsActivityActive": "Active",
   "settingsActivityVeryActive": "Very active",
-  "settingsComputeActivity": "Compute activity from workouts and steps",
   "settingsTrackBodyFat": "Track body fat",
   "settingsBodyFatLabel": "Body fat (%)",
   "settingsBodyFatInvalid": "Enter a body fat percentage between 0 and 70",

@@ -718,7 +718,6 @@
   "settingsActivityModerate": "Moderado",
   "settingsActivityActive": "Activo",
   "settingsActivityVeryActive": "Muy activo",
-  "settingsComputeActivity": "Calcular la actividad desde entrenamientos y pasos",
   "settingsTrackBodyFat": "Registrar grasa corporal",
   "settingsBodyFatLabel": "Grasa corporal (%)",
   "settingsBodyFatInvalid": "Introduce un porcentaje de grasa corporal entre 0 y 70",

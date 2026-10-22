@@ -1566,10 +1566,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsActivityVeryActive => 'Très actif';
 
   @override
-  String get settingsComputeActivity =>
-      'Calculer l\'activité à partir des séances et des pas';
-
-  @override
   String get settingsTrackBodyFat => 'Suivre le taux de masse grasse';
 
   @override

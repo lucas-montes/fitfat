@@ -25,8 +25,7 @@ App-level settings (theme mode, language, profile age, body-weight goal) persist
 | age | int? | null | persisted as `settings_age` |
 | bodyWeightGoal | BodyWeightGoal? | null (unset) | persisted as `settings_body_weight_goal` ('lose'/'maintain'/'gain'); enum in `lib/src/models/body_weight_goal.dart`; null = no badge on the dashboard card |
 | gender | Gender? | null (unset) | persisted as `settings_gender` ('male'/'female'); enum in `lib/src/models/gender.dart`; calorie-profile input |
-| activityLevel | ActivityLevel? | null (unset) | persisted as `settings_activity_level` ('sedentary'/'light'/'moderate'/'active'/'very_active'); enum in `lib/src/models/activity_level.dart`; used by the static-activity calorie mode |
-| computeActivity | bool | false | persisted as `settings_compute_activity`; true = derive activity kcal from workouts + steps instead of `activityLevel` |
+| activityLevel | ActivityLevel? | null (unset) | persisted as `settings_activity_level` ('sedentary'/'light'/'moderate'/'active'/'very_active'); enum in `lib/src/models/activity_level.dart`; supplies the PAL multiplier that `PalActivityFactor` reads to turn BMR into TDEE. Unset falls back to `moderate` |
 | trackBodyFat | bool | false | persisted as `settings_track_body_fat`; enables the body-fat input + Katch-McArdle |
 | bodyFatPercent | double? | null | persisted as `settings_body_fat_percent` |
 | plannerNotifications | bool | true | persisted as `settings_planner_notifications`; app-wide task-reminder toggle (T11) |

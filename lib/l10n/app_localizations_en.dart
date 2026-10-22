@@ -1556,10 +1556,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsActivityVeryActive => 'Very active';
 
   @override
-  String get settingsComputeActivity =>
-      'Compute activity from workouts and steps';
-
-  @override
   String get settingsTrackBodyFat => 'Track body fat';
 
   @override

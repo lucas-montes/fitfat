@@ -382,36 +382,17 @@ final class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScr
                   ),
                   const SizedBox(height: 16),
 
-                  // Activity source toggle
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.settingsComputeActivity),
-                    value: settings.computeActivity,
-                    onChanged: notifier.setComputeActivity,
+                  // Activity level
+                  Text(
+                    l10n.settingsActivityLevel,
+                    style: theme.textTheme.bodyMedium,
                   ),
-                  if (settings.computeActivity)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        l10n.settingsActivityLevel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    )
-                  else ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.settingsActivityLevel,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    _ActivitySegmentedButton(
-                      selected: settings.activityLevel,
-                      onChanged: notifier.setActivityLevel,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                  const SizedBox(height: 8),
+                  _ActivitySegmentedButton(
+                    selected: settings.activityLevel,
+                    onChanged: notifier.setActivityLevel,
+                  ),
+                  const SizedBox(height: 16),
 
                   // Body fat tracking
                   SwitchListTile(
@@ -1314,9 +1295,15 @@ final class _MacroWarning extends ConsumerWidget {
             orElse: () => const SizedBox.shrink(),
             data: (metrics) {
               final config = settings.activePhaseConfig;
-              final protein =
-                  config.proteinPerKg * (metrics?.weightKg ?? _assumedWeightKg);
-              if (!macrosExceedTarget(
+              final calculator = ref.watch(calorieCalculatorProvider);
+              // The same calculator the dashboard uses, so this warning and the
+              // targets it describes can never be computed from a different
+              // assumed weight.
+              final protein = calculator.proteinGrams(
+                config: config,
+                profile: (weightKg: metrics?.weightKg, heightCm: null),
+              );
+              if (!calculator.macrosExceedTarget(
                 targetKcal: meta.target,
                 proteinGrams: protein,
                 fatPercent: config.fatPercent,
@@ -1339,9 +1326,6 @@ final class _MacroWarning extends ConsumerWidget {
     );
   }
 }
-
-/// Placeholder body weight when none is measured, matching the one BMR uses.
-const double _assumedWeightKg = 70;
 
 /// Budget & Currency: base currency + cached FX rates.
 final class _BudgetCurrencyScreen extends ConsumerWidget {

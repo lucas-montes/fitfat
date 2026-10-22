@@ -724,7 +724,6 @@
   "settingsActivityModerate": "Modéré",
   "settingsActivityActive": "Actif",
   "settingsActivityVeryActive": "Très actif",
-  "settingsComputeActivity": "Calculer l'activité à partir des séances et des pas",
   "settingsTrackBodyFat": "Suivre le taux de masse grasse",
   "settingsBodyFatLabel": "Masse grasse (%)",
   "settingsBodyFatInvalid": "Saisissez un taux de masse grasse entre 0 et 70",

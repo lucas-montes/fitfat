@@ -2812,12 +2812,6 @@ abstract class AppLocalizations {
   /// **'Very active'**
   String get settingsActivityVeryActive;
 
-  /// No description provided for @settingsComputeActivity.
-  ///
-  /// In en, this message translates to:
-  /// **'Compute activity from workouts and steps'**
-  String get settingsComputeActivity;
-
   /// No description provided for @settingsTrackBodyFat.
   ///
   /// In en, this message translates to:
