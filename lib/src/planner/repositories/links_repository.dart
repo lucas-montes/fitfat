@@ -42,7 +42,10 @@ final class LinksRepository {
               _database.tasks.id.equalsExp(_database.taskExperiments.taskId),
             ),
           ])
-          ..where(_database.taskExperiments.experimentId.equals(experimentId))
+          ..where(
+            _database.taskExperiments.experimentId.equals(experimentId) &
+                _database.tasks.deletedAt.isNull(),
+          )
           ..orderBy([
             OrderingTerm.asc(_database.tasks.date),
             OrderingTerm.asc(_database.tasks.sortOrder),
@@ -70,7 +73,10 @@ final class LinksRepository {
               ),
             ),
           ])
-          ..where(_database.taskExperiments.taskId.equals(taskId))
+          ..where(
+            _database.taskExperiments.taskId.equals(taskId) &
+                _database.experiments.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.asc(_database.experiments.startDate)]);
     final rows = await query.get();
     final items = await _attachExperiments(
@@ -125,7 +131,10 @@ final class LinksRepository {
               _database.tasks.id.equalsExp(_database.taskGoals.taskId),
             ),
           ])
-          ..where(_database.taskGoals.goalId.equals(goalId))
+          ..where(
+            _database.taskGoals.goalId.equals(goalId) &
+                _database.tasks.deletedAt.isNull(),
+          )
           ..orderBy([
             OrderingTerm.asc(_database.tasks.date),
             OrderingTerm.asc(_database.tasks.sortOrder),
@@ -151,7 +160,10 @@ final class LinksRepository {
               _database.goals.id.equalsExp(_database.taskGoals.goalId),
             ),
           ])
-          ..where(_database.taskGoals.taskId.equals(taskId))
+          ..where(
+            _database.taskGoals.taskId.equals(taskId) &
+                _database.goals.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
     final rows = await query.get();
     final items = await _attachGoals(
@@ -201,7 +213,10 @@ final class LinksRepository {
               ),
             ),
           ])
-          ..where(_database.experimentGoals.goalId.equals(goalId))
+          ..where(
+            _database.experimentGoals.goalId.equals(goalId) &
+                _database.experiments.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.asc(_database.experiments.startDate)]);
     final rows = await query.get();
     final items = await _attachExperiments(
@@ -226,7 +241,10 @@ final class LinksRepository {
               _database.goals.id.equalsExp(_database.experimentGoals.goalId),
             ),
           ])
-          ..where(_database.experimentGoals.experimentId.equals(experimentId))
+          ..where(
+            _database.experimentGoals.experimentId.equals(experimentId) &
+                _database.goals.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
     final rows = await query.get();
     final items = await _attachGoals(
@@ -279,7 +297,10 @@ final class LinksRepository {
               _database.notes.id.equalsExp(_database.taskNotes.noteId),
             ),
           ])
-          ..where(_database.taskNotes.taskId.equals(taskId))
+          ..where(
+            _database.taskNotes.taskId.equals(taskId) &
+                _database.notes.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
     final rows = await query.get();
     final items = await _attachNotes(
@@ -302,7 +323,10 @@ final class LinksRepository {
               _database.tasks.id.equalsExp(_database.taskNotes.taskId),
             ),
           ])
-          ..where(_database.taskNotes.noteId.equals(noteId))
+          ..where(
+            _database.taskNotes.noteId.equals(noteId) &
+                _database.tasks.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.desc(_database.tasks.date)]);
     final rows = await query.get();
     final items = await _attachTasks(
@@ -350,7 +374,10 @@ final class LinksRepository {
               _database.notes.id.equalsExp(_database.experimentNotes.noteId),
             ),
           ])
-          ..where(_database.experimentNotes.experimentId.equals(experimentId))
+          ..where(
+            _database.experimentNotes.experimentId.equals(experimentId) &
+                _database.notes.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
     final rows = await query.get();
     final items = await _attachNotes(
@@ -375,7 +402,10 @@ final class LinksRepository {
               ),
             ),
           ])
-          ..where(_database.experimentNotes.noteId.equals(noteId))
+          ..where(
+            _database.experimentNotes.noteId.equals(noteId) &
+                _database.experiments.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.asc(_database.experiments.startDate)]);
     final rows = await query.get();
     final items = await _attachExperiments(
@@ -430,7 +460,10 @@ final class LinksRepository {
               _database.notes.id.equalsExp(_database.goalNotes.noteId),
             ),
           ])
-          ..where(_database.goalNotes.goalId.equals(goalId))
+          ..where(
+            _database.goalNotes.goalId.equals(goalId) &
+                _database.notes.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
     final rows = await query.get();
     final items = await _attachNotes(
@@ -453,7 +486,10 @@ final class LinksRepository {
               _database.goals.id.equalsExp(_database.goalNotes.goalId),
             ),
           ])
-          ..where(_database.goalNotes.noteId.equals(noteId))
+          ..where(
+            _database.goalNotes.noteId.equals(noteId) &
+                _database.goals.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
     final rows = await query.get();
     final items = await _attachGoals(
@@ -501,7 +537,10 @@ final class LinksRepository {
               _database.workouts.id.equalsExp(_database.goalWorkouts.workoutId),
             ),
           ])
-          ..where(_database.goalWorkouts.goalId.equals(goalId))
+          ..where(
+            _database.goalWorkouts.goalId.equals(goalId) &
+                _database.workouts.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.desc(_database.workouts.date)]);
     final rows = await query.get();
     return [
@@ -521,7 +560,10 @@ final class LinksRepository {
               _database.goals.id.equalsExp(_database.goalWorkouts.goalId),
             ),
           ])
-          ..where(_database.goalWorkouts.workoutId.equals(workoutId))
+          ..where(
+            _database.goalWorkouts.workoutId.equals(workoutId) &
+                _database.goals.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
     final rows = await query.get();
     return [
@@ -571,7 +613,10 @@ final class LinksRepository {
               _database.workouts.id.equalsExp(_database.noteWorkouts.workoutId),
             ),
           ])
-          ..where(_database.noteWorkouts.noteId.equals(noteId))
+          ..where(
+            _database.noteWorkouts.noteId.equals(noteId) &
+                _database.workouts.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.desc(_database.workouts.date)]);
     final rows = await query.get();
     return [
@@ -591,7 +636,10 @@ final class LinksRepository {
               _database.notes.id.equalsExp(_database.noteWorkouts.noteId),
             ),
           ])
-          ..where(_database.noteWorkouts.workoutId.equals(workoutId))
+          ..where(
+            _database.noteWorkouts.workoutId.equals(workoutId) &
+                _database.notes.deletedAt.isNull(),
+          )
           ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
     final rows = await query.get();
     return [

@@ -7,14 +7,15 @@ final class TransactionRepository {
   final db.AppDatabase _database;
   const TransactionRepository(this._database);
 
-  /// All transactions, newest first. [accountId] filters by source account and
-  /// [type] filters by transaction type when provided.
+  /// All alive transactions, newest first. [accountId] filters by source
+  /// account and [type] filters by transaction type when provided.
   Future<List<Transaction>> getAll({
     String? accountId,
     TransactionType? type,
     bool includeDrafts = true,
   }) async {
     final query = _database.select(_database.transactions);
+    query.where((t) => t.deletedAt.isNull());
     if (accountId != null) {
       query.where((t) => t.accountId.equals(accountId));
     }
@@ -32,18 +33,22 @@ final class TransactionRepository {
   Future<Transaction?> getById(String id) async {
     final row = await (_database.select(
       _database.transactions,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
     return row == null ? null : _toDomain(row);
   }
 
   /// Transactions for a specific account (source or destination), newest first.
   Future<List<Transaction>> getByAccount(String accountId) async {
-    final source = await (_database.select(
-      _database.transactions,
-    )..where((t) => t.accountId.equals(accountId))).get();
-    final dest = await (_database.select(
-      _database.transactions,
-    )..where((t) => t.toAccountId.equals(accountId))).get();
+    final source =
+        await (_database.select(_database.transactions)..where(
+              (t) => t.accountId.equals(accountId) & t.deletedAt.isNull(),
+            ))
+            .get();
+    final dest =
+        await (_database.select(_database.transactions)..where(
+              (t) => t.toAccountId.equals(accountId) & t.deletedAt.isNull(),
+            ))
+            .get();
     final merged = [...source, ...dest];
     merged.sort((a, b) => b.date.compareTo(a.date));
     return merged.map(_toDomain).toList();
@@ -52,6 +57,7 @@ final class TransactionRepository {
   Future<List<Transaction>> getRecent(int limit) async {
     final rows =
         await (_database.select(_database.transactions)
+              ..where((t) => t.deletedAt.isNull())
               ..orderBy([(t) => OrderingTerm.desc(t.date)])
               ..limit(limit))
             .get();
@@ -103,9 +109,10 @@ final class TransactionRepository {
   }
 
   Future<void> delete(String id) async {
-    await (_database.delete(
-      _database.transactions,
-    )..where((t) => t.id.equals(id))).go();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await (_database.update(_database.transactions)
+          ..where((t) => t.id.equals(id)))
+        .write(db.TransactionsCompanion(deletedAt: Value(now)));
   }
 
   Transaction _toDomain(db.Transaction row) => Transaction(

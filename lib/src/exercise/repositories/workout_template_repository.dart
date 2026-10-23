@@ -13,12 +13,14 @@ final class WorkoutTemplateRepository {
   final db.AppDatabase _database;
   const WorkoutTemplateRepository(this._database);
 
-  /// All templates, alphabetical.
+  /// All alive templates, alphabetical.
   Future<List<WorkoutTemplate>> getAll() async {
     final rows =
-        await (_database.select(_database.workoutTemplates)..orderBy([
-              (t) => OrderingTerm(expression: t.name.collate(Collate.noCase)),
-            ]))
+        await (_database.select(_database.workoutTemplates)
+              ..where((t) => t.deletedAt.isNull())
+              ..orderBy([
+                (t) => OrderingTerm(expression: t.name.collate(Collate.noCase)),
+              ]))
             .get();
     return rows.map(_toDomain).toList();
   }
@@ -26,7 +28,7 @@ final class WorkoutTemplateRepository {
   Future<WorkoutTemplate?> getById(String id) async {
     final row = await (_database.select(
       _database.workoutTemplates,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
     return row == null ? null : _toDomain(row);
   }
 
@@ -179,8 +181,9 @@ final class WorkoutTemplateRepository {
     return copy;
   }
 
-  /// Deletes a template and its blueprint. Sessions instantiated from it are
-  /// left untouched (they only lose their provenance pointer's target).
+  /// Soft-deletes a template (tombstone) and hard-deletes its blueprint.
+  /// Sessions instantiated from it are left untouched (they only lose their
+  /// provenance pointer's target).
   Future<void> delete(String id) async {
     await _database.transaction(() async {
       final exercises = await (_database.select(
@@ -194,9 +197,10 @@ final class WorkoutTemplateRepository {
       await (_database.delete(
         _database.workoutTemplateExercises,
       )..where((t) => t.templateId.equals(id))).go();
-      await (_database.delete(
-        _database.workoutTemplates,
-      )..where((t) => t.id.equals(id))).go();
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await (_database.update(_database.workoutTemplates)
+            ..where((t) => t.id.equals(id)))
+          .write(db.WorkoutTemplatesCompanion(deletedAt: Value(now)));
     });
   }
 

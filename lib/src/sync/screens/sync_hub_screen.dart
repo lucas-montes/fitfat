@@ -1,12 +1,14 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import 'dart:async';
-
 import 'package:http/http.dart' as http;
-
 import 'package:logging/logging.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../network/api_client.dart';
@@ -17,6 +19,7 @@ import '../../ui/tokens.dart';
 import '../../settings/providers/settings.dart';
 import '../data_push_service.dart';
 import '../local_backup.dart';
+import '../personal_pull_service.dart';
 import '../sync_service.dart';
 import 'qr_scan_sheet.dart';
 import '../sync_state_store.dart';
@@ -948,6 +951,37 @@ final class _PersonalPoolSectionState
     }
   }
 
+  Future<void> _pullOne(String entity) async {
+    _setBusy(entity, true);
+    try {
+      final type = _entityToType(entity);
+      final res = await pullDataType(ref, type);
+      // Ship diagnostics either way so a failure is visible on the computer.
+      await shipPhoneLogs(ref);
+      if (!mounted) return;
+      showTopBanner(
+        context,
+        message: res.ok
+            ? 'Pulled $entity — ${res.updated} updated, ${res.deleted} deleted'
+            : 'Could not pull $entity — '
+                  '${friendlySyncError(ref.read(settingsProvider).remoteSyncBaseUrl, res.error ?? 'unknown error')}',
+      );
+      setState(() {});
+    } catch (e) {
+      await shipPhoneLogs(ref);
+      if (mounted)
+        showTopBanner(
+          context,
+          message: friendlySyncError(
+            ref.read(settingsProvider).remoteSyncBaseUrl,
+            '$e',
+          ),
+        );
+    } finally {
+      if (mounted) _setBusy(entity, false);
+    }
+  }
+
   String _entityToType(String e) => switch (e) {
     'Tasks' => 'tasks',
     'Notes' => 'notes',
@@ -966,6 +1000,31 @@ final class _PersonalPoolSectionState
   };
   @override
   Widget build(BuildContext context) {
+    final state = PrefsSyncStateStore(ref.watch(sharedPreferencesProvider));
+    String last(SyncResource r) {
+      final ms = state.getLastSyncedAt(r);
+      if (ms == 0) return 'never';
+      final dt = DateTime.fromMillisecondsSinceEpoch(ms);
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      return '${diff.inDays}d ago';
+    }
+
+    SyncResource resourceOf(String entity) => switch (entity) {
+      'Tasks' => SyncResource.tasks,
+      'Notes' => SyncResource.notes,
+      'Goals' => SyncResource.goals,
+      'Workouts' => SyncResource.workouts,
+      'Templates' => SyncResource.templates,
+      'Experiments' => SyncResource.experiments,
+      'Meals' => SyncResource.meals,
+      'Body' => SyncResource.bodyMetrics,
+      'Budget' => SyncResource.budgetAccounts,
+      'Receipts' => SyncResource.receipts,
+      'Tags' => SyncResource.tags,
+      _ => SyncResource.tasks,
+    };
     return FutureBuilder<Map<String, int>>(
       future: _counts(ref),
       builder: (ctx, snap) {
@@ -994,7 +1053,7 @@ final class _PersonalPoolSectionState
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 title: Text('$name · ${counts[name] ?? 0}'),
-                subtitle: const Text('Last sync: never'),
+                subtitle: Text('Last sync: ${last(resourceOf(name))}'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1014,10 +1073,21 @@ final class _PersonalPoolSectionState
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : IconButton(
-                            icon: const Icon(Icons.sync),
-                            tooltip: 'Sync $name',
-                            onPressed: () => _pushOne(name),
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.cloud_upload_outlined),
+                                tooltip: 'Push $name',
+                                onPressed: () => _pushOne(name),
+                              ),
+                              const SizedBox(width: 4),
+                              IconButton(
+                                icon: const Icon(Icons.cloud_download_outlined),
+                                tooltip: 'Pull $name',
+                                onPressed: () => _pullOne(name),
+                              ),
+                            ],
                           ),
                   ],
                 ),
@@ -1050,12 +1120,13 @@ final class _PersonalPoolSectionState
                 OutlinedButton.icon(
                   onPressed: _selected.isEmpty
                       ? null
-                      : () => showTopBanner(
-                          context,
-                          message: 'Pull selected — coming soon',
-                        ),
+                      : () async {
+                          for (final e in _selected) {
+                            if (!_isBusy(e)) await _pullOne(e);
+                          }
+                        },
                   icon: const Icon(Icons.cloud_download, size: 18),
-                  label: const Text('Pull'),
+                  label: const Text('Pull selected'),
                 ),
               ],
             ),
@@ -1115,6 +1186,8 @@ final class _LocalBackupSectionState
   };
   bool _busyExport = false;
   bool _busyImport = false;
+  bool _busyServerBackup = false;
+  bool _busyServerRestore = false;
   static const _prefsKey = 'local_backup_selected';
   static const _wholeKey = 'local_backup_whole';
   @override
@@ -1220,7 +1293,7 @@ final class _LocalBackupSectionState
                             setState(() => _busyExport = true);
                             try {
                               if (_wholeDb)
-                                await exportWholeDb(context);
+                                await exportWholeDb(context, ref);
                               else {
                                 if (_selected.isEmpty) {
                                   showTopBanner(
@@ -1298,7 +1371,156 @@ final class _LocalBackupSectionState
             ),
           ],
         ),
+        const SizedBox(height: FitFatTokens.spaceM),
+        Text('Server copy', style: theme.textTheme.labelMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Stash the whole database on the computer, or pull it back later',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: FitFatTokens.spaceS),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: _busyServerBackup
+                    ? null
+                    : () => _backUpToServer(context),
+                icon: _busyServerBackup
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.backup, size: 18),
+                label: const Text('Back up to server'),
+              ),
+            ),
+            const SizedBox(width: FitFatTokens.spaceM),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _busyServerRestore
+                    ? null
+                    : () => _restoreFromServer(context),
+                icon: _busyServerRestore
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.restore, size: 18),
+                label: const Text('Restore from server'),
+              ),
+            ),
+          ],
+        ),
       ],
     );
+  }
+
+  Future<void> _backUpToServer(BuildContext context) async {
+    setState(() => _busyServerBackup = true);
+    try {
+      final settings = ref.read(settingsProvider);
+      final file = await backupWholeDb(ref);
+      final bytes = await file.readAsBytes();
+      final httpClient = http.Client();
+      final client = HttpApiClient(
+        httpClient,
+        baseUrl: settings.remoteSyncBaseUrl,
+        timeout: Duration(seconds: settings.apiTimeoutSeconds),
+      );
+      try {
+        await client.postBytes(
+          '/backup',
+          body: bytes,
+          headers: authHeaders(settings.remoteSyncApiKey),
+        );
+      } finally {
+        httpClient.close();
+      }
+      if (mounted) showTopBanner(context, message: 'Database backed up');
+    } catch (e, st) {
+      Logger('SyncHub.Backup').severe('server backup failed', e, st);
+      await shipPhoneLogs(ref);
+      if (mounted)
+        showTopBanner(
+          context,
+          message: friendlySyncError(
+            ref.read(settingsProvider).remoteSyncBaseUrl,
+            '$e',
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _busyServerBackup = false);
+    }
+  }
+
+  Future<void> _restoreFromServer(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Replace local data?'),
+        content: const Text(
+          'Importing will replace the whole local database with the copy '
+          'stored on the server.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _busyServerRestore = true);
+    try {
+      final settings = ref.read(settingsProvider);
+      final httpClient = http.Client();
+      final client = HttpApiClient(
+        httpClient,
+        baseUrl: settings.remoteSyncBaseUrl,
+        timeout: Duration(seconds: settings.apiTimeoutSeconds),
+      );
+      Uint8List bytes;
+      try {
+        bytes = await client.getBytes(
+          '/backup/latest',
+          headers: authHeaders(settings.remoteSyncApiKey),
+        );
+      } finally {
+        httpClient.close();
+      }
+      final tmp = await getTemporaryDirectory();
+      final file = File(
+        p.join(tmp.path, 'fitfat-restore-${DateTime.now().millisecondsSinceEpoch}.sqlite'),
+      );      await file.writeAsBytes(bytes);
+      await replaceWholeDb(ref, file.path);
+      if (mounted)
+        showTopBanner(
+          context,
+          message: 'Imported server copy — restart to apply',
+        );
+    } catch (e, st) {
+      Logger('SyncHub.Backup').severe('server restore failed', e, st);
+      await shipPhoneLogs(ref);
+      if (mounted)
+        showTopBanner(
+          context,
+          message: friendlySyncError(
+            ref.read(settingsProvider).remoteSyncBaseUrl,
+            '$e',
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _busyServerRestore = false);
+    }
   }
 }

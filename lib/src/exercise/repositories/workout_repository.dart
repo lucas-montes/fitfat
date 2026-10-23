@@ -83,9 +83,11 @@ final class WorkoutRepository {
 
   Future<List<Workout>> getAll() async {
     final rows =
-        await (_database.select(_database.workouts)..orderBy([
-              (t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc),
-            ]))
+        await (_database.select(_database.workouts)
+              ..where((t) => t.deletedAt.isNull())
+              ..orderBy([
+                (t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc),
+              ]))
             .get();
     return rows.map(_toDomain).toList();
   }
@@ -93,7 +95,7 @@ final class WorkoutRepository {
   Future<WorkoutWithDetails?> getWithDetails(String id) async {
     final row = await (_database.select(
       _database.workouts,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
     if (row == null) return null;
 
     final workout = _toDomain(row);
@@ -244,6 +246,8 @@ final class WorkoutRepository {
     );
   }
 
+  /// Soft-deletes the workout (sets a `deletedAt` tombstone so sync stays
+  /// exact) and hard-deletes its dependent rows.
   Future<void> delete(String id) async {
     await _database.transaction(() async {
       // Delete sets for all workout_exercises of this workout
@@ -258,9 +262,12 @@ final class WorkoutRepository {
       await (_database.delete(
         _database.workoutExercises,
       )..where((t) => t.workoutId.equals(id))).go();
-      await (_database.delete(
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await (_database.update(
         _database.workouts,
-      )..where((t) => t.id.equals(id))).go();
+      )..where((t) => t.id.equals(id))).write(
+        db.WorkoutsCompanion(deletedAt: Value(now)),
+      );
     });
   }
 
@@ -589,7 +596,9 @@ final class WorkoutRepository {
     final workoutIds = weRows.map((r) => r.workoutId).toList();
     final workoutRows = await (_database.select(
       _database.workouts,
-    )..where((t) => t.id.isIn(workoutIds) & t.completedAt.isNotNull())).get();
+    )..where(
+      (t) => t.id.isIn(workoutIds) & t.completedAt.isNotNull() & t.deletedAt.isNull(),
+    )).get();
     final workoutMap = {for (final row in workoutRows) row.id: _toDomain(row)};
 
     // Load every set across all of the exercise's workout_exercises in one
@@ -644,7 +653,8 @@ final class WorkoutRepository {
     final inWindow = _database.workouts.completedAt.isBiggerOrEqualValue(
           fromMillis,
         ) &
-        _database.workouts.completedAt.isSmallerThanValue(untilMillis);
+        _database.workouts.completedAt.isSmallerThanValue(untilMillis) &
+        _database.workouts.deletedAt.isNull();
 
     final joined =
         await (_database.select(_database.exerciseSets).join([
@@ -730,7 +740,8 @@ final class WorkoutRepository {
                 ),
               ),
             ])..where(
-              _database.workouts.completedAt.isBiggerOrEqualValue(fromMillis),
+              _database.workouts.completedAt.isBiggerOrEqualValue(fromMillis) &
+                  _database.workouts.deletedAt.isNull(),
             ))
             .get();
 
@@ -759,9 +770,11 @@ final class WorkoutRepository {
         .toList();
   }
 
-  /// Deletes a workout and all its rows (exercise_sets → workout_exercises →
-  /// workouts) inside one transaction, returning a [WorkoutSnapshot] of every
-  /// row removed so [restore] can put them back exactly.
+  /// Tombstones the workout (sets `deleted_at` so sync stays exact) and
+  /// hard-deletes all its child rows (exercise_sets → workout_exercises)
+  /// inside one transaction, returning a [WorkoutSnapshot] of every row the
+  /// restore flow can put back exactly (the hard-deleted children plus the
+  /// pre-tombstone workouts row).
   Future<WorkoutSnapshot> deleteWithSnapshot(String id) async {
     return _database.transaction(() async {
       final workoutRow = await (_database.select(
@@ -790,9 +803,12 @@ final class WorkoutRepository {
       await (_database.delete(
         _database.workoutExercises,
       )..where((t) => t.workoutId.equals(id))).go();
-      await (_database.delete(
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await (_database.update(
         _database.workouts,
-      )..where((t) => t.id.equals(id))).go();
+      )..where((t) => t.id.equals(id))).write(
+        db.WorkoutsCompanion(deletedAt: Value(now)),
+      );
 
       return WorkoutSnapshot(
         workout: workoutRow,
@@ -804,7 +820,8 @@ final class WorkoutRepository {
 
   /// Re-inserts a [WorkoutSnapshot] taken by [deleteWithSnapshot], restoring
   /// every row with its original ids and column values (including nullable
-  /// started_at / completed_at / notes and set actuals).
+  /// started_at / completed_at / notes and set actuals). The tombstone left
+  /// behind on the `workouts` row is cleared so the session comes back alive.
   Future<void> restore(WorkoutSnapshot snapshot) async {
     await _database.transaction(() async {
       final w = snapshot.workout;
@@ -820,6 +837,16 @@ final class WorkoutRepository {
               notes: Value(w.notes),
               routineId: Value(w.routineId),
               createdAt: w.createdAt,
+            ),
+            onConflict: DoUpdate(
+              (_) => db.WorkoutsCompanion(
+                name: Value(w.name),
+                date: Value(w.date),
+                startedAt: Value(w.startedAt),
+                completedAt: Value(w.completedAt),
+                notes: Value(w.notes),
+                deletedAt: const Value(null),
+              ),
             ),
           );
       for (final we in snapshot.workoutExercises) {
@@ -1341,7 +1368,8 @@ final class WorkoutRepository {
               ..addColumns([_database.workouts.id.count()])
               ..where(
                 _database.workouts.routineId.equals(routineId) &
-                    _database.workouts.completedAt.isNotNull(),
+                    _database.workouts.completedAt.isNotNull() &
+                    _database.workouts.deletedAt.isNull(),
               ))
             .getSingle();
     return count.read(_database.workouts.id.count()) ?? 0;

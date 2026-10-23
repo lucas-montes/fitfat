@@ -8,16 +8,18 @@ final class ReceiptRepository {
   const ReceiptRepository(this._database);
 
   Future<List<Receipt>> getAll() async {
-    final rows = await (_database.select(
-      _database.receipts,
-    )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
+    final rows =
+        await (_database.select(_database.receipts)
+              ..where((t) => t.deletedAt.isNull())
+              ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+            .get();
     return rows.map(_toDomain).toList();
   }
 
   Future<Receipt?> getById(String id) async {
     final row = await (_database.select(
       _database.receipts,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
     return row == null ? null : _toDomain(row);
   }
 
@@ -27,8 +29,9 @@ final class ReceiptRepository {
     final txns =
         await (_database.select(_database.transactions)..where(
               (t) =>
-                  t.accountId.equals(accountId) |
-                  t.toAccountId.equals(accountId),
+                  t.deletedAt.isNull() &
+                  (t.accountId.equals(accountId) |
+                      t.toAccountId.equals(accountId)),
             ))
             .get();
     if (txns.isEmpty) return const [];
@@ -36,7 +39,7 @@ final class ReceiptRepository {
     if (ids.isEmpty) return const [];
     final rows = await (_database.select(
       _database.receipts,
-    )..where((t) => t.id.isIn(ids))).get();
+    )..where((t) => t.id.isIn(ids) & t.deletedAt.isNull())).get();
     return rows.map(_toDomain).toList();
   }
 
@@ -74,9 +77,9 @@ final class ReceiptRepository {
   }
 
   Future<void> delete(String id) async {
-    await (_database.delete(
-      _database.receipts,
-    )..where((t) => t.id.equals(id))).go();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await (_database.update(_database.receipts)..where((t) => t.id.equals(id)))
+        .write(db.ReceiptsCompanion(deletedAt: Value(now)));
   }
 
   Receipt _toDomain(db.Receipt row) => Receipt(

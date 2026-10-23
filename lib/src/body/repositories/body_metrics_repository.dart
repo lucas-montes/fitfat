@@ -10,9 +10,11 @@ final class BodyMetricsRepository {
 
   /// All entries ordered chronologically by day (oldest first) — chart-ready.
   Future<List<BodyMetricsEntry>> getAll() async {
-    final rows = await (_database.select(
-      _database.bodyMetrics,
-    )..orderBy([(t) => OrderingTerm(expression: t.date)])).get();
+    final rows =
+        await (_database.select(_database.bodyMetrics)
+              ..where((t) => t.deletedAt.isNull())
+              ..orderBy([(t) => OrderingTerm(expression: t.date)]))
+            .get();
     return rows.map(_toDomain).toList();
   }
 
@@ -20,6 +22,7 @@ final class BodyMetricsRepository {
   Future<BodyMetricsEntry?> getLatest() async {
     final row =
         await (_database.select(_database.bodyMetrics)
+              ..where((t) => t.deletedAt.isNull())
               ..orderBy([
                 (t) =>
                     OrderingTerm(expression: t.date, mode: OrderingMode.desc),
@@ -40,8 +43,11 @@ final class BodyMetricsRepository {
   }) async {
     final startOfDay = _startOfDay(day);
     final existing =
-        await (_database.select(_database.bodyMetrics)
-              ..where((t) => t.date.equals(startOfDay.millisecondsSinceEpoch)))
+        await (_database.select(_database.bodyMetrics)..where(
+              (t) =>
+                  t.date.equals(startOfDay.millisecondsSinceEpoch) &
+                  t.deletedAt.isNull(),
+            ))
             .getSingleOrNull();
 
     if (existing == null) {

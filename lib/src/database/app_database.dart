@@ -63,7 +63,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 35;
+  int get schemaVersion => 36;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -805,6 +805,27 @@ final class AppDatabase extends _$AppDatabase {
         ]) {
           await m.database.customStatement(statement);
         }
+      }
+      if (from < 36) {
+        // v36: soft deletes for every top-level personal entity.
+        //
+        // Each portrait table gets a nullable `deleted_at` tombstone. Local
+        // deletions stamp it instead of removing the row, which is what makes
+        // the sync server honest about deletions: a hard delete was invisible
+        // to the next push, so the server kept the row alive and a pull
+        // resurrected it. Children (sets, meal Foods, links) follow their
+        // parent's aliveness, so they do not need a marker of their own.
+        await m.addColumn(meals, meals.deletedAt);
+        await m.addColumn(workouts, workouts.deletedAt);
+        await m.addColumn(workoutTemplates, workoutTemplates.deletedAt);
+        await m.addColumn(tasks, tasks.deletedAt);
+        await m.addColumn(experiments, experiments.deletedAt);
+        await m.addColumn(notes, notes.deletedAt);
+        await m.addColumn(goals, goals.deletedAt);
+        await m.addColumn(bodyMetrics, bodyMetrics.deletedAt);
+        await m.addColumn(accounts, accounts.deletedAt);
+        await m.addColumn(transactions, transactions.deletedAt);
+        await m.addColumn(receipts, receipts.deletedAt);
       }
     },
   );

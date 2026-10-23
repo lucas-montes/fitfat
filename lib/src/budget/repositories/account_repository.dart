@@ -10,9 +10,11 @@ final class AccountRepository {
 
   Future<List<Account>> getAll() async {
     final rows =
-        await (_database.select(_database.accounts)..orderBy([
-              (t) => OrderingTerm(expression: t.name, mode: OrderingMode.asc),
-            ]))
+        await (_database.select(_database.accounts)
+              ..where((t) => t.deletedAt.isNull())
+              ..orderBy([
+                (t) => OrderingTerm(expression: t.name, mode: OrderingMode.asc),
+              ]))
             .get();
     return rows.map(_toDomain).toList();
   }
@@ -20,18 +22,19 @@ final class AccountRepository {
   Future<Account?> getById(String id) async {
     final row = await (_database.select(
       _database.accounts,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
     return row == null ? null : _toDomain(row);
   }
 
-  /// Number of transactions referencing this account (source or destination).
+  /// Number of alive transactions referencing this account (source or
+  /// destination).
   Future<int> usageCount(String id) async {
     final source = await (_database.select(
       _database.transactions,
-    )..where((t) => t.accountId.equals(id))).get();
+    )..where((t) => t.accountId.equals(id) & t.deletedAt.isNull())).get();
     final dest = await (_database.select(
       _database.transactions,
-    )..where((t) => t.toAccountId.equals(id))).get();
+    )..where((t) => t.toAccountId.equals(id) & t.deletedAt.isNull())).get();
     return source.length + dest.length;
   }
 
@@ -63,10 +66,12 @@ final class AccountRepository {
     );
   }
 
+  /// Soft-deletes the account (tombstone). Its transactions keep the account
+  /// reference and are hidden together with it — no forced child cleanup.
   Future<void> delete(String id) async {
-    await (_database.delete(
-      _database.accounts,
-    )..where((t) => t.id.equals(id))).go();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await (_database.update(_database.accounts)..where((t) => t.id.equals(id)))
+        .write(db.AccountsCompanion(deletedAt: Value(now)));
   }
 
   Account _toDomain(db.Account row) => Account(

@@ -145,6 +145,7 @@ final class SettingsState {
   final String endpointReceiptPictures; // default '/receipt-pictures'
   final String endpointExperiments; // default '/experiments'
   final String endpointBodyMetrics; // default '/body-metrics'
+  final String endpointTags; // default '/tags'
 
   // How many days ahead recurring planner tasks are materialized
   // (default 90).
@@ -210,6 +211,7 @@ final class SettingsState {
     this.endpointReceiptPictures = '/receipt-pictures',
     this.endpointExperiments = '/experiments',
     this.endpointBodyMetrics = '/body-metrics',
+    this.endpointTags = '/tags',
     this.plannerHorizonDays = 90,
     Map<DietPhase, PhaseConfig>? phaseConfigs,
     this.experimentBaselineDays = 14,
@@ -293,6 +295,7 @@ final class SettingsState {
     String? endpointReceiptPictures,
     String? endpointExperiments,
     String? endpointBodyMetrics,
+    String? endpointTags,
     int? plannerHorizonDays,
     Map<DietPhase, PhaseConfig>? phaseConfigs,
     int? experimentBaselineDays,
@@ -351,6 +354,7 @@ final class SettingsState {
         endpointReceiptPictures ?? this.endpointReceiptPictures,
     endpointExperiments: endpointExperiments ?? this.endpointExperiments,
     endpointBodyMetrics: endpointBodyMetrics ?? this.endpointBodyMetrics,
+    endpointTags: endpointTags ?? this.endpointTags,
     plannerHorizonDays: plannerHorizonDays ?? this.plannerHorizonDays,
     phaseConfigs: phaseConfigs ?? this.phaseConfigs,
     experimentBaselineDays:
@@ -401,6 +405,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       'settings_endpoint_receipt_pictures';
   static const _endpointExperimentsKey = 'settings_endpoint_experiments';
   static const _endpointBodyMetricsKey = 'settings_endpoint_body_metrics';
+  static const _endpointTagsKey = 'settings_endpoint_tags';
   static const _plannerHorizonDaysKey = 'settings_planner_horizon_days';
   // The pre-phase knob. Still read so an existing user's +/-500 magnitude
   // seeds their cutting and bulking adjustments instead of snapping to a
@@ -483,6 +488,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
           prefs.getString(_endpointExperimentsKey) ?? '/experiments',
       endpointBodyMetrics:
           prefs.getString(_endpointBodyMetricsKey) ?? '/body-metrics',
+      endpointTags: prefs.getString(_endpointTagsKey) ?? '/tags',
       plannerHorizonDays: prefs.getInt(_plannerHorizonDaysKey) ?? 90,
       phaseConfigs: _loadPhaseConfigs(prefs),
       experimentBaselineDays: prefs.getInt(_experimentBaselineDaysKey) ?? 14,

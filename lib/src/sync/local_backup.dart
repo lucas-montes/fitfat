@@ -8,76 +8,171 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../database/app_database.dart';
 import '../database/database_provider.dart' as db;
 
-Future<void> exportWholeDb(BuildContext context) async {
-  final dir = await getApplicationDocumentsDirectory();
-  final file = File(p.join(dir.path, 'fitfat.sqlite'));
-  if (!await file.exists()) throw StateError('Database not found');
+/// Which tables belong to which backup entity, parents always before their
+/// children — the backup hub hands the same entity labels to export and
+/// import, so both sides stay in lock-step through this map.
+const _ownership = <String, List<String>>{
+  'Tasks': ['tasks', 'task_tags', 'task_goals', 'task_notes', 'task_experiments'],
+  'Notes': ['notes', 'note_tags'],
+  'Goals': ['goals', 'goal_tags', 'goal_progress_entries', 'goal_workouts'],
+  'Workouts': [
+    'workouts',
+    'workout_exercises',
+    'exercise_sets',
+    'workout_templates',
+    'workout_template_exercises',
+    'workout_template_sets',
+  ],
+  'Experiments': ['experiments', 'experiment_tags', 'experiment_checkins'],
+  'Meals': ['meals', 'meal_foods'],
+  'Body': ['body_metrics'],
+  'Budget': ['accounts', 'fx_rates', 'transactions'],
+  'Receipts': ['receipts'],
+};
+
+/// Every table the backup can carry, in parents-first import order.
+final _tableOrder = <String>[
+  for (final tables in _ownership.values) ...tables,
+];
+
+dynamic _tableFor(AppDatabase d, String name) => switch (name) {
+  'tasks' => d.tasks,
+  'task_tags' => d.taskTags,
+  'task_goals' => d.taskGoals,
+  'task_notes' => d.taskNotes,
+  'task_experiments' => d.taskExperiments,
+  'notes' => d.notes,
+  'note_tags' => d.noteTags,
+  'goals' => d.goals,
+  'goal_tags' => d.goalTags,
+  'goal_progress_entries' => d.goalProgressEntries,
+  'goal_workouts' => d.goalWorkouts,
+  'workouts' => d.workouts,
+  'workout_exercises' => d.workoutExercises,
+  'exercise_sets' => d.exerciseSets,
+  'workout_templates' => d.workoutTemplates,
+  'workout_template_exercises' => d.workoutTemplateExercises,
+  'workout_template_sets' => d.workoutTemplateSets,
+  'experiments' => d.experiments,
+  'experiment_tags' => d.experimentTags,
+  'experiment_checkins' => d.experimentCheckins,
+  'meals' => d.meals,
+  'meal_foods' => d.mealFoods,
+  'body_metrics' => d.bodyMetrics,
+  'accounts' => d.accounts,
+  'fx_rates' => d.fxRates,
+  'transactions' => d.transactions,
+  'receipts' => d.receipts,
+  _ => throw StateError('Unknown backup table: $name'),
+};
+
+String _owningEntity(String tableName) => _ownership.entries
+    .firstWhere((e) => e.value.contains(tableName))
+    .key;
+
+/// Whole-database export: `VACUUM INTO` writes a fully-consistent copy of the
+/// live database (pending WAL pages merged in) without any file race.
+Future<File> backupWholeDb(WidgetRef ref) async {
   final stamp = DateTime.now().toIso8601String().split('T').first;
   final tmp = await getTemporaryDirectory();
-  final copy = await file.copy(p.join(tmp.path, 'fitfat-$stamp.sqlite'));
+  final target = p.join(tmp.path, 'fitfat-$stamp.sqlite');
+  final database = ref.read(db.databaseProvider);
+  await database.customStatement("VACUUM INTO '${target.replaceAll("'", "''")}'");
+  return File(target);
+}
+
+Future<void> exportWholeDb(BuildContext context, WidgetRef ref) async {
+  final copy = await backupWholeDb(ref);
   await SharePlus.instance.share(ShareParams(files: [XFile(copy.path)]));
 }
 
-Future<void> exportJsonPerEntity(
+/// Exports the selected entity groups as one JSON document of raw row maps,
+/// keyed by table name. Returns the number of rows written.
+Future<int> exportJsonPerEntity(
   BuildContext context,
   WidgetRef ref,
   Set<String> entities,
 ) async {
-  final database = ref.read(db.databaseProvider);
-  final Map<String, dynamic> dump = {};
-  if (entities.contains('tasks')) {
-    dump['tasks'] = (await database.select(database.tasks).get())
-        .map((e) => e.toJson())
-        .toList();
-    dump['taskTags'] = (await database.select(database.taskTags).get())
-        .map((e) => e.toJson())
-        .toList();
-  }
-  if (entities.contains('notes')) {
-    dump['notes'] = (await database.select(database.notes).get())
-        .map((e) => e.toJson())
-        .toList();
-  }
-  if (entities.contains('goals')) {
-    dump['goals'] = (await database.select(database.goals).get())
-        .map((e) => e.toJson())
-        .toList();
-    dump['goalProgressEntries'] =
-        (await database.select(database.goalProgressEntries).get())
-            .map((e) => e.toJson())
-            .toList();
-  }
-  if (entities.contains('workouts')) {
-    dump['workouts'] = (await database.select(database.workouts).get())
-        .map((e) => e.toJson())
-        .toList();
-    dump['workoutExercises'] =
-        (await database.select(database.workoutExercises).get())
-            .map((e) => e.toJson())
-            .toList();
-    dump['exerciseSets'] = (await database.select(database.exerciseSets).get())
-        .map((e) => e.toJson())
-        .toList();
-  }
-  if (entities.contains('templates')) {
-    dump['workoutTemplates'] =
-        (await database.select(database.workoutTemplates).get())
-            .map((e) => e.toJson())
-            .toList();
-  }
-  if (entities.contains('experiments')) {
-    dump['tasks_experiments'] = (await database.select(database.tasks).get())
-        .where((r) => r.toString().contains('experiment'))
-        .toList()
-        .length;
-  }
+  final dump = await dumpTables(ref.read(db.databaseProvider), entities);
+  final rows = dump.values.fold<int>(
+    0,
+    (sum, list) => sum + list.length,
+  );
   final stamp = DateTime.now().toIso8601String().split('T').first;
   final tmp = await getTemporaryDirectory();
   final path = p.join(tmp.path, 'fitfat-$stamp.json');
   await File(path).writeAsString(jsonEncode(dump));
-  await SharePlus.instance.share(ShareParams(files: [XFile(path)]));
+  await SharePlus.instance.share(
+    ShareParams(files: [XFile(path)], text: 'fitfat backup — $rows rows'),
+  );
+  return rows;
+}
+
+/// Reads every table owned by [entities] into a parents-first row-map dump.
+Future<Map<String, List<Map<String, Object?>>>> dumpTables(
+  AppDatabase database,
+  Set<String> entities,
+) async {
+  final dump = <String, List<Map<String, Object?>>>{};
+  for (final name in _tableOrder) {
+    if (!entities.contains(_owningEntity(name))) continue;
+    final data = await database.customSelect('SELECT * FROM "$name"').get();
+    dump[name] = data.map((row) => row.data).toList();
+  }
+  return dump;
+}
+
+/// Upserts the selected groups from a JSON export, parents before children, so
+/// restoring a partial selection keeps every row linked to its owner.
+Future<int> importJson(
+  AppDatabase database,
+  Set<String> entities,
+  Map<String, dynamic> data,
+) async {
+  var imported = 0;
+  for (final name in _tableOrder) {
+    if (!entities.contains(_owningEntity(name))) continue;
+    final rawRows = data[name];
+    if (rawRows is! List) continue;
+    final table = _tableFor(database, name);
+    final byName = table.columnsByName;
+    for (final row in rawRows) {
+      if (row is! Map) continue;
+      final values = <String, Object?>{
+        for (final e in row.entries)
+          if (e.key is String && byName.containsKey(e.key as String))
+            e.key as String: e.value,
+      };
+      if (values.isEmpty) continue;
+      final cols = values.keys.map((c) => '"$c"').join(', ');
+      final placeholders = values.keys.map((_) => '?').join(', ');
+      await database.customStatement(
+        'INSERT OR REPLACE INTO "$name" ($cols) VALUES ($placeholders)',
+        [...values.values],
+      );
+      imported++;
+    }
+  }
+  return imported;
+}
+
+/// Replaces the live database with [sourcePath] and reopens it on next use —
+/// shared by file import and server restore.
+Future<void> replaceWholeDb(WidgetRef ref, String sourcePath) async {
+  final dir = await getApplicationDocumentsDirectory();
+  final dest = p.join(dir.path, 'fitfat.sqlite');
+  await ref.read(db.databaseProvider).close();
+  // Stale journal files would let SQLite roll the copy back; the imported
+  // database is self-contained, so drop them before reopening.
+  for (final suffix in ['-wal', '-shm']) {
+    final journal = File('$dest$suffix');
+    if (await journal.exists()) await journal.delete();
+  }
+  await File(sourcePath).copy(dest);
+  ref.invalidate(db.databaseProvider);
 }
 
 Future<void> importBackup(
@@ -130,12 +225,8 @@ Future<void> importBackup(
     ),
   );
   if (confirmed != true) return;
-  if (!isJson) {
-    final dir = await getApplicationDocumentsDirectory();
-    final dest = p.join(dir.path, 'fitfat.sqlite');
-    await ref.read(db.databaseProvider).close();
-    await File(path).copy(dest);
-    ref.invalidate(db.databaseProvider);
+  if (isSqlite) {
+    await replaceWholeDb(ref, path);
     if (context.mounted)
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -145,48 +236,14 @@ Future<void> importBackup(
   } else {
     final content = await File(path).readAsString();
     final data = jsonDecode(content) as Map<String, dynamic>;
-    final filtered = <String, dynamic>{};
-    for (final entry in data.entries) {
-      final key = entry.key;
-      // Exact table-name matches: a substring test on 'meal' would also sweep
-      // `mealFoods` into the Meals group, and 'task' would take `taskTags` with
-      // it. Groups are named after the tables they own.
-      const owns = {
-        'Tasks': {
-          'tasks',
-          'taskTags',
-          'taskGoals',
-          'taskNotes',
-          'taskExperiments',
-        },
-        'Notes': {'notes', 'noteTags', 'noteAudio'},
-        'Goals': {'goals', 'goalProgressEntries', 'goalTags'},
-        'Workouts': {
-          'workouts',
-          'workoutExercises',
-          'exerciseSets',
-          'workoutTemplates',
-          'workoutTemplateExercises',
-          'workoutTemplateSets',
-        },
-        'Meals': {'meals', 'mealFoods'},
-        'Body': {'bodyMetrics'},
-        'Budget': {'accounts', 'transactions', 'receipts', 'fxRates'},
-        'Receipts': {'receipts'},
-        'Experiments': {'experiments', 'experimentCheckins', 'experimentTags'},
-      };
-      final keep = owns.entries.any(
-        (group) => entities.contains(group.key) && group.value.contains(key),
-      );
-      if (keep) filtered[key] = entry.value;
-    }
+    final imported = await importJson(
+      ref.read(db.databaseProvider),
+      entities,
+      data,
+    );
     if (context.mounted)
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Imported ${filtered.length} entity groups (${filtered.keys.join(', ')}) — upsert filtered by selection',
-          ),
-        ),
+        SnackBar(content: Text('Imported $imported rows')),
       );
   }
 }

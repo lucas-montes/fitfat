@@ -31,10 +31,14 @@ final class MealRepository {
   /// is not touched at all.
   Future<List<MealEntry>> getAll() async {
     final mealRows =
-        await (_database.select(_database.meals)..orderBy([
-              (t) =>
-                  OrderingTerm(expression: t.eatenAt, mode: OrderingMode.desc),
-            ]))
+        await (_database.select(_database.meals)
+              ..where((t) => t.deletedAt.isNull())
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.eatenAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
             .get();
     if (mealRows.isEmpty) return const [];
 
@@ -106,7 +110,7 @@ final class MealRepository {
           'COALESCE(SUM(mf.fiber), 0) AS fiber, '
           'COALESCE(SUM(mf.sugar), 0) AS sugar '
           'FROM meal_foods mf INNER JOIN meals m ON m.id = mf.meal_id '
-          'WHERE m.eaten_at >= ?1 AND m.eaten_at < ?2',
+          'WHERE m.deleted_at IS NULL AND m.eaten_at >= ?1 AND m.eaten_at < ?2',
           variables: [
             Variable<int>(from.millisecondsSinceEpoch),
             Variable<int>(to.millisecondsSinceEpoch),
@@ -258,22 +262,69 @@ final class MealRepository {
     )..where((t) => t.mealId.equals(mealId) & t.id.equals(itemId))).go();
   }
 
+  /// Soft-deletes the meal (tombstone) and hard-deletes its logged foods.
   Future<void> delete(String id) async {
     await _database.transaction(() async {
       await (_database.delete(
         _database.mealFoods,
       )..where((t) => t.mealId.equals(id))).go();
-      await (_database.delete(
-        _database.meals,
-      )..where((t) => t.id.equals(id))).go();
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await (_database.update(_database.meals)..where((t) => t.id.equals(id)))
+          .write(db.MealsCompanion(deletedAt: Value(now)));
     });
   }
 
   /// Re-inserts a previously deleted [meal] with all its items and their
   /// original ids — the undo path for delete. Shares the create path so the
   /// create and restore flows stay consistent, and so the snapshots are
-  /// re-verified against the current composition on the way back in.
-  Future<void> restore(MealEntry meal) => insert(meal);
+  /// re-verified against the current composition on the way back in. The
+  /// tombstone row left by [delete] is resurrected (its `deletedAt` cleared)
+  /// rather than duplicated.
+  Future<void> restore(MealEntry meal) async {
+    final snapshots = _snapshotAll(meal.items);
+    await _database.transaction(() async {
+      await _database
+          .into(_database.meals)
+          .insert(
+            db.MealsCompanion.insert(
+              id: meal.id,
+              name: meal.name,
+              eatenAt: meal.eatenAt.millisecondsSinceEpoch,
+              createdAt: meal.createdAt.millisecondsSinceEpoch,
+            ),
+            onConflict: DoUpdate(
+              (_) => db.MealsCompanion(
+                name: Value(meal.name),
+                eatenAt: Value(meal.eatenAt.millisecondsSinceEpoch),
+                deletedAt: const Value(null),
+              ),
+            ),
+          );
+      await (_database.delete(
+        _database.mealFoods,
+      )..where((t) => t.mealId.equals(meal.id))).go();
+      for (var i = 0; i < meal.items.length; i++) {
+        final row = snapshots[i];
+        await _database
+            .into(_database.mealFoods)
+            .insert(
+              db.MealFoodsCompanion.insert(
+                id: meal.items[i].id,
+                mealId: meal.items[i].mealId,
+                foodId: meal.items[i].foodId,
+                amount: meal.items[i].amount,
+                calories: row.calories,
+                protein: row.protein,
+                carbs: row.carbs,
+                fat: row.fat,
+                sodium: Value(row.sodium),
+                fiber: Value(row.fiber),
+                sugar: Value(row.sugar),
+              ),
+            );
+      }
+    });
+  }
 
   /// Scales every item's live per-100g profile to the logged amount.
   Nutrition _portionFor(MealFood item) {

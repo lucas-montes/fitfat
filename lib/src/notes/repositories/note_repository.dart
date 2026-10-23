@@ -13,7 +13,9 @@ final class NoteRepository {
 
   Future<List<Note>> getAll() async {
     final rows =
-        await (_database.select(_database.notes) ..orderBy([
+        await (_database.select(_database.notes)
+              ..where((t) => t.deletedAt.isNull())
+              ..orderBy([
               (t) => OrderingTerm(
                 expression: t.updatedAt,
                 mode: OrderingMode.desc,
@@ -27,7 +29,7 @@ final class NoteRepository {
   Future<Note?> getById(String id) async {
     final row = await (_database.select(
       _database.notes,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
     if (row == null) return null;
     final notes = await _attachTags([_toDomain(row)]);
     return _attachClipCounts(notes).then((n) => n.first);
@@ -141,15 +143,39 @@ final class NoteRepository {
     }
   }
 
+  /// Tombstones the note instead of hard-deleting it; audio files and the
+  /// note's audio/tag/link rows are still removed physically so they cannot
+  /// dangle or be re-pushed.
   Future<void> delete(String id) async {
     // Cascade removes the NoteAudio rows; delete their files first.
     final clips = await getClips(id);
     for (final clip in clips) {
       await deleteClipFile(clip.audioPath);
     }
-    await (_database.delete(
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await (_database.update(
       _database.notes,
-    )..where((t) => t.id.equals(id))).go();
+    )..where((t) => t.id.equals(id))).write(
+      db.NotesCompanion(deletedAt: Value(now)),
+    );
+    await (_database.delete(
+      _database.noteAudio,
+    )..where((t) => t.noteId.equals(id))).go();
+    await (_database.delete(
+      _database.noteTags,
+    )..where((t) => t.noteId.equals(id))).go();
+    await (_database.delete(
+      _database.taskNotes,
+    )..where((t) => t.noteId.equals(id))).go();
+    await (_database.delete(
+      _database.experimentNotes,
+    )..where((t) => t.noteId.equals(id))).go();
+    await (_database.delete(
+      _database.goalNotes,
+    )..where((t) => t.noteId.equals(id))).go();
+    await (_database.delete(
+      _database.noteWorkouts,
+    )..where((t) => t.noteId.equals(id))).go();
   }
 
   Note _toDomain(db.Note row) => Note(

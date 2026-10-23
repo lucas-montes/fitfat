@@ -2,7 +2,36 @@
 ///
 /// `ingredients` must be pulled **before** `foods`: a recipe references
 /// ingredients by id and the two have independent cursors.
-enum SyncResource { exercises, ingredients, foods, currencies }
+///
+/// The personal pool (the last twelve values) is the user's own data mirrored
+/// by the sync server. Two roles apply, and every pull path honors them:
+///
+///  * **Local-first** — tasks, notes, goals, workouts, templates, experiments,
+///    meals, bodyMetrics, budgetAccounts, transactions: a server row is
+///    applied only when the id is absent locally, so a local edit always wins;
+///    the server's tombstoned ids still delete local rows (deletion intent is
+///    global).
+///  * **Server-wins** — tags and receipts: the server is the source of truth,
+///    pulled rows overwrite local state (receipt images stay server-side; only
+///    the parse rides along).
+enum SyncResource {
+  exercises,
+  ingredients,
+  foods,
+  currencies,
+  tasks,
+  notes,
+  goals,
+  workouts,
+  templates,
+  experiments,
+  meals,
+  bodyMetrics,
+  budgetAccounts,
+  transactions,
+  receipts,
+  tags,
+}
 
 /// Outcome of a single sync pull: how many rows were upserted / deleted, the
 /// server timestamp to persist as the next `since` cursor, and an error

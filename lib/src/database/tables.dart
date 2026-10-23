@@ -83,6 +83,10 @@ class Meals extends Table {
   TextColumn get name => text()();
   IntColumn get eatenAt => integer()();
   IntColumn get createdAt => integer()();
+  // Soft-delete marker (v36): NULL = alive. A tombstone rather than a hard
+  // delete so the deletion propagates through the sync server to other
+  // devices instead of being resurrected by their next push.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -228,6 +232,9 @@ class Workouts extends Table {
   // workout template; null for ad-hoc sessions.
   TextColumn? get templateId => text().nullable()();
   IntColumn get createdAt => integer()();
+  // Soft-delete marker (v36), mirroring every other top-level personal
+  // entity; deletions tombstone rather than remove so sync stays exact.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -265,6 +272,9 @@ class WorkoutTemplates extends Table {
   TextColumn? get sourceRoutineId => text().nullable()();
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
+  // Soft-delete marker (v36): deletions are tombstones, not removals, so a
+  // replayed push/pull cannot resurrect a blueprint another device erased.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -380,6 +390,9 @@ class Tasks extends Table {
   // Groups occurrences of one recurring series (v13).
   TextColumn? get seriesId => text().nullable()();
   IntColumn get createdAt => integer()();
+  // Soft-delete marker (v36): tombstoned tasks are hidden, not erased, and
+  // their state rides the sync so no device resurrects a done deletion.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -412,6 +425,8 @@ class Experiments extends Table {
   IntColumn get reminderTimeMinutes =>
       integer().withDefault(const Constant(1200))();
   IntColumn get createdAt => integer()();
+  // Soft-delete marker (v36), mirroring the other personal entities.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -427,6 +442,8 @@ class Notes extends Table {
   TextColumn get body => text().withDefault(const Constant(''))();
   IntColumn get updatedAt => integer()();
   IntColumn get createdAt => integer()();
+  // Soft-delete marker (v36): tombstoned notes are hidden, not erased.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -490,6 +507,8 @@ class Goals extends Table {
       integer().withDefault(const Constant(1200))();
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
+  // Soft-delete marker (v36): tombstoned goals are hidden, not erased.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -701,6 +720,8 @@ class Accounts extends Table {
   RealColumn get openingBalance => real().withDefault(const Constant(0.0))();
   TextColumn? get note => text().nullable()();
   IntColumn get createdAt => integer()();
+  // Soft-delete marker (v36): tombstoned accounts are hidden, not erased.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -733,6 +754,8 @@ class Transactions extends Table {
   // confirmed / linked to an account by the user.
   BoolColumn get isDraft => boolean().withDefault(const Constant(false))();
   IntColumn get createdAt => integer()();
+  // Soft-delete marker (v36): tombstoned transactions are hidden, not erased.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -753,6 +776,9 @@ class Receipts extends Table {
   // to avoid a circular reference with `transactions.receiptId`.
   TextColumn? get transactionId => text().nullable()();
   IntColumn get createdAt => integer()();
+  // Soft-delete marker (v36): a locally removed receipt keeps its row (and a
+  // tombstone) so a later pull cannot resurrect the parse.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -786,6 +812,8 @@ class BodyMetrics extends Table {
   RealColumn? get weightKg => real().nullable()();
   RealColumn? get heightCm => real().nullable()();
   IntColumn get createdAt => integer()();
+  // Soft-delete marker (v36): tombstoned measurements are hidden, not erased.
+  IntColumn? get deletedAt => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

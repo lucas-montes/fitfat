@@ -20,7 +20,11 @@ final class TaskRepository {
     final startOfDay = _startOfDay(day);
     final rows =
         await (_database.select(_database.tasks)
-              ..where((t) => t.date.equals(startOfDay.millisecondsSinceEpoch))
+              ..where(
+                (t) =>
+                    t.deletedAt.isNull() &
+                    t.date.equals(startOfDay.millisecondsSinceEpoch),
+              )
               ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
             .get();
     return _attachTags(rows.map(_toDomain).toList());
@@ -37,6 +41,7 @@ final class TaskRepository {
         await (_database.select(_database.tasks)
               ..where(
                 (t) =>
+                    t.deletedAt.isNull() &
                     t.done.equals(0) &
                     // Cancelled tasks are neither upcoming nor copyable.
                     (t.taskStatus.isNull() |
@@ -64,6 +69,7 @@ final class TaskRepository {
         await (_database.select(_database.tasks)
               ..where(
                 (t) =>
+                    t.deletedAt.isNull() &
                     t.done.equals(0) &
                     // Cancelled tasks are neither upcoming nor copyable.
                     (t.taskStatus.isNull() |
@@ -84,9 +90,15 @@ final class TaskRepository {
   }
 
   Future<void> insert(Task item) async {
+    // Upsert so re-inserting a task whose tombstoned row still exists (the
+    // undo path of a cascading delete) revives it instead of tripping the
+    // primary key; shared with [restore] so both stay consistent.
+    final companion = _companionFor(item, createdAt: item.createdAt).copyWith(
+      deletedAt: const Value(null),
+    );
     await _database
         .into(_database.tasks)
-        .insert(_companionFor(item, createdAt: item.createdAt));
+        .insert(companion, onConflict: DoUpdate((_) => companion));
     final tags = item.tags;
     if (tags != null) {
       await _tags.setTaskTags(item.id, tags);
@@ -145,15 +157,38 @@ final class TaskRepository {
         createdAt: createdAt.millisecondsSinceEpoch,
       );
 
-  Future<void> delete(String id) async {
-    await (_database.delete(
-      _database.tasks,
-    )..where((t) => t.id.equals(id))).go();
-  }
+  /// Tombstones the task instead of hard-deleting it and physically removes
+  /// its junction rows so they cannot dangle or be re-pushed.
+  Future<void> delete(String id) async => _tombstone([id]);
 
-  /// Re-inserts a previously deleted [item] with its original id — the undo
-  /// path for delete. Shares the create path so both stay consistent.
+  /// Re-inserts (or, if the row was tombstoned by [delete], un-tombstones) a
+  /// previously deleted [item] with its original id — the undo path for
+  /// delete. Shares the create path so both stay consistent.
   Future<void> restore(Task item) => insert(item);
+
+  /// Tombstones the given tasks (soft delete keeps the rows so other devices
+  /// can be pushed the `deletedAt` stamp) and physically removes their
+  /// junction rows so they cannot dangle or be re-pushed with stale links.
+  Future<void> _tombstone(List<String> ids) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await (_database.update(
+      _database.tasks,
+    )..where((t) => t.id.isIn(ids))).write(
+      db.TasksCompanion(deletedAt: Value(now)),
+    );
+    await (_database.delete(
+      _database.taskTags,
+    )..where((t) => t.taskId.isIn(ids))).go();
+    await (_database.delete(
+      _database.taskGoals,
+    )..where((t) => t.taskId.isIn(ids))).go();
+    await (_database.delete(
+      _database.taskExperiments,
+    )..where((t) => t.taskId.isIn(ids))).go();
+    await (_database.delete(
+      _database.taskNotes,
+    )..where((t) => t.taskId.isIn(ids))).go();
+  }
 
   Future<void> updateSortOrder(String id, int sortOrder) async {
     await (_database.update(_database.tasks)..where((t) => t.id.equals(id)))
@@ -171,6 +206,7 @@ final class TaskRepository {
     final rows =
         await (_database.select(_database.tasks)..where(
               (t) =>
+                  t.deletedAt.isNull() &
                   t.seriesId.isNull() &
                   t.date.isSmallerThanValue(today.millisecondsSinceEpoch) &
                   t.done.equals(0) &
@@ -210,11 +246,13 @@ final class TaskRepository {
 
   /// Recurring "anchor" tasks (those carrying a rule) whose series can still
   /// produce occurrences on or before [upTo]. Used to materialize occurrences.
+  /// Tombstoned anchors are skipped so their series cannot regenerate.
   Future<List<Task>> getRecurringAnchors(DateTime upTo) async {
     final rows =
         await (_database.select(_database.tasks)
               ..where(
                 (t) =>
+                    t.deletedAt.isNull() &
                     t.recurrence.isNotNull() &
                     t.date.isSmallerOrEqualValue(
                       _startOfDay(upTo).millisecondsSinceEpoch,
@@ -255,7 +293,9 @@ final class TaskRepository {
       final existing =
           await (_database.select(_database.tasks)..where(
                 (t) =>
-                    t.workoutTemplateId.equals(row.id) & t.date.equals(dayMs),
+                    t.deletedAt.isNull() &
+                    t.workoutTemplateId.equals(row.id) &
+                    t.date.equals(dayMs),
               ))
               .get();
       if (existing.isNotEmpty) continue;
@@ -309,6 +349,7 @@ final class TaskRepository {
       final existing =
           await (_database.select(_database.tasks)..where(
                 (t) =>
+                    t.deletedAt.isNull() &
                     t.date.equals(dMillis) &
                     t.seriesId.equals(anchor.seriesId!),
               ))
@@ -340,34 +381,32 @@ final class TaskRepository {
     }
   }
 
-  /// Loads a single task by id (used to read/update the anchor of a recurring
-  /// series, whose id equals its `seriesId`).
+  /// Loads a single alive task by id (used to read/update the anchor of a
+  /// recurring series, whose id equals its `seriesId`).
   Future<Task?> getById(String id) async {
     final row = await (_database.select(
       _database.tasks,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
     if (row == null) return null;
     return (await _attachTags([_toDomain(row)])).first;
   }
 
-  /// All occurrences (anchor + generated) of a recurring series.
+  /// All alive occurrences (anchor + generated) of a recurring series.
   Future<List<Task>> getBySeriesId(String seriesId) async {
     final rows = await (_database.select(
       _database.tasks,
-    )..where((t) => t.seriesId.equals(seriesId))).get();
+    )..where((t) => t.seriesId.equals(seriesId) & t.deletedAt.isNull())).get();
     return _attachTags(rows.map(_toDomain).toList());
   }
 
-  /// Deletes one generated occurrence of a series and records its day as an
-  /// excluded date on the anchor, so the materializer won't recreate it.
+  /// Tombstones one generated occurrence of a series (and records its day as
+  /// an excluded date on the anchor, so the materializer won't recreate it).
   Future<void> deleteOccurrence({
     required String id,
     required String seriesId,
     required DateTime day,
   }) async {
-    await (_database.delete(
-      _database.tasks,
-    )..where((t) => t.id.equals(id))).go();
+    await _tombstone([id]);
     await _setExclusion(seriesId, day, add: true);
   }
 
@@ -403,25 +442,33 @@ final class TaskRepository {
     await update(anchor.copyWith(recurrence: updatedRule));
   }
 
-  /// Deletes every task in a series (anchor + all occurrences).
+  /// Tombstones every task in a series (anchor + all occurrences).
   Future<void> deleteSeries(String seriesId) async {
-    await (_database.delete(
+    final rows = await (_database.select(
       _database.tasks,
-    )..where((t) => t.seriesId.equals(seriesId))).go();
+    )..where((t) => t.seriesId.equals(seriesId))).get();
+    if (rows.isEmpty) return;
+    await _tombstone([for (final row in rows) row.id]);
   }
 
-  /// Deletes future (strictly after [from]) generated occurrences of a series,
-  /// leaving the anchor and past occurrences intact. Used when an anchor's
-  /// rule changes so stale future instances are dropped before re-materializing.
+  /// Tombstones future (strictly after [from]) generated occurrences of a
+  /// series, leaving the anchor and past occurrences intact. Used when an
+  /// anchor's rule changes so stale future instances are dropped before
+  /// re-materializing.
   Future<void> deleteFutureOccurrences(String seriesId, DateTime from) async {
-    await (_database.delete(_database.tasks)..where(
-          (t) =>
-              t.seriesId.equals(seriesId) &
-              t.date.isBiggerThanValue(
-                _startOfDay(from).millisecondsSinceEpoch,
-              ),
-        ))
-        .go();
+    final ids =
+        (await (_database.select(_database.tasks)..where(
+              (t) =>
+                  t.seriesId.equals(seriesId) &
+                  t.date.isBiggerThanValue(
+                    _startOfDay(from).millisecondsSinceEpoch,
+                  ),
+            ))
+            .get())
+        .map((row) => row.id)
+        .toList();
+    if (ids.isEmpty) return;
+    await _tombstone(ids);
   }
 
   /// Updates the non-rule fields of every generated occurrence of a series
@@ -442,6 +489,7 @@ final class TaskRepository {
     final fromStart = _startOfDay(from).millisecondsSinceEpoch;
     await (_database.update(_database.tasks)..where(
           (t) =>
+              t.deletedAt.isNull() &
               t.seriesId.equals(seriesId) &
               t.id.isNotValue(seriesId) &
               t.date.isBiggerOrEqualValue(fromStart),
@@ -459,6 +507,7 @@ final class TaskRepository {
     if (tags != null) {
       final affected = await (_database.select(_database.tasks)..where(
             (t) =>
+                t.deletedAt.isNull() &
                 t.seriesId.equals(seriesId) &
                 t.id.isNotValue(seriesId) &
                 t.date.isBiggerOrEqualValue(fromStart),
@@ -470,23 +519,27 @@ final class TaskRepository {
     }
   }
 
-  /// Deletes a generated occurrence and every later occurrence of the series
-  /// (date >= start-of-day [day]) and halts regeneration by setting the
+  /// Tombstones a generated occurrence and every later occurrence of the
+  /// series (date >= start-of-day [day]) and halts regeneration by setting the
   /// anchor's `recurrence.endDate` to the day before [day]. The anchor itself
-  /// (id == seriesId) is never deleted. Returns the anchor's previous endDate
-  /// (for undo), or null when the anchor/rule is missing. Used by
+  /// (id == seriesId) is never tombstoned. Returns the anchor's previous
+  /// endDate (for undo), or null when the anchor/rule is missing. Used by
   /// "delete → this and all following".
   Future<DateTime?> stopSeriesOnOrAfter(String seriesId, DateTime day) async {
     final dayStart = _startOfDay(day).millisecondsSinceEpoch;
     DateTime? previousEndDate;
     await _database.transaction(() async {
-      await (_database.delete(_database.tasks)..where(
-            (t) =>
-                t.seriesId.equals(seriesId) &
-                t.id.isNotValue(seriesId) &
-                t.date.isBiggerOrEqualValue(dayStart),
-          ))
-          .go();
+      final ids =
+          (await (_database.select(_database.tasks)..where(
+                (t) =>
+                    t.seriesId.equals(seriesId) &
+                    t.id.isNotValue(seriesId) &
+                    t.date.isBiggerOrEqualValue(dayStart),
+              ))
+              .get())
+          .map((row) => row.id)
+          .toList();
+      if (ids.isNotEmpty) await _tombstone(ids);
       final anchor = await getById(seriesId);
       if (anchor == null) return;
       final rule = anchor.recurrence;
@@ -531,7 +584,7 @@ final class TaskRepository {
     final pattern = '%${query.trim()}%';
     final rows =
         await (_database.select(_database.tasks)
-              ..where((t) => t.title.like(pattern))
+              ..where((t) => t.title.like(pattern) & t.deletedAt.isNull())
               ..orderBy([
                 (t) =>
                     OrderingTerm(expression: t.date, mode: OrderingMode.desc),
@@ -569,11 +622,11 @@ final class TaskRepository {
     return task;
   }
 
-  /// The task linked to [workoutId] via its `workout_id` column, if any.
+  /// The alive task linked to [workoutId] via its `workout_id` column, if any.
   Future<Task?> getByWorkoutId(String workoutId) async {
     final rows = await (_database.select(
       _database.tasks,
-    )..where((t) => t.workoutId.equals(workoutId))).get();
+    )..where((t) => t.workoutId.equals(workoutId) & t.deletedAt.isNull())).get();
     return rows.isEmpty ? null : _toDomain(rows.first);
   }
 
@@ -586,6 +639,7 @@ final class TaskRepository {
     final rows =
         await (_database.select(_database.tasks)..where(
               (t) =>
+                  t.deletedAt.isNull() &
                   t.date.isBiggerOrEqualValue(fromMs) &
                   t.date.isSmallerOrEqualValue(toMs),
             ))
@@ -595,9 +649,11 @@ final class TaskRepository {
 
   Task _toDomain(db.Task row) => taskFromRow(row);
 
-  /// Every task regardless of date (used by data push/sync).
+  /// Every alive task regardless of date.
   Future<List<Task>> getAll() async {
-    final rows = await _database.select(_database.tasks).get();
+    final rows = await (_database.select(
+      _database.tasks,
+    )..where((t) => t.deletedAt.isNull())).get();
     return _attachTags(rows.map(_toDomain).toList());
   }
 

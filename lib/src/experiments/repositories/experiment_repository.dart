@@ -13,15 +13,17 @@ final class ExperimentRepository {
   final db.AppDatabase _database;
   const ExperimentRepository(this._database);
 
-  /// All experiments ordered by start date, newest first.
+  /// All alive experiments ordered by start date, newest first.
   Future<List<Experiment>> getAll() async {
     final rows =
-        await (_database.select(_database.experiments)..orderBy([
-              (t) => OrderingTerm(
-                expression: t.startDate,
-                mode: OrderingMode.desc,
-              ),
-            ]))
+        await (_database.select(_database.experiments)
+              ..where((t) => t.deletedAt.isNull())
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.startDate,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
             .get();
     return _attachTags(rows.map(_toDomain).toList());
   }
@@ -29,7 +31,7 @@ final class ExperimentRepository {
   Future<Experiment?> getById(String id) async {
     final row = await (_database.select(
       _database.experiments,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
     if (row == null) return null;
     return (await _attachTags([_toDomain(row)])).first;
   }
@@ -43,6 +45,7 @@ final class ExperimentRepository {
     final rows =
         await (_database.select(_database.experiments)..where(
               (t) =>
+                  t.deletedAt.isNull() &
                   t.startDate.isSmallerOrEqualValue(toMs) &
                   // Open-ended experiments (end_date null) never end.
                   (t.endDate.isNull() | t.endDate.isBiggerOrEqualValue(fromMs)),
@@ -55,8 +58,10 @@ final class ExperimentRepository {
   Future<List<Experiment>> getByDay(DateTime day) => getByRange(day, day);
 
   /// Inserts a new experiment row or refreshes it in place (ids are stable).
+  /// Upsert so re-writing an experiment whose tombstoned row still exists
+  /// (the undo path of [delete]) revives it instead of tripping the primary
+  /// key.
   Future<void> upsert(Experiment experiment) async {
-    final existing = await getById(experiment.id);
     final companion = db.ExperimentsCompanion.insert(
       id: experiment.id,
       name: experiment.name,
@@ -72,14 +77,11 @@ final class ExperimentRepository {
       reminderEnabled: Value(experiment.reminderEnabled),
       reminderTimeMinutes: Value(experiment.reminderTimeMinutes),
       createdAt: experiment.createdAt.millisecondsSinceEpoch,
+      deletedAt: const Value(null),
     );
-    if (existing == null) {
-      await _database.into(_database.experiments).insert(companion);
-    } else {
-      await (_database.update(
-        _database.experiments,
-      )..where((t) => t.id.equals(experiment.id))).write(companion);
-    }
+    await _database
+        .into(_database.experiments)
+        .insert(companion, onConflict: DoUpdate((_) => companion));
     if (experiment.tags != null) {
       await TagRepository(
         _database,
@@ -87,8 +89,8 @@ final class ExperimentRepository {
     }
   }
 
-  /// Deletes an experiment plus its check-ins and link-table rows in one
-  /// transaction. When [cascadeTasks] is true, also deletes tasks linked
+  /// Tombstones an experiment, removing its check-ins and link-table rows
+  /// physically. When [cascadeTasks] is true, also tombstones tasks linked
   /// via `task_experiments`.
   Future<void> delete(String id, {bool cascadeTasks = false}) async {
     await _database.transaction(() async {
@@ -99,6 +101,12 @@ final class ExperimentRepository {
         )..where((t) => t.experimentId.equals(id))).get();
         cascadeIds = links.map((e) => e.taskId).toList();
         for (final taskId in cascadeIds) {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          await (_database.update(
+            _database.tasks,
+          )..where((t) => t.id.equals(taskId))).write(
+            db.TasksCompanion(deletedAt: Value(now)),
+          );
           await (_database.delete(
             _database.taskExperiments,
           )..where((t) => t.taskId.equals(taskId))).go();
@@ -111,9 +119,6 @@ final class ExperimentRepository {
           await (_database.delete(
             _database.taskNotes,
           )..where((t) => t.taskId.equals(taskId))).go();
-          await (_database.delete(
-            _database.tasks,
-          )..where((t) => t.id.equals(taskId))).go();
         }
       }
       await (_database.delete(
@@ -131,9 +136,12 @@ final class ExperimentRepository {
       await (_database.delete(
         _database.experimentNotes,
       )..where((t) => t.experimentId.equals(id))).go();
-      await (_database.delete(
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await (_database.update(
         _database.experiments,
-      )..where((t) => t.id.equals(id))).go();
+      )..where((t) => t.id.equals(id))).write(
+        db.ExperimentsCompanion(deletedAt: Value(now)),
+      );
     });
   }
 

@@ -37,6 +37,7 @@ final receiptPendingProvider = FutureProvider<List<Receipt>>((ref) async {
   final database = ref.watch(databaseProvider);
   final rows = await (database.select(database.receipts)..where(
         (t) =>
+            t.deletedAt.isNull() &
             t.parsed.equals(false) &
             t.uploadStatus.isIn([
               ReceiptStatus.uploading.code,

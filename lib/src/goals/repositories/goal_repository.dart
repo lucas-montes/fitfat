@@ -9,10 +9,12 @@ final class GoalRepository {
   final db.AppDatabase _database;
   const GoalRepository(this._database);
 
-  /// All goals, most recently started first.
+  /// All alive goals, most recently started first.
   Future<List<Goal>> getGoals() async {
     final rows =
-        await (_database.select(_database.goals)..orderBy([
+        await (_database.select(_database.goals)
+              ..where((t) => t.deletedAt.isNull())
+              ..orderBy([
               (t) => OrderingTerm(
                 expression: t.startDate,
                 mode: OrderingMode.desc,
@@ -25,11 +27,14 @@ final class GoalRepository {
   Future<Goal?> getGoalById(String id) async {
     final row = await (_database.select(
       _database.goals,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id) & t.deletedAt.isNull())).getSingleOrNull();
     if (row == null) return null;
     return (await _attachTags([_toDomain(row)])).first;
   }
 
+  /// Inserts a new goal row or refreshes it in place (ids are stable).
+  /// Upsert so re-writing a goal whose tombstoned row still exists (the undo
+  /// path of [deleteGoal]) revives it instead of tripping the primary key.
   Future<void> upsertGoal(Goal goal) async {
     final companion = db.GoalsCompanion.insert(
       id: goal.id,
@@ -50,17 +55,11 @@ final class GoalRepository {
       reminderTimeMinutes: Value(goal.reminderTimeMinutes),
       createdAt: goal.createdAt.millisecondsSinceEpoch,
       updatedAt: goal.updatedAt.millisecondsSinceEpoch,
+      deletedAt: const Value(null),
     );
-    final existing = await (_database.select(
-      _database.goals,
-    )..where((t) => t.id.equals(goal.id))).getSingleOrNull();
-    if (existing == null) {
-      await _database.into(_database.goals).insert(companion);
-    } else {
-      await (_database.update(
-        _database.goals,
-      )..where((t) => t.id.equals(goal.id))).write(companion);
-    }
+    await _database
+        .into(_database.goals)
+        .insert(companion, onConflict: DoUpdate((_) => companion));
     if (goal.tags != null) {
       await TagRepository(_database).setGoalTags(goal.id, goal.tags!);
     }
@@ -77,8 +76,10 @@ final class GoalRepository {
     );
   }
 
-  /// Deletes a goal plus its progress entries and link-table rows.
-  /// When [cascadeTasks] is true, also deletes tasks linked via `task_goals`.
+  /// Tombstones a goal (its progress entries and link-table rows are removed
+  /// physically) so it disappears from every list but other devices can be
+  /// pushed the `deletedAt` stamp. When [cascadeTasks] is true, also
+  /// tombstones tasks linked via `task_goals`.
   Future<void> deleteGoal(String id, {bool cascadeTasks = false}) async {
     await _database.transaction(() async {
       if (cascadeTasks) {
@@ -87,6 +88,12 @@ final class GoalRepository {
         )..where((t) => t.goalId.equals(id))).get();
         for (final link in links) {
           final taskId = link.taskId;
+          final now = DateTime.now().millisecondsSinceEpoch;
+          await (_database.update(
+            _database.tasks,
+          )..where((t) => t.id.equals(taskId))).write(
+            db.TasksCompanion(deletedAt: Value(now)),
+          );
           await (_database.delete(
             _database.taskTags,
           )..where((t) => t.taskId.equals(taskId))).go();
@@ -99,9 +106,6 @@ final class GoalRepository {
           await (_database.delete(
             _database.taskNotes,
           )..where((t) => t.taskId.equals(taskId))).go();
-          await (_database.delete(
-            _database.tasks,
-          )..where((t) => t.id.equals(taskId))).go();
         }
       }
       await (_database.delete(
@@ -122,9 +126,12 @@ final class GoalRepository {
       await (_database.delete(
         _database.goalWorkouts,
       )..where((t) => t.goalId.equals(id))).go();
-      await (_database.delete(
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await (_database.update(
         _database.goals,
-      )..where((t) => t.id.equals(id))).go();
+      )..where((t) => t.id.equals(id))).write(
+        db.GoalsCompanion(deletedAt: Value(now)),
+      );
     });
   }
 
