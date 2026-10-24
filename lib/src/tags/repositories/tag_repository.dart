@@ -185,6 +185,10 @@ final class TagRepository {
     await (_database.delete(
       _database.tags,
     )..where((t) => t.id.equals(tag.id))).go();
+    // Tags are hard-deleted locally (the table has no tombstone column), so the
+    // deletion must ride the outbox or the next push would leave the server
+    // holding a tag the phone no longer has.
+    await _database.recordSyncDelete('tags', tag.id);
     return removed;
   }
 

@@ -372,9 +372,13 @@ final class DataPushService {
   ) async {
     final database = ref.read(db.databaseProvider);
     final rows = await database.select(database.tags).get();
-    return _pushObject(baseUrl, apiKey, endpoint, {
+    final deleted = await _pendingDeletes(database, const ['tags']);
+    final result = await _pushObject(baseUrl, apiKey, endpoint, {
       'tags': rows.map((e) => e.toJson()).toList(),
+      'deleted': deleted,
     });
+    if (result.ok) await database.clearSyncDeletes('tags');
+    return result;
   }
 
   /// Pushes store rows so the server keeps human names (its price-driven
@@ -406,8 +410,16 @@ final class DataPushService {
       }
       final database = ref.read(db.databaseProvider);
       final rows = await database.select(database.receipts).get();
+      // Soft-deleted receipts stay in the table (so a pull cannot resurrect
+      // them), but they must not be uploaded as live rows: the server's upsert
+      // clears `deleted_at`. Send them in the tombstone list instead.
+      final deletedIds = [
+        for (final r in rows)
+          if (r.deletedAt != null) r.id,
+      ];
       var pushed = 0;
       for (final r in rows) {
+        if (r.deletedAt != null) continue;
         final data = r.toJson();
         // The Drift column is `localPath`; reading `picturePath` (which never
         // existed) meant the multipart branch below was unreachable and every
@@ -443,6 +455,13 @@ final class DataPushService {
           );
         }
         pushed++;
+      }
+      if (deletedIds.isNotEmpty) {
+        await client.postJson(
+          endpoint,
+          body: {'receipts': <Object>[], 'deleted': deletedIds},
+          headers: authHeaders(apiKey),
+        );
       }
       return PushResult(count: pushed);
     } catch (e) {

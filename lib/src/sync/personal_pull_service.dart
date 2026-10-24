@@ -52,16 +52,16 @@ final class PersonalPullService {
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
       final items = _maps(payload['items']);
+      final pending = await _database.pendingSyncDeletes('tasks');
       var updated = 0;
+      final pulledIds = <String>{};
       for (final raw in items) {
         final id = raw['id'];
-        if (id is! String) continue;
-        final existing =
-            await (_database.select(_database.tasks)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        if (existing.isNotEmpty) continue;
-        await _database.into(_database.tasks).insert(
+        if (id is! String || pending.contains(id)) continue;
+        pulledIds.add(id);
+        // Server-wins: a pull mirrors the server's row, including edits made
+        // on another phone. Pending local deletions are skipped above.
+        await _database.into(_database.tasks).insertOnConflictUpdate(
           db.TasksCompanion.insert(
             id: id,
             date: _int(raw['date']),
@@ -84,10 +84,22 @@ final class PersonalPullService {
             recurrence: Value(_optStr(raw['recurrence'])),
             seriesId: Value(_optStr(raw['seriesId'])),
             createdAt: _int(raw['createdAt']),
+            deletedAt: const Value(null),
           ),
-          mode: InsertMode.insertOrIgnore,
         );
         updated++;
+      }
+      // Link rows have no tombstone of their own: the server returns every
+      // link for the parents in this response, so reconcile the set.
+      if (payload.containsKey('taskTags')) {
+        await _reconcileTagLinks(
+          table: 'task_tags',
+          parentColumn: 'task_id',
+          parentIds: pulledIds,
+          links: _maps(payload['taskTags']),
+          tagKey: 'tagId',
+          parentKey: 'taskId',
+        );
       }
       final deleted = await _tombstoneTasks(_names(payload['deleted']));
       await _advance(SyncResource.tasks, serverTime, since);
@@ -111,34 +123,33 @@ final class PersonalPullService {
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
       final items = _maps(payload['items']);
+      final pending = await _database.pendingSyncDeletes('notes');
       var updated = 0;
+      final pulledIds = <String>{};
       for (final raw in items) {
         final id = raw['id'];
-        if (id is! String) continue;
-        final existing =
-            await (_database.select(_database.notes)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        if (existing.isNotEmpty) continue;
-        await _database.into(_database.notes).insert(
+        if (id is! String || pending.contains(id)) continue;
+        pulledIds.add(id);
+        await _database.into(_database.notes).insertOnConflictUpdate(
           db.NotesCompanion.insert(
             id: id,
             title: _str(raw['title'], ''),
             body: Value(_str(raw['body'], '')),
             updatedAt: _int(raw['updatedAt']),
             createdAt: _int(raw['createdAt']),
+            deletedAt: const Value(null),
           ),
-          mode: InsertMode.insertOrIgnore,
         );
         updated++;
       }
-      for (final raw in _maps(payload['noteTags'])) {
-        final tagId = raw['tagId'];
-        final noteId = raw['noteId'];
-        if (tagId is! String || noteId is! String) continue;
-        await _database.into(_database.noteTags).insert(
-          db.NoteTagsCompanion.insert(tagId: tagId, noteId: noteId),
-          mode: InsertMode.insertOrIgnore,
+      if (payload.containsKey('noteTags')) {
+        await _reconcileTagLinks(
+          table: 'note_tags',
+          parentColumn: 'note_id',
+          parentIds: pulledIds,
+          links: _maps(payload['noteTags']),
+          tagKey: 'tagId',
+          parentKey: 'noteId',
         );
       }
       final deleted = await _tombstoneNotes(_names(payload['deleted']));
@@ -162,17 +173,14 @@ final class PersonalPullService {
     final since = _state.getLastSyncedAt(SyncResource.goals);
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
-      final goals = await _idSet(_database.goals);
+      final pending = await _database.pendingSyncDeletes('goals');
       var updated = 0;
+      final pulledIds = <String>{};
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
-        if (id is! String) continue;
-        final existing =
-            await (_database.select(_database.goals)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        if (existing.isNotEmpty) continue;
-        await _database.into(_database.goals).insert(
+        if (id is! String || pending.contains(id)) continue;
+        pulledIds.add(id);
+        await _database.into(_database.goals).insertOnConflictUpdate(
           db.GoalsCompanion.insert(
             id: id,
             title: _str(raw['title'], ''),
@@ -188,26 +196,46 @@ final class PersonalPullService {
             reminderEnabled: Value(raw['reminderEnabled'] == true),
             createdAt: _int(raw['createdAt']),
             updatedAt: _int(raw['updatedAt']),
+            deletedAt: const Value(null),
           ),
-          mode: InsertMode.insertOrIgnore,
         );
         updated++;
       }
+      final goals = await _idSet(_database.goals);
       for (final raw in _maps(payload['progressEntries'])) {
         final id = raw['id'];
         final goalId = raw['goalId'];
         if (id is! String || goalId is! String) continue;
         if (!goals.contains(goalId)) continue;
-        await _database.into(_database.goalProgressEntries).insert(
+        final recordedAt = _int(raw['recordedAt']);
+        // `(goalId, recordedAt)` is unique locally: drop a same-day row that
+        // carries a different id before upserting the server's copy.
+        await (_database.delete(_database.goalProgressEntries)..where(
+              (t) =>
+                  t.goalId.equals(goalId) &
+                  t.recordedAt.equals(recordedAt) &
+                  t.id.equals(id).not(),
+            ))
+            .go();
+        await _database.into(_database.goalProgressEntries).insertOnConflictUpdate(
           db.GoalProgressEntriesCompanion.insert(
             id: id,
             goalId: goalId,
-            recordedAt: _int(raw['recordedAt']),
+            recordedAt: recordedAt,
             value: _double(raw['value']),
             note: Value(_optStr(raw['note'])),
             createdAt: _int(raw['createdAt']),
           ),
-          mode: InsertMode.insertOrIgnore,
+        );
+      }
+      if (payload.containsKey('goalTags')) {
+        await _reconcileTagLinks(
+          table: 'goal_tags',
+          parentColumn: 'goal_id',
+          parentIds: pulledIds,
+          links: _maps(payload['goalTags']),
+          tagKey: 'tagId',
+          parentKey: 'goalId',
         );
       }
       final deleted = await _tombstoneGoals(_names(payload['deleted']));
@@ -244,33 +272,23 @@ final class PersonalPullService {
         final id = raw['id'];
         if (id is! String) continue;
         if (pendingWorkouts.contains(id)) continue;
-        final existing =
-            await (_database.select(_database.workouts)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        // Local-first: an already-present workout keeps its local values, but
-        // its children are still applied below — a workout row that arrived in
-        // an earlier pull used to suppress its exercises/sets forever.
-        if (existing.isEmpty) {
-          await _database.into(_database.workouts).insert(
-            db.WorkoutsCompanion.insert(
-              id: id,
-              name: _str(raw['name'], ''),
-              date: _int(raw['date']),
-              startedAt: Value(_optInt(raw['startedAt'])),
-              completedAt: Value(_optInt(raw['completedAt'])),
-              notes: Value(_optStr(raw['notes'])),
-              routineId: Value(_optStr(raw['routineId'])),
-              templateId: Value(_optStr(raw['templateId'])),
-              createdAt: _int(raw['createdAt']),
-            ),
-            mode: InsertMode.insertOrIgnore,
-          );
-          updated++;
-        } else if (existing.first.deletedAt != null) {
-          // Deleted here, not yet pushed: do not resurrect its children.
-          continue;
-        }
+        // Server-wins, and the graph is applied even when the header already
+        // exists: an exercise added on another phone must still land.
+        await _database.into(_database.workouts).insertOnConflictUpdate(
+          db.WorkoutsCompanion.insert(
+            id: id,
+            name: _str(raw['name'], ''),
+            date: _int(raw['date']),
+            startedAt: Value(_optInt(raw['startedAt'])),
+            completedAt: Value(_optInt(raw['completedAt'])),
+            notes: Value(_optStr(raw['notes'])),
+            routineId: Value(_optStr(raw['routineId'])),
+            templateId: Value(_optStr(raw['templateId'])),
+            createdAt: _int(raw['createdAt']),
+            deletedAt: const Value(null),
+          ),
+        );
+        updated++;
 
         for (final exRaw in _maps(raw['exercises'])) {
           final weId = exRaw['id'];
@@ -279,9 +297,9 @@ final class PersonalPullService {
           if (pendingExercises.contains(weId)) continue;
           // No `exerciseId` filtering: mobile foreign keys are off, and a
           // missing exercise must not swallow the whole workout graph.
-          final insertedExercise = await _database
+          await _database
               .into(_database.workoutExercises)
-              .insert(
+              .insertOnConflictUpdate(
                 db.WorkoutExercisesCompanion.insert(
                   id: weId,
                   workoutId: id,
@@ -289,16 +307,15 @@ final class PersonalPullService {
                   sortOrder: _int(exRaw['sortOrder']),
                   notes: Value(_optStr(exRaw['notes'])),
                 ),
-                mode: InsertMode.insertOrIgnore,
               );
-          if (insertedExercise > 0) updated++;
+          updated++;
 
           for (final setRaw in _maps(exRaw['sets'])) {
             final setId = setRaw['id'];
             if (setId is! String || pendingSets.contains(setId)) continue;
-            final insertedSet = await _database
+            await _database
                 .into(_database.exerciseSets)
-                .insert(
+                .insertOnConflictUpdate(
                   db.ExerciseSetsCompanion.insert(
                     id: setId,
                     workoutExerciseId: weId,
@@ -322,9 +339,8 @@ final class PersonalPullService {
                     ),
                     notes: Value(_optStr(setRaw['notes'])),
                   ),
-                  mode: InsertMode.insertOrIgnore,
                 );
-            if (insertedSet > 0) updated++;
+            updated++;
           }
         }
       }
@@ -385,38 +401,30 @@ final class PersonalPullService {
         final id = raw['id'];
         if (id is! String) continue;
         if (pendingTemplates.contains(id)) continue;
-        final existing =
-            await (_database.select(_database.workoutTemplates)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        if (existing.isEmpty) {
-          await _database.into(_database.workoutTemplates).insert(
-            db.WorkoutTemplatesCompanion.insert(
-              id: id,
-              name: _str(raw['name'], ''),
-              startDate: _int(raw['startDate']),
-              notes: Value(_optStr(raw['notes'])),
-              recurrence: Value(_optStr(raw['recurrence'])),
-              excludedDates: Value(_optStr(raw['excludedDates'])),
-              sourceRoutineId: Value(_optStr(raw['sourceRoutineId'])),
-              createdAt: _int(raw['createdAt']),
-              updatedAt: _int(raw['updatedAt']),
-            ),
-            mode: InsertMode.insertOrIgnore,
-          );
-          updated++;
-        } else if (existing.first.deletedAt != null) {
-          continue;
-        }
+        await _database.into(_database.workoutTemplates).insertOnConflictUpdate(
+          db.WorkoutTemplatesCompanion.insert(
+            id: id,
+            name: _str(raw['name'], ''),
+            startDate: _int(raw['startDate']),
+            notes: Value(_optStr(raw['notes'])),
+            recurrence: Value(_optStr(raw['recurrence'])),
+            excludedDates: Value(_optStr(raw['excludedDates'])),
+            sourceRoutineId: Value(_optStr(raw['sourceRoutineId'])),
+            createdAt: _int(raw['createdAt']),
+            updatedAt: _int(raw['updatedAt']),
+            deletedAt: const Value(null),
+          ),
+        );
+        updated++;
 
         for (final exRaw in _maps(raw['exercises'])) {
           final exerciseId = exRaw['exerciseId'];
           final weId = exRaw['id'];
           if (weId is! String || exerciseId is! String) continue;
           if (pendingExercises.contains(weId)) continue;
-          final insertedExercise = await _database
+          await _database
               .into(_database.workoutTemplateExercises)
-              .insert(
+              .insertOnConflictUpdate(
                 db.WorkoutTemplateExercisesCompanion.insert(
                   id: weId,
                   templateId: id,
@@ -424,18 +432,17 @@ final class PersonalPullService {
                   sortOrder: _int(exRaw['sortOrder']),
                   notes: Value(_optStr(exRaw['notes'])),
                 ),
-                mode: InsertMode.insertOrIgnore,
               );
-          if (insertedExercise > 0) updated++;
+          updated++;
 
           // The wire nests each exercise's planned sets inside the exercise
           // object, mirroring how the push handlers read them.
           for (final setRaw in _maps(exRaw['sets'])) {
             final setId = setRaw['id'];
             if (setId is! String || pendingSets.contains(setId)) continue;
-            final insertedSet = await _database
+            await _database
                 .into(_database.workoutTemplateSets)
-                .insert(
+                .insertOnConflictUpdate(
                   db.WorkoutTemplateSetsCompanion.insert(
                     id: setId,
                     templateExerciseId: weId,
@@ -446,9 +453,8 @@ final class PersonalPullService {
                     durationMinutes: Value(_optInt(setRaw['durationMinutes'])),
                     distanceMeters: Value(_optDouble(setRaw['distanceMeters'])),
                   ),
-                  mode: InsertMode.insertOrIgnore,
                 );
-            if (insertedSet > 0) updated++;
+            updated++;
           }
         }
       }
@@ -493,34 +499,42 @@ final class PersonalPullService {
     final since = _state.getLastSyncedAt(SyncResource.meals);
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
+      final pendingMeals = await _database.pendingSyncDeletes('meals');
+      final pendingFoods = await _database.pendingSyncDeletes('mealFoods');
       final landed = <String>{};
       var updated = 0;
       for (final raw in _maps(payload['meals'])) {
         final id = raw['id'];
-        if (id is! String) continue;
-        final existing =
-            await (_database.select(_database.meals)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        if (existing.isNotEmpty) continue;
-        await _database.into(_database.meals).insert(
+        if (id is! String || pendingMeals.contains(id)) continue;
+        landed.add(id);
+        await _database.into(_database.meals).insertOnConflictUpdate(
           db.MealsCompanion.insert(
             id: id,
             name: _str(raw['name'], ''),
             eatenAt: _int(raw['eatenAt']),
             createdAt: _int(raw['createdAt']),
+            deletedAt: const Value(null),
           ),
-          mode: InsertMode.insertOrIgnore,
         );
-        landed.add(id);
         updated++;
+      }
+      // A returned meal carries its complete logged-food set. Clear the local
+      // children first so a food removed on another device cannot linger.
+      for (final mealId in landed) {
+        await (_database.delete(
+          _database.mealFoods,
+        )..where((t) => t.mealId.equals(mealId))).go();
       }
       for (final raw in _maps(payload['mealFoods'])) {
         final id = raw['id'];
         final mealId = raw['mealId'];
         if (id is! String || mealId is! String) continue;
+        // Apply the foods of *every* returned meal, not only meals that were
+        // inserted in this pass: a meal header seen earlier used to suppress
+        // its foods forever.
         if (!landed.contains(mealId)) continue;
-        await _database.into(_database.mealFoods).insert(
+        if (pendingFoods.contains(id)) continue;
+        await _database.into(_database.mealFoods).insertOnConflictUpdate(
           db.MealFoodsCompanion.insert(
             id: id,
             mealId: mealId,
@@ -534,15 +548,24 @@ final class PersonalPullService {
             fiber: Value(_double(raw['fiber'])),
             sugar: Value(_double(raw['sugar'])),
           ),
-          mode: InsertMode.insertOrIgnore,
         );
+        updated++;
       }
       var deleted = 0;
+      for (final id in _names(payload['deletedMealFoods'])) {
+        deleted += await (_database.delete(
+          _database.mealFoods,
+        )..where((t) => t.id.equals(id))).go();
+      }
       for (final id in _names(payload['deleted'])) {
         var hit = await (_database.delete(
           _database.meals,
         )..where((t) => t.id.equals(id))).go();
-        if (hit == 0) {
+        if (hit > 0) {
+          await (_database.delete(
+            _database.mealFoods,
+          )..where((t) => t.mealId.equals(id))).go();
+        } else {
           hit = await (_database.delete(
             _database.mealFoods,
           )..where((t) => t.id.equals(id))).go();
@@ -569,24 +592,20 @@ final class PersonalPullService {
     final since = _state.getLastSyncedAt(SyncResource.bodyMetrics);
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
+      final pending = await _database.pendingSyncDeletes('bodyMetrics');
       var updated = 0;
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
-        if (id is! String) continue;
-        final existing =
-            await (_database.select(_database.bodyMetrics)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        if (existing.isNotEmpty) continue;
-        await _database.into(_database.bodyMetrics).insert(
+        if (id is! String || pending.contains(id)) continue;
+        await _database.into(_database.bodyMetrics).insertOnConflictUpdate(
           db.BodyMetricsCompanion.insert(
             id: id,
             date: _int(raw['date']),
             weightKg: Value(_optDouble(raw['weightKg'])),
             heightCm: Value(_optDouble(raw['heightCm'])),
             createdAt: _int(raw['createdAt']),
+            deletedAt: const Value(null),
           ),
-          mode: InsertMode.insertOrIgnore,
         );
         updated++;
       }
@@ -612,16 +631,12 @@ final class PersonalPullService {
     final since = _state.getLastSyncedAt(SyncResource.budgetAccounts);
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
+      final pending = await _database.pendingSyncDeletes('budgetAccounts');
       var updated = 0;
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
-        if (id is! String) continue;
-        final existing =
-            await (_database.select(_database.accounts)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        if (existing.isNotEmpty) continue;
-        await _database.into(_database.accounts).insert(
+        if (id is! String || pending.contains(id)) continue;
+        await _database.into(_database.accounts).insertOnConflictUpdate(
           db.AccountsCompanion.insert(
             id: id,
             name: _str(raw['name'], ''),
@@ -629,8 +644,8 @@ final class PersonalPullService {
             openingBalance: Value(_double(raw['openingBalance'])),
             note: Value(_optStr(raw['note'])),
             createdAt: _int(raw['createdAt']),
+            deletedAt: const Value(null),
           ),
-          mode: InsertMode.insertOrIgnore,
         );
         updated++;
       }
@@ -657,15 +672,11 @@ final class PersonalPullService {
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
       final accounts = await _idSet(_database.accounts);
+      final pending = await _database.pendingSyncDeletes('transactions');
       var updated = 0;
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
-        if (id is! String) continue;
-        final existing =
-            await (_database.select(_database.transactions)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        if (existing.isNotEmpty) continue;
+        if (id is! String || pending.contains(id)) continue;
         final accountId = _optStr(raw['accountId']);
         final toAccountId = _optStr(raw['toAccountId']);
         // The local transactions table carries real foreign keys to accounts;
@@ -674,7 +685,7 @@ final class PersonalPullService {
             (toAccountId != null && !accounts.contains(toAccountId))) {
           continue;
         }
-        await _database.into(_database.transactions).insert(
+        await _database.into(_database.transactions).insertOnConflictUpdate(
           db.TransactionsCompanion.insert(
             id: id,
             type: _str(raw['type'], 'expense'),
@@ -692,8 +703,8 @@ final class PersonalPullService {
             receiptId: Value(_optStr(raw['receiptId'])),
             isDraft: Value(raw['isDraft'] == true),
             createdAt: _int(raw['createdAt']),
+            deletedAt: const Value(null),
           ),
-          mode: InsertMode.insertOrIgnore,
         );
         updated++;
       }
@@ -716,9 +727,8 @@ final class PersonalPullService {
   // Stores (shared vocabulary; also nested in the ingredient pull)
   // --------------------------------------------------------------------------
 
-  /// Local-first like the other personal entities: a store this device already
-  /// knows keeps its local name, an unknown id is inserted, and the server's
-  /// tombstones delete local rows.
+  /// Server-wins like the rest of the personal pool: the server's copy of a
+  /// store replaces the local one, and its tombstones delete local rows.
   Future<SyncResult> pullStores({
     required String apiKey,
     required String endpoint,
@@ -731,18 +741,12 @@ final class PersonalPullService {
         final id = raw['id'];
         final name = raw['name'];
         if (id is! String || name is! String) continue;
-        final existing =
-            await (_database.select(
-              _database.stores,
-            )..where((t) => t.id.equals(id))).get();
-        if (existing.isNotEmpty) continue;
-        await _database.into(_database.stores).insert(
+        await _database.into(_database.stores).insertOnConflictUpdate(
           db.StoresCompanion.insert(
             id: id,
             name: name,
             createdAt: _int(raw['createdAt']),
           ),
-          mode: InsertMode.insertOrIgnore,
         );
         updated++;
       }
@@ -765,13 +769,13 @@ final class PersonalPullService {
   // Server-wins resources
   // --------------------------------------------------------------------------
 
-  /// Tags: the shared vocabulary. `tags.name` is unique locally, so a server
-  /// rename that collides with another local id is skipped rather than
-  /// corrupting the vocabulary.
+  /// Tags: the shared vocabulary. Server-wins, except that a server rename that
+  /// would collide with a *different* local id is skipped (the local `name`
+  /// column is UNIQUE, so applying it would abort the whole pull).
   ///
   /// Placeholder tags (`name == id`, the legacy output of link-only pushes) are
-  /// ignored: they are not real names. When a local row still carries such a
-  /// placeholder and the server now knows the real name, the row is repaired.
+  /// ignored: they are not real names. Tombstones are applied first so a
+  /// deleted tag cannot keep its name reserved while its replacement arrives.
   Future<SyncResult> pullTags({
     required String apiKey,
     required String endpoint,
@@ -779,6 +783,12 @@ final class PersonalPullService {
     final since = _state.getLastSyncedAt(SyncResource.tags);
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
+      var deleted = 0;
+      for (final id in _names(payload['deleted'])) {
+        deleted += await (_database.delete(
+          _database.tags,
+        )..where((t) => t.id.equals(id))).go();
+      }
       var updated = 0;
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
@@ -797,16 +807,12 @@ final class PersonalPullService {
         // Another id already owns this name locally: never steal it.
         if (byName.any((t) => t.id != id)) continue;
 
-        final existing = byId.isEmpty ? null : byId.first;
-        if (existing != null) {
-          // An existing real name wins over the server's copy; only heal a
-          // local placeholder or fill in the server's metadata.
-          final keepName = existing.name != existing.id && existing.name != '';
+        if (byId.isNotEmpty) {
           await (_database.update(
             _database.tags,
           )..where((t) => t.id.equals(id))).write(
             db.TagsCompanion(
-              name: keepName ? const Value.absent() : Value(name),
+              name: Value(name),
               color: Value(_optInt(raw['color'])),
               sortOrder: Value(_int(raw['sortOrder'])),
               createdAt: Value(_int(raw['createdAt'])),
@@ -814,7 +820,7 @@ final class PersonalPullService {
             ),
           );
         } else {
-          await _database.into(_database.tags).insert(
+          await _database.into(_database.tags).insertOnConflictUpdate(
             db.TagsCompanion.insert(
               id: id,
               name: name,
@@ -823,16 +829,9 @@ final class PersonalPullService {
               createdAt: _int(raw['createdAt']),
               updatedAt: _int(raw['updatedAt']),
             ),
-            mode: InsertMode.insertOrIgnore,
           );
         }
         updated++;
-      }
-      var deleted = 0;
-      for (final id in _names(payload['deleted'])) {
-        deleted += await (_database.delete(
-          _database.tags,
-        )..where((t) => t.id.equals(id))).go();
       }
       await _advance(SyncResource.tags, serverTime, since);
       return _result(updated, deleted, serverTime);
@@ -852,11 +851,12 @@ final class PersonalPullService {
     final since = _state.getLastSyncedAt(SyncResource.receipts);
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
+      final pending = await _database.pendingSyncDeletes('receipts');
       var updated = 0;
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
-        if (id is! String) continue;
-        await _database.into(_database.receipts).insert(
+        if (id is! String || pending.contains(id)) continue;
+        await _database.into(_database.receipts).insertOnConflictUpdate(
           db.ReceiptsCompanion.insert(
             id: id,
             localPath: _str(raw['localPath'], ''),
@@ -866,8 +866,8 @@ final class PersonalPullService {
             parsedJson: Value(_optStr(raw['parsedJson'])),
             transactionId: Value(_optStr(raw['transactionId'])),
             createdAt: _int(raw['createdAt']),
+            deletedAt: const Value(null),
           ),
-          mode: InsertMode.insertOrReplace,
         );
         updated++;
       }
@@ -889,6 +889,40 @@ final class PersonalPullService {
   // --------------------------------------------------------------------------
   // Scaffolding
   // --------------------------------------------------------------------------
+
+  /// Mirrors the tag links of [parentIds] against [links].
+  ///
+  /// Junction tables have no tombstone column, so the server returns the full
+  /// link set for every parent it sends. Replacing the local set is the only way
+  /// an unlinked tag actually disappears; inserting without deleting left the
+  /// old link behind forever. Parents outside [parentIds] are untouched (their
+  /// links were not part of this response).
+  Future<void> _reconcileTagLinks({
+    required String table,
+    required String parentColumn,
+    required Set<String> parentIds,
+    required List<Map> links,
+    required String tagKey,
+    required String parentKey,
+  }) async {
+    if (parentIds.isEmpty) return;
+    for (final parentId in parentIds) {
+      await _database.customStatement(
+        'DELETE FROM $table WHERE $parentColumn = ?1',
+        [parentId],
+      );
+    }
+    for (final raw in links) {
+      final tagId = raw[tagKey];
+      final parentId = raw[parentKey];
+      if (tagId is! String || parentId is! String) continue;
+      if (!parentIds.contains(parentId)) continue;
+      await _database.customStatement(
+        'INSERT OR IGNORE INTO $table (tag_id, $parentColumn) VALUES (?1, ?2)',
+        [tagId, parentId],
+      );
+    }
+  }
 
   /// Decodes the pull response for [endpoint] (or fails with a message the
   /// caller turns into a [SyncResult.error]).

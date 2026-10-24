@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../network/api_client.dart';
 import '../../database/database_provider.dart' as db;
 import '../../exercise/widgets/select_sheet.dart';
+import '../../app/app_restart.dart';
 import '../repositories/catalog_repository.dart';
 import '../../ui/tokens.dart';
 import '../../settings/providers/settings.dart';
@@ -911,7 +912,9 @@ final class _PersonalPoolSectionState
   ///
   /// Tags go first so links can name them; exercises go before workouts and
   /// templates because those reference exercise ids (the server enforces the
-  /// foreign key on push). Stores precede foods for the same reason.
+  /// foreign key on push). Stores precede foods, and foods precede meals: the
+  /// server skips a logged food whose recipe it does not know yet, and budget
+  /// accounts precede transactions for the same reason.
   static const _order = [
     'Tags',
     'Exercises',
@@ -920,12 +923,13 @@ final class _PersonalPoolSectionState
     'Goals',
     'Workouts',
     'Templates',
+    'Stores',
+    'Foods',
     'Meals',
     'Body',
     'Budget',
+    'Transactions',
     'Receipts',
-    'Stores',
-    'Foods',
   ];
 
   static const _entities = [
@@ -936,12 +940,13 @@ final class _PersonalPoolSectionState
     ('Goals', Icons.flag_outlined),
     ('Workouts', Icons.fitness_center),
     ('Templates', Icons.view_module_outlined),
+    ('Stores', Icons.storefront_outlined),
+    ('Foods', Icons.local_grocery_store_outlined),
     ('Meals', Icons.restaurant_outlined),
     ('Body', Icons.monitor_weight_outlined),
     ('Budget', Icons.account_balance_wallet_outlined),
+    ('Transactions', Icons.swap_horiz),
     ('Receipts', Icons.receipt_long_outlined),
-    ('Stores', Icons.storefront_outlined),
-    ('Foods', Icons.local_grocery_store_outlined),
   ];
 
   /// Pushes one entity. Returns the failure message, or null on success.
@@ -1065,6 +1070,7 @@ final class _PersonalPoolSectionState
     'Meals' => 'meals',
     'Body' => 'bodyMetrics',
     'Budget' => 'budgetAccounts',
+    'Transactions' => 'transactions',
     'Receipts' => 'receiptPictures',
     'Stores' => 'stores',
     'Foods' => 'foods',
@@ -1096,6 +1102,7 @@ final class _PersonalPoolSectionState
       'Meals' => SyncResource.meals,
       'Body' => SyncResource.bodyMetrics,
       'Budget' => SyncResource.budgetAccounts,
+      'Transactions' => SyncResource.transactions,
       'Receipts' => SyncResource.receipts,
       'Stores' => SyncResource.stores,
       'Foods' => SyncResource.foods,
@@ -1188,6 +1195,7 @@ final class _PersonalPoolSectionState
     final meals = await dbInst.select(dbInst.meals).get();
     final body = await dbInst.select(dbInst.bodyMetrics).get();
     final accounts = await dbInst.select(dbInst.accounts).get();
+    final transactions = await dbInst.select(dbInst.transactions).get();
     final receipts = await dbInst.select(dbInst.receipts).get();
     final tags = await dbInst.select(dbInst.tags).get();
     final exercises = await dbInst.select(dbInst.exercises).get();
@@ -1204,6 +1212,7 @@ final class _PersonalPoolSectionState
       'Meals': meals.length,
       'Body': body.length,
       'Budget': accounts.length,
+      'Transactions': transactions.length,
       'Receipts': receipts.length,
       'Stores': stores.length,
       'Foods': foods.length,
@@ -1550,11 +1559,7 @@ final class _LocalBackupSectionState
         p.join(tmp.path, 'fitfat-restore-${DateTime.now().millisecondsSinceEpoch}.sqlite'),
       );      await file.writeAsBytes(bytes);
       await replaceWholeDb(ref, file.path);
-      if (mounted)
-        showTopBanner(
-          context,
-          message: 'Imported server copy — restart to apply',
-        );
+      restartApp();
     } catch (e, st) {
       Logger('SyncHub.Backup').severe('server restore failed', e, st);
       await shipPhoneLogs(ref);

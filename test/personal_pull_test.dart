@@ -14,6 +14,7 @@ final class _FakeApi implements ApiClient {
 
   final Map<String, Object?> _byPath;
   final Set<String> failPaths;
+  final Map<String, Map<String, String>?> queries = {};
 
   @override
   Future<Object?> getJson(
@@ -21,6 +22,7 @@ final class _FakeApi implements ApiClient {
     Map<String, String>? query,
     Map<String, String>? headers,
   }) async {
+    queries[path] = query;
     if (failPaths.contains(path)) {
       throw ApiException(statusCode: 404, body: 'not found');
     }
@@ -126,7 +128,7 @@ void main() {
     expect(task.deletedAt, isNull);
   });
 
-  test('pullTasks never overwrites an existing local row', () async {
+  test('pullTasks overwrites an existing local row (server wins)', () async {
     await database.into(database.tasks).insert(
       db.TasksCompanion.insert(
         id: 't1',
@@ -159,11 +161,11 @@ void main() {
     });
     final service = PersonalPullService(api, database, state);
     final result = await service.pullTasks(apiKey: 'k', endpoint: '/tasks');
-    expect(result.updated, 0);
+    expect(result.updated, 1);
     final task = await (database.select(
       database.tasks,
     )..where((t) => t.id.equals('t1'))).getSingle();
-    expect(task.title, 'Local edit');
+    expect(task.title, 'Server edit');
     expect(state.getLastSyncedAt(SyncResource.tasks), 600);
   });
 
@@ -299,7 +301,7 @@ void main() {
       apiKey: 'k',
       endpoint: '/workouts',
     );
-    expect(result.updated, 2);
+    expect(result.updated, 3);
     expect(await database.select(database.workoutExercises).get(), hasLength(1));
     expect(await database.select(database.exerciseSets).get(), hasLength(1));
   });
@@ -482,7 +484,7 @@ void main() {
     expect(receipt.parsed, isTrue);
   });
 
-  test('pullStores inserts unknown stores and applies tombstones', () async {
+  test('pullStores upserts server rows and applies tombstones', () async {
     await database.into(database.stores).insert(
       db.StoresCompanion.insert(id: 's0', name: 'Local', createdAt: 1),
     );
@@ -494,7 +496,7 @@ void main() {
         'server_time': 960,
         'items': [
           {'id': 's1', 'name': 'Carrefour', 'createdAt': 90, 'updatedAt': 90},
-          // A local row keeps its local name.
+          // Server-wins: the pulled name replaces the local one.
           {'id': 's0', 'name': 'Renamed', 'createdAt': 1, 'updatedAt': 90},
         ],
         'deleted': ['s2'],
@@ -503,13 +505,169 @@ void main() {
     final service = PersonalPullService(api, database, state);
     final result = await service.pullStores(apiKey: 'k', endpoint: '/stores');
     expect(result.ok, isTrue, reason: result.error);
-    expect(result.updated, 1);
+    expect(result.updated, 2);
     expect(result.deleted, 1);
     final rows = await database.select(database.stores).get();
     expect({for (final r in rows) r.id: r.name}, {
-      's0': 'Local',
+      's0': 'Renamed',
       's1': 'Carrefour',
     });
     expect(state.getLastSyncedAt(SyncResource.stores), 960);
+  });
+
+  test('pullTasks reconciles tag links for returned tasks', () async {
+    await database.into(database.tasks).insert(
+      db.TasksCompanion.insert(
+        id: 't1',
+        date: 100,
+        title: 'Doomed',
+        done: 0,
+        taskStatus: const Value(0),
+        carryOver: const Value(false),
+        sortOrder: 0,
+        createdAt: 50,
+      ),
+    );
+    await database.into(database.taskTags).insert(
+      db.TaskTagsCompanion.insert(tagId: 'tag1', taskId: 't1'),
+    );
+    await database.into(database.taskTags).insert(
+      db.TaskTagsCompanion.insert(tagId: 'tag2', taskId: 't1'),
+    );
+    final api = _FakeApi({
+      '/tasks': <String, Object?>{
+        'server_time': 900,
+        'items': [
+          {
+            'id': 't1',
+            'date': 100,
+            'title': 'Server',
+            'done': 0,
+            'carryOver': false,
+            'sortOrder': 0,
+            'createdAt': 50,
+          },
+        ],
+        'taskTags': [
+          {'tagId': 'tag1', 'taskId': 't1'},
+        ],
+        'deleted': <String>[],
+      },
+    });
+    final service = PersonalPullService(api, database, state);
+    final result = await service.pullTasks(apiKey: 'k', endpoint: '/tasks');
+    expect(result.ok, isTrue, reason: result.error);
+    final links = await database.select(database.taskTags).get();
+    expect(links.map((l) => l.tagId), ['tag1']);
+  });
+
+  test('pullNotes upserts the row and mirrors its tag links', () async {
+    await database.into(database.notes).insert(
+      db.NotesCompanion.insert(
+        id: 'n1',
+        title: 'Local',
+        body: const Value('local body'),
+        updatedAt: 10,
+        createdAt: 5,
+      ),
+    );
+    await database.into(database.noteTags).insert(
+      db.NoteTagsCompanion.insert(tagId: 'old', noteId: 'n1'),
+    );
+    final api = _FakeApi({
+      '/notes': <String, Object?>{
+        'server_time': 910,
+        'items': [
+          {
+            'id': 'n1',
+            'title': 'Server',
+            'body': 'server body',
+            'updatedAt': 20,
+            'createdAt': 5,
+          },
+        ],
+        'noteTags': [
+          {'tagId': 'new', 'noteId': 'n1'},
+        ],
+        'deleted': <String>[],
+      },
+    });
+    final service = PersonalPullService(api, database, state);
+    final result = await service.pullNotes(apiKey: 'k', endpoint: '/notes');
+    expect(result.ok, isTrue, reason: result.error);
+    final note = await database.select(database.notes).getSingle();
+    expect(note.title, 'Server');
+    expect(note.body, 'server body');
+    final links = await database.select(database.noteTags).get();
+    expect(links.map((l) => l.tagId), ['new']);
+  });
+
+  test('pullMeals replaces the foods of a meal it returns', () async {
+    await database.into(database.meals).insert(
+      db.MealsCompanion.insert(
+        id: 'm1',
+        name: 'Lunch',
+        eatenAt: 100,
+        createdAt: 50,
+      ),
+    );
+    await database.into(database.mealFoods).insert(
+      db.MealFoodsCompanion.insert(
+        id: 'mf1',
+        mealId: 'm1',
+        foodId: 'f1',
+        amount: 100,
+        calories: 100,
+        protein: 10,
+        carbs: 10,
+        fat: 5,
+      ),
+    );
+    final api = _FakeApi({
+      '/meals': <String, Object?>{
+        'server_time': 920,
+        'meals': [
+          {
+            'id': 'm1',
+            'name': 'Lunch',
+            'eatenAt': 100,
+            'createdAt': 50,
+          },
+        ],
+        'mealFoods': [
+          {
+            'id': 'mf2',
+            'mealId': 'm1',
+            'foodId': 'f2',
+            'amount': 200,
+            'calories': 300,
+            'protein': 20,
+            'carbs': 30,
+            'fat': 10,
+          },
+        ],
+        'deleted': <String>[],
+        'deletedMealFoods': <String>[],
+      },
+    });
+    final service = PersonalPullService(api, database, state);
+    final result = await service.pullMeals(apiKey: 'k', endpoint: '/meals');
+    expect(result.ok, isTrue, reason: result.error);
+    final foods = await database.select(database.mealFoods).get();
+    expect(foods.map((f) => f.id), ['mf2']);
+  });
+
+  test('personal pulls always request the full server state', () async {
+    await state.setLastSyncedAt(SyncResource.tasks, 500);
+    final api = _FakeApi({
+      '/tasks': <String, Object?>{
+        'server_time': 600,
+        'items': <Object?>[],
+        'deleted': <String>[],
+      },
+    });
+    final service = PersonalPullService(api, database, state);
+    await service.pullTasks(apiKey: 'k', endpoint: '/tasks');
+    expect(api.queries['/tasks']?['since'], '0');
   });
 }
