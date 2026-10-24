@@ -71,8 +71,9 @@ final class SyncService {
     String apiKey, {
     String endpoint = '/exercises',
     Duration? timeout,
+    bool full = false,
   }) async {
-    final since = state.getLastSyncedAt(SyncResource.exercises);
+    final since = full ? 0 : state.getLastSyncedAt(SyncResource.exercises);
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
     final client = HttpApiClient(
@@ -172,6 +173,7 @@ final class SyncService {
     String apiKey, {
     String endpoint = '/foods',
     Duration? timeout,
+    bool full = false,
   }) async {
     final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final httpClient = http.Client();
@@ -185,6 +187,7 @@ final class SyncService {
       final result = await FoodSyncClient(client, database, state).sync(
         apiKey: apiKey,
         endpoint: endpoint,
+        full: full,
         resolveMissingIngredientIds: (ids) async {
           if (ids.isEmpty) return;
           _log.info(

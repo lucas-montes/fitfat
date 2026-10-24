@@ -21,8 +21,8 @@ const List<Color> _kPalette = [
 ];
 
 /// Manage the shared "priorities" vocabulary: reorder (rank), color, rename
-/// and delete tags. Renames/deletes propagate to every tagged task, note,
-/// goal and experiment.
+/// and delete tags. Renames/deletes propagate to every tagged task, note and
+/// goal.
 final class TagManagerScreen extends ConsumerStatefulWidget {
   const TagManagerScreen({super.key});
 

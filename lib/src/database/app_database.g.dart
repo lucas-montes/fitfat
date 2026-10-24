@@ -9010,679 +9010,6 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }
 }
 
-class $ExperimentsTable extends Experiments
-    with TableInfo<$ExperimentsTable, Experiment> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ExperimentsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _purposeMeta = const VerificationMeta(
-    'purpose',
-  );
-  @override
-  late final GeneratedColumn<String> purpose = GeneratedColumn<String>(
-    'purpose',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _startDateMeta = const VerificationMeta(
-    'startDate',
-  );
-  @override
-  late final GeneratedColumn<int> startDate = GeneratedColumn<int>(
-    'start_date',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _endDateMeta = const VerificationMeta(
-    'endDate',
-  );
-  @override
-  late final GeneratedColumn<int> endDate = GeneratedColumn<int>(
-    'end_date',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _statusMeta = const VerificationMeta('status');
-  @override
-  late final GeneratedColumn<String> status = GeneratedColumn<String>(
-    'status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('planned'),
-  );
-  static const VerificationMeta _categoriesMeta = const VerificationMeta(
-    'categories',
-  );
-  @override
-  late final GeneratedColumn<String> categories = GeneratedColumn<String>(
-    'categories',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _reminderEnabledMeta = const VerificationMeta(
-    'reminderEnabled',
-  );
-  @override
-  late final GeneratedColumn<bool> reminderEnabled = GeneratedColumn<bool>(
-    'reminder_enabled',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("reminder_enabled" IN (0, 1))',
-    ),
-    defaultValue: const Constant(true),
-  );
-  static const VerificationMeta _reminderTimeMinutesMeta =
-      const VerificationMeta('reminderTimeMinutes');
-  @override
-  late final GeneratedColumn<int> reminderTimeMinutes = GeneratedColumn<int>(
-    'reminder_time_minutes',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(1200),
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
-    'deletedAt',
-  );
-  @override
-  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
-    'deleted_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    name,
-    purpose,
-    startDate,
-    endDate,
-    status,
-    categories,
-    reminderEnabled,
-    reminderTimeMinutes,
-    createdAt,
-    deletedAt,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'experiments';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<Experiment> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('name')) {
-      context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('purpose')) {
-      context.handle(
-        _purposeMeta,
-        purpose.isAcceptableOrUnknown(data['purpose']!, _purposeMeta),
-      );
-    }
-    if (data.containsKey('start_date')) {
-      context.handle(
-        _startDateMeta,
-        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_startDateMeta);
-    }
-    if (data.containsKey('end_date')) {
-      context.handle(
-        _endDateMeta,
-        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
-      );
-    }
-    if (data.containsKey('status')) {
-      context.handle(
-        _statusMeta,
-        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
-      );
-    }
-    if (data.containsKey('categories')) {
-      context.handle(
-        _categoriesMeta,
-        categories.isAcceptableOrUnknown(data['categories']!, _categoriesMeta),
-      );
-    }
-    if (data.containsKey('reminder_enabled')) {
-      context.handle(
-        _reminderEnabledMeta,
-        reminderEnabled.isAcceptableOrUnknown(
-          data['reminder_enabled']!,
-          _reminderEnabledMeta,
-        ),
-      );
-    }
-    if (data.containsKey('reminder_time_minutes')) {
-      context.handle(
-        _reminderTimeMinutesMeta,
-        reminderTimeMinutes.isAcceptableOrUnknown(
-          data['reminder_time_minutes']!,
-          _reminderTimeMinutesMeta,
-        ),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
-    }
-    if (data.containsKey('deleted_at')) {
-      context.handle(
-        _deletedAtMeta,
-        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  Experiment map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Experiment(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
-      purpose: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}purpose'],
-      ),
-      startDate: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}start_date'],
-      )!,
-      endDate: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}end_date'],
-      ),
-      status: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}status'],
-      )!,
-      categories: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}categories'],
-      ),
-      reminderEnabled: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}reminder_enabled'],
-      )!,
-      reminderTimeMinutes: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}reminder_time_minutes'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}created_at'],
-      )!,
-      deletedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}deleted_at'],
-      ),
-    );
-  }
-
-  @override
-  $ExperimentsTable createAlias(String alias) {
-    return $ExperimentsTable(attachedDatabase, alias);
-  }
-}
-
-class Experiment extends DataClass implements Insertable<Experiment> {
-  final String id;
-  final String name;
-  final String? purpose;
-  final int startDate;
-
-  /// Target end date (start-of-day epoch ms); null = open-ended.
-  final int? endDate;
-
-  /// 'planned' | 'active' | 'done' | 'aborted'.
-  final String status;
-
-  /// JSON string[] of linked data categories: workout | diet | body | steps.
-  final String? categories;
-  final bool reminderEnabled;
-  final int reminderTimeMinutes;
-  final int createdAt;
-  final int? deletedAt;
-  const Experiment({
-    required this.id,
-    required this.name,
-    this.purpose,
-    required this.startDate,
-    this.endDate,
-    required this.status,
-    this.categories,
-    required this.reminderEnabled,
-    required this.reminderTimeMinutes,
-    required this.createdAt,
-    this.deletedAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['name'] = Variable<String>(name);
-    if (!nullToAbsent || purpose != null) {
-      map['purpose'] = Variable<String>(purpose);
-    }
-    map['start_date'] = Variable<int>(startDate);
-    if (!nullToAbsent || endDate != null) {
-      map['end_date'] = Variable<int>(endDate);
-    }
-    map['status'] = Variable<String>(status);
-    if (!nullToAbsent || categories != null) {
-      map['categories'] = Variable<String>(categories);
-    }
-    map['reminder_enabled'] = Variable<bool>(reminderEnabled);
-    map['reminder_time_minutes'] = Variable<int>(reminderTimeMinutes);
-    map['created_at'] = Variable<int>(createdAt);
-    if (!nullToAbsent || deletedAt != null) {
-      map['deleted_at'] = Variable<int>(deletedAt);
-    }
-    return map;
-  }
-
-  ExperimentsCompanion toCompanion(bool nullToAbsent) {
-    return ExperimentsCompanion(
-      id: Value(id),
-      name: Value(name),
-      purpose: purpose == null && nullToAbsent
-          ? const Value.absent()
-          : Value(purpose),
-      startDate: Value(startDate),
-      endDate: endDate == null && nullToAbsent
-          ? const Value.absent()
-          : Value(endDate),
-      status: Value(status),
-      categories: categories == null && nullToAbsent
-          ? const Value.absent()
-          : Value(categories),
-      reminderEnabled: Value(reminderEnabled),
-      reminderTimeMinutes: Value(reminderTimeMinutes),
-      createdAt: Value(createdAt),
-      deletedAt: deletedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(deletedAt),
-    );
-  }
-
-  factory Experiment.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Experiment(
-      id: serializer.fromJson<String>(json['id']),
-      name: serializer.fromJson<String>(json['name']),
-      purpose: serializer.fromJson<String?>(json['purpose']),
-      startDate: serializer.fromJson<int>(json['startDate']),
-      endDate: serializer.fromJson<int?>(json['endDate']),
-      status: serializer.fromJson<String>(json['status']),
-      categories: serializer.fromJson<String?>(json['categories']),
-      reminderEnabled: serializer.fromJson<bool>(json['reminderEnabled']),
-      reminderTimeMinutes: serializer.fromJson<int>(
-        json['reminderTimeMinutes'],
-      ),
-      createdAt: serializer.fromJson<int>(json['createdAt']),
-      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'name': serializer.toJson<String>(name),
-      'purpose': serializer.toJson<String?>(purpose),
-      'startDate': serializer.toJson<int>(startDate),
-      'endDate': serializer.toJson<int?>(endDate),
-      'status': serializer.toJson<String>(status),
-      'categories': serializer.toJson<String?>(categories),
-      'reminderEnabled': serializer.toJson<bool>(reminderEnabled),
-      'reminderTimeMinutes': serializer.toJson<int>(reminderTimeMinutes),
-      'createdAt': serializer.toJson<int>(createdAt),
-      'deletedAt': serializer.toJson<int?>(deletedAt),
-    };
-  }
-
-  Experiment copyWith({
-    String? id,
-    String? name,
-    Value<String?> purpose = const Value.absent(),
-    int? startDate,
-    Value<int?> endDate = const Value.absent(),
-    String? status,
-    Value<String?> categories = const Value.absent(),
-    bool? reminderEnabled,
-    int? reminderTimeMinutes,
-    int? createdAt,
-    Value<int?> deletedAt = const Value.absent(),
-  }) => Experiment(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    purpose: purpose.present ? purpose.value : this.purpose,
-    startDate: startDate ?? this.startDate,
-    endDate: endDate.present ? endDate.value : this.endDate,
-    status: status ?? this.status,
-    categories: categories.present ? categories.value : this.categories,
-    reminderEnabled: reminderEnabled ?? this.reminderEnabled,
-    reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
-    createdAt: createdAt ?? this.createdAt,
-    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
-  );
-  Experiment copyWithCompanion(ExperimentsCompanion data) {
-    return Experiment(
-      id: data.id.present ? data.id.value : this.id,
-      name: data.name.present ? data.name.value : this.name,
-      purpose: data.purpose.present ? data.purpose.value : this.purpose,
-      startDate: data.startDate.present ? data.startDate.value : this.startDate,
-      endDate: data.endDate.present ? data.endDate.value : this.endDate,
-      status: data.status.present ? data.status.value : this.status,
-      categories: data.categories.present
-          ? data.categories.value
-          : this.categories,
-      reminderEnabled: data.reminderEnabled.present
-          ? data.reminderEnabled.value
-          : this.reminderEnabled,
-      reminderTimeMinutes: data.reminderTimeMinutes.present
-          ? data.reminderTimeMinutes.value
-          : this.reminderTimeMinutes,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Experiment(')
-          ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('purpose: $purpose, ')
-          ..write('startDate: $startDate, ')
-          ..write('endDate: $endDate, ')
-          ..write('status: $status, ')
-          ..write('categories: $categories, ')
-          ..write('reminderEnabled: $reminderEnabled, ')
-          ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('deletedAt: $deletedAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    name,
-    purpose,
-    startDate,
-    endDate,
-    status,
-    categories,
-    reminderEnabled,
-    reminderTimeMinutes,
-    createdAt,
-    deletedAt,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Experiment &&
-          other.id == this.id &&
-          other.name == this.name &&
-          other.purpose == this.purpose &&
-          other.startDate == this.startDate &&
-          other.endDate == this.endDate &&
-          other.status == this.status &&
-          other.categories == this.categories &&
-          other.reminderEnabled == this.reminderEnabled &&
-          other.reminderTimeMinutes == this.reminderTimeMinutes &&
-          other.createdAt == this.createdAt &&
-          other.deletedAt == this.deletedAt);
-}
-
-class ExperimentsCompanion extends UpdateCompanion<Experiment> {
-  final Value<String> id;
-  final Value<String> name;
-  final Value<String?> purpose;
-  final Value<int> startDate;
-  final Value<int?> endDate;
-  final Value<String> status;
-  final Value<String?> categories;
-  final Value<bool> reminderEnabled;
-  final Value<int> reminderTimeMinutes;
-  final Value<int> createdAt;
-  final Value<int?> deletedAt;
-  final Value<int> rowid;
-  const ExperimentsCompanion({
-    this.id = const Value.absent(),
-    this.name = const Value.absent(),
-    this.purpose = const Value.absent(),
-    this.startDate = const Value.absent(),
-    this.endDate = const Value.absent(),
-    this.status = const Value.absent(),
-    this.categories = const Value.absent(),
-    this.reminderEnabled = const Value.absent(),
-    this.reminderTimeMinutes = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ExperimentsCompanion.insert({
-    required String id,
-    required String name,
-    this.purpose = const Value.absent(),
-    required int startDate,
-    this.endDate = const Value.absent(),
-    this.status = const Value.absent(),
-    this.categories = const Value.absent(),
-    this.reminderEnabled = const Value.absent(),
-    this.reminderTimeMinutes = const Value.absent(),
-    required int createdAt,
-    this.deletedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       name = Value(name),
-       startDate = Value(startDate),
-       createdAt = Value(createdAt);
-  static Insertable<Experiment> custom({
-    Expression<String>? id,
-    Expression<String>? name,
-    Expression<String>? purpose,
-    Expression<int>? startDate,
-    Expression<int>? endDate,
-    Expression<String>? status,
-    Expression<String>? categories,
-    Expression<bool>? reminderEnabled,
-    Expression<int>? reminderTimeMinutes,
-    Expression<int>? createdAt,
-    Expression<int>? deletedAt,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (name != null) 'name': name,
-      if (purpose != null) 'purpose': purpose,
-      if (startDate != null) 'start_date': startDate,
-      if (endDate != null) 'end_date': endDate,
-      if (status != null) 'status': status,
-      if (categories != null) 'categories': categories,
-      if (reminderEnabled != null) 'reminder_enabled': reminderEnabled,
-      if (reminderTimeMinutes != null)
-        'reminder_time_minutes': reminderTimeMinutes,
-      if (createdAt != null) 'created_at': createdAt,
-      if (deletedAt != null) 'deleted_at': deletedAt,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ExperimentsCompanion copyWith({
-    Value<String>? id,
-    Value<String>? name,
-    Value<String?>? purpose,
-    Value<int>? startDate,
-    Value<int?>? endDate,
-    Value<String>? status,
-    Value<String?>? categories,
-    Value<bool>? reminderEnabled,
-    Value<int>? reminderTimeMinutes,
-    Value<int>? createdAt,
-    Value<int?>? deletedAt,
-    Value<int>? rowid,
-  }) {
-    return ExperimentsCompanion(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      purpose: purpose ?? this.purpose,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      status: status ?? this.status,
-      categories: categories ?? this.categories,
-      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
-      reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
-      createdAt: createdAt ?? this.createdAt,
-      deletedAt: deletedAt ?? this.deletedAt,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (purpose.present) {
-      map['purpose'] = Variable<String>(purpose.value);
-    }
-    if (startDate.present) {
-      map['start_date'] = Variable<int>(startDate.value);
-    }
-    if (endDate.present) {
-      map['end_date'] = Variable<int>(endDate.value);
-    }
-    if (status.present) {
-      map['status'] = Variable<String>(status.value);
-    }
-    if (categories.present) {
-      map['categories'] = Variable<String>(categories.value);
-    }
-    if (reminderEnabled.present) {
-      map['reminder_enabled'] = Variable<bool>(reminderEnabled.value);
-    }
-    if (reminderTimeMinutes.present) {
-      map['reminder_time_minutes'] = Variable<int>(reminderTimeMinutes.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<int>(createdAt.value);
-    }
-    if (deletedAt.present) {
-      map['deleted_at'] = Variable<int>(deletedAt.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExperimentsCompanion(')
-          ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('purpose: $purpose, ')
-          ..write('startDate: $startDate, ')
-          ..write('endDate: $endDate, ')
-          ..write('status: $status, ')
-          ..write('categories: $categories, ')
-          ..write('reminderEnabled: $reminderEnabled, ')
-          ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('deletedAt: $deletedAt, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $BodyMetricsTable extends BodyMetrics
     with TableInfo<$BodyMetricsTable, BodyMetric> {
   @override
@@ -12807,419 +12134,6 @@ class FxRatesCompanion extends UpdateCompanion<FxRate> {
   }
 }
 
-class $ExperimentCheckinsTable extends ExperimentCheckins
-    with TableInfo<$ExperimentCheckinsTable, ExperimentCheckin> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ExperimentCheckinsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _experimentIdMeta = const VerificationMeta(
-    'experimentId',
-  );
-  @override
-  late final GeneratedColumn<String> experimentId = GeneratedColumn<String>(
-    'experiment_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _dayMeta = const VerificationMeta('day');
-  @override
-  late final GeneratedColumn<int> day = GeneratedColumn<int>(
-    'day',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _ratingMeta = const VerificationMeta('rating');
-  @override
-  late final GeneratedColumn<int> rating = GeneratedColumn<int>(
-    'rating',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _noteMeta = const VerificationMeta('note');
-  @override
-  late final GeneratedColumn<String> note = GeneratedColumn<String>(
-    'note',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    experimentId,
-    day,
-    rating,
-    note,
-    createdAt,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'experiment_checkins';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ExperimentCheckin> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('experiment_id')) {
-      context.handle(
-        _experimentIdMeta,
-        experimentId.isAcceptableOrUnknown(
-          data['experiment_id']!,
-          _experimentIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_experimentIdMeta);
-    }
-    if (data.containsKey('day')) {
-      context.handle(
-        _dayMeta,
-        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_dayMeta);
-    }
-    if (data.containsKey('rating')) {
-      context.handle(
-        _ratingMeta,
-        rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_ratingMeta);
-    }
-    if (data.containsKey('note')) {
-      context.handle(
-        _noteMeta,
-        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  List<Set<GeneratedColumn>> get uniqueKeys => [
-    {experimentId, day},
-  ];
-  @override
-  ExperimentCheckin map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ExperimentCheckin(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      experimentId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}experiment_id'],
-      )!,
-      day: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}day'],
-      )!,
-      rating: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}rating'],
-      )!,
-      note: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}note'],
-      ),
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}created_at'],
-      )!,
-    );
-  }
-
-  @override
-  $ExperimentCheckinsTable createAlias(String alias) {
-    return $ExperimentCheckinsTable(attachedDatabase, alias);
-  }
-}
-
-class ExperimentCheckin extends DataClass
-    implements Insertable<ExperimentCheckin> {
-  final String id;
-  final String experimentId;
-  final int day;
-  final int rating;
-  final String? note;
-  final int createdAt;
-  const ExperimentCheckin({
-    required this.id,
-    required this.experimentId,
-    required this.day,
-    required this.rating,
-    this.note,
-    required this.createdAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['experiment_id'] = Variable<String>(experimentId);
-    map['day'] = Variable<int>(day);
-    map['rating'] = Variable<int>(rating);
-    if (!nullToAbsent || note != null) {
-      map['note'] = Variable<String>(note);
-    }
-    map['created_at'] = Variable<int>(createdAt);
-    return map;
-  }
-
-  ExperimentCheckinsCompanion toCompanion(bool nullToAbsent) {
-    return ExperimentCheckinsCompanion(
-      id: Value(id),
-      experimentId: Value(experimentId),
-      day: Value(day),
-      rating: Value(rating),
-      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
-      createdAt: Value(createdAt),
-    );
-  }
-
-  factory ExperimentCheckin.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ExperimentCheckin(
-      id: serializer.fromJson<String>(json['id']),
-      experimentId: serializer.fromJson<String>(json['experimentId']),
-      day: serializer.fromJson<int>(json['day']),
-      rating: serializer.fromJson<int>(json['rating']),
-      note: serializer.fromJson<String?>(json['note']),
-      createdAt: serializer.fromJson<int>(json['createdAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'experimentId': serializer.toJson<String>(experimentId),
-      'day': serializer.toJson<int>(day),
-      'rating': serializer.toJson<int>(rating),
-      'note': serializer.toJson<String?>(note),
-      'createdAt': serializer.toJson<int>(createdAt),
-    };
-  }
-
-  ExperimentCheckin copyWith({
-    String? id,
-    String? experimentId,
-    int? day,
-    int? rating,
-    Value<String?> note = const Value.absent(),
-    int? createdAt,
-  }) => ExperimentCheckin(
-    id: id ?? this.id,
-    experimentId: experimentId ?? this.experimentId,
-    day: day ?? this.day,
-    rating: rating ?? this.rating,
-    note: note.present ? note.value : this.note,
-    createdAt: createdAt ?? this.createdAt,
-  );
-  ExperimentCheckin copyWithCompanion(ExperimentCheckinsCompanion data) {
-    return ExperimentCheckin(
-      id: data.id.present ? data.id.value : this.id,
-      experimentId: data.experimentId.present
-          ? data.experimentId.value
-          : this.experimentId,
-      day: data.day.present ? data.day.value : this.day,
-      rating: data.rating.present ? data.rating.value : this.rating,
-      note: data.note.present ? data.note.value : this.note,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExperimentCheckin(')
-          ..write('id: $id, ')
-          ..write('experimentId: $experimentId, ')
-          ..write('day: $day, ')
-          ..write('rating: $rating, ')
-          ..write('note: $note, ')
-          ..write('createdAt: $createdAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(id, experimentId, day, rating, note, createdAt);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ExperimentCheckin &&
-          other.id == this.id &&
-          other.experimentId == this.experimentId &&
-          other.day == this.day &&
-          other.rating == this.rating &&
-          other.note == this.note &&
-          other.createdAt == this.createdAt);
-}
-
-class ExperimentCheckinsCompanion extends UpdateCompanion<ExperimentCheckin> {
-  final Value<String> id;
-  final Value<String> experimentId;
-  final Value<int> day;
-  final Value<int> rating;
-  final Value<String?> note;
-  final Value<int> createdAt;
-  final Value<int> rowid;
-  const ExperimentCheckinsCompanion({
-    this.id = const Value.absent(),
-    this.experimentId = const Value.absent(),
-    this.day = const Value.absent(),
-    this.rating = const Value.absent(),
-    this.note = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ExperimentCheckinsCompanion.insert({
-    required String id,
-    required String experimentId,
-    required int day,
-    required int rating,
-    this.note = const Value.absent(),
-    required int createdAt,
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       experimentId = Value(experimentId),
-       day = Value(day),
-       rating = Value(rating),
-       createdAt = Value(createdAt);
-  static Insertable<ExperimentCheckin> custom({
-    Expression<String>? id,
-    Expression<String>? experimentId,
-    Expression<int>? day,
-    Expression<int>? rating,
-    Expression<String>? note,
-    Expression<int>? createdAt,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (experimentId != null) 'experiment_id': experimentId,
-      if (day != null) 'day': day,
-      if (rating != null) 'rating': rating,
-      if (note != null) 'note': note,
-      if (createdAt != null) 'created_at': createdAt,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ExperimentCheckinsCompanion copyWith({
-    Value<String>? id,
-    Value<String>? experimentId,
-    Value<int>? day,
-    Value<int>? rating,
-    Value<String?>? note,
-    Value<int>? createdAt,
-    Value<int>? rowid,
-  }) {
-    return ExperimentCheckinsCompanion(
-      id: id ?? this.id,
-      experimentId: experimentId ?? this.experimentId,
-      day: day ?? this.day,
-      rating: rating ?? this.rating,
-      note: note ?? this.note,
-      createdAt: createdAt ?? this.createdAt,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (experimentId.present) {
-      map['experiment_id'] = Variable<String>(experimentId.value);
-    }
-    if (day.present) {
-      map['day'] = Variable<int>(day.value);
-    }
-    if (rating.present) {
-      map['rating'] = Variable<int>(rating.value);
-    }
-    if (note.present) {
-      map['note'] = Variable<String>(note.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<int>(createdAt.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExperimentCheckinsCompanion(')
-          ..write('id: $id, ')
-          ..write('experimentId: $experimentId, ')
-          ..write('day: $day, ')
-          ..write('rating: $rating, ')
-          ..write('note: $note, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -14919,285 +13833,6 @@ class GoalProgressEntriesCompanion extends UpdateCompanion<GoalProgressEntry> {
   }
 }
 
-class $TaskExperimentsTable extends TaskExperiments
-    with TableInfo<$TaskExperimentsTable, TaskExperiment> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $TaskExperimentsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
-  @override
-  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
-    'task_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES tasks (id)',
-    ),
-  );
-  static const VerificationMeta _experimentIdMeta = const VerificationMeta(
-    'experimentId',
-  );
-  @override
-  late final GeneratedColumn<String> experimentId = GeneratedColumn<String>(
-    'experiment_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES experiments (id)',
-    ),
-  );
-  static const VerificationMeta _labelMeta = const VerificationMeta('label');
-  @override
-  late final GeneratedColumn<String> label = GeneratedColumn<String>(
-    'label',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [taskId, experimentId, label];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'task_experiments';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<TaskExperiment> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('task_id')) {
-      context.handle(
-        _taskIdMeta,
-        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_taskIdMeta);
-    }
-    if (data.containsKey('experiment_id')) {
-      context.handle(
-        _experimentIdMeta,
-        experimentId.isAcceptableOrUnknown(
-          data['experiment_id']!,
-          _experimentIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_experimentIdMeta);
-    }
-    if (data.containsKey('label')) {
-      context.handle(
-        _labelMeta,
-        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {taskId, experimentId};
-  @override
-  TaskExperiment map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return TaskExperiment(
-      taskId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}task_id'],
-      )!,
-      experimentId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}experiment_id'],
-      )!,
-      label: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}label'],
-      ),
-    );
-  }
-
-  @override
-  $TaskExperimentsTable createAlias(String alias) {
-    return $TaskExperimentsTable(attachedDatabase, alias);
-  }
-}
-
-class TaskExperiment extends DataClass implements Insertable<TaskExperiment> {
-  final String taskId;
-  final String experimentId;
-
-  /// Optional relationship label ('supports', 'measures', …).
-  final String? label;
-  const TaskExperiment({
-    required this.taskId,
-    required this.experimentId,
-    this.label,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['task_id'] = Variable<String>(taskId);
-    map['experiment_id'] = Variable<String>(experimentId);
-    if (!nullToAbsent || label != null) {
-      map['label'] = Variable<String>(label);
-    }
-    return map;
-  }
-
-  TaskExperimentsCompanion toCompanion(bool nullToAbsent) {
-    return TaskExperimentsCompanion(
-      taskId: Value(taskId),
-      experimentId: Value(experimentId),
-      label: label == null && nullToAbsent
-          ? const Value.absent()
-          : Value(label),
-    );
-  }
-
-  factory TaskExperiment.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return TaskExperiment(
-      taskId: serializer.fromJson<String>(json['taskId']),
-      experimentId: serializer.fromJson<String>(json['experimentId']),
-      label: serializer.fromJson<String?>(json['label']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'taskId': serializer.toJson<String>(taskId),
-      'experimentId': serializer.toJson<String>(experimentId),
-      'label': serializer.toJson<String?>(label),
-    };
-  }
-
-  TaskExperiment copyWith({
-    String? taskId,
-    String? experimentId,
-    Value<String?> label = const Value.absent(),
-  }) => TaskExperiment(
-    taskId: taskId ?? this.taskId,
-    experimentId: experimentId ?? this.experimentId,
-    label: label.present ? label.value : this.label,
-  );
-  TaskExperiment copyWithCompanion(TaskExperimentsCompanion data) {
-    return TaskExperiment(
-      taskId: data.taskId.present ? data.taskId.value : this.taskId,
-      experimentId: data.experimentId.present
-          ? data.experimentId.value
-          : this.experimentId,
-      label: data.label.present ? data.label.value : this.label,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('TaskExperiment(')
-          ..write('taskId: $taskId, ')
-          ..write('experimentId: $experimentId, ')
-          ..write('label: $label')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(taskId, experimentId, label);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is TaskExperiment &&
-          other.taskId == this.taskId &&
-          other.experimentId == this.experimentId &&
-          other.label == this.label);
-}
-
-class TaskExperimentsCompanion extends UpdateCompanion<TaskExperiment> {
-  final Value<String> taskId;
-  final Value<String> experimentId;
-  final Value<String?> label;
-  final Value<int> rowid;
-  const TaskExperimentsCompanion({
-    this.taskId = const Value.absent(),
-    this.experimentId = const Value.absent(),
-    this.label = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  TaskExperimentsCompanion.insert({
-    required String taskId,
-    required String experimentId,
-    this.label = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : taskId = Value(taskId),
-       experimentId = Value(experimentId);
-  static Insertable<TaskExperiment> custom({
-    Expression<String>? taskId,
-    Expression<String>? experimentId,
-    Expression<String>? label,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (taskId != null) 'task_id': taskId,
-      if (experimentId != null) 'experiment_id': experimentId,
-      if (label != null) 'label': label,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  TaskExperimentsCompanion copyWith({
-    Value<String>? taskId,
-    Value<String>? experimentId,
-    Value<String?>? label,
-    Value<int>? rowid,
-  }) {
-    return TaskExperimentsCompanion(
-      taskId: taskId ?? this.taskId,
-      experimentId: experimentId ?? this.experimentId,
-      label: label ?? this.label,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (taskId.present) {
-      map['task_id'] = Variable<String>(taskId.value);
-    }
-    if (experimentId.present) {
-      map['experiment_id'] = Variable<String>(experimentId.value);
-    }
-    if (label.present) {
-      map['label'] = Variable<String>(label.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('TaskExperimentsCompanion(')
-          ..write('taskId: $taskId, ')
-          ..write('experimentId: $experimentId, ')
-          ..write('label: $label, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $TaskGoalsTable extends TaskGoals
     with TableInfo<$TaskGoalsTable, TaskGoal> {
   @override
@@ -15464,283 +14099,6 @@ class TaskGoalsCompanion extends UpdateCompanion<TaskGoal> {
   }
 }
 
-class $ExperimentGoalsTable extends ExperimentGoals
-    with TableInfo<$ExperimentGoalsTable, ExperimentGoal> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ExperimentGoalsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _experimentIdMeta = const VerificationMeta(
-    'experimentId',
-  );
-  @override
-  late final GeneratedColumn<String> experimentId = GeneratedColumn<String>(
-    'experiment_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES experiments (id)',
-    ),
-  );
-  static const VerificationMeta _goalIdMeta = const VerificationMeta('goalId');
-  @override
-  late final GeneratedColumn<String> goalId = GeneratedColumn<String>(
-    'goal_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES goals (id)',
-    ),
-  );
-  static const VerificationMeta _labelMeta = const VerificationMeta('label');
-  @override
-  late final GeneratedColumn<String> label = GeneratedColumn<String>(
-    'label',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [experimentId, goalId, label];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'experiment_goals';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ExperimentGoal> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('experiment_id')) {
-      context.handle(
-        _experimentIdMeta,
-        experimentId.isAcceptableOrUnknown(
-          data['experiment_id']!,
-          _experimentIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_experimentIdMeta);
-    }
-    if (data.containsKey('goal_id')) {
-      context.handle(
-        _goalIdMeta,
-        goalId.isAcceptableOrUnknown(data['goal_id']!, _goalIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_goalIdMeta);
-    }
-    if (data.containsKey('label')) {
-      context.handle(
-        _labelMeta,
-        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {experimentId, goalId};
-  @override
-  ExperimentGoal map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ExperimentGoal(
-      experimentId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}experiment_id'],
-      )!,
-      goalId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}goal_id'],
-      )!,
-      label: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}label'],
-      ),
-    );
-  }
-
-  @override
-  $ExperimentGoalsTable createAlias(String alias) {
-    return $ExperimentGoalsTable(attachedDatabase, alias);
-  }
-}
-
-class ExperimentGoal extends DataClass implements Insertable<ExperimentGoal> {
-  final String experimentId;
-  final String goalId;
-  final String? label;
-  const ExperimentGoal({
-    required this.experimentId,
-    required this.goalId,
-    this.label,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['experiment_id'] = Variable<String>(experimentId);
-    map['goal_id'] = Variable<String>(goalId);
-    if (!nullToAbsent || label != null) {
-      map['label'] = Variable<String>(label);
-    }
-    return map;
-  }
-
-  ExperimentGoalsCompanion toCompanion(bool nullToAbsent) {
-    return ExperimentGoalsCompanion(
-      experimentId: Value(experimentId),
-      goalId: Value(goalId),
-      label: label == null && nullToAbsent
-          ? const Value.absent()
-          : Value(label),
-    );
-  }
-
-  factory ExperimentGoal.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ExperimentGoal(
-      experimentId: serializer.fromJson<String>(json['experimentId']),
-      goalId: serializer.fromJson<String>(json['goalId']),
-      label: serializer.fromJson<String?>(json['label']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'experimentId': serializer.toJson<String>(experimentId),
-      'goalId': serializer.toJson<String>(goalId),
-      'label': serializer.toJson<String?>(label),
-    };
-  }
-
-  ExperimentGoal copyWith({
-    String? experimentId,
-    String? goalId,
-    Value<String?> label = const Value.absent(),
-  }) => ExperimentGoal(
-    experimentId: experimentId ?? this.experimentId,
-    goalId: goalId ?? this.goalId,
-    label: label.present ? label.value : this.label,
-  );
-  ExperimentGoal copyWithCompanion(ExperimentGoalsCompanion data) {
-    return ExperimentGoal(
-      experimentId: data.experimentId.present
-          ? data.experimentId.value
-          : this.experimentId,
-      goalId: data.goalId.present ? data.goalId.value : this.goalId,
-      label: data.label.present ? data.label.value : this.label,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExperimentGoal(')
-          ..write('experimentId: $experimentId, ')
-          ..write('goalId: $goalId, ')
-          ..write('label: $label')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(experimentId, goalId, label);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ExperimentGoal &&
-          other.experimentId == this.experimentId &&
-          other.goalId == this.goalId &&
-          other.label == this.label);
-}
-
-class ExperimentGoalsCompanion extends UpdateCompanion<ExperimentGoal> {
-  final Value<String> experimentId;
-  final Value<String> goalId;
-  final Value<String?> label;
-  final Value<int> rowid;
-  const ExperimentGoalsCompanion({
-    this.experimentId = const Value.absent(),
-    this.goalId = const Value.absent(),
-    this.label = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ExperimentGoalsCompanion.insert({
-    required String experimentId,
-    required String goalId,
-    this.label = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : experimentId = Value(experimentId),
-       goalId = Value(goalId);
-  static Insertable<ExperimentGoal> custom({
-    Expression<String>? experimentId,
-    Expression<String>? goalId,
-    Expression<String>? label,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (experimentId != null) 'experiment_id': experimentId,
-      if (goalId != null) 'goal_id': goalId,
-      if (label != null) 'label': label,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ExperimentGoalsCompanion copyWith({
-    Value<String>? experimentId,
-    Value<String>? goalId,
-    Value<String?>? label,
-    Value<int>? rowid,
-  }) {
-    return ExperimentGoalsCompanion(
-      experimentId: experimentId ?? this.experimentId,
-      goalId: goalId ?? this.goalId,
-      label: label ?? this.label,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (experimentId.present) {
-      map['experiment_id'] = Variable<String>(experimentId.value);
-    }
-    if (goalId.present) {
-      map['goal_id'] = Variable<String>(goalId.value);
-    }
-    if (label.present) {
-      map['label'] = Variable<String>(label.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExperimentGoalsCompanion(')
-          ..write('experimentId: $experimentId, ')
-          ..write('goalId: $goalId, ')
-          ..write('label: $label, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $TaskNotesTable extends TaskNotes
     with TableInfo<$TaskNotesTable, TaskNote> {
   @override
@@ -15999,283 +14357,6 @@ class TaskNotesCompanion extends UpdateCompanion<TaskNote> {
   String toString() {
     return (StringBuffer('TaskNotesCompanion(')
           ..write('taskId: $taskId, ')
-          ..write('noteId: $noteId, ')
-          ..write('label: $label, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $ExperimentNotesTable extends ExperimentNotes
-    with TableInfo<$ExperimentNotesTable, ExperimentNote> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ExperimentNotesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _experimentIdMeta = const VerificationMeta(
-    'experimentId',
-  );
-  @override
-  late final GeneratedColumn<String> experimentId = GeneratedColumn<String>(
-    'experiment_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES experiments (id)',
-    ),
-  );
-  static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
-  @override
-  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
-    'note_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES notes (id)',
-    ),
-  );
-  static const VerificationMeta _labelMeta = const VerificationMeta('label');
-  @override
-  late final GeneratedColumn<String> label = GeneratedColumn<String>(
-    'label',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [experimentId, noteId, label];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'experiment_notes';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ExperimentNote> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('experiment_id')) {
-      context.handle(
-        _experimentIdMeta,
-        experimentId.isAcceptableOrUnknown(
-          data['experiment_id']!,
-          _experimentIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_experimentIdMeta);
-    }
-    if (data.containsKey('note_id')) {
-      context.handle(
-        _noteIdMeta,
-        noteId.isAcceptableOrUnknown(data['note_id']!, _noteIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_noteIdMeta);
-    }
-    if (data.containsKey('label')) {
-      context.handle(
-        _labelMeta,
-        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {experimentId, noteId};
-  @override
-  ExperimentNote map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ExperimentNote(
-      experimentId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}experiment_id'],
-      )!,
-      noteId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}note_id'],
-      )!,
-      label: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}label'],
-      ),
-    );
-  }
-
-  @override
-  $ExperimentNotesTable createAlias(String alias) {
-    return $ExperimentNotesTable(attachedDatabase, alias);
-  }
-}
-
-class ExperimentNote extends DataClass implements Insertable<ExperimentNote> {
-  final String experimentId;
-  final String noteId;
-  final String? label;
-  const ExperimentNote({
-    required this.experimentId,
-    required this.noteId,
-    this.label,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['experiment_id'] = Variable<String>(experimentId);
-    map['note_id'] = Variable<String>(noteId);
-    if (!nullToAbsent || label != null) {
-      map['label'] = Variable<String>(label);
-    }
-    return map;
-  }
-
-  ExperimentNotesCompanion toCompanion(bool nullToAbsent) {
-    return ExperimentNotesCompanion(
-      experimentId: Value(experimentId),
-      noteId: Value(noteId),
-      label: label == null && nullToAbsent
-          ? const Value.absent()
-          : Value(label),
-    );
-  }
-
-  factory ExperimentNote.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ExperimentNote(
-      experimentId: serializer.fromJson<String>(json['experimentId']),
-      noteId: serializer.fromJson<String>(json['noteId']),
-      label: serializer.fromJson<String?>(json['label']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'experimentId': serializer.toJson<String>(experimentId),
-      'noteId': serializer.toJson<String>(noteId),
-      'label': serializer.toJson<String?>(label),
-    };
-  }
-
-  ExperimentNote copyWith({
-    String? experimentId,
-    String? noteId,
-    Value<String?> label = const Value.absent(),
-  }) => ExperimentNote(
-    experimentId: experimentId ?? this.experimentId,
-    noteId: noteId ?? this.noteId,
-    label: label.present ? label.value : this.label,
-  );
-  ExperimentNote copyWithCompanion(ExperimentNotesCompanion data) {
-    return ExperimentNote(
-      experimentId: data.experimentId.present
-          ? data.experimentId.value
-          : this.experimentId,
-      noteId: data.noteId.present ? data.noteId.value : this.noteId,
-      label: data.label.present ? data.label.value : this.label,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExperimentNote(')
-          ..write('experimentId: $experimentId, ')
-          ..write('noteId: $noteId, ')
-          ..write('label: $label')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(experimentId, noteId, label);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ExperimentNote &&
-          other.experimentId == this.experimentId &&
-          other.noteId == this.noteId &&
-          other.label == this.label);
-}
-
-class ExperimentNotesCompanion extends UpdateCompanion<ExperimentNote> {
-  final Value<String> experimentId;
-  final Value<String> noteId;
-  final Value<String?> label;
-  final Value<int> rowid;
-  const ExperimentNotesCompanion({
-    this.experimentId = const Value.absent(),
-    this.noteId = const Value.absent(),
-    this.label = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ExperimentNotesCompanion.insert({
-    required String experimentId,
-    required String noteId,
-    this.label = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : experimentId = Value(experimentId),
-       noteId = Value(noteId);
-  static Insertable<ExperimentNote> custom({
-    Expression<String>? experimentId,
-    Expression<String>? noteId,
-    Expression<String>? label,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (experimentId != null) 'experiment_id': experimentId,
-      if (noteId != null) 'note_id': noteId,
-      if (label != null) 'label': label,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ExperimentNotesCompanion copyWith({
-    Value<String>? experimentId,
-    Value<String>? noteId,
-    Value<String?>? label,
-    Value<int>? rowid,
-  }) {
-    return ExperimentNotesCompanion(
-      experimentId: experimentId ?? this.experimentId,
-      noteId: noteId ?? this.noteId,
-      label: label ?? this.label,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (experimentId.present) {
-      map['experiment_id'] = Variable<String>(experimentId.value);
-    }
-    if (noteId.present) {
-      map['note_id'] = Variable<String>(noteId.value);
-    }
-    if (label.present) {
-      map['label'] = Variable<String>(label.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExperimentNotesCompanion(')
-          ..write('experimentId: $experimentId, ')
           ..write('noteId: $noteId, ')
           ..write('label: $label, ')
           ..write('rowid: $rowid')
@@ -17301,233 +15382,6 @@ class TaskTagsCompanion extends UpdateCompanion<TaskTag> {
     return (StringBuffer('TaskTagsCompanion(')
           ..write('tagId: $tagId, ')
           ..write('taskId: $taskId, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $ExperimentTagsTable extends ExperimentTags
-    with TableInfo<$ExperimentTagsTable, ExperimentTag> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ExperimentTagsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _tagIdMeta = const VerificationMeta('tagId');
-  @override
-  late final GeneratedColumn<String> tagId = GeneratedColumn<String>(
-    'tag_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES tags (id) ON DELETE CASCADE',
-    ),
-  );
-  static const VerificationMeta _experimentIdMeta = const VerificationMeta(
-    'experimentId',
-  );
-  @override
-  late final GeneratedColumn<String> experimentId = GeneratedColumn<String>(
-    'experiment_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES experiments (id) ON DELETE CASCADE',
-    ),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [tagId, experimentId];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'experiment_tags';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ExperimentTag> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('tag_id')) {
-      context.handle(
-        _tagIdMeta,
-        tagId.isAcceptableOrUnknown(data['tag_id']!, _tagIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_tagIdMeta);
-    }
-    if (data.containsKey('experiment_id')) {
-      context.handle(
-        _experimentIdMeta,
-        experimentId.isAcceptableOrUnknown(
-          data['experiment_id']!,
-          _experimentIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_experimentIdMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {tagId, experimentId};
-  @override
-  ExperimentTag map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ExperimentTag(
-      tagId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}tag_id'],
-      )!,
-      experimentId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}experiment_id'],
-      )!,
-    );
-  }
-
-  @override
-  $ExperimentTagsTable createAlias(String alias) {
-    return $ExperimentTagsTable(attachedDatabase, alias);
-  }
-}
-
-class ExperimentTag extends DataClass implements Insertable<ExperimentTag> {
-  final String tagId;
-  final String experimentId;
-  const ExperimentTag({required this.tagId, required this.experimentId});
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['tag_id'] = Variable<String>(tagId);
-    map['experiment_id'] = Variable<String>(experimentId);
-    return map;
-  }
-
-  ExperimentTagsCompanion toCompanion(bool nullToAbsent) {
-    return ExperimentTagsCompanion(
-      tagId: Value(tagId),
-      experimentId: Value(experimentId),
-    );
-  }
-
-  factory ExperimentTag.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ExperimentTag(
-      tagId: serializer.fromJson<String>(json['tagId']),
-      experimentId: serializer.fromJson<String>(json['experimentId']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'tagId': serializer.toJson<String>(tagId),
-      'experimentId': serializer.toJson<String>(experimentId),
-    };
-  }
-
-  ExperimentTag copyWith({String? tagId, String? experimentId}) =>
-      ExperimentTag(
-        tagId: tagId ?? this.tagId,
-        experimentId: experimentId ?? this.experimentId,
-      );
-  ExperimentTag copyWithCompanion(ExperimentTagsCompanion data) {
-    return ExperimentTag(
-      tagId: data.tagId.present ? data.tagId.value : this.tagId,
-      experimentId: data.experimentId.present
-          ? data.experimentId.value
-          : this.experimentId,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExperimentTag(')
-          ..write('tagId: $tagId, ')
-          ..write('experimentId: $experimentId')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(tagId, experimentId);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ExperimentTag &&
-          other.tagId == this.tagId &&
-          other.experimentId == this.experimentId);
-}
-
-class ExperimentTagsCompanion extends UpdateCompanion<ExperimentTag> {
-  final Value<String> tagId;
-  final Value<String> experimentId;
-  final Value<int> rowid;
-  const ExperimentTagsCompanion({
-    this.tagId = const Value.absent(),
-    this.experimentId = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ExperimentTagsCompanion.insert({
-    required String tagId,
-    required String experimentId,
-    this.rowid = const Value.absent(),
-  }) : tagId = Value(tagId),
-       experimentId = Value(experimentId);
-  static Insertable<ExperimentTag> custom({
-    Expression<String>? tagId,
-    Expression<String>? experimentId,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (tagId != null) 'tag_id': tagId,
-      if (experimentId != null) 'experiment_id': experimentId,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ExperimentTagsCompanion copyWith({
-    Value<String>? tagId,
-    Value<String>? experimentId,
-    Value<int>? rowid,
-  }) {
-    return ExperimentTagsCompanion(
-      tagId: tagId ?? this.tagId,
-      experimentId: experimentId ?? this.experimentId,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (tagId.present) {
-      map['tag_id'] = Variable<String>(tagId.value);
-    }
-    if (experimentId.present) {
-      map['experiment_id'] = Variable<String>(experimentId.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ExperimentTagsCompanion(')
-          ..write('tagId: $tagId, ')
-          ..write('experimentId: $experimentId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -18897,6 +16751,265 @@ class IngredientCatalogCompanion
   }
 }
 
+class $SyncDeletesTable extends SyncDeletes
+    with TableInfo<$SyncDeletesTable, SyncDelete> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncDeletesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entityMeta = const VerificationMeta('entity');
+  @override
+  late final GeneratedColumn<String> entity = GeneratedColumn<String>(
+    'entity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [entity, id, deletedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_deletes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncDelete> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entity')) {
+      context.handle(
+        _entityMeta,
+        entity.isAcceptableOrUnknown(data['entity']!, _entityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityMeta);
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deletedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entity, id};
+  @override
+  SyncDelete map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncDelete(
+      entity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncDeletesTable createAlias(String alias) {
+    return $SyncDeletesTable(attachedDatabase, alias);
+  }
+}
+
+class SyncDelete extends DataClass implements Insertable<SyncDelete> {
+  final String entity;
+  final String id;
+  final int deletedAt;
+  const SyncDelete({
+    required this.entity,
+    required this.id,
+    required this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entity'] = Variable<String>(entity);
+    map['id'] = Variable<String>(id);
+    map['deleted_at'] = Variable<int>(deletedAt);
+    return map;
+  }
+
+  SyncDeletesCompanion toCompanion(bool nullToAbsent) {
+    return SyncDeletesCompanion(
+      entity: Value(entity),
+      id: Value(id),
+      deletedAt: Value(deletedAt),
+    );
+  }
+
+  factory SyncDelete.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncDelete(
+      entity: serializer.fromJson<String>(json['entity']),
+      id: serializer.fromJson<String>(json['id']),
+      deletedAt: serializer.fromJson<int>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entity': serializer.toJson<String>(entity),
+      'id': serializer.toJson<String>(id),
+      'deletedAt': serializer.toJson<int>(deletedAt),
+    };
+  }
+
+  SyncDelete copyWith({String? entity, String? id, int? deletedAt}) =>
+      SyncDelete(
+        entity: entity ?? this.entity,
+        id: id ?? this.id,
+        deletedAt: deletedAt ?? this.deletedAt,
+      );
+  SyncDelete copyWithCompanion(SyncDeletesCompanion data) {
+    return SyncDelete(
+      entity: data.entity.present ? data.entity.value : this.entity,
+      id: data.id.present ? data.id.value : this.id,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncDelete(')
+          ..write('entity: $entity, ')
+          ..write('id: $id, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(entity, id, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncDelete &&
+          other.entity == this.entity &&
+          other.id == this.id &&
+          other.deletedAt == this.deletedAt);
+}
+
+class SyncDeletesCompanion extends UpdateCompanion<SyncDelete> {
+  final Value<String> entity;
+  final Value<String> id;
+  final Value<int> deletedAt;
+  final Value<int> rowid;
+  const SyncDeletesCompanion({
+    this.entity = const Value.absent(),
+    this.id = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncDeletesCompanion.insert({
+    required String entity,
+    required String id,
+    required int deletedAt,
+    this.rowid = const Value.absent(),
+  }) : entity = Value(entity),
+       id = Value(id),
+       deletedAt = Value(deletedAt);
+  static Insertable<SyncDelete> custom({
+    Expression<String>? entity,
+    Expression<String>? id,
+    Expression<int>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entity != null) 'entity': entity,
+      if (id != null) 'id': id,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncDeletesCompanion copyWith({
+    Value<String>? entity,
+    Value<String>? id,
+    Value<int>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return SyncDeletesCompanion(
+      entity: entity ?? this.entity,
+      id: id ?? this.id,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entity.present) {
+      map['entity'] = Variable<String>(entity.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncDeletesCompanion(')
+          ..write('entity: $entity, ')
+          ..write('id: $id, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -18927,35 +17040,22 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WorkoutTemplateSetsTable workoutTemplateSets =
       $WorkoutTemplateSetsTable(this);
   late final $TasksTable tasks = $TasksTable(this);
-  late final $ExperimentsTable experiments = $ExperimentsTable(this);
   late final $BodyMetricsTable bodyMetrics = $BodyMetricsTable(this);
   late final $NotesTable notes = $NotesTable(this);
   late final $AccountsTable accounts = $AccountsTable(this);
   late final $ReceiptsTable receipts = $ReceiptsTable(this);
   late final $TransactionsTable transactions = $TransactionsTable(this);
   late final $FxRatesTable fxRates = $FxRatesTable(this);
-  late final $ExperimentCheckinsTable experimentCheckins =
-      $ExperimentCheckinsTable(this);
   late final $TagsTable tags = $TagsTable(this);
   late final $GoalsTable goals = $GoalsTable(this);
   late final $GoalProgressEntriesTable goalProgressEntries =
       $GoalProgressEntriesTable(this);
-  late final $TaskExperimentsTable taskExperiments = $TaskExperimentsTable(
-    this,
-  );
   late final $TaskGoalsTable taskGoals = $TaskGoalsTable(this);
-  late final $ExperimentGoalsTable experimentGoals = $ExperimentGoalsTable(
-    this,
-  );
   late final $TaskNotesTable taskNotes = $TaskNotesTable(this);
-  late final $ExperimentNotesTable experimentNotes = $ExperimentNotesTable(
-    this,
-  );
   late final $GoalNotesTable goalNotes = $GoalNotesTable(this);
   late final $GoalWorkoutsTable goalWorkouts = $GoalWorkoutsTable(this);
   late final $NoteWorkoutsTable noteWorkouts = $NoteWorkoutsTable(this);
   late final $TaskTagsTable taskTags = $TaskTagsTable(this);
-  late final $ExperimentTagsTable experimentTags = $ExperimentTagsTable(this);
   late final $GoalTagsTable goalTags = $GoalTagsTable(this);
   late final $NoteTagsTable noteTags = $NoteTagsTable(this);
   late final $NoteAudioTable noteAudio = $NoteAudioTable(this);
@@ -18964,6 +17064,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $IngredientCatalogTable ingredientCatalog =
       $IngredientCatalogTable(this);
+  late final $SyncDeletesTable syncDeletes = $SyncDeletesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -18985,32 +17086,27 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     workoutTemplateExercises,
     workoutTemplateSets,
     tasks,
-    experiments,
     bodyMetrics,
     notes,
     accounts,
     receipts,
     transactions,
     fxRates,
-    experimentCheckins,
     tags,
     goals,
     goalProgressEntries,
-    taskExperiments,
     taskGoals,
-    experimentGoals,
     taskNotes,
-    experimentNotes,
     goalNotes,
     goalWorkouts,
     noteWorkouts,
     taskTags,
-    experimentTags,
     goalTags,
     noteTags,
     noteAudio,
     exerciseCatalog,
     ingredientCatalog,
+    syncDeletes,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -19041,20 +17137,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('task_tags', kind: UpdateKind.delete)],
-    ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'tags',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('experiment_tags', kind: UpdateKind.delete)],
-    ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'experiments',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('experiment_tags', kind: UpdateKind.delete)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -26189,26 +24271,6 @@ final class $$TasksTableReferences
     extends BaseReferences<_$AppDatabase, $TasksTable, Task> {
   $$TasksTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static MultiTypedResultKey<$TaskExperimentsTable, List<TaskExperiment>>
-  _taskExperimentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.taskExperiments,
-    aliasName: $_aliasNameGenerator(db.tasks.id, db.taskExperiments.taskId),
-  );
-
-  $$TaskExperimentsTableProcessedTableManager get taskExperimentsRefs {
-    final manager = $$TaskExperimentsTableTableManager(
-      $_db,
-      $_db.taskExperiments,
-    ).filter((f) => f.taskId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _taskExperimentsRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
   static MultiTypedResultKey<$TaskGoalsTable, List<TaskGoal>>
   _taskGoalsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.taskGoals,
@@ -26362,31 +24424,6 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
     column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> taskExperimentsRefs(
-    Expression<bool> Function($$TaskExperimentsTableFilterComposer f) f,
-  ) {
-    final $$TaskExperimentsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.taskExperiments,
-      getReferencedColumn: (t) => t.taskId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TaskExperimentsTableFilterComposer(
-            $db: $db,
-            $table: $db.taskExperiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 
   Expression<bool> taskGoalsRefs(
     Expression<bool> Function($$TaskGoalsTableFilterComposer f) f,
@@ -26639,31 +24676,6 @@ class $$TasksTableAnnotationComposer
   GeneratedColumn<int> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
-  Expression<T> taskExperimentsRefs<T extends Object>(
-    Expression<T> Function($$TaskExperimentsTableAnnotationComposer a) f,
-  ) {
-    final $$TaskExperimentsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.taskExperiments,
-      getReferencedColumn: (t) => t.taskId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TaskExperimentsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.taskExperiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> taskGoalsRefs<T extends Object>(
     Expression<T> Function($$TaskGoalsTableAnnotationComposer a) f,
   ) {
@@ -26754,7 +24766,6 @@ class $$TasksTableTableManager
           (Task, $$TasksTableReferences),
           Task,
           PrefetchHooks Function({
-            bool taskExperimentsRefs,
             bool taskGoalsRefs,
             bool taskNotesRefs,
             bool taskTagsRefs,
@@ -26863,7 +24874,6 @@ class $$TasksTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
-                taskExperimentsRefs = false,
                 taskGoalsRefs = false,
                 taskNotesRefs = false,
                 taskTagsRefs = false,
@@ -26871,7 +24881,6 @@ class $$TasksTableTableManager
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
-                    if (taskExperimentsRefs) db.taskExperiments,
                     if (taskGoalsRefs) db.taskGoals,
                     if (taskNotesRefs) db.taskNotes,
                     if (taskTagsRefs) db.taskTags,
@@ -26879,27 +24888,6 @@ class $$TasksTableTableManager
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
                     return [
-                      if (taskExperimentsRefs)
-                        await $_getPrefetchedData<
-                          Task,
-                          $TasksTable,
-                          TaskExperiment
-                        >(
-                          currentTable: table,
-                          referencedTable: $$TasksTableReferences
-                              ._taskExperimentsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$TasksTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).taskExperimentsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.taskId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
                       if (taskGoalsRefs)
                         await $_getPrefetchedData<Task, $TasksTable, TaskGoal>(
                           currentTable: table,
@@ -26972,739 +24960,9 @@ typedef $$TasksTableProcessedTableManager =
       (Task, $$TasksTableReferences),
       Task,
       PrefetchHooks Function({
-        bool taskExperimentsRefs,
         bool taskGoalsRefs,
         bool taskNotesRefs,
         bool taskTagsRefs,
-      })
-    >;
-typedef $$ExperimentsTableCreateCompanionBuilder =
-    ExperimentsCompanion Function({
-      required String id,
-      required String name,
-      Value<String?> purpose,
-      required int startDate,
-      Value<int?> endDate,
-      Value<String> status,
-      Value<String?> categories,
-      Value<bool> reminderEnabled,
-      Value<int> reminderTimeMinutes,
-      required int createdAt,
-      Value<int?> deletedAt,
-      Value<int> rowid,
-    });
-typedef $$ExperimentsTableUpdateCompanionBuilder =
-    ExperimentsCompanion Function({
-      Value<String> id,
-      Value<String> name,
-      Value<String?> purpose,
-      Value<int> startDate,
-      Value<int?> endDate,
-      Value<String> status,
-      Value<String?> categories,
-      Value<bool> reminderEnabled,
-      Value<int> reminderTimeMinutes,
-      Value<int> createdAt,
-      Value<int?> deletedAt,
-      Value<int> rowid,
-    });
-
-final class $$ExperimentsTableReferences
-    extends BaseReferences<_$AppDatabase, $ExperimentsTable, Experiment> {
-  $$ExperimentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$TaskExperimentsTable, List<TaskExperiment>>
-  _taskExperimentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.taskExperiments,
-    aliasName: $_aliasNameGenerator(
-      db.experiments.id,
-      db.taskExperiments.experimentId,
-    ),
-  );
-
-  $$TaskExperimentsTableProcessedTableManager get taskExperimentsRefs {
-    final manager = $$TaskExperimentsTableTableManager(
-      $_db,
-      $_db.taskExperiments,
-    ).filter((f) => f.experimentId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _taskExperimentsRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$ExperimentGoalsTable, List<ExperimentGoal>>
-  _experimentGoalsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.experimentGoals,
-    aliasName: $_aliasNameGenerator(
-      db.experiments.id,
-      db.experimentGoals.experimentId,
-    ),
-  );
-
-  $$ExperimentGoalsTableProcessedTableManager get experimentGoalsRefs {
-    final manager = $$ExperimentGoalsTableTableManager(
-      $_db,
-      $_db.experimentGoals,
-    ).filter((f) => f.experimentId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _experimentGoalsRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$ExperimentNotesTable, List<ExperimentNote>>
-  _experimentNotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.experimentNotes,
-    aliasName: $_aliasNameGenerator(
-      db.experiments.id,
-      db.experimentNotes.experimentId,
-    ),
-  );
-
-  $$ExperimentNotesTableProcessedTableManager get experimentNotesRefs {
-    final manager = $$ExperimentNotesTableTableManager(
-      $_db,
-      $_db.experimentNotes,
-    ).filter((f) => f.experimentId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _experimentNotesRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$ExperimentTagsTable, List<ExperimentTag>>
-  _experimentTagsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.experimentTags,
-    aliasName: $_aliasNameGenerator(
-      db.experiments.id,
-      db.experimentTags.experimentId,
-    ),
-  );
-
-  $$ExperimentTagsTableProcessedTableManager get experimentTagsRefs {
-    final manager = $$ExperimentTagsTableTableManager(
-      $_db,
-      $_db.experimentTags,
-    ).filter((f) => f.experimentId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_experimentTagsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
-class $$ExperimentsTableFilterComposer
-    extends Composer<_$AppDatabase, $ExperimentsTable> {
-  $$ExperimentsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get purpose => $composableBuilder(
-    column: $table.purpose,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get startDate => $composableBuilder(
-    column: $table.startDate,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get endDate => $composableBuilder(
-    column: $table.endDate,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get categories => $composableBuilder(
-    column: $table.categories,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get reminderEnabled => $composableBuilder(
-    column: $table.reminderEnabled,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get reminderTimeMinutes => $composableBuilder(
-    column: $table.reminderTimeMinutes,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  Expression<bool> taskExperimentsRefs(
-    Expression<bool> Function($$TaskExperimentsTableFilterComposer f) f,
-  ) {
-    final $$TaskExperimentsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.taskExperiments,
-      getReferencedColumn: (t) => t.experimentId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TaskExperimentsTableFilterComposer(
-            $db: $db,
-            $table: $db.taskExperiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> experimentGoalsRefs(
-    Expression<bool> Function($$ExperimentGoalsTableFilterComposer f) f,
-  ) {
-    final $$ExperimentGoalsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentGoals,
-      getReferencedColumn: (t) => t.experimentId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentGoalsTableFilterComposer(
-            $db: $db,
-            $table: $db.experimentGoals,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> experimentNotesRefs(
-    Expression<bool> Function($$ExperimentNotesTableFilterComposer f) f,
-  ) {
-    final $$ExperimentNotesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentNotes,
-      getReferencedColumn: (t) => t.experimentId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentNotesTableFilterComposer(
-            $db: $db,
-            $table: $db.experimentNotes,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> experimentTagsRefs(
-    Expression<bool> Function($$ExperimentTagsTableFilterComposer f) f,
-  ) {
-    final $$ExperimentTagsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentTags,
-      getReferencedColumn: (t) => t.experimentId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentTagsTableFilterComposer(
-            $db: $db,
-            $table: $db.experimentTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$ExperimentsTableOrderingComposer
-    extends Composer<_$AppDatabase, $ExperimentsTable> {
-  $$ExperimentsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get purpose => $composableBuilder(
-    column: $table.purpose,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get startDate => $composableBuilder(
-    column: $table.startDate,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get endDate => $composableBuilder(
-    column: $table.endDate,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get status => $composableBuilder(
-    column: $table.status,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get categories => $composableBuilder(
-    column: $table.categories,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get reminderEnabled => $composableBuilder(
-    column: $table.reminderEnabled,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get reminderTimeMinutes => $composableBuilder(
-    column: $table.reminderTimeMinutes,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$ExperimentsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ExperimentsTable> {
-  $$ExperimentsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get purpose =>
-      $composableBuilder(column: $table.purpose, builder: (column) => column);
-
-  GeneratedColumn<int> get startDate =>
-      $composableBuilder(column: $table.startDate, builder: (column) => column);
-
-  GeneratedColumn<int> get endDate =>
-      $composableBuilder(column: $table.endDate, builder: (column) => column);
-
-  GeneratedColumn<String> get status =>
-      $composableBuilder(column: $table.status, builder: (column) => column);
-
-  GeneratedColumn<String> get categories => $composableBuilder(
-    column: $table.categories,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get reminderEnabled => $composableBuilder(
-    column: $table.reminderEnabled,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get reminderTimeMinutes => $composableBuilder(
-    column: $table.reminderTimeMinutes,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<int> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-
-  Expression<T> taskExperimentsRefs<T extends Object>(
-    Expression<T> Function($$TaskExperimentsTableAnnotationComposer a) f,
-  ) {
-    final $$TaskExperimentsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.taskExperiments,
-      getReferencedColumn: (t) => t.experimentId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TaskExperimentsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.taskExperiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> experimentGoalsRefs<T extends Object>(
-    Expression<T> Function($$ExperimentGoalsTableAnnotationComposer a) f,
-  ) {
-    final $$ExperimentGoalsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentGoals,
-      getReferencedColumn: (t) => t.experimentId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentGoalsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experimentGoals,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> experimentNotesRefs<T extends Object>(
-    Expression<T> Function($$ExperimentNotesTableAnnotationComposer a) f,
-  ) {
-    final $$ExperimentNotesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentNotes,
-      getReferencedColumn: (t) => t.experimentId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentNotesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experimentNotes,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> experimentTagsRefs<T extends Object>(
-    Expression<T> Function($$ExperimentTagsTableAnnotationComposer a) f,
-  ) {
-    final $$ExperimentTagsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentTags,
-      getReferencedColumn: (t) => t.experimentId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentTagsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experimentTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-}
-
-class $$ExperimentsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ExperimentsTable,
-          Experiment,
-          $$ExperimentsTableFilterComposer,
-          $$ExperimentsTableOrderingComposer,
-          $$ExperimentsTableAnnotationComposer,
-          $$ExperimentsTableCreateCompanionBuilder,
-          $$ExperimentsTableUpdateCompanionBuilder,
-          (Experiment, $$ExperimentsTableReferences),
-          Experiment,
-          PrefetchHooks Function({
-            bool taskExperimentsRefs,
-            bool experimentGoalsRefs,
-            bool experimentNotesRefs,
-            bool experimentTagsRefs,
-          })
-        > {
-  $$ExperimentsTableTableManager(_$AppDatabase db, $ExperimentsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ExperimentsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ExperimentsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ExperimentsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<String?> purpose = const Value.absent(),
-                Value<int> startDate = const Value.absent(),
-                Value<int?> endDate = const Value.absent(),
-                Value<String> status = const Value.absent(),
-                Value<String?> categories = const Value.absent(),
-                Value<bool> reminderEnabled = const Value.absent(),
-                Value<int> reminderTimeMinutes = const Value.absent(),
-                Value<int> createdAt = const Value.absent(),
-                Value<int?> deletedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentsCompanion(
-                id: id,
-                name: name,
-                purpose: purpose,
-                startDate: startDate,
-                endDate: endDate,
-                status: status,
-                categories: categories,
-                reminderEnabled: reminderEnabled,
-                reminderTimeMinutes: reminderTimeMinutes,
-                createdAt: createdAt,
-                deletedAt: deletedAt,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String name,
-                Value<String?> purpose = const Value.absent(),
-                required int startDate,
-                Value<int?> endDate = const Value.absent(),
-                Value<String> status = const Value.absent(),
-                Value<String?> categories = const Value.absent(),
-                Value<bool> reminderEnabled = const Value.absent(),
-                Value<int> reminderTimeMinutes = const Value.absent(),
-                required int createdAt,
-                Value<int?> deletedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentsCompanion.insert(
-                id: id,
-                name: name,
-                purpose: purpose,
-                startDate: startDate,
-                endDate: endDate,
-                status: status,
-                categories: categories,
-                reminderEnabled: reminderEnabled,
-                reminderTimeMinutes: reminderTimeMinutes,
-                createdAt: createdAt,
-                deletedAt: deletedAt,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ExperimentsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({
-                taskExperimentsRefs = false,
-                experimentGoalsRefs = false,
-                experimentNotesRefs = false,
-                experimentTagsRefs = false,
-              }) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (taskExperimentsRefs) db.taskExperiments,
-                    if (experimentGoalsRefs) db.experimentGoals,
-                    if (experimentNotesRefs) db.experimentNotes,
-                    if (experimentTagsRefs) db.experimentTags,
-                  ],
-                  addJoins: null,
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (taskExperimentsRefs)
-                        await $_getPrefetchedData<
-                          Experiment,
-                          $ExperimentsTable,
-                          TaskExperiment
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ExperimentsTableReferences
-                              ._taskExperimentsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ExperimentsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).taskExperimentsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.experimentId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (experimentGoalsRefs)
-                        await $_getPrefetchedData<
-                          Experiment,
-                          $ExperimentsTable,
-                          ExperimentGoal
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ExperimentsTableReferences
-                              ._experimentGoalsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ExperimentsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).experimentGoalsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.experimentId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (experimentNotesRefs)
-                        await $_getPrefetchedData<
-                          Experiment,
-                          $ExperimentsTable,
-                          ExperimentNote
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ExperimentsTableReferences
-                              ._experimentNotesRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ExperimentsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).experimentNotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.experimentId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (experimentTagsRefs)
-                        await $_getPrefetchedData<
-                          Experiment,
-                          $ExperimentsTable,
-                          ExperimentTag
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ExperimentsTableReferences
-                              ._experimentTagsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ExperimentsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).experimentTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.experimentId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$ExperimentsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ExperimentsTable,
-      Experiment,
-      $$ExperimentsTableFilterComposer,
-      $$ExperimentsTableOrderingComposer,
-      $$ExperimentsTableAnnotationComposer,
-      $$ExperimentsTableCreateCompanionBuilder,
-      $$ExperimentsTableUpdateCompanionBuilder,
-      (Experiment, $$ExperimentsTableReferences),
-      Experiment,
-      PrefetchHooks Function({
-        bool taskExperimentsRefs,
-        bool experimentGoalsRefs,
-        bool experimentNotesRefs,
-        bool experimentTagsRefs,
       })
     >;
 typedef $$BodyMetricsTableCreateCompanionBuilder =
@@ -27969,26 +25227,6 @@ final class $$NotesTableReferences
     );
   }
 
-  static MultiTypedResultKey<$ExperimentNotesTable, List<ExperimentNote>>
-  _experimentNotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.experimentNotes,
-    aliasName: $_aliasNameGenerator(db.notes.id, db.experimentNotes.noteId),
-  );
-
-  $$ExperimentNotesTableProcessedTableManager get experimentNotesRefs {
-    final manager = $$ExperimentNotesTableTableManager(
-      $_db,
-      $_db.experimentNotes,
-    ).filter((f) => f.noteId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _experimentNotesRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
   static MultiTypedResultKey<$GoalNotesTable, List<GoalNote>>
   _goalNotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.goalNotes,
@@ -28117,31 +25355,6 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
           }) => $$TaskNotesTableFilterComposer(
             $db: $db,
             $table: $db.taskNotes,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> experimentNotesRefs(
-    Expression<bool> Function($$ExperimentNotesTableFilterComposer f) f,
-  ) {
-    final $$ExperimentNotesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentNotes,
-      getReferencedColumn: (t) => t.noteId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentNotesTableFilterComposer(
-            $db: $db,
-            $table: $db.experimentNotes,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -28344,31 +25557,6 @@ class $$NotesTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> experimentNotesRefs<T extends Object>(
-    Expression<T> Function($$ExperimentNotesTableAnnotationComposer a) f,
-  ) {
-    final $$ExperimentNotesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentNotes,
-      getReferencedColumn: (t) => t.noteId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentNotesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experimentNotes,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> goalNotesRefs<T extends Object>(
     Expression<T> Function($$GoalNotesTableAnnotationComposer a) f,
   ) {
@@ -28485,7 +25673,6 @@ class $$NotesTableTableManager
           Note,
           PrefetchHooks Function({
             bool taskNotesRefs,
-            bool experimentNotesRefs,
             bool goalNotesRefs,
             bool noteWorkoutsRefs,
             bool noteTagsRefs,
@@ -28548,7 +25735,6 @@ class $$NotesTableTableManager
           prefetchHooksCallback:
               ({
                 taskNotesRefs = false,
-                experimentNotesRefs = false,
                 goalNotesRefs = false,
                 noteWorkoutsRefs = false,
                 noteTagsRefs = false,
@@ -28558,7 +25744,6 @@ class $$NotesTableTableManager
                   db: db,
                   explicitlyWatchedTables: [
                     if (taskNotesRefs) db.taskNotes,
-                    if (experimentNotesRefs) db.experimentNotes,
                     if (goalNotesRefs) db.goalNotes,
                     if (noteWorkoutsRefs) db.noteWorkouts,
                     if (noteTagsRefs) db.noteTags,
@@ -28578,27 +25763,6 @@ class $$NotesTableTableManager
                                 table,
                                 p0,
                               ).taskNotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.noteId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (experimentNotesRefs)
-                        await $_getPrefetchedData<
-                          Note,
-                          $NotesTable,
-                          ExperimentNote
-                        >(
-                          currentTable: table,
-                          referencedTable: $$NotesTableReferences
-                              ._experimentNotesRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$NotesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).experimentNotesRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.noteId == item.id,
@@ -28703,7 +25867,6 @@ typedef $$NotesTableProcessedTableManager =
       Note,
       PrefetchHooks Function({
         bool taskNotesRefs,
-        bool experimentNotesRefs,
         bool goalNotesRefs,
         bool noteWorkoutsRefs,
         bool noteTagsRefs,
@@ -30457,240 +27620,6 @@ typedef $$FxRatesTableProcessedTableManager =
       FxRate,
       PrefetchHooks Function()
     >;
-typedef $$ExperimentCheckinsTableCreateCompanionBuilder =
-    ExperimentCheckinsCompanion Function({
-      required String id,
-      required String experimentId,
-      required int day,
-      required int rating,
-      Value<String?> note,
-      required int createdAt,
-      Value<int> rowid,
-    });
-typedef $$ExperimentCheckinsTableUpdateCompanionBuilder =
-    ExperimentCheckinsCompanion Function({
-      Value<String> id,
-      Value<String> experimentId,
-      Value<int> day,
-      Value<int> rating,
-      Value<String?> note,
-      Value<int> createdAt,
-      Value<int> rowid,
-    });
-
-class $$ExperimentCheckinsTableFilterComposer
-    extends Composer<_$AppDatabase, $ExperimentCheckinsTable> {
-  $$ExperimentCheckinsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get experimentId => $composableBuilder(
-    column: $table.experimentId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get day => $composableBuilder(
-    column: $table.day,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get rating => $composableBuilder(
-    column: $table.rating,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get note => $composableBuilder(
-    column: $table.note,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$ExperimentCheckinsTableOrderingComposer
-    extends Composer<_$AppDatabase, $ExperimentCheckinsTable> {
-  $$ExperimentCheckinsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get experimentId => $composableBuilder(
-    column: $table.experimentId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get day => $composableBuilder(
-    column: $table.day,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get rating => $composableBuilder(
-    column: $table.rating,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get note => $composableBuilder(
-    column: $table.note,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$ExperimentCheckinsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ExperimentCheckinsTable> {
-  $$ExperimentCheckinsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get experimentId => $composableBuilder(
-    column: $table.experimentId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get day =>
-      $composableBuilder(column: $table.day, builder: (column) => column);
-
-  GeneratedColumn<int> get rating =>
-      $composableBuilder(column: $table.rating, builder: (column) => column);
-
-  GeneratedColumn<String> get note =>
-      $composableBuilder(column: $table.note, builder: (column) => column);
-
-  GeneratedColumn<int> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-}
-
-class $$ExperimentCheckinsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ExperimentCheckinsTable,
-          ExperimentCheckin,
-          $$ExperimentCheckinsTableFilterComposer,
-          $$ExperimentCheckinsTableOrderingComposer,
-          $$ExperimentCheckinsTableAnnotationComposer,
-          $$ExperimentCheckinsTableCreateCompanionBuilder,
-          $$ExperimentCheckinsTableUpdateCompanionBuilder,
-          (
-            ExperimentCheckin,
-            BaseReferences<
-              _$AppDatabase,
-              $ExperimentCheckinsTable,
-              ExperimentCheckin
-            >,
-          ),
-          ExperimentCheckin,
-          PrefetchHooks Function()
-        > {
-  $$ExperimentCheckinsTableTableManager(
-    _$AppDatabase db,
-    $ExperimentCheckinsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ExperimentCheckinsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ExperimentCheckinsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ExperimentCheckinsTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> experimentId = const Value.absent(),
-                Value<int> day = const Value.absent(),
-                Value<int> rating = const Value.absent(),
-                Value<String?> note = const Value.absent(),
-                Value<int> createdAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentCheckinsCompanion(
-                id: id,
-                experimentId: experimentId,
-                day: day,
-                rating: rating,
-                note: note,
-                createdAt: createdAt,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String experimentId,
-                required int day,
-                required int rating,
-                Value<String?> note = const Value.absent(),
-                required int createdAt,
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentCheckinsCompanion.insert(
-                id: id,
-                experimentId: experimentId,
-                day: day,
-                rating: rating,
-                note: note,
-                createdAt: createdAt,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$ExperimentCheckinsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ExperimentCheckinsTable,
-      ExperimentCheckin,
-      $$ExperimentCheckinsTableFilterComposer,
-      $$ExperimentCheckinsTableOrderingComposer,
-      $$ExperimentCheckinsTableAnnotationComposer,
-      $$ExperimentCheckinsTableCreateCompanionBuilder,
-      $$ExperimentCheckinsTableUpdateCompanionBuilder,
-      (
-        ExperimentCheckin,
-        BaseReferences<
-          _$AppDatabase,
-          $ExperimentCheckinsTable,
-          ExperimentCheckin
-        >,
-      ),
-      ExperimentCheckin,
-      PrefetchHooks Function()
-    >;
 typedef $$TagsTableCreateCompanionBuilder =
     TagsCompanion Function({
       required String id,
@@ -30730,24 +27659,6 @@ final class $$TagsTableReferences
     ).filter((f) => f.tagId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_taskTagsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$ExperimentTagsTable, List<ExperimentTag>>
-  _experimentTagsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.experimentTags,
-    aliasName: $_aliasNameGenerator(db.tags.id, db.experimentTags.tagId),
-  );
-
-  $$ExperimentTagsTableProcessedTableManager get experimentTagsRefs {
-    final manager = $$ExperimentTagsTableTableManager(
-      $_db,
-      $_db.experimentTags,
-    ).filter((f) => f.tagId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_experimentTagsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -30846,31 +27757,6 @@ class $$TagsTableFilterComposer extends Composer<_$AppDatabase, $TagsTable> {
           }) => $$TaskTagsTableFilterComposer(
             $db: $db,
             $table: $db.taskTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> experimentTagsRefs(
-    Expression<bool> Function($$ExperimentTagsTableFilterComposer f) f,
-  ) {
-    final $$ExperimentTagsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentTags,
-      getReferencedColumn: (t) => t.tagId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentTagsTableFilterComposer(
-            $db: $db,
-            $table: $db.experimentTags,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -31022,31 +27908,6 @@ class $$TagsTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> experimentTagsRefs<T extends Object>(
-    Expression<T> Function($$ExperimentTagsTableAnnotationComposer a) f,
-  ) {
-    final $$ExperimentTagsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentTags,
-      getReferencedColumn: (t) => t.tagId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentTagsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experimentTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> goalTagsRefs<T extends Object>(
     Expression<T> Function($$GoalTagsTableAnnotationComposer a) f,
   ) {
@@ -31113,7 +27974,6 @@ class $$TagsTableTableManager
           Tag,
           PrefetchHooks Function({
             bool taskTagsRefs,
-            bool experimentTagsRefs,
             bool goalTagsRefs,
             bool noteTagsRefs,
           })
@@ -31174,7 +28034,6 @@ class $$TagsTableTableManager
           prefetchHooksCallback:
               ({
                 taskTagsRefs = false,
-                experimentTagsRefs = false,
                 goalTagsRefs = false,
                 noteTagsRefs = false,
               }) {
@@ -31182,7 +28041,6 @@ class $$TagsTableTableManager
                   db: db,
                   explicitlyWatchedTables: [
                     if (taskTagsRefs) db.taskTags,
-                    if (experimentTagsRefs) db.experimentTags,
                     if (goalTagsRefs) db.goalTags,
                     if (noteTagsRefs) db.noteTags,
                   ],
@@ -31196,26 +28054,6 @@ class $$TagsTableTableManager
                               ._taskTagsRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$TagsTableReferences(db, table, p0).taskTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tagId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (experimentTagsRefs)
-                        await $_getPrefetchedData<
-                          Tag,
-                          $TagsTable,
-                          ExperimentTag
-                        >(
-                          currentTable: table,
-                          referencedTable: $$TagsTableReferences
-                              ._experimentTagsRefsTable(db),
-                          managerFromTypedResult: (p0) => $$TagsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).experimentTagsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.tagId == item.id,
@@ -31270,7 +28108,6 @@ typedef $$TagsTableProcessedTableManager =
       Tag,
       PrefetchHooks Function({
         bool taskTagsRefs,
-        bool experimentTagsRefs,
         bool goalTagsRefs,
         bool noteTagsRefs,
       })
@@ -31331,26 +28168,6 @@ final class $$GoalsTableReferences
     ).filter((f) => f.goalId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_taskGoalsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$ExperimentGoalsTable, List<ExperimentGoal>>
-  _experimentGoalsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.experimentGoals,
-    aliasName: $_aliasNameGenerator(db.goals.id, db.experimentGoals.goalId),
-  );
-
-  $$ExperimentGoalsTableProcessedTableManager get experimentGoalsRefs {
-    final manager = $$ExperimentGoalsTableTableManager(
-      $_db,
-      $_db.experimentGoals,
-    ).filter((f) => f.goalId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _experimentGoalsRefsTable($_db),
-    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -31511,31 +28328,6 @@ class $$GoalsTableFilterComposer extends Composer<_$AppDatabase, $GoalsTable> {
           }) => $$TaskGoalsTableFilterComposer(
             $db: $db,
             $table: $db.taskGoals,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> experimentGoalsRefs(
-    Expression<bool> Function($$ExperimentGoalsTableFilterComposer f) f,
-  ) {
-    final $$ExperimentGoalsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentGoals,
-      getReferencedColumn: (t) => t.goalId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentGoalsTableFilterComposer(
-            $db: $db,
-            $table: $db.experimentGoals,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -31797,31 +28589,6 @@ class $$GoalsTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> experimentGoalsRefs<T extends Object>(
-    Expression<T> Function($$ExperimentGoalsTableAnnotationComposer a) f,
-  ) {
-    final $$ExperimentGoalsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.experimentGoals,
-      getReferencedColumn: (t) => t.goalId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentGoalsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experimentGoals,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> goalNotesRefs<T extends Object>(
     Expression<T> Function($$GoalNotesTableAnnotationComposer a) f,
   ) {
@@ -31913,7 +28680,6 @@ class $$GoalsTableTableManager
           Goal,
           PrefetchHooks Function({
             bool taskGoalsRefs,
-            bool experimentGoalsRefs,
             bool goalNotesRefs,
             bool goalWorkoutsRefs,
             bool goalTagsRefs,
@@ -32011,7 +28777,6 @@ class $$GoalsTableTableManager
           prefetchHooksCallback:
               ({
                 taskGoalsRefs = false,
-                experimentGoalsRefs = false,
                 goalNotesRefs = false,
                 goalWorkoutsRefs = false,
                 goalTagsRefs = false,
@@ -32020,7 +28785,6 @@ class $$GoalsTableTableManager
                   db: db,
                   explicitlyWatchedTables: [
                     if (taskGoalsRefs) db.taskGoals,
-                    if (experimentGoalsRefs) db.experimentGoals,
                     if (goalNotesRefs) db.goalNotes,
                     if (goalWorkoutsRefs) db.goalWorkouts,
                     if (goalTagsRefs) db.goalTags,
@@ -32039,27 +28803,6 @@ class $$GoalsTableTableManager
                                 table,
                                 p0,
                               ).taskGoalsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.goalId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (experimentGoalsRefs)
-                        await $_getPrefetchedData<
-                          Goal,
-                          $GoalsTable,
-                          ExperimentGoal
-                        >(
-                          currentTable: table,
-                          referencedTable: $$GoalsTableReferences
-                              ._experimentGoalsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$GoalsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).experimentGoalsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.goalId == item.id,
@@ -32143,7 +28886,6 @@ typedef $$GoalsTableProcessedTableManager =
       Goal,
       PrefetchHooks Function({
         bool taskGoalsRefs,
-        bool experimentGoalsRefs,
         bool goalNotesRefs,
         bool goalWorkoutsRefs,
         bool goalTagsRefs,
@@ -32385,388 +29127,6 @@ typedef $$GoalProgressEntriesTableProcessedTableManager =
       ),
       GoalProgressEntry,
       PrefetchHooks Function()
-    >;
-typedef $$TaskExperimentsTableCreateCompanionBuilder =
-    TaskExperimentsCompanion Function({
-      required String taskId,
-      required String experimentId,
-      Value<String?> label,
-      Value<int> rowid,
-    });
-typedef $$TaskExperimentsTableUpdateCompanionBuilder =
-    TaskExperimentsCompanion Function({
-      Value<String> taskId,
-      Value<String> experimentId,
-      Value<String?> label,
-      Value<int> rowid,
-    });
-
-final class $$TaskExperimentsTableReferences
-    extends
-        BaseReferences<_$AppDatabase, $TaskExperimentsTable, TaskExperiment> {
-  $$TaskExperimentsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $TasksTable _taskIdTable(_$AppDatabase db) => db.tasks.createAlias(
-    $_aliasNameGenerator(db.taskExperiments.taskId, db.tasks.id),
-  );
-
-  $$TasksTableProcessedTableManager get taskId {
-    final $_column = $_itemColumn<String>('task_id')!;
-
-    final manager = $$TasksTableTableManager(
-      $_db,
-      $_db.tasks,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_taskIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $ExperimentsTable _experimentIdTable(_$AppDatabase db) =>
-      db.experiments.createAlias(
-        $_aliasNameGenerator(
-          db.taskExperiments.experimentId,
-          db.experiments.id,
-        ),
-      );
-
-  $$ExperimentsTableProcessedTableManager get experimentId {
-    final $_column = $_itemColumn<String>('experiment_id')!;
-
-    final manager = $$ExperimentsTableTableManager(
-      $_db,
-      $_db.experiments,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_experimentIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$TaskExperimentsTableFilterComposer
-    extends Composer<_$AppDatabase, $TaskExperimentsTable> {
-  $$TaskExperimentsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get label => $composableBuilder(
-    column: $table.label,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$TasksTableFilterComposer get taskId {
-    final $$TasksTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.taskId,
-      referencedTable: $db.tasks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TasksTableFilterComposer(
-            $db: $db,
-            $table: $db.tasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ExperimentsTableFilterComposer get experimentId {
-    final $$ExperimentsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableFilterComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$TaskExperimentsTableOrderingComposer
-    extends Composer<_$AppDatabase, $TaskExperimentsTable> {
-  $$TaskExperimentsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get label => $composableBuilder(
-    column: $table.label,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$TasksTableOrderingComposer get taskId {
-    final $$TasksTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.taskId,
-      referencedTable: $db.tasks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TasksTableOrderingComposer(
-            $db: $db,
-            $table: $db.tasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ExperimentsTableOrderingComposer get experimentId {
-    final $$ExperimentsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableOrderingComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$TaskExperimentsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $TaskExperimentsTable> {
-  $$TaskExperimentsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get label =>
-      $composableBuilder(column: $table.label, builder: (column) => column);
-
-  $$TasksTableAnnotationComposer get taskId {
-    final $$TasksTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.taskId,
-      referencedTable: $db.tasks,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TasksTableAnnotationComposer(
-            $db: $db,
-            $table: $db.tasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ExperimentsTableAnnotationComposer get experimentId {
-    final $$ExperimentsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$TaskExperimentsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $TaskExperimentsTable,
-          TaskExperiment,
-          $$TaskExperimentsTableFilterComposer,
-          $$TaskExperimentsTableOrderingComposer,
-          $$TaskExperimentsTableAnnotationComposer,
-          $$TaskExperimentsTableCreateCompanionBuilder,
-          $$TaskExperimentsTableUpdateCompanionBuilder,
-          (TaskExperiment, $$TaskExperimentsTableReferences),
-          TaskExperiment,
-          PrefetchHooks Function({bool taskId, bool experimentId})
-        > {
-  $$TaskExperimentsTableTableManager(
-    _$AppDatabase db,
-    $TaskExperimentsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$TaskExperimentsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$TaskExperimentsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$TaskExperimentsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> taskId = const Value.absent(),
-                Value<String> experimentId = const Value.absent(),
-                Value<String?> label = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => TaskExperimentsCompanion(
-                taskId: taskId,
-                experimentId: experimentId,
-                label: label,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String taskId,
-                required String experimentId,
-                Value<String?> label = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => TaskExperimentsCompanion.insert(
-                taskId: taskId,
-                experimentId: experimentId,
-                label: label,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$TaskExperimentsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({taskId = false, experimentId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (taskId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.taskId,
-                                referencedTable:
-                                    $$TaskExperimentsTableReferences
-                                        ._taskIdTable(db),
-                                referencedColumn:
-                                    $$TaskExperimentsTableReferences
-                                        ._taskIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-                    if (experimentId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.experimentId,
-                                referencedTable:
-                                    $$TaskExperimentsTableReferences
-                                        ._experimentIdTable(db),
-                                referencedColumn:
-                                    $$TaskExperimentsTableReferences
-                                        ._experimentIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$TaskExperimentsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $TaskExperimentsTable,
-      TaskExperiment,
-      $$TaskExperimentsTableFilterComposer,
-      $$TaskExperimentsTableOrderingComposer,
-      $$TaskExperimentsTableAnnotationComposer,
-      $$TaskExperimentsTableCreateCompanionBuilder,
-      $$TaskExperimentsTableUpdateCompanionBuilder,
-      (TaskExperiment, $$TaskExperimentsTableReferences),
-      TaskExperiment,
-      PrefetchHooks Function({bool taskId, bool experimentId})
     >;
 typedef $$TaskGoalsTableCreateCompanionBuilder =
     TaskGoalsCompanion Function({
@@ -33135,388 +29495,6 @@ typedef $$TaskGoalsTableProcessedTableManager =
       TaskGoal,
       PrefetchHooks Function({bool taskId, bool goalId})
     >;
-typedef $$ExperimentGoalsTableCreateCompanionBuilder =
-    ExperimentGoalsCompanion Function({
-      required String experimentId,
-      required String goalId,
-      Value<String?> label,
-      Value<int> rowid,
-    });
-typedef $$ExperimentGoalsTableUpdateCompanionBuilder =
-    ExperimentGoalsCompanion Function({
-      Value<String> experimentId,
-      Value<String> goalId,
-      Value<String?> label,
-      Value<int> rowid,
-    });
-
-final class $$ExperimentGoalsTableReferences
-    extends
-        BaseReferences<_$AppDatabase, $ExperimentGoalsTable, ExperimentGoal> {
-  $$ExperimentGoalsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $ExperimentsTable _experimentIdTable(_$AppDatabase db) =>
-      db.experiments.createAlias(
-        $_aliasNameGenerator(
-          db.experimentGoals.experimentId,
-          db.experiments.id,
-        ),
-      );
-
-  $$ExperimentsTableProcessedTableManager get experimentId {
-    final $_column = $_itemColumn<String>('experiment_id')!;
-
-    final manager = $$ExperimentsTableTableManager(
-      $_db,
-      $_db.experiments,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_experimentIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $GoalsTable _goalIdTable(_$AppDatabase db) => db.goals.createAlias(
-    $_aliasNameGenerator(db.experimentGoals.goalId, db.goals.id),
-  );
-
-  $$GoalsTableProcessedTableManager get goalId {
-    final $_column = $_itemColumn<String>('goal_id')!;
-
-    final manager = $$GoalsTableTableManager(
-      $_db,
-      $_db.goals,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_goalIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$ExperimentGoalsTableFilterComposer
-    extends Composer<_$AppDatabase, $ExperimentGoalsTable> {
-  $$ExperimentGoalsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get label => $composableBuilder(
-    column: $table.label,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$ExperimentsTableFilterComposer get experimentId {
-    final $$ExperimentsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableFilterComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$GoalsTableFilterComposer get goalId {
-    final $$GoalsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.goalId,
-      referencedTable: $db.goals,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GoalsTableFilterComposer(
-            $db: $db,
-            $table: $db.goals,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ExperimentGoalsTableOrderingComposer
-    extends Composer<_$AppDatabase, $ExperimentGoalsTable> {
-  $$ExperimentGoalsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get label => $composableBuilder(
-    column: $table.label,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$ExperimentsTableOrderingComposer get experimentId {
-    final $$ExperimentsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableOrderingComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$GoalsTableOrderingComposer get goalId {
-    final $$GoalsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.goalId,
-      referencedTable: $db.goals,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GoalsTableOrderingComposer(
-            $db: $db,
-            $table: $db.goals,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ExperimentGoalsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ExperimentGoalsTable> {
-  $$ExperimentGoalsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get label =>
-      $composableBuilder(column: $table.label, builder: (column) => column);
-
-  $$ExperimentsTableAnnotationComposer get experimentId {
-    final $$ExperimentsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$GoalsTableAnnotationComposer get goalId {
-    final $$GoalsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.goalId,
-      referencedTable: $db.goals,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$GoalsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.goals,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ExperimentGoalsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ExperimentGoalsTable,
-          ExperimentGoal,
-          $$ExperimentGoalsTableFilterComposer,
-          $$ExperimentGoalsTableOrderingComposer,
-          $$ExperimentGoalsTableAnnotationComposer,
-          $$ExperimentGoalsTableCreateCompanionBuilder,
-          $$ExperimentGoalsTableUpdateCompanionBuilder,
-          (ExperimentGoal, $$ExperimentGoalsTableReferences),
-          ExperimentGoal,
-          PrefetchHooks Function({bool experimentId, bool goalId})
-        > {
-  $$ExperimentGoalsTableTableManager(
-    _$AppDatabase db,
-    $ExperimentGoalsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ExperimentGoalsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ExperimentGoalsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ExperimentGoalsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> experimentId = const Value.absent(),
-                Value<String> goalId = const Value.absent(),
-                Value<String?> label = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentGoalsCompanion(
-                experimentId: experimentId,
-                goalId: goalId,
-                label: label,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String experimentId,
-                required String goalId,
-                Value<String?> label = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentGoalsCompanion.insert(
-                experimentId: experimentId,
-                goalId: goalId,
-                label: label,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ExperimentGoalsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({experimentId = false, goalId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (experimentId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.experimentId,
-                                referencedTable:
-                                    $$ExperimentGoalsTableReferences
-                                        ._experimentIdTable(db),
-                                referencedColumn:
-                                    $$ExperimentGoalsTableReferences
-                                        ._experimentIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-                    if (goalId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.goalId,
-                                referencedTable:
-                                    $$ExperimentGoalsTableReferences
-                                        ._goalIdTable(db),
-                                referencedColumn:
-                                    $$ExperimentGoalsTableReferences
-                                        ._goalIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$ExperimentGoalsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ExperimentGoalsTable,
-      ExperimentGoal,
-      $$ExperimentGoalsTableFilterComposer,
-      $$ExperimentGoalsTableOrderingComposer,
-      $$ExperimentGoalsTableAnnotationComposer,
-      $$ExperimentGoalsTableCreateCompanionBuilder,
-      $$ExperimentGoalsTableUpdateCompanionBuilder,
-      (ExperimentGoal, $$ExperimentGoalsTableReferences),
-      ExperimentGoal,
-      PrefetchHooks Function({bool experimentId, bool goalId})
-    >;
 typedef $$TaskNotesTableCreateCompanionBuilder =
     TaskNotesCompanion Function({
       required String taskId,
@@ -33883,388 +29861,6 @@ typedef $$TaskNotesTableProcessedTableManager =
       (TaskNote, $$TaskNotesTableReferences),
       TaskNote,
       PrefetchHooks Function({bool taskId, bool noteId})
-    >;
-typedef $$ExperimentNotesTableCreateCompanionBuilder =
-    ExperimentNotesCompanion Function({
-      required String experimentId,
-      required String noteId,
-      Value<String?> label,
-      Value<int> rowid,
-    });
-typedef $$ExperimentNotesTableUpdateCompanionBuilder =
-    ExperimentNotesCompanion Function({
-      Value<String> experimentId,
-      Value<String> noteId,
-      Value<String?> label,
-      Value<int> rowid,
-    });
-
-final class $$ExperimentNotesTableReferences
-    extends
-        BaseReferences<_$AppDatabase, $ExperimentNotesTable, ExperimentNote> {
-  $$ExperimentNotesTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $ExperimentsTable _experimentIdTable(_$AppDatabase db) =>
-      db.experiments.createAlias(
-        $_aliasNameGenerator(
-          db.experimentNotes.experimentId,
-          db.experiments.id,
-        ),
-      );
-
-  $$ExperimentsTableProcessedTableManager get experimentId {
-    final $_column = $_itemColumn<String>('experiment_id')!;
-
-    final manager = $$ExperimentsTableTableManager(
-      $_db,
-      $_db.experiments,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_experimentIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $NotesTable _noteIdTable(_$AppDatabase db) => db.notes.createAlias(
-    $_aliasNameGenerator(db.experimentNotes.noteId, db.notes.id),
-  );
-
-  $$NotesTableProcessedTableManager get noteId {
-    final $_column = $_itemColumn<String>('note_id')!;
-
-    final manager = $$NotesTableTableManager(
-      $_db,
-      $_db.notes,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_noteIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$ExperimentNotesTableFilterComposer
-    extends Composer<_$AppDatabase, $ExperimentNotesTable> {
-  $$ExperimentNotesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get label => $composableBuilder(
-    column: $table.label,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$ExperimentsTableFilterComposer get experimentId {
-    final $$ExperimentsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableFilterComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$NotesTableFilterComposer get noteId {
-    final $$NotesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.noteId,
-      referencedTable: $db.notes,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$NotesTableFilterComposer(
-            $db: $db,
-            $table: $db.notes,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ExperimentNotesTableOrderingComposer
-    extends Composer<_$AppDatabase, $ExperimentNotesTable> {
-  $$ExperimentNotesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get label => $composableBuilder(
-    column: $table.label,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$ExperimentsTableOrderingComposer get experimentId {
-    final $$ExperimentsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableOrderingComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$NotesTableOrderingComposer get noteId {
-    final $$NotesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.noteId,
-      referencedTable: $db.notes,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$NotesTableOrderingComposer(
-            $db: $db,
-            $table: $db.notes,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ExperimentNotesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ExperimentNotesTable> {
-  $$ExperimentNotesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get label =>
-      $composableBuilder(column: $table.label, builder: (column) => column);
-
-  $$ExperimentsTableAnnotationComposer get experimentId {
-    final $$ExperimentsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$NotesTableAnnotationComposer get noteId {
-    final $$NotesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.noteId,
-      referencedTable: $db.notes,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$NotesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.notes,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ExperimentNotesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ExperimentNotesTable,
-          ExperimentNote,
-          $$ExperimentNotesTableFilterComposer,
-          $$ExperimentNotesTableOrderingComposer,
-          $$ExperimentNotesTableAnnotationComposer,
-          $$ExperimentNotesTableCreateCompanionBuilder,
-          $$ExperimentNotesTableUpdateCompanionBuilder,
-          (ExperimentNote, $$ExperimentNotesTableReferences),
-          ExperimentNote,
-          PrefetchHooks Function({bool experimentId, bool noteId})
-        > {
-  $$ExperimentNotesTableTableManager(
-    _$AppDatabase db,
-    $ExperimentNotesTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ExperimentNotesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ExperimentNotesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ExperimentNotesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> experimentId = const Value.absent(),
-                Value<String> noteId = const Value.absent(),
-                Value<String?> label = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentNotesCompanion(
-                experimentId: experimentId,
-                noteId: noteId,
-                label: label,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String experimentId,
-                required String noteId,
-                Value<String?> label = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentNotesCompanion.insert(
-                experimentId: experimentId,
-                noteId: noteId,
-                label: label,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ExperimentNotesTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({experimentId = false, noteId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (experimentId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.experimentId,
-                                referencedTable:
-                                    $$ExperimentNotesTableReferences
-                                        ._experimentIdTable(db),
-                                referencedColumn:
-                                    $$ExperimentNotesTableReferences
-                                        ._experimentIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-                    if (noteId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.noteId,
-                                referencedTable:
-                                    $$ExperimentNotesTableReferences
-                                        ._noteIdTable(db),
-                                referencedColumn:
-                                    $$ExperimentNotesTableReferences
-                                        ._noteIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$ExperimentNotesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ExperimentNotesTable,
-      ExperimentNote,
-      $$ExperimentNotesTableFilterComposer,
-      $$ExperimentNotesTableOrderingComposer,
-      $$ExperimentNotesTableAnnotationComposer,
-      $$ExperimentNotesTableCreateCompanionBuilder,
-      $$ExperimentNotesTableUpdateCompanionBuilder,
-      (ExperimentNote, $$ExperimentNotesTableReferences),
-      ExperimentNote,
-      PrefetchHooks Function({bool experimentId, bool noteId})
     >;
 typedef $$GoalNotesTableCreateCompanionBuilder =
     GoalNotesCompanion Function({
@@ -35713,363 +31309,6 @@ typedef $$TaskTagsTableProcessedTableManager =
       TaskTag,
       PrefetchHooks Function({bool tagId, bool taskId})
     >;
-typedef $$ExperimentTagsTableCreateCompanionBuilder =
-    ExperimentTagsCompanion Function({
-      required String tagId,
-      required String experimentId,
-      Value<int> rowid,
-    });
-typedef $$ExperimentTagsTableUpdateCompanionBuilder =
-    ExperimentTagsCompanion Function({
-      Value<String> tagId,
-      Value<String> experimentId,
-      Value<int> rowid,
-    });
-
-final class $$ExperimentTagsTableReferences
-    extends BaseReferences<_$AppDatabase, $ExperimentTagsTable, ExperimentTag> {
-  $$ExperimentTagsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $TagsTable _tagIdTable(_$AppDatabase db) => db.tags.createAlias(
-    $_aliasNameGenerator(db.experimentTags.tagId, db.tags.id),
-  );
-
-  $$TagsTableProcessedTableManager get tagId {
-    final $_column = $_itemColumn<String>('tag_id')!;
-
-    final manager = $$TagsTableTableManager(
-      $_db,
-      $_db.tags,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_tagIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $ExperimentsTable _experimentIdTable(_$AppDatabase db) =>
-      db.experiments.createAlias(
-        $_aliasNameGenerator(db.experimentTags.experimentId, db.experiments.id),
-      );
-
-  $$ExperimentsTableProcessedTableManager get experimentId {
-    final $_column = $_itemColumn<String>('experiment_id')!;
-
-    final manager = $$ExperimentsTableTableManager(
-      $_db,
-      $_db.experiments,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_experimentIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$ExperimentTagsTableFilterComposer
-    extends Composer<_$AppDatabase, $ExperimentTagsTable> {
-  $$ExperimentTagsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$TagsTableFilterComposer get tagId {
-    final $$TagsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.tagId,
-      referencedTable: $db.tags,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TagsTableFilterComposer(
-            $db: $db,
-            $table: $db.tags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ExperimentsTableFilterComposer get experimentId {
-    final $$ExperimentsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableFilterComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ExperimentTagsTableOrderingComposer
-    extends Composer<_$AppDatabase, $ExperimentTagsTable> {
-  $$ExperimentTagsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$TagsTableOrderingComposer get tagId {
-    final $$TagsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.tagId,
-      referencedTable: $db.tags,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TagsTableOrderingComposer(
-            $db: $db,
-            $table: $db.tags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ExperimentsTableOrderingComposer get experimentId {
-    final $$ExperimentsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableOrderingComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ExperimentTagsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ExperimentTagsTable> {
-  $$ExperimentTagsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$TagsTableAnnotationComposer get tagId {
-    final $$TagsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.tagId,
-      referencedTable: $db.tags,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TagsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.tags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$ExperimentsTableAnnotationComposer get experimentId {
-    final $$ExperimentsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.experimentId,
-      referencedTable: $db.experiments,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ExperimentsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.experiments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ExperimentTagsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ExperimentTagsTable,
-          ExperimentTag,
-          $$ExperimentTagsTableFilterComposer,
-          $$ExperimentTagsTableOrderingComposer,
-          $$ExperimentTagsTableAnnotationComposer,
-          $$ExperimentTagsTableCreateCompanionBuilder,
-          $$ExperimentTagsTableUpdateCompanionBuilder,
-          (ExperimentTag, $$ExperimentTagsTableReferences),
-          ExperimentTag,
-          PrefetchHooks Function({bool tagId, bool experimentId})
-        > {
-  $$ExperimentTagsTableTableManager(
-    _$AppDatabase db,
-    $ExperimentTagsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ExperimentTagsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ExperimentTagsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ExperimentTagsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> tagId = const Value.absent(),
-                Value<String> experimentId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentTagsCompanion(
-                tagId: tagId,
-                experimentId: experimentId,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String tagId,
-                required String experimentId,
-                Value<int> rowid = const Value.absent(),
-              }) => ExperimentTagsCompanion.insert(
-                tagId: tagId,
-                experimentId: experimentId,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ExperimentTagsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({tagId = false, experimentId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (tagId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.tagId,
-                                referencedTable: $$ExperimentTagsTableReferences
-                                    ._tagIdTable(db),
-                                referencedColumn:
-                                    $$ExperimentTagsTableReferences
-                                        ._tagIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-                    if (experimentId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.experimentId,
-                                referencedTable: $$ExperimentTagsTableReferences
-                                    ._experimentIdTable(db),
-                                referencedColumn:
-                                    $$ExperimentTagsTableReferences
-                                        ._experimentIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$ExperimentTagsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ExperimentTagsTable,
-      ExperimentTag,
-      $$ExperimentTagsTableFilterComposer,
-      $$ExperimentTagsTableOrderingComposer,
-      $$ExperimentTagsTableAnnotationComposer,
-      $$ExperimentTagsTableCreateCompanionBuilder,
-      $$ExperimentTagsTableUpdateCompanionBuilder,
-      (ExperimentTag, $$ExperimentTagsTableReferences),
-      ExperimentTag,
-      PrefetchHooks Function({bool tagId, bool experimentId})
-    >;
 typedef $$GoalTagsTableCreateCompanionBuilder =
     GoalTagsCompanion Function({
       required String tagId,
@@ -37444,6 +32683,168 @@ typedef $$IngredientCatalogTableProcessedTableManager =
       IngredientCatalogData,
       PrefetchHooks Function()
     >;
+typedef $$SyncDeletesTableCreateCompanionBuilder =
+    SyncDeletesCompanion Function({
+      required String entity,
+      required String id,
+      required int deletedAt,
+      Value<int> rowid,
+    });
+typedef $$SyncDeletesTableUpdateCompanionBuilder =
+    SyncDeletesCompanion Function({
+      Value<String> entity,
+      Value<String> id,
+      Value<int> deletedAt,
+      Value<int> rowid,
+    });
+
+class $$SyncDeletesTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncDeletesTable> {
+  $$SyncDeletesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncDeletesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncDeletesTable> {
+  $$SyncDeletesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncDeletesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncDeletesTable> {
+  $$SyncDeletesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entity =>
+      $composableBuilder(column: $table.entity, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$SyncDeletesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncDeletesTable,
+          SyncDelete,
+          $$SyncDeletesTableFilterComposer,
+          $$SyncDeletesTableOrderingComposer,
+          $$SyncDeletesTableAnnotationComposer,
+          $$SyncDeletesTableCreateCompanionBuilder,
+          $$SyncDeletesTableUpdateCompanionBuilder,
+          (
+            SyncDelete,
+            BaseReferences<_$AppDatabase, $SyncDeletesTable, SyncDelete>,
+          ),
+          SyncDelete,
+          PrefetchHooks Function()
+        > {
+  $$SyncDeletesTableTableManager(_$AppDatabase db, $SyncDeletesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncDeletesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncDeletesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncDeletesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> entity = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<int> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncDeletesCompanion(
+                entity: entity,
+                id: id,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entity,
+                required String id,
+                required int deletedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SyncDeletesCompanion.insert(
+                entity: entity,
+                id: id,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncDeletesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncDeletesTable,
+      SyncDelete,
+      $$SyncDeletesTableFilterComposer,
+      $$SyncDeletesTableOrderingComposer,
+      $$SyncDeletesTableAnnotationComposer,
+      $$SyncDeletesTableCreateCompanionBuilder,
+      $$SyncDeletesTableUpdateCompanionBuilder,
+      (
+        SyncDelete,
+        BaseReferences<_$AppDatabase, $SyncDeletesTable, SyncDelete>,
+      ),
+      SyncDelete,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -37483,8 +32884,6 @@ class $AppDatabaseManager {
       $$WorkoutTemplateSetsTableTableManager(_db, _db.workoutTemplateSets);
   $$TasksTableTableManager get tasks =>
       $$TasksTableTableManager(_db, _db.tasks);
-  $$ExperimentsTableTableManager get experiments =>
-      $$ExperimentsTableTableManager(_db, _db.experiments);
   $$BodyMetricsTableTableManager get bodyMetrics =>
       $$BodyMetricsTableTableManager(_db, _db.bodyMetrics);
   $$NotesTableTableManager get notes =>
@@ -37497,23 +32896,15 @@ class $AppDatabaseManager {
       $$TransactionsTableTableManager(_db, _db.transactions);
   $$FxRatesTableTableManager get fxRates =>
       $$FxRatesTableTableManager(_db, _db.fxRates);
-  $$ExperimentCheckinsTableTableManager get experimentCheckins =>
-      $$ExperimentCheckinsTableTableManager(_db, _db.experimentCheckins);
   $$TagsTableTableManager get tags => $$TagsTableTableManager(_db, _db.tags);
   $$GoalsTableTableManager get goals =>
       $$GoalsTableTableManager(_db, _db.goals);
   $$GoalProgressEntriesTableTableManager get goalProgressEntries =>
       $$GoalProgressEntriesTableTableManager(_db, _db.goalProgressEntries);
-  $$TaskExperimentsTableTableManager get taskExperiments =>
-      $$TaskExperimentsTableTableManager(_db, _db.taskExperiments);
   $$TaskGoalsTableTableManager get taskGoals =>
       $$TaskGoalsTableTableManager(_db, _db.taskGoals);
-  $$ExperimentGoalsTableTableManager get experimentGoals =>
-      $$ExperimentGoalsTableTableManager(_db, _db.experimentGoals);
   $$TaskNotesTableTableManager get taskNotes =>
       $$TaskNotesTableTableManager(_db, _db.taskNotes);
-  $$ExperimentNotesTableTableManager get experimentNotes =>
-      $$ExperimentNotesTableTableManager(_db, _db.experimentNotes);
   $$GoalNotesTableTableManager get goalNotes =>
       $$GoalNotesTableTableManager(_db, _db.goalNotes);
   $$GoalWorkoutsTableTableManager get goalWorkouts =>
@@ -37522,8 +32913,6 @@ class $AppDatabaseManager {
       $$NoteWorkoutsTableTableManager(_db, _db.noteWorkouts);
   $$TaskTagsTableTableManager get taskTags =>
       $$TaskTagsTableTableManager(_db, _db.taskTags);
-  $$ExperimentTagsTableTableManager get experimentTags =>
-      $$ExperimentTagsTableTableManager(_db, _db.experimentTags);
   $$GoalTagsTableTableManager get goalTags =>
       $$GoalTagsTableTableManager(_db, _db.goalTags);
   $$NoteTagsTableTableManager get noteTags =>
@@ -37534,4 +32923,6 @@ class $AppDatabaseManager {
       $$ExerciseCatalogTableTableManager(_db, _db.exerciseCatalog);
   $$IngredientCatalogTableTableManager get ingredientCatalog =>
       $$IngredientCatalogTableTableManager(_db, _db.ingredientCatalog);
+  $$SyncDeletesTableTableManager get syncDeletes =>
+      $$SyncDeletesTableTableManager(_db, _db.syncDeletes);
 }

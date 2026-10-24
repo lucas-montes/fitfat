@@ -8,9 +8,7 @@ import '../../models/planner_recurrence.dart';
 import '../../models/task.dart';
 import '../../tags/repositories/tag_repository.dart';
 
-/// Data access for plain planner tasks (schema v27: the `tasks` table; the
-/// experiment half of the former planner items lives in
-/// [ExperimentRepository]).
+/// Data access for plain planner tasks (schema v27: the `tasks` table).
 final class TaskRepository {
   final db.AppDatabase _database;
   const TaskRepository(this._database);
@@ -181,9 +179,6 @@ final class TaskRepository {
     )..where((t) => t.taskId.isIn(ids))).go();
     await (_database.delete(
       _database.taskGoals,
-    )..where((t) => t.taskId.isIn(ids))).go();
-    await (_database.delete(
-      _database.taskExperiments,
     )..where((t) => t.taskId.isIn(ids))).go();
     await (_database.delete(
       _database.taskNotes,
@@ -631,8 +626,7 @@ final class TaskRepository {
   }
 
   /// All tasks with `date` within [start, end] (start-of-day bounds,
-  /// inclusive). Combined with the matching experiment query this powers the
-  /// timeline union.
+  /// inclusive). Powers the week and month timeline queries.
   Future<List<Task>> getByRange(DateTime start, DateTime end) async {
     final fromMs = _startOfDay(start).millisecondsSinceEpoch;
     final toMs = _startOfDay(end).millisecondsSinceEpoch;

@@ -1,6 +1,6 @@
 # FitFat — Database Schema
 
-20 tables defined in `lib/src/database/tables.dart`. Drift generates row classes, companions, and table info classes using default singularization (no `@DataClass` annotations).
+37 tables defined in `lib/src/database/tables.dart`. Drift generates row classes, companions, and table info classes using default singularization (no `@DataClass` annotations).
 
 ## Diet tables
 
@@ -179,29 +179,32 @@ Individual sets within a workout exercise. Supports both weightlifting (reps/wei
 
 ## Planner tables
 
-### planner_items
+### tasks
 
-Per-day planner tasks — and since v24 experiments too (`kind='experiment'`).
+Per-day planner tasks. The table was called `planner_items` until v25, when
+experiments moved back out into their own tables and the remaining rows were
+renamed to `tasks`. Experiments were removed entirely in v37 (see below).
 Standalone table — no foreign keys.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | TEXT PK | UUID v7 |
-| date | INTEGER | start-of-day epoch milliseconds (normalized `DateTime(y,m,d)`); for experiments = start date |
+| date | INTEGER | start-of-day epoch milliseconds (normalized `DateTime(y,m,d)`) |
 | title | TEXT | |
-| done | INTEGER | `0` or `1` |
+| done | INTEGER | `0` or `1`; kept in sync with `task_status` (`done == task_status == 1`) |
+| task_status | INTEGER? | v25 — `0` pending \| `1` done \| `2` cancelled |
+| carry_over | INTEGER (bool) | v25 — `NOT NULL DEFAULT 1`; pending tasks move to today, otherwise roll over to cancelled |
 | sort_order | INTEGER | display order within the day |
 | due_date | INTEGER? | v3 — optional due date, epoch milliseconds |
 | due_time_minutes | INTEGER? | v8 — optional due time-of-day (retained; new tasks use start/end below) |
 | notes | TEXT? | v6 — optional free-text note |
 | start_time_minutes / end_time_minutes | INTEGER? | v15 — optional time-of-day span, minutes since midnight |
 | workout_id | TEXT? | v11 — linked workout |
-| tags | TEXT? | v12 — JSON `string[]` free-form labels |
+| workout_template_id | TEXT? | v28 — template occurrence that generated the task |
 | recurrence | TEXT? | v13 — repeat rule JSON |
 | series_id | TEXT? | v13 — groups occurrences of one recurring series |
-| kind | TEXT | v24 — `'task'` (default) \| `'experiment'`; see the Experiments section for the experiment-only columns |
-| experiment_id | TEXT? | v24 — child-task link to its experiment |
 | created_at | INTEGER | epoch milliseconds |
+| deleted_at | INTEGER? | v36 — soft-delete tombstone, pushed to the server |
 
 ## Body metrics tables
 
@@ -217,47 +220,20 @@ One row per day (keyed by start-of-day) holding optional weight and/or height. A
 | height_cm | REAL? | optional |
 | created_at | INTEGER | epoch milliseconds |
 
-## Experiments (v24 — folded into planner_items)
+## Experiments (removed in v37)
 
-Since v24 an experiment **is** a `planner_items` row with `kind='experiment'`;
-the standalone `experiments` table is gone. Experiment-only columns live on
-`planner_items`:
-
-| Column | Type | Notes |
-|--------|------|-------|
-| kind | TEXT | `'task'` default \| `'experiment'` |
-| end_date | INTEGER? | experiment end date, start-of-day epoch ms (**required** for experiments; forms enforce it) |
-| purpose | TEXT? | hypothesis |
-| status | TEXT? | `'planned' \| 'active' \| 'done' \| 'aborted'` |
-| categories | TEXT? | JSON `string[]`: `workout \| diet \| body \| steps` |
-| reminder_enabled | INTEGER (bool) | `NOT NULL DEFAULT 1` |
-| reminder_time_minutes | INTEGER | minutes from midnight, `NOT NULL DEFAULT 1200` (20:00) |
-| experiment_id | TEXT? | child-task link back to its experiment |
-
-The start date reuses the standard `date` column; `title` holds the name.
-`PlannerRepository._toExperiment` projects a row into the domain
-`Experiment`.
-
-### experiment_checkins
-
-Daily check-ins (rating 1–5 + optional note); one per experiment per day (unique constraint on `(experiment_id, day)`).
-
-| Column | Type | Notes |
-|--------|------|-------|
-| id | TEXT PK | UUID v7 |
-| experiment_id | TEXT | references `planner_items.id` (plain reference — no FK since v24) |
-| day | INTEGER | start-of-day epoch milliseconds |
-| rating | INTEGER | 1..5 scale |
-| note | TEXT? | optional |
-| created_at | INTEGER | epoch milliseconds |
-| UNIQUE(experiment_id, day) | | one check-in per experiment per day; repo `upsertCheckin` replaces in place |
+The experiments feature was deleted from the app, server and desktop UI. v37
+drops its tables (`experiment_checkins`, `experiment_tags`, `task_experiments`,
+`experiment_goals`, `experiment_notes`, `experiments`) with
+`DROP TABLE IF EXISTS`, so devices that skipped an intermediate version still
+land on the same schema. No code reads or writes them any more.
 
 ## Key patterns
 
 - All primary keys are UUID v7 strings (generated via the `uuid` package).
 - Timestamps are stored as epoch milliseconds (integers) and converted to `DateTime` in domain models.
 - `exercise_type` is stored as plain text rather than an enum to keep the schema simple.
-- Schema version is 33. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `beforeOpen` idempotently creates the barcode, routine and recipe-component lookup indexes; `onUpgrade` runs stepwise:
+- Schema version is 37. `AppDatabase` defines an explicit `MigrationStrategy`: `onCreate` runs `createAll()` (fresh installs); `beforeOpen` idempotently creates the barcode, routine and recipe-component lookup indexes; `onUpgrade` runs stepwise:
   - v1 → v2: creates `planner_items`.
   - v2 → v3: adds nullable `sodium_per100g`/`fiber_per100g`/`sugar_per100g` to `ingredients`, adds nullable `due_date` to `planner_items`, creates `body_metrics`, and deletes orphaned `meal_ingredients` rows (rows whose `meal_id` has no matching `meals` row — leftover from the pre-T02 new-meal bug). No data is dropped.
   - v3 → v4: adds `is_archived` to `ingredients` (`NOT NULL DEFAULT 0` — ingredient soft-archive). No data is dropped.
@@ -286,6 +262,9 @@ Daily check-ins (rating 1–5 + optional note); one per experiment per day (uniq
   - v31 → v32: adds `has_image` (`NOT NULL DEFAULT 0`) to `exercise_catalog` so the picker can skip thumbnail fetches for imageless rows. Additive column only — no data is dropped.
   - v32 → v33: creates `ingredient_components` for composite (recipe) ingredients. Superseded by v34 below.
   - v33 → v34: **destructive and intentional.** Replaces the composite-ingredient design with `meal → food → ingredient`: creates `foods`, `food_ingredients` and `meal_foods` (carrying a portion macro snapshot), and drops `ingredient_components` and `meal_ingredients`. Existing meals and recipes are not carried over — the user confirmed there is nothing to migrate.
+  - v34 → v35: backfills `sodium`/`fiber`/`sugar` to `0` wherever they are null (`ingredients` and `meal_foods`). The columns stay nullable in SQLite but the Dart getters are non-nullable; no table rebuild.
+  - v35 → v36: adds a nullable `deleted_at` tombstone to every top-level personal entity (`meals`, `workouts`, `workout_templates`, `tasks`, `notes`, `goals`, `body_metrics`, `accounts`, `transactions`, `receipts`). Local deletes stamp the row instead of removing it, so a push can report the deletion. Children follow their parent's liveness and carry no marker of their own.
+  - v36 → v37: creates the `sync_deletes` outbox (hard-deleted child ids awaiting push) and drops the experiments tables (`experiment_checkins`, `experiment_tags`, `task_experiments`, `experiment_goals`, `experiment_notes`, `experiments`) now that the feature is gone. New table + dropped tables only — no data loss beyond the removed feature.
 
 ## Selective-sync catalog tables (v31)
 
@@ -308,6 +287,26 @@ Lightweight available-data index for selective import (selective-sync-catalog T0
 | barcode | TEXT? | nullable — selective match key alongside name |
 
 Repositories (`lib/src/sync/repositories/catalog_repository.dart`): `getAll` (name-ordered), `upsertAll` (whole-cache replace in one batch transaction), `clear`, and `searchHideImported(query)` — a single SQL query (`NOT IN` subquery against `exercises` / `ingredients`, `LIKE ... ESCAPE '\'` matching picker `contains` semantics) returning picker-ready rows (ingredient subtitle = barcode, no stored image paths; exercise entries carry `hasImage`, added to the table in v32).
+
+## Sync outbox (v37)
+
+### sync_deletes
+
+Tombstones for rows that are **hard-deleted** locally and therefore have no
+row left to carry a `deleted_at`. Repositories insert here in the same
+transaction as the delete; `DataPushService` drains the matching entity rows
+into the push payload and clears them only after the server acknowledges.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| entity | TEXT | local table name: `workouts`, `workoutExercises`, `exerciseSets`, `workoutTemplates`, `workoutTemplateExercises`, `workoutTemplateSets`, `exercises` |
+| id | TEXT | deleted row id |
+| deleted_at | INTEGER | epoch milliseconds, diagnostic only |
+
+Composite PK `(entity, id)`. Top-level rows (workout/template/task/note/…)
+instead use their own `deleted_at` column, which rides the pushed row itself.
+Undo (`WorkoutRepository.restore`) clears the matching outbox rows so a
+restored child is not announced as deleted.
 
 ## Generated code
 

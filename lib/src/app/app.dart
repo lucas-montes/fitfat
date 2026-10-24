@@ -12,8 +12,6 @@ import 'dart:developer' as developer;
 import '../../l10n/app_localizations.dart';
 import '../dashboard/providers/dashboard.dart';
 import '../database/database_provider.dart';
-import '../experiments/notifications/experiment_reminder.dart';
-import '../experiments/providers/experiments_repository.dart';
 import '../notifications/active_workout_notifier.dart';
 import '../notifications/notification_plugin.dart';
 import '../notifications/rest_alarm.dart';
@@ -190,8 +188,6 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
         plugin: ref.read(flutterLocalNotificationsProvider),
         onTapPlan: () => appRouter.go('/plan'),
         onTapActiveWorkout: () => appRouter.go('/active-workout'),
-        // Experiments now live inside the Planner tab.
-        onTapExperiments: () => appRouter.go('/plan'),
       ),
     ]);
 
@@ -218,7 +214,6 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
     final goals = await ref.read(goalRepositoryProvider).getGoals();
     final needsTimezone =
         settings.plannerNotifications ||
-        settings.experimentRemindersEnabled ||
         goals.any((g) => g.isActive && g.reminderEnabled);
     if (needsTimezone) {
       await _initTimeZone();
@@ -242,21 +237,6 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
             title: goal.title,
             body: l10n.goalsReminderSubtitle,
           );
-    }
-
-    if (settings.experimentRemindersEnabled) {
-      final experiments = await ref
-          .read(experimentRepositoryProvider)
-          .getAll();
-      for (final exp in experiments) {
-        await ref
-            .read(experimentReminderSchedulerProvider)
-            .scheduleForExperiment(
-              exp,
-              title: l10n.experimentReminderTitle(exp.name),
-              body: l10n.experimentReminderBody,
-            );
-      }
     }
 
     unawaited(_refreshSelectiveCatalogs());

@@ -8,7 +8,7 @@ changes don't regress them silently.
 - **Lazy tab branches** (`lib/src/app/deferred_branch.dart`): the shell's
   `StatefulShellRoute.indexedStack` builds all branch widgets at startup, so
   every tab root is wrapped in `DeferredBranch` — a branch constructs (and
-  runs its providers: ~3,800-row exercise list, budget, experiments…) only on
+  runs its providers: ~3,800-row exercise list, budget…) only on
   first visit, then stays alive with state preserved. Cold start executes only
   the dashboard's queries. See [architecture.md](architecture.md).
 - First frame stays instant via `_BackgroundStartup`

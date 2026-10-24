@@ -21,7 +21,7 @@ final class BranchVisibility extends InheritedWidget {
 
 /// Defers a shell branch's first build until it is actually selected, so
 /// cold-start only constructs (and fires providers for) the dashboard branch
-/// instead of every tab (~3,800-row exercise list, budget, experiments…).
+/// instead of every tab (~3,800-row exercise list, budget…).
 ///
 /// Once a branch has been visited it builds normally and stays alive inside
 /// the shell's IndexedStack — state and scroll positions survive switching,

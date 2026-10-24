@@ -169,7 +169,12 @@ final class WorkoutRepository {
       final weRows = await (_database.select(
         _database.workoutExercises,
       )..where((t) => t.workoutId.equals(workoutId))).get();
+      final removedSetIds = <String>[];
       for (final we in weRows) {
+        final setRows = await (_database.select(
+          _database.exerciseSets,
+        )..where((t) => t.workoutExerciseId.equals(we.id))).get();
+        removedSetIds.addAll(setRows.map((s) => s.id));
         await (_database.delete(
           _database.exerciseSets,
         )..where((t) => t.workoutExerciseId.equals(we.id))).go();
@@ -177,6 +182,13 @@ final class WorkoutRepository {
       await (_database.delete(
         _database.workoutExercises,
       )..where((t) => t.workoutId.equals(workoutId))).go();
+      // The removed children are gone locally, so sync must carry their ids
+      // explicitly; otherwise the server keeps returning them.
+      await _database.recordSyncDeletes(
+        'workoutExercises',
+        weRows.map((r) => r.id),
+      );
+      await _database.recordSyncDeletes('exerciseSets', removedSetIds);
 
       for (var i = 0; i < exercises.length; i++) {
         final we = exercises[i];
@@ -247,14 +259,21 @@ final class WorkoutRepository {
   }
 
   /// Soft-deletes the workout (sets a `deletedAt` tombstone so sync stays
-  /// exact) and hard-deletes its dependent rows.
+  /// exact) and hard-deletes its dependent rows. The parent tombstone rides on
+  /// the pushed row itself; the removed children are recorded in the sync
+  /// outbox because they no longer exist locally.
   Future<void> delete(String id) async {
     await _database.transaction(() async {
       // Delete sets for all workout_exercises of this workout
       final weIds = await (_database.select(
         _database.workoutExercises,
       )..where((t) => t.workoutId.equals(id))).get();
+      final setIds = <String>[];
       for (final we in weIds) {
+        final sets = await (_database.select(
+          _database.exerciseSets,
+        )..where((t) => t.workoutExerciseId.equals(we.id))).get();
+        setIds.addAll(sets.map((s) => s.id));
         await (_database.delete(
           _database.exerciseSets,
         )..where((t) => t.workoutExerciseId.equals(we.id))).go();
@@ -262,6 +281,11 @@ final class WorkoutRepository {
       await (_database.delete(
         _database.workoutExercises,
       )..where((t) => t.workoutId.equals(id))).go();
+      await _database.recordSyncDeletes(
+        'workoutExercises',
+        weIds.map((r) => r.id),
+      );
+      await _database.recordSyncDeletes('exerciseSets', setIds);
       final now = DateTime.now().millisecondsSinceEpoch;
       await (_database.update(
         _database.workouts,
@@ -425,6 +449,7 @@ final class WorkoutRepository {
       await (_database.delete(
         _database.exerciseSets,
       )..where((t) => t.id.equals(setId))).go();
+      await _database.recordSyncDelete('exerciseSets', setId);
       await _renumberSets(row.workoutExerciseId);
     });
   }
@@ -438,12 +463,20 @@ final class WorkoutRepository {
                 ..where((t) => t.id.equals(workoutExerciseId)))
               .getSingleOrNull();
       if (row == null) return;
+      final sets = await (_database.select(
+        _database.exerciseSets,
+      )..where((t) => t.workoutExerciseId.equals(workoutExerciseId))).get();
       await (_database.delete(
         _database.exerciseSets,
       )..where((t) => t.workoutExerciseId.equals(workoutExerciseId))).go();
       await (_database.delete(
         _database.workoutExercises,
       )..where((t) => t.id.equals(workoutExerciseId))).go();
+      await _database.recordSyncDeletes('exerciseSets', sets.map((s) => s.id));
+      await _database.recordSyncDelete(
+        'workoutExercises',
+        workoutExerciseId,
+      );
       final remaining =
           await (_database.select(_database.workoutExercises)
                 ..where((t) => t.workoutId.equals(row.workoutId))
@@ -803,6 +836,8 @@ final class WorkoutRepository {
       await (_database.delete(
         _database.workoutExercises,
       )..where((t) => t.workoutId.equals(id))).go();
+      await _database.recordSyncDeletes('workoutExercises', weIds);
+      await _database.recordSyncDeletes('exerciseSets', setRows.map((s) => s.id));
       final now = DateTime.now().millisecondsSinceEpoch;
       await (_database.update(
         _database.workouts,
@@ -885,6 +920,16 @@ final class WorkoutRepository {
               ),
             );
       }
+      // Undo: the rows are alive again, so their pending tombstones must not
+      // reach the server.
+      await _database.clearSyncDeletes(
+        'workoutExercises',
+        ids: snapshot.workoutExercises.map((r) => r.id),
+      );
+      await _database.clearSyncDeletes(
+        'exerciseSets',
+        ids: snapshot.exerciseSets.map((r) => r.id),
+      );
     });
   }
 

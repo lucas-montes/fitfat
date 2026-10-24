@@ -91,7 +91,13 @@ final class ExerciseRepository {
     );
   }
 
-  Future<void> delete(String id) async {
+  /// Hard-deletes the row. A user-initiated delete records a sync tombstone;
+  /// the pull path passes [recordDeletion] `false` because the server already
+  /// knows (it sent the tombstone).
+  Future<void> delete(String id, {bool recordDeletion = true}) async {
+    if (recordDeletion) {
+      await _database.recordSyncDelete('exercises', id);
+    }
     await (_database.delete(
       _database.exercises,
     )..where((t) => t.id.equals(id))).go();

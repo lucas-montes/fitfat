@@ -102,10 +102,6 @@ final class SettingsState {
   plannerNotifications; // app-wide task reminders toggle (default on)
   final bool restAlarmSound; // rest alarm plays a sound (default on)
   final bool restAlarmVibration; // rest alarm vibrates (default on)
-  // Master switch for experiment check-in reminders (default on). When off,
-  // all scheduled experiment reminders are cancelled.
-  final bool experimentRemindersEnabled;
-
   final String baseCurrency; // ISO-4217-ish code, default 'USD'
 
   // Display units (storage stays metric).
@@ -143,7 +139,6 @@ final class SettingsState {
   final String endpointTransactions; // default '/transactions'
   final String endpointBudgetAccounts; // default '/budget-accounts'
   final String endpointReceiptPictures; // default '/receipt-pictures'
-  final String endpointExperiments; // default '/experiments'
   final String endpointBodyMetrics; // default '/body-metrics'
   final String endpointTags; // default '/tags'
 
@@ -156,9 +151,6 @@ final class SettingsState {
   // Cutting and bulking are seeded at +/-500 and maintenance at 0, which
   // reproduces the old goal-based adjustment exactly.
   final Map<DietPhase, PhaseConfig> phaseConfigs;
-  // Length of the baseline phase shown on an experiment's chart, in days
-  // (default 14).
-  final int experimentBaselineDays;
   // Prefill for new planned sets' rest field, in seconds; 0 = empty
   // (current behavior, default).
   final int defaultRestSeconds;
@@ -185,7 +177,6 @@ final class SettingsState {
     this.plannerNotifications = true,
     this.restAlarmSound = true,
     this.restAlarmVibration = true,
-    this.experimentRemindersEnabled = true,
     this.baseCurrency = 'USD',
     this.weightUnit = WeightUnit.kg,
     this.lengthUnit = LengthUnit.cm,
@@ -209,12 +200,10 @@ final class SettingsState {
     this.endpointTransactions = '/transactions',
     this.endpointBudgetAccounts = '/budget-accounts',
     this.endpointReceiptPictures = '/receipt-pictures',
-    this.endpointExperiments = '/experiments',
     this.endpointBodyMetrics = '/body-metrics',
     this.endpointTags = '/tags',
     this.plannerHorizonDays = 90,
     Map<DietPhase, PhaseConfig>? phaseConfigs,
-    this.experimentBaselineDays = 14,
     this.defaultRestSeconds = 0,
     this.reminderLeadMinutes = 30,
     this.untimedReminderMinutes = 540,
@@ -268,7 +257,6 @@ final class SettingsState {
     bool? plannerNotifications,
     bool? restAlarmSound,
     bool? restAlarmVibration,
-    bool? experimentRemindersEnabled,
     String? baseCurrency,
     WeightUnit? weightUnit,
     LengthUnit? lengthUnit,
@@ -293,12 +281,10 @@ final class SettingsState {
     String? endpointTransactions,
     String? endpointBudgetAccounts,
     String? endpointReceiptPictures,
-    String? endpointExperiments,
     String? endpointBodyMetrics,
     String? endpointTags,
     int? plannerHorizonDays,
     Map<DietPhase, PhaseConfig>? phaseConfigs,
-    int? experimentBaselineDays,
     int? defaultRestSeconds,
     int? reminderLeadMinutes,
     int? untimedReminderMinutes,
@@ -323,8 +309,6 @@ final class SettingsState {
     plannerNotifications: plannerNotifications ?? this.plannerNotifications,
     restAlarmSound: restAlarmSound ?? this.restAlarmSound,
     restAlarmVibration: restAlarmVibration ?? this.restAlarmVibration,
-    experimentRemindersEnabled:
-        experimentRemindersEnabled ?? this.experimentRemindersEnabled,
     baseCurrency: baseCurrency ?? this.baseCurrency,
     weightUnit: weightUnit ?? this.weightUnit,
     lengthUnit: lengthUnit ?? this.lengthUnit,
@@ -352,13 +336,10 @@ final class SettingsState {
         endpointBudgetAccounts ?? this.endpointBudgetAccounts,
     endpointReceiptPictures:
         endpointReceiptPictures ?? this.endpointReceiptPictures,
-    endpointExperiments: endpointExperiments ?? this.endpointExperiments,
     endpointBodyMetrics: endpointBodyMetrics ?? this.endpointBodyMetrics,
     endpointTags: endpointTags ?? this.endpointTags,
     plannerHorizonDays: plannerHorizonDays ?? this.plannerHorizonDays,
     phaseConfigs: phaseConfigs ?? this.phaseConfigs,
-    experimentBaselineDays:
-        experimentBaselineDays ?? this.experimentBaselineDays,
     defaultRestSeconds: defaultRestSeconds ?? this.defaultRestSeconds,
     reminderLeadMinutes: reminderLeadMinutes ?? this.reminderLeadMinutes,
     untimedReminderMinutes:
@@ -381,7 +362,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _plannerNotificationsKey = 'settings_planner_notifications';
   static const _restAlarmSoundKey = 'settings_rest_alarm_sound';
   static const _restAlarmVibrationKey = 'settings_rest_alarm_vibration';
-  static const _experimentRemindersKey = 'settings_experiment_reminders';
   static const _baseCurrencyKey = 'settings_base_currency';
   static const _weightUnitKey = 'settings_weight_unit';
   static const _lengthUnitKey = 'settings_length_unit';
@@ -403,7 +383,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
   static const _endpointBudgetAccountsKey = 'settings_endpoint_budget_accounts';
   static const _endpointReceiptPicturesKey =
       'settings_endpoint_receipt_pictures';
-  static const _endpointExperimentsKey = 'settings_endpoint_experiments';
   static const _endpointBodyMetricsKey = 'settings_endpoint_body_metrics';
   static const _endpointTagsKey = 'settings_endpoint_tags';
   static const _plannerHorizonDaysKey = 'settings_planner_horizon_days';
@@ -415,7 +394,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
 
   static String _phaseKey(DietPhase phase, String knob) =>
       'settings_phase_${phase.name}_${knob}';
-  static const _experimentBaselineDaysKey = 'settings_experiment_baseline_days';
   static const _defaultRestSecondsKey = 'settings_default_rest_seconds';
   static const _cascadeDeleteKey = 'settings_cascade_delete';
   static const _hasSeenWizardKey = 'settings_has_seen_wizard';
@@ -450,8 +428,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       plannerNotifications: prefs.getBool(_plannerNotificationsKey) ?? true,
       restAlarmSound: prefs.getBool(_restAlarmSoundKey) ?? true,
       restAlarmVibration: prefs.getBool(_restAlarmVibrationKey) ?? true,
-      experimentRemindersEnabled:
-          prefs.getBool(_experimentRemindersKey) ?? true,
       baseCurrency: prefs.getString(_baseCurrencyKey) ?? 'USD',
       weightUnit: _weightUnitFromName(prefs.getString(_weightUnitKey)),
       lengthUnit: _lengthUnitFromName(prefs.getString(_lengthUnitKey)),
@@ -484,14 +460,11 @@ final class SettingsNotifier extends Notifier<SettingsState> {
           prefs.getString(_endpointBudgetAccountsKey) ?? '/budget-accounts',
       endpointReceiptPictures:
           prefs.getString(_endpointReceiptPicturesKey) ?? '/receipt-pictures',
-      endpointExperiments:
-          prefs.getString(_endpointExperimentsKey) ?? '/experiments',
       endpointBodyMetrics:
           prefs.getString(_endpointBodyMetricsKey) ?? '/body-metrics',
       endpointTags: prefs.getString(_endpointTagsKey) ?? '/tags',
       plannerHorizonDays: prefs.getInt(_plannerHorizonDaysKey) ?? 90,
       phaseConfigs: _loadPhaseConfigs(prefs),
-      experimentBaselineDays: prefs.getInt(_experimentBaselineDaysKey) ?? 14,
       defaultRestSeconds: prefs.getInt(_defaultRestSecondsKey) ?? 0,
       reminderLeadMinutes: prefs.getInt(reminderLeadMinutesKey) ?? 30,
       untimedReminderMinutes: prefs.getInt(untimedReminderMinutesKey) ?? 540,
@@ -823,13 +796,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
     state = state.copyWith(baseCurrency: normalized);
   }
 
-  Future<void> setExperimentRemindersEnabled(bool enabled) async {
-    await ref
-        .read(sharedPreferencesProvider)
-        .setBool(_experimentRemindersKey, enabled);
-    state = state.copyWith(experimentRemindersEnabled: enabled);
-  }
-
   Future<void> setWeightUnit(WeightUnit unit) async {
     await ref
         .read(sharedPreferencesProvider)
@@ -1074,14 +1040,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       );
     }
     return configs;
-  }
-
-  Future<void> setExperimentBaselineDays(int days) async {
-    final clamped = days < 1 ? 1 : days;
-    await ref
-        .read(sharedPreferencesProvider)
-        .setInt(_experimentBaselineDaysKey, clamped);
-    state = state.copyWith(experimentBaselineDays: clamped);
   }
 
   Future<void> setDefaultRestSeconds(int seconds) async {

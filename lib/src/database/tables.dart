@@ -398,40 +398,6 @@ class Tasks extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// A self-tracking experiment with a start→end date range, lifecycle status,
-/// linked data categories and daily check-ins (schema v27). Experiments were
-/// planner_items rows (kind='experiment') between v24 and v26; v27 splits them
-/// back out into this standalone table. Check-ins in [ExperimentCheckins]
-/// reference [id] directly.
-class Experiments extends Table {
-  TextColumn get id => text()();
-  TextColumn get name => text()();
-  // Hypothesis / stated purpose.
-  TextColumn? get purpose => text().nullable()();
-  IntColumn get startDate => integer()(); // start-of-day epoch milliseconds
-
-  /// Target end date (start-of-day epoch ms); null = open-ended.
-  IntColumn? get endDate => integer().nullable()();
-
-  /// 'planned' | 'active' | 'done' | 'aborted'.
-  TextColumn get status => text().withDefault(const Constant('planned'))();
-
-  /// JSON string[] of linked data categories: workout | diet | body | steps.
-  TextColumn? get categories => text().nullable()();
-
-  // Daily check-in reminder.
-  BoolColumn get reminderEnabled =>
-      boolean().withDefault(const Constant(true))();
-  IntColumn get reminderTimeMinutes =>
-      integer().withDefault(const Constant(1200))();
-  IntColumn get createdAt => integer()();
-  // Soft-delete marker (v36), mirroring the other personal entities.
-  IntColumn? get deletedAt => integer().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
 // ---------------------------------------------------------------------------
 // Notes tables
 // ---------------------------------------------------------------------------
@@ -550,20 +516,6 @@ class GoalProgressEntries extends Table {
 // former per-entity JSON name arrays.
 // ---------------------------------------------------------------------------
 
-/// Tasks associated with an experiment (many tasks per experiment, and a task
-/// may support several experiments). Replaces the pre-v27
-/// `planner_items.experiment_id` back-reference column.
-class TaskExperiments extends Table {
-  TextColumn get taskId => text().references(Tasks, #id)();
-  TextColumn get experimentId => text().references(Experiments, #id)();
-
-  /// Optional relationship label ('supports', 'measures', …).
-  TextColumn? get label => text().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {taskId, experimentId};
-}
-
 /// Tasks associated with a goal.
 class TaskGoals extends Table {
   TextColumn get taskId => text().references(Tasks, #id)();
@@ -574,16 +526,6 @@ class TaskGoals extends Table {
   Set<Column> get primaryKey => {taskId, goalId};
 }
 
-/// Experiments associated with a goal.
-class ExperimentGoals extends Table {
-  TextColumn get experimentId => text().references(Experiments, #id)();
-  TextColumn get goalId => text().references(Goals, #id)();
-  TextColumn? get label => text().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {experimentId, goalId};
-}
-
 /// Notes attached to a task.
 class TaskNotes extends Table {
   TextColumn get taskId => text().references(Tasks, #id)();
@@ -592,16 +534,6 @@ class TaskNotes extends Table {
 
   @override
   Set<Column> get primaryKey => {taskId, noteId};
-}
-
-/// Notes attached to an experiment.
-class ExperimentNotes extends Table {
-  TextColumn get experimentId => text().references(Experiments, #id)();
-  TextColumn get noteId => text().references(Notes, #id)();
-  TextColumn? get label => text().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {experimentId, noteId};
 }
 
 /// Notes attached to a goal.
@@ -653,17 +585,6 @@ class TaskTags extends Table {
 
   @override
   Set<Column> get primaryKey => {tagId, taskId};
-}
-
-/// Priorities attached to an experiment.
-class ExperimentTags extends Table {
-  TextColumn get tagId =>
-      text().references(Tags, #id, onDelete: KeyAction.cascade)();
-  TextColumn get experimentId =>
-      text().references(Experiments, #id, onDelete: KeyAction.cascade)();
-
-  @override
-  Set<Column> get primaryKey => {tagId, experimentId};
 }
 
 /// Priorities attached to a goal.
@@ -820,31 +741,6 @@ class BodyMetrics extends Table {
 }
 
 // ---------------------------------------------------------------------------
-// Experiments tables (v18)
-// ---------------------------------------------------------------------------
-
-class ExperimentCheckins extends Table {
-  TextColumn get id => text()();
-  // The experiment's planner_items id (plain reference, no FK: the standalone
-  // experiments table was folded into planner_items in v24).
-  TextColumn get experimentId => text()();
-  // Start-of-day epoch milliseconds — one check-in per experiment per day.
-  IntColumn get day => integer()();
-  // 1..5 wellbeing/rating scale.
-  IntColumn get rating => integer()();
-  TextColumn? get note => text().nullable()();
-  IntColumn get createdAt => integer()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-
-  @override
-  List<Set<Column>> get uniqueKeys => [
-    {experimentId, day},
-  ];
-}
-
-// ---------------------------------------------------------------------------
 // Selective-sync catalog tables (v31) — lightweight available-data index.
 // No FK to user tables; picker hides rows already present in exercises /
 // ingredients. No media stored here; thumbnails are live server fetches.
@@ -868,4 +764,27 @@ class IngredientCatalog extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+// ---------------------------------------------------------------------------
+// Sync outbox (v37)
+// ---------------------------------------------------------------------------
+
+/// Child deletions waiting to be announced to the sync server.
+///
+/// Top-level personal entities carry their own `deleted_at` tombstone, so a
+/// push can infer their deletions. Children (workout exercises, sets, template
+/// blueprints, exercises) are hard-deleted locally, so the push would
+/// otherwise be unable to say "this row is gone" and the next pull would
+/// resurrect it. Repositories record an entry here in the same transaction as
+/// the delete; the push drains the entity's rows once the server has accepted
+/// them. `entity` is one of `workoutExercises`, `exerciseSets`,
+/// `templateExercises`, `templateSets`, `exercises`.
+class SyncDeletes extends Table {
+  TextColumn get entity => text()();
+  TextColumn get id => text()();
+  IntColumn get deletedAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {entity, id};
 }

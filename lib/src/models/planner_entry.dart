@@ -1,10 +1,10 @@
-import 'experiment.dart';
 import 'task.dart';
 
-/// One entry on the planner timeline (schema v27): either a [Task] or an
-/// [Experiment]. Day/Week/Month views union both tables by date, so timeline
-/// consumers work against this union while task- or experiment-specific flows
-/// pattern-match to the concrete variant.
+/// One entry on the planner timeline: a [Task].
+///
+/// Day/Week/Month views work against this union so timeline consumers stay
+/// decoupled from the task repository. (It used to also carry experiments;
+/// that feature was removed in schema v37.)
 sealed class PlannerEntry {
   const PlannerEntry();
 
@@ -13,11 +13,9 @@ sealed class PlannerEntry {
   DateTime get day;
   List<String>? get tags;
 
-  bool get isExperiment => this is ExperimentEntry;
   bool get isTask => this is TaskEntry;
 
   Task get task => (this as TaskEntry).task;
-  Experiment get experiment => (this as ExperimentEntry).experiment;
 }
 
 /// A plain scheduled task.
@@ -38,24 +36,4 @@ final class TaskEntry extends PlannerEntry {
 
   @override
   List<String>? get tags => task.tags;
-}
-
-/// An experiment occupying a start→end date range on the timeline.
-final class ExperimentEntry extends PlannerEntry {
-  @override
-  final Experiment experiment;
-
-  const ExperimentEntry(this.experiment);
-
-  @override
-  String get id => experiment.id;
-
-  @override
-  String get title => experiment.name;
-
-  @override
-  DateTime get day => experiment.startDate;
-
-  @override
-  List<String>? get tags => experiment.tags;
 }

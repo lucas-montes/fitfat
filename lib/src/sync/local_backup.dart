@@ -15,7 +15,7 @@ import '../database/database_provider.dart' as db;
 /// children — the backup hub hands the same entity labels to export and
 /// import, so both sides stay in lock-step through this map.
 const _ownership = <String, List<String>>{
-  'Tasks': ['tasks', 'task_tags', 'task_goals', 'task_notes', 'task_experiments'],
+  'Tasks': ['tasks', 'task_tags', 'task_goals', 'task_notes'],
   'Notes': ['notes', 'note_tags'],
   'Goals': ['goals', 'goal_tags', 'goal_progress_entries', 'goal_workouts'],
   'Workouts': [
@@ -26,7 +26,6 @@ const _ownership = <String, List<String>>{
     'workout_template_exercises',
     'workout_template_sets',
   ],
-  'Experiments': ['experiments', 'experiment_tags', 'experiment_checkins'],
   'Meals': ['meals', 'meal_foods'],
   'Body': ['body_metrics'],
   'Budget': ['accounts', 'fx_rates', 'transactions'],
@@ -43,7 +42,6 @@ dynamic _tableFor(AppDatabase d, String name) => switch (name) {
   'task_tags' => d.taskTags,
   'task_goals' => d.taskGoals,
   'task_notes' => d.taskNotes,
-  'task_experiments' => d.taskExperiments,
   'notes' => d.notes,
   'note_tags' => d.noteTags,
   'goals' => d.goals,
@@ -56,9 +54,6 @@ dynamic _tableFor(AppDatabase d, String name) => switch (name) {
   'workout_templates' => d.workoutTemplates,
   'workout_template_exercises' => d.workoutTemplateExercises,
   'workout_template_sets' => d.workoutTemplateSets,
-  'experiments' => d.experiments,
-  'experiment_tags' => d.experimentTags,
-  'experiment_checkins' => d.experimentCheckins,
   'meals' => d.meals,
   'meal_foods' => d.mealFoods,
   'body_metrics' => d.bodyMetrics,

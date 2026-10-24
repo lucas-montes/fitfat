@@ -1,25 +1,21 @@
 import 'package:drift/drift.dart';
 
 import '../../database/app_database.dart' as db;
-import '../../models/experiment.dart';
 import '../../models/goal.dart';
 import '../../models/note.dart';
 import '../../models/task.dart';
 import '../../models/workout.dart';
-import '../../experiments/repositories/experiment_repository.dart'
-    show experimentFromRow;
 import '../../tags/repositories/tag_repository.dart';
 import 'task_repository.dart' show taskFromRow;
 
 /// One end of a link: the linked entity plus the optional relationship label.
 typedef LabeledTask = ({Task item, String? label});
-typedef LabeledExperiment = ({Experiment item, String? label});
 typedef LabeledGoal = ({Goal item, String? label});
 typedef LabeledNote = ({Note item, String? label});
 typedef LabeledWorkout = ({Workout item, String? label});
 
 /// Data access for the v27 link (junction) tables: typed many-to-many
-/// associations between tasks, experiments, goals, notes and workouts.
+/// associations between tasks, goals, notes and workouts.
 ///
 /// Every association has list helpers in both directions plus idempotent
 /// link/unlink operations; links are keyed by their pair, so re-linking with
@@ -29,95 +25,6 @@ typedef LabeledWorkout = ({Workout item, String? label});
 final class LinksRepository {
   final db.AppDatabase _database;
   const LinksRepository(this._database);
-
-  // ---------------------------------------------------------------------------
-  // task ↔ experiment
-  // ---------------------------------------------------------------------------
-
-  Future<List<LabeledTask>> tasksForExperiment(String experimentId) async {
-    final query =
-        _database.select(_database.taskExperiments).join([
-            innerJoin(
-              _database.tasks,
-              _database.tasks.id.equalsExp(_database.taskExperiments.taskId),
-            ),
-          ])
-          ..where(
-            _database.taskExperiments.experimentId.equals(experimentId) &
-                _database.tasks.deletedAt.isNull(),
-          )
-          ..orderBy([
-            OrderingTerm.asc(_database.tasks.date),
-            OrderingTerm.asc(_database.tasks.sortOrder),
-          ]);
-    final rows = await query.get();
-    final items = await _attachTasks(
-      rows.map((r) => taskFromRow(r.readTable(_database.tasks))).toList(),
-    );
-    return [
-      for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.taskExperiments).label,
-        ),
-    ];
-  }
-
-  Future<List<LabeledExperiment>> experimentsForTask(String taskId) async {
-    final query =
-        _database.select(_database.taskExperiments).join([
-            innerJoin(
-              _database.experiments,
-              _database.experiments.id.equalsExp(
-                _database.taskExperiments.experimentId,
-              ),
-            ),
-          ])
-          ..where(
-            _database.taskExperiments.taskId.equals(taskId) &
-                _database.experiments.deletedAt.isNull(),
-          )
-          ..orderBy([OrderingTerm.asc(_database.experiments.startDate)]);
-    final rows = await query.get();
-    final items = await _attachExperiments(
-      rows
-          .map((r) => experimentFromRow(r.readTable(_database.experiments)))
-          .toList(),
-    );
-    return [
-      for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.taskExperiments).label,
-        ),
-    ];
-  }
-
-  Future<void> linkTaskExperiment(
-    String taskId,
-    String experimentId, {
-    String? label,
-  }) {
-    return _database
-        .into(_database.taskExperiments)
-        .insert(
-          db.TaskExperimentsCompanion.insert(
-            taskId: taskId,
-            experimentId: experimentId,
-            label: Value(label),
-          ),
-          onConflict: DoUpdate(
-            (_) => db.TaskExperimentsCompanion(label: Value(label)),
-          ),
-        );
-  }
-
-  Future<void> unlinkTaskExperiment(String taskId, String experimentId) {
-    return (_database.delete(_database.taskExperiments)..where(
-          (t) => t.taskId.equals(taskId) & t.experimentId.equals(experimentId),
-        ))
-        .go();
-  }
 
   // ---------------------------------------------------------------------------
   // task ↔ goal
@@ -200,92 +107,6 @@ final class LinksRepository {
   }
 
   // ---------------------------------------------------------------------------
-  // experiment ↔ goal
-  // ---------------------------------------------------------------------------
-
-  Future<List<LabeledExperiment>> experimentsForGoal(String goalId) async {
-    final query =
-        _database.select(_database.experimentGoals).join([
-            innerJoin(
-              _database.experiments,
-              _database.experiments.id.equalsExp(
-                _database.experimentGoals.experimentId,
-              ),
-            ),
-          ])
-          ..where(
-            _database.experimentGoals.goalId.equals(goalId) &
-                _database.experiments.deletedAt.isNull(),
-          )
-          ..orderBy([OrderingTerm.asc(_database.experiments.startDate)]);
-    final rows = await query.get();
-    final items = await _attachExperiments(
-      rows
-          .map((r) => experimentFromRow(r.readTable(_database.experiments)))
-          .toList(),
-    );
-    return [
-      for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.experimentGoals).label,
-        ),
-    ];
-  }
-
-  Future<List<LabeledGoal>> goalsForExperiment(String experimentId) async {
-    final query =
-        _database.select(_database.experimentGoals).join([
-            innerJoin(
-              _database.goals,
-              _database.goals.id.equalsExp(_database.experimentGoals.goalId),
-            ),
-          ])
-          ..where(
-            _database.experimentGoals.experimentId.equals(experimentId) &
-                _database.goals.deletedAt.isNull(),
-          )
-          ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
-    final rows = await query.get();
-    final items = await _attachGoals(
-      rows.map((r) => _goalFrom(r.readTable(_database.goals))).toList(),
-    );
-    return [
-      for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.experimentGoals).label,
-        ),
-    ];
-  }
-
-  Future<void> linkExperimentGoal(
-    String experimentId,
-    String goalId, {
-    String? label,
-  }) {
-    return _database
-        .into(_database.experimentGoals)
-        .insert(
-          db.ExperimentGoalsCompanion.insert(
-            experimentId: experimentId,
-            goalId: goalId,
-            label: Value(label),
-          ),
-          onConflict: DoUpdate(
-            (_) => db.ExperimentGoalsCompanion(label: Value(label)),
-          ),
-        );
-  }
-
-  Future<void> unlinkExperimentGoal(String experimentId, String goalId) {
-    return (_database.delete(_database.experimentGoals)..where(
-          (t) => t.experimentId.equals(experimentId) & t.goalId.equals(goalId),
-        ))
-        .go();
-  }
-
-  // ---------------------------------------------------------------------------
   // task ↔ note
   // ---------------------------------------------------------------------------
 
@@ -360,92 +181,6 @@ final class LinksRepository {
     return (_database.delete(
       _database.taskNotes,
     )..where((t) => t.taskId.equals(taskId) & t.noteId.equals(noteId))).go();
-  }
-
-  // ---------------------------------------------------------------------------
-  // experiment ↔ note
-  // ---------------------------------------------------------------------------
-
-  Future<List<LabeledNote>> notesForExperiment(String experimentId) async {
-    final query =
-        _database.select(_database.experimentNotes).join([
-            innerJoin(
-              _database.notes,
-              _database.notes.id.equalsExp(_database.experimentNotes.noteId),
-            ),
-          ])
-          ..where(
-            _database.experimentNotes.experimentId.equals(experimentId) &
-                _database.notes.deletedAt.isNull(),
-          )
-          ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
-    final rows = await query.get();
-    final items = await _attachNotes(
-      rows.map((r) => _noteFrom(r.readTable(_database.notes))).toList(),
-    );
-    return [
-      for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.experimentNotes).label,
-        ),
-    ];
-  }
-
-  Future<List<LabeledExperiment>> experimentsForNote(String noteId) async {
-    final query =
-        _database.select(_database.experimentNotes).join([
-            innerJoin(
-              _database.experiments,
-              _database.experiments.id.equalsExp(
-                _database.experimentNotes.experimentId,
-              ),
-            ),
-          ])
-          ..where(
-            _database.experimentNotes.noteId.equals(noteId) &
-                _database.experiments.deletedAt.isNull(),
-          )
-          ..orderBy([OrderingTerm.asc(_database.experiments.startDate)]);
-    final rows = await query.get();
-    final items = await _attachExperiments(
-      rows
-          .map((r) => experimentFromRow(r.readTable(_database.experiments)))
-          .toList(),
-    );
-    return [
-      for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.experimentNotes).label,
-        ),
-    ];
-  }
-
-  Future<void> linkExperimentNote(
-    String experimentId,
-    String noteId, {
-    String? label,
-  }) {
-    return _database
-        .into(_database.experimentNotes)
-        .insert(
-          db.ExperimentNotesCompanion.insert(
-            experimentId: experimentId,
-            noteId: noteId,
-            label: Value(label),
-          ),
-          onConflict: DoUpdate(
-            (_) => db.ExperimentNotesCompanion(label: Value(label)),
-          ),
-        );
-  }
-
-  Future<void> unlinkExperimentNote(String experimentId, String noteId) {
-    return (_database.delete(_database.experimentNotes)..where(
-          (t) => t.experimentId.equals(experimentId) & t.noteId.equals(noteId),
-        ))
-        .go();
   }
 
   // ---------------------------------------------------------------------------
@@ -685,9 +420,6 @@ final class LinksRepository {
   /// Removes every link row referencing [taskId].
   Future<void> detachTask(String taskId) async {
     await (_database.delete(
-      _database.taskExperiments,
-    )..where((t) => t.taskId.equals(taskId))).go();
-    await (_database.delete(
       _database.taskGoals,
     )..where((t) => t.taskId.equals(taskId))).go();
     await (_database.delete(
@@ -695,26 +427,10 @@ final class LinksRepository {
     )..where((t) => t.taskId.equals(taskId))).go();
   }
 
-  /// Removes every link row referencing [experimentId].
-  Future<void> detachExperiment(String experimentId) async {
-    await (_database.delete(
-      _database.taskExperiments,
-    )..where((t) => t.experimentId.equals(experimentId))).go();
-    await (_database.delete(
-      _database.experimentGoals,
-    )..where((t) => t.experimentId.equals(experimentId))).go();
-    await (_database.delete(
-      _database.experimentNotes,
-    )..where((t) => t.experimentId.equals(experimentId))).go();
-  }
-
   /// Removes every link row referencing [goalId].
   Future<void> detachGoal(String goalId) async {
     await (_database.delete(
       _database.taskGoals,
-    )..where((t) => t.goalId.equals(goalId))).go();
-    await (_database.delete(
-      _database.experimentGoals,
     )..where((t) => t.goalId.equals(goalId))).go();
     await (_database.delete(
       _database.goalNotes,
@@ -728,9 +444,6 @@ final class LinksRepository {
   Future<void> detachNote(String noteId) async {
     await (_database.delete(
       _database.taskNotes,
-    )..where((t) => t.noteId.equals(noteId))).go();
-    await (_database.delete(
-      _database.experimentNotes,
     )..where((t) => t.noteId.equals(noteId))).go();
     await (_database.delete(
       _database.goalNotes,
@@ -803,17 +516,6 @@ final class LinksRepository {
     ).tagNamesForTasks(tasks.map((t) => t.id).toList());
     return [
       for (final t in tasks) t.copyWith(tags: map[t.id] ?? const []),
-    ];
-  }
-
-  /// Populates [Experiment.tags] for a batch of experiments in one lookup.
-  Future<List<Experiment>> _attachExperiments(List<Experiment> items) async {
-    if (items.isEmpty) return items;
-    final map = await TagRepository(
-      _database,
-    ).tagNamesForExperiments(items.map((e) => e.id).toList());
-    return [
-      for (final e in items) e.copyWith(tags: map[e.id] ?? const []),
     ];
   }
 

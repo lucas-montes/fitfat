@@ -558,7 +558,7 @@ final class _RelatedTasksSectionState
                               : null,
                         ),
                         trailing: IconButton(
-                          tooltip: l10n.experimentUnlinkTask,
+                          tooltip: l10n.goalUnlinkTask,
                           icon: const Icon(Icons.link_off, size: 20),
                           onPressed: () => _unlink(item.id),
                         ),
@@ -571,7 +571,7 @@ final class _RelatedTasksSectionState
           children: [
             ActionChip(
               avatar: const Icon(Icons.add_link, size: 18),
-              label: Text(l10n.experimentLinkTask),
+              label: Text(l10n.goalLinkTask),
               onPressed: _linkExisting,
             ),
             ActionChip(
@@ -647,7 +647,7 @@ final class _TaskPickerSheetState extends ConsumerState<_TaskPickerSheet> {
                   autofocus: true,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
-                    hintText: l10n.experimentSearchTasksHint,
+                    hintText: l10n.goalSearchTasksHint,
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(),
@@ -804,7 +804,7 @@ final class _PendingTasksSection extends ConsumerWidget {
           children: [
             ActionChip(
               avatar: const Icon(Icons.add_link, size: 18),
-              label: Text(l10n.experimentLinkTask),
+              label: Text(l10n.goalLinkTask),
               onPressed: () => _linkExisting(context, ref),
             ),
             ActionChip(

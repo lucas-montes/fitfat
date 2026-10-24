@@ -168,9 +168,6 @@ final class NoteRepository {
       _database.taskNotes,
     )..where((t) => t.noteId.equals(id))).go();
     await (_database.delete(
-      _database.experimentNotes,
-    )..where((t) => t.noteId.equals(id))).go();
-    await (_database.delete(
       _database.goalNotes,
     )..where((t) => t.noteId.equals(id))).go();
     await (_database.delete(

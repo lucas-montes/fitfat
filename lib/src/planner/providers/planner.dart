@@ -4,7 +4,6 @@ import '../../database/database_provider.dart';
 import '../../models/planner_entry.dart';
 import '../repositories/links_repository.dart';
 import '../repositories/task_repository.dart';
-import '../../experiments/providers/experiments_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Repository providers
@@ -19,25 +18,20 @@ final linksRepositoryProvider = Provider<LinksRepository>((ref) {
 });
 
 // ---------------------------------------------------------------------------
-// Timeline entry providers (tasks ∪ experiments, schema v27)
+// Timeline entry providers (tasks)
 // ---------------------------------------------------------------------------
 
-/// Every planner entry (task or experiment) scheduled on [day] — powers the
-/// Day view. Recurring series are materialized first so generated occurrences
-/// exist before reading.
+/// Every planner entry (task) scheduled on [day] — powers the Day view.
+/// Recurring series are materialized first so generated occurrences exist
+/// before reading.
 final dayEntriesProvider = FutureProvider.family<List<PlannerEntry>, DateTime>((
   ref,
   day,
 ) async {
   final tasks = ref.watch(taskRepositoryProvider);
-  final experiments = ref.watch(experimentRepositoryProvider);
   await tasks.materializeForDay(day);
   final dayTasks = await tasks.getByDay(day);
-  final dayExperiments = await experiments.getByDay(day);
-  return [
-    for (final task in dayTasks) TaskEntry(task),
-    for (final experiment in dayExperiments) ExperimentEntry(experiment),
-  ];
+  return [for (final task in dayTasks) TaskEntry(task)];
 });
 
 /// Every planner entry whose span falls within the month containing
@@ -72,11 +66,5 @@ Future<List<PlannerEntry>> entriesInRange(
   final rangeTasks = await ref
       .watch(taskRepositoryProvider)
       .getByRange(start, end);
-  final rangeExperiments = await ref
-      .watch(experimentRepositoryProvider)
-      .getByRange(start, end);
-  return [
-    for (final task in rangeTasks) TaskEntry(task),
-    for (final experiment in rangeExperiments) ExperimentEntry(experiment),
-  ];
+  return [for (final task in rangeTasks) TaskEntry(task)];
 }

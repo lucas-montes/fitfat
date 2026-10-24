@@ -82,9 +82,6 @@
   "dashboardGoalsTitle": "Objectifs",
   "dashboardGoalsEmpty": "Aucun objectif actif",
   "dashboardGoalsCta": "Objectifs",
-  "dashboardExperimentsTitle": "Expériences",
-  "dashboardExperimentsBody": "Suivez vos expériences et vos relevés quotidiens.",
-  "dashboardExperimentsCta": "Expériences",
   "dashboardAddTitle": "Ajouter",
   "dietAddMeal": "Repas",
   "dietAddRecipe": "Recette",
@@ -511,15 +508,9 @@
     }
   },
   "plannerCopyPrevious": "Copier depuis hier",
-  "experimentLinkedTasksTitle": "Tâches liées",
-  "experimentLinkTask": "Lier une tâche",
-  "experimentUnlinkTask": "Délier la tâche",
-  "experimentNoLinkedTasks": "Aucune tâche liée pour l'instant. Liez des tâches pour suivre les étapes de cette expérience.",
-  "experimentSearchTasksHint": "Rechercher des tâches…",
-  "experimentsRelatedGoals": "Objectifs liés",
-  "experimentsRelatedNotes": "Notes liées",
-  "experimentsNoLinkedGoals": "Aucun objectif lié pour l'instant.",
-  "experimentsNoLinkedNotes": "Aucune note liée pour l'instant.",
+  "goalLinkTask": "Lier une tâche",
+  "goalUnlinkTask": "Délier la tâche",
+  "goalSearchTasksHint": "Rechercher des tâches…",
   "linkGoal": "Lier un objectif",
   "unlinkGoal": "Délier l'objectif",
   "linkNote": "Lier une note",
@@ -750,14 +741,12 @@
   "settingsTdeeLabel": "TDEE",
   "settingsEstimatedSuffix": "estimé",
   "settingsCalorieAdjustmentLabel": "Ajustement de l'objectif calorique (kcal)",
-  "settingsExperimentBaselineLabel": "Référence des expériences (jours)",
   "settingsDefaultRestLabel": "Repos par défaut entre séries (min)",
   "settingsReminderLeadLabel": "Délai du rappel anticipé (min)",
   "settingsUntimedReminderLabel": "Défaut sans heure (min)",
   "settingsApiTimeoutLabel": "Délai d'attente de synchronisation (s)",
   "settingsPlannerHorizonHelp": "Combien de jours à l'avance les tâches récurrentes sont pré-créées dans le planning.",
   "settingsCalorieAdjustmentHelp": "Kcal ajoutées à ton objectif quotidien pour cette phase. Négatif = déficit, positif = surplus.",
-  "settingsExperimentBaselineHelp": "Jours d'historique avant le début d'une expérience, servant de référence.",
   "settingsDefaultRestHelp": "Préremplit le champ de repos lors de l'ajout d'une nouvelle série. Laisser vide pour aucun.",
   "settingsReminderLeadHelp": "Minutes avant l'heure de début d'une tâche où la notification anticipée se déclenche.",
   "settingsUntimedReminderHelp": "Heure des rappels des tâches sans heure, en minutes après minuit (540 = 09h00).",
@@ -821,8 +810,6 @@
   "settingsFxAutoRefresh": "Actualisation automatique des taux",
   "settingsFxAutoRefreshSubtitle": "Récupère les taux de change en arrière-plan",
   "settingsFxRefreshInterval": "Intervalle d'actualisation",
-  "settingsExperimentReminders": "Rappels d'expériences",
-  "settingsExperimentRemindersSubtitle": "Rappels quotidiens tant qu'une expérience est en cours",
   "settingsSyncServer": "Serveur de synchronisation",
   "settingsSyncServerHint": "Indiquez votre serveur de sync pour récupérer exercices, ingrédients et devises. Laissez vide pour désactiver la sync.",
   "settingsSyncBaseUrl": "URL du serveur",
@@ -864,7 +851,7 @@
   "exportServerHelp": "Téléverse une copie complète de votre fichier de base locale vers le serveur.",
   "importServerHelp": "Remplace votre base locale par la copie du serveur. Demande confirmation au préalable.",
   "settingsPlanner": "Planificateur",
-  "settingsPlannerSubtitle": "Séances, expériences, tâches et objectifs",
+  "settingsPlannerSubtitle": "Séances, tâches et objectifs",
   "settingsNutrition": "Nutrition",
   "settingsNutritionSubtitle": "Unités et objectifs caloriques",
   "settingsBudgetCurrencySubtitle": "Devise de base et taux de change",
@@ -1626,112 +1613,10 @@
   "@tabBudget": {
     "description": "tabBudget"
   },
-  "tabExperiments": "Expériences",
-  "@tabExperiments": {
-    "description": "tabExperiments"
-  },
-  "experimentsAppBar": "Expériences",
-  "experimentsFab": "Nouvelle expérience",
   "plannerViewDay": "Vue jour",
   "plannerViewWeek": "Vue semaine",
   "plannerViewMonth": "Vue mois",
-  "plannerAllDay": "Journée entière",
   "plannerGoToday": "Aller à aujourd'hui",
-  "experimentsEmptyTitle": "Aucune expérience",
-  "experimentsEmptyBody": "Créez une expérience pour suivre une habitude, un changement alimentaire ou un protocole d'entraînement avec des bilans quotidiens.",
-  "experimentDaysElapsed": "{days} jours écoulés",
-  "@experimentDaysElapsed": {
-    "description": "experimentDaysElapsed",
-    "placeholders": {
-      "days": {
-        "type": "int"
-      }
-    }
-  },
-  "experimentStatusPlanned": "Planifiée",
-  "experimentStatusActive": "En cours",
-  "experimentStatusDone": "Terminée",
-  "experimentStatusAborted": "Abandonnée",
-  "experimentCategoryWorkout": "Entraînement",
-  "experimentCategoryDiet": "Alimentation",
-  "experimentCategoryBody": "Corps",
-  "experimentCategorySteps": "Pas",
-  "experimentCategoryBudget": "Budget",
-  "experimentFormTitleNew": "Nouvelle expérience",
-  "experimentFormTitleEdit": "Modifier l'expérience",
-  "experimentFormNameLabel": "Nom",
-  "experimentFormNameHint": "ex. bloc d'hypertrophie de 8 semaines",
-  "experimentFormPurposeLabel": "Hypothèse / objectif",
-  "experimentFormPurposeHint": "Que testez-vous ?",
-  "experimentFormStartLabel": "Date de début",
-  "experimentFormEndLabel": "Date de fin",
-  "experimentFormStatusLabel": "Statut",
-  "experimentFormCategoriesLabel": "Données suivies",
-  "experimentFormReminderLabel": "Rappel de bilan quotidien",
-  "experimentFormReminderSubtitle": "Une notification ouvre cette expérience pour une évaluation rapide.",
-  "experimentFormReminderTimeLabel": "Heure du rappel",
-  "experimentFormDelete": "Supprimer",
-  "experimentFormDeleteConfirmTitle": "Supprimer l'expérience ?",
-  "experimentFormDeleteConfirmBody": "Cela supprime aussi les bilans de l'expérience.",
-  "experimentFormNameRequired": "Donnez un nom à l'expérience.",
-  "experimentFormInvalidDates": "La date de fin doit être postérieure ou égale à la date de début.",
-  "experimentDetailCheckin": "Bilan",
-  "experimentDetailCheckinToday": "Vous avez déjà fait votre bilan aujourd'hui. Vous pouvez le mettre à jour.",
-  "experimentDetailCheckinDialogTitle": "Bilan quotidien",
-  "experimentDetailCheckinRatingLabel": "Note",
-  "experimentDetailCheckinRatingHint": "1 = journée difficile, 5 = excellente journée",
-  "experimentDetailCheckinNoteLabel": "Note (facultatif)",
-  "experimentDetailCheckinNoteHint": "Comment s'est passée la journée ?",
-  "experimentDetailProgressTitle": "Progression",
-  "experimentDetailCheckinsTitle": "Bilans",
-  "experimentDetailTrackedTitle": "Données suivies",
-  "experimentDetailBaselineTitle": "Base de 14 jours",
-  "experimentDetailNoData": "Aucune donnée pour cette période pour le moment.",
-  "experimentDetailMarkDone": "Marquer terminée",
-  "experimentDetailAbort": "Abandonner",
-  "experimentDetailCheckinCount": "{count} bilans",
-  "@experimentDetailCheckinCount": {
-    "description": "experimentDetailCheckinCount",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "experimentRatingOf5": "{rating}/5",
-  "@experimentRatingOf5": {
-    "description": "experimentRatingOf5",
-    "placeholders": {
-      "rating": {
-        "type": "int"
-      }
-    }
-  },
-  "experimentChartWorkout": "Volume d'entraînement (kg)",
-  "experimentChartDiet": "Calories (kcal)",
-  "experimentChartDietProtein": "Protéines (g)",
-  "experimentChartWeight": "Poids (kg)",
-  "experimentChartSteps": "Pas",
-  "experimentReminderTitle": "Bilan pour {experiment}",
-  "@experimentReminderTitle": {
-    "description": "experimentReminderTitle",
-    "placeholders": {
-      "experiment": {
-        "type": "String"
-      }
-    }
-  },
-  "experimentReminderBody": "Évaluez votre journée pour cette expérience.",
-  "experimentReminderScheduled": "Rappel quotidien réglé à {time}.",
-  "@experimentReminderScheduled": {
-    "description": "experimentReminderScheduled",
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "experimentReminderCancelled": "Rappel quotidien désactivé.",
   "plannerViewGoals": "Vue des objectifs",
   "plannerModeTimeline": "Chronologie",
   "plannerModeInitiatives": "Initiatives",
@@ -1748,10 +1633,10 @@
   "prioritiesEmpty": "Aucun tag pour l'instant. Créez-en un pour organiser vos objectifs, tâches et notes.",
   "prioritiesUsageCount": "{count, plural, =0{inutilisée} =1{1 élément} other{{count} éléments}}",
   "tagsFilterAll": "Tous",
-  "initiativesEmptyAllTitle": "Aucune expérience ni objectif pour l'instant",
-  "initiativesEmptyAll": "Créez une expérience pour suivre une habitude, ou un objectif à atteindre.",
+  "initiativesEmptyAllTitle": "Aucun objectif pour l'instant",
+  "initiativesEmptyAll": "Créez un objectif à atteindre.",
   "initiativesEmptyFilterTitle": "Aucune initiative correspondante",
-  "initiativesEmptyFilter": "Aucune expérience ni objectif ne porte les tags sélectionnés.",
+  "initiativesEmptyFilter": "Aucun objectif ne porte les tags sélectionnés.",
   "goalsNew": "Nouvel objectif",
   "goalsEdit": "Modifier l'objectif",
   "goalsMissing": "Objectif introuvable.",
@@ -1813,7 +1698,7 @@
   "cascadeDeleteOnly": "Delete only",
   "cascadeDeleteWithTasks": "Delete with tasks",
   "settingsCascadeDeleteLabel": "Delete behavior",
-  "settingsCascadeDeleteHelp": "When deleting experiments/goals, choose whether to also delete linked tasks.",
+  "settingsCascadeDeleteHelp": "Lors de la suppression d'un objectif, choisissez si ses tâches liées doivent aussi être supprimées.",
   "settingsCascadeAsk": "Ask each time",
   "settingsCascadeAlways": "Always delete tasks",
   "settingsCascadeNever": "Never delete tasks",
@@ -1821,14 +1706,6 @@
   "templatesDuplicated": "Template duplicated",
   "cascadeDeleteTitleWithTasks": "Delete linked tasks?",
   "cascadeDeleteKeepTasks": "Keep tasks",
-  "experimentDeleted": "Experiment \"{name}\" deleted",
-  "@experimentDeleted": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "goalDeleted": "Goal \"{name}\" deleted",
   "@goalDeleted": {
     "placeholders": {
@@ -1848,4 +1725,5 @@
   "dashboardWeeklyEmptyCtaSync": "Sync exercises",
   "dashboardUpcomingEmptyCta": "Add task",
   "dashboardLatestEmptyCta": "Add workout"
+
 }

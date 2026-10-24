@@ -60,7 +60,7 @@ final class TagChip extends ConsumerWidget {
   }
 }
 
-/// Multi-select tag input used by the task, note, goal and experiment forms.
+/// Multi-select tag input used by the task, note and goal forms.
 /// Controlled: pass the current selection and receive updates via [onChanged].
 /// Suggestions come from the shared vocabulary plus every free-form tag still
 /// referenced anywhere, ordered by priority rank.

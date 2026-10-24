@@ -43,7 +43,7 @@ Both timer notifications are configured to show their **content on a secure lock
 
 - **Rest-over popup** (`_fireRestOverPopup` in `active_workout_notifier.dart`): `AndroidNotificationDetails` now sets `visibility: NotificationVisibility.public` + `category: AndroidNotificationCategory.alarm` alongside `importance`/`priority` high. Without `visibility`, flutter_local_notifications defaults to private and secure lock screens redact the content.
 - **Ongoing foreground notification** (`FlutterForegroundTask.init` in `app.dart`): explicit `visibility: NotificationVisibility.VISIBILITY_PUBLIC` (also the flutter_foreground_task package default — the actual gap was the channel) plus `channelImportance: NotificationChannelImportance.HIGH` and `priority: NotificationPriority.HIGH` so the channel can alert while locked; `onlyAlertOnce` kept.
-- Tap behavior unchanged: both route to `/active-workout`. Planner/experiment reminders untouched.
+- Tap behavior unchanged: both route to `/active-workout`. Planner reminders untouched.
 - Device verification pending (needs a physical Android device): lock during an active workout and during a rest → both visible; tap opens the workout.
 
 ## iOS (best-effort, per plan)
@@ -74,14 +74,6 @@ flowchart LR
 
 Scheduled due-time + pre-reminder notifications for planner tasks, governed by a single app-wide Settings toggle (`plannerNotifications`, default **on**).
 
-# Experiment Check-in Reminders (experiments tab)
-
-Daily "check in" notification per running experiment (`lib/src/experiments/notifications/experiment_reminder.dart`):
-
-- Android channel `experiment_reminders`; payload `experiment_reminder` → tap opens `/experiments` (wired in `notification_plugin.dart` alongside the planner + rest-alarm payloads).
-- `ExperimentReminderScheduler.scheduleForExperiment` fires via `zonedSchedule` + `DateTimeComponents.time` at the experiment's `reminderTimeMinutes` (default 20:00), **only while the experiment is `active` with reminders enabled** (otherwise it cancels in place). Deterministic notification id (stable FNV-1a hash of the experiment id) so edits reschedule in place.
-- `cancelForExperiment` runs on done / aborted / delete / toggle-off (the delete path also removes the check-ins).
-- No app-wide toggle (per-experiment switch in the form); no startup reschedule required because `zonedSchedule` daily reminders survive app restart via the plugin.
 
 ## Files
 
@@ -114,4 +106,4 @@ flowchart LR
     Tap[Tap reminder] --> Nav[onDidReceive: go /plan]
 ```
 
-See also: [overview.md](../overview.md), [architecture.md](../architecture.md), [exercise/workout-crud.md](../exercise/workout-crud.md), [planner/planner.md](../planner/planner.md), [settings/settings.md](../settings/settings.md), [experiments/experiments.md](../experiments/experiments.md)
+See also: [overview.md](../overview.md), [architecture.md](../architecture.md), [exercise/workout-crud.md](../exercise/workout-crud.md), [planner/planner.md](../planner/planner.md), [settings/settings.md](../settings/settings.md)

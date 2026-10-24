@@ -7,6 +7,7 @@ import '../database/database_provider.dart' as db;
 import '../network/api_client.dart';
 import '../settings/providers/settings.dart';
 import 'sync_models.dart';
+import 'sync_service.dart';
 import 'sync_state_store.dart';
 
 /// Pulls the **personal pool** — the user's own data mirrored by the sync
@@ -16,7 +17,7 @@ import 'sync_state_store.dart';
 /// fields, epoch-millisecond timestamps. Two roles apply (see [SyncResource]):
 ///
 ///  * **Local-first** resources (tasks, notes, goals, workouts, templates,
-///    experiments, meals, bodyMetrics, budgetAccounts, transactions) apply a
+///    meals, bodyMetrics, budgetAccounts, transactions) apply a
 ///    server row only when the id is absent locally, so a local edit always
 ///    wins. Tombstoned ids delete the local row with its dependents — a
 ///    deletion anywhere is a deletion everywhere.
@@ -220,8 +221,7 @@ final class PersonalPullService {
   }
 
   // --------------------------------------------------------------------------
-  // Workouts (exercise rows skip exercises the device has not imported; their
-  // sets land only when the parent exercise row landed)
+  // Workouts (the server nests each workout's exercises and their sets)
   // --------------------------------------------------------------------------
 
   Future<SyncResult> pullWorkouts({
@@ -232,79 +232,124 @@ final class PersonalPullService {
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
       var updated = 0;
-      for (final raw in _maps(payload['workouts'])) {
+      // A child deleted on the phone but not pushed yet must not come back
+      // from the server's (still alive) copy.
+      final pendingExercises = await _database.pendingSyncDeletes(
+        'workoutExercises',
+      );
+      final pendingSets = await _database.pendingSyncDeletes('exerciseSets');
+      final pendingWorkouts = await _database.pendingSyncDeletes('workouts');
+
+      for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
         if (id is! String) continue;
+        if (pendingWorkouts.contains(id)) continue;
         final existing =
             await (_database.select(_database.workouts)
                   ..where((t) => t.id.equals(id)))
                 .get();
-        if (existing.isNotEmpty) {
+        // Local-first: an already-present workout keeps its local values, but
+        // its children are still applied below — a workout row that arrived in
+        // an earlier pull used to suppress its exercises/sets forever.
+        if (existing.isEmpty) {
+          await _database.into(_database.workouts).insert(
+            db.WorkoutsCompanion.insert(
+              id: id,
+              name: _str(raw['name'], ''),
+              date: _int(raw['date']),
+              startedAt: Value(_optInt(raw['startedAt'])),
+              completedAt: Value(_optInt(raw['completedAt'])),
+              notes: Value(_optStr(raw['notes'])),
+              routineId: Value(_optStr(raw['routineId'])),
+              templateId: Value(_optStr(raw['templateId'])),
+              createdAt: _int(raw['createdAt']),
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+          updated++;
+        } else if (existing.first.deletedAt != null) {
+          // Deleted here, not yet pushed: do not resurrect its children.
           continue;
         }
-        await _database.into(_database.workouts).insert(
-          db.WorkoutsCompanion.insert(
-            id: id,
-            name: _str(raw['name'], ''),
-            date: _int(raw['date']),
-            startedAt: Value(_optInt(raw['startedAt'])),
-            completedAt: Value(_optInt(raw['completedAt'])),
-            notes: Value(_optStr(raw['notes'])),
-            routineId: Value(_optStr(raw['routineId'])),
-            templateId: Value(_optStr(raw['templateId'])),
-            createdAt: _int(raw['createdAt']),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-        updated++;
+
+        for (final exRaw in _maps(raw['exercises'])) {
+          final weId = exRaw['id'];
+          final exerciseId = exRaw['exerciseId'];
+          if (weId is! String || exerciseId is! String) continue;
+          if (pendingExercises.contains(weId)) continue;
+          // No `exerciseId` filtering: mobile foreign keys are off, and a
+          // missing exercise must not swallow the whole workout graph.
+          final insertedExercise = await _database
+              .into(_database.workoutExercises)
+              .insert(
+                db.WorkoutExercisesCompanion.insert(
+                  id: weId,
+                  workoutId: id,
+                  exerciseId: exerciseId,
+                  sortOrder: _int(exRaw['sortOrder']),
+                  notes: Value(_optStr(exRaw['notes'])),
+                ),
+                mode: InsertMode.insertOrIgnore,
+              );
+          if (insertedExercise > 0) updated++;
+
+          for (final setRaw in _maps(exRaw['sets'])) {
+            final setId = setRaw['id'];
+            if (setId is! String || pendingSets.contains(setId)) continue;
+            final insertedSet = await _database
+                .into(_database.exerciseSets)
+                .insert(
+                  db.ExerciseSetsCompanion.insert(
+                    id: setId,
+                    workoutExerciseId: weId,
+                    setNumber: _int(setRaw['setNumber']),
+                    reps: Value(_optInt(setRaw['reps'])),
+                    weightKg: Value(_optDouble(setRaw['weightKg'])),
+                    restSeconds: Value(_optInt(setRaw['restSeconds'])),
+                    actualReps: Value(_optInt(setRaw['actualReps'])),
+                    actualWeightKg: Value(_optDouble(setRaw['actualWeightKg'])),
+                    actualRestSeconds: Value(
+                      _optInt(setRaw['actualRestSeconds']),
+                    ),
+                    completedAt: Value(_optInt(setRaw['completedAt'])),
+                    durationMinutes: Value(_optInt(setRaw['durationMinutes'])),
+                    distanceMeters: Value(_optDouble(setRaw['distanceMeters'])),
+                    actualDurationMinutes: Value(
+                      _optInt(setRaw['actualDurationMinutes']),
+                    ),
+                    actualDistanceMeters: Value(
+                      _optDouble(setRaw['actualDistanceMeters']),
+                    ),
+                    notes: Value(_optStr(setRaw['notes'])),
+                  ),
+                  mode: InsertMode.insertOrIgnore,
+                );
+            if (insertedSet > 0) updated++;
+          }
+        }
       }
-      final exercises = await _idSet(_database.exercises);
-      for (final raw in _maps(payload['workoutExercises'])) {
-        final id = raw['id'];
-        final workoutId = raw['workoutId'];
-        final exerciseId = raw['exerciseId'];
-        if (id is! String || workoutId is! String) continue;
-        // `workoutExercises.exerciseId` carries a real foreign key to the local
-        // exercises table; a pulled session referencing an exercise this
-        // device has not imported is skipped, like the foods client skips
-        // unknown ingredients.
-        if (exerciseId is! String || !exercises.contains(exerciseId)) continue;
-        await _database.into(_database.workoutExercises).insert(
-          db.WorkoutExercisesCompanion.insert(
-            id: id,
-            workoutId: workoutId,
-            exerciseId: exerciseId,
-            sortOrder: _int(raw['sortOrder']),
-            notes: Value(_optStr(raw['notes'])),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
+
+      // Child tombstones delete the local rows even when the parent survived.
+      var deleted = 0;
+      for (final id in _names(payload['deletedExercises'])) {
+        final sets = await (_database.select(
+          _database.exerciseSets,
+        )..where((t) => t.workoutExerciseId.equals(id))).get();
+        for (final set in sets) {
+          await (_database.delete(
+            _database.exerciseSets,
+          )..where((t) => t.id.equals(set.id))).go();
+        }
+        deleted += await (_database.delete(
+          _database.workoutExercises,
+        )..where((t) => t.id.equals(id))).go();
       }
-      for (final raw in _maps(payload['exerciseSets'])) {
-        final id = raw['id'];
-        if (id is! String) continue;
-        await _database.into(_database.exerciseSets).insert(
-          db.ExerciseSetsCompanion.insert(
-            id: id,
-            workoutExerciseId: _str(raw['workoutExerciseId'], ''),
-            setNumber: _int(raw['setNumber']),
-            reps: Value(_optInt(raw['reps'])),
-            weightKg: Value(_optDouble(raw['weightKg'])),
-            restSeconds: Value(_optInt(raw['restSeconds'])),
-            actualReps: Value(_optInt(raw['actualReps'])),
-            actualWeightKg: Value(_optDouble(raw['actualWeightKg'])),
-            actualRestSeconds: Value(_optInt(raw['actualRestSeconds'])),
-            completedAt: Value(_optInt(raw['completedAt'])),
-            durationMinutes: Value(_optInt(raw['durationMinutes'])),
-            distanceMeters: Value(_optDouble(raw['distanceMeters'])),
-            actualDurationMinutes: Value(_optInt(raw['actualDurationMinutes'])),
-            actualDistanceMeters: Value(_optDouble(raw['actualDistanceMeters'])),
-            notes: Value(_optStr(raw['notes'])),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
+      for (final id in _names(payload['deletedSets'])) {
+        deleted += await (_database.delete(
+          _database.exerciseSets,
+        )..where((t) => t.id.equals(id))).go();
       }
-      final deleted = await _tombstoneWorkouts(_names(payload['deleted']));
+      deleted += await _tombstoneWorkouts(_names(payload['deleted']));
       await _advance(SyncResource.workouts, serverTime, since);
       return _result(updated, deleted, serverTime);
     } on ApiException catch (e) {
@@ -325,148 +370,110 @@ final class PersonalPullService {
     final since = _state.getLastSyncedAt(SyncResource.templates);
     try {
       final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
-      final exercises = await _idSet(_database.exercises);
       var updated = 0;
+      final pendingExercises = await _database.pendingSyncDeletes(
+        'workoutTemplateExercises',
+      );
+      final pendingSets = await _database.pendingSyncDeletes(
+        'workoutTemplateSets',
+      );
+      final pendingTemplates = await _database.pendingSyncDeletes(
+        'workoutTemplates',
+      );
+
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
         if (id is! String) continue;
+        if (pendingTemplates.contains(id)) continue;
         final existing =
             await (_database.select(_database.workoutTemplates)
                   ..where((t) => t.id.equals(id)))
                 .get();
-        if (existing.isNotEmpty) continue;
-        await _database.into(_database.workoutTemplates).insert(
-          db.WorkoutTemplatesCompanion.insert(
-            id: id,
-            name: _str(raw['name'], ''),
-            startDate: _int(raw['startDate']),
-            notes: Value(_optStr(raw['notes'])),
-            recurrence: Value(_optStr(raw['recurrence'])),
-            excludedDates: Value(_optStr(raw['excludedDates'])),
-            sourceRoutineId: Value(_optStr(raw['sourceRoutineId'])),
-            createdAt: _int(raw['createdAt']),
-            updatedAt: _int(raw['updatedAt']),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-        updated++;
-        for (final exRaw in _maps(raw['exercises'])) {
-          final exerciseId = exRaw['exerciseId'];
-          if (exerciseId is! String || !exercises.contains(exerciseId)) continue;
-          final weId = exRaw['id'];
-          if (weId is! String) continue;
-          await _database.into(_database.workoutTemplateExercises).insert(
-            db.WorkoutTemplateExercisesCompanion.insert(
-              id: weId,
-              templateId: id,
-              exerciseId: exerciseId,
-              sortOrder: _int(exRaw['sortOrder']),
-              notes: Value(_optStr(exRaw['notes'])),
+        if (existing.isEmpty) {
+          await _database.into(_database.workoutTemplates).insert(
+            db.WorkoutTemplatesCompanion.insert(
+              id: id,
+              name: _str(raw['name'], ''),
+              startDate: _int(raw['startDate']),
+              notes: Value(_optStr(raw['notes'])),
+              recurrence: Value(_optStr(raw['recurrence'])),
+              excludedDates: Value(_optStr(raw['excludedDates'])),
+              sourceRoutineId: Value(_optStr(raw['sourceRoutineId'])),
+              createdAt: _int(raw['createdAt']),
+              updatedAt: _int(raw['updatedAt']),
             ),
             mode: InsertMode.insertOrIgnore,
           );
+          updated++;
+        } else if (existing.first.deletedAt != null) {
+          continue;
+        }
+
+        for (final exRaw in _maps(raw['exercises'])) {
+          final exerciseId = exRaw['exerciseId'];
+          final weId = exRaw['id'];
+          if (weId is! String || exerciseId is! String) continue;
+          if (pendingExercises.contains(weId)) continue;
+          final insertedExercise = await _database
+              .into(_database.workoutTemplateExercises)
+              .insert(
+                db.WorkoutTemplateExercisesCompanion.insert(
+                  id: weId,
+                  templateId: id,
+                  exerciseId: exerciseId,
+                  sortOrder: _int(exRaw['sortOrder']),
+                  notes: Value(_optStr(exRaw['notes'])),
+                ),
+                mode: InsertMode.insertOrIgnore,
+              );
+          if (insertedExercise > 0) updated++;
+
           // The wire nests each exercise's planned sets inside the exercise
           // object, mirroring how the push handlers read them.
           for (final setRaw in _maps(exRaw['sets'])) {
             final setId = setRaw['id'];
-            if (setId is! String) continue;
-            await _database.into(_database.workoutTemplateSets).insert(
-              db.WorkoutTemplateSetsCompanion.insert(
-                id: setId,
-                templateExerciseId: weId,
-                setNumber: _int(setRaw['setNumber']),
-                reps: Value(_optInt(setRaw['reps'])),
-                weightKg: Value(_optDouble(setRaw['weightKg'])),
-                restSeconds: Value(_optInt(setRaw['restSeconds'])),
-                durationMinutes: Value(_optInt(setRaw['durationMinutes'])),
-                distanceMeters: Value(_optDouble(setRaw['distanceMeters'])),
-              ),
-              mode: InsertMode.insertOrIgnore,
-            );
+            if (setId is! String || pendingSets.contains(setId)) continue;
+            final insertedSet = await _database
+                .into(_database.workoutTemplateSets)
+                .insert(
+                  db.WorkoutTemplateSetsCompanion.insert(
+                    id: setId,
+                    templateExerciseId: weId,
+                    setNumber: _int(setRaw['setNumber']),
+                    reps: Value(_optInt(setRaw['reps'])),
+                    weightKg: Value(_optDouble(setRaw['weightKg'])),
+                    restSeconds: Value(_optInt(setRaw['restSeconds'])),
+                    durationMinutes: Value(_optInt(setRaw['durationMinutes'])),
+                    distanceMeters: Value(_optDouble(setRaw['distanceMeters'])),
+                  ),
+                  mode: InsertMode.insertOrIgnore,
+                );
+            if (insertedSet > 0) updated++;
           }
         }
       }
-      final deleted = await _tombstoneTemplates(_names(payload['deleted']));
-      await _advance(SyncResource.templates, serverTime, since);
-      return _result(updated, deleted, serverTime);
-    } on ApiException catch (e) {
-      return SyncResult(error: 'Pull failed (HTTP ${e.statusCode})');
-    } catch (e) {
-      return SyncResult(error: e.toString());
-    }
-  }
 
-  // --------------------------------------------------------------------------
-  // Experiments (daily check-ins ride along)
-  // --------------------------------------------------------------------------
-
-  Future<SyncResult> pullExperiments({
-    required String apiKey,
-    required String endpoint,
-  }) async {
-    final since = _state.getLastSyncedAt(SyncResource.experiments);
-    try {
-      final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
-      final landed = <String>{};
-      var updated = 0;
-      for (final raw in _maps(payload['items'])) {
-        final id = raw['id'];
-        if (id is! String) continue;
-        final existing =
-            await (_database.select(_database.experiments)
-                  ..where((t) => t.id.equals(id)))
-                .get();
-        if (existing.isNotEmpty) continue;
-        await _database.into(_database.experiments).insert(
-          db.ExperimentsCompanion.insert(
-            id: id,
-            name: _str(raw['name'], ''),
-            startDate: _int(raw['startDate']),
-            purpose: Value(_optStr(raw['purpose'])),
-            endDate: Value(_optInt(raw['endDate'])),
-            status: Value(_str(raw['status'], 'planned')),
-            categories: Value(_optStr(raw['categories'])),
-            reminderEnabled: Value(raw['reminderEnabled'] == true),
-            reminderTimeMinutes: Value(_int(raw['reminderTimeMinutes'])),
-            createdAt: _int(raw['createdAt']),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-        landed.add(id);
-        updated++;
-      }
-      for (final raw in _maps(payload['checkins'])) {
-        final id = raw['id'];
-        final experimentId = raw['experimentId'];
-        if (id is! String || experimentId is! String) continue;
-        if (!landed.contains(experimentId)) continue;
-        await _database.into(_database.experimentCheckins).insert(
-          db.ExperimentCheckinsCompanion.insert(
-            id: id,
-            experimentId: experimentId,
-            day: _int(raw['day']),
-            rating: _int(raw['rating']),
-            note: Value(_optStr(raw['note'])),
-            createdAt: _int(raw['createdAt']),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-      }
       var deleted = 0;
-      for (final id in _names(payload['deleted'])) {
-        // The shared tombstone list covers experiments and their check-ins;
-        // deleting whichever table holds the id keeps it honest.
-        var hit = await (_database.delete(
-          _database.experiments,
-        )..where((t) => t.id.equals(id))).go();
-        if (hit == 0) {
-          hit = await (_database.delete(
-            _database.experimentCheckins,
-          )..where((t) => t.id.equals(id))).go();
+      for (final id in _names(payload['deletedExercises'])) {
+        final sets = await (_database.select(
+          _database.workoutTemplateSets,
+        )..where((t) => t.templateExerciseId.equals(id))).get();
+        for (final set in sets) {
+          await (_database.delete(
+            _database.workoutTemplateSets,
+          )..where((t) => t.id.equals(set.id))).go();
         }
-        deleted += hit > 0 ? 1 : 0;
+        deleted += await (_database.delete(
+          _database.workoutTemplateExercises,
+        )..where((t) => t.id.equals(id))).go();
       }
-      await _advance(SyncResource.experiments, serverTime, since);
+      for (final id in _names(payload['deletedSets'])) {
+        deleted += await (_database.delete(
+          _database.workoutTemplateSets,
+        )..where((t) => t.id.equals(id))).go();
+      }
+      deleted += await _tombstoneTemplates(_names(payload['deleted']));
+      await _advance(SyncResource.templates, serverTime, since);
       return _result(updated, deleted, serverTime);
     } on ApiException catch (e) {
       return SyncResult(error: 'Pull failed (HTTP ${e.statusCode})');
@@ -706,12 +713,65 @@ final class PersonalPullService {
   }
 
   // --------------------------------------------------------------------------
+  // Stores (shared vocabulary; also nested in the ingredient pull)
+  // --------------------------------------------------------------------------
+
+  /// Local-first like the other personal entities: a store this device already
+  /// knows keeps its local name, an unknown id is inserted, and the server's
+  /// tombstones delete local rows.
+  Future<SyncResult> pullStores({
+    required String apiKey,
+    required String endpoint,
+  }) async {
+    final since = _state.getLastSyncedAt(SyncResource.stores);
+    try {
+      final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
+      var updated = 0;
+      for (final raw in _maps(payload['items'])) {
+        final id = raw['id'];
+        final name = raw['name'];
+        if (id is! String || name is! String) continue;
+        final existing =
+            await (_database.select(
+              _database.stores,
+            )..where((t) => t.id.equals(id))).get();
+        if (existing.isNotEmpty) continue;
+        await _database.into(_database.stores).insert(
+          db.StoresCompanion.insert(
+            id: id,
+            name: name,
+            createdAt: _int(raw['createdAt']),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+        updated++;
+      }
+      var deleted = 0;
+      for (final id in _names(payload['deleted'])) {
+        deleted += await (_database.delete(
+          _database.stores,
+        )..where((t) => t.id.equals(id))).go();
+      }
+      await _advance(SyncResource.stores, serverTime, since);
+      return _result(updated, deleted, serverTime);
+    } on ApiException catch (e) {
+      return SyncResult(error: 'Pull failed (HTTP ${e.statusCode})');
+    } catch (e) {
+      return SyncResult(error: e.toString());
+    }
+  }
+
+  // --------------------------------------------------------------------------
   // Server-wins resources
   // --------------------------------------------------------------------------
 
   /// Tags: the shared vocabulary. `tags.name` is unique locally, so a server
   /// rename that collides with another local id is skipped rather than
   /// corrupting the vocabulary.
+  ///
+  /// Placeholder tags (`name == id`, the legacy output of link-only pushes) are
+  /// ignored: they are not real names. When a local row still carries such a
+  /// placeholder and the server now knows the real name, the row is repaired.
   Future<SyncResult> pullTags({
     required String apiKey,
     required String endpoint,
@@ -724,22 +784,48 @@ final class PersonalPullService {
         final id = raw['id'];
         final name = raw['name'];
         if (id is! String || name is! String) continue;
-        final rows =
+        if (name.isEmpty || name == id) continue;
+
+        final byId =
+            await (_database.select(
+              _database.tags,
+            )..where((t) => t.id.equals(id))).get();
+        final byName =
             await (_database.select(
               _database.tags,
             )..where((t) => t.name.equals(name))).get();
-        if (rows.any((t) => t.id != id)) continue;
-        await _database.into(_database.tags).insert(
-          db.TagsCompanion.insert(
-            id: id,
-            name: name,
-            color: Value(_optInt(raw['color'])),
-            sortOrder: Value(_int(raw['sortOrder'])),
-            createdAt: _int(raw['createdAt']),
-            updatedAt: _int(raw['updatedAt']),
-          ),
-          mode: InsertMode.insertOrReplace,
-        );
+        // Another id already owns this name locally: never steal it.
+        if (byName.any((t) => t.id != id)) continue;
+
+        final existing = byId.isEmpty ? null : byId.first;
+        if (existing != null) {
+          // An existing real name wins over the server's copy; only heal a
+          // local placeholder or fill in the server's metadata.
+          final keepName = existing.name != existing.id && existing.name != '';
+          await (_database.update(
+            _database.tags,
+          )..where((t) => t.id.equals(id))).write(
+            db.TagsCompanion(
+              name: keepName ? const Value.absent() : Value(name),
+              color: Value(_optInt(raw['color'])),
+              sortOrder: Value(_int(raw['sortOrder'])),
+              createdAt: Value(_int(raw['createdAt'])),
+              updatedAt: Value(_int(raw['updatedAt'])),
+            ),
+          );
+        } else {
+          await _database.into(_database.tags).insert(
+            db.TagsCompanion.insert(
+              id: id,
+              name: name,
+              color: Value(_optInt(raw['color'])),
+              sortOrder: Value(_int(raw['sortOrder'])),
+              createdAt: _int(raw['createdAt']),
+              updatedAt: _int(raw['updatedAt']),
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+        }
         updated++;
       }
       var deleted = 0;
@@ -806,6 +892,12 @@ final class PersonalPullService {
 
   /// Decodes the pull response for [endpoint] (or fails with a message the
   /// caller turns into a [SyncResult.error]).
+  ///
+  /// The personal pool is always fetched in full (`since=0`): push mirrors the
+  /// phone's complete state onto the server and pull mirrors the server's
+  /// complete state back, so a change that only touched a child row can never
+  /// be missed. [since] is still passed in to keep the call sites uniform and
+  /// is only used for the last-sync label.
   Future<(Map<String, Object?>, int)> _fetch(
     String endpoint,
     String apiKey,
@@ -813,7 +905,7 @@ final class PersonalPullService {
   ) async {
     final response = await _api.getJson(
       endpoint,
-      query: {'since': '$since'},
+      query: const {'since': '0'},
       headers: authHeaders(apiKey),
     );
     if (response is! Map) throw StateError(_error);
@@ -871,7 +963,6 @@ final class PersonalPullService {
         for (final statement in [
           'DELETE FROM task_tags WHERE task_id = ?1',
           'DELETE FROM task_goals WHERE task_id = ?1',
-          'DELETE FROM task_experiments WHERE task_id = ?1',
           'DELETE FROM task_notes WHERE task_id = ?1',
         ]) {
           await _database.customStatement(statement, [id]);
@@ -893,7 +984,6 @@ final class PersonalPullService {
           'DELETE FROM note_tags WHERE note_id = ?1',
           'DELETE FROM note_audio WHERE note_id = ?1',
           'DELETE FROM task_notes WHERE note_id = ?1',
-          'DELETE FROM experiment_notes WHERE note_id = ?1',
           'DELETE FROM goal_notes WHERE note_id = ?1',
           'DELETE FROM note_workouts WHERE note_id = ?1',
         ]) {
@@ -921,7 +1011,6 @@ final class PersonalPullService {
         for (final statement in [
           'DELETE FROM goal_tags WHERE goal_id = ?1',
           'DELETE FROM task_goals WHERE goal_id = ?1',
-          'DELETE FROM experiment_goals WHERE goal_id = ?1',
           'DELETE FROM goal_notes WHERE goal_id = ?1',
           'DELETE FROM goal_workouts WHERE goal_id = ?1',
         ]) {
@@ -1003,6 +1092,17 @@ Future<SyncResult> pullDataType(WidgetRef ref, String type) async {
   );
   final key = settings.remoteSyncApiKey;
   switch (type) {
+    case 'exercises':
+      // Exercises have their own client (media download + catalog handling);
+      // a full pull is requested so newly shared custom exercises arrive.
+      return ref
+          .read(syncServiceProvider)
+          .syncExercises(
+            settings.remoteSyncBaseUrl,
+            key,
+            endpoint: settings.endpointExercises,
+            full: true,
+          );
     case 'tasks':
       return service.pullTasks(apiKey: key, endpoint: settings.endpointTasks);
     case 'notes':
@@ -1018,11 +1118,6 @@ Future<SyncResult> pullDataType(WidgetRef ref, String type) async {
       return service.pullTemplates(
         apiKey: key,
         endpoint: settings.endpointTemplates,
-      );
-    case 'experiments':
-      return service.pullExperiments(
-        apiKey: key,
-        endpoint: settings.endpointExperiments,
       );
     case 'meals':
       return service.pullMeals(apiKey: key, endpoint: settings.endpointMeals);
@@ -1048,6 +1143,19 @@ Future<SyncResult> pullDataType(WidgetRef ref, String type) async {
       );
     case 'tags':
       return service.pullTags(apiKey: key, endpoint: settings.endpointTags);
+    case 'stores':
+      return service.pullStores(apiKey: key, endpoint: '/stores');
+    case 'foods':
+      // Recipes have their own client (ingredient resolution + nutrition
+      // snapshots); a full pull mirrors the server like the personal pool.
+      return ref
+          .read(syncServiceProvider)
+          .syncFoods(
+            settings.remoteSyncBaseUrl,
+            key,
+            endpoint: settings.endpointFoods,
+            full: true,
+          );
     default:
       return SyncResult(error: 'Unknown pull type: $type');
   }

@@ -211,9 +211,6 @@ final class TagRepository {
     for (final row in await _database.select(_database.taskTags).get()) {
       bump(row.tagId);
     }
-    for (final row in await _database.select(_database.experimentTags).get()) {
-      bump(row.tagId);
-    }
     for (final row in await _database.select(_database.goalTags).get()) {
       bump(row.tagId);
     }
@@ -237,9 +234,6 @@ final class TagRepository {
   Future<List<String>> tagsForTask(String id) =>
       _namesFor('task_tags', 'task_id', id);
 
-  Future<List<String>> tagsForExperiment(String id) =>
-      _namesFor('experiment_tags', 'experiment_id', id);
-
   Future<List<String>> tagsForGoal(String id) =>
       _namesFor('goal_tags', 'goal_id', id);
 
@@ -249,9 +243,6 @@ final class TagRepository {
   /// Batched variant: returns id → tag names for a batch of entity ids.
   Future<Map<String, List<String>>> tagNamesForTasks(List<String> ids) =>
       _namesMap('task_tags', 'task_id', ids);
-
-  Future<Map<String, List<String>>> tagNamesForExperiments(List<String> ids) =>
-      _namesMap('experiment_tags', 'experiment_id', ids);
 
   Future<Map<String, List<String>>> tagNamesForGoals(List<String> ids) =>
       _namesMap('goal_tags', 'goal_id', ids);
@@ -270,24 +261,6 @@ final class TagRepository {
       for (final tagId in tagIds) {
         await _database.into(_database.taskTags).insert(
               db.TaskTagsCompanion.insert(tagId: tagId, taskId: taskId),
-              onConflict: DoNothing(),
-            );
-      }
-    });
-  }
-
-  Future<void> setExperimentTags(String experimentId, List<String> names) async {
-    final tagIds = await _resolveTagIds(names);
-    await _database.transaction(() async {
-      await (_database.delete(
-        _database.experimentTags,
-      )..where((t) => t.experimentId.equals(experimentId))).go();
-      for (final tagId in tagIds) {
-        await _database.into(_database.experimentTags).insert(
-              db.ExperimentTagsCompanion.insert(
-                tagId: tagId,
-                experimentId: experimentId,
-              ),
               onConflict: DoNothing(),
             );
       }

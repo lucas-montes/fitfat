@@ -48,8 +48,9 @@ final class FoodSyncClient {
     required String apiKey,
     String endpoint = _path,
     Future<void> Function(Set<String> ids)? resolveMissingIngredientIds,
+    bool full = false,
   }) async {
-    final since = _state.getLastSyncedAt(SyncResource.foods);
+    final since = full ? 0 : _state.getLastSyncedAt(SyncResource.foods);
     try {
       final payload = await _api.getJson(
         endpoint,

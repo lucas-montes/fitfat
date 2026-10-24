@@ -10,7 +10,6 @@ import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import '../../../l10n/app_localizations.dart';
 import '../../network/api_client.dart';
 import '../../database/database_provider.dart' as db;
 import '../../exercise/widgets/select_sheet.dart';
@@ -83,7 +82,6 @@ final class SyncHubScreen extends ConsumerWidget {
   const SyncHubScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sync & Backup'),
@@ -108,7 +106,7 @@ final class SyncHubScreen extends ConsumerWidget {
             icon: Icons.cloud_upload_outlined,
             title: 'Personal pool',
             subtitle:
-                'Push/pull your tasks, notes, goals, workouts, templates, experiments, meals, body, budget',
+                'Push/pull your tasks, notes, goals, workouts, templates, meals, body, budget',
             child: _PersonalPoolSection(),
           ),
           const SizedBox(height: FitFatTokens.spaceL),
@@ -903,105 +901,181 @@ final class _PersonalPoolSection extends ConsumerStatefulWidget {
 
 final class _PersonalPoolSectionState
     extends ConsumerState<_PersonalPoolSection> {
-  final Set<String> _selected = {
+  final Map<String, bool> _busy = {};
+  bool _pushingAll = false;
+  bool _pullingAll = false;
+  bool _isBusy(String key) => _busy[key] ?? false;
+  void _setBusy(String key, bool v) => setState(() => _busy[key] = v);
+
+  /// Dependency order for both directions.
+  ///
+  /// Tags go first so links can name them; exercises go before workouts and
+  /// templates because those reference exercise ids (the server enforces the
+  /// foreign key on push). Stores precede foods for the same reason.
+  static const _order = [
+    'Tags',
+    'Exercises',
     'Tasks',
     'Notes',
     'Goals',
     'Workouts',
     'Templates',
-    'Experiments',
     'Meals',
     'Body',
     'Budget',
     'Receipts',
-    'Tags',
     'Stores',
     'Foods',
-  };
-  final Map<String, bool> _busy = {};
-  bool _isBusy(String key) => _busy[key] ?? false;
-  void _setBusy(String key, bool v) => setState(() => _busy[key] = v);
-  Future<void> _pushOne(String entity) async {
+  ];
+
+  static const _entities = [
+    ('Tags', Icons.sell_outlined),
+    ('Exercises', Icons.directions_run),
+    ('Tasks', Icons.checklist),
+    ('Notes', Icons.note_alt_outlined),
+    ('Goals', Icons.flag_outlined),
+    ('Workouts', Icons.fitness_center),
+    ('Templates', Icons.view_module_outlined),
+    ('Meals', Icons.restaurant_outlined),
+    ('Body', Icons.monitor_weight_outlined),
+    ('Budget', Icons.account_balance_wallet_outlined),
+    ('Receipts', Icons.receipt_long_outlined),
+    ('Stores', Icons.storefront_outlined),
+    ('Foods', Icons.local_grocery_store_outlined),
+  ];
+
+  /// Pushes one entity. Returns the failure message, or null on success.
+  Future<String?> _pushOne(String entity, {bool announce = true}) async {
     _setBusy(entity, true);
     try {
-      final type = _entityToType(entity);
-      final res = await pushDataType(ref, type);
+      final res = await pushDataType(ref, _entityToType(entity));
       // Ship diagnostics either way so a failure is visible on the computer.
       await shipPhoneLogs(ref);
-      if (!mounted) return;
-      showTopBanner(
-        context,
-        message: res.ok
-            ? 'Pushed $entity'
-            : 'Could not push $entity — '
-                  '${friendlySyncError(ref.read(settingsProvider).remoteSyncBaseUrl, res.error ?? 'unknown error')}',
-      );
+      if (!mounted) return null;
+      if (res.ok) {
+        if (announce) showTopBanner(context, message: 'Pushed $entity');
+        setState(() {});
+        return null;
+      }
+      final message =
+          'Could not push $entity — '
+          '${friendlySyncError(ref.read(settingsProvider).remoteSyncBaseUrl, res.error ?? 'unknown error')}';
+      if (announce) showTopBanner(context, message: message);
+      return message;
     } catch (e) {
       await shipPhoneLogs(ref);
-      if (mounted)
-        showTopBanner(
-          context,
-          message: friendlySyncError(
-            ref.read(settingsProvider).remoteSyncBaseUrl,
-            '$e',
-          ),
-        );
+      final message = friendlySyncError(
+        ref.read(settingsProvider).remoteSyncBaseUrl,
+        '$e',
+      );
+      if (mounted && announce) showTopBanner(context, message: message);
+      return message;
     } finally {
       if (mounted) _setBusy(entity, false);
     }
   }
 
-  Future<void> _pullOne(String entity) async {
+  /// Pulls one entity. Returns the failure message, or null on success.
+  Future<String?> _pullOne(String entity, {bool announce = true}) async {
     _setBusy(entity, true);
     try {
-      final type = _entityToType(entity);
-      final res = await pullDataType(ref, type);
+      final res = await pullDataType(ref, _entityToType(entity));
       // Ship diagnostics either way so a failure is visible on the computer.
       await shipPhoneLogs(ref);
+      if (!mounted) return null;
+      if (res.ok) {
+        if (announce) {
+          showTopBanner(
+            context,
+            message:
+                'Pulled $entity — ${res.updated} updated, ${res.deleted} deleted',
+          );
+        }
+        setState(() {});
+        return null;
+      }
+      final message =
+          'Could not pull $entity — '
+          '${friendlySyncError(ref.read(settingsProvider).remoteSyncBaseUrl, res.error ?? 'unknown error')}';
+      if (announce) showTopBanner(context, message: message);
+      return message;
+    } catch (e) {
+      await shipPhoneLogs(ref);
+      final message = friendlySyncError(
+        ref.read(settingsProvider).remoteSyncBaseUrl,
+        '$e',
+      );
+      if (mounted && announce) showTopBanner(context, message: message);
+      return message;
+    } finally {
+      if (mounted) _setBusy(entity, false);
+    }
+  }
+
+  /// Mirrors the phone's full state onto the server, in dependency order.
+  /// Stops at the first failure — later entities may reference the failed one.
+  Future<void> _pushAll() async {
+    setState(() => _pushingAll = true);
+    try {
+      for (final entity in _order) {
+        if (!mounted) return;
+        final error = await _pushOne(entity, announce: false);
+        if (error != null) {
+          if (mounted) showTopBanner(context, message: error);
+          return;
+        }
+      }
+      if (mounted) showTopBanner(context, message: 'Pushed all data');
+    } finally {
+      if (mounted) setState(() => _pushingAll = false);
+    }
+  }
+
+  /// Mirrors the server's full state onto the phone, in dependency order.
+  /// Keeps going after a failure so one bad endpoint cannot block the rest.
+  Future<void> _pullAll() async {
+    setState(() => _pullingAll = true);
+    final failures = <String>[];
+    try {
+      for (final entity in _order) {
+        if (!mounted) return;
+        final error = await _pullOne(entity, announce: false);
+        if (error != null) failures.add(entity);
+      }
       if (!mounted) return;
       showTopBanner(
         context,
-        message: res.ok
-            ? 'Pulled $entity — ${res.updated} updated, ${res.deleted} deleted'
-            : 'Could not pull $entity — '
-                  '${friendlySyncError(ref.read(settingsProvider).remoteSyncBaseUrl, res.error ?? 'unknown error')}',
+        message: failures.isEmpty
+            ? 'Pulled all data'
+            : 'Pulled with errors: ${failures.join(', ')}',
       );
-      setState(() {});
-    } catch (e) {
-      await shipPhoneLogs(ref);
-      if (mounted)
-        showTopBanner(
-          context,
-          message: friendlySyncError(
-            ref.read(settingsProvider).remoteSyncBaseUrl,
-            '$e',
-          ),
-        );
     } finally {
-      if (mounted) _setBusy(entity, false);
+      if (mounted) setState(() => _pullingAll = false);
     }
   }
 
   String _entityToType(String e) => switch (e) {
+    'Tags' => 'tags',
+    'Exercises' => 'exercises',
     'Tasks' => 'tasks',
     'Notes' => 'notes',
     'Goals' => 'goals',
     'Workouts' => 'workouts',
     'Templates' => 'templates',
-    'Experiments' => 'experiments',
     'Meals' => 'meals',
     'Body' => 'bodyMetrics',
     'Budget' => 'budgetAccounts',
     'Receipts' => 'receiptPictures',
-    'Tags' => 'tags',
     'Stores' => 'stores',
     'Foods' => 'foods',
     _ => 'tasks',
   };
+
   @override
   Widget build(BuildContext context) {
     final state = PrefsSyncStateStore(ref.watch(sharedPreferencesProvider));
-    String last(SyncResource r) {
+    String last(SyncResource? r) {
+      if (r == null) return '—';
       final ms = state.getLastSyncedAt(r);
       if (ms == 0) return 'never';
       final dt = DateTime.fromMillisecondsSinceEpoch(ms);
@@ -1011,40 +1085,30 @@ final class _PersonalPoolSectionState
       return '${diff.inDays}d ago';
     }
 
-    SyncResource resourceOf(String entity) => switch (entity) {
+    SyncResource? resourceOf(String entity) => switch (entity) {
+      'Tags' => SyncResource.tags,
+      'Exercises' => SyncResource.exercises,
       'Tasks' => SyncResource.tasks,
       'Notes' => SyncResource.notes,
       'Goals' => SyncResource.goals,
       'Workouts' => SyncResource.workouts,
       'Templates' => SyncResource.templates,
-      'Experiments' => SyncResource.experiments,
       'Meals' => SyncResource.meals,
       'Body' => SyncResource.bodyMetrics,
       'Budget' => SyncResource.budgetAccounts,
       'Receipts' => SyncResource.receipts,
-      'Tags' => SyncResource.tags,
-      _ => SyncResource.tasks,
+      'Stores' => SyncResource.stores,
+      'Foods' => SyncResource.foods,
+      _ => null,
     };
     return FutureBuilder<Map<String, int>>(
       future: _counts(ref),
       builder: (ctx, snap) {
         final counts = snap.data ?? {};
-        const entities = [
-          ('Tasks', Icons.checklist),
-          ('Notes', Icons.note_alt_outlined),
-          ('Goals', Icons.flag_outlined),
-          ('Workouts', Icons.fitness_center),
-          ('Templates', Icons.view_module_outlined),
-          ('Experiments', Icons.science_outlined),
-          ('Meals', Icons.restaurant_outlined),
-          ('Body', Icons.monitor_weight_outlined),
-          ('Budget', Icons.account_balance_wallet_outlined),
-          ('Receipts', Icons.receipt_long_outlined),
-        ];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (final (name, icon) in entities) ...[
+            for (final (name, icon) in _entities) ...[
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(
@@ -1054,43 +1118,28 @@ final class _PersonalPoolSectionState
                 ),
                 title: Text('$name · ${counts[name] ?? 0}'),
                 subtitle: Text('Last sync: ${last(resourceOf(name))}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Checkbox(
-                      value: _selected.contains(name),
-                      onChanged: (v) => setState(() {
-                        if (v == true)
-                          _selected.add(name);
-                        else
-                          _selected.remove(name);
-                      }),
-                    ),
-                    const SizedBox(width: 4),
-                    _isBusy(name)
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.cloud_upload_outlined),
-                                tooltip: 'Push $name',
-                                onPressed: () => _pushOne(name),
-                              ),
-                              const SizedBox(width: 4),
-                              IconButton(
-                                icon: const Icon(Icons.cloud_download_outlined),
-                                tooltip: 'Pull $name',
-                                onPressed: () => _pullOne(name),
-                              ),
-                            ],
+                trailing: _isBusy(name)
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.cloud_upload_outlined),
+                            tooltip: 'Push $name',
+                            onPressed: () => _pushOne(name),
                           ),
-                  ],
-                ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            icon: const Icon(Icons.cloud_download_outlined),
+                            tooltip: 'Pull $name',
+                            onPressed: () => _pullOne(name),
+                          ),
+                        ],
+                      ),
               ),
               const Divider(height: 1),
             ],
@@ -1100,33 +1149,26 @@ final class _PersonalPoolSectionState
               runSpacing: FitFatTokens.spaceS,
               children: [
                 FilledButton.icon(
-                  onPressed: () async {
-                    for (final e in _selected.toList()) {
-                      await _pushOne(e);
-                    }
-                  },
-                  icon: const Icon(Icons.cloud_upload, size: 18),
-                  label: Text('Push all (${_selected.length})'),
+                  onPressed: _pushingAll || _pullingAll ? null : _pushAll,
+                  icon: _pushingAll
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.cloud_upload, size: 18),
+                  label: const Text('Push all'),
                 ),
                 OutlinedButton.icon(
-                  onPressed: _selected.isEmpty
-                      ? null
-                      : () async {
-                          for (final e in _selected) await _pushOne(e);
-                        },
-                  icon: const Icon(Icons.upload, size: 18),
-                  label: const Text('Push selected'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: _selected.isEmpty
-                      ? null
-                      : () async {
-                          for (final e in _selected) {
-                            if (!_isBusy(e)) await _pullOne(e);
-                          }
-                        },
-                  icon: const Icon(Icons.cloud_download, size: 18),
-                  label: const Text('Pull selected'),
+                  onPressed: _pushingAll || _pullingAll ? null : _pullAll,
+                  icon: _pullingAll
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.cloud_download, size: 18),
+                  label: const Text('Pull all'),
                 ),
               ],
             ),
@@ -1147,17 +1189,24 @@ final class _PersonalPoolSectionState
     final body = await dbInst.select(dbInst.bodyMetrics).get();
     final accounts = await dbInst.select(dbInst.accounts).get();
     final receipts = await dbInst.select(dbInst.receipts).get();
+    final tags = await dbInst.select(dbInst.tags).get();
+    final exercises = await dbInst.select(dbInst.exercises).get();
+    final stores = await dbInst.select(dbInst.stores).get();
+    final foods = await dbInst.select(dbInst.foods).get();
     return {
+      'Tags': tags.length,
+      'Exercises': exercises.length,
       'Tasks': tasks.length,
       'Notes': notes.length,
       'Goals': goals.length,
       'Workouts': workouts.length,
       'Templates': templates.length,
-      'Experiments': 0,
       'Meals': meals.length,
       'Body': body.length,
       'Budget': accounts.length,
       'Receipts': receipts.length,
+      'Stores': stores.length,
+      'Foods': foods.length,
     };
   }
 }
@@ -1178,7 +1227,6 @@ final class _LocalBackupSectionState
     'Goals',
     'Workouts',
     'Templates',
-    'Experiments',
     'Meals',
     'Body',
     'Budget',
@@ -1251,7 +1299,6 @@ final class _LocalBackupSectionState
                 'Goals',
                 'Workouts',
                 'Templates',
-                'Experiments',
                 'Meals',
                 'Body',
                 'Budget',

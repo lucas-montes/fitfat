@@ -645,7 +645,7 @@ final class _GoalRelatedTasks extends ConsumerWidget {
           children: [
             ActionChip(
               avatar: const Icon(Icons.link, size: 18),
-              label: Text(l10n.experimentLinkTask),
+              label: Text(l10n.goalLinkTask),
               onPressed: () => _openPicker(context, ref),
             ),
             ActionChip(
@@ -699,7 +699,7 @@ final class _GoalRelatedTasks extends ConsumerWidget {
                           ).formatMediumDate(item.day),
                         ),
                         trailing: IconButton(
-                          tooltip: l10n.experimentUnlinkTask,
+                          tooltip: l10n.goalUnlinkTask,
                           icon: const Icon(Icons.link_off),
                           onPressed: () async {
                             await ref
@@ -826,7 +826,7 @@ final class _GoalTaskPickerSheetState extends ConsumerState<_GoalTaskPickerSheet
                   autofocus: true,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
-                    hintText: l10n.experimentSearchTasksHint,
+                    hintText: l10n.goalSearchTasksHint,
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(),

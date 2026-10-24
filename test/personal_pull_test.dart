@@ -209,26 +209,40 @@ void main() {
     expect(state.getLastSyncedAt(SyncResource.tasks), 0);
   });
 
-  test('pullWorkouts skips exercises the device has not imported', () async {
+  test('pullWorkouts applies the nested exercise/set graph', () async {
     final api = _FakeApi({
       '/workouts': <String, Object?>{
         'server_time': 800,
-        'workouts': [
-          {'id': 'w1', 'name': 'Leg day', 'date': 100, 'createdAt': 90},
-        ],
-        'workoutExercises': [
+        'items': [
           {
-            'id': 'we1',
-            'workoutId': 'w1',
-            'exerciseId': 'missing',
-            'sortOrder': 0,
-            'notes': null,
+            'id': 'w1',
+            'name': 'Leg day',
+            'date': 100,
+            'createdAt': 90,
+            'exercises': [
+              {
+                'id': 'we1',
+                'workoutId': 'w1',
+                // No local exercises row: mobile FKs are off, and dropping the
+                // exercise used to swallow the whole workout graph.
+                'exerciseId': 'missing',
+                'sortOrder': 0,
+                'notes': null,
+                'sets': [
+                  {
+                    'id': 's1',
+                    'workoutExerciseId': 'we1',
+                    'setNumber': 1,
+                    'reps': 8,
+                  },
+                ],
+              },
+            ],
           },
         ],
-        'exerciseSets': [
-          {'id': 's1', 'workoutExerciseId': 'we1', 'setNumber': 1},
-        ],
         'deleted': <String>[],
+        'deletedExercises': <String>[],
+        'deletedSets': <String>[],
       },
     });
     final service = PersonalPullService(api, database, state);
@@ -236,10 +250,138 @@ void main() {
       apiKey: 'k',
       endpoint: '/workouts',
     );
-    expect(result.updated, 1);
+    expect(result.updated, 3);
+    final exercises = await database.select(database.workoutExercises).get();
+    expect(exercises.map((e) => e.id), ['we1']);
+    final sets = await database.select(database.exerciseSets).get();
+    expect(sets.map((s) => s.id), ['s1']);
+  });
+
+  test('pullWorkouts still applies children when the workout exists', () async {
+    await database.into(database.workouts).insert(
+      db.WorkoutsCompanion.insert(
+        id: 'w1',
+        name: 'Leg day',
+        date: 100,
+        createdAt: 90,
+      ),
+    );
+    final api = _FakeApi({
+      '/workouts': <String, Object?>{
+        'server_time': 801,
+        'items': [
+          {
+            'id': 'w1',
+            'name': 'Leg day',
+            'date': 100,
+            'createdAt': 90,
+            'exercises': [
+              {
+                'id': 'we1',
+                'workoutId': 'w1',
+                'exerciseId': 'e1',
+                'sortOrder': 0,
+                'notes': null,
+                'sets': [
+                  {'id': 's1', 'workoutExerciseId': 'we1', 'setNumber': 1},
+                ],
+              },
+            ],
+          },
+        ],
+        'deleted': <String>[],
+        'deletedExercises': <String>[],
+        'deletedSets': <String>[],
+      },
+    });
+    final service = PersonalPullService(api, database, state);
+    final result = await service.pullWorkouts(
+      apiKey: 'k',
+      endpoint: '/workouts',
+    );
+    expect(result.updated, 2);
+    expect(await database.select(database.workoutExercises).get(), hasLength(1));
+    expect(await database.select(database.exerciseSets).get(), hasLength(1));
+  });
+
+  test('pullWorkouts applies child tombstones', () async {
+    await database.into(database.workouts).insert(
+      db.WorkoutsCompanion.insert(
+        id: 'w1',
+        name: 'Leg day',
+        date: 100,
+        createdAt: 90,
+      ),
+    );
+    await database.into(database.workoutExercises).insert(
+      db.WorkoutExercisesCompanion.insert(
+        id: 'we1',
+        workoutId: 'w1',
+        exerciseId: 'e1',
+        sortOrder: 0,
+      ),
+    );
+    await database.into(database.exerciseSets).insert(
+      db.ExerciseSetsCompanion.insert(
+        id: 's1',
+        workoutExerciseId: 'we1',
+        setNumber: 1,
+      ),
+    );
+    final api = _FakeApi({
+      '/workouts': <String, Object?>{
+        'server_time': 802,
+        'items': <Object?>[],
+        'deleted': <String>[],
+        'deletedExercises': ['we1'],
+        'deletedSets': <String>[],
+      },
+    });
+    final service = PersonalPullService(api, database, state);
+    await service.pullWorkouts(apiKey: 'k', endpoint: '/workouts');
     expect(await database.select(database.workoutExercises).get(), isEmpty);
-    // Sets still land by id; the parent linkage is honest via workoutExerciseId.
-    expect(await database.select(database.exerciseSets).get(), isNotEmpty);
+    expect(await database.select(database.exerciseSets).get(), isEmpty);
+  });
+
+  test('pullWorkouts never resurrects a child pending local deletion', () async {
+    await database.into(database.workouts).insert(
+      db.WorkoutsCompanion.insert(
+        id: 'w1',
+        name: 'Leg day',
+        date: 100,
+        createdAt: 90,
+      ),
+    );
+    await database.recordSyncDelete('workoutExercises', 'we1');
+    final api = _FakeApi({
+      '/workouts': <String, Object?>{
+        'server_time': 803,
+        'items': [
+          {
+            'id': 'w1',
+            'name': 'Leg day',
+            'date': 100,
+            'createdAt': 90,
+            'exercises': [
+              {
+                'id': 'we1',
+                'workoutId': 'w1',
+                'exerciseId': 'e1',
+                'sortOrder': 0,
+                'notes': null,
+                'sets': <Object?>[],
+              },
+            ],
+          },
+        ],
+        'deleted': <String>[],
+        'deletedExercises': <String>[],
+        'deletedSets': <String>[],
+      },
+    });
+    final service = PersonalPullService(api, database, state);
+    await service.pullWorkouts(apiKey: 'k', endpoint: '/workouts');
+    expect(await database.select(database.workoutExercises).get(), isEmpty);
   });
 
   test('pullTransactions skips rows whose accounts never landed', () async {
@@ -338,5 +480,36 @@ void main() {
     expect(receipt.parsedJson, '{"total":42.75}');
     expect(receipt.uploadStatus, 2);
     expect(receipt.parsed, isTrue);
+  });
+
+  test('pullStores inserts unknown stores and applies tombstones', () async {
+    await database.into(database.stores).insert(
+      db.StoresCompanion.insert(id: 's0', name: 'Local', createdAt: 1),
+    );
+    await database.into(database.stores).insert(
+      db.StoresCompanion.insert(id: 's2', name: 'Gone', createdAt: 2),
+    );
+    final api = _FakeApi({
+      '/stores': <String, Object?>{
+        'server_time': 960,
+        'items': [
+          {'id': 's1', 'name': 'Carrefour', 'createdAt': 90, 'updatedAt': 90},
+          // A local row keeps its local name.
+          {'id': 's0', 'name': 'Renamed', 'createdAt': 1, 'updatedAt': 90},
+        ],
+        'deleted': ['s2'],
+      },
+    });
+    final service = PersonalPullService(api, database, state);
+    final result = await service.pullStores(apiKey: 'k', endpoint: '/stores');
+    expect(result.ok, isTrue, reason: result.error);
+    expect(result.updated, 1);
+    expect(result.deleted, 1);
+    final rows = await database.select(database.stores).get();
+    expect({for (final r in rows) r.id: r.name}, {
+      's0': 'Local',
+      's1': 'Carrefour',
+    });
+    expect(state.getLastSyncedAt(SyncResource.stores), 960);
   });
 }

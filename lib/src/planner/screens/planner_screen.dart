@@ -11,12 +11,8 @@ import '../../dashboard/providers/dashboard.dart';
 import '../../exercise/screens/workout_detail.dart';
 import '../../exercise/providers/workout_templates.dart';
 import '../../exercise/providers/workouts.dart';
-import '../../experiments/providers/experiments.dart';
-import '../../experiments/screens/experiment_detail_screen.dart';
 import '../providers/dismissed.dart';
-import '../../experiments/screens/experiment_form_screen.dart';
 import '../../goals/screens/goal_form_screen.dart';
-import '../../models/experiment.dart';
 import '../../models/planner_entry.dart';
 import '../../models/task.dart';
 import '../../notifications/task_reminders.dart';
@@ -35,7 +31,7 @@ enum _PlannerViewMode { day, week, month }
 
 enum _PlanMode { timeline, initiatives }
 
-enum _AddChoice { task, experiment, goal }
+enum _AddChoice { task, goal }
 
 /// Anchors for the infinite PageViews' page indices (one day / week page).
 /// Index math happens in UTC — local days vary in length across DST
@@ -242,8 +238,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 onEditItem: _editItem,
                 onDeleteItem: _deleteItem,
                 onOpenWorkout: _openWorkout,
-                onOpenExperiment: _openExperimentDetail,
-                onEditExperiment: _editExperiment,
               ),
               _PlannerViewMode.week => _WeekFlowView(
                 key: _weekFlowKey,
@@ -258,8 +252,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 onEditItem: _editItem,
                 onDeleteItem: _deleteItem,
                 onOpenWorkout: _openWorkout,
-                onOpenExperiment: _openExperimentDetail,
-                onEditExperiment: _editExperiment,
               ),
               _PlannerViewMode.month => _MonthOverview(
                 key: _monthKey,
@@ -280,8 +272,8 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     );
   }
 
-  /// FAB opens a chooser instead of assuming what to create: tasks,
-  /// experiments and goals are all reachable from every view.
+  /// FAB opens a chooser instead of assuming what to create: tasks and goals
+  /// are both reachable from every view.
   Future<void> _showAddSheet() async {
     final l10n = AppLocalizations.of(context)!;
     final choice = await showModalBottomSheet<_AddChoice>(
@@ -296,11 +288,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               onTap: () => Navigator.of(ctx).pop(_AddChoice.task),
             ),
             ListTile(
-              leading: const Icon(Icons.science_outlined),
-              title: Text(l10n.experimentsFab),
-              onTap: () => Navigator.of(ctx).pop(_AddChoice.experiment),
-            ),
-            ListTile(
               leading: const Icon(Icons.flag_outlined),
               title: Text(l10n.goalsNew),
               onTap: () => Navigator.of(ctx).pop(_AddChoice.goal),
@@ -313,8 +300,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     switch (choice) {
       case _AddChoice.task:
         await _addItem();
-      case _AddChoice.experiment:
-        await _addExperiment();
       case _AddChoice.goal:
         await Navigator.of(
           context,
@@ -324,7 +309,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     }
   }
 
-  /// Initiatives-mode FAB: only experiments and goals (no day-bound task).
+  /// Initiatives-mode FAB: goals only (no day-bound task).
   Future<void> _showInitiativeSheet() async {
     final l10n = AppLocalizations.of(context)!;
     final choice = await showModalBottomSheet<_AddChoice>(
@@ -333,11 +318,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.science_outlined),
-              title: Text(l10n.experimentsFab),
-              onTap: () => Navigator.of(ctx).pop(_AddChoice.experiment),
-            ),
             ListTile(
               leading: const Icon(Icons.flag_outlined),
               title: Text(l10n.goalsNew),
@@ -349,8 +329,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     );
     if (!mounted) return;
     switch (choice) {
-      case _AddChoice.experiment:
-        await _addExperiment();
       case _AddChoice.goal:
         await Navigator.of(
           context,
@@ -379,43 +357,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         _monthKey.currentState?.focusDay(today);
     }
     setState(() => _selectedDay = today);
-  }
-
-  Future<void> _addExperiment() async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const ExperimentFormScreen()),
-    );
-    _refreshAfterExperimentChange(saved ?? false);
-  }
-
-  Future<void> _editExperiment(String experimentId) async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => ExperimentFormScreen(experimentId: experimentId),
-      ),
-    );
-    _refreshAfterExperimentChange(saved ?? false);
-  }
-
-  Future<void> _openExperimentDetail(String experimentId) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ExperimentDetailScreen(experimentId: experimentId),
-      ),
-    );
-    // Detail edits (status/check-ins) live in planner_items rows too.
-    _refreshAfterExperimentChange(true);
-  }
-
-  /// Experiments span many days, so every planner cache is dropped when one
-  /// may have changed.
-  void _refreshAfterExperimentChange(bool changed) {
-    if (!changed) return;
-    ref.invalidate(experimentListProvider);
-    ref.invalidate(dayEntriesProvider);
-    ref.invalidate(rangeEntriesProvider);
-    ref.invalidate(monthEntriesProvider);
-    invalidateDashboard(ref);
   }
 
   /// Opens the full read-mostly detail view for [item].
@@ -891,25 +832,6 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 }
 
-/// True when the experiment's inclusive [startDate, endDate] range covers
-/// [day] (all comparisons at start-of-day granularity).
-bool _experimentCoversDay(Experiment experiment, DateTime day) {
-  final d = DateTime(day.year, day.month, day.day);
-  final start = DateTime(
-    experiment.startDate.year,
-    experiment.startDate.month,
-    experiment.startDate.day,
-  );
-  final end = experiment.endDate == null
-      ? start
-      : DateTime(
-          experiment.endDate!.year,
-          experiment.endDate!.month,
-          experiment.endDate!.day,
-        );
-  return !start.isAfter(d) && !end.isBefore(d);
-}
-
 DateTime _startOf(DateTime day) => DateTime(day.year, day.month, day.day);
 
 /// The day flow: an infinite horizontal `PageView` whose pages are hourly
@@ -926,8 +848,6 @@ final class _DayFlowView extends StatefulWidget {
   final void Function(Task item) onEditItem;
   final void Function(Task item) onDeleteItem;
   final void Function(Task item) onOpenWorkout;
-  final void Function(String experimentId) onOpenExperiment;
-  final void Function(String experimentId) onEditExperiment;
 
   const _DayFlowView({
     super.key,
@@ -941,8 +861,6 @@ final class _DayFlowView extends StatefulWidget {
     required this.onEditItem,
     required this.onDeleteItem,
     required this.onOpenWorkout,
-    required this.onOpenExperiment,
-    required this.onEditExperiment,
   });
 
   @override
@@ -996,10 +914,9 @@ final class _DayFlowViewState extends State<_DayFlowView> {
 /// Bundles the host callbacks so the per-day page stays readable.
 typedef _DayCallbacks = _DayFlowView;
 
-/// One day inside [_DayFlowView]: date header, an all-day strip for
-/// experiments covering the day, an "Anytime" group for untimed tasks, and an
-/// hourly grid for timed ones. Today's page opens scrolled to roughly the
-/// current hour.
+/// One day inside [_DayFlowView]: date header, an "Anytime" group for untimed
+/// tasks, and an hourly grid for timed ones. Today's page opens scrolled to
+/// roughly the current hour.
 final class _DayTimelinePage extends ConsumerStatefulWidget {
   final DateTime day;
   final _DayCallbacks callbacks;
@@ -1037,14 +954,10 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
     final dismissed = ref.watch(dismissedTaskIdsProvider);
     final cbs = widget.callbacks;
 
-    // The union provider already merges tasks and experiments for this day.
+    // The union provider already merges tasks for this day.
     final allTasks = [
       for (final entry in entriesAsync.value ?? const <PlannerEntry>[])
         if (entry is TaskEntry) entry.task,
-    ];
-    final activeExperiments = [
-      for (final entry in entriesAsync.value ?? const <PlannerEntry>[])
-        if (entry is ExperimentEntry) entry.experiment,
     ];
     final visibleTasks = [
       for (final t in allTasks)
@@ -1074,7 +987,7 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
               ? Center(child: Text(entriesAsync.error.toString()))
               : entriesAsync.isLoading && !entriesAsync.hasValue
               ? const Center(child: CircularProgressIndicator())
-              : visibleTasks.isEmpty && activeExperiments.isEmpty
+              : visibleTasks.isEmpty
               ? EmptyState(
                   icon: Icons.event_note,
                   title: l10n.emptyPlannerTitle,
@@ -1091,7 +1004,6 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
                       l10n,
                       material,
                       visibleTasks,
-                      activeExperiments,
                     ),
                   ),
                 ),
@@ -1104,44 +1016,10 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
     AppLocalizations l10n,
     MaterialLocalizations material,
     List<Task> tasks,
-    List<Experiment> activeExperiments,
   ) {
     final theme = Theme.of(context);
     final cbs = widget.callbacks;
     final children = <Widget>[];
-
-    // All-day strip: experiments whose range covers this day.
-    if (activeExperiments.isNotEmpty) {
-      children.add(
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: Text(
-            l10n.plannerAllDay,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-      children.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final e in activeExperiments)
-                _AllDayChip(
-                  experiment: e,
-                  l10n: l10n,
-                  onTap: () => cbs.onOpenExperiment(e.id),
-                  onLongPress: () => cbs.onEditExperiment(e.id),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
 
     // Untimed tasks pin to the top "Anytime" group; timed ones flow down the
     // hour grid below.
@@ -1310,63 +1188,9 @@ final class _ErrorGuard extends StatelessWidget {
   }
 }
 
-/// A tinted chip for an experiment in the all-day strip. Tap opens the
-/// experiment detail; long-press opens its edit form.
-final class _AllDayChip extends StatelessWidget {
-  final Experiment experiment;
-  final AppLocalizations l10n;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-
-  const _AllDayChip({
-    required this.experiment,
-    required this.l10n,
-    required this.onTap,
-    required this.onLongPress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: scheme.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.science_outlined,
-              size: 14,
-              color: scheme.onPrimaryContainer,
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                experiment.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: scheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// The week flow: an infinite horizontal `PageView` whose pages are seven-day
-/// overviews. Each column shows that day's experiments on top, timed tasks by
-/// start time, then untimed ones. Tapping a column header jumps to that day.
+/// overviews. Each column shows that day's timed tasks by start time, then
+/// untimed ones. Tapping a column header jumps to that day.
 final class _WeekFlowView extends StatefulWidget {
   final DateTime initialDay;
   final bool Function(DateTime a, DateTime b) isSameDay;
@@ -1378,8 +1202,6 @@ final class _WeekFlowView extends StatefulWidget {
   final void Function(Task item) onEditItem;
   final void Function(Task item) onDeleteItem;
   final void Function(Task item) onOpenWorkout;
-  final void Function(String experimentId) onOpenExperiment;
-  final void Function(String experimentId) onEditExperiment;
 
   const _WeekFlowView({
     super.key,
@@ -1393,8 +1215,6 @@ final class _WeekFlowView extends StatefulWidget {
     required this.onEditItem,
     required this.onDeleteItem,
     required this.onOpenWorkout,
-    required this.onOpenExperiment,
-    required this.onEditExperiment,
   });
 
   @override
@@ -1493,10 +1313,6 @@ final class _WeekPage extends ConsumerWidget {
                 for (final entry in entries)
                   if (entry is TaskEntry) entry.task,
               ];
-              final weekExperiments = [
-                for (final entry in entries)
-                  if (entry is ExperimentEntry) entry.experiment,
-              ];
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -1506,7 +1322,6 @@ final class _WeekPage extends ConsumerWidget {
                       child: _WeekDayColumn(
                         day: weekStart.add(Duration(days: i)),
                         tasks: weekTasks,
-                        experiments: weekExperiments,
                         callbacks: callbacks,
                       ),
                     ),
@@ -1525,13 +1340,11 @@ final class _WeekPage extends ConsumerWidget {
 final class _WeekDayColumn extends ConsumerWidget {
   final DateTime day;
   final List<Task> tasks;
-  final List<Experiment> experiments;
   final _WeekCallbacks callbacks;
 
   const _WeekDayColumn({
     required this.day,
     required this.tasks,
-    required this.experiments,
     required this.callbacks,
   });
 
@@ -1553,10 +1366,6 @@ final class _WeekDayColumn extends ConsumerWidget {
               !dismissed.contains(it.id),
         )
         .toList();
-    final dayExperiments = experiments
-        .where((e) => _experimentCoversDay(e, day))
-        .toList();
-
     final timed = [
       for (final it in dayTasks)
         if (it.startTimeMinutes != null) it,
@@ -1567,42 +1376,6 @@ final class _WeekDayColumn extends ConsumerWidget {
     ];
 
     final children = <Widget>[
-      for (final e in dayExperiments)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-          child: GestureDetector(
-            onTap: () => callbacks.onOpenExperiment(e.id),
-            onLongPress: () => callbacks.onEditExperiment(e.id),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.science_outlined,
-                    size: 11,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                  const SizedBox(width: 3),
-                  Expanded(
-                    child: Text(
-                      e.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontSize: 10,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       for (final it in timed)
         _WeekTaskCard(
           key: ValueKey(it.id),
@@ -1745,9 +1518,8 @@ final class _WeekTaskCard extends StatelessWidget {
   }
 }
 
-/// The month overview: the calendar grid showing both plain tasks (dot
-/// marker) and experiment ranges (tinted background). Picking a day jumps to
-/// the day flow.
+/// The month overview: the calendar grid showing plain tasks (dot marker).
+/// Picking a day jumps to the day flow.
 final class _MonthOverview extends ConsumerStatefulWidget {
   final DateTime selectedDay;
   final bool Function(DateTime a, DateTime b) isSameDay;
@@ -1779,26 +1551,12 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
     final monthStart = DateTime(_focusedDay.year, _focusedDay.month, 1);
     final entriesAsync = ref.watch(monthEntriesProvider(monthStart));
 
-    // The union carries both halves: tasks mark their day, experiments tint
-    // every day of their span.
+    // Tasks mark their day.
     final taskDays = <DateTime>{};
-    final experimentDays = <DateTime>{};
     for (final entry in entriesAsync.value ?? const <PlannerEntry>[]) {
       switch (entry) {
         case TaskEntry(:final task):
           if (!task.isCancelled) taskDays.add(_startOfDay(task.day));
-        case ExperimentEntry(:final experiment):
-          final start = _startOfDay(experiment.startDate);
-          final end = experiment.endDate == null
-              ? start
-              : _startOfDay(experiment.endDate!);
-          for (
-            var d = start;
-            !d.isAfter(end);
-            d = d.add(const Duration(days: 1))
-          ) {
-            experimentDays.add(d);
-          }
       }
     }
 
@@ -1828,28 +1586,25 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
           day,
           focusedMonth,
           taskDays: taskDays,
-          experimentDays: experimentDays,
         ),
       ),
     );
   }
 
-  /// Custom cell for days worth marking: experiment-range tint, a task dot,
-  /// the selected-day fill, and today's outline. Plain days return null so
-  /// the stock rendering applies.
+  /// Custom cell for days worth marking: a task dot, the selected-day fill,
+  /// and today's outline. Plain days return null so the stock rendering
+  /// applies.
   Widget? _dayCell(
     BuildContext context,
     DateTime day,
     DateTime focusedMonth, {
     required Set<DateTime> taskDays,
-    required Set<DateTime> experimentDays,
   }) {
     final d = _startOfDay(day);
-    final inExperiment = experimentDays.contains(d);
     final hasTask = taskDays.contains(d);
     final isSelected = widget.isSameDay(day, widget.selectedDay);
     final isToday = widget.isSameDay(d, _startOfDay(DateTime.now()));
-    if (!inExperiment && !hasTask && !isSelected && !isToday) return null;
+    if (!hasTask && !isSelected && !isToday) return null;
 
     final scheme = Theme.of(context).colorScheme;
     final isOutside =
@@ -1864,11 +1619,6 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
     } else if (isToday) {
       decoration = BoxDecoration(
         border: Border.fromBorderSide(BorderSide(color: scheme.primary)),
-        borderRadius: BorderRadius.circular(8),
-      );
-    } else if (inExperiment) {
-      decoration = BoxDecoration(
-        color: scheme.primaryContainer.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(8),
       );
     } else {

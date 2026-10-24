@@ -15,8 +15,7 @@ MaterialApp.router
      │    ├─ StatefulShellBranch: /diet       → DietTab
      │    ├─ StatefulShellBranch: /plan       → PlanTab → PlannerScreen
      │    ├─ StatefulShellBranch: /notes      → NotesTab → NotesScreen
-     │    ├─ StatefulShellBranch: /budget     → BudgetTab → BudgetScreen
-     │    └─ StatefulShellBranch: /experiments → ExperimentsTab → ExperimentsScreen
+     │    └─ StatefulShellBranch: /budget     → BudgetTab → BudgetScreen
      └─ GoRoute: /active-workout → ActiveWorkoutScreen   (outside the shell)
      └─ GoRoute: /workout-summary/:id → WorkoutSummaryScreen   (outside the shell)
 ```
@@ -77,14 +76,13 @@ ingredients ──┐
 exercises  ──┐
               ├── workout_exercises ── workouts
               │         └── exercise_sets
-planner_items (standalone — daily planner tasks, no FKs)
+tasks         (standalone — daily planner tasks, no FKs)
 notes         (standalone — free-form Notes tab, no FKs)
 accounts ── transactions ── receipts, fx_rates (budget section)
 body_metrics  (standalone — one row per day: weight/height, no FKs)
-experiments ── experiment_checkins (experiments tab: one check-in per day)
 ```
 
-16 tables total. See [database/schema.md](database/schema.md) for full column definitions.
+37 tables total. See [database/schema.md](database/schema.md) for full column definitions.
 
 ### Data access
 
@@ -94,9 +92,7 @@ single `workoutExerciseId.isIn(...)` bulk query and group in memory, and the
 dashboard's `weeklyWorkoutStatsProvider` calls `getVolumeAndMinutesSince(weekStart)`
 (exactly two queries: a workouts→workout_exercises→exercise_sets join for volume,
 plus a workouts scan for duration) instead of resolving `workoutDetailProvider` per
-completed workout. The experiments tab reuses these: `WorkoutRepository.getDailyVolumes(from)` for the
-workout chart, `mealListProvider`/`bodyMetricsProvider` for diet/body aggregation, and
-`HealthConnectSteps.getDailySteps(from, to)` (best-effort) for the steps chart.
+completed workout. Workout history charts reuse `WorkoutRepository.getDailyVolumes(from)`.
 
 ### Delete semantics (T05+)
 

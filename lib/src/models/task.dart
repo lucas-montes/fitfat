@@ -7,8 +7,8 @@ extension TaskStatusStorage on TaskStatus {
   int get storage => index;
 }
 
-/// Plain domain model for a daily planner task (schema v27: the task half of
-/// the former [PlannerItem] union; experiments live in their own table).
+/// Plain domain model for a daily planner task (schema v27: the `tasks`
+/// table).
 final class Task {
   final String id;
   final DateTime day; // start-of-day

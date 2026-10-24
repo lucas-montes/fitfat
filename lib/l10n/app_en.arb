@@ -1,16 +1,13 @@
 {
   "@@locale": "en",
   "@@last_modified": "2026-07-02",
-
   "appTitle": "FitFat",
-
   "tabDashboard": "Dashboard",
   "tabExercise": "Exercise",
   "tabDiet": "Diet",
   "tabSettings": "Settings",
   "tabPlan": "Plan",
   "tabNotes": "Notes",
-
   "dashboardAppBar": "Dashboard",
   "dashboardTodayCalories": "Today's Calories",
   "dashboardLatestWorkout": "Latest Workout",
@@ -85,9 +82,6 @@
   "dashboardGoalsTitle": "Goals",
   "dashboardGoalsEmpty": "No active goals",
   "dashboardGoalsCta": "Goals",
-  "dashboardExperimentsTitle": "Experiments",
-  "dashboardExperimentsBody": "Track your experiments and daily check-ins.",
-  "dashboardExperimentsCta": "Experiments",
   "dashboardAddTitle": "Add",
   "dietAddMeal": "Meal",
   "dietAddRecipe": "Recipe",
@@ -107,7 +101,6 @@
       "count": { "type": "String" }
     }
   },
-
   "dashboardCalorieTargetEmptyTitle": "Complete your profile",
   "dashboardCalorieTargetEmptyBody": "Add your age, gender, weight and height to see your daily calorie target.",
   "dashboardMacroEmptyTitle": "Complete your profile",
@@ -119,7 +112,6 @@
   "dashboardWeeklyEmptyCtaSync": "Sync exercises",
   "dashboardUpcomingEmptyCta": "Add task",
   "dashboardLatestEmptyCta": "Add workout",
-
   "exerciseListAppBar": "Exercises",
   "exerciseListManageBtn": "Manage Exercises",
   "exerciseListSearchHint": "Search exercises",
@@ -166,7 +158,6 @@
   "activeWorkoutExerciseInfo": "Exercise info",
   "activeWorkoutExerciseNotesDialogTitle": "Exercise notes",
   "activeWorkoutExerciseNotesHint": "Note what to repeat or change next time (sets, weight, difficulty)…",
-
   "exerciseUsedTitle": "Exercise in use",
   "exerciseUsedBody": "Used in {count} workout. Delete the workout first to remove this exercise.",
   "exerciseUsedBody_plural": "Used in {count} workouts. Delete the workouts first to remove this exercise.",
@@ -254,7 +245,6 @@
   "exerciseDetailSetHeaderRest": "Rest",
   "exerciseDetailWeightTrend": "Best weight over time",
   "exerciseDetailRepsTrend": "Reps over time",
-
   "exerciseFormNewTitle": "New Exercise",
   "exerciseFormEditTitle": "Edit Exercise",
   "exerciseFormNameLabel": "Exercise Name",
@@ -263,7 +253,6 @@
   "exerciseFormTypeLabel": "Type",
   "exerciseFormSave": "Save",
   "exerciseFormSaving": "Saving…",
-
   "workoutListAppBar": "Workouts",
   "templatesTitle": "Templates",
   "templatesEmptyTitle": "No templates yet",
@@ -290,7 +279,6 @@
       "name": { "type": "String" }
     }
   },
-
   "workoutFormTitle": "New Workout",
   "workoutFormEditTitle": "Edit Workout",
   "workoutFormNameLabel": "Workout Name",
@@ -316,7 +304,6 @@
   "workoutFormSetIncomplete": "Complete every added set with its values and rest time (or remove the empty set)",
   "workoutFormRemoveExercise": "Remove exercise",
   "workoutFormCreateExercise": "Create new exercise “{query}”",
-
   "workoutDetailAppBar": "Workout",
   "workoutDetailNotFound": "Workout not found",
   "workoutDetailBtnStart": "Start",
@@ -355,7 +342,6 @@
       "count": { "type": "int" }
     }
   },
-
   "ingredientListAppBar": "Ingredients",
   "emptyIngredientsTitle": "No ingredients yet",
   "emptyIngredientsBody": "Add your first ingredient to start building meals.",
@@ -366,7 +352,6 @@
       "name": { "type": "String" }
     }
   },
-
   "ingredientFormNewTitle": "New Ingredient",
   "ingredientFormEditTitle": "Edit Ingredient",
   "ingredientFormNameLabel": "Name",
@@ -404,7 +389,6 @@
       "label": { "type": "String" }
     }
   },
-
   "mealListUnnamedMeal": "Meal · {date} {time}",
   "@mealListUnnamedMeal": {
     "placeholders": {
@@ -478,7 +462,6 @@
       "fat": { "type": "String" }
     }
   },
-
   "mealFormNewTitle": "New Meal",
   "mealFormEditTitle": "Edit Meal",
   "mealFormNameLabel": "Meal Name",
@@ -540,7 +523,6 @@
   "mealFormGramsLabel": "g",
   "mealFormSave": "Save",
   "mealFormSaving": "Saving…",
-
   "plannerAppBar": "Daily Plan",
   "plannerToday": "Today",
   "plannerPreviousDay": "Previous day",
@@ -680,7 +662,6 @@
       "count": { "type": "int" }
     }
   },
-
   "plannerRepeatLabel": "Repeat",
   "plannerRepeatNone": "Does not repeat",
   "plannerRepeatDaily": "Daily",
@@ -696,7 +677,6 @@
   "plannerRepeatEndsOnDate": "On date",
   "plannerRepeatEndsAfter": "After",
   "plannerRepeatOccurrences": "occurrences",
-
   "notesAppBar": "Notes",
   "notesEmptyTitle": "No notes yet",
   "notesEmptyBody": "Capture anything on your mind — routines, recipes, lessons from a workout. Notes are private to this device.",
@@ -736,7 +716,6 @@
       "count": { "type": "int" }
     }
   },
-
   "settingsAppBar": "Settings",
   "settingsProfile": "Profile",
   "settingsAgeLabel": "Age (years)",
@@ -793,14 +772,12 @@
   "settingsTdeeLabel": "TDEE",
   "settingsEstimatedSuffix": "estimated",
   "settingsCalorieAdjustmentLabel": "Calorie goal adjustment (kcal)",
-  "settingsExperimentBaselineLabel": "Experiment baseline (days)",
   "settingsDefaultRestLabel": "Default rest between sets (min)",
   "settingsReminderLeadLabel": "Pre-reminder lead (min)",
   "settingsUntimedReminderLabel": "Untimed default (min)",
   "settingsApiTimeoutLabel": "Sync request timeout (s)",
   "settingsPlannerHorizonHelp": "How many days ahead recurring tasks are pre-created in the planner.",
   "settingsCalorieAdjustmentHelp": "kcal added to your daily target for this phase. Negative creates a deficit, positive a surplus.",
-  "settingsExperimentBaselineHelp": "Days of history before an experiment starts, used as its comparison baseline.",
   "settingsDefaultRestHelp": "Prefills the rest field when adding a new set to a workout. Leave blank for none.",
   "settingsReminderLeadHelp": "Minutes before a task's start time when the advance notification fires.",
   "settingsUntimedReminderHelp": "Time of day for untimed task reminders, as minutes after midnight (540 = 09:00).",
@@ -810,17 +787,13 @@
   "settingsResetDataConfirmTitle": "Reset all data?",
   "settingsResetDataConfirmBody": "This permanently deletes all of your data and resets your settings. This cannot be undone.",
   "settingsResetDataConfirmAction": "Delete everything",
-
   "taskReminderDueSoon": "Due in 30 minutes",
   "taskReminderDueNow": "Due now",
-
   "statusCompleted": "Completed",
   "statusActive": "Active",
   "statusPending": "Pending",
-
   "exerciseTypeWeightlifting": "Weightlifting",
   "exerciseTypeCardio": "Cardio",
-
   "commonCancel": "Cancel",
   "commonContinue": "Continue",
   "commonSave": "Save",
@@ -829,7 +802,6 @@
   "commonOk": "OK",
   "commonSaving": "Saving…",
   "commonSearch": "Search",
-
   "errorWithMessage": "Error: {message}",
   "@errorWithMessage": {
     "placeholders": {
@@ -843,7 +815,6 @@
       "message": { "type": "String" }
     }
   },
-
   "macroGrams": "{value}g",
   "@macroGrams": {
     "placeholders": {
@@ -856,7 +827,6 @@
       "value": { "type": "String" }
     }
   },
-
   "ingredientMacroRow": "{grams}g  ·  {calories} kcal  ·  P {protein}g  ·  C {carbs}g  ·  F {fat}g",
   "@ingredientMacroRow": {
     "placeholders": {
@@ -867,7 +837,6 @@
       "fat": { "type": "String" }
     }
   },
-
   "ingredientNutrientSodium": "Na {value}mg",
   "@ingredientNutrientSodium": {
     "placeholders": {
@@ -886,7 +855,6 @@
       "value": { "type": "String" }
     }
   },
-
   "ingredientFormBrandLabel": "Brand",
   "ingredientFormBarcodeLabel": "Barcode",
   "ingredientFormScanTile": "Scan barcode",
@@ -913,12 +881,9 @@
   "storeManagerAddTile": "Add store",
   "storeNameLabel": "Store name",
   "storeNameRequired": "Name is required",
-
   "settingsFxAutoRefresh": "Auto-refresh rates",
   "settingsFxAutoRefreshSubtitle": "Fetches exchange rates in the background",
   "settingsFxRefreshInterval": "Refresh interval",
-  "settingsExperimentReminders": "Experiment reminders",
-  "settingsExperimentRemindersSubtitle": "Daily check-in reminders while an experiment is running",
   "settingsSyncServer": "Sync server",
   "settingsSyncServerHint": "Point this at your sync server to pull exercises, ingredients and currencies. Leave empty to disable sync.",
   "settingsSyncBaseUrl": "Server URL",
@@ -960,7 +925,7 @@
   "exportServerHelp": "Upload a full copy of your local database file to the server.",
   "importServerHelp": "Replace your local database with the server copy. Asks for confirmation first.",
   "settingsPlanner": "Planner",
-  "settingsPlannerSubtitle": "Workouts, experiments, tasks and goals",
+  "settingsPlannerSubtitle": "Workouts, tasks and goals",
   "settingsNutrition": "Nutrition",
   "settingsNutritionSubtitle": "Units and calorie targets",
   "settingsBudgetCurrencySubtitle": "Base currency and exchange rates",
@@ -975,7 +940,6 @@
   "workoutSummaryDoAgain": "Do again",
   "workoutActionReplay": "Replay",
   "workoutActionDuplicate": "Duplicate",
-
   "workoutDetailPlannedSetReps": "{reps} × {weight} {unit}",
   "@workoutDetailPlannedSetReps": {
     "placeholders": {
@@ -1027,7 +991,6 @@
     }
   },
   "workoutDetailActualSetEmpty": "—",
-
   "bodyMetricsTitle": "Body Metrics",
   "bodyMetricsAddWeight": "Add weight",
   "bodyMetricsAddHeight": "Add height",
@@ -1072,7 +1035,6 @@
       "goal": { "type": "String" }
     }
   },
-
   "restTimerTitle": "Rest timer",
   "restTimerCancel": "Cancel rest",
   "restTimerMinutes": "{minutes} min",
@@ -1092,7 +1054,6 @@
       "duration": { "type": "String" }
     }
   },
-
   "workoutSummaryAppBar": "Summary",
   "workoutSummaryDone": "Done",
   "workoutSummaryDurationLabel": "Duration",
@@ -1209,7 +1170,6 @@
   "@accountFormIntro": {
     "description": "accountFormIntro"
   },
-
   "accountFormNoteLabel": "Account Form Note Label",
   "@accountFormNoteLabel": {
   "description": "accountFormNoteLabel"
@@ -1731,117 +1691,17 @@
   "@tabBudget": {
   "description": "tabBudget"
 },
-  "tabExperiments": "Experiments",
-  "@tabExperiments": {
-  "description": "tabExperiments"
-},
-
-  "experimentsAppBar": "Experiments",
-  "experimentsFab": "New experiment",
   "plannerViewDay": "Day view",
   "plannerViewWeek": "Week view",
   "plannerViewMonth": "Month view",
-  "plannerAllDay": "All-day",
   "plannerGoToday": "Go to today",
-  "experimentsEmptyTitle": "No experiments yet",
-  "experimentsEmptyBody": "Create an experiment to track a habit, diet change, or training protocol with daily check-ins.",
-  "experimentLinkedTasksTitle": "Linked tasks",
-  "experimentLinkTask": "Link task",
-  "experimentUnlinkTask": "Unlink task",
-  "experimentNoLinkedTasks": "No linked tasks yet. Link tasks to follow the steps of this experiment.",
-  "experimentSearchTasksHint": "Search tasks…",
-  "experimentsRelatedGoals": "Related goals",
-  "experimentsRelatedNotes": "Related notes",
-  "experimentsNoLinkedGoals": "No related goals yet.",
-  "experimentsNoLinkedNotes": "No related notes yet.",
+  "goalLinkTask": "Link task",
+  "goalUnlinkTask": "Unlink task",
+  "goalSearchTasksHint": "Search tasks…",
   "linkGoal": "Link goal",
   "unlinkGoal": "Unlink goal",
   "linkNote": "Link note",
   "unlinkNote": "Unlink note",
-  "experimentDaysElapsed": "{days} days elapsed",
-  "@experimentDaysElapsed": {
-    "description": "experimentDaysElapsed",
-    "placeholders": {
-      "days": { "type": "int" }
-    }
-  },
-  "experimentStatusPlanned": "Planned",
-  "experimentStatusActive": "Active",
-  "experimentStatusDone": "Done",
-  "experimentStatusAborted": "Aborted",
-  "experimentCategoryWorkout": "Workout",
-  "experimentCategoryDiet": "Diet",
-  "experimentCategoryBody": "Body",
-  "experimentCategorySteps": "Steps",
-  "experimentCategoryBudget": "Budget",
-  "experimentFormTitleNew": "New experiment",
-  "experimentFormTitleEdit": "Edit experiment",
-  "experimentFormNameLabel": "Name",
-  "experimentFormNameHint": "e.g. 8-week hypertrophy block",
-  "experimentFormPurposeLabel": "Hypothesis / purpose",
-  "experimentFormPurposeHint": "What are you testing?",
-  "experimentFormStartLabel": "Start date",
-  "experimentFormEndLabel": "End date",
-  "experimentFormStatusLabel": "Status",
-  "experimentFormCategoriesLabel": "Tracked data",
-  "experimentFormReminderLabel": "Daily check-in reminder",
-  "experimentFormReminderSubtitle": "A notification opens this experiment for a quick rating.",
-  "experimentFormReminderTimeLabel": "Reminder time",
-  "experimentFormDelete": "Delete",
-  "experimentFormDeleteConfirmTitle": "Delete experiment?",
-  "experimentFormDeleteConfirmBody": "This also removes the experiment's check-ins.",
-  "experimentFormNameRequired": "Give the experiment a name.",
-  "experimentFormInvalidDates": "The end date must be on or after the start date.",
-  "experimentDetailCheckin": "Check in",
-  "experimentDetailCheckinToday": "You already checked in today. You can update it.",
-  "experimentDetailCheckinDialogTitle": "Daily check-in",
-  "experimentDetailCheckinRatingLabel": "Rating",
-  "experimentDetailCheckinRatingHint": "1 = rough day, 5 = excellent day",
-  "experimentDetailCheckinNoteLabel": "Note (optional)",
-  "experimentDetailCheckinNoteHint": "How did it go?",
-  "experimentDetailProgressTitle": "Progress",
-  "experimentDetailCheckinsTitle": "Check-ins",
-  "experimentDetailTrackedTitle": "Tracked data",
-  "experimentDetailBaselineTitle": "14-day baseline",
-  "experimentDetailNoData": "No data for this period yet.",
-  "experimentDetailMarkDone": "Mark done",
-  "experimentDetailAbort": "Abort",
-  "experimentDetailCheckinCount": "{count} check-ins",
-  "@experimentDetailCheckinCount": {
-    "description": "experimentDetailCheckinCount",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "experimentRatingOf5": "{rating}/5",
-  "@experimentRatingOf5": {
-    "description": "experimentRatingOf5",
-    "placeholders": {
-      "rating": { "type": "int" }
-    }
-  },
-  "experimentChartWorkout": "Workout volume (kg)",
-  "experimentChartDiet": "Calories (kcal)",
-  "experimentChartDietProtein": "Protein (g)",
-  "experimentChartWeight": "Weight (kg)",
-  "experimentChartSteps": "Steps",
-  "experimentReminderTitle": "Check in on {experiment}",
-  "@experimentReminderTitle": {
-    "description": "experimentReminderTitle",
-    "placeholders": {
-      "experiment": { "type": "String" }
-    }
-  },
-  "experimentReminderBody": "Rate your day for this experiment.",
-  "experimentReminderScheduled": "Daily reminder set for {time}.",
-  "@experimentReminderScheduled": {
-    "description": "experimentReminderScheduled",
-    "placeholders": {
-      "time": { "type": "String" }
-    }
-  },
-  "experimentReminderCancelled": "Daily reminder disabled.",
-
   "plannerViewGoals": "Goals view",
   "plannerModeTimeline": "Timeline",
   "plannerModeInitiatives": "Initiatives",
@@ -1858,11 +1718,10 @@
   "prioritiesEmpty": "No tags yet. Create one to start organizing your goals, tasks and notes.",
   "prioritiesUsageCount": "{count, plural, =0{unused} =1{1 item} other{{count} items}}",
   "tagsFilterAll": "All",
-  "initiativesEmptyAllTitle": "No experiments or goals yet",
-  "initiativesEmptyAll": "Create an experiment to track a habit, or a goal to aim at an outcome.",
+  "initiativesEmptyAllTitle": "No goals yet",
+  "initiativesEmptyAll": "Create a goal to aim at an outcome.",
   "initiativesEmptyFilterTitle": "No matching initiatives",
-  "initiativesEmptyFilter": "No experiments or goals carry the selected tags.",
-
+  "initiativesEmptyFilter": "No goals carry the selected tags.",
   "goalsNew": "New goal",
   "goalsEdit": "Edit goal",
   "goalsMissing": "Goal not found.",
@@ -1912,7 +1771,6 @@
   "goalsEmptyAll": "Set a long-term outcome to work toward and link it to your tags.",
   "goalsEmptyFilterTitle": "No goals here",
   "goalsEmptyFilter": "No goals carry the selected tags.",
-
   "cascadeDeleteBody": "This will be permanently deleted.",
   "cascadeDeleteBodyWithTasks": "Also delete {count} linked task(s)? You can keep them or delete them together.",
   "@cascadeDeleteBodyWithTasks": {
@@ -1922,29 +1780,20 @@
   },
   "cascadeDeleteOnly": "Delete only",
   "cascadeDeleteWithTasks": "Delete with tasks",
-
   "settingsCascadeDeleteLabel": "Delete behavior",
-  "settingsCascadeDeleteHelp": "When deleting experiments/goals, choose whether to also delete linked tasks.",
+  "settingsCascadeDeleteHelp": "When deleting a goal, choose whether to also delete its linked tasks.",
   "settingsCascadeAsk": "Ask each time",
   "settingsCascadeAlways": "Always delete tasks",
   "settingsCascadeNever": "Never delete tasks",
-
   "templatesDuplicate": "Duplicate",
   "templatesDuplicated": "Template duplicated",
-
   "cascadeDeleteTitleWithTasks": "Delete linked tasks?",
   "cascadeDeleteKeepTasks": "Keep tasks",
-
-  "experimentDeleted": "Experiment \"{name}\" deleted",
-  "@experimentDeleted": {
-    "placeholders": {
-      "name": { "type": "String" }
-    }
-  },
   "goalDeleted": "Goal \"{name}\" deleted",
   "@goalDeleted": {
     "placeholders": {
       "name": { "type": "String" }
     }
   }
+
 }

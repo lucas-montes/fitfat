@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'rest_alarm.dart';
 import 'task_reminders.dart';
-import '../experiments/notifications/experiment_reminder.dart';
 import '../goals/notifications/goal_reminder.dart';
 
 /// Single shared [FlutterLocalNotificationsPlugin] used by every notification
@@ -22,7 +21,6 @@ Future<void> initializeNotifications({
   required FlutterLocalNotificationsPlugin plugin,
   required void Function() onTapPlan,
   required void Function() onTapActiveWorkout,
-  required void Function() onTapExperiments,
 }) async {
   await plugin.initialize(
     const InitializationSettings(
@@ -35,8 +33,6 @@ Future<void> initializeNotifications({
           onTapPlan();
         case restAlarmPayload:
           onTapActiveWorkout();
-        case experimentReminderPayload:
-          onTapExperiments();
         case goalReminderPayload:
           onTapPlan();
       }
@@ -49,8 +45,6 @@ Future<void> initializeNotifications({
         onTapPlan();
       case restAlarmPayload:
         onTapActiveWorkout();
-      case experimentReminderPayload:
-        onTapExperiments();
       case goalReminderPayload:
         onTapPlan();
     }

@@ -98,9 +98,6 @@ final class GoalRepository {
             _database.taskTags,
           )..where((t) => t.taskId.equals(taskId))).go();
           await (_database.delete(
-            _database.taskExperiments,
-          )..where((t) => t.taskId.equals(taskId))).go();
-          await (_database.delete(
             _database.taskGoals,
           )..where((t) => t.taskId.equals(taskId))).go();
           await (_database.delete(
@@ -113,9 +110,6 @@ final class GoalRepository {
       )..where((t) => t.goalId.equals(id))).go();
       await (_database.delete(
         _database.taskGoals,
-      )..where((t) => t.goalId.equals(id))).go();
-      await (_database.delete(
-        _database.experimentGoals,
       )..where((t) => t.goalId.equals(id))).go();
       await (_database.delete(
         _database.goalTags,
@@ -167,7 +161,7 @@ final class GoalRepository {
   }
 
   /// Records a progress measurement; re-recording on the same day overwrites
-  /// (unique per goal per day, same convention as experiment check-ins).
+  /// (unique per goal per day).
   Future<void> recordProgress({
     required String goalId,
     required DateTime day,

@@ -19,8 +19,6 @@ import '../../database/database_provider.dart';
 import '../../network/api_client.dart';
 import '../../sync/data_push_service.dart';
 import '../../budget/providers/fx_rates.dart';
-import '../../experiments/notifications/experiment_reminder.dart';
-import '../../experiments/providers/experiments_repository.dart';
 import '../../models/activity_level.dart';
 import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
@@ -517,33 +515,6 @@ final class _NotificationsScreenState extends ConsumerState<_NotificationsScreen
     await notifier.setPlannerNotifications(enabled);
   }
 
-  /// Master switch for experiment check-in reminders: off cancels every
-  /// scheduled experiment reminder; on re-schedules the active ones (the
-  /// scheduler itself skips non-active / per-experiment-disabled rows).
-  Future<void> _setExperimentReminders(
-    BuildContext context,
-    WidgetRef ref,
-    bool enabled,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    final scheduler = ref.read(experimentReminderSchedulerProvider);
-    final experiments = await ref.read(experimentRepositoryProvider).getAll();
-    for (final experiment in experiments) {
-      if (!enabled) {
-        await scheduler.cancelForExperiment(experiment.id);
-      } else {
-        await scheduler.scheduleForExperiment(
-          experiment,
-          title: l10n.experimentReminderTitle(experiment.name),
-          body: l10n.experimentReminderBody,
-        );
-      }
-    }
-    await ref
-        .read(settingsProvider.notifier)
-        .setExperimentRemindersEnabled(enabled);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -562,14 +533,6 @@ final class _NotificationsScreenState extends ConsumerState<_NotificationsScreen
               value: settings.plannerNotifications,
               onChanged: (enabled) =>
                   _setPlannerNotifications(context, ref, enabled),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.settingsExperimentReminders),
-              subtitle: Text(l10n.settingsExperimentRemindersSubtitle),
-              value: settings.experimentRemindersEnabled,
-              onChanged: (enabled) =>
-                  _setExperimentReminders(context, ref, enabled),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -757,7 +720,7 @@ void _saveIfValid(TextEditingController ctrl, VoidCallback commit) {
   commit();
 }
 
-/// Planner: workout rest, planning horizon, reminder lead, experiment baseline.
+/// Planner: workout rest, planning horizon, reminder lead.
 final class _PlannerScreen extends ConsumerStatefulWidget {
   final bool embed;
 
@@ -772,7 +735,6 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
   late final TextEditingController _restCtrl;
   late final TextEditingController _leadCtrl;
   late final TextEditingController _untimedCtrl;
-  late final TextEditingController _baselineCtrl;
 
   @override
   void initState() {
@@ -792,9 +754,6 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
     _untimedCtrl = TextEditingController(
       text: settings.untimedReminderMinutes.toString(),
     );
-    _baselineCtrl = TextEditingController(
-      text: settings.experimentBaselineDays.toString(),
-    );
   }
 
   @override
@@ -803,7 +762,6 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
     _restCtrl.dispose();
     _leadCtrl.dispose();
     _untimedCtrl.dispose();
-    _baselineCtrl.dispose();
     super.dispose();
   }
 
@@ -876,18 +834,6 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
               validator: (v) => _validateNonNegative(context, v),
               onSave: () => _saveIfValid(_untimedCtrl, () {
                 unawaited(_saveUntimedDefault(notifier, l10n));
-              }),
-            ),
-            _settingsField(
-              context: context,
-              controller: _baselineCtrl,
-              label: l10n.settingsExperimentBaselineLabel,
-              help: l10n.settingsExperimentBaselineHelp,
-              validator: (v) => _validatePositiveInt(context, v),
-              onSave: () => _saveIfValid(_baselineCtrl, () {
-                notifier.setExperimentBaselineDays(
-                  int.parse(_baselineCtrl.text),
-                );
               }),
             ),
           ],

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
+import '../database/app_database.dart' as db;
 import '../database/database_provider.dart' as db;
 import '../network/api_client.dart';
 import '../settings/providers/settings.dart';
@@ -49,6 +50,46 @@ final class DataPushService {
     }
   }
 
+  /// Tag id -> name, so link rows can carry the real name alongside the id.
+  ///
+  /// Without this the server only sees the id and used to store a placeholder
+  /// tag (`name = id`), which the pull then sent back to the phone.
+  Future<Map<String, String>> _tagNames(db.AppDatabase database) async {
+    final rows = await database.select(database.tags).get();
+    return {for (final row in rows) row.id: row.name};
+  }
+
+  /// Enriches `{tagId, ...}` link rows with the tag's name (`tagName`).
+  List<Map<String, dynamic>> _withTagNames(
+    List<Map<String, dynamic>> rows,
+    Map<String, String> names,
+  ) => [
+    for (final row in rows)
+      if (names[row['tagId']] case final name?) {...row, 'tagName': name} else row,
+  ];
+
+  /// Merges the outbox tombstones for [entities] into one id list. The
+  /// workout/template push handlers apply every id to the parent *and* its
+  /// child tables, so one flat list is enough.
+  Future<List<String>> _pendingDeletes(
+    db.AppDatabase database,
+    Iterable<String> entities,
+  ) async {
+    final ids = <String>{};
+    for (final entity in entities) {
+      ids.addAll(await database.pendingSyncDeletes(entity));
+    }
+    return ids.toList();
+  }
+
+  /// Pushes every workout, its exercises and their sets, plus any deletions
+  /// recorded in the local outbox.
+  ///
+  /// The full graph goes every time (no delta): the phone is the driver, so a
+  /// push always mirrors its complete state and a pull always fetches the
+  /// server's complete state. Child tombstones ride in `deleted` because the
+  /// server applies each id to `workouts`, `workout_exercises` and
+  /// `exercise_sets` alike.
   Future<PushResult> pushWorkouts(
     WidgetRef ref,
     String baseUrl,
@@ -59,11 +100,27 @@ final class DataPushService {
     final workouts = await database.select(database.workouts).get();
     final exercises = await database.select(database.workoutExercises).get();
     final sets = await database.select(database.exerciseSets).get();
-    return _pushObject(baseUrl, apiKey, endpoint, {
+    final deleted = await _pendingDeletes(database, const [
+      'workouts',
+      'workoutExercises',
+      'exerciseSets',
+    ]);
+    final result = await _pushObject(baseUrl, apiKey, endpoint, {
       'workouts': workouts.map((e) => e.toJson()).toList(),
       'workoutExercises': exercises.map((e) => e.toJson()).toList(),
       'exerciseSets': sets.map((e) => e.toJson()).toList(),
+      'deleted': deleted,
     });
+    if (result.ok) {
+      for (final entity in const [
+        'workouts',
+        'workoutExercises',
+        'exerciseSets',
+      ]) {
+        await database.clearSyncDeletes(entity);
+      }
+    }
+    return result;
   }
 
   Future<PushResult> pushTemplates(
@@ -78,11 +135,61 @@ final class DataPushService {
         .select(database.workoutTemplateExercises)
         .get();
     final sets = await database.select(database.workoutTemplateSets).get();
-    return _pushObject(baseUrl, apiKey, endpoint, {
+    final deleted = await _pendingDeletes(database, const [
+      'workoutTemplates',
+      'workoutTemplateExercises',
+      'workoutTemplateSets',
+    ]);
+    final result = await _pushObject(baseUrl, apiKey, endpoint, {
       'workoutTemplates': templates.map((e) => e.toJson()).toList(),
       'workoutTemplateExercises': exercises.map((e) => e.toJson()).toList(),
       'workoutTemplateSets': sets.map((e) => e.toJson()).toList(),
+      'deleted': deleted,
     });
+    if (result.ok) {
+      for (final entity in const [
+        'workoutTemplates',
+        'workoutTemplateExercises',
+        'workoutTemplateSets',
+      ]) {
+        await database.clearSyncDeletes(entity);
+      }
+    }
+    return result;
+  }
+
+  /// Pushes the user's own (non-catalog) exercises so a workout that
+  /// references one does not fail the server's foreign key.
+  ///
+  /// Runs as a pre-flight before workouts/templates and as a standalone action.
+  /// The server only inserts missing ids and revives tombstoned ones; it never
+  /// overwrites an existing row, so pushing an already-known exercise is safe.
+  Future<PushResult> pushExercises(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    // The shared catalog lists every exercise the server already has. Anything
+    // local that it does not know was created on this device.
+    final catalog = await database.select(database.exerciseCatalog).get();
+    final catalogIds = {for (final row in catalog) row.id};
+    final rows = await database.select(database.exercises).get();
+    final custom = [
+      for (final row in rows)
+        if (!catalogIds.contains(row.id))
+          (row.toJson()
+                ..remove('imagePath')
+                ..remove('videoPath')),
+    ];
+    final deleted = await _pendingDeletes(database, const ['exercises']);
+    final result = await _pushObject(baseUrl, apiKey, endpoint, {
+      'exercises': custom,
+      'deleted': deleted,
+    });
+    if (result.ok) await database.clearSyncDeletes('exercises');
+    return result;
   }
 
   Future<PushResult> pushNotes(
@@ -97,7 +204,10 @@ final class DataPushService {
     final clips = await database.select(database.noteAudio).get();
     return _pushObject(baseUrl, apiKey, endpoint, {
       'notes': notes.map((e) => e.toJson()).toList(),
-      'noteTags': tags.map((e) => e.toJson()).toList(),
+      'noteTags': _withTagNames(
+        tags.map((e) => e.toJson()).toList(),
+        await _tagNames(database),
+      ),
       'noteAudio': clips.map((e) => e.toJson()).toList(),
     });
   }
@@ -165,7 +275,10 @@ final class DataPushService {
     final tags = await database.select(database.taskTags).get();
     return _pushObject(baseUrl, apiKey, endpoint, {
       'tasks': tasks.map((e) => e.toJson()).toList(),
-      'taskTags': tags.map((e) => e.toJson()).toList(),
+      'taskTags': _withTagNames(
+        tags.map((e) => e.toJson()).toList(),
+        await _tagNames(database),
+      ),
     });
   }
 
@@ -182,7 +295,10 @@ final class DataPushService {
     return _pushObject(baseUrl, apiKey, endpoint, {
       'goals': goals.map((e) => e.toJson()).toList(),
       'goalProgressEntries': progress.map((e) => e.toJson()).toList(),
-      'goalTags': tags.map((e) => e.toJson()).toList(),
+      'goalTags': _withTagNames(
+        tags.map((e) => e.toJson()).toList(),
+        await _tagNames(database),
+      ),
     });
   }
 
@@ -204,25 +320,6 @@ final class DataPushService {
     return _pushObject(baseUrl, apiKey, endpoint, {
       'meals': meals.map((e) => e.toJson()).toList(),
       'mealFoods': items.map((e) => e.toJson()).toList(),
-    });
-  }
-
-  /// Pushes every experiment plus its daily check-ins.
-  ///
-  /// Experiments are sent before their check-ins so the server's foreign key
-  /// always resolves.
-  Future<PushResult> pushExperiments(
-    WidgetRef ref,
-    String baseUrl,
-    String apiKey,
-    String endpoint,
-  ) async {
-    final database = ref.read(db.databaseProvider);
-    final experiments = await database.select(database.experiments).get();
-    final checkins = await database.select(database.experimentCheckins).get();
-    return _pushObject(baseUrl, apiKey, endpoint, {
-      'experiments': experiments.map((e) => e.toJson()).toList(),
-      'experimentCheckins': checkins.map((e) => e.toJson()).toList(),
     });
   }
 
@@ -367,15 +464,25 @@ Future<PushResult> pushDataType(WidgetRef ref, String type) async {
   final base = settings.remoteSyncBaseUrl;
   final key = settings.remoteSyncApiKey;
   switch (type) {
-    case 'workouts':
-      return service.pushWorkouts(ref, base, key, settings.endpointWorkouts);
-    case 'experiments':
-      return service.pushExperiments(
+    case 'exercises':
+      return service.pushExercises(
         ref,
         base,
         key,
-        settings.endpointExperiments,
+        settings.endpointExercises,
       );
+    case 'workouts': {
+      // Custom exercises must exist server-side before the workout rows that
+      // reference them (the server enforces the foreign key).
+      final pre = await service.pushExercises(
+        ref,
+        base,
+        key,
+        settings.endpointExercises,
+      );
+      if (!pre.ok) return pre;
+      return service.pushWorkouts(ref, base, key, settings.endpointWorkouts);
+    }
     case 'bodyMetrics':
       return service.pushBodyMetrics(
         ref,
@@ -383,8 +490,16 @@ Future<PushResult> pushDataType(WidgetRef ref, String type) async {
         key,
         settings.endpointBodyMetrics,
       );
-    case 'templates':
+    case 'templates': {
+      final pre = await service.pushExercises(
+        ref,
+        base,
+        key,
+        settings.endpointExercises,
+      );
+      if (!pre.ok) return pre;
       return service.pushTemplates(ref, base, key, settings.endpointTemplates);
+    }
     case 'notes':
       return service.pushNotes(ref, base, key, settings.endpointNotes);
     case 'noteAudio':

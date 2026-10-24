@@ -29,32 +29,27 @@ part 'app_database.g.dart';
     WorkoutTemplateExercises,
     WorkoutTemplateSets,
     Tasks,
-    Experiments,
     BodyMetrics,
     Notes,
     Accounts,
     Transactions,
     Receipts,
     FxRates,
-    ExperimentCheckins,
     Tags,
     Goals,
     GoalProgressEntries,
-    TaskExperiments,
     TaskGoals,
-    ExperimentGoals,
     TaskNotes,
-    ExperimentNotes,
     GoalNotes,
     GoalWorkouts,
     NoteWorkouts,
     TaskTags,
-    ExperimentTags,
     GoalTags,
     NoteTags,
     NoteAudio,
     ExerciseCatalog,
     IngredientCatalog,
+    SyncDeletes,
   ],
 )
 final class AppDatabase extends _$AppDatabase {
@@ -63,7 +58,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 36;
+  int get schemaVersion => 37;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -104,20 +99,12 @@ final class AppDatabase extends _$AppDatabase {
       // already serve lookups on the leading column; these cover queries that
       // start from the second column (e.g. goals for a task, tasks for a goal).
       const linkIndexes = [
-        (
-          'idx_task_experiments_experiment',
-          'task_experiments',
-          'experiment_id',
-        ),
         ('idx_task_goals_goal', 'task_goals', 'goal_id'),
-        ('idx_experiment_goals_goal', 'experiment_goals', 'goal_id'),
         ('idx_task_notes_note', 'task_notes', 'note_id'),
-        ('idx_experiment_notes_note', 'experiment_notes', 'note_id'),
         ('idx_goal_notes_note', 'goal_notes', 'note_id'),
         ('idx_goal_workouts_workout', 'goal_workouts', 'workout_id'),
         ('idx_note_workouts_workout', 'note_workouts', 'workout_id'),
         ('idx_task_tags_task', 'task_tags', 'task_id'),
-        ('idx_experiment_tags_experiment', 'experiment_tags', 'experiment_id'),
         ('idx_goal_tags_goal', 'goal_tags', 'goal_id'),
         ('idx_note_tags_note', 'note_tags', 'note_id'),
       ];
@@ -280,7 +267,19 @@ final class AppDatabase extends _$AppDatabase {
           'reminder_time_minutes INTEGER NOT NULL DEFAULT 1200, '
           'created_at INTEGER NOT NULL)',
         );
-        await m.createTable(experimentCheckins);
+        // `experiment_checkins` is created with raw SQL: the feature was
+        // removed in v38, so no Dart table class exists for it any more, but
+        // the historical upgrade path still has to reproduce the old schema.
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiment_checkins ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'experiment_id TEXT NOT NULL, '
+          'day INTEGER NOT NULL, '
+          'rating INTEGER NOT NULL, '
+          'note TEXT NULL, '
+          'created_at INTEGER NOT NULL, '
+          'UNIQUE (experiment_id, day))',
+        );
       }
       if (from < 19) {
         // v19: fx_rates.manual — marks hand-edited rates so a refresh can
@@ -388,7 +387,16 @@ final class AppDatabase extends _$AppDatabase {
         await m.database.customStatement(
           'ALTER TABLE experiment_checkins RENAME TO experiment_checkins_old',
         );
-        await m.createTable(experimentCheckins);
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiment_checkins ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'experiment_id TEXT NOT NULL, '
+          'day INTEGER NOT NULL, '
+          'rating INTEGER NOT NULL, '
+          'note TEXT NULL, '
+          'created_at INTEGER NOT NULL, '
+          'UNIQUE (experiment_id, day))',
+        );
         await m.database.customStatement(
           'INSERT INTO experiment_checkins '
           '(id, experiment_id, day, rating, note, created_at) '
@@ -442,7 +450,22 @@ final class AppDatabase extends _$AppDatabase {
         //    `task_experiments` link table; further junction tables are
         //    created empty.
         // 4. Goals gain reminder + baseline columns.
-        await m.createTable(experiments);
+        //
+        // The experiment tables are raw SQL: the feature was removed in v38 and
+        // has no Dart table class, but older databases still walk this path.
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiments ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'name TEXT NOT NULL, '
+          'purpose TEXT NULL, '
+          'start_date INTEGER NOT NULL, '
+          'end_date INTEGER NULL, '
+          "status TEXT NOT NULL DEFAULT 'planned', "
+          'categories TEXT NULL, '
+          'reminder_enabled INTEGER NOT NULL DEFAULT 1, '
+          'reminder_time_minutes INTEGER NOT NULL DEFAULT 1200, '
+          'created_at INTEGER NOT NULL)',
+        );
         await m.database.customStatement(
           'INSERT INTO experiments '
           '(id, name, purpose, start_date, end_date, status, categories, '
@@ -466,7 +489,13 @@ final class AppDatabase extends _$AppDatabase {
           'notes, workout_id, recurrence, series_id, created_at '
           "FROM planner_items_old WHERE kind = 'task'",
         );
-        await m.createTable(taskExperiments);
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS task_experiments ('
+          'task_id TEXT NOT NULL REFERENCES tasks (id), '
+          'experiment_id TEXT NOT NULL REFERENCES experiments (id), '
+          'label TEXT NULL, '
+          'PRIMARY KEY (task_id, experiment_id))',
+        );
         await m.database.customStatement(
           'INSERT INTO task_experiments (task_id, experiment_id) '
           'SELECT id, experiment_id FROM planner_items_old '
@@ -474,9 +503,21 @@ final class AppDatabase extends _$AppDatabase {
         );
         await m.database.customStatement('DROP TABLE planner_items_old');
         await m.createTable(taskGoals);
-        await m.createTable(experimentGoals);
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiment_goals ('
+          'experiment_id TEXT NOT NULL REFERENCES experiments (id), '
+          'goal_id TEXT NOT NULL REFERENCES goals (id), '
+          'label TEXT NULL, '
+          'PRIMARY KEY (experiment_id, goal_id))',
+        );
         await m.createTable(taskNotes);
-        await m.createTable(experimentNotes);
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiment_notes ('
+          'experiment_id TEXT NOT NULL REFERENCES experiments (id), '
+          'note_id TEXT NOT NULL REFERENCES notes (id), '
+          'label TEXT NULL, '
+          'PRIMARY KEY (experiment_id, note_id))',
+        );
         await m.createTable(goalNotes);
         await m.createTable(goalWorkouts);
         await m.createTable(noteWorkouts);
@@ -617,7 +658,6 @@ final class AppDatabase extends _$AppDatabase {
         }
 
         await readRefs('tasks');
-        await readRefs('experiments');
         await readRefs('notes');
         await readRefs('goals');
       }
@@ -633,7 +673,6 @@ final class AppDatabase extends _$AppDatabase {
         //    through.
         // 3. Drop the now-redundant JSON `tags` columns.
         await m.createTable(taskTags);
-        await m.createTable(experimentTags);
         await m.createTable(goalTags);
         await m.createTable(noteTags);
 
@@ -693,15 +732,6 @@ final class AppDatabase extends _$AppDatabase {
             final tagId = await ensureTag(name);
             await into(taskTags).insert(
               TaskTagsCompanion.insert(tagId: tagId, taskId: id),
-              onConflict: DoNothing(),
-            );
-          }
-        });
-        await linkRows('experiments', (id, names) async {
-          for (final name in names) {
-            final tagId = await ensureTag(name);
-            await into(experimentTags).insert(
-              ExperimentTagsCompanion.insert(tagId: tagId, experimentId: id),
               onConflict: DoNothing(),
             );
           }
@@ -819,7 +849,6 @@ final class AppDatabase extends _$AppDatabase {
         await m.addColumn(workouts, workouts.deletedAt);
         await m.addColumn(workoutTemplates, workoutTemplates.deletedAt);
         await m.addColumn(tasks, tasks.deletedAt);
-        await m.addColumn(experiments, experiments.deletedAt);
         await m.addColumn(notes, notes.deletedAt);
         await m.addColumn(goals, goals.deletedAt);
         await m.addColumn(bodyMetrics, bodyMetrics.deletedAt);
@@ -827,8 +856,70 @@ final class AppDatabase extends _$AppDatabase {
         await m.addColumn(transactions, transactions.deletedAt);
         await m.addColumn(receipts, receipts.deletedAt);
       }
+      if (from < 37) {
+        // v37: child-deletion outbox + experiments removal.
+        //
+        // `sync_deletes` carries hard-deleted child ids (workout exercises,
+        // sets, template blueprints, exercises) so a push can announce them;
+        // top-level rows use their own `deleted_at` tombstone instead.
+        await m.createTable(syncDeletes);
+        // The experiments feature is gone: drop its tables in FK-safe order.
+        // `IF EXISTS` covers upgrades that skipped a version which created them.
+        for (final table in [
+          'experiment_checkins',
+          'experiment_tags',
+          'task_experiments',
+          'experiment_goals',
+          'experiment_notes',
+          'experiments',
+        ]) {
+          await m.database.customStatement('DROP TABLE IF EXISTS $table');
+        }
+      }
     },
   );
+
+  // --------------------------------------------------------------------------
+  // Sync outbox
+  // --------------------------------------------------------------------------
+
+  /// Records child ids that must be announced to the sync server. Repositories
+  /// call this in the same transaction as the hard delete, so a crash can never
+  /// leave a row deleted locally but never reported.
+  Future<void> recordSyncDelete(String entity, String id) =>
+      recordSyncDeletes(entity, [id]);
+
+  Future<void> recordSyncDeletes(String entity, Iterable<String> ids) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (final id in ids) {
+      await into(syncDeletes).insertOnConflictUpdate(
+        SyncDeletesCompanion.insert(entity: entity, id: id, deletedAt: now),
+      );
+    }
+  }
+
+  /// Ids pending deletion for [entity]. The pull path skips these so a
+  /// not-yet-pushed local delete is never resurrected by the server.
+  Future<Set<String>> pendingSyncDeletes(String entity) async {
+    final rows = await (select(
+      syncDeletes,
+    )..where((t) => t.entity.equals(entity))).get();
+    return rows.map((r) => r.id).toSet();
+  }
+
+  /// Drains the outbox for [entity] (all ids, or just [ids]) after the server
+  /// acknowledged the tombstones.
+  Future<void> clearSyncDeletes(String entity, {Iterable<String>? ids}) async {
+    if (ids == null) {
+      await (delete(syncDeletes)..where((t) => t.entity.equals(entity))).go();
+      return;
+    }
+    for (final id in ids) {
+      await (delete(
+        syncDeletes,
+      )..where((t) => t.entity.equals(entity) & t.id.equals(id))).go();
+    }
+  }
 }
 
 LazyDatabase _openConnection() {

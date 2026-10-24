@@ -76,8 +76,6 @@ final class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: FitFatTokens.spaceL),
                   const _GoalsOverviewCard(),
                   const SizedBox(height: FitFatTokens.spaceL),
-                  const _ExperimentsNudgeCard(),
-                  const SizedBox(height: FitFatTokens.spaceL),
                   const _BudgetMiniCard(),
                   const SizedBox(height: FitFatTokens.spaceL),
                   const _SyncHubCard(),
@@ -678,22 +676,6 @@ final class _GoalRow extends ConsumerWidget {
         ]);
       },
     );
-  }
-}
-
-final class _ExperimentsNudgeCard extends ConsumerWidget {
-  const _ExperimentsNudgeCard();
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Icon(Icons.science_outlined, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text(l10n.dashboardExperimentsTitle, style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.chevron_right, size: 18), label: Text(l10n.dashboardExperimentsCta))]),
-      const SizedBox(height: FitFatTokens.spaceM),
-      Text(l10n.dashboardExperimentsBody, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      const SizedBox(height: FitFatTokens.spaceM),
-      OutlinedButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.science, size: 18), label: Text(l10n.dashboardExperimentsCta)),
-    ])));
   }
 }
 

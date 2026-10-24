@@ -109,7 +109,12 @@ final class WorkoutTemplateRepository {
       final oldExerciseIds = await (_database.select(
         _database.workoutTemplateExercises,
       )..where((t) => t.templateId.equals(templateId))).get();
+      final removedSetIds = <String>[];
       for (final ex in oldExerciseIds) {
+        final sets = await (_database.select(
+          _database.workoutTemplateSets,
+        )..where((t) => t.templateExerciseId.equals(ex.id))).get();
+        removedSetIds.addAll(sets.map((s) => s.id));
         await (_database.delete(
           _database.workoutTemplateSets,
         )..where((t) => t.templateExerciseId.equals(ex.id))).go();
@@ -117,6 +122,16 @@ final class WorkoutTemplateRepository {
       await (_database.delete(
         _database.workoutTemplateExercises,
       )..where((t) => t.templateId.equals(templateId))).go();
+      // The old blueprint rows are hard-deleted locally, so their ids must be
+      // pushed as tombstones or the server keeps resurrecting them.
+      await _database.recordSyncDeletes(
+        'workoutTemplateExercises',
+        oldExerciseIds.map((r) => r.id),
+      );
+      await _database.recordSyncDeletes(
+        'workoutTemplateSets',
+        removedSetIds,
+      );
 
       for (final (i, block) in blocks.indexed) {
         final exerciseId = const Uuid().v7();
@@ -189,7 +204,12 @@ final class WorkoutTemplateRepository {
       final exercises = await (_database.select(
         _database.workoutTemplateExercises,
       )..where((t) => t.templateId.equals(id))).get();
+      final removedSetIds = <String>[];
       for (final ex in exercises) {
+        final sets = await (_database.select(
+          _database.workoutTemplateSets,
+        )..where((t) => t.templateExerciseId.equals(ex.id))).get();
+        removedSetIds.addAll(sets.map((s) => s.id));
         await (_database.delete(
           _database.workoutTemplateSets,
         )..where((t) => t.templateExerciseId.equals(ex.id))).go();
@@ -197,6 +217,14 @@ final class WorkoutTemplateRepository {
       await (_database.delete(
         _database.workoutTemplateExercises,
       )..where((t) => t.templateId.equals(id))).go();
+      await _database.recordSyncDeletes(
+        'workoutTemplateExercises',
+        exercises.map((r) => r.id),
+      );
+      await _database.recordSyncDeletes(
+        'workoutTemplateSets',
+        removedSetIds,
+      );
       final now = DateTime.now().millisecondsSinceEpoch;
       await (_database.update(_database.workoutTemplates)
             ..where((t) => t.id.equals(id)))

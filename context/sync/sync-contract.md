@@ -45,13 +45,12 @@ Table names match `context/database/schema.md` exactly.
 | food | `foods`, `food_ingredients` | a named recipe; composition is nested inside the food in the push, so one pull yields a usable recipe (§11.3) |
 | store | `stores` | create + rename only (no delete exists) |
 | meal | `meals`, `meal_foods` | atomic per meal; each `meal_foods` row carries the portion macros for the amount eaten, re-derived whenever the food behind it changes |
-| planner_item | `planner_items` | recurrence JSON round-trips verbatim |
+| task | `tasks` (formerly `planner_items`) | recurrence JSON round-trips verbatim |
 | note | `notes` | |
 | body_metric | `body_metrics` | upsert-by-day semantics preserved |
 | account | `accounts` | budget accounts incl. opening balance |
 | transaction | `transactions` | `amount_base` / `rate_used` are derived-but-persisted; synced as-is so history stays reproducible |
 | receipt (metadata) | `receipts` | rows only — image binaries excluded (§2.2) |
-| experiment | `experiments`, `experiment_checkins` | check-ins unique per `(experiment_id, day)` |
 
 ### 2.2 Out of scope (never synced)
 
@@ -182,18 +181,15 @@ higher `device_id` (lexicographic), then higher `id`.
 
 Documented exceptions:
 
-1. **Aggregates are atomic.** A workout/meals/experiment batch replaces the
+1. **Aggregates are atomic.** A workout/meals batch replaces the
    whole aggregate (parent + children) — never parent-from-one-device,
    children-from-another. Children inherit the winning parent's `updated_at`.
 2. **Delete beats update only if the delete is newer.** Deletes are tombstone
    writes carrying their own `updated_at`, so an older delete arriving late
    loses against a newer edit (the row resurrects server-side and propagates).
-3. **`experiment_checkins` upsert-by-day** mirrors the local unique
-   `(experiment_id, day)` constraint; same-day conflicts resolve LWW like any
-   row.
-4. **`ingredient_prices` upsert-by-(store, day)** likewise; the unique key is
+3. **`ingredient_prices` upsert-by-(store, day)** likewise; the unique key is
    `(ingredient_id, store_id, recorded_at)`.
-5. **No field merging anywhere.** If silent LWW loss proves unacceptable later
+4. **No field merging anywhere.** If silent LWW loss proves unacceptable later
    (OQ-4), that is a new contract version.
 
 ## 7. Limits, guards, retries
@@ -539,6 +535,120 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
   batch rewrite). Picker thumbnails are live server fetches for `has_image`
   rows only, so the picker blocks with an unreachable banner when the
   server is down.
+
+### 11.6 Personal pool — full-state push / pull
+
+The user's own data is mirrored with one rule: **the phone is the driver, and
+the wire carries complete state.** A push sends every local row of one entity
+(full state, never a delta); a pull asks for the server's complete state
+(`since=0`, never a delta). Both directions use the *same* envelope shape, so a
+payload written by a push can be read back by a pull unchanged.
+
+The hub (Settings → Sync) exposes a per-entity push/pull pair plus **Push all**
+and **Pull all**, which run the entities in dependency order:
+
+```
+Tags → Exercises → Tasks → Notes → Goals → Workouts → Templates
+     → Meals → Body → Budget → Receipts → Stores → Foods
+```
+
+Tags go first so link rows can name them; exercises go before workouts and
+templates because those reference exercise ids (the server enforces the
+foreign key on push); stores precede foods for the same reason. Push all stops
+at the first failure (later entities may depend on it); Pull all keeps going
+and reports the failed entity names.
+
+| Entity | Push | Pull |
+|--------|------|------|
+| tags | `POST /tags` | `GET /tags` |
+| exercises (custom) | `POST /exercises` | `GET /exercises?since=0` (media client) |
+| tasks | `POST /tasks` | `GET /tasks` |
+| notes | `POST /notes` | `GET /notes` |
+| goals | `POST /goals` | `GET /goals` |
+| workouts | `POST /workouts` | `GET /workouts` |
+| templates | `POST /templates` | `GET /templates` |
+| meals | `POST /meals` | `GET /meals` |
+| body metrics | `POST /body-metrics` | `GET /body-metrics` |
+| budget accounts | `POST /budget-accounts` | `GET /budget-accounts` |
+| transactions | `POST /transactions` | `GET /transactions` |
+| receipts | `POST /receipt-pictures` (multipart or JSON) | `GET /receipt-pictures` |
+| stores | `POST /stores` | `GET /stores` |
+| foods | `POST /foods` | `GET /foods` (full) |
+
+Every route uses `Authorization: Bearer <apiKey>`; every response carries
+`server_time` (epoch ms). The cursor is only a “last sync” label in the hub —
+it never narrows what a pull fetches.
+
+#### Pull envelope
+
+```json
+{
+  "server_time": 1760000000000,
+  "items": [ "...one object per row..." ],
+  "deleted": ["id"],
+  "deletedExercises": ["workoutExerciseId"],
+  "deletedSets": ["setId"]
+}
+```
+
+- `items[]` uses the same camelCase field names as the push payload (Drift
+  `toJson()`), so a workout item looks like
+  `{id, name, date, startedAt, completedAt, notes, routineId, templateId,
+  createdAt, deletedAt, exercises: [{id, workoutId, exerciseId, sortOrder,
+  notes, sets: [{id, workoutExerciseId, setNumber, reps, weightKg, ...}]}]}`.
+- Workouts and templates are **aggregates**: the parent nests its exercises,
+  and each exercise nests its sets. The server returns the full aggregate when
+  *any* child changed (`workouts.updated_at > since OR EXISTS (child ...)`),
+  because a child-only change used to be invisible to a parent-only filter and
+  left the phone with empty workouts.
+- `deleted` lists top-level tombstones (parents and hard-deleted rows).
+  Workout/template child tombstones ride in `deletedExercises` /
+  `deletedSets` so a deleted child cannot be resurrected by an alive parent.
+- Tags are placeholders when `name == id` or `name == ''`; pulls ignore those
+  and repair a local placeholder instead of overwriting a real local name.
+
+#### Push rules
+
+- **Full state per entity.** `workouts` ships every `workouts`,
+  `workoutExercises` and `exerciseSets` row plus one flat `deleted[]` list;
+  the server applies each id to the parent and child tables alike. Templates
+  do the same with `workoutTemplates`, `workoutTemplateExercises` and
+  `workoutTemplateSets`.
+- **Tombstones.** Top-level rows carry their own `deletedAt` (null = alive).
+  Hard-deleted children have no row left, so they are recorded in the local
+  `sync_deletes` outbox (`entity`, `id`) and drained into the next push of that
+  entity; the outbox is cleared only after the server acknowledges.
+- **Tags first, with names.** Link batches (`taskTags`, `noteTags`,
+  `goalTags`) carry `tagName` next to `tagId`; the tag push runs before them,
+  and the server creates a missing tag row from the name. This is what stopped
+  imported tags from showing up as raw UUIDs.
+- **Custom exercises.** `POST /exercises` sends local rows whose id is absent
+  from `exercise_catalog` (i.e. created on this device) with the same shape as
+  the exercise pull. The server inserts missing ids and revives tombstoned
+  ones, but **never overwrites an existing row** (the shared catalog is
+  authoritative). Client-local `imagePath`/`videoPath` are not sent. Workouts
+  and templates run this push as a pre-flight because the server has foreign
+  keys on and would reject an unknown exercise id.
+
+#### Apply rules
+
+- **Local-first** for tasks, notes, goals, workouts, templates, meals, body
+  metrics, accounts, transactions and stores: an item whose id already exists
+  locally is skipped, so a local edit wins. Tombstoned ids still delete the
+  local row and its dependents — a deletion anywhere is a deletion everywhere.
+- **Server-wins** for tags and receipts: the server is the source of truth.
+  Receipt images stay server-side; only the row and OCR parse are pulled.
+- **Nested children always apply**, even when the parent row already exists —
+  that is how a workout whose header arrived earlier finally receives its
+  exercises and sets.
+- **Pending local deletions win over the pull.** Ids present in
+  `sync_deletes` are skipped while applying, so an unpushed local delete is not
+  resurrected by the server's still-alive copy. Undo clears the outbox rows.
+- Mobile does **not** enable `PRAGMA foreign_keys`; parentless child rows are
+  deliberately allowed so a workout graph is never dropped for a missing
+  exercise. The server **does** enable it, hence the exercise pre-flight.
+- Pulling an entity never advances the cursor past a failure, and a failed pull
+  reports `SyncResult.error` (surfaced as a banner by the hub).
 
 ---
 

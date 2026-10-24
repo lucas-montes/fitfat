@@ -160,16 +160,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardGoalsCta => 'Objectifs';
 
   @override
-  String get dashboardExperimentsTitle => 'Expériences';
-
-  @override
-  String get dashboardExperimentsBody =>
-      'Suivez vos expériences et vos relevés quotidiens.';
-
-  @override
-  String get dashboardExperimentsCta => 'Expériences';
-
-  @override
   String get dashboardAddTitle => 'Ajouter';
 
   @override
@@ -1653,10 +1643,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ajustement de l\'objectif calorique (kcal)';
 
   @override
-  String get settingsExperimentBaselineLabel =>
-      'Référence des expériences (jours)';
-
-  @override
   String get settingsDefaultRestLabel => 'Repos par défaut entre séries (min)';
 
   @override
@@ -1676,10 +1662,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsCalorieAdjustmentHelp =>
       'Kcal ajoutées à ton objectif quotidien pour cette phase. Négatif = déficit, positif = surplus.';
-
-  @override
-  String get settingsExperimentBaselineHelp =>
-      'Jours d\'historique avant le début d\'une expérience, servant de référence.';
 
   @override
   String get settingsDefaultRestHelp =>
@@ -1885,13 +1867,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsFxRefreshInterval => 'Intervalle d\'actualisation';
 
   @override
-  String get settingsExperimentReminders => 'Rappels d\'expériences';
-
-  @override
-  String get settingsExperimentRemindersSubtitle =>
-      'Rappels quotidiens tant qu\'une expérience est en cours';
-
-  @override
   String get settingsSyncServer => 'Serveur de synchronisation';
 
   @override
@@ -2033,8 +2008,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsPlanner => 'Planificateur';
 
   @override
-  String get settingsPlannerSubtitle =>
-      'Séances, expériences, tâches et objectifs';
+  String get settingsPlannerSubtitle => 'Séances, tâches et objectifs';
 
   @override
   String get settingsNutrition => 'Nutrition';
@@ -2705,15 +2679,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tabBudget => 'Budget';
 
   @override
-  String get tabExperiments => 'Expériences';
-
-  @override
-  String get experimentsAppBar => 'Expériences';
-
-  @override
-  String get experimentsFab => 'Nouvelle expérience';
-
-  @override
   String get plannerViewDay => 'Vue jour';
 
   @override
@@ -2723,45 +2688,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plannerViewMonth => 'Vue mois';
 
   @override
-  String get plannerAllDay => 'Journée entière';
-
-  @override
   String get plannerGoToday => 'Aller à aujourd\'hui';
 
   @override
-  String get experimentsEmptyTitle => 'Aucune expérience';
+  String get goalLinkTask => 'Lier une tâche';
 
   @override
-  String get experimentsEmptyBody =>
-      'Créez une expérience pour suivre une habitude, un changement alimentaire ou un protocole d\'entraînement avec des bilans quotidiens.';
+  String get goalUnlinkTask => 'Délier la tâche';
 
   @override
-  String get experimentLinkedTasksTitle => 'Tâches liées';
-
-  @override
-  String get experimentLinkTask => 'Lier une tâche';
-
-  @override
-  String get experimentUnlinkTask => 'Délier la tâche';
-
-  @override
-  String get experimentNoLinkedTasks =>
-      'Aucune tâche liée pour l\'instant. Liez des tâches pour suivre les étapes de cette expérience.';
-
-  @override
-  String get experimentSearchTasksHint => 'Rechercher des tâches…';
-
-  @override
-  String get experimentsRelatedGoals => 'Objectifs liés';
-
-  @override
-  String get experimentsRelatedNotes => 'Notes liées';
-
-  @override
-  String get experimentsNoLinkedGoals => 'Aucun objectif lié pour l\'instant.';
-
-  @override
-  String get experimentsNoLinkedNotes => 'Aucune note liée pour l\'instant.';
+  String get goalSearchTasksHint => 'Rechercher des tâches…';
 
   @override
   String get linkGoal => 'Lier un objectif';
@@ -2774,183 +2710,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get unlinkNote => 'Délier la note';
-
-  @override
-  String experimentDaysElapsed(int days) {
-    return '$days jours écoulés';
-  }
-
-  @override
-  String get experimentStatusPlanned => 'Planifiée';
-
-  @override
-  String get experimentStatusActive => 'En cours';
-
-  @override
-  String get experimentStatusDone => 'Terminée';
-
-  @override
-  String get experimentStatusAborted => 'Abandonnée';
-
-  @override
-  String get experimentCategoryWorkout => 'Entraînement';
-
-  @override
-  String get experimentCategoryDiet => 'Alimentation';
-
-  @override
-  String get experimentCategoryBody => 'Corps';
-
-  @override
-  String get experimentCategorySteps => 'Pas';
-
-  @override
-  String get experimentCategoryBudget => 'Budget';
-
-  @override
-  String get experimentFormTitleNew => 'Nouvelle expérience';
-
-  @override
-  String get experimentFormTitleEdit => 'Modifier l\'expérience';
-
-  @override
-  String get experimentFormNameLabel => 'Nom';
-
-  @override
-  String get experimentFormNameHint => 'ex. bloc d\'hypertrophie de 8 semaines';
-
-  @override
-  String get experimentFormPurposeLabel => 'Hypothèse / objectif';
-
-  @override
-  String get experimentFormPurposeHint => 'Que testez-vous ?';
-
-  @override
-  String get experimentFormStartLabel => 'Date de début';
-
-  @override
-  String get experimentFormEndLabel => 'Date de fin';
-
-  @override
-  String get experimentFormStatusLabel => 'Statut';
-
-  @override
-  String get experimentFormCategoriesLabel => 'Données suivies';
-
-  @override
-  String get experimentFormReminderLabel => 'Rappel de bilan quotidien';
-
-  @override
-  String get experimentFormReminderSubtitle =>
-      'Une notification ouvre cette expérience pour une évaluation rapide.';
-
-  @override
-  String get experimentFormReminderTimeLabel => 'Heure du rappel';
-
-  @override
-  String get experimentFormDelete => 'Supprimer';
-
-  @override
-  String get experimentFormDeleteConfirmTitle => 'Supprimer l\'expérience ?';
-
-  @override
-  String get experimentFormDeleteConfirmBody =>
-      'Cela supprime aussi les bilans de l\'expérience.';
-
-  @override
-  String get experimentFormNameRequired => 'Donnez un nom à l\'expérience.';
-
-  @override
-  String get experimentFormInvalidDates =>
-      'La date de fin doit être postérieure ou égale à la date de début.';
-
-  @override
-  String get experimentDetailCheckin => 'Bilan';
-
-  @override
-  String get experimentDetailCheckinToday =>
-      'Vous avez déjà fait votre bilan aujourd\'hui. Vous pouvez le mettre à jour.';
-
-  @override
-  String get experimentDetailCheckinDialogTitle => 'Bilan quotidien';
-
-  @override
-  String get experimentDetailCheckinRatingLabel => 'Note';
-
-  @override
-  String get experimentDetailCheckinRatingHint =>
-      '1 = journée difficile, 5 = excellente journée';
-
-  @override
-  String get experimentDetailCheckinNoteLabel => 'Note (facultatif)';
-
-  @override
-  String get experimentDetailCheckinNoteHint =>
-      'Comment s\'est passée la journée ?';
-
-  @override
-  String get experimentDetailProgressTitle => 'Progression';
-
-  @override
-  String get experimentDetailCheckinsTitle => 'Bilans';
-
-  @override
-  String get experimentDetailTrackedTitle => 'Données suivies';
-
-  @override
-  String get experimentDetailBaselineTitle => 'Base de 14 jours';
-
-  @override
-  String get experimentDetailNoData =>
-      'Aucune donnée pour cette période pour le moment.';
-
-  @override
-  String get experimentDetailMarkDone => 'Marquer terminée';
-
-  @override
-  String get experimentDetailAbort => 'Abandonner';
-
-  @override
-  String experimentDetailCheckinCount(int count) {
-    return '$count bilans';
-  }
-
-  @override
-  String experimentRatingOf5(int rating) {
-    return '$rating/5';
-  }
-
-  @override
-  String get experimentChartWorkout => 'Volume d\'entraînement (kg)';
-
-  @override
-  String get experimentChartDiet => 'Calories (kcal)';
-
-  @override
-  String get experimentChartDietProtein => 'Protéines (g)';
-
-  @override
-  String get experimentChartWeight => 'Poids (kg)';
-
-  @override
-  String get experimentChartSteps => 'Pas';
-
-  @override
-  String experimentReminderTitle(String experiment) {
-    return 'Bilan pour $experiment';
-  }
-
-  @override
-  String get experimentReminderBody =>
-      'Évaluez votre journée pour cette expérience.';
-
-  @override
-  String experimentReminderScheduled(String time) {
-    return 'Rappel quotidien réglé à $time.';
-  }
-
-  @override
-  String get experimentReminderCancelled => 'Rappel quotidien désactivé.';
 
   @override
   String get plannerViewGoals => 'Vue des objectifs';
@@ -3019,19 +2778,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tagsFilterAll => 'Tous';
 
   @override
-  String get initiativesEmptyAllTitle =>
-      'Aucune expérience ni objectif pour l\'instant';
+  String get initiativesEmptyAllTitle => 'Aucun objectif pour l\'instant';
 
   @override
-  String get initiativesEmptyAll =>
-      'Créez une expérience pour suivre une habitude, ou un objectif à atteindre.';
+  String get initiativesEmptyAll => 'Créez un objectif à atteindre.';
 
   @override
   String get initiativesEmptyFilterTitle => 'Aucune initiative correspondante';
 
   @override
   String get initiativesEmptyFilter =>
-      'Aucune expérience ni objectif ne porte les tags sélectionnés.';
+      'Aucun objectif ne porte les tags sélectionnés.';
 
   @override
   String get goalsNew => 'Nouvel objectif';
@@ -3203,7 +2960,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsCascadeDeleteHelp =>
-      'When deleting experiments/goals, choose whether to also delete linked tasks.';
+      'Lors de la suppression d\'un objectif, choisissez si ses tâches liées doivent aussi être supprimées.';
 
   @override
   String get settingsCascadeAsk => 'Ask each time';
@@ -3225,11 +2982,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get cascadeDeleteKeepTasks => 'Keep tasks';
-
-  @override
-  String experimentDeleted(String name) {
-    return 'Experiment \"$name\" deleted';
-  }
 
   @override
   String goalDeleted(String name) {

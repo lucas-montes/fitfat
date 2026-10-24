@@ -62,7 +62,7 @@ final class ExerciseSyncClient {
           if (id is! String) continue;
           await _media.remove(id, ExerciseMediaKind.image);
           await _media.remove(id, ExerciseMediaKind.video);
-          await _repo.delete(id);
+          await _repo.delete(id, recordDeletion: false);
           deleted++;
         }
       }

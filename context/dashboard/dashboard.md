@@ -1,13 +1,13 @@
 # Dashboard
 
-Redesigned Today-first actionable view (dashboard-redesign): horizontal Today strip (tasks + goals + experiments, priority-sorted, inline toggle), nutrition hero (five uniform calorie/macro/fiber rows with an Estimated badge), weight trend with deltas (7d/30d) and goal projection, unified workout hero (latest/Continue + weekly volume/minutes), goals overview (active goals with progressFrom bars), experiments nudge, and budget mini (net worth + month income/expense when accounts exist). Greeting header removed.
+Redesigned Today-first actionable view (dashboard-redesign): horizontal Today strip (tasks, priority-sorted, inline toggle), nutrition hero (five uniform calorie/macro/fiber rows with an Estimated badge), weight trend with deltas (7d/30d) and goal projection, unified workout hero (latest/Continue + weekly volume/minutes), goals overview (active goals with progressFrom bars), and budget mini (net worth + month income/expense when accounts exist). Greeting header removed.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `lib/src/dashboard/providers/dashboard.dart` | Riverpod providers: today's consumed calories/macros, latest workout, weekly volume/minutes, upcoming tasks (used by Today strip priority sorting) |
-| `lib/src/dashboard/screens/dashboard.dart` | Dashboard UI: Today strip, nutrition hero, weight trend, workout hero, goals, experiments, budget mini, welcome hub |
+| `lib/src/dashboard/screens/dashboard.dart` | Dashboard UI: Today strip, nutrition hero, weight trend, workout hero, goals, budget mini, welcome hub |
 | `lib/src/diet/providers/calories.dart` | Riverpod wiring only: `calorieCalculatorProvider`, the two input-source providers, `calorieTargetMetaProvider`, `calorieTargetProvider`, `macroTargetsProvider` |
 | `lib/src/diet/services/calorie_calculator.dart` | `CalorieCalculator` — the BMR → TDEE → target → macro derivation, plus `CalorieTargetMeta` / `MacroTargets` |
 | `lib/src/diet/services/bmr_equation.dart` | `BmrEquation` strategy + `MifflinStJeorEquation`, `KatchMcArdleEquation` |
@@ -56,7 +56,6 @@ body, are both pinned in `test/calorie_calculator_test.dart`.
   - **`_WeightTrendCard`** — `bodyMetricsProvider` + `latestBodyMetricsProvider` + `settingsProvider`; Add weight/height buttons, latest values, `_WeightEvolution` (chart + deltas 7d/30d via `_computeDelta` + projection via `_computeProjection` when goal set).
   - **`_WorkoutHeroCard`** — `activeWorkoutProvider` (Continue) or `latestWorkoutProvider` + `weeklyWorkoutStatsProvider` (volume/minutes) in one Card with Divider.
   - **`_GoalsOverviewCard`** — `goalListProvider` filtered `isActive` take 3 + `latestGoalProgressProvider` per goal, `progressFrom` bar.
-  - **`_ExperimentsNudgeCard`** — placeholder CTA to `/plan` (active experiments surface via Plan tab).
   - **`_BudgetMiniCard`** — `budgetOverviewProvider`; hidden when `accounts.isEmpty`; shows net worth + month income/expense + recent count.
 
 ## Repositories used
