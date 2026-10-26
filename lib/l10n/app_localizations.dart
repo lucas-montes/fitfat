@@ -3487,13 +3487,13 @@ abstract class AppLocalizations {
   /// No description provided for @exportServer.
   ///
   /// In en, this message translates to:
-  /// **'Export database to server'**
+  /// **'Export backup to server'**
   String get exportServer;
 
   /// No description provided for @exportServerTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Upload a full copy of your local database to the server'**
+  /// **'Upload a full backup of your local data to the server'**
   String get exportServerTooltip;
 
   /// No description provided for @importServer.
@@ -3505,7 +3505,7 @@ abstract class AppLocalizations {
   /// No description provided for @importServerTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Replace your local database with the server\'s copy'**
+  /// **'Replace your local data with the server\'s copy'**
   String get importServerTooltip;
 
   /// No description provided for @importConfirmTitle.
@@ -3523,7 +3523,7 @@ abstract class AppLocalizations {
   /// No description provided for @importSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Imported database. Restart the app to load it.'**
+  /// **'Restored from the server copy.'**
   String get importSuccess;
 
   /// No description provided for @importFailed.
@@ -3541,7 +3541,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Database exported.'**
+  /// **'Backup exported.'**
   String get exportSuccess;
 
   /// No description provided for @exportFailed.
@@ -3559,13 +3559,13 @@ abstract class AppLocalizations {
   /// No description provided for @exportServerHelp.
   ///
   /// In en, this message translates to:
-  /// **'Upload a full copy of your local database file to the server.'**
+  /// **'Upload a full backup of your local data to the server.'**
   String get exportServerHelp;
 
   /// No description provided for @importServerHelp.
   ///
   /// In en, this message translates to:
-  /// **'Replace your local database with the server copy. Asks for confirmation first.'**
+  /// **'Replace your local data with the server copy. Asks for confirmation first.'**
   String get importServerHelp;
 
   /// No description provided for @settingsPlanner.
@@ -3619,13 +3619,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsExportDb.
   ///
   /// In en, this message translates to:
-  /// **'Export database'**
+  /// **'Export backup'**
   String get settingsExportDb;
 
   /// No description provided for @settingsExportDbSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Share a copy of your data (SQLite)'**
+  /// **'Share a compressed JSON backup of all your data'**
   String get settingsExportDbSubtitle;
 
   /// No description provided for @settingsReplayPrefillLabel.

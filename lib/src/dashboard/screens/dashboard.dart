@@ -138,7 +138,7 @@ final class _SyncHubCardState extends ConsumerState<_SyncHubCard> {
     if (_busyBackup) return;
     setState(() => _busyBackup = true);
     try {
-      await exportWholeDb(context, ref);
+      await exportJsonPerEntity(context, ref, allBackupEntities);
     } catch (e) {
       if (mounted) showTopBanner(context, message: '$e');
     } finally {

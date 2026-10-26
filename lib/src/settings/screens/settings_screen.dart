@@ -1,21 +1,17 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import '../../sync/screens/sync_hub_screen.dart';
+import '../../sync/local_backup.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../../l10n/app_localizations.dart';
-import '../../database/database_provider.dart';
 import '../../network/api_client.dart';
 import '../../sync/data_push_service.dart';
 import '../../budget/providers/fx_rates.dart';
@@ -1341,24 +1337,12 @@ final class _DataScreenState extends ConsumerState<_DataScreen> {
     super.dispose();
   }
 
-  /// Shares a dated copy of the local SQLite database via the system share
-  /// sheet. Restore/import is out of scope this round.
+  /// Shares a compressed JSON backup of every backed-up group via the system
+  /// share sheet.
   Future<void> _exportDatabase() async {
     final l10n = AppLocalizations.of(context)!;
     try {
-      final dir = await getApplicationDocumentsDirectory();
-      final dbFile = File(p.join(dir.path, 'fitfat.sqlite'));
-      if (!await dbFile.exists()) {
-        throw StateError('Database file not found');
-      }
-      final stamp = DateTime.now().toIso8601String().split('T').first;
-      final tempDir = await getTemporaryDirectory();
-      final copy = await dbFile.copy(
-        p.join(tempDir.path, 'fitfat-$stamp.sqlite'),
-      );
-      await SharePlus.instance.share(
-        ShareParams(files: [XFile(copy.path)], title: l10n.settingsExportDb),
-      );
+      await exportJsonPerEntity(context, ref, allBackupEntities);
     } catch (e) {
       if (mounted) {
         showTopBanner(context, message: l10n.errorWithMessage('$e'));
@@ -1813,14 +1797,7 @@ final class _SyncServerCardState extends ConsumerState<_SyncServerCard> {
           showTopBanner(context, message: l10n.syncServerNotConfigured);
           return;
         }
-        final dir = await getApplicationDocumentsDirectory();
-        final file = File(p.join(dir.path, 'fitfat.sqlite'));
-        if (!await file.exists()) {
-          if (!mounted) return;
-          showTopBanner(context, message: l10n.exportFailed);
-          return;
-        }
-        final bytes = await file.readAsBytes();
+        final bytes = await buildBackupArchive(ref, allBackupEntities);
         final client = HttpApiClient(http.Client(), baseUrl: s.remoteSyncBaseUrl);
         await client.postBytes(
           s.endpointExport,
@@ -1867,11 +1844,7 @@ final class _SyncServerCardState extends ConsumerState<_SyncServerCard> {
             ) ??
             false;
         if (!confirmed || !mounted) return;
-        final dir = await getApplicationDocumentsDirectory();
-        final path = p.join(dir.path, 'fitfat.sqlite');
-        await ref.read(databaseProvider).close();
-        await File(path).writeAsBytes(bytes, flush: true);
-        ref.invalidate(databaseProvider);
+        await importBackupArchive(ref, bytes);
         if (!mounted) return;
         showTopBanner(context, message: l10n.importSuccess);
       });

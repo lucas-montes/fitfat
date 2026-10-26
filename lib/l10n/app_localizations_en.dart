@@ -1937,18 +1937,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pushAllSuccess => 'All data pushed to the server.';
 
   @override
-  String get exportServer => 'Export database to server';
+  String get exportServer => 'Export backup to server';
 
   @override
   String get exportServerTooltip =>
-      'Upload a full copy of your local database to the server';
+      'Upload a full backup of your local data to the server';
 
   @override
   String get importServer => 'Import database from server';
 
   @override
   String get importServerTooltip =>
-      'Replace your local database with the server\'s copy';
+      'Replace your local data with the server\'s copy';
 
   @override
   String get importConfirmTitle => 'Replace local data?';
@@ -1958,7 +1958,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This replaces all local data with the server copy. This cannot be undone.';
 
   @override
-  String get importSuccess => 'Imported database. Restart the app to load it.';
+  String get importSuccess => 'Restored from the server copy.';
 
   @override
   String get importFailed => 'Import failed';
@@ -1967,7 +1967,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importNothing => 'Nothing to import';
 
   @override
-  String get exportSuccess => 'Database exported.';
+  String get exportSuccess => 'Backup exported.';
 
   @override
   String get exportFailed => 'Export failed';
@@ -1978,11 +1978,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportServerHelp =>
-      'Upload a full copy of your local database file to the server.';
+      'Upload a full backup of your local data to the server.';
 
   @override
   String get importServerHelp =>
-      'Replace your local database with the server copy. Asks for confirmation first.';
+      'Replace your local data with the server copy. Asks for confirmation first.';
 
   @override
   String get settingsPlanner => 'Planner';
@@ -2010,10 +2010,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLengthUnitLabel => 'Height';
 
   @override
-  String get settingsExportDb => 'Export database';
+  String get settingsExportDb => 'Export backup';
 
   @override
-  String get settingsExportDbSubtitle => 'Share a copy of your data (SQLite)';
+  String get settingsExportDbSubtitle =>
+      'Share a compressed JSON backup of all your data';
 
   @override
   String get settingsReplayPrefillLabel =>

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -7,19 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import '../../network/api_client.dart';
 import '../../database/database_provider.dart' as db;
 import '../../exercise/widgets/select_sheet.dart';
-import '../../app/app_restart.dart';
 import '../repositories/catalog_repository.dart';
 import '../../ui/tokens.dart';
 import '../../settings/providers/settings.dart';
 import '../data_push_service.dart';
 import '../local_backup.dart';
 import '../personal_pull_service.dart';
+import '../sync_refresh.dart';
 import '../sync_service.dart';
 import 'qr_scan_sheet.dart';
 import '../sync_state_store.dart';
@@ -990,6 +987,9 @@ final class _PersonalPoolSectionState
       if (!mounted) return null;
       if (res.ok) {
         if (announce) {
+          // A single pull can touch any table, so refresh every cached list
+          // before showing the banner. Pull-all does this once at the end.
+          invalidateAllData(ref);
           showTopBanner(
             context,
             message:
@@ -1048,6 +1048,9 @@ final class _PersonalPoolSectionState
         if (error != null) failures.add(entity);
       }
       if (!mounted) return;
+      // Every entity just wrote to the database; refresh the tabs once rather
+      // than after each of the fourteen pulls.
+      invalidateAllData(ref);
       showTopBanner(
         context,
         message: failures.isEmpty
@@ -1229,46 +1232,39 @@ final class _LocalBackupSection extends ConsumerStatefulWidget {
 
 final class _LocalBackupSectionState
     extends ConsumerState<_LocalBackupSection> {
-  bool _wholeDb = true;
-  final Set<String> _selected = {
-    'Tasks',
-    'Notes',
-    'Goals',
-    'Workouts',
-    'Templates',
-    'Meals',
-    'Body',
-    'Budget',
-    'Receipts',
-  };
+  final Set<String> _selected = {...allBackupEntities};
   bool _busyExport = false;
   bool _busyImport = false;
   bool _busyServerBackup = false;
   bool _busyServerRestore = false;
   static const _prefsKey = 'local_backup_selected';
-  static const _wholeKey = 'local_backup_whole';
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final prefs = ref.read(sharedPreferencesProvider);
-      final savedWhole = prefs.getBool(_wholeKey);
       final saved = prefs.getStringList(_prefsKey);
       if (!mounted) return;
       setState(() {
-        if (savedWhole != null) _wholeDb = savedWhole;
-        if (saved != null && saved.isNotEmpty) {
-          _selected.clear();
-          _selected.addAll(saved);
+        if (saved != null) {
+          final known = saved.where(allBackupEntities.contains).toSet();
+          // An older build could save groups that no longer exist (e.g.
+          // 'Templates', now part of Workouts). Never end up with nothing
+          // selected because of a stale preference.
+          if (known.isNotEmpty) {
+            _selected
+              ..clear()
+              ..addAll(known);
+          }
         }
       });
     });
   }
 
   void _persist() {
-    final prefs = ref.read(sharedPreferencesProvider);
-    prefs.setBool(_wholeKey, _wholeDb);
-    prefs.setStringList(_prefsKey, _selected.toList());
+    ref
+        .read(sharedPreferencesProvider)
+        .setStringList(_prefsKey, _selected.toList());
   }
 
   @override
@@ -1277,62 +1273,37 @@ final class _LocalBackupSectionState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(value: true, label: Text('Whole DB')),
-            ButtonSegment(value: false, label: Text('Selected')),
-          ],
-          selected: {_wholeDb},
-          onSelectionChanged: (s) => setState(() {
-            _wholeDb = s.first;
-            _persist();
-          }),
-        ),
-        const SizedBox(height: FitFatTokens.spaceS),
         Text(
-          _wholeDb
-              ? 'Whole DB → .sqlite (full file)'
-              : 'Selected → .json (filtered by selection)',
+          'JSON → .json.gz (compressed, filtered by selection)',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        if (!_wholeDb) ...[
-          const SizedBox(height: FitFatTokens.spaceM),
-          Wrap(
-            spacing: FitFatTokens.spaceS,
-            children: [
-              for (final e in [
-                'Tasks',
-                'Notes',
-                'Goals',
-                'Workouts',
-                'Templates',
-                'Meals',
-                'Body',
-                'Budget',
-                'Receipts',
-              ])
-                FilterChip(
-                  label: Text(e),
-                  selected: _selected.contains(e),
-                  onSelected: (v) => setState(() {
-                    if (v)
-                      _selected.add(e);
-                    else
-                      _selected.remove(e);
-                    _persist();
-                  }),
-                ),
-            ],
+        const SizedBox(height: FitFatTokens.spaceM),
+        Wrap(
+          spacing: FitFatTokens.spaceS,
+          children: [
+            for (final e in backupEntityGroups)
+              FilterChip(
+                label: Text(e),
+                selected: _selected.contains(e),
+                onSelected: (v) => setState(() {
+                  if (v)
+                    _selected.add(e);
+                  else
+                    _selected.remove(e);
+                  _persist();
+                }),
+              ),
+          ],
+        ),
+        Text(
+          '${_selected.length}/${backupEntityGroups.length} groups — applies '
+          'to both Export and Import',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
-          Text(
-            'Selected (${_selected.length}/10) — applies to both Export and Import',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+        ),
         const SizedBox(height: FitFatTokens.spaceM),
         Row(
           children: [
@@ -1348,22 +1319,18 @@ final class _LocalBackupSectionState
                         : () async {
                             setState(() => _busyExport = true);
                             try {
-                              if (_wholeDb)
-                                await exportWholeDb(context, ref);
-                              else {
-                                if (_selected.isEmpty) {
-                                  showTopBanner(
-                                    context,
-                                    message: 'Select at least one entity',
-                                  );
-                                  return;
-                                }
-                                await exportJsonPerEntity(
+                              if (_selected.isEmpty) {
+                                showTopBanner(
                                   context,
-                                  ref,
-                                  _selected,
+                                  message: 'Select at least one group',
                                 );
+                                return;
                               }
+                              await exportJsonPerEntity(
+                                context,
+                                ref,
+                                _selected,
+                              );
                             } catch (e) {
                               if (mounted)
                                 showTopBanner(context, message: '$e');
@@ -1378,11 +1345,7 @@ final class _LocalBackupSectionState
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.ios_share, size: 18),
-                    label: Text(
-                      _wholeDb
-                          ? 'Export DB'
-                          : 'Export JSON (${_selected.length})',
-                    ),
+                    label: Text('Export JSON (${_selected.length})'),
                   ),
                 ],
               ),
@@ -1404,7 +1367,6 @@ final class _LocalBackupSectionState
                                 context,
                                 ref,
                                 entities: _selected,
-                                wholeDb: _wholeDb,
                               );
                             } catch (e) {
                               if (mounted)
@@ -1420,7 +1382,7 @@ final class _LocalBackupSectionState
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.file_open, size: 18),
-                    label: Text(_wholeDb ? 'Import DB' : 'Import JSON'),
+                    label: const Text('Import JSON'),
                   ),
                 ],
               ),
@@ -1431,7 +1393,8 @@ final class _LocalBackupSectionState
         Text('Server copy', style: theme.textTheme.labelMedium),
         const SizedBox(height: 4),
         Text(
-          'Stash the whole database on the computer, or pull it back later',
+          'Upload a compressed JSON backup, or restore the one stored on the '
+          'computer',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -1480,8 +1443,7 @@ final class _LocalBackupSectionState
     setState(() => _busyServerBackup = true);
     try {
       final settings = ref.read(settingsProvider);
-      final file = await backupWholeDb(ref);
-      final bytes = await file.readAsBytes();
+      final bytes = await buildBackupArchive(ref, allBackupEntities);
       final httpClient = http.Client();
       final client = HttpApiClient(
         httpClient,
@@ -1490,14 +1452,14 @@ final class _LocalBackupSectionState
       );
       try {
         await client.postBytes(
-          '/backup',
+          settings.endpointExport,
           body: bytes,
           headers: authHeaders(settings.remoteSyncApiKey),
         );
       } finally {
         httpClient.close();
       }
-      if (mounted) showTopBanner(context, message: 'Database backed up');
+      if (mounted) showTopBanner(context, message: 'Backup uploaded');
     } catch (e, st) {
       Logger('SyncHub.Backup').severe('server backup failed', e, st);
       await shipPhoneLogs(ref);
@@ -1520,8 +1482,8 @@ final class _LocalBackupSectionState
       builder: (ctx) => AlertDialog(
         title: const Text('Replace local data?'),
         content: const Text(
-          'Importing will replace the whole local database with the copy '
-          'stored on the server.',
+          'Importing will delete the existing rows in every backed-up group '
+          'and restore the copy stored on the server.',
         ),
         actions: [
           TextButton(
@@ -1548,18 +1510,16 @@ final class _LocalBackupSectionState
       Uint8List bytes;
       try {
         bytes = await client.getBytes(
-          '/backup/latest',
+          settings.endpointImport,
           headers: authHeaders(settings.remoteSyncApiKey),
         );
       } finally {
         httpClient.close();
       }
-      final tmp = await getTemporaryDirectory();
-      final file = File(
-        p.join(tmp.path, 'fitfat-restore-${DateTime.now().millisecondsSinceEpoch}.sqlite'),
-      );      await file.writeAsBytes(bytes);
-      await replaceWholeDb(ref, file.path);
-      restartApp();
+      final imported = await importBackupArchive(ref, bytes);
+      if (mounted) {
+        showTopBanner(context, message: 'Restored $imported rows');
+      }
     } catch (e, st) {
       Logger('SyncHub.Backup').severe('server restore failed', e, st);
       await shipPhoneLogs(ref);

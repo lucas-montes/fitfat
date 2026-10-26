@@ -1956,18 +1956,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Toutes les données ont été envoyées au serveur.';
 
   @override
-  String get exportServer => 'Exporter la base vers le serveur';
+  String get exportServer => 'Exporter la sauvegarde vers le serveur';
 
   @override
   String get exportServerTooltip =>
-      'Téléverse une copie complète de votre base locale vers le serveur';
+      'Téléverse une sauvegarde complète de vos données locales vers le serveur';
 
   @override
   String get importServer => 'Importer la base depuis le serveur';
 
   @override
   String get importServerTooltip =>
-      'Remplace votre base locale par la copie du serveur';
+      'Remplace vos données locales par la copie du serveur';
 
   @override
   String get importConfirmTitle => 'Remplacer les données locales ?';
@@ -1977,8 +1977,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cela remplace toutes les données locales par la copie du serveur. Action irréversible.';
 
   @override
-  String get importSuccess =>
-      'Base importée. Redémarrez l\'application pour la charger.';
+  String get importSuccess => 'Restauré depuis la copie du serveur.';
 
   @override
   String get importFailed => 'Échec de l\'import';
@@ -1987,7 +1986,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get importNothing => 'Rien à importer';
 
   @override
-  String get exportSuccess => 'Base exportée.';
+  String get exportSuccess => 'Sauvegarde exportée.';
 
   @override
   String get exportFailed => 'Échec de l\'export';
@@ -1998,11 +1997,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get exportServerHelp =>
-      'Téléverse une copie complète de votre fichier de base locale vers le serveur.';
+      'Téléverse une sauvegarde complète de vos données locales vers le serveur.';
 
   @override
   String get importServerHelp =>
-      'Remplace votre base locale par la copie du serveur. Demande confirmation au préalable.';
+      'Remplace vos données locales par la copie du serveur. Demande confirmation au préalable.';
 
   @override
   String get settingsPlanner => 'Planificateur';
@@ -2030,11 +2029,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsLengthUnitLabel => 'Taille';
 
   @override
-  String get settingsExportDb => 'Exporter la base de données';
+  String get settingsExportDb => 'Exporter la sauvegarde';
 
   @override
   String get settingsExportDbSubtitle =>
-      'Partager une copie de vos données (SQLite)';
+      'Partager une sauvegarde JSON compressée de toutes vos données';
 
   @override
   String get settingsReplayPrefillLabel =>

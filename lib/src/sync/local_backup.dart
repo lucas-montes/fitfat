@@ -1,26 +1,31 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:drift/native.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:sqlite3/sqlite3.dart' as sqlite;
 
-import '../app/app_restart.dart';
 import '../database/app_database.dart';
 import '../database/database_provider.dart' as db;
+import 'sync_refresh.dart';
 
 /// Which tables belong to which backup entity, parents always before their
-/// children — the backup hub hands the same entity labels to export and
-/// import, so both sides stay in lock-step through this map.
+/// children. The same map drives export order, import order and the reverse
+/// order used to clear a group before a restore.
 const _ownership = <String, List<String>>{
-  'Tasks': ['tasks', 'task_tags', 'task_goals', 'task_notes'],
-  'Notes': ['notes', 'note_tags'],
-  'Goals': ['goals', 'goal_tags', 'goal_progress_entries', 'goal_workouts'],
+  'Tags': ['tags'],
+  'Exercises': ['exercises'],
+  'Ingredients': [
+    'stores',
+    'ingredients',
+    'ingredient_prices',
+    'ingredient_pictures',
+  ],
+  'Foods': ['foods', 'food_ingredients'],
   'Workouts': [
     'workouts',
     'workout_exercises',
@@ -30,10 +35,63 @@ const _ownership = <String, List<String>>{
     'workout_template_sets',
   ],
   'Meals': ['meals', 'meal_foods'],
+  'Tasks': ['tasks', 'task_tags', 'task_goals', 'task_notes'],
+  'Notes': ['notes', 'note_tags', 'note_workouts', 'note_audio'],
+  'Goals': [
+    'goals',
+    'goal_tags',
+    'goal_progress_entries',
+    'goal_workouts',
+    'goal_notes',
+  ],
   'Body': ['body_metrics'],
   'Budget': ['accounts', 'fx_rates', 'transactions'],
   'Receipts': ['receipts'],
 };
+
+/// Groups offered by the backup UI, ordered like the app's tabs rather than by
+/// table dependency (that order lives in [_ownership]).
+const backupEntityGroups = <String>[
+  'Tasks',
+  'Notes',
+  'Goals',
+  'Workouts',
+  'Meals',
+  'Body',
+  'Budget',
+  'Receipts',
+  'Tags',
+  'Exercises',
+  'Foods',
+  'Ingredients',
+];
+
+/// Every group, i.e. a full logical backup.
+final Set<String> allBackupEntities = backupEntityGroups.toSet();
+
+/// Groups whose rows reference another group's ids. Importing a child without
+/// its parents would leave dangling references (a workout without its exercise,
+/// a task without its tag), so [expandEntities] pulls the parents in.
+const _parentGroups = <String, Set<String>>{
+  'Tasks': {'Tags'},
+  'Notes': {'Tags'},
+  'Goals': {'Tags'},
+  'Workouts': {'Exercises'},
+  'Meals': {'Foods'},
+  'Foods': {'Ingredients'},
+};
+
+/// Expands [entities] with every parent group they reference, transitively.
+Set<String> expandEntities(Iterable<String> entities) {
+  final result = <String>{...entities};
+  final pending = <String>[...result];
+  while (pending.isNotEmpty) {
+    for (final parent in _parentGroups[pending.removeLast()] ?? const {}) {
+      if (result.add(parent)) pending.add(parent);
+    }
+  }
+  return result;
+}
 
 /// Every table the backup can carry, in parents-first import order.
 final _tableOrder = <String>[
@@ -47,10 +105,13 @@ dynamic _tableFor(AppDatabase d, String name) => switch (name) {
   'task_notes' => d.taskNotes,
   'notes' => d.notes,
   'note_tags' => d.noteTags,
+  'note_workouts' => d.noteWorkouts,
+  'note_audio' => d.noteAudio,
   'goals' => d.goals,
   'goal_tags' => d.goalTags,
   'goal_progress_entries' => d.goalProgressEntries,
   'goal_workouts' => d.goalWorkouts,
+  'goal_notes' => d.goalNotes,
   'workouts' => d.workouts,
   'workout_exercises' => d.workoutExercises,
   'exercise_sets' => d.exerciseSets,
@@ -64,16 +125,20 @@ dynamic _tableFor(AppDatabase d, String name) => switch (name) {
   'fx_rates' => d.fxRates,
   'transactions' => d.transactions,
   'receipts' => d.receipts,
+  'tags' => d.tags,
+  'exercises' => d.exercises,
+  'foods' => d.foods,
+  'food_ingredients' => d.foodIngredients,
+  'stores' => d.stores,
+  'ingredients' => d.ingredients,
+  'ingredient_prices' => d.ingredientPrices,
+  'ingredient_pictures' => d.ingredientPictures,
   _ => throw StateError('Unknown backup table: $name'),
 };
 
 String _owningEntity(String tableName) => _ownership.entries
     .firstWhere((e) => e.value.contains(tableName))
     .key;
-
-// ---------------------------------------------------------------------------
-// Whole-database import
-// ---------------------------------------------------------------------------
 
 /// Thrown for a picked file that is not a backup this app can import. The
 /// message is user-facing.
@@ -90,18 +155,16 @@ final class BackupException implements Exception {
 /// WhatsApp hands documents over with names like `DOC-20261023-WA0002.` (no
 /// suffix at all) and the picker's custom-type filter rejects them before we
 /// ever see them.
-enum BackupFormat { sqlite, json, unknown }
+enum BackupFormat { json, jsonGzip, unknown }
 
-const _sqliteMagic = 'SQLite format 3\u0000';
+bool _isGzip(List<int> head) =>
+    head.length >= 2 && head[0] == 0x1F && head[1] == 0x8B;
 
-/// Sniffs [head] (the first bytes of a file) for a SQLite header or a JSON
-/// document. JSON is detected by its first non-whitespace byte so a UTF-8 BOM
-/// or leading newline does not hide it.
+/// Sniffs [head] (the first bytes of a file) for gzip-compressed JSON or a
+/// plain JSON document. JSON is detected by its first non-whitespace byte so a
+/// UTF-8 BOM or leading newline does not hide it.
 BackupFormat detectBackupFormat(List<int> head) {
-  if (head.length >= 16 &&
-      String.fromCharCodes(head.take(16)) == _sqliteMagic) {
-    return BackupFormat.sqlite;
-  }
+  if (_isGzip(head)) return BackupFormat.jsonGzip;
   var i = 0;
   if (head.length >= 3 &&
       head[0] == 0xEF &&
@@ -129,285 +192,166 @@ Future<BackupFormat> detectBackupFile(File file) async {
   }
 }
 
-/// Returns a user-facing error when [file] is not a FitFat SQLite database this
-/// build can open, or `null` when it looks safe to migrate.
+/// Encodes a backup dump as a gzip-compressed JSON document.
 ///
-/// Runs against the raw file (before Drift touches it) so a rejected backup can
-/// never have its schema rewritten.
-Future<String?> validateSqliteBackup(
-  File file, {
-  required int maxSchemaVersion,
-}) async {
-  sqlite.Database raw;
+/// Compression matters here: the row maps repeat every column name and the
+/// catalog text is verbose, and gzip shrinks the archive several-fold without
+/// changing what it contains.
+Uint8List encodeBackup(Map<String, Object?> dump) {
+  final text = jsonEncode(dump);
+  return Uint8List.fromList(gzip.encode(utf8.encode(text)));
+}
+
+/// Decodes a backup archive, plain JSON or gzip-compressed JSON.
+Map<String, dynamic> decodeBackupBytes(List<int> bytes) {
+  final Object? decoded;
   try {
-    raw = sqlite.sqlite3.open(file.path, mode: sqlite.OpenMode.readOnly);
-  } catch (_) {
-    return 'That file is not a SQLite database.';
+    final raw = _isGzip(bytes) ? gzip.decode(bytes) : bytes;
+    var text = utf8.decode(raw);
+    if (text.isNotEmpty && text.codeUnitAt(0) == 0xFEFF) {
+      text = text.substring(1);
+    }
+    decoded = jsonDecode(text);
+  } on FormatException {
+    throw const BackupException('That file is not a FitFat backup export.');
   }
-  try {
-    final integrity = raw.select('PRAGMA integrity_check');
-    final verdict = integrity.isEmpty
-        ? ''
-        : '${integrity.first.values.first}';
-    if (verdict != 'ok') {
-      return 'That database is damaged ($verdict).';
-    }
-
-    final versionRows = raw.select('PRAGMA user_version');
-    final version = versionRows.isEmpty
-        ? 0
-        : (versionRows.first.values.first as int? ?? 0);
-    if (version <= 0) {
-      return 'That file is not a FitFat backup (no schema version).';
-    }
-    if (version > maxSchemaVersion) {
-      return 'That backup was made by a newer app version '
-          '(schema $version, this app supports $maxSchemaVersion).';
-    }
-
-    final tables = <String>{
-      for (final row in raw.select(
-        "SELECT name FROM sqlite_master WHERE type='table'",
-      ))
-        if (row['name'] is String) row['name'] as String,
-    };
-    const required = ['tasks', 'workouts', 'exercises'];
-    final missing = required.where((t) => !tables.contains(t)).toList();
-    if (missing.isNotEmpty) {
-      return 'That file is not a FitFat backup '
-          '(missing ${missing.join(', ')}).';
-    }
-    return null;
-  } catch (e) {
-    return 'Could not read that database: $e';
-  } finally {
-    raw.dispose();
+  if (decoded is! Map<String, dynamic>) {
+    throw const BackupException('That file is not a FitFat backup export.');
   }
+  return decoded;
 }
 
-String _sqlString(String value) => value.replaceAll("'", "''");
-
-Future<void> _deleteIfPresent(File file) async {
-  try {
-    if (await file.exists()) await file.delete();
-  } catch (_) {
-    // Best effort: a leftover temp file must never fail an import.
-  }
+/// Builds the gzipped JSON archive for [entities] (parents included) without
+/// writing it to disk. Used by both the share sheet and the server copy.
+Future<Uint8List> buildBackupArchive(
+  WidgetRef ref,
+  Set<String> entities,
+) async {
+  final dump = await dumpTables(
+    ref.read(db.databaseProvider),
+    expandEntities(entities),
+  );
+  return encodeBackup(dump);
 }
 
-/// Copies [source] into [tempDir], proves the copy can be opened and migrated,
-/// and returns a clean `VACUUM INTO` snapshot of the migrated database.
-///
-/// The original file is never touched. Nothing is installed until this
-/// succeeds, so a bad pick cannot replace the live database.
-Future<File> prepareWholeDbImport(
-  File source, {
-  required int maxSchemaVersion,
-  Directory? tempDir,
-}) async {
-  final dir = tempDir ?? await getTemporaryDirectory();
-  final stamp = DateTime.now().microsecondsSinceEpoch;
-  final candidate = File(p.join(dir.path, 'fitfat-import-$stamp.sqlite'));
-  final ready = File(p.join(dir.path, 'fitfat-import-$stamp-ready.sqlite'));
-  await source.copy(candidate.path);
-  try {
-    final error = await validateSqliteBackup(
-      candidate,
-      maxSchemaVersion: maxSchemaVersion,
-    );
-    if (error != null) throw BackupException(error);
-
-    // Opening with Drift runs the real migration chain in isolation. Every
-    // table the app reads must resolve afterwards, otherwise the swap would
-    // produce an app that opens and then crashes on its first query.
-    final probe = AppDatabase.forTesting(NativeDatabase(candidate));
-    try {
-      for (final table in _tableOrder) {
-        await probe.customSelect('SELECT * FROM "$table" LIMIT 0').get();
-      }
-      await probe.customStatement(
-        "VACUUM INTO '${_sqlString(ready.path)}'",
-      );
-    } finally {
-      await probe.close();
-    }
-    return ready;
-  } catch (_) {
-    await _deleteIfPresent(ready);
-    rethrow;
-  } finally {
-    await _deleteIfPresent(candidate);
-    await _deleteIfPresent(File('${candidate.path}-wal'));
-    await _deleteIfPresent(File('${candidate.path}-shm'));
-  }
-}
-
-/// Whole-database export: `VACUUM INTO` writes a fully-consistent copy of the
-/// live database (pending WAL pages merged in) without any file race.
-Future<File> backupWholeDb(WidgetRef ref) async {
-  final stamp = DateTime.now().toIso8601String().split('T').first;
-  final tmp = await getTemporaryDirectory();
-  final target = p.join(tmp.path, 'fitfat-$stamp.sqlite');
-  final database = ref.read(db.databaseProvider);
-  await database.customStatement("VACUUM INTO '${target.replaceAll("'", "''")}'");
-  return File(target);
-}
-
-Future<void> exportWholeDb(BuildContext context, WidgetRef ref) async {
-  final copy = await backupWholeDb(ref);
-  await SharePlus.instance.share(ShareParams(files: [XFile(copy.path)]));
-}
-
-/// Exports the selected entity groups as one JSON document of raw row maps,
-/// keyed by table name. Returns the number of rows written.
+/// Exports the selected entity groups as one compressed JSON document of raw
+/// row maps, keyed by table name. Returns the number of rows written.
 Future<int> exportJsonPerEntity(
   BuildContext context,
   WidgetRef ref,
   Set<String> entities,
 ) async {
-  final dump = await dumpTables(ref.read(db.databaseProvider), entities);
-  final rows = dump.values.fold<int>(
-    0,
-    (sum, list) => sum + list.length,
-  );
-  final stamp = DateTime.now().toIso8601String().split('T').first;
+  final groups = expandEntities(entities);
+  final dump = await dumpTables(ref.read(db.databaseProvider), groups);
+  final rows = dump.values.fold<int>(0, (sum, list) => sum + list.length);
+  final stamp = DateTime.now()
+      .toIso8601String()
+      .replaceAll(RegExp(r'[:.]'), '-');
   final tmp = await getTemporaryDirectory();
-  final path = p.join(tmp.path, 'fitfat-$stamp.json');
-  await File(path).writeAsString(jsonEncode(dump));
+  final path = p.join(tmp.path, 'fitfat-$stamp.json.gz');
+  await File(path).writeAsBytes(encodeBackup(dump), flush: true);
   await SharePlus.instance.share(
-    ShareParams(files: [XFile(path)], text: 'fitfat backup — $rows rows'),
+    ShareParams(
+      files: [XFile(path, mimeType: 'application/gzip')],
+      text: 'fitfat backup — $rows rows',
+    ),
   );
   return rows;
 }
 
 /// Reads every table owned by [entities] into a parents-first row-map dump.
+/// Parent groups are pulled in automatically, so a dump can always be imported
+/// back without dangling references.
 Future<Map<String, List<Map<String, Object?>>>> dumpTables(
   AppDatabase database,
   Set<String> entities,
 ) async {
+  final groups = expandEntities(entities);
   final dump = <String, List<Map<String, Object?>>>{};
   for (final name in _tableOrder) {
-    if (!entities.contains(_owningEntity(name))) continue;
+    if (!groups.contains(_owningEntity(name))) continue;
     final data = await database.customSelect('SELECT * FROM "$name"').get();
     dump[name] = data.map((row) => row.data).toList();
   }
   return dump;
 }
 
-/// Upserts the selected groups from a JSON export, parents before children, so
-/// restoring a partial selection keeps every row linked to its owner.
+/// Applies a backup dump to [database], parents before children.
+///
+/// With [replace] the selected groups are cleared first, so the result matches
+/// the backup exactly: rows deleted on the device the backup came from do not
+/// survive. Without it the import is an upsert, leaving untouched rows alone.
 Future<int> importJson(
   AppDatabase database,
   Set<String> entities,
-  Map<String, dynamic> data,
-) async {
-  var imported = 0;
-  for (final name in _tableOrder) {
-    if (!entities.contains(_owningEntity(name))) continue;
-    final rawRows = data[name];
-    if (rawRows is! List) continue;
-    final table = _tableFor(database, name);
-    final byName = table.columnsByName;
-    for (final row in rawRows) {
-      if (row is! Map) continue;
-      final values = <String, Object?>{
-        for (final e in row.entries)
-          if (e.key is String && byName.containsKey(e.key as String))
-            e.key as String: e.value,
-      };
-      if (values.isEmpty) continue;
-      final cols = values.keys.map((c) => '"$c"').join(', ');
-      final placeholders = values.keys.map((_) => '?').join(', ');
-      await database.customStatement(
-        'INSERT OR REPLACE INTO "$name" ($cols) VALUES ($placeholders)',
-        [...values.values],
-      );
-      imported++;
+  Map<String, dynamic> data, {
+  bool replace = false,
+}) async {
+  final groups = expandEntities(entities);
+  return database.transaction(() async {
+    if (replace) {
+      // Clear only the groups the caller asked for. Parents pulled in as
+      // dependencies (tags for a task, ingredients for a food) are upserted
+      // instead, so a partial restore never deletes a tag another group still
+      // references. Children before parents, and dependent groups before the
+      // groups they reference.
+      for (final name in _tableOrder.reversed) {
+        if (!entities.contains(_owningEntity(name))) continue;
+        await database.customStatement('DELETE FROM "$name"');
+      }
     }
-  }
+    var imported = 0;
+    for (final name in _tableOrder) {
+      if (!groups.contains(_owningEntity(name))) continue;
+      final rawRows = data[name];
+      if (rawRows is! List) continue;
+      final table = _tableFor(database, name);
+      final byName = table.columnsByName;
+      for (final row in rawRows) {
+        if (row is! Map) continue;
+        final values = <String, Object?>{
+          for (final e in row.entries)
+            if (e.key is String && byName.containsKey(e.key as String))
+              e.key as String: e.value,
+        };
+        if (values.isEmpty) continue;
+        final cols = values.keys.map((c) => '"$c"').join(', ');
+        final placeholders = values.keys.map((_) => '?').join(', ');
+        await database.customStatement(
+          'INSERT OR REPLACE INTO "$name" ($cols) VALUES ($placeholders)',
+          [...values.values],
+        );
+        imported++;
+      }
+    }
+    return imported;
+  });
+}
+
+/// Restores an in-memory archive (the server copy, or bytes handed to the app).
+/// Clears the selected groups first, then refreshes the UI.
+Future<int> importBackupArchive(
+  WidgetRef ref,
+  List<int> bytes, {
+  Set<String>? entities,
+}) async {
+  final data = decodeBackupBytes(bytes);
+  final imported = await importJson(
+    ref.read(db.databaseProvider),
+    entities ?? allBackupEntities,
+    data,
+    replace: true,
+  );
+  invalidateAllData(ref);
   return imported;
 }
 
-/// Replaces the live database with [sourcePath] and returns the safety copy of
-/// the previous file.
-///
-/// The source is validated and migrated on a temp copy first (see
-/// [prepareWholeDbImport]), then the current database is snapshotted next to
-/// the live file. Only after both steps does the swap happen. If anything goes
-/// wrong mid-swap the snapshot is restored, so a failed import can never brick
-/// the app. Callers must restart afterwards: every provider still holds the
-/// closed handle.
-Future<File> replaceWholeDb(WidgetRef ref, String sourcePath) async {
-  final database = ref.read(db.databaseProvider);
-  final ready = await prepareWholeDbImport(
-    File(sourcePath),
-    maxSchemaVersion: database.schemaVersion,
-  );
-  final dir = await getApplicationDocumentsDirectory();
-  final dest = p.join(dir.path, 'fitfat.sqlite');
-  final stamp = DateTime.now()
-      .toIso8601String()
-      .replaceAll(RegExp(r'[:.]'), '-');
-  final backup = File(
-    p.join(dir.path, 'fitfat-before-import-$stamp.sqlite'),
-  );
-
-  try {
-    await database.customStatement(
-      "VACUUM INTO '${_sqlString(backup.path)}'",
-    );
-    await database.close();
-    await _deleteJournals(dest);
-    await ready.copy(dest);
-    ref.invalidate(db.databaseProvider);
-    await _pruneImportBackups(dir);
-    return backup;
-  } catch (e) {
-    // Put the previous database back so a failed swap cannot leave the app
-    // pointing at a half-written file.
-    try {
-      await _deleteJournals(dest);
-      if (await backup.exists()) await backup.copy(dest);
-      ref.invalidate(db.databaseProvider);
-    } catch (_) {
-      // Nothing more we can do; the snapshot is still on disk for recovery.
-    }
-    rethrow;
-  } finally {
-    await _deleteIfPresent(ready);
-  }
-}
-
-Future<void> _deleteJournals(String dest) async {
-  for (final suffix in ['-wal', '-shm']) {
-    final journal = File('$dest$suffix');
-    if (await journal.exists()) await journal.delete();
-  }
-}
-
-/// Keeps the three most recent pre-import snapshots; older ones are dead
-/// weight once a swap has succeeded.
-Future<void> _pruneImportBackups(Directory dir) async {
-  try {
-    final backups = <File>[
-      await for (final entry in dir.list())
-        if (entry is File &&
-            p.basename(entry.path).startsWith('fitfat-before-import-'))
-          entry,
-    ]..sort((a, b) => b.path.compareTo(a.path));
-    for (final old in backups.skip(3)) {
-      await old.delete();
-    }
-  } catch (_) {
-    // Pruning is housekeeping; never fail an otherwise good import over it.
-  }
-}
-
+/// Picks a JSON backup (plain or `.json.gz`) and replaces the selected groups
+/// with its contents.
 Future<void> importBackup(
   BuildContext context,
   WidgetRef ref, {
   required Set<String> entities,
-  required bool wholeDb,
 }) async {
   // `FileType.any` is required: WhatsApp delivers documents without a suffix
   // and file_picker's custom filter silently drops them.
@@ -415,40 +359,23 @@ Future<void> importBackup(
   final path = result?.files.single.path;
   if (path == null) return;
 
-  final format = await detectBackupFile(File(path));
-  if (format == BackupFormat.unknown) {
+  final bytes = await File(path).readAsBytes();
+  final head = bytes.length > 64 ? bytes.sublist(0, 64) : bytes;
+  if (detectBackupFormat(head) == BackupFormat.unknown) {
     throw const BackupException(
-      'Unsupported file — expected a FitFat SQLite database or JSON export.',
+      'Unsupported file — expected a FitFat JSON backup (.json or .json.gz).',
     );
   }
-  final isJson = format == BackupFormat.json;
-  if (wholeDb && isJson) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Switch to Selected to import JSON')),
-      );
-    }
-    return;
-  }
-  if (!wholeDb && !isJson) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Switch to Whole DB to import SQLite')),
-      );
-    }
-    return;
-  }
 
+  final groups = expandEntities(entities);
   if (!context.mounted) return;
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: const Text('Replace local data?'),
       content: Text(
-        isJson
-            ? 'Import JSON will upsert selected entities: ${entities.join(', ')}'
-            : 'Import SQLite will replace the whole database. A copy of the '
-                  'current database is kept first.',
+        'Importing will delete the existing rows in these groups and restore '
+        'the backup: ${_labels(groups)}.',
       ),
       actions: [
         TextButton(
@@ -464,27 +391,12 @@ Future<void> importBackup(
   );
   if (confirmed != true) return;
 
-  if (isJson) {
-    final content = await File(path).readAsString();
-    final Object? decoded = jsonDecode(content);
-    if (decoded is! Map<String, dynamic>) {
-      throw const BackupException('That JSON file is not a backup export.');
-    }
-    final imported = await importJson(
-      ref.read(db.databaseProvider),
-      entities,
-      decoded,
-    );
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Imported $imported rows')),
-      );
-    }
-    return;
-  }
-
-  // Whole database: validate/migrate a copy, snapshot the live file, swap, and
-  // restart so every provider reopens against the imported data.
-  await replaceWholeDb(ref, path);
-  restartApp();
+  final imported = await importBackupArchive(ref, bytes, entities: entities);
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('Restored $imported rows')),
+  );
 }
+
+String _labels(Set<String> groups) =>
+    backupEntityGroups.where(groups.contains).join(', ');
