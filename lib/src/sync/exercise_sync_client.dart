@@ -207,11 +207,15 @@ final class ExerciseSyncClient {
     final name = raw['name'];
     if (id is! String || name is! String) return null;
     final ts = raw['updated_at'] ?? raw['created_at'];
+    final bodyPart = raw['bodyPart'] as String?;
     final exercise = Exercise(
       id: id,
       name: name,
-      exerciseType: raw['exerciseType'] as String? ?? 'weightlifting',
-      bodyPart: raw['bodyPart'] as String?,
+      exerciseType: normalizeExerciseType(
+        type: raw['exerciseType'] as String?,
+        bodyPart: bodyPart,
+      ),
+      bodyPart: bodyPart,
       equipment: raw['equipment'] as String?,
       primaryMuscle: raw['primaryMuscle'] as String?,
       secondaryMuscle: raw['secondaryMuscle'] as String?,

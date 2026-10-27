@@ -929,6 +929,13 @@ final class _PersonalPoolSectionState
     'Receipts',
   ];
 
+  /// Pull-all deliberately skips the catalogue. Workouts and templates bring
+  /// only the exercises they reference (see [_importRelatedExercises]); the
+  /// rest arrive through the exercise search.
+  static final _pullOrder = List<String>.unmodifiable(
+    _order.where((entity) => entity != 'Exercises'),
+  );
+
   static const _entities = [
     ('Tags', Icons.sell_outlined),
     ('Exercises', Icons.directions_run),
@@ -1042,11 +1049,13 @@ final class _PersonalPoolSectionState
     setState(() => _pullingAll = true);
     final failures = <String>[];
     try {
-      for (final entity in _order) {
+      for (final entity in _pullOrder) {
         if (!mounted) return;
         final error = await _pullOne(entity, announce: false);
         if (error != null) failures.add(entity);
       }
+      if (!mounted) return;
+      await _importRelatedExercises(failures);
       if (!mounted) return;
       // Every entity just wrote to the database; refresh the tabs once rather
       // than after each of the fourteen pulls.
@@ -1060,6 +1069,42 @@ final class _PersonalPoolSectionState
     } finally {
       if (mounted) setState(() => _pullingAll = false);
     }
+  }
+
+  /// Imports the exercise definitions referenced by the workouts and template
+  /// blueprints that just landed. The catalogue is never pulled in bulk here:
+  /// only ids the phone does not already have are fetched, one by one, through
+  /// the selective import path (which also downloads their media).
+  Future<void> _importRelatedExercises(List<String> failures) async {
+    // Read everything up front: the screen can be disposed while the queries
+    // and downloads below are in flight, and a `ref.read` after that throws.
+    final database = ref.read(db.databaseProvider);
+    final settings = ref.read(settingsProvider);
+    final sync = ref.read(syncServiceProvider);
+    final rows = await database.customSelect('''
+      SELECT DISTINCT we.exercise_id
+      FROM workout_exercises we
+      JOIN workouts w ON w.id = we.workout_id
+      WHERE w.deleted_at IS NULL
+        AND we.exercise_id NOT IN (SELECT id FROM exercises)
+      UNION
+      SELECT DISTINCT wte.exercise_id
+      FROM workout_template_exercises wte
+      JOIN workout_templates wt ON wt.id = wte.template_id
+      WHERE wt.deleted_at IS NULL
+        AND wte.exercise_id NOT IN (SELECT id FROM exercises)
+    ''').get();
+    final ids = {for (final row in rows) row.read<String>('exercise_id')};
+    if (ids.isEmpty) return;
+
+    final result = await sync.importSelectedExercises(
+      settings.remoteSyncBaseUrl,
+      settings.remoteSyncApiKey,
+      ids,
+      endpoint: settings.endpointExercises,
+      timeout: Duration(seconds: settings.apiTimeoutSeconds),
+    );
+    if (!result.ok) failures.add('Exercises (related)');
   }
 
   String _entityToType(String e) => switch (e) {
@@ -1144,8 +1189,14 @@ final class _PersonalPoolSectionState
                           ),
                           const SizedBox(width: 4),
                           IconButton(
-                            icon: const Icon(Icons.cloud_download_outlined),
-                            tooltip: 'Pull $name',
+                            icon: Icon(
+                              name == 'Exercises'
+                                  ? Icons.sync
+                                  : Icons.cloud_download_outlined,
+                            ),
+                            tooltip: name == 'Exercises'
+                                ? 'Sync exercise updates'
+                                : 'Pull $name',
                             onPressed: () => _pullOne(name),
                           ),
                         ],

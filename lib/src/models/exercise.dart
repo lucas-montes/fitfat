@@ -1,3 +1,19 @@
+/// Collapses the server's exercise type into the two values the phone
+/// understands.
+///
+/// Older servers stored the catalogue's `bodyPart` (`Chest`, `Thighs`, …) in
+/// `exerciseType`. The UI treats anything other than `weightlifting` as
+/// cardio, so those rows all looked like cardio. Prefer a valid type; when the
+/// value is missing or invalid, derive it from `bodyPart`.
+String normalizeExerciseType({String? type, String? bodyPart}) {
+  final normalizedType = type?.trim().toLowerCase();
+  if (normalizedType == 'cardio' || normalizedType == 'weightlifting') {
+    return normalizedType!;
+  }
+  final normalizedBodyPart = bodyPart?.toLowerCase() ?? '';
+  return normalizedBodyPart.contains('cardio') ? 'cardio' : 'weightlifting';
+}
+
 /// Plain domain model for an exercise definition.
 final class Exercise {
   final String id;

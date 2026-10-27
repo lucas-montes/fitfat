@@ -109,6 +109,20 @@ void main() {
     );
   });
 
+  test('repository normalizes a legacy body-part exercise type', () async {
+    await database.customStatement(
+      "INSERT INTO exercises (id, name, exercise_type, body_part, created_at) "
+      "VALUES ('legacy', 'Legacy', 'Chest', 'Chest', 1000)",
+    );
+
+    final exercise = await ExerciseRepository(database).getById('legacy');
+
+    expect(exercise, isNotNull);
+    expect(exercise!.exerciseType, 'weightlifting');
+    expect(exercise.isWeightlifting, isTrue);
+    expect(exercise.isCardio, isFalse);
+  });
+
   test('importSelectedExercises upserts only chosen ids', () async {
     await catalog.refreshExercises(apiKey: 'k');
     final result = await catalog.importExercises(ids: {'e2'}, apiKey: 'k');

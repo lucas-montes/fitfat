@@ -1127,15 +1127,16 @@ Future<SyncResult> pullDataType(WidgetRef ref, String type) async {
   final key = settings.remoteSyncApiKey;
   switch (type) {
     case 'exercises':
-      // Exercises have their own client (media download + catalog handling);
-      // a full pull is requested so newly shared custom exercises arrive.
+      // Exercises have their own client (media download + catalog handling).
+      // This is the incremental update path; the catalogue is imported
+      // explicitly through the exercise search, and pull-all imports just the
+      // exercises referenced by pulled workouts.
       return ref
           .read(syncServiceProvider)
           .syncExercises(
             settings.remoteSyncBaseUrl,
             key,
             endpoint: settings.endpointExercises,
-            full: true,
           );
     case 'tasks':
       return service.pullTasks(apiKey: key, endpoint: settings.endpointTasks);

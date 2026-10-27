@@ -138,6 +138,8 @@ void main() {
       bool? hasVideo,
       String? imagePath,
       String? videoPath,
+      String? exerciseType,
+      String? bodyPart,
     }) => {
       'id': id,
       'name': 'Squat',
@@ -146,6 +148,8 @@ void main() {
       'hasVideo': ?hasVideo,
       'imagePath': ?imagePath,
       'videoPath': ?videoPath,
+      'exerciseType': ?exerciseType,
+      'bodyPart': ?bodyPart,
     };
 
     test('parses media presence flags', () {
@@ -176,6 +180,38 @@ void main() {
       )!;
       expect(exercise.imagePath, isNull);
       expect(exercise.videoPath, isNull);
+    });
+
+    test('maps a legacy body-part type to weightlifting', () {
+      final (exercise, _, _) = ExerciseSyncClient.parseExercise(
+        raw(exerciseType: 'Chest', bodyPart: 'Chest'),
+        serverTime,
+      )!;
+      expect(exercise.exerciseType, 'weightlifting');
+      expect(exercise.isWeightlifting, isTrue);
+      expect(exercise.isCardio, isFalse);
+    });
+
+    test('keeps a valid cardio type', () {
+      final (exercise, _, _) = ExerciseSyncClient.parseExercise(
+        raw(exerciseType: 'Cardio', bodyPart: 'Cardio'),
+        serverTime,
+      )!;
+      expect(exercise.exerciseType, 'cardio');
+      expect(exercise.isCardio, isTrue);
+    });
+
+    test('derives the type from bodyPart when the type is missing', () {
+      final (cardio, _, _) = ExerciseSyncClient.parseExercise(
+        raw(bodyPart: 'Cardio'),
+        serverTime,
+      )!;
+      final (weights, _, _) = ExerciseSyncClient.parseExercise(
+        raw(bodyPart: 'Thighs'),
+        serverTime,
+      )!;
+      expect(cardio.exerciseType, 'cardio');
+      expect(weights.exerciseType, 'weightlifting');
     });
 
     test('returns null without id or name', () {

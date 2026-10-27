@@ -153,7 +153,10 @@ final class ExerciseRepository {
   Exercise _toDomain(db.Exercise row) => Exercise(
     id: row.id,
     name: row.name,
-    exerciseType: row.exerciseType,
+    exerciseType: normalizeExerciseType(
+      type: row.exerciseType,
+      bodyPart: row.bodyPart,
+    ),
     bodyPart: row.bodyPart,
     equipment: row.equipment,
     primaryMuscle: row.primaryMuscle,

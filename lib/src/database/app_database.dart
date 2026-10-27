@@ -58,7 +58,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 37;
+  int get schemaVersion => 38;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -875,6 +875,23 @@ final class AppDatabase extends _$AppDatabase {
         ]) {
           await m.database.customStatement('DROP TABLE IF EXISTS $table');
         }
+      }
+      if (from < 38) {
+        // v38: older exercise pulls stored the catalogue's body part
+        // (`Chest`, `Thighs`, …) in `exercise_type`. The UI treats anything
+        // that is not exactly `weightlifting` as cardio, so weightlifting
+        // exercises appeared as cardio. Normalize the stored values without
+        // touching the sync cursor.
+        await m.database.customStatement('''
+          UPDATE exercises
+          SET exercise_type = CASE
+            WHEN lower(coalesce(exercise_type, '')) = 'cardio'
+              OR lower(coalesce(body_part, '')) LIKE '%cardio%' THEN 'cardio'
+            ELSE 'weightlifting'
+          END
+          WHERE exercise_type IS NULL
+             OR exercise_type NOT IN ('cardio', 'weightlifting')
+        ''');
       }
     },
   );
