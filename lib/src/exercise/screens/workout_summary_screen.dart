@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../models/exercise_set.dart';
 import '../../notifications/rest_timer.dart';
 import '../../settings/providers/settings.dart';
 import '../../ui/format.dart';
@@ -11,9 +12,12 @@ import '../../ui/units.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/status_badge.dart';
 import '../../ui/widgets/top_banner.dart';
+import '../../dashboard/providers/dashboard.dart';
+import '../providers/exercises.dart';
 import '../providers/workout_templates.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+import '../widgets/set_actuals_dialog.dart';
 import 'workout_form.dart';
 
 /// Read-only summary of a completed workout (active-workout-flow T07). Lives
@@ -141,6 +145,19 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
     }
   }
 
+  /// Opens the completed workout in the form, which edits its **actuals** while
+  /// preserving ids and planned values.
+  Future<void> _edit(BuildContext context, WidgetRef ref) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => WorkoutFormScreen(initial: detail)),
+    );
+    if (saved == true) {
+      ref.invalidate(workoutDetailProvider(detail.workout.id));
+      ref.invalidate(workoutListProvider);
+      invalidateDashboard(ref);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final w = detail.workout;
@@ -151,6 +168,11 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.workoutSummaryAppBar),
         actions: [
+          IconButton(
+            tooltip: l10n.workoutSummaryEdit,
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => _edit(context, ref),
+          ),
           IconButton(
             tooltip: l10n.workoutSummaryDoAgain,
             icon: const Icon(Icons.replay),
@@ -234,13 +256,22 @@ final class _ExerciseSummaryCard extends ConsumerWidget {
     final metrics = _ExerciseMetrics.fromBlock(block);
     final unit = ref.watch(settingsProvider).weightUnit;
     final unitLabel = weightUnitLabel(unit);
-    // Cardio classification: the app classifies per set (workout_detail /
-    // active_workout_screen); the summary's natural unit is the exercise, so
-    // an exercise is cardio when any of its sets logged duration or distance,
-    // otherwise it is weightlifting.
-    final isCardio = block.sets.any(
-      (s) => s.durationMinutes != null || s.distanceMeters != null,
-    );
+    // Field layout follows the exercise type, falling back to the values when
+    // the catalog row is unavailable. Cardio vs weightlifting decides which
+    // pair of actuals a set shows and which editor fields it offers.
+    final exercise = ref
+        .watch(exerciseByIdProvider(block.exercise.exerciseId))
+        .value;
+    final isCardio =
+        exercise?.isCardio ??
+        block.sets.any(
+          (s) =>
+              s.durationMinutes != null ||
+              s.distanceMeters != null ||
+              s.actualDurationMinutes != null ||
+              s.actualDistanceMeters != null,
+        );
+    final isWeightlifting = exercise?.isWeightlifting ?? !isCardio;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -298,6 +329,141 @@ final class _ExerciseSummaryCard extends ConsumerWidget {
                 value: '${metrics.totalReps}',
               ),
             ],
+            // Every set is listed, including the ones that were never done.
+            // Those render as zeroes and stay muted; tapping any row reopens
+            // the same actuals editor the active workout uses.
+            if (block.sets.isNotEmpty) ...[
+              const Divider(height: 24),
+              for (final set in block.sets)
+                _SummarySetRow(
+                  block: block,
+                  set: set,
+                  l10n: l10n,
+                  isWeightlifting: isWeightlifting,
+                  isCardio: isCardio,
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One set in the completed summary: actuals when logged, zeroes when not.
+final class _SummarySetRow extends ConsumerWidget {
+  final ExerciseBlock block;
+  final ExerciseSet set;
+  final AppLocalizations l10n;
+  final bool isWeightlifting;
+  final bool isCardio;
+
+  const _SummarySetRow({
+    required this.block,
+    required this.set,
+    required this.l10n,
+    required this.isWeightlifting,
+    required this.isCardio,
+  });
+
+  Future<void> _edit(BuildContext context, WidgetRef ref) async {
+    final unit = ref.read(settingsProvider).weightUnit;
+    final result = await showSetActualsDialog(
+      context,
+      set: set,
+      l10n: l10n,
+      isWeightlifting: isWeightlifting,
+      isCardio: isCardio,
+      unit: unit,
+    );
+    if (result == null) return;
+    await ref
+        .read(workoutRepositoryProvider)
+        .saveSetActuals(
+          setId: set.id,
+          actualReps: result.reps,
+          actualWeightKg: result.weightKg,
+          actualDurationMinutes: result.actualDurationMinutes,
+          actualDistanceMeters: result.actualDistanceMeters,
+        );
+    ref.invalidate(workoutDetailProvider(block.exercise.workoutId));
+    ref.invalidate(workoutListProvider);
+    invalidateDashboard(ref);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final unit = ref.watch(settingsProvider).weightUnit;
+    final unitLabel = weightUnitLabel(unit);
+    final done = set.isCompleted;
+
+    // Not-done sets show the same fields with zeroes, so the row still lines
+    // up with the ones that were performed. Null in storage is what keeps them
+    // out of the counts and averages.
+    final String value;
+    if (isWeightlifting) {
+      value = l10n.workoutDetailActualSetReps(
+        '${set.actualReps ?? 0}',
+        formatWeightValue(set.actualWeightKg ?? 0, unit),
+        unitLabel,
+      );
+    } else {
+      value = [
+        l10n.workoutDetailActualSetDuration(
+          '${set.actualDurationMinutes ?? 0}',
+        ),
+        l10n.workoutDetailActualSetDistance(
+          formatDecimal(set.actualDistanceMeters ?? 0),
+        ),
+      ].join(' · ');
+    }
+    final rest = l10n.workoutSummarySetRest(
+      formatRestDuration(Duration(seconds: set.actualRestSeconds ?? 0)),
+    );
+
+    return InkWell(
+      onTap: () => _edit(context, ref),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 56,
+              child: Text(
+                l10n.workoutSummarySetLabel(set.setNumber),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: done
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurfaceVariant,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+            Text(
+              rest,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: done
+                    ? theme.colorScheme.onSurfaceVariant
+                    : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),

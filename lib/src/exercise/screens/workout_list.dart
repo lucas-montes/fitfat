@@ -76,7 +76,8 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
               : _buildList(l10n, workouts);
         },
       ),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => _openForm(context, ref),
         child: const Icon(Icons.add),
       ),
@@ -284,7 +285,9 @@ final class _WorkoutTile extends StatelessWidget {
 
     final dateStr = DateFormats.formatDate(context, workout.date);
 
-    final canEdit = workout.isPending;
+    // Completed sessions are editable too: the form switches to actuals and
+    // preserves ids, so swipe-right opens the same editor for both.
+    final canEdit = workout.isPending || workout.isCompleted;
 
     return Dismissible(
       key: ValueKey(workout.id),

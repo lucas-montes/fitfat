@@ -86,7 +86,8 @@ final class WorkoutRepository {
         await (_database.select(_database.workouts)
               ..where((t) => t.deletedAt.isNull())
               ..orderBy([
-                (t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc),
+                (t) =>
+                    OrderingTerm(expression: t.date, mode: OrderingMode.desc),
               ]))
             .get();
     return rows.map(_toDomain).toList();
@@ -225,6 +226,154 @@ final class WorkoutRepository {
     });
   }
 
+  /// Saves edits to a **completed** workout without destroying what happened.
+  ///
+  /// Unlike [replaceExercises], which deletes and recreates children (and is
+  /// only safe for a plan nobody has logged yet), this upserts by id:
+  ///
+  ///  * existing `workout_exercises` keep their id and notes;
+  ///  * existing sets keep their id, planned values, notes and recorded rest —
+  ///    only the **actual** columns are rewritten;
+  ///  * sets/exercises the user removed are deleted and tombstoned for sync;
+  ///  * newly added sets are inserted with actuals only (there is no plan for
+  ///    work that was recorded after the fact).
+  ///
+  /// A set with no actuals at all is deliberately left "not done": the summary
+  /// renders it as zeroes, but the row stays null so it is excluded from
+  /// completed counts, volume and average rest.
+  Future<void> saveCompletedWorkout({
+    required Workout workout,
+    required List<WorkoutExercise> exercises,
+    required List<List<ExerciseSet>> setGroups,
+  }) async {
+    await _database.transaction(() async {
+      await (_database.update(
+        _database.workouts,
+      )..where((t) => t.id.equals(workout.id))).write(
+        db.WorkoutsCompanion(
+          name: Value(workout.name),
+          date: Value(workout.date.millisecondsSinceEpoch),
+        ),
+      );
+
+      final existingWe = await (_database.select(
+        _database.workoutExercises,
+      )..where((t) => t.workoutId.equals(workout.id))).get();
+      final existingWeById = {for (final row in existingWe) row.id: row};
+      final keptWeIds = {for (final we in exercises) we.id};
+
+      // Exercises removed from the session: drop their sets and tombstone both
+      // levels, exactly like the single-exercise delete path.
+      for (final row in existingWe) {
+        if (keptWeIds.contains(row.id)) continue;
+        final sets = await (_database.select(
+          _database.exerciseSets,
+        )..where((t) => t.workoutExerciseId.equals(row.id))).get();
+        await (_database.delete(
+          _database.exerciseSets,
+        )..where((t) => t.workoutExerciseId.equals(row.id))).go();
+        await (_database.delete(
+          _database.workoutExercises,
+        )..where((t) => t.id.equals(row.id))).go();
+        await _database.recordSyncDeletes(
+          'exerciseSets',
+          sets.map((s) => s.id),
+        );
+        await _database.recordSyncDelete('workoutExercises', row.id);
+      }
+
+      for (var i = 0; i < exercises.length; i++) {
+        final we = exercises[i];
+        final previousWe = existingWeById[we.id];
+        if (previousWe == null) {
+          await _database
+              .into(_database.workoutExercises)
+              .insert(
+                db.WorkoutExercisesCompanion.insert(
+                  id: we.id,
+                  workoutId: workout.id,
+                  exerciseId: we.exerciseId,
+                  sortOrder: we.sortOrder,
+                  notes: Value(we.notes),
+                ),
+              );
+        } else {
+          // Notes are not edited here; keep whatever the active session wrote.
+          await (_database.update(
+            _database.workoutExercises,
+          )..where((t) => t.id.equals(we.id))).write(
+            db.WorkoutExercisesCompanion(sortOrder: Value(we.sortOrder)),
+          );
+        }
+
+        final existingSets = await (_database.select(
+          _database.exerciseSets,
+        )..where((t) => t.workoutExerciseId.equals(we.id))).get();
+        final existingSetsById = {for (final row in existingSets) row.id: row};
+        final supplied = i < setGroups.length ? setGroups[i] : const [];
+        final keptSetIds = {for (final set in supplied) set.id};
+
+        for (final row in existingSets) {
+          if (keptSetIds.contains(row.id)) continue;
+          await (_database.delete(
+            _database.exerciseSets,
+          )..where((t) => t.id.equals(row.id))).go();
+          await _database.recordSyncDelete('exerciseSets', row.id);
+        }
+
+        for (var j = 0; j < supplied.length; j++) {
+          final set = supplied[j];
+          final previous = existingSetsById[set.id];
+          final hasActual =
+              set.actualReps != null ||
+              set.actualWeightKg != null ||
+              set.actualDurationMinutes != null ||
+              set.actualDistanceMeters != null;
+          final completedAt = hasActual
+              ? (previous?.completedAt ?? DateTime.now().millisecondsSinceEpoch)
+              : null;
+
+          if (previous == null) {
+            await _database
+                .into(_database.exerciseSets)
+                .insert(
+                  db.ExerciseSetsCompanion.insert(
+                    id: set.id,
+                    workoutExerciseId: we.id,
+                    setNumber: j + 1,
+                    actualReps: Value(set.actualReps),
+                    actualWeightKg: Value(set.actualWeightKg),
+                    actualDurationMinutes: Value(set.actualDurationMinutes),
+                    actualDistanceMeters: Value(set.actualDistanceMeters),
+                    completedAt: Value(completedAt),
+                  ),
+                );
+            continue;
+          }
+
+          await (_database.update(
+            _database.exerciseSets,
+          )..where((t) => t.id.equals(set.id))).write(
+            db.ExerciseSetsCompanion(
+              setNumber: Value(j + 1),
+              // Actuals are the only editable columns. Planned values, notes
+              // and a previously recorded rest survive the edit untouched; a
+              // set cleared back to "not done" loses its rest and timestamp.
+              actualReps: Value(set.actualReps),
+              actualWeightKg: Value(set.actualWeightKg),
+              actualDurationMinutes: Value(set.actualDurationMinutes),
+              actualDistanceMeters: Value(set.actualDistanceMeters),
+              actualRestSeconds: hasActual
+                  ? const Value.absent()
+                  : const Value(null),
+              completedAt: Value(completedAt),
+            ),
+          );
+        }
+      }
+    });
+  }
+
   /// Updates the editable fields of a workout row (name, date). Safe to call
   /// on any workout; only the top-level `workouts` row is written, exercises
   /// and sets are left untouched.
@@ -287,11 +436,9 @@ final class WorkoutRepository {
       );
       await _database.recordSyncDeletes('exerciseSets', setIds);
       final now = DateTime.now().millisecondsSinceEpoch;
-      await (_database.update(
-        _database.workouts,
-      )..where((t) => t.id.equals(id))).write(
-        db.WorkoutsCompanion(deletedAt: Value(now)),
-      );
+      await (_database.update(_database.workouts)
+            ..where((t) => t.id.equals(id)))
+          .write(db.WorkoutsCompanion(deletedAt: Value(now)));
     });
   }
 
@@ -371,6 +518,43 @@ final class WorkoutRepository {
     );
   }
 
+  /// Writes a set's actuals as an absolute value, including clearing them.
+  ///
+  /// [updateSetActuals] only ever sets fields (a null means "leave alone"),
+  /// which is right for the active flow where a blank field should not erase a
+  /// previously logged number. The completed summary reopens the same editor
+  /// with the set's values already in it, so blanking a field there genuinely
+  /// means "this was not done" and must clear the stored actual.
+  Future<void> saveSetActuals({
+    required String setId,
+    int? actualReps,
+    double? actualWeightKg,
+    int? actualDurationMinutes,
+    double? actualDistanceMeters,
+  }) async {
+    final hasActual =
+        actualReps != null ||
+        actualWeightKg != null ||
+        actualDurationMinutes != null ||
+        actualDistanceMeters != null;
+    await (_database.update(
+      _database.exerciseSets,
+    )..where((t) => t.id.equals(setId))).write(
+      db.ExerciseSetsCompanion(
+        actualReps: Value(actualReps),
+        actualWeightKg: Value(actualWeightKg),
+        actualDurationMinutes: Value(actualDurationMinutes),
+        actualDistanceMeters: Value(actualDistanceMeters),
+        // A cleared set is no longer done: drop the timestamp and the rest it
+        // recorded, so it stops counting as completed.
+        completedAt: Value(
+          hasActual ? DateTime.now().millisecondsSinceEpoch : null,
+        ),
+        actualRestSeconds: hasActual ? const Value.absent() : const Value(null),
+      ),
+    );
+  }
+
   /// Updates the planned values of one set, preserving ids, actuals and
   /// completion state. Safe to call on active workouts (unlike
   /// [replaceExercises], which wipes logged data).
@@ -441,10 +625,9 @@ final class WorkoutRepository {
   /// Deletes one set and renumbers the remaining sets of its exercise 1..n.
   Future<void> deletePlannedSet(String setId) async {
     await _database.transaction(() async {
-      final row =
-          await (_database.select(_database.exerciseSets)
-                ..where((t) => t.id.equals(setId)))
-              .getSingleOrNull();
+      final row = await (_database.select(
+        _database.exerciseSets,
+      )..where((t) => t.id.equals(setId))).getSingleOrNull();
       if (row == null) return;
       await (_database.delete(
         _database.exerciseSets,
@@ -458,10 +641,9 @@ final class WorkoutRepository {
   /// `sortOrder` values of the workout.
   Future<void> deleteWorkoutExercise(String workoutExerciseId) async {
     await _database.transaction(() async {
-      final row =
-          await (_database.select(_database.workoutExercises)
-                ..where((t) => t.id.equals(workoutExerciseId)))
-              .getSingleOrNull();
+      final row = await (_database.select(
+        _database.workoutExercises,
+      )..where((t) => t.id.equals(workoutExerciseId))).getSingleOrNull();
       if (row == null) return;
       final sets = await (_database.select(
         _database.exerciseSets,
@@ -473,21 +655,16 @@ final class WorkoutRepository {
         _database.workoutExercises,
       )..where((t) => t.id.equals(workoutExerciseId))).go();
       await _database.recordSyncDeletes('exerciseSets', sets.map((s) => s.id));
-      await _database.recordSyncDelete(
-        'workoutExercises',
-        workoutExerciseId,
-      );
+      await _database.recordSyncDelete('workoutExercises', workoutExerciseId);
       final remaining =
           await (_database.select(_database.workoutExercises)
                 ..where((t) => t.workoutId.equals(row.workoutId))
                 ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
               .get();
       for (var i = 0; i < remaining.length; i++) {
-        await (_database.update(
-          _database.workoutExercises,
-        )..where((t) => t.id.equals(remaining[i].id))).write(
-          db.WorkoutExercisesCompanion(sortOrder: Value(i)),
-        );
+        await (_database.update(_database.workoutExercises)
+              ..where((t) => t.id.equals(remaining[i].id)))
+            .write(db.WorkoutExercisesCompanion(sortOrder: Value(i)));
       }
     });
   }
@@ -497,11 +674,9 @@ final class WorkoutRepository {
   Future<void> reorderExercises(List<String> orderedIds) async {
     await _database.transaction(() async {
       for (var i = 0; i < orderedIds.length; i++) {
-        await (_database.update(
-          _database.workoutExercises,
-        )..where((t) => t.id.equals(orderedIds[i]))).write(
-          db.WorkoutExercisesCompanion(sortOrder: Value(i)),
-        );
+        await (_database.update(_database.workoutExercises)
+              ..where((t) => t.id.equals(orderedIds[i])))
+            .write(db.WorkoutExercisesCompanion(sortOrder: Value(i)));
       }
     });
   }
@@ -511,11 +686,9 @@ final class WorkoutRepository {
   Future<void> reorderSets(List<String> orderedSetIds) async {
     await _database.transaction(() async {
       for (var i = 0; i < orderedSetIds.length; i++) {
-        await (_database.update(
-          _database.exerciseSets,
-        )..where((t) => t.id.equals(orderedSetIds[i]))).write(
-          db.ExerciseSetsCompanion(setNumber: Value(i + 1)),
-        );
+        await (_database.update(_database.exerciseSets)
+              ..where((t) => t.id.equals(orderedSetIds[i])))
+            .write(db.ExerciseSetsCompanion(setNumber: Value(i + 1)));
       }
     });
   }
@@ -528,11 +701,9 @@ final class WorkoutRepository {
             .get();
     for (var i = 0; i < rows.length; i++) {
       if (rows[i].setNumber != i + 1) {
-        await (_database.update(
-          _database.exerciseSets,
-        )..where((t) => t.id.equals(rows[i].id))).write(
-          db.ExerciseSetsCompanion(setNumber: Value(i + 1)),
-        );
+        await (_database.update(_database.exerciseSets)
+              ..where((t) => t.id.equals(rows[i].id)))
+            .write(db.ExerciseSetsCompanion(setNumber: Value(i + 1)));
       }
     }
   }
@@ -627,11 +798,14 @@ final class WorkoutRepository {
     if (weRows.isEmpty) return [];
 
     final workoutIds = weRows.map((r) => r.workoutId).toList();
-    final workoutRows = await (_database.select(
-      _database.workouts,
-    )..where(
-      (t) => t.id.isIn(workoutIds) & t.completedAt.isNotNull() & t.deletedAt.isNull(),
-    )).get();
+    final workoutRows =
+        await (_database.select(_database.workouts)..where(
+              (t) =>
+                  t.id.isIn(workoutIds) &
+                  t.completedAt.isNotNull() &
+                  t.deletedAt.isNull(),
+            ))
+            .get();
     final workoutMap = {for (final row in workoutRows) row.id: _toDomain(row)};
 
     // Load every set across all of the exercise's workout_exercises in one
@@ -679,32 +853,27 @@ final class WorkoutRepository {
   /// exclude the next one explicitly, because a `completedAt` written by
   /// another device with a skewed clock can otherwise land in it.
   Future<({double volumeKg, int minutes, int daysTrained})>
-      getVolumeAndMinutesBetween(DateTime fromDay, DateTime untilDay) async {
+  getVolumeAndMinutesBetween(DateTime fromDay, DateTime untilDay) async {
     final fromMillis = fromDay.millisecondsSinceEpoch;
     final untilMillis = untilDay.millisecondsSinceEpoch;
 
-    final inWindow = _database.workouts.completedAt.isBiggerOrEqualValue(
-          fromMillis,
-        ) &
+    final inWindow =
+        _database.workouts.completedAt.isBiggerOrEqualValue(fromMillis) &
         _database.workouts.completedAt.isSmallerThanValue(untilMillis) &
         _database.workouts.deletedAt.isNull();
 
-    final joined =
-        await (_database.select(_database.exerciseSets).join([
-              innerJoin(
-                _database.workoutExercises,
-                _database.workoutExercises.id.equalsExp(
-                  _database.exerciseSets.workoutExerciseId,
-                ),
-              ),
-              innerJoin(
-                _database.workouts,
-                _database.workouts.id.equalsExp(
-                  _database.workoutExercises.workoutId,
-                ),
-              ),
-            ])..where(inWindow))
-            .get();
+    final joined = await (_database.select(_database.exerciseSets).join([
+      innerJoin(
+        _database.workoutExercises,
+        _database.workoutExercises.id.equalsExp(
+          _database.exerciseSets.workoutExerciseId,
+        ),
+      ),
+      innerJoin(
+        _database.workouts,
+        _database.workouts.id.equalsExp(_database.workoutExercises.workoutId),
+      ),
+    ])..where(inWindow)).get();
 
     var volumeKg = 0.0;
     // Logged set minutes per workout, accumulated in the same pass as volume.
@@ -724,9 +893,9 @@ final class WorkoutRepository {
       }
     }
 
-    final workoutRows =
-        await (_database.select(_database.workouts)..where((t) => inWindow))
-            .get();
+    final workoutRows = await (_database.select(
+      _database.workouts,
+    )..where((t) => inWindow)).get();
     var minutes = 0;
     // Distinct calendar days, not workout count: two sessions on one day are
     // one day trained. Derived from the rows already fetched for the minute
@@ -748,7 +917,11 @@ final class WorkoutRepository {
       }
     }
 
-    return (volumeKg: volumeKg, minutes: minutes, daysTrained: trainedDays.length);
+    return (
+      volumeKg: volumeKg,
+      minutes: minutes,
+      daysTrained: trainedDays.length,
+    );
   }
 
   /// Completed-workout volume (kg) per day, oldest first, for workouts
@@ -837,13 +1010,14 @@ final class WorkoutRepository {
         _database.workoutExercises,
       )..where((t) => t.workoutId.equals(id))).go();
       await _database.recordSyncDeletes('workoutExercises', weIds);
-      await _database.recordSyncDeletes('exerciseSets', setRows.map((s) => s.id));
-      final now = DateTime.now().millisecondsSinceEpoch;
-      await (_database.update(
-        _database.workouts,
-      )..where((t) => t.id.equals(id))).write(
-        db.WorkoutsCompanion(deletedAt: Value(now)),
+      await _database.recordSyncDeletes(
+        'exerciseSets',
+        setRows.map((s) => s.id),
       );
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await (_database.update(_database.workouts)
+            ..where((t) => t.id.equals(id)))
+          .write(db.WorkoutsCompanion(deletedAt: Value(now)));
 
       return WorkoutSnapshot(
         workout: workoutRow,
@@ -1492,4 +1666,3 @@ ExerciseSet newPlannedSet({
 );
 
 DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
-

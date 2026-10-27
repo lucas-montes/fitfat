@@ -3,34 +3,67 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
 import '../../models/exercise_set.dart';
+import '../../models/units.dart';
+import '../../models/workout.dart';
 import '../../models/workout_exercise.dart';
 import '../../planner/providers/planner.dart' show taskRepositoryProvider;
 import '../../settings/providers/settings.dart';
 import '../../ui/date_formats.dart';
+import '../../ui/format.dart';
 import '../../ui/tokens.dart';
+import '../../ui/units.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
 import '../../dashboard/providers/dashboard.dart';
 import '../repositories/workout_repository.dart';
 import 'exercise_picker_sheet.dart';
 
-/// A planned set entry used in the form before saving.
-/// Null fields = unset; the form starts with an empty entry and each field
-/// stores `null` until the user types a value.
-final class _PlannedSetEntry {
+/// One set in the form before saving.
+///
+/// A pending workout uses the planned fields (reps/weight or
+/// duration/distance, plus rest); a completed workout uses the actual fields
+/// and hides rest. The unused group stays null, which is also what makes a
+/// completed set "not done": no actuals at all is deliberately stored as null
+/// rather than zero so it stays out of completed counts and averages.
+final class _SetEntry {
+  /// Existing `exercise_sets.id`, or a fresh one for a set added while editing
+  /// a completed workout. Preserved across a completed edit so sync sees an
+  /// update rather than a delete-and-recreate.
+  final String id;
+
   int? reps;
   double? weightKg;
   int? durationMinutes;
+  double? distanceMeters;
   int? restSeconds;
+
+  int? actualReps;
+  double? actualWeightKg;
+  int? actualDurationMinutes;
+  double? actualDistanceMeters;
+
+  _SetEntry({String? id}) : id = id ?? const Uuid().v7();
+}
+
+/// One exercise's draft state: the existing workout-exercise id (null for a
+/// newly added exercise) plus its notes and sets.
+final class _ExerciseEntry {
+  final String? workoutExerciseId;
+  final String? notes;
+  final List<_SetEntry> sets;
+
+  _ExerciseEntry({this.workoutExerciseId, this.notes, required this.sets});
 }
 
 final class WorkoutFormScreen extends ConsumerStatefulWidget {
-  /// When null the form creates a new workout; when set it edits that workout
-  /// (only ever a pending, not-yet-started one).
+  /// When null the form creates a new workout. When set it edits that workout:
+  /// a pending one edits the **plan**, a completed one edits the **actuals**
+  /// that were recorded, preserving ids and planned values.
   final WorkoutWithDetails? initial;
   const WorkoutFormScreen({super.key, this.initial});
 
@@ -49,15 +82,17 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
   /// timeline without a second manual step.
   bool _addToPlanner = true;
 
-  /// Selected exercise ids → planned set configs. Order is preserved (Dart
-  /// Maps keep insertion order) and is user-reorderable via the drag handle.
-  Map<String, List<_PlannedSetEntry>> _selected = {};
+  /// Selected exercise ids → draft state. Order is preserved (Dart Maps keep
+  /// insertion order) and is user-reorderable via the drag handle.
+  Map<String, _ExerciseEntry> _selected = {};
 
   // Memoized id→exercise lookup over the ~3,800-row catalog: rebuilt only
   // when the provider's list instance actually changes, not on every
   // add/remove/reorder setState (perf T02).
   List<Exercise>? _byIdSource;
   Map<String, Exercise>? _byIdCache;
+
+  bool get _isCompletedEdit => widget.initial?.workout.isCompleted ?? false;
 
   Map<String, Exercise> _byIdFor(List<Exercise> exercises) {
     if (_byIdCache != null && identical(_byIdSource, exercises)) {
@@ -76,14 +111,26 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
       _nameCtrl.text = initial.workout.name;
       _date = initial.workout.date;
       for (final block in initial.exercises) {
-        _selected[block.exercise.exerciseId] = [
-          for (final set in block.sets)
-            _PlannedSetEntry()
-              ..reps = set.reps
-              ..weightKg = set.weightKg
-              ..durationMinutes = set.durationMinutes
-              ..restSeconds = set.restSeconds,
-        ];
+        _selected[block.exercise.exerciseId] = _ExerciseEntry(
+          workoutExerciseId: block.exercise.id,
+          notes: block.exercise.notes,
+          sets: [
+            for (final set in block.sets)
+              _isCompletedEdit
+                  // A completed session only ever edits what was logged.
+                  ? (_SetEntry(id: set.id)
+                      ..actualReps = set.actualReps
+                      ..actualWeightKg = set.actualWeightKg
+                      ..actualDurationMinutes = set.actualDurationMinutes
+                      ..actualDistanceMeters = set.actualDistanceMeters)
+                  : (_SetEntry()
+                      ..reps = set.reps
+                      ..weightKg = set.weightKg
+                      ..durationMinutes = set.durationMinutes
+                      ..distanceMeters = set.distanceMeters
+                      ..restSeconds = set.restSeconds),
+          ],
+        );
       }
     } else {
       _date = DateTime.now();
@@ -100,6 +147,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final exercisesAsync = ref.watch(exerciseListProvider);
+    final unit = ref.watch(settingsProvider).weightUnit;
 
     return Scaffold(
       appBar: AppBar(
@@ -191,6 +239,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                         ordered[i].value,
                         i,
                         l10n,
+                        unit,
                       ),
                   ],
                 );
@@ -212,10 +261,10 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     });
   }
 
-  /// Reorders the planned sets within an exercise (drag the set chip handle).
+  /// Reorders the sets within an exercise (drag the set chip handle).
   void _reorderSets(String exerciseId, int oldIndex, int newIndex) {
     setState(() {
-      final sets = _selected[exerciseId]!;
+      final sets = _selected[exerciseId]!.sets;
       if (oldIndex < newIndex) newIndex -= 1;
       final moved = sets.removeAt(oldIndex);
       sets.insert(newIndex, moved);
@@ -233,7 +282,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
       // remain; add empty set lists for newly chosen exercises.
       _selected.removeWhere((id, _) => !picked.contains(id));
       for (final id in picked) {
-        _selected.putIfAbsent(id, () => []);
+        _selected.putIfAbsent(id, () => _ExerciseEntry(sets: []));
       }
     });
   }
@@ -243,10 +292,12 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
   Widget _buildSelectedExerciseRow(
     String exerciseId,
     Exercise ex,
-    List<_PlannedSetEntry> sets,
+    _ExerciseEntry entry,
     int index,
     AppLocalizations l10n,
+    WeightUnit unit,
   ) {
+    final sets = entry.sets;
     return Card(
       key: Key(exerciseId),
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -290,19 +341,24 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                   _reorderSets(ex.id, oldIndex, newIndex),
               children: [
                 for (var i = 0; i < sets.length; i++)
-                  _buildSetRow(i, sets[i], sets, ex, l10n),
+                  _buildSetRow(i, sets[i], sets, ex, l10n, unit),
               ],
             ),
             TextButton.icon(
               icon: const Icon(Icons.add, size: 18),
               label: Text(l10n.workoutFormAddSet),
               onPressed: () => setState(() {
-                // New sets prefill rest from the user's default (if any).
+                // A completed session gets an empty "not done" set; there is
+                // no plan to prefill. A planned set prefills the default rest.
+                if (_isCompletedEdit) {
+                  sets.add(_SetEntry());
+                  return;
+                }
                 final defaultRest = ref
                     .read(settingsProvider)
                     .defaultRestSeconds;
-                _selected[ex.id]!.add(
-                  _PlannedSetEntry()
+                sets.add(
+                  _SetEntry()
                     ..restSeconds = defaultRest > 0 ? defaultRest : null,
                 );
               }),
@@ -315,11 +371,33 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
 
   Widget _buildSetRow(
     int index,
-    _PlannedSetEntry entry,
-    List<_PlannedSetEntry> sets,
+    _SetEntry entry,
+    List<_SetEntry> sets,
     Exercise ex,
     AppLocalizations l10n,
+    WeightUnit unit,
   ) {
+    // A completed session edits actuals, a pending one edits the plan. The
+    // field layout is the same either way so the two modes read alike.
+    final weight = _isCompletedEdit ? entry.actualWeightKg : entry.weightKg;
+    final reps = _isCompletedEdit ? entry.actualReps : entry.reps;
+    final duration = _isCompletedEdit
+        ? entry.actualDurationMinutes
+        : entry.durationMinutes;
+    final distance = _isCompletedEdit
+        ? entry.actualDistanceMeters
+        : entry.distanceMeters;
+
+    void setWeight(String v) {
+      final parsed = double.tryParse(v.replaceAll(',', '.'));
+      final kg = parsed == null ? null : weightToKg(parsed, unit);
+      if (_isCompletedEdit) {
+        entry.actualWeightKg = kg;
+      } else {
+        entry.weightKg = kg;
+      }
+    }
+
     return Container(
       key: ObjectKey(entry),
       margin: const EdgeInsets.only(bottom: 8),
@@ -341,23 +419,29 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
           if (ex.isWeightlifting) ...[
             Expanded(
               child: TextFormField(
-                initialValue: entry.weightKg?.toStringAsFixed(0) ?? '',
+                key: ValueKey('${entry.id}-weight'),
+                initialValue: weight == null
+                    ? ''
+                    : formatWeightValue(weight, unit),
                 decoration: InputDecoration(
-                  labelText: l10n.workoutFormWeightLabel,
+                  labelText: weightUnitLabel(unit),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 6,
                   ),
                 ),
-                keyboardType: TextInputType.number,
-                onChanged: (v) => entry.weightKg = double.tryParse(v),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                onChanged: setWeight,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: TextFormField(
-                initialValue: entry.reps?.toString() ?? '',
+                key: ValueKey('${entry.id}-reps'),
+                initialValue: reps?.toString() ?? '',
                 decoration: InputDecoration(
                   labelText: l10n.workoutFormRepsLabel,
                   isDense: true,
@@ -367,13 +451,21 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                   ),
                 ),
                 keyboardType: TextInputType.number,
-                onChanged: (v) => entry.reps = int.tryParse(v),
+                onChanged: (v) {
+                  final parsed = int.tryParse(v);
+                  if (_isCompletedEdit) {
+                    entry.actualReps = parsed;
+                  } else {
+                    entry.reps = parsed;
+                  }
+                },
               ),
             ),
           ] else ...[
             Expanded(
               child: TextFormField(
-                initialValue: entry.durationMinutes?.toString() ?? '',
+                key: ValueKey('${entry.id}-duration'),
+                initialValue: duration?.toString() ?? '',
                 decoration: InputDecoration(
                   labelText: l10n.workoutFormDurationLabel,
                   isDense: true,
@@ -383,30 +475,68 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                   ),
                 ),
                 keyboardType: TextInputType.number,
-                onChanged: (v) => entry.durationMinutes = int.tryParse(v),
+                onChanged: (v) {
+                  final parsed = int.tryParse(v);
+                  if (_isCompletedEdit) {
+                    entry.actualDurationMinutes = parsed;
+                  } else {
+                    entry.durationMinutes = parsed;
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                key: ValueKey('${entry.id}-distance'),
+                initialValue: distance == null ? '' : formatDecimal(distance),
+                decoration: InputDecoration(
+                  labelText: l10n.workoutFormDistanceLabel,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                onChanged: (v) {
+                  final parsed = double.tryParse(v.replaceAll(',', '.'));
+                  if (_isCompletedEdit) {
+                    entry.actualDistanceMeters = parsed;
+                  } else {
+                    entry.distanceMeters = parsed;
+                  }
+                },
               ),
             ),
           ],
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextFormField(
-              initialValue: entry.restSeconds == null
-                  ? ''
-                  : (entry.restSeconds! / 60).toString(),
-              decoration: InputDecoration(
-                labelText: l10n.workoutFormRestLabel,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
+          // Rest is a plan value; a completed session already has a recorded
+          // actual rest and must not invite rewriting it here.
+          if (!_isCompletedEdit) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                key: ValueKey('${entry.id}-rest'),
+                initialValue: entry.restSeconds == null
+                    ? ''
+                    : (entry.restSeconds! / 60).toString(),
+                decoration: InputDecoration(
+                  labelText: l10n.workoutFormRestLabel,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
                 ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                onChanged: (v) => entry.restSeconds = _parseRestSeconds(v),
               ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              onChanged: (v) => entry.restSeconds = _parseRestSeconds(v),
             ),
-          ),
+          ],
           IconButton(
             icon: const Icon(Icons.delete_outline, size: 20),
             tooltip: l10n.workoutFormRemoveSet,
@@ -440,6 +570,25 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     if (date != null && mounted) setState(() => _date = date);
   }
 
+  /// True when a numeric entry is absent or non-positive. Zero is treated as
+  /// "not done" so a cleared field and a typed 0 behave the same.
+  bool _unset(num? value) => value == null || value <= 0;
+
+  /// A completed set is either fully logged or fully blank. Half a set is a
+  /// typo, not a record, so saving refuses it rather than storing a partial
+  /// actual that would count as done.
+  bool _completedSetIsValid(_SetEntry entry, Exercise? ex) {
+    if (ex?.isWeightlifting != false) {
+      final repsSet = !_unset(entry.actualReps);
+      final weightSet = !_unset(entry.actualWeightKg);
+      return repsSet == weightSet;
+    }
+    final durationSet = !_unset(entry.actualDurationMinutes);
+    final distanceSet = !_unset(entry.actualDistanceMeters);
+    // Duration is the primary cardio measure; distance is optional.
+    return durationSet || !distanceSet;
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
@@ -456,20 +605,32 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
           widget.initial?.workout.copyWith(name: name, date: _date) ??
           newWorkout(name: name, date: _date);
 
-      // Build exercise + set lists
-      final exercises = <WorkoutExercise>[];
-      final setGroups = <List<ExerciseSet>>[];
-      var sortOrder = 0;
-
       // We need exercise names — fetch from provider cache
       final exercisesList = await ref.read(exerciseListProvider.future);
       final nameMap = {for (final ex in exercisesList) ex.id: ex.name};
       final exerciseMap = {for (final ex in exercisesList) ex.id: ex};
 
+      if (_isCompletedEdit) {
+        await _saveCompleted(
+          repo: repo,
+          workout: workout,
+          name: name,
+          exerciseMap: exerciseMap,
+          nameMap: nameMap,
+          l10n: l10n,
+        );
+        return;
+      }
+
+      // Build exercise + set lists
+      final exercises = <WorkoutExercise>[];
+      final setGroups = <List<ExerciseSet>>[];
+      var sortOrder = 0;
+
       // Every added set must be complete: reps/weight (or duration) AND rest.
       for (final entry in _selected.entries) {
         final ex = exerciseMap[entry.key];
-        for (final plan in entry.value) {
+        for (final plan in entry.value.sets) {
           final baseOk = ex?.isWeightlifting == true
               ? (plan.reps ?? 0) > 0 && (plan.weightKg ?? 0) > 0
               : (plan.durationMinutes ?? 0) > 0;
@@ -484,7 +645,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
 
       for (final entry in _selected.entries) {
         final exId = entry.key;
-        final plannedSets = entry.value;
+        final plannedSets = entry.value.sets;
         if (plannedSets.isEmpty) continue;
         final we = newWorkoutExercise(
           workoutId: workout.id,
@@ -504,6 +665,10 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
             restSeconds: (plan.restSeconds ?? 0) > 0 ? plan.restSeconds : null,
             durationMinutes: (plan.durationMinutes ?? 0) > 0
                 ? plan.durationMinutes
+                : null,
+            // Was dropped before: cardio plans lost their distance on save.
+            distanceMeters: (plan.distanceMeters ?? 0) > 0
+                ? plan.distanceMeters
                 : null,
           );
         }).toList();
@@ -529,7 +694,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               .createForWorkout(workoutId: workout.id, title: name, day: _date);
         }
       }
-      invalidateDashboard(ref);
+      _invalidate();
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -541,5 +706,97 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Completed-mode save: actuals only, ids preserved.
+  Future<void> _saveCompleted({
+    required WorkoutRepository repo,
+    required Workout workout,
+    required String name,
+    required Map<String, Exercise> exerciseMap,
+    required Map<String, String> nameMap,
+    required AppLocalizations l10n,
+  }) async {
+    final exercises = <WorkoutExercise>[];
+    final setGroups = <List<ExerciseSet>>[];
+    var sortOrder = 0;
+
+    for (final entry in _selected.entries) {
+      final ex = exerciseMap[entry.key];
+      if (entry.value.sets.isEmpty) continue;
+
+      for (final set in entry.value.sets) {
+        if (!_completedSetIsValid(set, ex)) {
+          if (mounted) {
+            showTopBanner(context, message: l10n.workoutFormSetIncomplete);
+          }
+          return;
+        }
+      }
+
+      final existingId = entry.value.workoutExerciseId;
+      final we = existingId == null
+          ? newWorkoutExercise(
+              workoutId: workout.id,
+              exerciseId: entry.key,
+              exerciseName: nameMap[entry.key] ?? '',
+              sortOrder: sortOrder,
+              notes: entry.value.notes,
+            )
+          : WorkoutExercise(
+              id: existingId,
+              workoutId: workout.id,
+              exerciseId: entry.key,
+              exerciseName: nameMap[entry.key] ?? '',
+              sortOrder: sortOrder,
+              notes: entry.value.notes,
+            );
+      sortOrder++;
+      exercises.add(we);
+
+      final isWeightlifting = ex?.isWeightlifting != false;
+      final sets = <ExerciseSet>[];
+      for (var i = 0; i < entry.value.sets.length; i++) {
+        final set = entry.value.sets[i];
+        final done = isWeightlifting
+            ? !_unset(set.actualReps) && !_unset(set.actualWeightKg)
+            : !_unset(set.actualDurationMinutes);
+        sets.add(
+          ExerciseSet(
+            id: set.id,
+            workoutExerciseId: we.id,
+            setNumber: i + 1,
+            actualReps: done && isWeightlifting ? set.actualReps : null,
+            actualWeightKg: done && isWeightlifting ? set.actualWeightKg : null,
+            actualDurationMinutes: done && !isWeightlifting
+                ? set.actualDurationMinutes
+                : null,
+            actualDistanceMeters:
+                done && !isWeightlifting && !_unset(set.actualDistanceMeters)
+                ? set.actualDistanceMeters
+                : null,
+          ),
+        );
+      }
+      setGroups.add(sets);
+    }
+
+    await repo.saveCompletedWorkout(
+      workout: workout,
+      exercises: exercises,
+      setGroups: setGroups,
+    );
+    _invalidate();
+
+    if (mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  void _invalidate() {
+    final id = widget.initial?.workout.id;
+    invalidateDashboard(ref);
+    ref.invalidate(workoutListProvider);
+    if (id != null) ref.invalidate(workoutDetailProvider(id));
   }
 }

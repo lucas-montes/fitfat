@@ -27,6 +27,7 @@ import '../exercise_filter.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+import '../widgets/set_actuals_dialog.dart';
 import '../../planner/providers/planner.dart';
 
 /// Guards against a second "Complete" tap racing the first (the teardown of
@@ -244,9 +245,7 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
             icon: Icon(_reorderExercises ? Icons.check : Icons.reorder),
             onPressed: detail.exercises.length < 2 && !_reorderExercises
                 ? null
-                : () => setState(
-                    () => _reorderExercises = !_reorderExercises,
-                  ),
+                : () => setState(() => _reorderExercises = !_reorderExercises),
           ),
           TextButton.icon(
             onPressed: () => _completeWorkout(context, _ref, workout.id),
@@ -504,8 +503,13 @@ final class _ExerciseReorderList extends StatelessWidget {
             trailing: IconButton(
               tooltip: l10n.workoutFormRemoveExercise,
               icon: const Icon(Icons.delete_outline),
-              onPressed: () =>
-                  confirmDeleteWorkoutExercise(context, ref, block, workout, l10n),
+              onPressed: () => confirmDeleteWorkoutExercise(
+                context,
+                ref,
+                block,
+                workout,
+                l10n,
+              ),
             ),
           ),
         );
@@ -518,9 +522,7 @@ final class _ExerciseReorderList extends StatelessWidget {
     final ids = detail.exercises.map((b) => b.exercise.id).toList();
     final moved = ids.removeAt(oldIndex);
     ids.insert(newIndex, moved);
-    await ref
-        .read(workoutRepositoryProvider)
-        .reorderExercises(ids);
+    await ref.read(workoutRepositoryProvider).reorderExercises(ids);
     ref.invalidate(workoutDetailProvider(workout.id));
   }
 }
@@ -554,8 +556,7 @@ Future<void> confirmDeleteWorkoutExercise(
   );
   if (confirmed != true || !context.mounted) return;
   final rest = ref.read(restTimerProvider);
-  if (rest.isResting &&
-      block.sets.any((s) => s.id == rest.setId)) {
+  if (rest.isResting && block.sets.any((s) => s.id == rest.setId)) {
     await ref.read(restTimerProvider.notifier).cancelRest();
   }
   await ref
@@ -734,15 +735,17 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
   // duration for cardio). Falls back to value inference when the exercise row
   // is unavailable.
   bool get _isWeightlifting {
-    final exercise =
-        ref.read(exerciseByIdProvider(block.exercise.exerciseId)).value;
+    final exercise = ref
+        .read(exerciseByIdProvider(block.exercise.exerciseId))
+        .value;
     return exercise?.isWeightlifting ??
         block.sets.any((s) => s.reps != null || s.weightKg != null);
   }
 
   bool get _isCardio {
-    final exercise =
-        ref.read(exerciseByIdProvider(block.exercise.exerciseId)).value;
+    final exercise = ref
+        .read(exerciseByIdProvider(block.exercise.exerciseId))
+        .value;
     return exercise?.isCardio ??
         block.sets.any(
           (s) => s.durationMinutes != null || s.distanceMeters != null,
@@ -825,8 +828,7 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
                           onPressed: () => _editNote(context, ref),
                         ),
                         PopupMenuButton<_ExerciseMenu>(
-                          onSelected: (value) =>
-                              _onMenu(context, ref, value),
+                          onSelected: (value) => _onMenu(context, ref, value),
                           itemBuilder: (ctx) => [
                             PopupMenuItem(
                               value: _ExerciseMenu.addSet,
@@ -890,16 +892,16 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
                             completed: completedSets,
                             total: block.sets.length,
                           ),
-                    for (final set in block.sets)
-                      _SetRow(
-                        set: set,
-                        workout: workout,
-                        l10n: l10n,
-                        ref: ref,
-                        unit: unit,
-                        isWeightlifting: isWeightlifting,
-                        isCardio: isCardio,
-                      ),
+                          for (final set in block.sets)
+                            _SetRow(
+                              set: set,
+                              workout: workout,
+                              l10n: l10n,
+                              ref: ref,
+                              unit: unit,
+                              isWeightlifting: isWeightlifting,
+                              isCardio: isCardio,
+                            ),
                         ],
                       ),
               ),
@@ -1189,9 +1191,7 @@ final class _SetRow extends StatelessWidget {
       if (rest.isResting && rest.setId == set.id) {
         await ref.read(restTimerProvider.notifier).cancelRest();
       }
-      await ref
-          .read(workoutRepositoryProvider)
-          .deletePlannedSet(set.id);
+      await ref.read(workoutRepositoryProvider).deletePlannedSet(set.id);
       ref.invalidate(workoutDetailProvider(workout.id));
       return;
     }
@@ -1267,14 +1267,13 @@ final class _SetRow extends StatelessWidget {
   }
 
   Future<void> _editActuals(BuildContext context) async {
-    final result = await showDialog<_SetActuals>(
-      context: context,
-      builder: (ctx) => _SetActualsDialog(
-        set: set,
-        l10n: l10n,
-        isWeightlifting: isWeightlifting,
-        isCardio: isCardio,
-      ),
+    final result = await showSetActualsDialog(
+      context,
+      set: set,
+      l10n: l10n,
+      isWeightlifting: isWeightlifting,
+      isCardio: isCardio,
+      unit: unit,
     );
     if (result == null) return;
 
@@ -1354,8 +1353,7 @@ final class _EditPlannedSetDialog extends StatefulWidget {
   State<_EditPlannedSetDialog> createState() => _EditPlannedSetDialogState();
 }
 
-final class _EditPlannedSetDialogState
-    extends State<_EditPlannedSetDialog> {
+final class _EditPlannedSetDialogState extends State<_EditPlannedSetDialog> {
   late final TextEditingController _repsCtrl;
   late final TextEditingController _weightCtrl;
   late final TextEditingController _durationCtrl;
@@ -1398,9 +1396,7 @@ final class _EditPlannedSetDialogState
     final isCardio = widget.isCardio;
     return AlertDialog(
       title: Text(
-        s == null
-            ? l10n.workoutFormAddSet
-            : l10n.activeWorkoutEditPlannedTitle,
+        s == null ? l10n.workoutFormAddSet : l10n.activeWorkoutEditPlannedTitle,
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -1439,9 +1435,7 @@ final class _EditPlannedSetDialogState
             ],
             TextField(
               controller: _restCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.workoutFormRestLabel,
-              ),
+              decoration: InputDecoration(labelText: l10n.workoutFormRestLabel),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -1487,139 +1481,6 @@ final class _EditPlannedSetDialogState
     final minutes = double.tryParse(t);
     if (minutes == null || minutes <= 0) return null;
     return (minutes * 60).round();
-  }
-}
-
-final class _SetActuals {
-  final int? reps;
-  final double? weightKg;
-  final int? actualDurationMinutes;
-  final double? actualDistanceMeters;
-  const _SetActuals({
-    this.reps,
-    this.weightKg,
-    this.actualDurationMinutes,
-    this.actualDistanceMeters,
-  });
-}
-
-final class _SetActualsDialog extends StatefulWidget {
-  final ExerciseSet set;
-  final AppLocalizations l10n;
-  final bool isWeightlifting;
-  final bool isCardio;
-  const _SetActualsDialog({
-    required this.set,
-    required this.l10n,
-    required this.isWeightlifting,
-    required this.isCardio,
-  });
-
-  @override
-  State<_SetActualsDialog> createState() => _SetActualsDialogState();
-}
-
-final class _SetActualsDialogState extends State<_SetActualsDialog> {
-  late final TextEditingController _repsCtrl;
-  late final TextEditingController _weightCtrl;
-  late final TextEditingController _durationCtrl;
-  late final TextEditingController _distanceCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    final s = widget.set;
-    _repsCtrl = TextEditingController(
-      text: (s.actualReps ?? s.reps)?.toString() ?? '',
-    );
-    _weightCtrl = TextEditingController(
-      text: (s.actualWeightKg ?? s.weightKg)?.toStringAsFixed(1) ?? '',
-    );
-    _durationCtrl = TextEditingController(
-      text: s.actualDurationMinutes?.toString() ?? '',
-    );
-    _distanceCtrl = TextEditingController(
-      text: s.actualDistanceMeters?.toStringAsFixed(0) ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _repsCtrl.dispose();
-    _weightCtrl.dispose();
-    _durationCtrl.dispose();
-    _distanceCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = widget.l10n;
-    final s = widget.set;
-    final isWeightlifting = widget.isWeightlifting || !widget.isCardio;
-    final isCardio = widget.isCardio;
-
-    return AlertDialog(
-      title: Text(l10n.workoutDetailSetActualsTitle(s.setNumber)),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isWeightlifting) ...[
-              TextField(
-                controller: _repsCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualRepsLabel,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: _weightCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualWeightLabel,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-            if (isCardio) ...[
-              TextField(
-                controller: _durationCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualDurationLabel,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: _distanceCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualDistanceLabel,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.commonCancel),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop(
-              _SetActuals(
-                reps: int.tryParse(_repsCtrl.text),
-                weightKg: double.tryParse(_weightCtrl.text),
-                actualDurationMinutes: int.tryParse(_durationCtrl.text),
-                actualDistanceMeters: double.tryParse(_distanceCtrl.text),
-              ),
-            );
-          },
-          child: Text(l10n.commonSave),
-        ),
-      ],
-    );
   }
 }
 
@@ -1801,9 +1662,8 @@ final class _PlannedSetsDialogState extends State<_PlannedSetsDialog> {
               ),
             TextButton.icon(
               onPressed: () => setState(
-                () => _rows.add(
-                  _PlannedSetRow(initialRest: widget.initialRest),
-                ),
+                () =>
+                    _rows.add(_PlannedSetRow(initialRest: widget.initialRest)),
               ),
               icon: const Icon(Icons.add),
               label: Text(l10n.workoutFormAddSet),
@@ -1823,9 +1683,7 @@ final class _PlannedSetsDialogState extends State<_PlannedSetsDialog> {
                   (r) => PlannedSet(
                     reps: int.tryParse(r.repsCtrl.text.trim()),
                     weightKg: double.tryParse(r.weightCtrl.text.trim()),
-                    durationMinutes: int.tryParse(
-                      r.durationCtrl.text.trim(),
-                    ),
+                    durationMinutes: int.tryParse(r.durationCtrl.text.trim()),
                     restSeconds: _parseRestMinutes(r.restCtrl.text),
                   ),
                 )
