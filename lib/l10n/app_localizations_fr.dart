@@ -661,6 +661,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get workoutFormRestLabel => 'Repos (min)';
 
   @override
+  String get workoutFormSetDoneAt => 'Faite à';
+
+  @override
+  String get workoutFormSetDoneAtTooltip =>
+      'Quand cette série s\'est terminée : le repos se mesure à partir d\'ici';
+
+  @override
+  String get workoutFormSetTimeEmpty => 'Heure de la série';
+
+  @override
   String get workoutFormSetIncomplete =>
       'Complétez chaque série ajoutée (valeurs et temps de repos) ou retirez-la';
 

@@ -1264,6 +1264,24 @@ abstract class AppLocalizations {
   /// **'Rest (min)'**
   String get workoutFormRestLabel;
 
+  /// No description provided for @workoutFormSetDoneAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Done at'**
+  String get workoutFormSetDoneAt;
+
+  /// No description provided for @workoutFormSetDoneAtTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'When this set was finished — rest is measured from here'**
+  String get workoutFormSetDoneAtTooltip;
+
+  /// No description provided for @workoutFormSetTimeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Set time'**
+  String get workoutFormSetTimeEmpty;
+
   /// No description provided for @workoutFormSetIncomplete.
   ///
   /// In en, this message translates to:

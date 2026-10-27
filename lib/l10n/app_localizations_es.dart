@@ -663,6 +663,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get workoutFormRestLabel => 'Descanso (min)';
 
   @override
+  String get workoutFormSetDoneAt => 'Hecha a las';
+
+  @override
+  String get workoutFormSetDoneAtTooltip =>
+      'Cuándo terminó esta serie: el descanso se mide desde aquí';
+
+  @override
+  String get workoutFormSetTimeEmpty => 'Hora de la serie';
+
+  @override
   String get workoutFormSetIncomplete =>
       'Completa cada serie añadida (valores y tiempo de descanso) o elimínala';
 

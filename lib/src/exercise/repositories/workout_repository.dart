@@ -232,15 +232,19 @@ final class WorkoutRepository {
   /// only safe for a plan nobody has logged yet), this upserts by id:
   ///
   ///  * existing `workout_exercises` keep their id and notes;
-  ///  * existing sets keep their id, planned values, notes and recorded rest —
-  ///    only the **actual** columns are rewritten;
+  ///  * existing sets keep their id, planned values and notes; the **actual**
+  ///    columns, the completion time and the recorded rest are rewritten from
+  ///    the supplied [ExerciseSet]s;
   ///  * sets/exercises the user removed are deleted and tombstoned for sync;
   ///  * newly added sets are inserted with actuals only (there is no plan for
   ///    work that was recorded after the fact).
   ///
   /// A set with no actuals at all is deliberately left "not done": the summary
   /// renders it as zeroes, but the row stays null so it is excluded from
-  /// completed counts, volume and average rest.
+  /// completed counts, volume and average rest. A supplied set with no
+  /// [ExerciseSet.completedAt] keeps the stored timestamp (or gets "now" for a
+  /// set logged for the first time), and one with no
+  /// [ExerciseSet.actualRestSeconds] keeps the stored rest.
   Future<void> saveCompletedWorkout({
     required Workout workout,
     required List<WorkoutExercise> exercises,
@@ -330,7 +334,9 @@ final class WorkoutRepository {
               set.actualDurationMinutes != null ||
               set.actualDistanceMeters != null;
           final completedAt = hasActual
-              ? (previous?.completedAt ?? DateTime.now().millisecondsSinceEpoch)
+              ? (set.completedAt?.millisecondsSinceEpoch ??
+                    previous?.completedAt ??
+                    DateTime.now().millisecondsSinceEpoch)
               : null;
 
           if (previous == null) {
@@ -345,6 +351,7 @@ final class WorkoutRepository {
                     actualWeightKg: Value(set.actualWeightKg),
                     actualDurationMinutes: Value(set.actualDurationMinutes),
                     actualDistanceMeters: Value(set.actualDistanceMeters),
+                    actualRestSeconds: Value(set.actualRestSeconds),
                     completedAt: Value(completedAt),
                   ),
                 );
@@ -363,9 +370,16 @@ final class WorkoutRepository {
               actualWeightKg: Value(set.actualWeightKg),
               actualDurationMinutes: Value(set.actualDurationMinutes),
               actualDistanceMeters: Value(set.actualDistanceMeters),
-              actualRestSeconds: hasActual
+              // The form decides whether the recorded rest still applies or
+              // was re-derived from the set times (see [restAfterFromTimes]).
+              // A null here means "no rest to write", not "clear it": only a
+              // set that is no longer done clears its rest, so a caller that
+              // does not manage rest cannot wipe one the timer measured.
+              actualRestSeconds: !hasActual
+                  ? const Value(null)
+                  : set.actualRestSeconds == null
                   ? const Value.absent()
-                  : const Value(null),
+                  : Value(set.actualRestSeconds),
               completedAt: Value(completedAt),
             ),
           );
@@ -1666,3 +1680,48 @@ ExerciseSet newPlannedSet({
 );
 
 DateTime _startOfDay(DateTime day) => DateTime(day.year, day.month, day.day);
+
+/// Rest taken after each set, derived from when the sets were finished.
+///
+/// `result[i]` is the gap between `times[i]` and `times[i + 1]`, i.e. the rest
+/// that followed set `i` — the same convention as the rest timer, which records
+/// a set's rest on that set. The last set has no following set, so its recorded
+/// rest is kept as-is.
+///
+/// A gap only replaces the recorded value when the set has no rest yet, or the
+/// user moved one of the two times involved. Editing a weight must not silently
+/// rewrite rest the timer actually measured; a session logged after the fact,
+/// where the timer was never used, gets its rests filled in from the times.
+///
+/// A null time means the set was not done: it has no rest, and it breaks the
+/// chain so the sets on either side keep whatever they recorded.
+List<int?> restAfterFromTimes({
+  required List<DateTime?> times,
+  required List<int?> recorded,
+  required List<bool> timesEdited,
+}) {
+  assert(times.length == recorded.length);
+  assert(times.length == timesEdited.length);
+  return [
+    for (var i = 0; i < times.length; i++)
+      _restAfter(i, times, recorded, timesEdited),
+  ];
+}
+
+int? _restAfter(
+  int index,
+  List<DateTime?> times,
+  List<int?> recorded,
+  List<bool> timesEdited,
+) {
+  final current = times[index];
+  if (current == null) return null;
+  final hasNext = index + 1 < times.length;
+  final next = hasNext ? times[index + 1] : null;
+  if (next == null) return recorded[index];
+  final edited = timesEdited[index] || (hasNext && timesEdited[index + 1]);
+  if (recorded[index] != null && !edited) return recorded[index];
+  final seconds = next.difference(current).inSeconds;
+  // Out-of-order times are a typo, not a negative rest.
+  return seconds > 0 ? seconds : 0;
+}

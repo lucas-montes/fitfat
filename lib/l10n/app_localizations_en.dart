@@ -659,6 +659,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workoutFormRestLabel => 'Rest (min)';
 
   @override
+  String get workoutFormSetDoneAt => 'Done at';
+
+  @override
+  String get workoutFormSetDoneAtTooltip =>
+      'When this set was finished — rest is measured from here';
+
+  @override
+  String get workoutFormSetTimeEmpty => 'Set time';
+
+  @override
   String get workoutFormSetIncomplete =>
       'Complete every added set with its values and rest time (or remove the empty set)';
 

@@ -17,6 +17,7 @@ import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
 import '../../ui/tokens.dart';
 import '../../ui/units.dart';
+import '../../notifications/rest_timer.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
 import '../../dashboard/providers/dashboard.dart';
@@ -26,9 +27,10 @@ import 'exercise_picker_sheet.dart';
 /// One set in the form before saving.
 ///
 /// A pending workout uses the planned fields (reps/weight or
-/// duration/distance, plus rest); a completed workout uses the actual fields
-/// and hides rest. The unused group stays null, which is also what makes a
-/// completed set "not done": no actuals at all is deliberately stored as null
+/// duration/distance, plus rest); a completed workout uses the actual fields,
+/// records when each set was finished, and derives rest from the gap between
+/// consecutive set times. The unused group stays null, which is also what makes
+/// a completed set "not done": no actuals at all is deliberately stored as null
 /// rather than zero so it stays out of completed counts and averages.
 final class _SetEntry {
   /// Existing `exercise_sets.id`, or a fresh one for a set added while editing
@@ -46,6 +48,22 @@ final class _SetEntry {
   double? actualWeightKg;
   int? actualDurationMinutes;
   double? actualDistanceMeters;
+
+  /// The completion time as loaded from the row. Kept verbatim (seconds
+  /// included) so opening the form and saving does not rewrite a timestamp.
+  DateTime? originalCompletedAt;
+
+  /// Time of day shown in the editor. Null until the user picks one, or when
+  /// the set never recorded a completion time.
+  TimeOfDay? doneAt;
+
+  /// True once the user picked a time here. This is what tells the rest
+  /// calculation to re-derive rest from the set times instead of trusting the
+  /// value the rest timer recorded.
+  bool doneAtEdited = false;
+
+  /// Rest the rest timer recorded after this set; null when it was never used.
+  int? actualRestSeconds;
 
   _SetEntry({String? id}) : id = id ?? const Uuid().v7();
 }
@@ -94,6 +112,62 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
 
   bool get _isCompletedEdit => widget.initial?.workout.isCompleted ?? false;
 
+  /// A completed set counts as done when its primary measure is present. This
+  /// matches what `_saveCompleted` stores, so the rest preview and the saved
+  /// rows cannot disagree about which sets took part.
+  bool _entryDone(_SetEntry entry, Exercise? ex) => ex?.isWeightlifting != false
+      ? !_unset(entry.actualReps) && !_unset(entry.actualWeightKg)
+      : !_unset(entry.actualDurationMinutes);
+
+  /// Completion time for a set, pinned to the workout's date.
+  ///
+  /// An untouched timestamp keeps its original instant (seconds included) so
+  /// merely fixing a weight does not move the set. A time the user picked
+  /// replaces the clock time on the workout's date. Null means "unknown": the
+  /// repository then keeps the stored timestamp, or stamps one for a set that
+  /// is being logged for the first time.
+  DateTime? _resolveCompletedAt(_SetEntry entry) {
+    if (entry.doneAtEdited) {
+      final at = entry.doneAt;
+      return at == null
+          ? null
+          : DateTime(_date.year, _date.month, _date.day, at.hour, at.minute);
+    }
+    final original = entry.originalCompletedAt;
+    if (original == null) return null;
+    if (original.year == _date.year &&
+        original.month == _date.month &&
+        original.day == _date.day) {
+      return original;
+    }
+    // The workout date moved: keep the clock time, put it on the new day.
+    return DateTime(
+      _date.year,
+      _date.month,
+      _date.day,
+      original.hour,
+      original.minute,
+      original.second,
+      original.millisecond,
+    );
+  }
+
+  /// Completion time per set; null for sets that were not done (or whose time
+  /// is unknown), which also breaks the rest chain around them.
+  List<DateTime?> _completedTimes(List<_SetEntry> sets, Exercise? ex) => [
+    for (final set in sets)
+      _entryDone(set, ex) ? _resolveCompletedAt(set) : null,
+  ];
+
+  /// Rest taken after each set, as it will be saved. Shared by the editor's
+  /// preview and the save itself so the number on screen is the stored one.
+  List<int?> _restsAfter(List<_SetEntry> sets, Exercise? ex) =>
+      restAfterFromTimes(
+        times: _completedTimes(sets, ex),
+        recorded: [for (final set in sets) set.actualRestSeconds],
+        timesEdited: [for (final set in sets) set.doneAtEdited],
+      );
+
   Map<String, Exercise> _byIdFor(List<Exercise> exercises) {
     if (_byIdCache != null && identical(_byIdSource, exercises)) {
       return _byIdCache!;
@@ -122,7 +196,12 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                       ..actualReps = set.actualReps
                       ..actualWeightKg = set.actualWeightKg
                       ..actualDurationMinutes = set.actualDurationMinutes
-                      ..actualDistanceMeters = set.actualDistanceMeters)
+                      ..actualDistanceMeters = set.actualDistanceMeters
+                      ..actualRestSeconds = set.actualRestSeconds
+                      ..originalCompletedAt = set.completedAt
+                      ..doneAt = set.completedAt == null
+                          ? null
+                          : TimeOfDay.fromDateTime(set.completedAt!))
                   : (_SetEntry()
                       ..reps = set.reps
                       ..weightKg = set.weightKg
@@ -398,6 +477,148 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
       }
     }
 
+    final fields = Row(
+      children: [
+        ReorderableDragStartListener(
+          index: index,
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Icon(Icons.drag_handle, size: 20),
+          ),
+        ),
+        const SizedBox(width: 4),
+        if (ex.isWeightlifting) ...[
+          Expanded(
+            child: TextFormField(
+              key: ValueKey('${entry.id}-weight'),
+              initialValue: weight == null
+                  ? ''
+                  : formatWeightValue(weight, unit),
+              decoration: InputDecoration(
+                labelText: weightUnitLabel(unit),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              onChanged: setWeight,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextFormField(
+              key: ValueKey('${entry.id}-reps'),
+              initialValue: reps?.toString() ?? '',
+              decoration: InputDecoration(
+                labelText: l10n.workoutFormRepsLabel,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (v) {
+                final parsed = int.tryParse(v);
+                if (_isCompletedEdit) {
+                  entry.actualReps = parsed;
+                } else {
+                  entry.reps = parsed;
+                }
+              },
+            ),
+          ),
+        ] else ...[
+          Expanded(
+            child: TextFormField(
+              key: ValueKey('${entry.id}-duration'),
+              initialValue: duration?.toString() ?? '',
+              decoration: InputDecoration(
+                labelText: l10n.workoutFormDurationLabel,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (v) {
+                final parsed = int.tryParse(v);
+                if (_isCompletedEdit) {
+                  entry.actualDurationMinutes = parsed;
+                } else {
+                  entry.durationMinutes = parsed;
+                }
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextFormField(
+              key: ValueKey('${entry.id}-distance'),
+              initialValue: distance == null ? '' : formatDecimal(distance),
+              decoration: InputDecoration(
+                labelText: l10n.workoutFormDistanceLabel,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              onChanged: (v) {
+                final parsed = double.tryParse(v.replaceAll(',', '.'));
+                if (_isCompletedEdit) {
+                  entry.actualDistanceMeters = parsed;
+                } else {
+                  entry.distanceMeters = parsed;
+                }
+              },
+            ),
+          ),
+        ],
+        // Rest is a plan value; a completed session already has a recorded
+        // actual rest and must not invite rewriting it here.
+        if (!_isCompletedEdit) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextFormField(
+              key: ValueKey('${entry.id}-rest'),
+              initialValue: entry.restSeconds == null
+                  ? ''
+                  : (entry.restSeconds! / 60).toString(),
+              decoration: InputDecoration(
+                labelText: l10n.workoutFormRestLabel,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              onChanged: (v) => entry.restSeconds = _parseRestSeconds(v),
+            ),
+          ),
+        ],
+        IconButton(
+          icon: const Icon(Icons.delete_outline, size: 20),
+          tooltip: l10n.workoutFormRemoveSet,
+          onPressed: () => setState(() {
+            sets.removeAt(index);
+            if (sets.isEmpty) _selected.remove(ex.id);
+          }),
+        ),
+      ],
+    );
+
     return Container(
       key: ObjectKey(entry),
       margin: const EdgeInsets.only(bottom: 8),
@@ -406,148 +627,108 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
       ),
-      child: Row(
-        children: [
-          ReorderableDragStartListener(
-            index: index,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Icon(Icons.drag_handle, size: 20),
-            ),
-          ),
-          const SizedBox(width: 4),
-          if (ex.isWeightlifting) ...[
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('${entry.id}-weight'),
-                initialValue: weight == null
-                    ? ''
-                    : formatWeightValue(weight, unit),
-                decoration: InputDecoration(
-                  labelText: weightUnitLabel(unit),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                onChanged: setWeight,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('${entry.id}-reps'),
-                initialValue: reps?.toString() ?? '',
-                decoration: InputDecoration(
-                  labelText: l10n.workoutFormRepsLabel,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (v) {
-                  final parsed = int.tryParse(v);
-                  if (_isCompletedEdit) {
-                    entry.actualReps = parsed;
-                  } else {
-                    entry.reps = parsed;
-                  }
-                },
-              ),
-            ),
-          ] else ...[
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('${entry.id}-duration'),
-                initialValue: duration?.toString() ?? '',
-                decoration: InputDecoration(
-                  labelText: l10n.workoutFormDurationLabel,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (v) {
-                  final parsed = int.tryParse(v);
-                  if (_isCompletedEdit) {
-                    entry.actualDurationMinutes = parsed;
-                  } else {
-                    entry.durationMinutes = parsed;
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('${entry.id}-distance'),
-                initialValue: distance == null ? '' : formatDecimal(distance),
-                decoration: InputDecoration(
-                  labelText: l10n.workoutFormDistanceLabel,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                onChanged: (v) {
-                  final parsed = double.tryParse(v.replaceAll(',', '.'));
-                  if (_isCompletedEdit) {
-                    entry.actualDistanceMeters = parsed;
-                  } else {
-                    entry.distanceMeters = parsed;
-                  }
-                },
-              ),
-            ),
-          ],
-          // Rest is a plan value; a completed session already has a recorded
-          // actual rest and must not invite rewriting it here.
-          if (!_isCompletedEdit) ...[
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                key: ValueKey('${entry.id}-rest'),
-                initialValue: entry.restSeconds == null
-                    ? ''
-                    : (entry.restSeconds! / 60).toString(),
-                decoration: InputDecoration(
-                  labelText: l10n.workoutFormRestLabel,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                onChanged: (v) => entry.restSeconds = _parseRestSeconds(v),
-              ),
-            ),
-          ],
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
-            tooltip: l10n.workoutFormRemoveSet,
-            onPressed: () => setState(() {
-              sets.removeAt(index);
-              if (sets.isEmpty) _selected.remove(ex.id);
-            }),
-          ),
-        ],
-      ),
+      child: _isCompletedEdit
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                fields,
+                const SizedBox(height: 2),
+                _buildSetTimeRow(entry, index, sets, ex, l10n),
+              ],
+            )
+          : fields,
     );
+  }
+
+  /// Completed-mode footer: when the set was finished, plus the rest that
+  /// follows the previous set. The rest is the gap between the two times, which
+  /// is why editing a time here can fix a session logged without the timer.
+  Widget _buildSetTimeRow(
+    _SetEntry entry,
+    int index,
+    List<_SetEntry> sets,
+    Exercise ex,
+    AppLocalizations l10n,
+  ) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final restBefore = index == 0 ? null : _restsAfter(sets, ex)[index - 1];
+    final at = entry.doneAt;
+    final label = at == null
+        ? l10n.workoutFormSetTimeEmpty
+        : '${l10n.workoutFormSetDoneAt} '
+              '${MaterialLocalizations.of(context).formatTimeOfDay(at, alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}';
+
+    return Row(
+      children: [
+        Tooltip(
+          message: l10n.workoutFormSetDoneAtTooltip,
+          child: InkWell(
+            onTap: () => _pickSetTime(entry, sets, index),
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.schedule, size: 16, color: muted),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: at == null ? muted : theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const Spacer(),
+        if (restBefore != null)
+          Text(
+            l10n.workoutSummarySetRest(
+              formatRestDuration(Duration(seconds: restBefore)),
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: muted,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _pickSetTime(
+    _SetEntry entry,
+    List<_SetEntry> sets,
+    int index,
+  ) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _initialTimeFor(entry, sets, index),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      entry.doneAt = picked;
+      entry.doneAtEdited = true;
+    });
+  }
+
+  /// First guess for the picker: the set's own time, else a few minutes after
+  /// the previous set, else when the session started. Retyping the whole
+  /// timeline is the point here, so the default has to move forward with it.
+  TimeOfDay _initialTimeFor(_SetEntry entry, List<_SetEntry> sets, int index) {
+    if (entry.doneAt != null) return entry.doneAt!;
+    for (var i = index - 1; i >= 0; i--) {
+      final previous = sets[i].doneAt;
+      if (previous == null) continue;
+      final minutes = previous.hour * 60 + previous.minute + 3;
+      return TimeOfDay(hour: (minutes ~/ 60) % 24, minute: minutes % 60);
+    }
+    final session = widget.initial?.workout;
+    final started = session?.startedAt ?? session?.completedAt;
+    return started == null ? TimeOfDay.now() : TimeOfDay.fromDateTime(started);
   }
 
   /// Parses the rest field (minutes, decimal allowed) into seconds. Empty or
@@ -755,12 +936,12 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
       exercises.add(we);
 
       final isWeightlifting = ex?.isWeightlifting != false;
+      final times = _completedTimes(entry.value.sets, ex);
+      final rests = _restsAfter(entry.value.sets, ex);
       final sets = <ExerciseSet>[];
       for (var i = 0; i < entry.value.sets.length; i++) {
         final set = entry.value.sets[i];
-        final done = isWeightlifting
-            ? !_unset(set.actualReps) && !_unset(set.actualWeightKg)
-            : !_unset(set.actualDurationMinutes);
+        final done = _entryDone(set, ex);
         sets.add(
           ExerciseSet(
             id: set.id,
@@ -775,6 +956,10 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                 done && !isWeightlifting && !_unset(set.actualDistanceMeters)
                 ? set.actualDistanceMeters
                 : null,
+            // A not-done set has no timestamp and no rest; a done one keeps the
+            // time it had, or the time just entered here.
+            completedAt: done ? times[i] : null,
+            actualRestSeconds: done ? rests[i] : null,
           ),
         );
       }
