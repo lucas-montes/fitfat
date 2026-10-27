@@ -69,10 +69,7 @@ final class FoodSyncClient {
         // then resolve what we are missing *before* applying, so a recipe is
         // never stored in a half-resolvable state.
         var present = await _presentIngredientIds();
-        final parsed = [
-          for (final raw in items)
-            if (parseFood(raw, serverTime) case final entry?) entry,
-        ];
+        final parsed = [for (final raw in items) ?parseFood(raw, serverTime)];
         final needed = {
           for (final entry in parsed)
             for (final c in entry.components) c.ingredientId,
@@ -145,6 +142,7 @@ final class FoodSyncClient {
           'name': foods[i].name,
           'createdAt': foods[i].createdAt.millisecondsSinceEpoch,
           'archivedAt': foods[i].archivedAt?.millisecondsSinceEpoch,
+          'cookedWeight': foods[i].cookedWeight,
           'components': [
             for (final c in componentsByFoodId[i])
               {'ingredientId': c.ingredientId, 'amount': c.amount},
@@ -182,6 +180,7 @@ final class FoodSyncClient {
               name: food.name,
               createdAt: food.createdAt.millisecondsSinceEpoch,
               archivedAt: Value(food.archivedAt?.millisecondsSinceEpoch),
+              cookedWeight: Value(food.cookedWeight),
             ),
             mode: InsertMode.insertOrReplace,
           );
@@ -248,6 +247,12 @@ final class FoodSyncClient {
         createdAt: toSyncDateTime(raw['createdAt'], serverTime),
         archivedAt: switch (raw['archivedAt']) {
           final num ms => DateTime.fromMillisecondsSinceEpoch(ms.toInt()),
+          _ => null,
+        },
+        cookedWeight: switch (raw['cookedWeight']) {
+          // Non-positive values are treated as absent, matching the resolver's
+          // fallback to the raw batch weight.
+          final num grams when grams > 0 => grams.toDouble(),
           _ => null,
         },
         components: components,

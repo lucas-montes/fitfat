@@ -1240,6 +1240,12 @@ abstract class AppLocalizations {
   /// **'min'**
   String get workoutFormDurationLabel;
 
+  /// No description provided for @workoutFormDistanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance (m)'**
+  String get workoutFormDistanceLabel;
+
   /// No description provided for @workoutFormSelectExercise.
   ///
   /// In en, this message translates to:
@@ -1353,6 +1359,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Actual Weight (kg)'**
   String get workoutDetailActualWeightLabel;
+
+  /// No description provided for @workoutDetailActualWeightLabelUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual Weight ({unit})'**
+  String workoutDetailActualWeightLabelUnit(String unit);
 
   /// No description provided for @workoutDetailActualDurationLabel.
   ///
@@ -1588,6 +1600,12 @@ abstract class AppLocalizations {
   /// **'{name} needs an amount before you can save'**
   String foodPickerNeedsAmount(String name);
 
+  /// No description provided for @foodPickerCaloriesCooked.
+  ///
+  /// In en, this message translates to:
+  /// **'{portion} kcal for this portion · {per100g}/100g cooked'**
+  String foodPickerCaloriesCooked(String portion, String per100g);
+
   /// No description provided for @mealListTotals.
   ///
   /// In en, this message translates to:
@@ -1768,6 +1786,12 @@ abstract class AppLocalizations {
   /// **'Ingredients missing — nutrition cannot be calculated'**
   String get foodListUnresolved;
 
+  /// No description provided for @foodListCookedWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooked weight {grams} g'**
+  String foodListCookedWeight(String grams);
+
   /// No description provided for @foodArchived.
   ///
   /// In en, this message translates to:
@@ -1831,8 +1855,44 @@ abstract class AppLocalizations {
   /// No description provided for @foodFormCompositionHint.
   ///
   /// In en, this message translates to:
-  /// **'Amounts are how much of each ingredient goes in. They add up to the batch weight the per-100g figures are worked out from.'**
+  /// **'Amounts are how much of each ingredient goes in. They add up to the raw batch weight.'**
   String get foodFormCompositionHint;
+
+  /// No description provided for @foodFormSearchPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Search an ingredient to add.'**
+  String get foodFormSearchPrompt;
+
+  /// No description provided for @foodFormNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No ingredients match your search.'**
+  String get foodFormNoMatches;
+
+  /// No description provided for @foodFormCookedWeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Final weight after cooking'**
+  String get foodFormCookedWeightLabel;
+
+  /// No description provided for @foodFormCookedWeightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw total {raw} g. Cooking changes the weight, not the calories — per-100g is worked out from this weight.'**
+  String foodFormCookedWeightHint(String raw);
+
+  /// No description provided for @foodFormCookedWeightRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the final weight (greater than zero).'**
+  String get foodFormCookedWeightRequired;
+
+  /// No description provided for @foodFormCookedYield.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of the raw weight'**
+  String foodFormCookedYield(String percent);
 
   /// No description provided for @foodFormAddPart.
   ///
@@ -1876,6 +1936,12 @@ abstract class AppLocalizations {
   /// **'Nutrition per 100g'**
   String get foodFormPreview;
 
+  /// No description provided for @foodFormPreviewCooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition per 100 g cooked'**
+  String get foodFormPreviewCooked;
+
   /// No description provided for @foodFormPreviewEmpty.
   ///
   /// In en, this message translates to:
@@ -1887,6 +1953,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Worked out from the amounts above.'**
   String get foodFormPer100g;
+
+  /// No description provided for @foodFormRawToCooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw {raw} g → cooked {cooked} g'**
+  String foodFormRawToCooked(String raw, String cooked);
+
+  /// No description provided for @foodFormBatchCalories.
+  ///
+  /// In en, this message translates to:
+  /// **'{calories} kcal in the whole batch'**
+  String foodFormBatchCalories(String calories);
 
   /// No description provided for @foodFormBatchTotal.
   ///
@@ -3879,6 +3957,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Summary'**
   String get workoutSummaryAppBar;
+
+  /// No description provided for @workoutSummaryEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit workout'**
+  String get workoutSummaryEdit;
+
+  /// No description provided for @workoutSummarySetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set {number}'**
+  String workoutSummarySetLabel(int number);
+
+  /// No description provided for @workoutSummarySetRest.
+  ///
+  /// In en, this message translates to:
+  /// **'rest {rest}'**
+  String workoutSummarySetRest(String rest);
 
   /// No description provided for @workoutSummaryDone.
   ///

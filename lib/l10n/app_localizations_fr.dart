@@ -649,6 +649,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get workoutFormDurationLabel => 'min';
 
   @override
+  String get workoutFormDistanceLabel => 'Distance (m)';
+
+  @override
   String get workoutFormSelectExercise => 'Sélectionnez au moins un exercice';
 
   @override
@@ -714,6 +717,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get workoutDetailActualWeightLabel => 'Charge réelle (kg)';
+
+  @override
+  String workoutDetailActualWeightLabelUnit(String unit) {
+    return 'Charge réelle ($unit)';
+  }
 
   @override
   String get workoutDetailActualDurationLabel => 'Durée (min)';
@@ -848,6 +856,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String foodPickerNeedsAmount(String name) {
     return '$name a besoin d\'une quantité avant d\'enregistrer';
+  }
+
+  @override
+  String foodPickerCaloriesCooked(String portion, String per100g) {
+    return '$portion kcal pour cette portion · $per100g/100 g cuits';
   }
 
   @override
@@ -987,6 +1000,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ingrédients manquants — valeurs nutritionnelles impossibles à calculer';
 
   @override
+  String foodListCookedWeight(String grams) {
+    return 'Poids cuit $grams g';
+  }
+
+  @override
   String foodArchived(String name) {
     return '$name archivée';
   }
@@ -1021,7 +1039,31 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get foodFormCompositionHint =>
-      'Les quantités indiquent la part de chaque ingrédient. Leur somme forme le poids du lot d’où sont tirées les valeurs pour 100g.';
+      'Les quantités indiquent la part de chaque ingrédient. Leur somme forme le poids cru du lot.';
+
+  @override
+  String get foodFormSearchPrompt => 'Recherchez un ingrédient à ajouter.';
+
+  @override
+  String get foodFormNoMatches =>
+      'Aucun ingrédient ne correspond à la recherche.';
+
+  @override
+  String get foodFormCookedWeightLabel => 'Poids final après cuisson';
+
+  @override
+  String foodFormCookedWeightHint(String raw) {
+    return 'Poids cru $raw g. La cuisson change le poids, pas les calories : la nutrition pour 100 g est calculée à partir de ce poids.';
+  }
+
+  @override
+  String get foodFormCookedWeightRequired =>
+      'Indiquez le poids final (supérieur à zéro).';
+
+  @override
+  String foodFormCookedYield(String percent) {
+    return '$percent % du poids cru';
+  }
 
   @override
   String get foodFormAddPart => 'Ajouter un ingrédient';
@@ -1046,11 +1088,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get foodFormPreview => 'Nutrition pour 100g';
 
   @override
+  String get foodFormPreviewCooked => 'Nutrition pour 100 g cuits';
+
+  @override
   String get foodFormPreviewEmpty =>
       'Ajoutez un ingrédient pour voir la nutrition.';
 
   @override
   String get foodFormPer100g => 'Calculé à partir des quantités ci-dessus.';
+
+  @override
+  String foodFormRawToCooked(String raw, String cooked) {
+    return 'Cru $raw g → cuit $cooked g';
+  }
+
+  @override
+  String foodFormBatchCalories(String calories) {
+    return '$calories kcal pour tout le lot';
+  }
 
   @override
   String foodFormBatchTotal(String total) {
@@ -2193,6 +2248,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get workoutSummaryAppBar => 'Résumé';
+
+  @override
+  String get workoutSummaryEdit => 'Modifier la séance';
+
+  @override
+  String workoutSummarySetLabel(int number) {
+    return 'Série $number';
+  }
+
+  @override
+  String workoutSummarySetRest(String rest) {
+    return 'repos $rest';
+  }
 
   @override
   String get workoutSummaryDone => 'Terminé';

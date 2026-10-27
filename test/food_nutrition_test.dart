@@ -100,6 +100,45 @@ void main() {
       expect(result.totalAmount, 0);
       expect(result.per100g.calories, 0);
     });
+
+    test('the cooked weight becomes the per-100g denominator', () {
+      // 100 g raw at 400 kcal/100g is 400 kcal. Cooked down to 80 g the same
+      // batch is denser, so 100 g cooked is 500 kcal and an 80 g portion is
+      // still exactly the raw 400 kcal.
+      final result = resolveFoodPer100g(
+        [component(calories: 400, protein: 13, amount: 100)],
+        cookedWeight: 80,
+      );
+      expect(result.totalAmount, 80);
+      expect(result.per100g.calories, closeTo(500, 1e-9));
+      expect(result.per100g.protein, closeTo(16.25, 1e-9));
+
+      final portion = scaleToAmount(result.per100g, 80);
+      expect(portion.calories, closeTo(400, 1e-9));
+      expect(portion.protein, closeTo(13, 1e-9));
+    });
+
+    test('a cooked weight above raw handles water absorption', () {
+      // Rice absorbs water: 100 g raw at 350 kcal/100g becomes 250 g cooked.
+      final result = resolveFoodPer100g(
+        [component(calories: 350, amount: 100)],
+        cookedWeight: 250,
+      );
+      expect(result.totalAmount, 250);
+      expect(result.per100g.calories, closeTo(140, 1e-9));
+      expect(scaleToAmount(result.per100g, 250).calories, closeTo(350, 1e-9));
+    });
+
+    test('a null or non-positive cooked weight falls back to raw', () {
+      for (final cooked in [null, 0.0, -10.0]) {
+        final result = resolveFoodPer100g(
+          [component(calories: 400, amount: 100)],
+          cookedWeight: cooked,
+        );
+        expect(result.totalAmount, 100, reason: 'cookedWeight=$cooked');
+        expect(result.per100g.calories, 400, reason: 'cookedWeight=$cooked');
+      }
+    });
   });
 
   group('scaleToAmount', () {

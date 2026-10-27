@@ -2,7 +2,6 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:fitfat/src/database/app_database.dart' as db;
 import 'package:fitfat/src/database/database_provider.dart';
-import 'package:fitfat/src/diet/providers/foods.dart';
 import 'package:fitfat/src/diet/repositories/food_repository.dart';
 import 'package:fitfat/src/diet/repositories/ingredient_repository.dart';
 import 'package:fitfat/src/diet/screens/food_form.dart';
@@ -59,6 +58,14 @@ void main() {
   testWidgets('adding a part renders its row without crashing', (tester) async {
     await pumpForm(tester);
 
+    // The ingredient list is search-only: nothing is offered until a query is
+    // typed.
+    await tester.enterText(
+      find.byKey(const ValueKey('foodFormSearch')),
+      'Oats',
+    );
+    await tester.pumpAndSettle();
+
     // Tap the "+" next to the only ingredient offered.
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
@@ -67,8 +74,8 @@ void main() {
     // expectation, so assert the error trap stayed empty.
     expect(tester.takeException(), isNull);
     expect(find.text('Oats'), findsOneWidget);
-    // Its default amount is on screen.
-    expect(find.text('100'), findsOneWidget);
+    // Its default amount is on screen, and the cooked weight followed it.
+    expect(find.text('100'), findsNWidgets(2));
   });
 
   testWidgets('saving with no parts is refused rather than throwing', (
@@ -98,9 +105,15 @@ void main() {
     await pumpForm(tester);
 
     await tester.enterText(find.byType(TextFormField).first, 'Porridge');
+    await tester.enterText(
+      find.byKey(const ValueKey('foodFormSearch')),
+      'Oats',
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Save recipe'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -800));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save recipe'));
     await tester.pumpAndSettle();
@@ -112,5 +125,39 @@ void main() {
     expect(saved, hasLength(1));
     expect(saved.single.food.name, 'Porridge');
     expect(saved.single.food.components.single.amount, 100);
+    expect(saved.single.food.cookedWeight, 100);
+  });
+
+  testWidgets('the final weight changes the per-100g density', (tester) async {
+    await pumpForm(tester);
+
+    await tester.enterText(find.byType(TextFormField).first, 'Cooked oats');
+    await tester.enterText(
+      find.byKey(const ValueKey('foodFormSearch')),
+      'Oats',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    // 100 g raw at 400 kcal/100g cooked down to 80 g keeps 400 kcal, so the
+    // per-100g figure rises to 500.
+    await tester.enterText(
+      find.byKey(const ValueKey('foodFormCookedWeight')),
+      '80',
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -800));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save recipe'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    final saved = (await foods.getAllWithNutrition())
+        .where((e) => !e.food.isDerived)
+        .single;
+    expect(saved.food.cookedWeight, 80);
+    expect(saved.nutrition!.totalAmount, 80);
+    expect(saved.nutrition!.per100g.calories, closeTo(500, 1e-9));
   });
 }

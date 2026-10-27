@@ -12,16 +12,23 @@ export '../../models/food.dart'
 /// on its own and cannot drift between the form preview, the foods list, the
 /// meal snapshot and the server.
 ///
-/// The denominator is the **sum of component amounts**; there is no separate
-/// yield/cook-weight input. Sodium, fiber and sugar sum like the macros do —
-/// they are mandatory and zero-defaulted, so a component that has none recorded
-/// contributes a real zero rather than leaving the total undefined.
+/// The numerator is the **sum of `per100g × amount`**; the denominator is
+/// [cookedWeight] when the recipe has one, otherwise the raw sum of component
+/// amounts. Cooking moves water in or out of the batch but leaves its calories
+/// and macros behind, so using the cooked weight here is what makes a weighed
+/// cooked portion score the same as the raw ingredients that went into it.
+/// Sodium, fiber and sugar sum like the macros do — they are mandatory and
+/// zero-defaulted, so a component that has none recorded contributes a real zero
+/// rather than leaving the total undefined.
 ///
 /// Each term accumulates `per100g * amount`, an **absolute** amount, so dividing
-/// the totals by the total weight lands directly on a per-100g figure — there is
+/// the totals by the denominator lands directly on a per-100g figure — there is
 /// no extra /100 or x100 factor.
-FoodNutrition resolveFoodPer100g(List<ComponentNutrition> components) {
-  var totalAmount = 0.0;
+FoodNutrition resolveFoodPer100g(
+  List<ComponentNutrition> components, {
+  double? cookedWeight,
+}) {
+  var rawAmount = 0.0;
   var calories = 0.0;
   var protein = 0.0;
   var carbs = 0.0;
@@ -35,7 +42,7 @@ FoodNutrition resolveFoodPer100g(List<ComponentNutrition> components) {
   // component that omits it genuinely contributes nothing rather than leaving
   // the total in an undefined state.
   for (final c in components) {
-    totalAmount += c.amount;
+    rawAmount += c.amount;
     calories += c.caloriesPer100g * c.amount;
     protein += c.proteinPer100g * c.amount;
     carbs += c.carbsPer100g * c.amount;
@@ -45,7 +52,7 @@ FoodNutrition resolveFoodPer100g(List<ComponentNutrition> components) {
     sugar += c.sugarPer100g * c.amount;
   }
 
-  if (totalAmount <= 0) {
+  if (rawAmount <= 0) {
     return (
       per100g: (
         calories: 0,
@@ -60,7 +67,12 @@ FoodNutrition resolveFoodPer100g(List<ComponentNutrition> components) {
     );
   }
 
-  final factor = 1.0 / totalAmount;
+  // A non-positive cooked weight is treated as unset: the form and repository
+  // reject it, and falling back to raw is the only meaningful resolution here.
+  final denominator = cookedWeight != null && cookedWeight > 0
+      ? cookedWeight
+      : rawAmount;
+  final factor = 1.0 / denominator;
   return (
     per100g: (
       calories: calories * factor,
@@ -71,7 +83,7 @@ FoodNutrition resolveFoodPer100g(List<ComponentNutrition> components) {
       fiber: fiber * factor,
       sugar: sugar * factor,
     ),
-    totalAmount: totalAmount,
+    totalAmount: denominator,
   );
 }
 
@@ -98,8 +110,12 @@ Nutrition scaleToAmount(Nutrition profile, double amount) {
 ///
 /// Returns `null` when the composition is empty or carries no weight, which is
 /// the signal to refuse the log rather than record a zero-calorie meal.
-Nutrition? resolvePortion(List<ComponentNutrition> components, double amount) {
-  final resolved = resolveFoodPer100g(components);
+Nutrition? resolvePortion(
+  List<ComponentNutrition> components,
+  double amount, {
+  double? cookedWeight,
+}) {
+  final resolved = resolveFoodPer100g(components, cookedWeight: cookedWeight);
   if (resolved.totalAmount <= 0) return null;
   return scaleToAmount(resolved.per100g, amount);
 }

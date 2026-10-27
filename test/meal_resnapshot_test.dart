@@ -175,6 +175,27 @@ void main() {
       expect((await loggedPortion()).calories, closeTo(500, 1e-9));
     });
 
+    test('changing the cooked weight moves the logged portion', () async {
+      final oats = await seedIngredient('Oats', calories: 400);
+      final granola = newFood(name: 'Granola', cookedWeight: 100);
+      final components = [
+        FoodIngredient(
+          foodId: granola.id,
+          ingredientId: oats.id,
+          ingredientName: 'Oats',
+          amount: 100,
+        ),
+      ];
+      await foods.insert(granola, components);
+      await logFood(granola.id, 'Granola', 200);
+      expect((await loggedPortion()).calories, 800);
+
+      // Cooking the same raw batch down to 80 g concentrates it: 400 kcal in
+      // 80 g is 500 per 100 g, so the logged 200 g becomes 1000 kcal.
+      await foods.update(granola.copyWith(cookedWeight: 80), components);
+      expect((await loggedPortion()).calories, closeTo(1000, 1e-9));
+    });
+
     test('a recipe arriving from the server also re-derives', () async {
       final oats = await seedIngredient('Oats', calories: 400);
       final granola = newFood(name: 'Granola');

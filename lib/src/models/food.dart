@@ -31,8 +31,9 @@ typedef ComponentNutrition = ({
 
 /// A food resolved against its ingredients.
 ///
-/// [per100g] is the food's own per-100g profile; [totalAmount] is the weight of
-/// the batch it was derived from, which is what a portion is a fraction of.
+/// [per100g] is the food's own per-100g profile; [totalAmount] is the weight the
+/// figures are derived from — the final cooked weight when the recipe has one,
+/// otherwise the raw sum of its components.
 typedef FoodNutrition = ({Nutrition per100g, double totalAmount});
 
 /// Prefix marking a **derived** food: the auto-created 1:1 wrapper the app
@@ -66,6 +67,11 @@ final class Food {
   /// hard-deleted, because `meal_foods` references them.
   final DateTime? archivedAt;
 
+  /// Final weight of the batch after cooking, in grams — the denominator of the
+  /// per-100g figures. Null for legacy rows and the derived 1:1 wrappers, where
+  /// the raw component sum is used instead.
+  final double? cookedWeight;
+
   /// Composition, alphabetical by ingredient name when loaded from the
   /// repository. Empty for a food whose composition has not been loaded.
   final List<FoodIngredient> components;
@@ -75,6 +81,7 @@ final class Food {
     required this.name,
     required this.createdAt,
     this.archivedAt,
+    this.cookedWeight,
     this.components = const [],
   });
 
@@ -95,6 +102,7 @@ final class Food {
     String? name,
     DateTime? createdAt,
     Object? archivedAt = _unset,
+    Object? cookedWeight = _unset,
     List<FoodIngredient>? components,
   }) => Food(
     id: id,
@@ -103,6 +111,9 @@ final class Food {
     archivedAt: identical(archivedAt, _unset)
         ? this.archivedAt
         : archivedAt as DateTime?,
+    cookedWeight: identical(cookedWeight, _unset)
+        ? this.cookedWeight
+        : (cookedWeight as num?)?.toDouble(),
     components: components ?? this.components,
   );
 

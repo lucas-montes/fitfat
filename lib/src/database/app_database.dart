@@ -58,7 +58,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 38;
+  int get schemaVersion => 39;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -892,6 +892,17 @@ final class AppDatabase extends _$AppDatabase {
           WHERE exercise_type IS NULL
              OR exercise_type NOT IN ('cardio', 'weightlifting')
         ''');
+      }
+      if (from < 39) {
+        // v39: a recipe's final weight after cooking. Cooking changes the mass
+        // of the batch (water leaves chicken, rice absorbs it) but not its
+        // calories or macros, so this becomes the per-100g denominator and a
+        // weighed cooked portion keeps the raw ingredients' numbers.
+        //
+        // No backfill: writing the raw sum into old rows would look right today
+        // and silently go stale the moment an ingredient amount changes. NULL
+        // already means "use the raw sum", which is exactly today's behaviour.
+        await m.addColumn(foods, foods.cookedWeight);
       }
     },
   );

@@ -115,6 +115,14 @@ final class MealResnapshot {
           sugarPer100g: row.sugarPer100g,
         ),
     };
+    // The cooked weight lives on the food row, not the components: it is the
+    // batch's final mass, which is what the per-100g denominator follows.
+    final foodRows = await (_database.select(
+      _database.foods,
+    )..where((t) => t.id.isIn(foodIds))).get();
+    final cookedWeights = {
+      for (final row in foodRows) row.id: row.cookedWeight,
+    };
 
     final byFood = <String, List<ComponentNutrition>>{};
     for (final row in componentRows) {
@@ -140,7 +148,7 @@ final class MealResnapshot {
         id:
             (byFood[id]?.length ?? 0) == (counts[id] ?? 0) &&
                 (counts[id] ?? 0) > 0
-            ? resolveFoodPer100g(byFood[id]!)
+            ? resolveFoodPer100g(byFood[id]!, cookedWeight: cookedWeights[id])
             : null,
     };
   }

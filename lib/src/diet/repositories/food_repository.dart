@@ -105,6 +105,10 @@ final class FoodRepository {
   ///
   /// This is what a meal row snapshots at log time.
   Future<FoodNutrition?> resolveNutrition(String foodId) async {
+    final row = await (_database.select(
+      _database.foods,
+    )..where((t) => t.id.equals(foodId))).getSingleOrNull();
+    if (row == null) return null;
     final components = await getComponents(foodId);
     if (components.isEmpty) return null;
     final ingredients = await _ingredientsById(
@@ -121,7 +125,7 @@ final class FoodRepository {
       for (final component in components)
         if (ingredients[component.ingredientId] case final ingredient?)
           component.toNutrition(ingredient),
-    ]);
+    ], cookedWeight: row.cookedWeight);
     if (nutrition.totalAmount <= 0) return null;
     return nutrition;
   }
@@ -136,6 +140,7 @@ final class FoodRepository {
   /// nothing to resolve and could not be logged.
   Future<void> insert(Food food, List<FoodIngredient> components) async {
     _rejectDerived(food.id);
+    _validateCookedWeight(food.cookedWeight);
     if (components.isEmpty) {
       throw ArgumentError('A food must be made of at least one ingredient');
     }
@@ -148,6 +153,7 @@ final class FoodRepository {
               name: food.name,
               createdAt: food.createdAt.millisecondsSinceEpoch,
               archivedAt: Value(food.archivedAt?.millisecondsSinceEpoch),
+              cookedWeight: Value(food.cookedWeight),
             ),
           );
       await _replaceComponents(food.id, components);
@@ -172,6 +178,7 @@ final class FoodRepository {
   /// ingredients.
   Future<void> update(Food food, List<FoodIngredient> components) async {
     _rejectDerived(food.id);
+    _validateCookedWeight(food.cookedWeight);
     if (components.isEmpty) {
       throw ArgumentError('A food must be made of at least one ingredient');
     }
@@ -182,14 +189,16 @@ final class FoodRepository {
         db.FoodsCompanion(
           name: Value(food.name),
           archivedAt: Value(food.archivedAt?.millisecondsSinceEpoch),
+          cookedWeight: Value(food.cookedWeight),
         ),
       );
       await _replaceComponents(food.id, components);
     });
 
-    // A composition change invalidates every meal that logged this food. Re-derive
-    // those portions so the stored numbers match the recipe as it is now — the
-    // snapshot is a cache of this derivation, not an independent record.
+    // A composition or cooked-weight change invalidates every meal that logged
+    // this food. Re-derive those portions so the stored numbers match the
+    // recipe as it is now — the snapshot is a cache of this derivation, not an
+    // independent record.
     await MealResnapshot(_database).applyToFoods({food.id});
   }
 
@@ -222,6 +231,7 @@ final class FoodRepository {
     Food food,
     List<FoodIngredient> components,
   ) async {
+    _validateCookedWeight(food.cookedWeight);
     await _database.transaction(() async {
       await _database
           .into(_database.foods)
@@ -231,6 +241,7 @@ final class FoodRepository {
               name: food.name,
               createdAt: food.createdAt.millisecondsSinceEpoch,
               archivedAt: Value(food.archivedAt?.millisecondsSinceEpoch),
+              cookedWeight: Value(food.cookedWeight),
             ),
             mode: InsertMode.insertOrReplace,
           );
@@ -238,6 +249,16 @@ final class FoodRepository {
     });
 
     await MealResnapshot(_database).applyToFoods({food.id});
+  }
+
+  /// Rejects a cooked weight that could not be a real batch weight.
+  ///
+  /// Null is allowed for legacy rows and the derived 1:1 wrappers; the recipe
+  /// form is what makes it mandatory for user-created recipes.
+  void _validateCookedWeight(double? cookedWeight) {
+    if (cookedWeight != null && cookedWeight <= 0) {
+      throw ArgumentError('The cooked weight must be greater than zero');
+    }
   }
 
   /// Throws when a write targets a derived food.
@@ -327,15 +348,20 @@ final class FoodRepository {
       for (final row in rows)
         (
           food: _foodToDomain(row, byFood[row.id] ?? const []),
-          nutrition: _nutritionOf(byFood[row.id] ?? const [], ingredients),
+          nutrition: _nutritionOf(
+            byFood[row.id] ?? const [],
+            ingredients,
+            cookedWeight: row.cookedWeight,
+          ),
         ),
     ];
   }
 
   FoodNutrition? _nutritionOf(
     List<FoodIngredient> components,
-    Map<String, Ingredient> ingredients,
-  ) {
+    Map<String, Ingredient> ingredients, {
+    double? cookedWeight,
+  }) {
     if (components.isEmpty) return null;
     // All-or-nothing: a food missing even one ingredient has no meaningful
     // per-100g figure. Summing only the parts that happen to be present would
@@ -348,7 +374,7 @@ final class FoodRepository {
       for (final component in components)
         if (ingredients[component.ingredientId] case final ingredient?)
           component.toNutrition(ingredient),
-    ]);
+    ], cookedWeight: cookedWeight);
     return resolved.totalAmount <= 0 ? null : resolved;
   }
 
@@ -368,6 +394,7 @@ final class FoodRepository {
     archivedAt: row.archivedAt == null
         ? null
         : DateTime.fromMillisecondsSinceEpoch(row.archivedAt!),
+    cookedWeight: row.cookedWeight,
     components: components,
   );
 
@@ -392,8 +419,12 @@ final class FoodRepository {
 ///
 /// Auto-created 1:1 foods do not go through here — they are created by
 /// `IngredientRepository` with [derivedFoodId].
-Food newFood({required String name}) =>
-    Food(id: const Uuid().v7(), name: name.trim(), createdAt: DateTime.now());
+Food newFood({required String name, double? cookedWeight}) => Food(
+  id: const Uuid().v7(),
+  name: name.trim(),
+  createdAt: DateTime.now(),
+  cookedWeight: cookedWeight,
+);
 
 /// Builds a composition entry for [newFood]'s editor, before the food exists.
 FoodIngredient newFoodIngredient({

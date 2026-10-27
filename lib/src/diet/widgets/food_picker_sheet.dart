@@ -306,6 +306,14 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
     final per100g = entry.nutrition!.per100g;
     final portion = per100g.calories * amount / 100;
     final theme = Theme.of(context);
+    final portionCalories = isSelected ? portion.toStringAsFixed(0) : '0';
+    final per100gCalories = per100g.calories.toStringAsFixed(0);
+    // The per-100g figure is per 100 g *cooked* when the recipe has a final
+    // weight, so the row must say so — otherwise logging raw grams against a
+    // cooked density silently overstates the portion.
+    final caloriesText = food.cookedWeight != null
+        ? l10n.foodPickerCaloriesCooked(portionCalories, per100gCalories)
+        : l10n.mealFormFoodCalories(portionCalories, per100gCalories);
 
     return ListTile(
       dense: true,
@@ -321,18 +329,7 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
-      subtitle: Text(
-        isSelected
-            ? l10n.mealFormFoodCalories(
-                portion.toStringAsFixed(0),
-                per100g.calories.toStringAsFixed(0),
-              )
-            : l10n.mealFormFoodCalories(
-                '0',
-                per100g.calories.toStringAsFixed(0),
-              ),
-        style: theme.textTheme.bodySmall,
-      ),
+      subtitle: Text(caloriesText, style: theme.textTheme.bodySmall),
       trailing: SizedBox(
         width: 84,
         child: TextField(

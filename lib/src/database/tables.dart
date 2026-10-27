@@ -99,8 +99,13 @@ class Meals extends Table {
 // composition (name + amounts); meals are occurrences. Nutrition is resolved by
 // walking down, so nothing is duplicated between the layers:
 //
-//   log time: food_per100g = Σ(ing.per100g × fi.amount) / Σ(fi.amount)
+//   log time: food_per100g = Σ(ing.per100g × fi.amount) / cooked_weight
 //             portion      = food_per100g × mf.amount / 100
+//
+// `cooked_weight` is the batch's final weight after cooking; NULL means the raw
+// sum Σ(fi.amount) is used (legacy rows and the 1:1 ingredient wrappers).
+// Cooking removes or adds water, not macros, so the numerator is unchanged
+// while the denominator follows the weight actually on the plate.
 //
 // A food with exactly one component needs no special case: with one term the
 // ratio collapses to that ingredient's per-100g values for any amount.
@@ -122,6 +127,15 @@ class Foods extends Table {
   /// because `meal_foods` references this row: a food can only ever be hidden,
   /// never removed out from under a past meal.
   IntColumn? get archivedAt => integer().nullable()();
+
+  /// Final weight of the batch after cooking, in grams. This is the denominator
+  /// of the per-100g figures, so a cooked portion keeps the raw ingredients'
+  /// calories and macros.
+  ///
+  /// Nullable because SQLite cannot add a NOT NULL column without a default and
+  /// pre-existing recipes have no value; NULL resolves as the raw component sum.
+  /// The form requires a positive value for every recipe it writes.
+  RealColumn? get cookedWeight => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

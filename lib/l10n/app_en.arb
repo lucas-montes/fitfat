@@ -298,6 +298,7 @@
   "workoutFormRepsLabel": "Reps",
   "workoutFormWeightLabel": "kg",
   "workoutFormDurationLabel": "min",
+  "workoutFormDistanceLabel": "Distance (m)",
   "workoutFormSelectExercise": "Select at least one exercise",
   "workoutFormSearchHint": "Search exercises",
   "workoutFormRestLabel": "Rest (min)",
@@ -333,6 +334,10 @@
   },
   "workoutDetailActualRepsLabel": "Actual Reps",
   "workoutDetailActualWeightLabel": "Actual Weight (kg)",
+  "workoutDetailActualWeightLabelUnit": "Actual Weight ({unit})",
+  "@workoutDetailActualWeightLabelUnit": {
+    "placeholders": { "unit": { "type": "String" } }
+  },
   "workoutDetailActualDurationLabel": "Duration (min)",
   "workoutDetailActualDistanceLabel": "Distance (m)",
   "workoutDetailSetCount": "{count} set",
@@ -408,6 +413,13 @@
       "name": { "type": "String" }
     }
   },
+  "foodPickerCaloriesCooked": "{portion} kcal for this portion · {per100g}/100g cooked",
+  "@foodPickerCaloriesCooked": {
+    "placeholders": {
+      "portion": { "type": "String" },
+      "per100g": { "type": "String" }
+    }
+  },
   "mealListTotals": "{amount} g  ·  P {protein}  ·  C {carbs}  ·  F {fat}  ·  Fiber {fiber}",
   "@mealListTotals": {
     "placeholders": {
@@ -478,6 +490,10 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "foodListUnresolved": "Ingredients missing — nutrition cannot be calculated",
+  "foodListCookedWeight": "Cooked weight {grams} g",
+  "@foodListCookedWeight": {
+    "placeholders": { "grams": { "type": "String" } }
+  },
   "foodArchived": "{name} archived",
   "@foodArchived": {
     "placeholders": { "name": { "type": "String" } }
@@ -491,7 +507,19 @@
   "foodFormNameHint": "e.g. Granola",
   "foodFormNameRequired": "Name is required",
   "foodFormComposition": "Ingredients",
-  "foodFormCompositionHint": "Amounts are how much of each ingredient goes in. They add up to the batch weight the per-100g figures are worked out from.",
+  "foodFormCompositionHint": "Amounts are how much of each ingredient goes in. They add up to the raw batch weight.",
+  "foodFormSearchPrompt": "Search an ingredient to add.",
+  "foodFormNoMatches": "No ingredients match your search.",
+  "foodFormCookedWeightLabel": "Final weight after cooking",
+  "foodFormCookedWeightHint": "Raw total {raw} g. Cooking changes the weight, not the calories — per-100g is worked out from this weight.",
+  "@foodFormCookedWeightHint": {
+    "placeholders": { "raw": { "type": "String" } }
+  },
+  "foodFormCookedWeightRequired": "Enter the final weight (greater than zero).",
+  "foodFormCookedYield": "{percent}% of the raw weight",
+  "@foodFormCookedYield": {
+    "placeholders": { "percent": { "type": "String" } }
+  },
   "foodFormAddPart": "Add an ingredient",
   "foodFormNoMoreParts": "No more ingredients to add.",
   "foodFormRemovePart": "Remove ingredient",
@@ -499,8 +527,20 @@
   "foodFormAmountPositive": "Amounts must be greater than zero.",
   "foodFormNeedsParts": "Add at least one ingredient",
   "foodFormPreview": "Nutrition per 100g",
+  "foodFormPreviewCooked": "Nutrition per 100 g cooked",
   "foodFormPreviewEmpty": "Add an ingredient to see the nutrition.",
   "foodFormPer100g": "Worked out from the amounts above.",
+  "foodFormRawToCooked": "Raw {raw} g → cooked {cooked} g",
+  "@foodFormRawToCooked": {
+    "placeholders": {
+      "raw": { "type": "String" },
+      "cooked": { "type": "String" }
+    }
+  },
+  "foodFormBatchCalories": "{calories} kcal in the whole batch",
+  "@foodFormBatchCalories": {
+    "placeholders": { "calories": { "type": "String" } }
+  },
   "foodFormBatchTotal": "Batch weighs {total}",
   "@foodFormBatchTotal": {
     "placeholders": { "total": { "type": "String" } }
@@ -1055,6 +1095,15 @@
     }
   },
   "workoutSummaryAppBar": "Summary",
+  "workoutSummaryEdit": "Edit workout",
+  "workoutSummarySetLabel": "Set {number}",
+  "@workoutSummarySetLabel": {
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "workoutSummarySetRest": "rest {rest}",
+  "@workoutSummarySetRest": {
+    "placeholders": { "rest": { "type": "String" } }
+  },
   "workoutSummaryDone": "Done",
   "workoutSummaryDurationLabel": "Duration",
   "workoutSummaryAvgRest": "Average rest",

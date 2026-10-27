@@ -34,6 +34,7 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
+  final _cookedCtrl = TextEditingController();
 
   /// Ingredient id → amount in the batch.
   final Map<String, double> _amounts = {};
@@ -47,6 +48,14 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
 
   String _filter = '';
   bool _saving = false;
+
+  /// Whether the user has taken over the cooked-weight field.
+  ///
+  /// A new recipe starts with the field following the raw batch total, so
+  /// adding ingredients keeps the default meaningful. The moment the user types
+  /// in it (or an existing recipe with a stored weight is loaded) that link is
+  /// broken and amount edits leave the value alone.
+  bool _cookedEdited = false;
 
   bool get _isEditing => widget.food != null;
 
@@ -83,6 +92,10 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
         _parts[c.ingredientId] = part;
         _amounts[c.ingredientId] = c.amount;
       }
+      // A stored weight is authoritative; a legacy null keeps following the raw
+      // total until the user types, exactly like a new recipe.
+      _cookedEdited = food.cookedWeight != null;
+      _cookedCtrl.text = _formatAmount(food.cookedWeight ?? _batchTotal);
     });
     _syncControllers();
   }
@@ -110,6 +123,7 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _searchCtrl.dispose();
+    _cookedCtrl.dispose();
     for (final c in _amountCtrls.values) {
       c.dispose();
     }
@@ -117,6 +131,21 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
       e.dispose();
     }
     super.dispose();
+  }
+
+  /// The cooked weight the user typed, or null when the field is empty or not
+  /// a positive number. The resolver falls back to the raw total in that case,
+  /// which keeps the live preview useful while the user is still typing.
+  double? get _parsedCooked {
+    final parsed = double.tryParse(_cookedCtrl.text.trim());
+    return parsed != null && parsed > 0 ? parsed : null;
+  }
+
+  /// Keeps the cooked-weight field in step with the raw total while the user
+  /// has not typed a value of their own.
+  void _followRawTotal() {
+    if (_cookedEdited) return;
+    _cookedCtrl.text = _batchTotal > 0 ? _formatAmount(_batchTotal) : '';
   }
 
   /// Live per-100g profile of the current draft, or null when nothing is added
@@ -135,7 +164,7 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
               sugarPer100g: _parts[entry.key]!.sugarPer100g,
               amount: entry.value,
             ),
-        ]);
+        ], cookedWeight: _parsedCooked);
 
   /// Total batch weight, which is the denominator of the per-100g figures.
   double get _batchTotal =>
@@ -197,29 +226,73 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
                         controller: _amountCtrls[id]!,
                         error: _amountErrors[id]!,
                         l10n: l10n,
-                        onAmountChanged: (v) =>
-                            setState(() => _amounts[id] = v),
+                        onAmountChanged: (v) => setState(() {
+                          _amounts[id] = v;
+                          _followRawTotal();
+                        }),
                         onRemoved: () => setState(() {
                           _amounts.remove(id);
                           _parts.remove(id);
+                          _followRawTotal();
                         }),
                       ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
+            ],
+
+            // Final weight after cooking — the per-100g denominator. Required
+            // for a recipe: it defaults to the raw total, and the user only has
+            // to change it when cooking moved water in or out of the batch.
+            TextFormField(
+              key: const ValueKey('foodFormCookedWeight'),
+              controller: _cookedCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.foodFormCookedWeightLabel,
+                helperText: l10n.foodFormCookedWeightHint(
+                  formatDecimal(_batchTotal),
+                ),
+                helperMaxLines: 2,
+                suffixText: 'g',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              validator: (v) {
+                final parsed = double.tryParse(v?.trim() ?? '');
+                if (parsed == null || parsed <= 0) {
+                  return l10n.foodFormCookedWeightRequired;
+                }
+                return null;
+              },
+              onChanged: (_) => setState(() => _cookedEdited = true),
+            ),
+            if (_parsedCooked != null && _batchTotal > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                l10n.foodFormCookedYield(
+                  formatDecimal(_parsedCooked! / _batchTotal * 100),
+                ),
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            if (_amounts.isNotEmpty) ...[
+              const SizedBox(height: 12),
               _PreviewCard(
                 preview: _preview,
-                batchTotal: _batchTotal,
+                rawTotal: _batchTotal,
+                cookedWeight: _parsedCooked,
                 l10n: l10n,
               ),
-              const SizedBox(height: 20),
             ],
+            const SizedBox(height: 20),
 
             // Add a part
             Text(l10n.foodFormAddPart, style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             TextField(
+              key: const ValueKey('foodFormSearch'),
               controller: _searchCtrl,
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
@@ -234,11 +307,23 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
               error: (e, _) => Text(l10n.errorWithMessage('$e')),
               data: (all) {
                 final query = _filter.trim().toLowerCase();
-                final candidates = _candidates(all).where(
-                  (i) => query.isEmpty || i.name.toLowerCase().contains(query),
-                );
+                // The catalogue is far too long to browse here; the search box
+                // is the only way in. An empty query shows nothing rather than
+                // every ingredient in the database.
+                if (query.isEmpty) {
+                  return Text(
+                    l10n.foodFormSearchPrompt,
+                    style: theme.textTheme.bodySmall,
+                  );
+                }
+                final candidates = _candidates(
+                  all,
+                ).where((i) => i.name.toLowerCase().contains(query)).toList();
                 if (candidates.isEmpty) {
-                  return Text(l10n.foodFormNoMoreParts);
+                  return Text(
+                    l10n.foodFormNoMatches,
+                    style: theme.textTheme.bodySmall,
+                  );
                 }
                 return Column(
                   children: [
@@ -253,6 +338,7 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
                             setState(() {
                               _parts[i.id] = i;
                               _amounts[i.id] = 100;
+                              _followRawTotal();
                             });
                             // The row reads its field controller and error
                             // notifier from these maps, so a part added from
@@ -300,7 +386,10 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
     setState(() => _saving = true);
     try {
       final repo = ref.read(foodRepositoryProvider);
-      final food = widget.food ?? newFood(name: _nameCtrl.text.trim());
+      final cookedWeight = double.parse(_cookedCtrl.text.trim());
+      final food =
+          widget.food?.copyWith(cookedWeight: cookedWeight) ??
+          newFood(name: _nameCtrl.text.trim(), cookedWeight: cookedWeight);
       final components = [
         for (final entry in _amounts.entries)
           FoodIngredient(
@@ -401,12 +490,14 @@ final class _PartRow extends StatelessWidget {
 /// before anything is stored. Foods hold no nutrition — this is derived.
 final class _PreviewCard extends StatelessWidget {
   final FoodNutrition? preview;
-  final double batchTotal;
+  final double rawTotal;
+  final double? cookedWeight;
   final AppLocalizations l10n;
 
   const _PreviewCard({
     required this.preview,
-    required this.batchTotal,
+    required this.rawTotal,
+    required this.cookedWeight,
     required this.l10n,
   });
 
@@ -414,6 +505,7 @@ final class _PreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final per100g = preview?.per100g;
+    final denominator = preview?.totalAmount ?? rawTotal;
     return Card(
       color: theme.colorScheme.surfaceContainerHighest,
       child: Padding(
@@ -421,14 +513,19 @@ final class _PreviewCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.foodFormPreview, style: theme.textTheme.titleSmall),
+            Text(
+              cookedWeight == null
+                  ? l10n.foodFormPreview
+                  : l10n.foodFormPreviewCooked,
+              style: theme.textTheme.titleSmall,
+            ),
             const SizedBox(height: 6),
             if (per100g == null)
               Text(l10n.foodFormPreviewEmpty)
             else ...[
               Text(
                 l10n.ingredientMacroRow(
-                  per100g.calories.toStringAsFixed(0),
+                  '100',
                   per100g.calories.toStringAsFixed(0),
                   per100g.protein.toStringAsFixed(1),
                   per100g.carbs.toStringAsFixed(1),
@@ -436,10 +533,18 @@ final class _PreviewCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(l10n.foodFormPer100g, style: theme.textTheme.bodySmall),
+              Text(
+                l10n.foodFormRawToCooked(
+                  formatDecimal(rawTotal),
+                  formatDecimal(denominator),
+                ),
+                style: theme.textTheme.bodySmall,
+              ),
               const SizedBox(height: 2),
               Text(
-                l10n.foodFormBatchTotal(formatDecimal(batchTotal)),
+                l10n.foodFormBatchCalories(
+                  (per100g.calories * denominator / 100).toStringAsFixed(0),
+                ),
                 style: theme.textTheme.bodySmall,
               ),
             ],

@@ -1990,8 +1990,25 @@ class $FoodsTable extends Foods with TableInfo<$FoodsTable, Food> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _cookedWeightMeta = const VerificationMeta(
+    'cookedWeight',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, createdAt, archivedAt];
+  late final GeneratedColumn<double> cookedWeight = GeneratedColumn<double>(
+    'cooked_weight',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    createdAt,
+    archivedAt,
+    cookedWeight,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2031,6 +2048,15 @@ class $FoodsTable extends Foods with TableInfo<$FoodsTable, Food> {
         archivedAt.isAcceptableOrUnknown(data['archived_at']!, _archivedAtMeta),
       );
     }
+    if (data.containsKey('cooked_weight')) {
+      context.handle(
+        _cookedWeightMeta,
+        cookedWeight.isAcceptableOrUnknown(
+          data['cooked_weight']!,
+          _cookedWeightMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2056,6 +2082,10 @@ class $FoodsTable extends Foods with TableInfo<$FoodsTable, Food> {
         DriftSqlType.int,
         data['${effectivePrefix}archived_at'],
       ),
+      cookedWeight: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cooked_weight'],
+      ),
     );
   }
 
@@ -2074,11 +2104,21 @@ class Food extends DataClass implements Insertable<Food> {
   /// because `meal_foods` references this row: a food can only ever be hidden,
   /// never removed out from under a past meal.
   final int? archivedAt;
+
+  /// Final weight of the batch after cooking, in grams. This is the denominator
+  /// of the per-100g figures, so a cooked portion keeps the raw ingredients'
+  /// calories and macros.
+  ///
+  /// Nullable because SQLite cannot add a NOT NULL column without a default and
+  /// pre-existing recipes have no value; NULL resolves as the raw component sum.
+  /// The form requires a positive value for every recipe it writes.
+  final double? cookedWeight;
   const Food({
     required this.id,
     required this.name,
     required this.createdAt,
     this.archivedAt,
+    this.cookedWeight,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2088,6 +2128,9 @@ class Food extends DataClass implements Insertable<Food> {
     map['created_at'] = Variable<int>(createdAt);
     if (!nullToAbsent || archivedAt != null) {
       map['archived_at'] = Variable<int>(archivedAt);
+    }
+    if (!nullToAbsent || cookedWeight != null) {
+      map['cooked_weight'] = Variable<double>(cookedWeight);
     }
     return map;
   }
@@ -2100,6 +2143,9 @@ class Food extends DataClass implements Insertable<Food> {
       archivedAt: archivedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(archivedAt),
+      cookedWeight: cookedWeight == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cookedWeight),
     );
   }
 
@@ -2113,6 +2159,7 @@ class Food extends DataClass implements Insertable<Food> {
       name: serializer.fromJson<String>(json['name']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       archivedAt: serializer.fromJson<int?>(json['archivedAt']),
+      cookedWeight: serializer.fromJson<double?>(json['cookedWeight']),
     );
   }
   @override
@@ -2123,6 +2170,7 @@ class Food extends DataClass implements Insertable<Food> {
       'name': serializer.toJson<String>(name),
       'createdAt': serializer.toJson<int>(createdAt),
       'archivedAt': serializer.toJson<int?>(archivedAt),
+      'cookedWeight': serializer.toJson<double?>(cookedWeight),
     };
   }
 
@@ -2131,11 +2179,13 @@ class Food extends DataClass implements Insertable<Food> {
     String? name,
     int? createdAt,
     Value<int?> archivedAt = const Value.absent(),
+    Value<double?> cookedWeight = const Value.absent(),
   }) => Food(
     id: id ?? this.id,
     name: name ?? this.name,
     createdAt: createdAt ?? this.createdAt,
     archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
+    cookedWeight: cookedWeight.present ? cookedWeight.value : this.cookedWeight,
   );
   Food copyWithCompanion(FoodsCompanion data) {
     return Food(
@@ -2145,6 +2195,9 @@ class Food extends DataClass implements Insertable<Food> {
       archivedAt: data.archivedAt.present
           ? data.archivedAt.value
           : this.archivedAt,
+      cookedWeight: data.cookedWeight.present
+          ? data.cookedWeight.value
+          : this.cookedWeight,
     );
   }
 
@@ -2154,13 +2207,15 @@ class Food extends DataClass implements Insertable<Food> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('createdAt: $createdAt, ')
-          ..write('archivedAt: $archivedAt')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('cookedWeight: $cookedWeight')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, createdAt, archivedAt);
+  int get hashCode =>
+      Object.hash(id, name, createdAt, archivedAt, cookedWeight);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2168,7 +2223,8 @@ class Food extends DataClass implements Insertable<Food> {
           other.id == this.id &&
           other.name == this.name &&
           other.createdAt == this.createdAt &&
-          other.archivedAt == this.archivedAt);
+          other.archivedAt == this.archivedAt &&
+          other.cookedWeight == this.cookedWeight);
 }
 
 class FoodsCompanion extends UpdateCompanion<Food> {
@@ -2176,12 +2232,14 @@ class FoodsCompanion extends UpdateCompanion<Food> {
   final Value<String> name;
   final Value<int> createdAt;
   final Value<int?> archivedAt;
+  final Value<double?> cookedWeight;
   final Value<int> rowid;
   const FoodsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.archivedAt = const Value.absent(),
+    this.cookedWeight = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FoodsCompanion.insert({
@@ -2189,6 +2247,7 @@ class FoodsCompanion extends UpdateCompanion<Food> {
     required String name,
     required int createdAt,
     this.archivedAt = const Value.absent(),
+    this.cookedWeight = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -2198,6 +2257,7 @@ class FoodsCompanion extends UpdateCompanion<Food> {
     Expression<String>? name,
     Expression<int>? createdAt,
     Expression<int>? archivedAt,
+    Expression<double>? cookedWeight,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2205,6 +2265,7 @@ class FoodsCompanion extends UpdateCompanion<Food> {
       if (name != null) 'name': name,
       if (createdAt != null) 'created_at': createdAt,
       if (archivedAt != null) 'archived_at': archivedAt,
+      if (cookedWeight != null) 'cooked_weight': cookedWeight,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2214,6 +2275,7 @@ class FoodsCompanion extends UpdateCompanion<Food> {
     Value<String>? name,
     Value<int>? createdAt,
     Value<int?>? archivedAt,
+    Value<double?>? cookedWeight,
     Value<int>? rowid,
   }) {
     return FoodsCompanion(
@@ -2221,6 +2283,7 @@ class FoodsCompanion extends UpdateCompanion<Food> {
       name: name ?? this.name,
       createdAt: createdAt ?? this.createdAt,
       archivedAt: archivedAt ?? this.archivedAt,
+      cookedWeight: cookedWeight ?? this.cookedWeight,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2240,6 +2303,9 @@ class FoodsCompanion extends UpdateCompanion<Food> {
     if (archivedAt.present) {
       map['archived_at'] = Variable<int>(archivedAt.value);
     }
+    if (cookedWeight.present) {
+      map['cooked_weight'] = Variable<double>(cookedWeight.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2253,6 +2319,7 @@ class FoodsCompanion extends UpdateCompanion<Food> {
           ..write('name: $name, ')
           ..write('createdAt: $createdAt, ')
           ..write('archivedAt: $archivedAt, ')
+          ..write('cookedWeight: $cookedWeight, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -18953,6 +19020,7 @@ typedef $$FoodsTableCreateCompanionBuilder =
       required String name,
       required int createdAt,
       Value<int?> archivedAt,
+      Value<double?> cookedWeight,
       Value<int> rowid,
     });
 typedef $$FoodsTableUpdateCompanionBuilder =
@@ -18961,6 +19029,7 @@ typedef $$FoodsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<int> createdAt,
       Value<int?> archivedAt,
+      Value<double?> cookedWeight,
       Value<int> rowid,
     });
 
@@ -19032,6 +19101,11 @@ class $$FoodsTableFilterComposer extends Composer<_$AppDatabase, $FoodsTable> {
 
   ColumnFilters<int> get archivedAt => $composableBuilder(
     column: $table.archivedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get cookedWeight => $composableBuilder(
+    column: $table.cookedWeight,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19114,6 +19188,11 @@ class $$FoodsTableOrderingComposer
     column: $table.archivedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<double> get cookedWeight => $composableBuilder(
+    column: $table.cookedWeight,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FoodsTableAnnotationComposer
@@ -19136,6 +19215,11 @@ class $$FoodsTableAnnotationComposer
 
   GeneratedColumn<int> get archivedAt => $composableBuilder(
     column: $table.archivedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get cookedWeight => $composableBuilder(
+    column: $table.cookedWeight,
     builder: (column) => column,
   );
 
@@ -19222,12 +19306,14 @@ class $$FoodsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int?> archivedAt = const Value.absent(),
+                Value<double?> cookedWeight = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FoodsCompanion(
                 id: id,
                 name: name,
                 createdAt: createdAt,
                 archivedAt: archivedAt,
+                cookedWeight: cookedWeight,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -19236,12 +19322,14 @@ class $$FoodsTableTableManager
                 required String name,
                 required int createdAt,
                 Value<int?> archivedAt = const Value.absent(),
+                Value<double?> cookedWeight = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FoodsCompanion.insert(
                 id: id,
                 name: name,
                 createdAt: createdAt,
                 archivedAt: archivedAt,
+                cookedWeight: cookedWeight,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/food.dart';
+import '../../ui/format.dart';
 import '../../ui/haptics.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/top_banner.dart';
@@ -143,6 +144,11 @@ final class _FoodTile extends StatelessWidget {
               l10n.foodListPartCount(parts),
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            if (food.cookedWeight != null)
+              Text(
+                l10n.foodListCookedWeight(formatDecimal(food.cookedWeight!)),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
           ],
         ),
         trailing: const Icon(Icons.chevron_right),
