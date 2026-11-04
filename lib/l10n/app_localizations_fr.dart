@@ -1691,6 +1691,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Objectif quotidien de fibres pour cette phase.';
 
   @override
+  String get settingsSetActiveGoal => 'Définir comme objectif actif';
+
+  @override
+  String get settingsActiveGoalLabel => 'Objectif actif';
+
+  @override
   String get settingsMacrosExceedWarning =>
       'Les protéines et les lipides dépassent ton objectif, donc les glucides sont à 0.';
 

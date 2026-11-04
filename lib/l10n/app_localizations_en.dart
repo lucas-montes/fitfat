@@ -1679,6 +1679,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPhaseFiberHelp => 'Daily fiber target for this phase.';
 
   @override
+  String get settingsSetActiveGoal => 'Set as active goal';
+
+  @override
+  String get settingsActiveGoalLabel => 'Active goal';
+
+  @override
   String get settingsMacrosExceedWarning =>
       'Protein and fat use more calories than your target, so carbs are set to 0.';
 

@@ -3016,6 +3016,18 @@ abstract class AppLocalizations {
   /// **'Daily fiber target for this phase.'**
   String get settingsPhaseFiberHelp;
 
+  /// No description provided for @settingsSetActiveGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as active goal'**
+  String get settingsSetActiveGoal;
+
+  /// No description provided for @settingsActiveGoalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Active goal'**
+  String get settingsActiveGoalLabel;
+
   /// No description provided for @settingsMacrosExceedWarning.
   ///
   /// In en, this message translates to:

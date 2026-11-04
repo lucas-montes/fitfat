@@ -810,6 +810,8 @@
   "settingsPhaseFatHelp": "Share of your calorie target spent on fat. Carbs get whatever is left.",
   "settingsPhaseFiberLabel": "Fiber (g)",
   "settingsPhaseFiberHelp": "Daily fiber target for this phase.",
+  "settingsSetActiveGoal": "Set as active goal",
+  "settingsActiveGoalLabel": "Active goal",
   "settingsMacrosExceedWarning": "Protein and fat use more calories than your target, so carbs are set to 0.",
   "settingsBmrLabel": "BMR",
   "settingsTdeeLabel": "TDEE",

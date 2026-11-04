@@ -752,6 +752,8 @@
   "settingsPhaseFatHelp": "Part de ton objectif caloric consacrée aux lipides. Les glucides reçoivent le reste.",
   "settingsPhaseFiberLabel": "Fibres (g)",
   "settingsPhaseFiberHelp": "Objectif quotidien de fibres pour cette phase.",
+  "settingsSetActiveGoal": "Définir comme objectif actif",
+  "settingsActiveGoalLabel": "Objectif actif",
   "settingsMacrosExceedWarning": "Les protéines et les lipides dépassent ton objectif, donc les glucides sont à 0.",
   "settingsBmrLabel": "MB",
   "settingsTdeeLabel": "TDEE",

@@ -16,7 +16,6 @@ import '../../network/api_client.dart';
 import '../../sync/data_push_service.dart';
 import '../../budget/providers/fx_rates.dart';
 import '../../models/activity_level.dart';
-import '../../models/body_weight_goal.dart';
 import '../../models/gender.dart';
 import '../../models/units.dart';
 import '../../notifications/task_reminders.dart';
@@ -418,40 +417,6 @@ final class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScr
                     ),
                 ],
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: FitFatTokens.spaceL),
-        SettingsSection(
-          title: l10n.settingsBodyWeightGoal,
-          children: [
-            SegmentedButton<BodyWeightGoal>(
-              // No goal stored yet (unset) -> nothing selected.
-              emptySelectionAllowed: true,
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: BodyWeightGoal.lose,
-                  label: Text(l10n.settingsGoalLose),
-                ),
-                ButtonSegment(
-                  value: BodyWeightGoal.maintain,
-                  label: Text(l10n.settingsGoalMaintain),
-                ),
-                ButtonSegment(
-                  value: BodyWeightGoal.gain,
-                  label: Text(l10n.settingsGoalGain),
-                ),
-              ],
-              selected: settings.bodyWeightGoal == null
-                  ? const <BodyWeightGoal>{}
-                  : {settings.bodyWeightGoal!},
-              onSelectionChanged: (selection) {
-                if (selection.isEmpty) {
-                  return; // deselect is not supported
-                }
-                notifier.setBodyWeightGoal(selection.first);
-              },
             ),
           ],
         ),
@@ -889,9 +854,9 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
   /// by a rebuild triggered by something else.
   final Map<DietPhase, Map<String, TextEditingController>> _controllers = {};
 
-  /// Which phase's knobs are open. Tapping a card also selects it, so the open
-  /// card is always the active one.
-  DietPhase? _expanded;
+  /// Which phases' knobs are open. Independent of which phase is active:
+  /// opening a card is just for viewing/editing its values.
+  final Set<DietPhase> _expandedPhases = {};
 
   TextEditingController _ctrl(DietPhase phase, String knob, double value) {
     final byKnob = _controllers.putIfAbsent(phase, () => {});
@@ -937,14 +902,16 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
                   DietPhase.bulking => l10n.settingsGoalGain,
                   DietPhase.maintenance => l10n.settingsGoalMaintain,
                 },
-                expanded: _expanded == phase,
+                expanded: _expandedPhases.contains(phase),
                 active: settings.activePhase == phase,
-                // Tapping both selects the phase and opens its knobs, so the
-                // active phase is always the one being edited.
-                onTap: () {
-                  notifier.setActivePhase(phase);
-                  setState(() => _expanded = phase);
-                },
+                // Opening a card is purely about viewing/editing its values;
+                // selecting it as the active goal is a separate action inside
+                // the expanded form.
+                onTap: () => setState(() {
+                  if (!_expandedPhases.remove(phase)) {
+                    _expandedPhases.add(phase);
+                  }
+                }),
                 child: _PhaseKnobs(
                   phase: phase,
                   config: settings.phaseConfigs[phase] ??
@@ -955,6 +922,8 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
                   saveProtein: (v) => notifier.setPhaseProteinPerKg(phase, v),
                   saveFat: (v) => notifier.setPhaseFatPercent(phase, v),
                   saveFiber: (v) => notifier.setPhaseFiberTarget(phase, v),
+                  isActive: settings.activePhase == phase,
+                  onSetActive: () => notifier.setActivePhase(phase),
                 ),
               ),
               if (phase != DietPhase.values.last)
@@ -1053,6 +1022,10 @@ final class _BmrTdeeLine extends ConsumerWidget {
 }
 
 /// One phase, collapsed to a row or expanded to its four knobs.
+///
+/// [onTap] only opens/closes the card; selecting the phase as the active goal
+/// is a separate control inside [child], so viewing a phase's numbers never
+/// has the side effect of switching to it.
 final class _PhaseCard extends StatelessWidget {
   final DietPhase phase;
   final String label;
@@ -1133,6 +1106,8 @@ final class _PhaseKnobs extends StatelessWidget {
   final ValueChanged<double> saveProtein;
   final ValueChanged<double> saveFat;
   final ValueChanged<double> saveFiber;
+  final bool isActive;
+  final VoidCallback onSetActive;
 
   const _PhaseKnobs({
     required this.phase,
@@ -1142,6 +1117,8 @@ final class _PhaseKnobs extends StatelessWidget {
     required this.saveProtein,
     required this.saveFat,
     required this.saveFiber,
+    required this.isActive,
+    required this.onSetActive,
   });
 
   @override
@@ -1207,6 +1184,33 @@ final class _PhaseKnobs extends StatelessWidget {
           ),
         ),
         _MacroWarning(phase: phase),
+        const SizedBox(height: FitFatTokens.spaceS),
+        if (isActive)
+          Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: FitFatTokens.spaceS),
+              Text(
+                AppLocalizations.of(context)!.settingsActiveGoalLabel,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          )
+        else
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: onSetActive,
+              icon: const Icon(Icons.flag_outlined),
+              label: Text(AppLocalizations.of(context)!.settingsSetActiveGoal),
+            ),
+          ),
       ],
     );
   }

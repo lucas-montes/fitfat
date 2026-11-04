@@ -746,6 +746,8 @@
   "settingsPhaseFatHelp": "Parte de tu objetivo calórico dedicada a grasa. Los carbohidratos reciben lo que quede.",
   "settingsPhaseFiberLabel": "Fibra (g)",
   "settingsPhaseFiberHelp": "Objetivo diario de fibra para esta fase.",
+  "settingsSetActiveGoal": "Establecer como objetivo activo",
+  "settingsActiveGoalLabel": "Objetivo activo",
   "settingsMacrosExceedWarning": "Proteína y grasa usan más calorías que tu objetivo, así que los carbohidratos son 0.",
   "settingsBmrLabel": "TMB",
   "settingsTdeeLabel": "TDEE",
