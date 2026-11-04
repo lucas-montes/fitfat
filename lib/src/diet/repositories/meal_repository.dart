@@ -275,13 +275,14 @@ final class MealRepository {
   }
 
   /// Re-inserts a previously deleted [meal] with all its items and their
-  /// original ids — the undo path for delete. Shares the create path so the
-  /// create and restore flows stay consistent, and so the snapshots are
-  /// re-verified against the current composition on the way back in. The
-  /// tombstone row left by [delete] is resurrected (its `deletedAt` cleared)
-  /// rather than duplicated.
+  /// original ids — the undo path for delete. Writes back each item's already
+  /// -resolved [MealFood.snapshot] rather than re-deriving it from a live
+  /// nutrition profile: a meal loaded from history (as every meal on the undo
+  /// path is) never carries [MealFood.nutrition], so re-deriving would throw.
+  /// The tombstone row left by [delete] is resurrected (its `deletedAt`
+  /// cleared) rather than duplicated.
   Future<void> restore(MealEntry meal) async {
-    final snapshots = _snapshotAll(meal.items);
+    final snapshots = [for (final item in meal.items) item.snapshot];
     await _database.transaction(() async {
       await _database
           .into(_database.meals)

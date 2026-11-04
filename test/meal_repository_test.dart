@@ -432,9 +432,12 @@ void main() {
       () async {
         final oats = await seedIngredient('Oats', calories: 400);
         final food = derivedFoodId(oats);
-        final meal = await logMeal('Breakfast', [
-          await draft(food, 'Oats', 100),
-        ]);
+        await logMeal('Breakfast', [await draft(food, 'Oats', 100)]);
+
+        // Reloaded rather than using logMeal's return value: a loaded MealFood
+        // carries no live `nutrition`, same as what the UI's delete/undo path
+        // actually passes to restore().
+        final meal = (await meals.getAll()).single;
 
         await meals.delete(meal.id);
         expect(await meals.getAll(), isEmpty);
