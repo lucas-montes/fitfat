@@ -80,9 +80,9 @@ final class _DetailView extends ConsumerWidget {
     final metrics = _HistoryMetrics.fromHistory(history);
     final unit = ref.watch(settingsProvider).weightUnit;
     final hasMedia = exercise.imagePath != null || exercise.videoPath != null;
-    // Media (220) + name block + fact chips; a smaller height when the
-    // exercise has no media so the collapsed header leaves no gap.
-    final expandedHeight = hasMedia ? 330.0 : 112.0;
+    // Media (220) + name block; a smaller height when the exercise has no
+    // media so the collapsed header leaves no gap.
+    final expandedHeight = hasMedia ? 300.0 : 80.0;
 
     return Scaffold(
       body: DefaultTabController(
@@ -120,8 +120,9 @@ final class _DetailView extends ConsumerWidget {
   }
 }
 
-/// Pinned header: media, then name, then the quick-fact chips (type, body
-/// parts, equipment). Stays visible while the History/Details tabs scroll.
+/// Pinned header: media, then name. Stays visible while the History/Details
+/// tabs scroll. Fact chips (type, body parts, equipment) live in the
+/// Details tab.
 final class _Header extends StatelessWidget {
   final Exercise exercise;
   const _Header({required this.exercise});
@@ -133,31 +134,35 @@ final class _Header extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _MediaHeader(exercise: exercise),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            FitFatTokens.spaceL,
-            FitFatTokens.spaceM,
-            FitFatTokens.spaceL,
-            FitFatTokens.spaceS,
-          ),
-          child: Text(
-            exercise.name,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+        // A scroll view (rather than letting the Column grow) keeps a long,
+        // wrapping name from tripping a RenderFlex overflow against the
+        // SliverAppBar's fixed expandedHeight budget.
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                FitFatTokens.spaceL,
+                FitFatTokens.spaceM,
+                FitFatTokens.spaceL,
+                FitFatTokens.spaceS,
+              ),
+              child: Text(
+                exercise.name,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL),
-          child: _FactChips(exercise: exercise),
-        ),
-        const SizedBox(height: FitFatTokens.spaceS),
       ],
     );
   }
 }
 
-/// Type + body-part + equipment chips. Muscles live in the Details tab.
+/// Type + body-part + equipment chips, each under its own label (Details
+/// tab), matching the layout of [_MusclesSection] below it.
 final class _FactChips extends StatelessWidget {
   final Exercise exercise;
   const _FactChips({required this.exercise});
@@ -165,6 +170,7 @@ final class _FactChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final typeLabel = exercise.isWeightlifting
         ? l10n.exerciseTypeWeightlifting
         : l10n.exerciseTypeCardio;
@@ -172,20 +178,45 @@ final class _FactChips extends StatelessWidget {
     final equipments = splitTags(
       exercise.equipment,
     ).map(canonicalEquipmentTag).toList();
-    if (bodyParts.isEmpty && equipments.isEmpty) {
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Chip(label: Text(typeLabel)),
-      );
-    }
-    return Wrap(
-      spacing: FitFatTokens.spaceS,
-      runSpacing: FitFatTokens.spaceS,
-      children: [
-        Chip(label: Text(typeLabel)),
-        for (final part in bodyParts) Chip(label: Text(part)),
-        for (final equipment in equipments) Chip(label: Text(equipment)),
-      ],
+
+    Widget tagRow(String label, List<String> tags) => Padding(
+      padding: const EdgeInsets.only(bottom: FitFatTokens.spaceM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: FitFatTokens.spaceS),
+          Wrap(
+            spacing: FitFatTokens.spaceS,
+            runSpacing: FitFatTokens.spaceS,
+            children: [for (final tag in tags) Chip(label: Text(tag))],
+          ),
+        ],
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceL,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          tagRow(l10n.exerciseDetailType, [typeLabel]),
+          if (bodyParts.isNotEmpty)
+            tagRow(l10n.exerciseDetailBodyPart, bodyParts),
+          if (equipments.isNotEmpty)
+            tagRow(l10n.exerciseDetailEquipment, equipments),
+        ],
+      ),
     );
   }
 }
@@ -291,7 +322,8 @@ final class _HistoryTab extends StatelessWidget {
   }
 }
 
-/// Details tab: numbered instructions, tips, structured FAQs, muscle tags.
+/// Details tab: fact chips (type/body part/equipment), numbered
+/// instructions, tips, structured FAQs, muscle tags.
 final class _DetailsTab extends StatelessWidget {
   final Exercise exercise;
   const _DetailsTab({required this.exercise});
@@ -302,6 +334,7 @@ final class _DetailsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: FitFatTokens.spaceXxl),
       children: [
+        _FactChips(exercise: exercise),
         if (exercise.instructions != null && exercise.instructions!.isNotEmpty)
           _InstructionSection(
             title: l10n.exerciseDetailInstructions,
