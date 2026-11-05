@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
@@ -7,14 +8,23 @@ import 'package:fitfat/src/sync/personal_pull_service.dart';
 import 'package:fitfat/src/sync/sync_models.dart';
 import 'package:fitfat/src/sync/sync_state_store.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 /// Fake server responses keyed by request path.
 final class _FakeApi implements ApiClient {
-  _FakeApi(this._byPath, {this.failPaths = const {}});
+  _FakeApi(
+    this._byPath, {
+    this.failPaths = const {},
+    this.byteResponses = const {},
+    this.byteFailPaths = const {},
+  });
 
   final Map<String, Object?> _byPath;
   final Set<String> failPaths;
+  final Map<String, Uint8List> byteResponses;
+  final Set<String> byteFailPaths;
   final Map<String, Map<String, String>?> queries = {};
+  final List<String> byteRequests = [];
 
   @override
   Future<Object?> getJson(
@@ -40,8 +50,13 @@ final class _FakeApi implements ApiClient {
   }) async => <String, Object?>{'server_time': 1000};
 
   @override
-  Future<Uint8List> getBytes(String path, {Map<String, String>? headers}) async =>
-      Uint8List(0);
+  Future<Uint8List> getBytes(String path, {Map<String, String>? headers}) async {
+    byteRequests.add(path);
+    if (byteFailPaths.contains(path)) {
+      throw ApiException(statusCode: 404, body: 'not found');
+    }
+    return byteResponses[path] ?? Uint8List(0);
+  }
 
   @override
   Future<Object?> postBytes(
@@ -74,13 +89,25 @@ final class _FakeApi implements ApiClient {
 void main() {
   late db.AppDatabase database;
   late MemorySyncStateStore state;
+  late Directory audioTempDir;
 
-  setUp(() {
+  Future<String> clipPathFor(String clipId) async =>
+      p.join(audioTempDir.path, '$clipId.m4a');
+
+  setUp(() async {
     database = db.AppDatabase.forTesting(NativeDatabase.memory());
     state = MemorySyncStateStore();
+    audioTempDir = await Directory.systemTemp.createTemp(
+      'personal_pull_audio_test',
+    );
   });
 
-  tearDown(() => database.close());
+  tearDown(() async {
+    await database.close();
+    if (await audioTempDir.exists()) {
+      await audioTempDir.delete(recursive: true);
+    }
+  });
 
   Future<int> taskCount() async =>
       (await database.select(database.tasks).get()).length;
@@ -601,6 +628,148 @@ void main() {
     final links = await database.select(database.noteTags).get();
     expect(links.map((l) => l.tagId), ['new']);
   });
+
+  test(
+    'pullNotes upserts noteAudio metadata and downloads a missing clip',
+    () async {
+      await database.into(database.notes).insert(
+        db.NotesCompanion.insert(
+          id: 'n1',
+          title: 'Note',
+          updatedAt: 10,
+          createdAt: 5,
+        ),
+      );
+      final clipBytes = Uint8List.fromList([1, 2, 3, 4]);
+      final api = _FakeApi(
+        {
+          '/notes': <String, Object?>{
+            'server_time': 930,
+            'items': <Object?>[],
+            'noteAudio': [
+              {
+                'id': 'clip1',
+                'noteId': 'n1',
+                'durationMs': 4200,
+                'position': 0,
+                'createdAt': 20,
+                'updatedAt': 20,
+              },
+            ],
+            'deleted': <String>[],
+          },
+        },
+        byteResponses: {'/notes/audio/clip1': clipBytes},
+      );
+      final service = PersonalPullService(
+        api,
+        database,
+        state,
+        clipPathFor: clipPathFor,
+      );
+      final result = await service.pullNotes(apiKey: 'k', endpoint: '/notes');
+      expect(result.ok, isTrue, reason: result.error);
+
+      final clip = await database.select(database.noteAudio).getSingle();
+      expect(clip.noteId, 'n1');
+      expect(clip.durationMs, 4200);
+      expect(clip.audioPath, await clipPathFor('clip1'));
+      expect(await File(clip.audioPath).readAsBytes(), clipBytes);
+      expect(api.byteRequests, ['/notes/audio/clip1']);
+    },
+  );
+
+  test(
+    'pullNotes does not re-download a clip whose file already has bytes',
+    () async {
+      await database.into(database.notes).insert(
+        db.NotesCompanion.insert(
+          id: 'n1',
+          title: 'Note',
+          updatedAt: 10,
+          createdAt: 5,
+        ),
+      );
+      final path = await clipPathFor('clip1');
+      await File(path).writeAsBytes([9, 9, 9], flush: true);
+      final api = _FakeApi(
+        {
+          '/notes': <String, Object?>{
+            'server_time': 931,
+            'items': <Object?>[],
+            'noteAudio': [
+              {
+                'id': 'clip1',
+                'noteId': 'n1',
+                'durationMs': 1000,
+                'position': 0,
+                'createdAt': 20,
+              },
+            ],
+            'deleted': <String>[],
+          },
+        },
+        byteResponses: {
+          '/notes/audio/clip1': Uint8List.fromList([5, 5, 5]),
+        },
+      );
+      final service = PersonalPullService(
+        api,
+        database,
+        state,
+        clipPathFor: clipPathFor,
+      );
+      await service.pullNotes(apiKey: 'k', endpoint: '/notes');
+
+      expect(api.byteRequests, isEmpty, reason: 'file already has bytes');
+      expect(await File(path).readAsBytes(), [9, 9, 9]);
+    },
+  );
+
+  test(
+    'pullNotes keeps the metadata row when the clip has no bytes server-side',
+    () async {
+      await database.into(database.notes).insert(
+        db.NotesCompanion.insert(
+          id: 'n1',
+          title: 'Note',
+          updatedAt: 10,
+          createdAt: 5,
+        ),
+      );
+      final api = _FakeApi(
+        {
+          '/notes': <String, Object?>{
+            'server_time': 932,
+            'items': <Object?>[],
+            'noteAudio': [
+              {
+                'id': 'clip1',
+                'noteId': 'n1',
+                'durationMs': 1000,
+                'position': 0,
+                'createdAt': 20,
+              },
+            ],
+            'deleted': <String>[],
+          },
+        },
+        byteFailPaths: {'/notes/audio/clip1'},
+      );
+      final service = PersonalPullService(
+        api,
+        database,
+        state,
+        clipPathFor: clipPathFor,
+      );
+      final result = await service.pullNotes(apiKey: 'k', endpoint: '/notes');
+
+      expect(result.ok, isTrue, reason: result.error);
+      final clip = await database.select(database.noteAudio).getSingle();
+      expect(clip.id, 'clip1');
+      expect(await File(await clipPathFor('clip1')).exists(), isFalse);
+    },
+  );
 
   test('pullMeals replaces the foods of a meal it returns', () async {
     await database.into(database.meals).insert(

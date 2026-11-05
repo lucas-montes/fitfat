@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -5,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../database/app_database.dart' as db;
 import '../database/database_provider.dart' as db;
 import '../network/api_client.dart';
+import '../notes/audio/note_audio_path.dart';
 import '../settings/providers/settings.dart';
 import 'sync_models.dart';
 import 'sync_service.dart';
@@ -31,8 +34,18 @@ final class PersonalPullService {
   final ApiClient _api;
   final db.AppDatabase _database;
   final SyncStateStore _state;
+  final Future<String> Function(String clipId) _clipPathFor;
 
-  PersonalPullService(this._api, this._database, this._state);
+  /// [clipPathFor] overrides where a downloaded clip's bytes land — the real
+  /// default goes through `path_provider`, which has no platform channel in
+  /// a plain `flutter_test` unit test, so tests inject a temp-dir resolver
+  /// the same way [ExerciseMediaDownloader] does for its media directory.
+  PersonalPullService(
+    this._api,
+    this._database,
+    this._state, {
+    Future<String> Function(String clipId)? clipPathFor,
+  }) : _clipPathFor = clipPathFor ?? noteAudioPathFor;
 
   static const _error = 'Unexpected payload';
 
@@ -112,7 +125,8 @@ final class PersonalPullService {
   }
 
   // --------------------------------------------------------------------------
-  // Notes (tag links ride along; audio stays server-side)
+  // Notes (tag links and audio metadata ride along; clip bytes are fetched
+  // separately, only for clips whose local file is missing or empty)
   // --------------------------------------------------------------------------
 
   Future<SyncResult> pullNotes({
@@ -152,6 +166,9 @@ final class PersonalPullService {
           parentKey: 'noteId',
         );
       }
+      if (payload.containsKey('noteAudio')) {
+        await _applyNoteAudio(_maps(payload['noteAudio']), apiKey: apiKey);
+      }
       final deleted = await _tombstoneNotes(_names(payload['deleted']));
       await _advance(SyncResource.notes, serverTime, since);
       return _result(updated, deleted, serverTime);
@@ -159,6 +176,50 @@ final class PersonalPullService {
       return SyncResult(error: 'Pull failed (HTTP ${e.statusCode})');
     } catch (e) {
       return SyncResult(error: e.toString());
+    }
+  }
+
+  /// Upserts `noteAudio` metadata rows (the server never sends bytes — see
+  /// `GET /notes/audio/:id`) and backfills whichever clip's local file is
+  /// missing or empty: a fresh install, or a clip recorded on another phone,
+  /// both show up as "the row exists but the file doesn't".
+  ///
+  /// The server row carries no local path, so [NoteAudioClip.audioPath] is
+  /// always recomputed from [noteAudioPathFor] rather than trusted from the
+  /// wire — the existing clips directory `note_repository.dart` and the
+  /// player/list UIs already read from.
+  Future<void> _applyNoteAudio(List<Map> rows, {required String apiKey}) async {
+    for (final raw in rows) {
+      final id = raw['id'];
+      final noteId = raw['noteId'];
+      if (id is! String || noteId is! String) continue;
+      final path = await _clipPathFor(id);
+      await _database.into(_database.noteAudio).insertOnConflictUpdate(
+        db.NoteAudioCompanion.insert(
+          id: id,
+          noteId: noteId,
+          audioPath: path,
+          durationMs: Value(_int(raw['durationMs'])),
+          position: Value(_int(raw['position'])),
+          createdAt: _int(raw['createdAt']),
+        ),
+      );
+
+      final file = File(path);
+      final hasBytes = await file.exists() && await file.length() > 0;
+      if (hasBytes) continue;
+      try {
+        final bytes = await _api.getBytes(
+          '/notes/audio/$id',
+          headers: authHeaders(apiKey),
+        );
+        await file.writeAsBytes(bytes, flush: true);
+      } on ApiException catch (e) {
+        // The clip's bytes never reached the server (e.g. an upload that
+        // failed mid-flight); leave the metadata row — there is simply
+        // nothing to play until a future push succeeds.
+        if (e.statusCode != 404) rethrow;
+      }
     }
   }
 
