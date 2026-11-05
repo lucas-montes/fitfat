@@ -1461,6 +1461,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notesBodyLabel => 'Note';
 
   @override
+  String get notesBodyPreviewTooltip => 'Preview';
+
+  @override
+  String get notesBodyEditTooltip => 'Edit';
+
+  @override
+  String get notesToolbarBold => 'Bold';
+
+  @override
+  String get notesToolbarItalic => 'Italic';
+
+  @override
+  String get notesToolbarHeading => 'Heading';
+
+  @override
+  String get notesToolbarList => 'List';
+
+  @override
   String get notesTitleRequired => 'Title is required';
 
   @override

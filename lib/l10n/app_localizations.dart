@@ -2614,6 +2614,42 @@ abstract class AppLocalizations {
   /// **'Note'**
   String get notesBodyLabel;
 
+  /// No description provided for @notesBodyPreviewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get notesBodyPreviewTooltip;
+
+  /// No description provided for @notesBodyEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get notesBodyEditTooltip;
+
+  /// No description provided for @notesToolbarBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get notesToolbarBold;
+
+  /// No description provided for @notesToolbarItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get notesToolbarItalic;
+
+  /// No description provided for @notesToolbarHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get notesToolbarHeading;
+
+  /// No description provided for @notesToolbarList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get notesToolbarList;
+
   /// No description provided for @notesTitleRequired.
   ///
   /// In en, this message translates to:

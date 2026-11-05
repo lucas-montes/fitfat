@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../ui/widgets/top_banner.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -32,6 +33,7 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   List<NoteAudioClip> _clips = [];
   bool _saving = false;
   bool _saved = false;
+  bool _showPreview = false;
 
   bool get _isEditing => widget.note != null;
 
@@ -135,6 +137,126 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     if (mounted) Navigator.of(context).pop(true);
   }
 
+  /// Wraps the current selection in [prefix]/[suffix] (or inserts an empty
+  /// pair at the cursor when nothing is selected), leaving the cursor right
+  /// after the inserted/wrapped text.
+  void _wrapSelection(String prefix, String suffix) {
+    final text = _bodyCtrl.text;
+    final selection = _bodyCtrl.selection;
+    final start = selection.isValid ? selection.start : text.length;
+    final end = selection.isValid ? selection.end : text.length;
+    final inner = text.substring(start, end);
+    final replacement = '$prefix$inner$suffix';
+    _bodyCtrl.value = TextEditingValue(
+      text: text.replaceRange(start, end, replacement),
+      selection: TextSelection.collapsed(offset: start + replacement.length),
+    );
+  }
+
+  /// Inserts [prefix] at the start of the line the cursor is on — for markers
+  /// like `## ` or `- ` that belong at the front of a line rather than
+  /// wrapped around a selection.
+  void _prefixLine(String prefix) {
+    final text = _bodyCtrl.text;
+    final selection = _bodyCtrl.selection;
+    final cursor = selection.isValid ? selection.start : text.length;
+    final lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
+    _bodyCtrl.value = TextEditingValue(
+      text: text.replaceRange(lineStart, lineStart, prefix),
+      selection: TextSelection.collapsed(offset: cursor + prefix.length),
+    );
+  }
+
+  /// Raw markdown body (monospace) with a preview toggle. The toolbar only
+  /// shows while editing — there is nothing to insert into a read-only
+  /// preview.
+  Widget _buildBodyField(BuildContext context, AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(l10n.notesBodyLabel, style: Theme.of(context).textTheme.labelLarge),
+            IconButton(
+              key: const ValueKey('notesBodyPreviewToggle'),
+              icon: Icon(
+                _showPreview ? Icons.edit_outlined : Icons.visibility_outlined,
+              ),
+              tooltip: _showPreview
+                  ? l10n.notesBodyEditTooltip
+                  : l10n.notesBodyPreviewTooltip,
+              onPressed: () => setState(() => _showPreview = !_showPreview),
+            ),
+          ],
+        ),
+        if (_showPreview)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Theme.of(context).dividerColor),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            // An empty body renders an empty box — no placeholder text is
+            // needed, since the edit toggle is one tap away.
+            child: MarkdownBody(data: _bodyCtrl.text, selectable: true),
+          )
+        else ...[
+          _buildMarkdownToolbar(l10n),
+          TextFormField(
+            key: const ValueKey('notesBodyField'),
+            controller: _bodyCtrl,
+            minLines: 6,
+            maxLines: null,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontFamily: 'monospace',
+            ),
+            decoration: const InputDecoration(alignLabelWithHint: true),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Tiny toolbar inserting markdown markers at the cursor: bold, italic,
+  /// heading, list. Not a full formatting bar — just the handful of markers
+  /// tedious enough to type by hand on a phone keyboard.
+  Widget _buildMarkdownToolbar(AppLocalizations l10n) {
+    return Row(
+      children: [
+        IconButton(
+          key: const ValueKey('notesToolbarBold'),
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.format_bold),
+          tooltip: l10n.notesToolbarBold,
+          onPressed: () => _wrapSelection('**', '**'),
+        ),
+        IconButton(
+          key: const ValueKey('notesToolbarItalic'),
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.format_italic),
+          tooltip: l10n.notesToolbarItalic,
+          onPressed: () => _wrapSelection('_', '_'),
+        ),
+        IconButton(
+          key: const ValueKey('notesToolbarHeading'),
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.title),
+          tooltip: l10n.notesToolbarHeading,
+          onPressed: () => _prefixLine('## '),
+        ),
+        IconButton(
+          key: const ValueKey('notesToolbarList'),
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.format_list_bulleted),
+          tooltip: l10n.notesToolbarList,
+          onPressed: () => _prefixLine('- '),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -168,15 +290,7 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _bodyCtrl,
-              minLines: 6,
-              maxLines: null,
-              decoration: InputDecoration(
-                labelText: l10n.notesBodyLabel,
-                alignLabelWithHint: true,
-              ),
-            ),
+            _buildBodyField(context, l10n),
             const SizedBox(height: 16),
             TagPicker(
               tags: _tags,

@@ -1470,6 +1470,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notesBodyLabel => 'Note';
 
   @override
+  String get notesBodyPreviewTooltip => 'Aperçu';
+
+  @override
+  String get notesBodyEditTooltip => 'Modifier';
+
+  @override
+  String get notesToolbarBold => 'Gras';
+
+  @override
+  String get notesToolbarItalic => 'Italique';
+
+  @override
+  String get notesToolbarHeading => 'Titre';
+
+  @override
+  String get notesToolbarList => 'Liste';
+
+  @override
   String get notesTitleRequired => 'Le titre est requis';
 
   @override
