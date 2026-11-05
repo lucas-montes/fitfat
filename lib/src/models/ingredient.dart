@@ -8,7 +8,7 @@ final class Ingredient {
   final double fatPer100g;
   // Extra nutriments per 100g. Mandatory and zero-defaulted since v35; see the
   // note on the table columns for why "unrecorded" became 0.
-  final double sodiumPer100g; // mg
+  final double sodiumPer100g; // g
   final double fiberPer100g; // g
   final double sugarPer100g; // g
   /// Soft-delete flag: archived ingredients are hidden from list and picker

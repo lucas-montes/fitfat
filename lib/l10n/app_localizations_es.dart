@@ -813,7 +813,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get ingredientFormSodiumLabel => 'Sodio (por 100 g)';
 
   @override
-  String get ingredientFormSodiumSuffix => 'mg';
+  String get ingredientFormSodiumSuffix => 'g';
 
   @override
   String get ingredientFormFiberLabel => 'Fibra (por 100 g)';
@@ -1849,7 +1849,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String ingredientNutrientSodium(String value) {
-    return 'Na ${value}mg';
+    return 'Na ${value}g';
   }
 
   @override

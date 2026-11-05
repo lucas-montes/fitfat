@@ -295,7 +295,7 @@ final class _IngredientTile extends StatelessWidget {
     final parts = <String>[
       if (ingredient.sodiumPer100g != null)
         l10n.ingredientNutrientSodium(
-          ingredient.sodiumPer100g!.toStringAsFixed(0),
+          ingredient.sodiumPer100g!.toStringAsFixed(1),
         ),
       if (ingredient.fiberPer100g != null)
         l10n.ingredientNutrientFiber(

@@ -15,7 +15,7 @@ class Ingredients extends Table {
   // used to be nullable to mean "never recorded", which made every aggregate
   // downstream carry a null case. A missing value is now an explicit 0, so
   // sodium/fiber/sugar sum like the macros do.
-  RealColumn get sodiumPer100g => real().withDefault(const Constant(0))(); // mg
+  RealColumn get sodiumPer100g => real().withDefault(const Constant(0))(); // g
   RealColumn get fiberPer100g => real().withDefault(const Constant(0))(); // g
   RealColumn get sugarPer100g => real().withDefault(const Constant(0))(); // g
   // Soft-delete flag (v4). Archived ingredients are hidden from list and
@@ -189,7 +189,7 @@ class MealFoods extends Table {
   RealColumn get fat => real()();
   // Non-null since v35, matching the ingredient columns. See the note there on
   // why "unrecorded" became 0 rather than staying a null case.
-  RealColumn get sodium => real().withDefault(const Constant(0))(); // mg
+  RealColumn get sodium => real().withDefault(const Constant(0))(); // g
   RealColumn get fiber => real().withDefault(const Constant(0))(); // g
   RealColumn get sugar => real().withDefault(const Constant(0))(); // g
 

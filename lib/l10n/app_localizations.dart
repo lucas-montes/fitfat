@@ -1525,7 +1525,7 @@ abstract class AppLocalizations {
   /// No description provided for @ingredientFormSodiumSuffix.
   ///
   /// In en, this message translates to:
-  /// **'mg'**
+  /// **'g'**
   String get ingredientFormSodiumSuffix;
 
   /// No description provided for @ingredientFormFiberLabel.
@@ -3277,7 +3277,7 @@ abstract class AppLocalizations {
   /// No description provided for @ingredientNutrientSodium.
   ///
   /// In en, this message translates to:
-  /// **'Na {value}mg'**
+  /// **'Na {value}g'**
   String ingredientNutrientSodium(String value);
 
   /// No description provided for @ingredientNutrientFiber.

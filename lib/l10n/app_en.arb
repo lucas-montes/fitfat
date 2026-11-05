@@ -374,7 +374,7 @@
   "ingredientFormFatLabel": "Fat (per 100g)",
   "ingredientFormFatSuffix": "g",
   "ingredientFormSodiumLabel": "Sodium (per 100g)",
-  "ingredientFormSodiumSuffix": "mg",
+  "ingredientFormSodiumSuffix": "g",
   "ingredientFormFiberLabel": "Fiber (per 100g)",
   "ingredientFormFiberSuffix": "g",
   "ingredientFormSugarLabel": "Sugar (per 100g)",
@@ -882,7 +882,7 @@
       "fat": { "type": "String" }
     }
   },
-  "ingredientNutrientSodium": "Na {value}mg",
+  "ingredientNutrientSodium": "Na {value}g",
   "@ingredientNutrientSodium": {
     "placeholders": {
       "value": { "type": "String" }

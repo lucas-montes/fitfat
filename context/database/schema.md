@@ -14,7 +14,7 @@
 | protein_per100g | REAL | |
 | carbs_per100g | REAL | |
 | fat_per100g | REAL | |
-| sodium_per100g | REAL? | v3 — optional, mg per 100g |
+| sodium_per100g | REAL? | v3 — optional, g per 100g |
 | fiber_per100g | REAL? | v3 — optional, g per 100g |
 | sugar_per100g | REAL? | v3 — optional, g per 100g |
 | is_archived | INTEGER (bool) | v4 — soft-delete flag, `0`/`1`, default `0` |
