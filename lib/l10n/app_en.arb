@@ -925,6 +925,7 @@
   "ingredientPriceStoreLabel": "Store",
   "ingredientPriceAmountLabel": "Price",
   "ingredientPriceGramsLabel": "Package size",
+  "ingredientPriceSourceUrlLabel": "Source URL (optional)",
   "ingredientPriceHistoryTitle": "Price history",
   "ingredientDetailManageStores": "Manage stores",
   "storeManagerTitle": "Stores",

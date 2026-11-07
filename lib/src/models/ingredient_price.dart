@@ -16,6 +16,9 @@ final class IngredientPrice {
   // cost-per-100g cannot be computed.
   final double? packageGrams;
   final DateTime recordedAt;
+  // Where the price was found, e.g. an online catalogue page. Reference only
+  // — never fetched or followed automatically.
+  final String? sourceUrl;
 
   const IngredientPrice({
     required this.id,
@@ -25,6 +28,7 @@ final class IngredientPrice {
     required this.currencyCode,
     required this.recordedAt,
     this.packageGrams,
+    this.sourceUrl,
   });
 
   /// Cost per 100g converted to [baseCode] using [ratesToBase] — null when

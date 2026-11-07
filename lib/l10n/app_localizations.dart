@@ -3412,6 +3412,12 @@ abstract class AppLocalizations {
   /// **'Package size'**
   String get ingredientPriceGramsLabel;
 
+  /// No description provided for @ingredientPriceSourceUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source URL (optional)'**
+  String get ingredientPriceSourceUrlLabel;
+
   /// No description provided for @ingredientPriceHistoryTitle.
   ///
   /// In en, this message translates to:

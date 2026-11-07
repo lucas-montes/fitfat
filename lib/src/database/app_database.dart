@@ -58,7 +58,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 39;
+  int get schemaVersion => 40;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -903,6 +903,11 @@ final class AppDatabase extends _$AppDatabase {
         // and silently go stale the moment an ingredient amount changes. NULL
         // already means "use the raw sum", which is exactly today's behaviour.
         await m.addColumn(foods, foods.cookedWeight);
+      }
+      if (from < 40) {
+        // v40: an optional reference link for a price observation (e.g. the
+        // online catalogue page it was found on). Manual entry only.
+        await m.addColumn(ingredientPrices, ingredientPrices.sourceUrl);
       }
     },
   );

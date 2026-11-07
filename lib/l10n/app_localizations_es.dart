@@ -1925,6 +1925,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get ingredientPriceGramsLabel => 'Tamaño del paquete';
 
   @override
+  String get ingredientPriceSourceUrlLabel => 'URL de origen (opcional)';
+
+  @override
   String get ingredientPriceHistoryTitle => 'Historial de precios';
 
   @override

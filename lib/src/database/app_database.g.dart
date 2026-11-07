@@ -1481,6 +1481,17 @@ class $IngredientPricesTable extends IngredientPrices
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sourceUrlMeta = const VerificationMeta(
+    'sourceUrl',
+  );
+  @override
+  late final GeneratedColumn<String> sourceUrl = GeneratedColumn<String>(
+    'source_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _recordedAtMeta = const VerificationMeta(
     'recordedAt',
   );
@@ -1511,6 +1522,7 @@ class $IngredientPricesTable extends IngredientPrices
     price,
     currencyCode,
     packageGrams,
+    sourceUrl,
     recordedAt,
     createdAt,
   ];
@@ -1578,6 +1590,12 @@ class $IngredientPricesTable extends IngredientPrices
         ),
       );
     }
+    if (data.containsKey('source_url')) {
+      context.handle(
+        _sourceUrlMeta,
+        sourceUrl.isAcceptableOrUnknown(data['source_url']!, _sourceUrlMeta),
+      );
+    }
     if (data.containsKey('recorded_at')) {
       context.handle(
         _recordedAtMeta,
@@ -1631,6 +1649,10 @@ class $IngredientPricesTable extends IngredientPrices
         DriftSqlType.double,
         data['${effectivePrefix}package_grams'],
       ),
+      sourceUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_url'],
+      ),
       recordedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}recorded_at'],
@@ -1655,6 +1677,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
   final double price;
   final String currencyCode;
   final double? packageGrams;
+  final String? sourceUrl;
   final int recordedAt;
   final int createdAt;
   const IngredientPrice({
@@ -1664,6 +1687,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
     required this.price,
     required this.currencyCode,
     this.packageGrams,
+    this.sourceUrl,
     required this.recordedAt,
     required this.createdAt,
   });
@@ -1677,6 +1701,9 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
     map['currency_code'] = Variable<String>(currencyCode);
     if (!nullToAbsent || packageGrams != null) {
       map['package_grams'] = Variable<double>(packageGrams);
+    }
+    if (!nullToAbsent || sourceUrl != null) {
+      map['source_url'] = Variable<String>(sourceUrl);
     }
     map['recorded_at'] = Variable<int>(recordedAt);
     map['created_at'] = Variable<int>(createdAt);
@@ -1693,6 +1720,9 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
       packageGrams: packageGrams == null && nullToAbsent
           ? const Value.absent()
           : Value(packageGrams),
+      sourceUrl: sourceUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceUrl),
       recordedAt: Value(recordedAt),
       createdAt: Value(createdAt),
     );
@@ -1710,6 +1740,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
       price: serializer.fromJson<double>(json['price']),
       currencyCode: serializer.fromJson<String>(json['currencyCode']),
       packageGrams: serializer.fromJson<double?>(json['packageGrams']),
+      sourceUrl: serializer.fromJson<String?>(json['sourceUrl']),
       recordedAt: serializer.fromJson<int>(json['recordedAt']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
@@ -1724,6 +1755,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
       'price': serializer.toJson<double>(price),
       'currencyCode': serializer.toJson<String>(currencyCode),
       'packageGrams': serializer.toJson<double?>(packageGrams),
+      'sourceUrl': serializer.toJson<String?>(sourceUrl),
       'recordedAt': serializer.toJson<int>(recordedAt),
       'createdAt': serializer.toJson<int>(createdAt),
     };
@@ -1736,6 +1768,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
     double? price,
     String? currencyCode,
     Value<double?> packageGrams = const Value.absent(),
+    Value<String?> sourceUrl = const Value.absent(),
     int? recordedAt,
     int? createdAt,
   }) => IngredientPrice(
@@ -1745,6 +1778,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
     price: price ?? this.price,
     currencyCode: currencyCode ?? this.currencyCode,
     packageGrams: packageGrams.present ? packageGrams.value : this.packageGrams,
+    sourceUrl: sourceUrl.present ? sourceUrl.value : this.sourceUrl,
     recordedAt: recordedAt ?? this.recordedAt,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -1762,6 +1796,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
       packageGrams: data.packageGrams.present
           ? data.packageGrams.value
           : this.packageGrams,
+      sourceUrl: data.sourceUrl.present ? data.sourceUrl.value : this.sourceUrl,
       recordedAt: data.recordedAt.present
           ? data.recordedAt.value
           : this.recordedAt,
@@ -1778,6 +1813,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
           ..write('price: $price, ')
           ..write('currencyCode: $currencyCode, ')
           ..write('packageGrams: $packageGrams, ')
+          ..write('sourceUrl: $sourceUrl, ')
           ..write('recordedAt: $recordedAt, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -1792,6 +1828,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
     price,
     currencyCode,
     packageGrams,
+    sourceUrl,
     recordedAt,
     createdAt,
   );
@@ -1805,6 +1842,7 @@ class IngredientPrice extends DataClass implements Insertable<IngredientPrice> {
           other.price == this.price &&
           other.currencyCode == this.currencyCode &&
           other.packageGrams == this.packageGrams &&
+          other.sourceUrl == this.sourceUrl &&
           other.recordedAt == this.recordedAt &&
           other.createdAt == this.createdAt);
 }
@@ -1816,6 +1854,7 @@ class IngredientPricesCompanion extends UpdateCompanion<IngredientPrice> {
   final Value<double> price;
   final Value<String> currencyCode;
   final Value<double?> packageGrams;
+  final Value<String?> sourceUrl;
   final Value<int> recordedAt;
   final Value<int> createdAt;
   final Value<int> rowid;
@@ -1826,6 +1865,7 @@ class IngredientPricesCompanion extends UpdateCompanion<IngredientPrice> {
     this.price = const Value.absent(),
     this.currencyCode = const Value.absent(),
     this.packageGrams = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
     this.recordedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1837,6 +1877,7 @@ class IngredientPricesCompanion extends UpdateCompanion<IngredientPrice> {
     required double price,
     required String currencyCode,
     this.packageGrams = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
     required int recordedAt,
     required int createdAt,
     this.rowid = const Value.absent(),
@@ -1854,6 +1895,7 @@ class IngredientPricesCompanion extends UpdateCompanion<IngredientPrice> {
     Expression<double>? price,
     Expression<String>? currencyCode,
     Expression<double>? packageGrams,
+    Expression<String>? sourceUrl,
     Expression<int>? recordedAt,
     Expression<int>? createdAt,
     Expression<int>? rowid,
@@ -1865,6 +1907,7 @@ class IngredientPricesCompanion extends UpdateCompanion<IngredientPrice> {
       if (price != null) 'price': price,
       if (currencyCode != null) 'currency_code': currencyCode,
       if (packageGrams != null) 'package_grams': packageGrams,
+      if (sourceUrl != null) 'source_url': sourceUrl,
       if (recordedAt != null) 'recorded_at': recordedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -1878,6 +1921,7 @@ class IngredientPricesCompanion extends UpdateCompanion<IngredientPrice> {
     Value<double>? price,
     Value<String>? currencyCode,
     Value<double?>? packageGrams,
+    Value<String?>? sourceUrl,
     Value<int>? recordedAt,
     Value<int>? createdAt,
     Value<int>? rowid,
@@ -1889,6 +1933,7 @@ class IngredientPricesCompanion extends UpdateCompanion<IngredientPrice> {
       price: price ?? this.price,
       currencyCode: currencyCode ?? this.currencyCode,
       packageGrams: packageGrams ?? this.packageGrams,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
       recordedAt: recordedAt ?? this.recordedAt,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -1916,6 +1961,9 @@ class IngredientPricesCompanion extends UpdateCompanion<IngredientPrice> {
     if (packageGrams.present) {
       map['package_grams'] = Variable<double>(packageGrams.value);
     }
+    if (sourceUrl.present) {
+      map['source_url'] = Variable<String>(sourceUrl.value);
+    }
     if (recordedAt.present) {
       map['recorded_at'] = Variable<int>(recordedAt.value);
     }
@@ -1937,6 +1985,7 @@ class IngredientPricesCompanion extends UpdateCompanion<IngredientPrice> {
           ..write('price: $price, ')
           ..write('currencyCode: $currencyCode, ')
           ..write('packageGrams: $packageGrams, ')
+          ..write('sourceUrl: $sourceUrl, ')
           ..write('recordedAt: $recordedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -18539,6 +18588,7 @@ typedef $$IngredientPricesTableCreateCompanionBuilder =
       required double price,
       required String currencyCode,
       Value<double?> packageGrams,
+      Value<String?> sourceUrl,
       required int recordedAt,
       required int createdAt,
       Value<int> rowid,
@@ -18551,6 +18601,7 @@ typedef $$IngredientPricesTableUpdateCompanionBuilder =
       Value<double> price,
       Value<String> currencyCode,
       Value<double?> packageGrams,
+      Value<String?> sourceUrl,
       Value<int> recordedAt,
       Value<int> createdAt,
       Value<int> rowid,
@@ -18632,6 +18683,11 @@ class $$IngredientPricesTableFilterComposer
 
   ColumnFilters<double> get packageGrams => $composableBuilder(
     column: $table.packageGrams,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -18721,6 +18777,11 @@ class $$IngredientPricesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get recordedAt => $composableBuilder(
     column: $table.recordedAt,
     builder: (column) => ColumnOrderings(column),
@@ -18802,6 +18863,9 @@ class $$IngredientPricesTableAnnotationComposer
     column: $table.packageGrams,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get sourceUrl =>
+      $composableBuilder(column: $table.sourceUrl, builder: (column) => column);
 
   GeneratedColumn<int> get recordedAt => $composableBuilder(
     column: $table.recordedAt,
@@ -18894,6 +18958,7 @@ class $$IngredientPricesTableTableManager
                 Value<double> price = const Value.absent(),
                 Value<String> currencyCode = const Value.absent(),
                 Value<double?> packageGrams = const Value.absent(),
+                Value<String?> sourceUrl = const Value.absent(),
                 Value<int> recordedAt = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -18904,6 +18969,7 @@ class $$IngredientPricesTableTableManager
                 price: price,
                 currencyCode: currencyCode,
                 packageGrams: packageGrams,
+                sourceUrl: sourceUrl,
                 recordedAt: recordedAt,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -18916,6 +18982,7 @@ class $$IngredientPricesTableTableManager
                 required double price,
                 required String currencyCode,
                 Value<double?> packageGrams = const Value.absent(),
+                Value<String?> sourceUrl = const Value.absent(),
                 required int recordedAt,
                 required int createdAt,
                 Value<int> rowid = const Value.absent(),
@@ -18926,6 +18993,7 @@ class $$IngredientPricesTableTableManager
                 price: price,
                 currencyCode: currencyCode,
                 packageGrams: packageGrams,
+                sourceUrl: sourceUrl,
                 recordedAt: recordedAt,
                 createdAt: createdAt,
                 rowid: rowid,

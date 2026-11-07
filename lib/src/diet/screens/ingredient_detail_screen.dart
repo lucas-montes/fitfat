@@ -593,6 +593,7 @@ final class _PriceSheet extends ConsumerStatefulWidget {
 final class _PriceSheetState extends ConsumerState<_PriceSheet> {
   late final TextEditingController _priceCtrl;
   late final TextEditingController _gramsCtrl;
+  late final TextEditingController _sourceUrlCtrl;
   late String _currency;
 
   /// Unit the package size is entered in: 'g' | 'kg' | 'ml'. Stored as grams
@@ -610,6 +611,9 @@ final class _PriceSheetState extends ConsumerState<_PriceSheet> {
     _gramsCtrl = TextEditingController(
       text: widget.existing?.packageGrams?.toStringAsFixed(0) ?? '',
     );
+    _sourceUrlCtrl = TextEditingController(
+      text: widget.existing?.sourceUrl ?? '',
+    );
     _currency = widget.existing?.currencyCode ?? '';
   }
 
@@ -617,6 +621,7 @@ final class _PriceSheetState extends ConsumerState<_PriceSheet> {
   void dispose() {
     _priceCtrl.dispose();
     _gramsCtrl.dispose();
+    _sourceUrlCtrl.dispose();
     super.dispose();
   }
 
@@ -780,6 +785,14 @@ final class _PriceSheetState extends ConsumerState<_PriceSheet> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _sourceUrlCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.ingredientPriceSourceUrlLabel,
+              ),
+              keyboardType: TextInputType.url,
+            ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: () => _save(selectedStoreId),
@@ -819,6 +832,7 @@ final class _PriceSheetState extends ConsumerState<_PriceSheet> {
     if (existing != null && !_isSameDay(existing.recordedAt, _recordedAt)) {
       await repo.deletePrice(existing.id);
     }
+    final sourceUrl = _sourceUrlCtrl.text.trim();
     await repo.upsertPrice(
       newIngredientPrice(
         ingredientId: widget.ingredientId,
@@ -827,6 +841,7 @@ final class _PriceSheetState extends ConsumerState<_PriceSheet> {
         currencyCode: _currency,
         recordedAt: _recordedAt,
         packageGrams: grams,
+        sourceUrl: sourceUrl.isEmpty ? null : sourceUrl,
       ),
     );
     if (mounted) Navigator.of(context).pop(true);

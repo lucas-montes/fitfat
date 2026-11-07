@@ -133,6 +133,7 @@ final class IngredientSyncClient {
                 'price': pr.price,
                 'currencyCode': pr.currencyCode,
                 'packageGrams': pr.packageGrams,
+                'sourceUrl': pr.sourceUrl,
                 'recordedAt': pr.recordedAt.millisecondsSinceEpoch,
               },
           ],
@@ -202,6 +203,7 @@ final class IngredientSyncClient {
               price: price.toDouble(),
               currencyCode: currencyCode,
               packageGrams: (pr['packageGrams'] as num?)?.toDouble(),
+              sourceUrl: pr['sourceUrl'] as String?,
               recordedAt: toSyncDateTime(pr['recorded_at'], serverTime),
             ),
           );

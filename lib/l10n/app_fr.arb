@@ -824,6 +824,7 @@
   "ingredientPriceStoreLabel": "Magasin",
   "ingredientPriceAmountLabel": "Prix",
   "ingredientPriceGramsLabel": "Taille du paquet",
+  "ingredientPriceSourceUrlLabel": "URL source (facultatif)",
   "ingredientPriceHistoryTitle": "Historique des prix",
   "ingredientDetailManageStores": "Gérer les magasins",
   "storeManagerTitle": "Magasins",

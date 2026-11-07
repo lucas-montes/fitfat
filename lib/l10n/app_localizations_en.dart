@@ -1907,6 +1907,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ingredientPriceGramsLabel => 'Package size';
 
   @override
+  String get ingredientPriceSourceUrlLabel => 'Source URL (optional)';
+
+  @override
   String get ingredientPriceHistoryTitle => 'Price history';
 
   @override

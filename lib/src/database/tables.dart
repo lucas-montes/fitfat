@@ -64,6 +64,9 @@ class IngredientPrices extends Table {
   // Package weight the price refers to; null when unknown (cost-per-100g
   // cannot be computed then).
   RealColumn? get packageGrams => real().nullable()();
+  // Where the price was found, e.g. an online catalogue page. Reference only
+  // — never fetched or followed automatically.
+  TextColumn? get sourceUrl => text().nullable()();
   // When the price was observed, start-of-day epoch milliseconds. One price
   // row per ingredient per store per day (re-recording overwrites).
   IntColumn get recordedAt => integer()();

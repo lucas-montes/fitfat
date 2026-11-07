@@ -355,6 +355,7 @@ final class IngredientRepository {
             price: price.price,
             currencyCode: price.currencyCode,
             packageGrams: Value(price.packageGrams),
+            sourceUrl: Value(price.sourceUrl),
             recordedAt: price.recordedAt.millisecondsSinceEpoch,
             createdAt: DateTime.now().millisecondsSinceEpoch,
           ),
@@ -423,6 +424,7 @@ final class IngredientRepository {
     price: row.price,
     currencyCode: row.currencyCode,
     packageGrams: row.packageGrams,
+    sourceUrl: row.sourceUrl,
     recordedAt: DateTime.fromMillisecondsSinceEpoch(row.recordedAt),
   );
 }
@@ -479,12 +481,14 @@ IngredientPrice newIngredientPrice({
   required String currencyCode,
   required DateTime recordedAt,
   double? packageGrams,
+  String? sourceUrl,
 }) => IngredientPrice(
   id: const Uuid().v7(),
   ingredientId: ingredientId,
   storeId: storeId,
   price: price,
   currencyCode: currencyCode,
+  sourceUrl: sourceUrl,
   packageGrams: packageGrams,
   recordedAt: recordedAt,
 );
