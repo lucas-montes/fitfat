@@ -1,58 +1,29 @@
-import 'dart:async';
-import 'dart:io' show Platform;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../database/providers.dart';
-import '../../models/workout.dart';
-import '../../services/logger.dart';
+import '../../database/database_provider.dart';
+import '../../models/exercise.dart';
+import '../repositories/exercise_repository.dart';
 
-final _log = logger('exercise_providers');
+// ---------------------------------------------------------------------------
+// Repository provider
+// ---------------------------------------------------------------------------
 
-final exerciseListProvider =
-    NotifierProvider<ExerciseListNotifier, List<ExerciseDefinition>>(
-      ExerciseListNotifier.new,
-    );
+final exerciseRepositoryProvider = Provider<ExerciseRepository>((ref) {
+  return ExerciseRepository(ref.watch(databaseProvider));
+});
 
-/// Manages the global exercise library.
-/// State: All available exercises loaded from DB.
-class ExerciseListNotifier extends Notifier<List<ExerciseDefinition>> {
-  @override
-  List<ExerciseDefinition> build() {
-    _loadFromDb();
-    return [];
-  }
+// ---------------------------------------------------------------------------
+// Exercise list provider
+// ---------------------------------------------------------------------------
 
-  Future<void> _loadFromDb() async {
-    try {
-      final db = ref.read(databaseProvider);
-      final rows = await db.getAllExercises();
-      if (rows.isEmpty) return;
+final exerciseListProvider = FutureProvider<List<Exercise>>((ref) async {
+  return ref.watch(exerciseRepositoryProvider).getAll();
+});
 
-      // Load translations for the device locale (language part only, e.g. "fr")
-      final locale = Platform.localeName.split('_').first;
-      final translations = await db.getTranslations(locale);
-      final translationMap = {for (final t in translations) t.exerciseId: t};
-
-      state = rows
-          .map(
-            (exercise) => ExerciseDefinition(
-              id: exercise.id,
-              name: exercise.name,
-              type: ExerciseType.values.firstWhere(
-                (e) => e.name == exercise.type,
-                orElse: () => ExerciseType.weightlifting,
-              ),
-              met: exercise.met,
-              description: exercise.description,
-              imageUrl: exercise.imageUrl,
-              localizedName: translationMap[exercise.id]?.name,
-              localizedDescription: translationMap[exercise.id]?.description,
-            ),
-          )
-          .toList();
-    } catch (e, stack) {
-      _log.warning('Failed to load exercises from database', e, stack);
-    }
-  }
-}
+/// Loads a single exercise by id; resolves to `null` when it doesn't exist.
+final exerciseByIdProvider = FutureProvider.family<Exercise?, String>((
+  ref,
+  id,
+) async {
+  return ref.watch(exerciseRepositoryProvider).getById(id);
+});

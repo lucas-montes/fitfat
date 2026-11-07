@@ -1,460 +1,1860 @@
 {
   "@@locale": "en",
-  "appTitle": "fitfat",
-
-  "mealsTab": "Meals",
-  "ingredientsTab": "Ingredients",
-  "addMeal": "Add Meal",
-  "addIngredient": "Add Ingredient",
-  "editIngredient": "Edit Ingredient",
-  "editMeal": "Edit Meal",
-  "archivedIngredients": "Archived Ingredients",
-
-  "save": "Save",
-  "cancel": "Cancel",
-  "delete": "Delete",
-  "archive": "Archive",
-  "restore": "Restore",
-  "add": "Add",
-  "change": "Change",
-  "clear": "Clear",
-
-  "ingredientName": "Ingredient name",
-  "buildFromIngredients": "Build from ingredients",
-  "components": "Components",
-  "noComponentsAdded": "No components added yet",
-  "addComponents": "Add ingredients",
-  "searchIngredients": "Search ingredients",
-  "typeToSearchIngredient": "Type to search ingredients",
-  "caloriesPer100g": "Calories per 100g",
-  "proteinPer100g": "Protein per 100g (g)",
-  "carbsPer100g": "Carbs per 100g (g)",
-  "fatPer100g": "Fat per 100g (g)",
-  "sodiumPer100g": "Sodium per 100g (mg)",
-  "fiberPer100g": "Fiber per 100g (g)",
-  "amountInGrams": "Amount in grams",
-  "gramsHint": "e.g. 80",
-  "gramsHintMeal": "e.g. 120",
-  "createNewIngredient": "Create new ingredient",
-
-  "mealNameOptional": "Meal name (optional)",
-  "selectedIngredients": "Selected ingredients",
-  "noIngredientsSelected": "No ingredients selected yet",
-  "noIngredientsFound": "No ingredients found",
-
-  "archiveIngredientTitle": "Archive Ingredient",
-  "archiveIngredientContent": "This ingredient will be hidden from regular views. Use the Archived Ingredients tab to restore or delete it.",
-  "deleteMealTitle": "Delete meal?",
-  "deleteMealContent": "This will remove the meal from your log.",
-  "deleteIngredientTitle": "Delete ingredient?",
-  "deleteIngredientContent": "This will remove the ingredient and any portions from meals.",
-  "permanentlyDeleteTitle": "Permanently Delete Ingredient",
-  "permanentlyDeleteContent": "This ingredient will be deleted permanently. It cannot be restored.",
-  "restoreIngredientTitle": "Restore Ingredient",
-
-  "deleteMealTooltip": "Delete meal",
-  "deleteIngredientTooltip": "Delete",
-
-  "ingredientArchived": "Ingredient archived successfully",
-  "ingredientDeleted": "Ingredient deleted successfully",
-  "ingredientRestored": "Ingredient restored successfully",
-
-  "meal": "Meal",
-  "sortAZ": "Sort A-Z",
-  "sortZA": "Sort Z-A",
-  "noIngredientsFoundSubtext": "Try a different search or add a new ingredient",
-
-  "kcalAbbrev": "kcal",
-  "proteinAbbrev": "P",
-  "carbsAbbrev": "C",
-  "fatAbbrev": "F",
-
-  "eatenAtLabel": "Eaten at: {time}",
-  "@eatenAtLabel": {
+  "@@last_modified": "2026-07-02",
+  "appTitle": "FitFat",
+  "tabDashboard": "Dashboard",
+  "tabExercise": "Exercise",
+  "tabDiet": "Diet",
+  "tabSettings": "Settings",
+  "tabPlan": "Plan",
+  "tabNotes": "Notes",
+  "dashboardAppBar": "Dashboard",
+  "dashboardTodayCalories": "Today's Calories",
+  "dashboardLatestWorkout": "Latest Workout",
+  "dashboardNoWorkouts": "No completed workouts yet.",
+  "dashboardWelcomeTitle": "Welcome to FitFat",
+  "dashboardWelcomeBody": "Start by adding an ingredient, a meal, or a workout.",
+  "dashboardWelcomeActionIngredients": "Add an ingredient",
+  "dashboardWelcomeActionMeals": "Log a meal",
+  "dashboardWelcomeActionWorkouts": "Add a workout",
+  "dashboardDurationMin": "Duration: {minutes} min",
+  "@dashboardDurationMin": {
     "placeholders": {
-      "time": {}
+      "minutes": { "type": "int" }
     }
   },
-
-  "failedToSave": "Failed to save meal: {error}",
-  "@failedToSave": {
+  "dashboardCaloriesValue": "{calories} kcal",
+  "@dashboardCaloriesValue": {
     "placeholders": {
-      "error": {}
+      "calories": { "type": "String" }
     }
   },
-  "failedToUpdate": "Failed to update meal: {error}",
-  "@failedToUpdate": {
+  "dashboardError": "Error: {message}",
+  "@dashboardError": {
     "placeholders": {
-      "error": {}
+      "message": { "type": "String" }
     }
   },
-
-  "items": "{count,plural, one{{count} item} other{{count} items}}",
-  "@items": {
+  "dashboardGreetingMorning": "Good morning",
+  "dashboardGreetingAfternoon": "Good afternoon",
+  "dashboardGreetingEvening": "Good evening",
+  "dashboardMacroCalories": "Calories",
+  "dashboardMacroFiber": "Fiber",
+  "dashboardMacroProtein": "Protein",
+  "dashboardMacroCarbs": "Carbs",
+  "dashboardMacroFat": "Fat",
+  "dashboardContinueWorkout": "Continue workout",
+  "dashboardOpenWorkout": "Open workout",
+  "dashboardCalorieTarget": "Daily calorie target",
+  "dashboardConsumedOfTarget": "{consumed} / {target} kcal",
+  "@dashboardConsumedOfTarget": {
+    "placeholders": {
+      "consumed": { "type": "String" },
+      "target": { "type": "String" }
+    }
+  },
+  "dashboardMacroProgress": "{consumed} / {target} g",
+  "@dashboardMacroProgress": {
+    "placeholders": {
+      "consumed": { "type": "String" },
+      "target": { "type": "String" }
+    }
+  },
+  "dashboardWeightTrend": "Weight trend",
+  "dashboardWeeklyWorkout": "Weekly workout",
+  "dashboardVolume": "Volume",
+  "dashboardDaysTrained": "Days",
+  "dashboardDaysTrainedValue": "{count}/7",
+  "@dashboardDaysTrainedValue": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "dashboardHoursTrained": "Time",
+  "dashboardHoursTrainedHours": "{hours} h",
+  "dashboardHoursTrainedMinutes": "{minutes} m",
+  "@dashboardHoursTrainedMinutes": {
+    "placeholders": {
+      "minutes": { "type": "String" }
+    }
+  },
+  "dashboardHoursTrainedHoursMinutes": "{hours} h {minutes} m",
+  "dashboardGoalsTitle": "Goals",
+  "dashboardGoalsEmpty": "No active goals",
+  "dashboardGoalsCta": "Goals",
+  "dashboardAddTitle": "Add",
+  "dietAddMeal": "Meal",
+  "dietAddRecipe": "Recipe",
+  "dietAddIngredient": "Ingredient",
+  "@dashboardVolumeKg": {
+    "placeholders": {
+      "volume": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "dashboardMinutes": "Minutes",
+  "dashboardUpcomingTasks": "Upcoming tasks",
+  "dashboardNoUpcomingTasks": "No upcoming timed tasks.",
+  "dashboardSeeAllTasks": "See all {count} tasks",
+  "@dashboardSeeAllTasks": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "dashboardCalorieTargetEmptyTitle": "Complete your profile",
+  "dashboardCalorieTargetEmptyBody": "Add your age, gender, weight and height to see your daily calorie target.",
+  "dashboardMacroEmptyTitle": "Complete your profile",
+  "dashboardMacroEmptyBody": "Add your profile details to see macro targets.",
+  "dashboardMacroEmptyCta": "Complete profile",
+  "dashboardWeeklyEmptyTitle": "No workouts yet",
+  "dashboardWeeklyEmptyBody": "Log your first workout or sync from server.",
+  "dashboardWeeklyEmptyCtaCreate": "Add workout",
+  "dashboardWeeklyEmptyCtaSync": "Sync exercises",
+  "dashboardUpcomingEmptyCta": "Add task",
+  "dashboardLatestEmptyCta": "Add workout",
+  "exerciseListAppBar": "Exercises",
+  "exerciseListManageBtn": "Manage Exercises",
+  "exerciseListSearchHint": "Search exercises",
+  "exerciseFilterType": "Type",
+  "exerciseFilterBodyPart": "Body part",
+  "exerciseFilterEquipment": "Equipment",
+  "exerciseFilterMuscle": "Muscle",
+  "exerciseFilterResults": "{count} exercises",
+  "@exerciseFilterResults": {
     "placeholders": {
       "count": {
-        "type": "int",
-        "format": "compact"
+        "type": "int"
       }
     }
   },
-
-  "formatMacros": "{kcal} kcal · P {protein}g · C {carbs}g · F {fat}g",
-  "@formatMacros": {
+  "exerciseFilterClear": "Clear",
+  "exerciseFilterApply": "Apply",
+  "exerciseFilterNoResults": "No exercises match",
+  "exerciseFilterSearchOptions": "Search options",
+  "exerciseDetailTabHistory": "History",
+  "exerciseDetailTabDetails": "Details",
+  "emptyExercisesTitle": "No exercises yet",
+  "emptyExercisesBody": "Create exercises to plan your workouts.",
+  "emptyExercisesCta": "Add exercise",
+  "activeWorkoutAddExercise": "Add Exercise",
+  "activeWorkoutAddExerciseTooltip": "Search and add exercises to this workout",
+  "activeWorkoutPlannedSetsTitle": "Planned sets for {exercise}",
+  "@activeWorkoutPlannedSetsTitle": {
     "placeholders": {
-      "kcal": {},
-      "protein": {},
-      "carbs": {},
-      "fat": {}
+      "exercise": { "type": "String" }
     }
   },
-  "formatPer100g": "Per 100g: {kcal} kcal · P {protein}g · C {carbs}g · F {fat}g",
-  "@formatPer100g": {
+  "activeWorkoutPlannedRepsLabel": "Reps",
+  "activeWorkoutPlannedWeightLabel": "Weight",
+  "activeWorkoutReorderSets": "Reorder sets",
+  "activeWorkoutEditPlannedTitle": "Edit planned set",
+  "commonRemove": "Remove",
+  "activeWorkoutPrevExercise": "Previous exercise",
+  "activeWorkoutNextExercise": "Next exercise",
+  "activeWorkoutInThisWorkout": "In This Workout",
+  "activeWorkoutAllExercises": "All Exercises",
+  "activeWorkoutSearchPrompt": "Type to search exercises",
+  "activeWorkoutExerciseNotes": "Notes",
+  "activeWorkoutExerciseInfo": "Exercise info",
+  "activeWorkoutExerciseNotesDialogTitle": "Exercise notes",
+  "activeWorkoutExerciseNotesHint": "Note what to repeat or change next time (sets, weight, difficulty)…",
+  "exerciseUsedTitle": "Exercise in use",
+  "exerciseUsedBody": "Used in {count} workout. Delete the workout first to remove this exercise.",
+  "exerciseUsedBody_plural": "Used in {count} workouts. Delete the workouts first to remove this exercise.",
+  "@exerciseUsedBody": {
     "placeholders": {
-      "kcal": {},
-      "protein": {},
-      "carbs": {},
-      "fat": {}
+      "count": { "type": "int" }
     }
   },
-  "formatTotal": "Total: {total}",
-  "@formatTotal": {
+  "exerciseDetailAppBar": "Exercise",
+  "exerciseDetailNotFound": "Exercise not found.",
+  "exerciseDetailType": "Type",
+  "exerciseDetailBodyPart": "Body part",
+  "exerciseDetailEquipment": "Equipment",
+  "exerciseDetailPrimaryMuscle": "Primary muscles",
+  "exerciseDetailSecondaryMuscle": "Secondary muscles",
+  "exerciseDetailInstructions": "Instructions",
+  "exerciseDetailTips": "Tips",
+  "exerciseDetailFaqs": "FAQs",
+  "exerciseDetailKeywords": "Keywords",
+  "exerciseDetailHistory": "History",
+  "exerciseDetailHistoryEmpty": "No history yet. Add this exercise to a workout to see your stats.",
+  "exerciseDetailBestWeight": "Best weight",
+  "exerciseDetailBestVolume": "Best volume",
+  "exerciseDetailBestDuration": "Best duration",
+  "exerciseDetailTotalWorkouts": "Workouts",
+  "exerciseDetailTotalSets": "Sets",
+  "exerciseDetailVolumeOverTime": "Volume over time",
+  "exerciseDetailDurationOverTime": "Duration over time",
+  "exerciseDetailPlannedVsActual": "Planned vs actual",
+  "exerciseDetailVolumeAdherence": "Volume adherence",
+  "exerciseDetailSetsCompleted": "Sets completed",
+  "exerciseDetailAdherenceValue": "{percent}%",
+  "@exerciseDetailAdherenceValue": {
     "placeholders": {
-      "total": {}
+      "percent": { "type": "String" }
     }
   },
-
-  "exercises": "Exercises",
-  "exercise": "Exercise",
-  "activeWorkout": "Active Workout",
-  "noActiveSeance": "No active workout",
-  "guidedMode": "Guided",
-  "freeformMode": "Free-form",
-  "cancelSeance": "Cancel workout",
-  "backToApp": "Back to app",
-  "discardEmptySeance": "Discard empty workout?",
-  "discardEmptySeanceContent": "This workout has no exercises and will not be saved to history.",
-  "keepEditing": "Keep editing",
-  "discard": "Discard",
-  "completeSeance": "Complete Workout",
-  "addExercise": "Add Exercise",
-  "followPlan": "Follow the plan",
-  "searchToAdd": "Search to add",
-  "searchExercises": "Search exercises",
-  "exerciseTypeToSearch": "Type to search exercises...",
-  "typeToFindExercises": "Type to find exercises...",
-
-  "sets": "Sets",
-  "set": "Set",
-  "setsLower": "sets",
-  "done": "done",
-  "summary": "Summary",
-  "totalReps": "Total Reps",
-  "totalWeight": "Total Weight",
-  "addSet": "Add Set",
-  "tapToComplete": "Tap to complete",
-  "noExercisesFound": "No exercises found matching",
-  "repsLower": "reps",
-  "preFilledFrom": "Pre-filled from",
-  "allSetsComplete": "All sets complete!",
-  "restTimer": "Rest Timer",
-  "skip": "Skip",
-  "restOver": "Rest over!",
-  "getReadyNextSet": "Get ready for your next set!",
-  "editSet": "Edit Set",
-  "weightKg": "Weight (kg)",
-
-  "history": "History",
-  "records": "Records",
-  "noHistory": "No history yet",
-  "sessions": "Sessions",
-  "volume": "Volume",
-  "time": "Time",
-  "searchHistory": "Search history",
-  "searchByDateHint": "Search by date or workout name...",
-  "volumeProgression": "Volume Progression",
-  "estimated1RM": "Estimated 1RM Progression",
-  "bestEstimated1RM": "Best Estimated 1RM",
-  "maxWeight": "Max Weight",
-  "maxVolume": "Max Volume (Set)",
-  "totalVolume": "Total Volume",
-  "noHistoryContent": "Complete a workout with this exercise to see it here",
-
-  "library": "Library",
-  "createExercise": "Create Exercise",
-  "exerciseName": "Exercise name",
-  "category": "Category",
-  "templates": "Templates",
-  "createTemplate": "Create Template",
-
-  "exercisesCount": "{count,plural, one{{count} exercise} other{{count} exercises}}",
-  "@exercisesCount": {
+  "exerciseDetailSetNumber": "Set {number}",
+  "@exerciseDetailSetNumber": {
     "placeholders": {
-      "count": {
-        "type": "int",
-        "format": "compact"
-      }
+      "number": { "type": "int" }
     }
   },
-  "setsCount": "{count,plural, one{{count} set} other{{count} sets}}",
-  "@setsCount": {
+  "exerciseDetailSetCompleted": "Completed",
+  "exerciseDetailSetNotCompleted": "Not completed",
+  "exerciseDetailSetEmpty": "—",
+  "exerciseDetailRepsDelta": "{delta} reps",
+  "@exerciseDetailRepsDelta": {
     "placeholders": {
-      "count": {
-        "type": "int",
-        "format": "compact"
-      }
+      "delta": { "type": "String" }
     }
   },
-
-  "workoutsTab": "Workouts",
-  "trainingTab": "Training",
-  "quickLog": "Quick Log",
-  "followTodaysPlan": "Follow today's plan",
-  "startWorkout": "Start workout",
-  "statsTab": "Stats",
-  "searchExercisesHint": "Search exercises...",
-  "noExercisesFoundSimple": "No exercises found",
-  "noExercisesFoundAction": "Try a different search or clear filters",
-
-  "cardio": "Cardio",
-  "weightlifting": "Weightlifting",
-  "cardioDuration": "Cardio Duration",
-  "minutesLower": "min",
-  "minutes": "Minutes",
-  "setDuration": "Set Duration",
-
-  "quickLogTitle": "Quick Log",
-  "quickLogSearchHint": "Type to search exercises...",
-  "quickLogSelectExercise": "Please select an exercise",
-  "quickLogEnterDuration": "Please enter a valid duration",
-  "quickLogEnterReps": "Please enter a valid number of reps",
-  "quickLogEnterWeight": "Please enter a valid weight",
-  "quickLogSaved": "Workout logged!",
-  "quickLogDurationHint": "e.g. 30",
-  "quickLogRepsHint": "e.g. 10",
-  "quickLogWeightHint": "e.g. 50",
-  "quickLogNotes": "Notes",
-  "quickLogNotesHint": "Optional notes...",
-  "logWorkout": "Log Workout",
-
-  "noPlannedWorkoutsForDay": "No planned workouts for this day",
-  "addPlannedWorkout": "Add planned workout",
-  "completed": "Completed",
-  "close": "Close",
-  "startPlan": "Start",
-  "deletePlannedWorkout": "Delete planned workout",
-  "deletePlannedWorkoutContent": "Are you sure you want to delete this planned workout?",
-  "noTemplatesAvailable": "No templates available",
-  "selectTemplate": "Select template",
-  "error": "Error",
-  "enterWorkoutName": "Please enter a workout name",
-  "addAtLeastOneExercise": "Please add at least one exercise",
-  "plannedWorkoutSaved": "Planned workout saved!",
-  "editPlannedWorkout": "Edit planned workout",
-  "planWorkout": "Plan workout",
-  "workoutName": "Workout name",
-  "copyFromTemplate": "Copy from template",
-  "saveChanges": "Save changes",
-  "savePlan": "Save plan",
-
-  "runningWorkout": "Running Workout",
-  "resumeWorkout": "Resume Workout",
-  "viewWorkout": "View",
-  "stopWorkout": "Stop",
-  "newSeance": "New Workout",
-  "startBlankSeance": "Start Blank Workout",
-  "create": "Create",
-  "noTemplatesYet": "No templates yet. Create one to quickly start a workout!",
-  "browseAllTemplates": "Browse all templates",
-  "noWorkoutsYet": "No workouts yet. Start your first one above!",
-
-  "allTime": "All Time",
-  "workouts": "Workouts",
-  "duration": "Duration",
-  "thisWeek": "This Week",
-  "activity": "Activity",
-  "trends": "Trends",
-
-  "edit": "Edit",
-  "clone": "Clone",
-  "start": "Start",
-  "createTemplateFrom": "Create template from this",
-
-  "workoutAlreadyRunning": "Workout already running",
-  "workoutAlreadyRunningContent": "A workout is already in progress. Cancel it and start a new one?",
-  "startNewWorkout": "Start new workout",
-  "workout": "Workout",
-  "noExercises": "No exercises",
-
-  "pr": "PR!",
-  "oneRM": "e1RM",
-  "workoutSummary": "Workout Summary",
-  "exerciseBreakdown": "Exercise Breakdown",
-  "best": "Best",
-  "finish": "Finish",
-  "previousSessions": "Previous sessions ({count})",
-  "@previousSessions": {
+  "exerciseDetailWeightDelta": "{delta} {unit}",
+  "@exerciseDetailWeightDelta": {
     "placeholders": {
-      "count": {
-        "type": "int",
-        "format": "compact"
-      }
+      "delta": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
-  "tapToExpand": "Tap to expand",
-  "reps": "Reps",
-
-  "templateLibrary": "Template Library",
-  "createFirstTemplate": "Create your first template",
-  "createTemplate": "Create Template",
-  "editTemplate": "Edit Template",
-  "templateNameLabel": "Template name",
-  "addCustom": "Add as custom",
-  "searchAboveHint": "Search an exercise above to add it. Tap an exercise in the list to configure sets and reps.",
-  "noExercisesAdded": "No exercises added yet",
-  "noSetsConfigured": "No sets configured — tap to edit",
-  "remove": "Remove",
-  "restSeconds": "Rest (s)",
-
-  "pastMonth": "Past month",
-  "past3Months": "Past 3 months",
-  "pastYear": "Past year",
-  "noHistoryFor": "No history for {name} yet",
-  "@noHistoryFor": {
+  "exerciseDetailSetRest": "rest {rest}",
+  "@exerciseDetailSetRest": {
     "placeholders": {
-      "name": {}
+      "rest": { "type": "String" }
     }
   },
-  "completeWorkoutToSee": "Complete a workout with this exercise to see it here",
-  "records": "Records",
-  "volumeProgression": "Volume Progression",
-  "date": "Date",
-  "searchHistory": "Search history",
-  "searchByDateWorkout": "Search by date or workout name...",
-  "sessionsCount": "{count,plural, one{{count} session} other{{count} sessions}}",
-  "time": "Time",
-  "bestEstimated1RM": "Best Estimated 1RM",
-  "maxWeight": "Max Weight",
-  "maxVolumeSet": "Max Volume (Set)",
-  "totalVolume": "Total Volume",
-  "notAvailable": "N/A",
-  "across": "Across",
-
-  "overviewTab": "Overview",
-  "goalsTab": "Goals",
-  "settingsTab": "Settings",
-  "weight": "Weight",
-  "weightLogged": "Weight logged!",
-  "enterWeightKg": "Enter weight (kg)",
-  "log": "Log",
-  "weightTracker": "Weight Tracker",
-  "noWeightEntries": "No weight entries yet.",
-  "latest": "Latest",
-  "logWeight": "Log Weight",
-  "historyLast7Entries": "History (last 7 entries)",
-  "waterIntake": "Water Intake",
-  "goal": "Goal",
-  "setDailyWaterGoal": "Set Daily Water Goal",
-  "litersExample": "Liters (e.g., 2.5)",
-  "todaysActivity": "Today's activity",
-  "workoutInProgress": "Workout in progress",
-  "exercisesCompleted": "exercises completed",
-  "noWorkoutsToday": "No workouts yet. Start a session to see today's summary here.",
-  "elapsed": "elapsed",
-  "last84Days": "Last 84 days",
-  "noTrainingRecorded": "No training recorded on this day.",
-  "today": "Today",
-  "calories": "Calories",
-  "protein": "Protein",
-  "carbs": "Carbs",
-  "fat": "Fat",
-  "setProfileForTargets": "Set a bodyweight goal and your profile to see daily targets.",
-  "bodyWeightGoal": "Body Weight Goal",
-  "noBodyweightGoalSet": "No bodyweight goal set.",
-  "addBodyWeightGoal": "Add Body Weight Goal",
-  "target": "Target",
-  "by": "By",
-  "strengthGoals": "Strength Goals",
-  "addStrengthGoalTooltip": "Add strength goal",
-  "noStrengthGoalsYet": "No strength goals yet. Tap + to add (one per exercise).",
-  "setUpProfileFirst": "Set up your profile first",
-  "createProfile": "Create Profile",
-  "editProfile": "Edit Profile",
-  "yourProfile": "Your Profile",
-  "birthdate": "Birthdate",
-  "sex": "Sex",
-  "heightCm": "Height (cm)",
-  "activityLevel": "Activity Level",
-  "addBodyWeightGoalTitle": "Add Body Weight Goal",
-  "editBodyWeightGoalTitle": "Edit Body Weight Goal",
-  "direction": "Direction",
-  "targetWeightKg": "Target Weight (kg)",
-  "targetDate": "Target date",
-  "notSet": "Not set",
-  "addStrengthGoalTitle": "Add Strength Goal",
-  "editStrengthGoalTitle": "Edit Strength Goal",
-  "exercise": "Exercise",
-  "searchOrTypeCustom": "Search or type custom name",
-  "deleteBodyweightGoal": "Delete bodyweight goal?",
-  "deleteBodyweightGoalContent": "This will clear your weight target and macro targets.",
-  "deleteStrengthGoalTitle": "Delete strength goal for {exercise}?",
-  "@deleteStrengthGoalTitle": {
+  "exerciseDetailSetRestTook": "(took {rest})",
+  "@exerciseDetailSetRestTook": {
     "placeholders": {
-      "exercise": {}
+      "rest": { "type": "String" }
     }
   },
-  "deleteStrengthGoalContent": "This will remove the goal.",
-  "deleteEverything": "Delete everything",
-  "goalReached": "Goal reached!",
-  "toGo": "to go",
-  "strengthTrend": "Strength Trend",
-  "noStrengthData": "No strength data",
-  "weightTrend90Days": "Weight Trend (90 days)",
-  "profile": "Profile",
-  "setUpProfile": "Set up Profile",
-  "nutrition": "Nutrition",
-  "visibleMacros": "Visible macros",
-  "defaultRestTimer": "Default rest timer",
-  "secondsBetweenSets": "60 seconds between sets",
-  "restTimerComingSoon": "Rest timer settings coming soon",
-  "appearance": "Appearance",
-  "theme": "Theme",
-  "systemDefault": "System default",
-  "themeComingSoon": "Theme settings coming soon",
-  "data": "Data",
-  "exportDatabase": "Export database",
-  "shareDbFile": "Share the SQLite database file",
-  "deleteAllData": "Delete all data",
-  "removeEverything": "Remove everything and restart fresh",
-  "noDbFound": "No database file found",
-  "deleteAllDataTitle": "Delete all data?",
-  "deleteAllDataContent": "This will remove all your data including meals, exercises, workouts, goals, and profile. A fresh database will be created on next launch.",
-  "dbDeleted": "Database deleted. Restart the app to recreate it.",
-  "thisMonth": "This month",
-
-  "couldNotLoadWeightHistory": "Could not load weight history.",
-  "trainingHeatmap": "Training heatmap",
-  "heatmapLegendLow": "Low",
-  "heatmapLegendMid": "Mid",
-  "heatmapLegendHigh": "High",
-  "benchPress": "Bench Press",
-  "deadlift": "Deadlift",
-  "squat": "Squat",
-  "enterDetailsForMacros": "Enter your details for macro calculations",
-  "exportFailed": "Export failed: {error}",
-  "@exportFailed": {
+  "exerciseDetailTrendSame": "same as previous workout",
+  "exerciseDetailTrendDelta": "{delta} {unit} vs previous workout",
+  "@exerciseDetailTrendDelta": {
     "placeholders": {
-      "error": {}
+      "delta": { "type": "String" },
+      "unit": { "type": "String" }
     }
   },
-  "deleteFailed": "Delete failed: {error}",
-  "@deleteFailed": {
+  "exerciseDetailPrBadge": "New PR",
+  "exerciseDetailSetHeader": "Set",
+  "exerciseDetailSetHeaderPlanned": "Planned",
+  "exerciseDetailSetHeaderActual": "Actual",
+  "exerciseDetailSetHeaderDelta": "Δ",
+  "exerciseDetailSetHeaderRest": "Rest",
+  "exerciseDetailWeightTrend": "Best weight over time",
+  "exerciseDetailRepsTrend": "Reps over time",
+  "exerciseFormNewTitle": "New Exercise",
+  "exerciseFormEditTitle": "Edit Exercise",
+  "exerciseFormNameLabel": "Exercise Name",
+  "exerciseFormNameHint": "e.g. Bench Press",
+  "exerciseFormNameRequired": "Name is required",
+  "exerciseFormTypeLabel": "Type",
+  "exerciseFormSave": "Save",
+  "exerciseFormSaving": "Saving…",
+  "workoutListAppBar": "Workouts",
+  "templatesTitle": "Templates",
+  "templatesEmptyTitle": "No templates yet",
+  "templatesEmptyBody": "Create a reusable routine, or save a past workout as a template.",
+  "templatesNew": "New template",
+  "templatesEdit": "Edit template",
+  "templatesStartToday": "Start today",
+  "templatesExercisesCount": "{count, plural, =0{No exercises} =1{1 exercise} other{{count} exercises}}",
+  "templatesScheduleOff": "Not scheduled",
+  "templatesScheduleDaily": "Every day",
+  "templatesScheduleWeekly": "Weekly on {days}",
+  "templatesScheduleInterval": "Every {days} days",
+  "templatesSavedAsTemplate": "Workout saved as template",
+  "templatesDeleteConfirmTitle": "Delete template?",
+  "templatesDeleteConfirmBody": "The blueprint will be deleted. Workouts you already started are kept.",
+  "templatesAddSet": "Add set",
+  "workoutListManageBtn": "Manage Exercises",
+  "emptyWorkoutsTitle": "No workouts yet",
+  "emptyWorkoutsBody": "Plan your first workout and start training.",
+  "emptyWorkoutsCta": "Add workout",
+  "workoutDeleted": "Workout \"{name}\" deleted",
+  "@workoutDeleted": {
     "placeholders": {
-      "error": {}
+      "name": { "type": "String" }
     }
   },
+  "workoutFormTitle": "New Workout",
+  "workoutFormEditTitle": "Edit Workout",
+  "workoutFormNameLabel": "Workout Name",
+  "workoutFormNameHint": "e.g. Morning Push",
+  "workoutFormNameRequired": "Name is required",
+  "workoutFormDate": "Date",
+  "workoutFormAddPlannerTask": "Add to planner",
+  "workoutFormAddPlannerTaskSubtitle": "Creates a \"do this workout\" task on the planner for this date.",
+  "workoutFormExercises": "Exercises",
+  "workoutFormAddExercise": "Add exercise",
+  "workoutFormRemoveSet": "Remove set",
+  "workoutFormReorderExercises": "Reorder exercises",
+  "workoutFormNoExercises": "No exercises available. Add some first.",
+  "workoutFormSave": "Save",
+  "workoutFormSaving": "Saving…",
+  "workoutFormAddSet": "Add set",
+  "workoutFormRepsLabel": "Reps",
+  "workoutFormWeightLabel": "kg",
+  "workoutFormDurationLabel": "min",
+  "workoutFormDistanceLabel": "Distance (m)",
+  "workoutFormSelectExercise": "Select at least one exercise",
+  "workoutFormSearchHint": "Search exercises",
+  "workoutFormRestLabel": "Rest (min)",
+  "workoutFormSetDoneAt": "Done at",
+  "workoutFormSetDoneAtTooltip": "When this set was finished — rest is measured from here",
+  "workoutFormSetTimeEmpty": "Set time",
+  "workoutFormSetIncomplete": "Complete every added set with its values and rest time (or remove the empty set)",
+  "workoutFormRemoveExercise": "Remove exercise",
+  "workoutFormCreateExercise": "Create new exercise “{query}”",
+  "workoutDetailAppBar": "Workout",
+  "workoutDetailNotFound": "Workout not found",
+  "workoutDetailBtnStart": "Start",
+  "workoutDetailBtnComplete": "Complete",
+  "workoutDetailStartedAt": "Started: {time}",
+  "@workoutDetailStartedAt": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "workoutDetailExercises": "Exercises",
+  "emptyWorkoutDetailTitle": "No exercises in this workout",
+  "emptyWorkoutDetailBody": "Add exercises when creating a workout.",
+  "workoutDetailSetHeaderActual": "Actual",
+  "workoutDetailSetChipRest": "{planned} · {rest}",
+  "@workoutDetailSetChipRest": {
+    "placeholders": {
+      "planned": { "type": "String" },
+      "rest": { "type": "String" }
+    }
+  },
+  "workoutDetailSetActualsTitle": "Set {number} — Actuals",
+  "@workoutDetailSetActualsTitle": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "workoutDetailActualRepsLabel": "Actual Reps",
+  "workoutDetailActualWeightLabel": "Actual Weight (kg)",
+  "workoutDetailActualWeightLabelUnit": "Actual Weight ({unit})",
+  "@workoutDetailActualWeightLabelUnit": {
+    "placeholders": { "unit": { "type": "String" } }
+  },
+  "workoutDetailActualDurationLabel": "Duration (min)",
+  "workoutDetailActualDistanceLabel": "Distance (m)",
+  "workoutDetailSetCount": "{count} set",
+  "workoutDetailSetCount_plural": "{count} sets",
+  "@workoutDetailSetCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "ingredientListAppBar": "Ingredients",
+  "emptyIngredientsTitle": "No ingredients yet",
+  "emptyIngredientsBody": "Add your first ingredient to start building meals.",
+  "emptyIngredientsCta": "Add ingredient",
+  "ingredientArchived": "Ingredient \"{name}\" archived",
+  "@ingredientArchived": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "ingredientFormNewTitle": "New Ingredient",
+  "ingredientFormEditTitle": "Edit Ingredient",
+  "ingredientFormNameLabel": "Name",
+  "ingredientFormNameHint": "e.g. Chicken Breast",
+  "ingredientFormNameRequired": "Name is required",
+  "ingredientFormCaloriesLabel": "Calories (per 100g)",
+  "ingredientFormCaloriesSuffix": "kcal",
+  "ingredientFormProteinLabel": "Protein (per 100g)",
+  "ingredientFormProteinSuffix": "g",
+  "ingredientFormCarbsLabel": "Carbs (per 100g)",
+  "ingredientFormCarbsSuffix": "g",
+  "ingredientFormFatLabel": "Fat (per 100g)",
+  "ingredientFormFatSuffix": "g",
+  "ingredientFormSodiumLabel": "Sodium (per 100g)",
+  "ingredientFormSodiumSuffix": "g",
+  "ingredientFormFiberLabel": "Fiber (per 100g)",
+  "ingredientFormFiberSuffix": "g",
+  "ingredientFormSugarLabel": "Sugar (per 100g)",
+  "ingredientFormSugarSuffix": "g",
+  "ingredientFormFieldRequired": "{label} is required",
+  "@ingredientFormFieldRequired": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "ingredientFormFieldPositive": "{label} must be positive",
+  "@ingredientFormFieldPositive": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "ingredientFormFieldNonNegative": "{label} cannot be negative",
+  "@ingredientFormFieldNonNegative": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "mealListUnnamedMeal": "Meal · {date} {time}",
+  "@mealListUnnamedMeal": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "foodPickerTitle": "Add foods",
+  "foodPickerSearchHint": "Search recipes and ingredients",
+  "foodPickerSectionRecipes": "Recipes",
+  "foodPickerSectionIngredients": "Single ingredients",
+  "foodPickerEmpty": "Nothing matches your search.",
+  "foodPickerNoFoods": "No foods yet. Add an ingredient to get started — every ingredient can be logged on its own.",
+  "foodPickerNeedsAmount": "{name} needs an amount before you can save",
+  "@foodPickerNeedsAmount": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "foodPickerCaloriesCooked": "{portion} kcal for this portion · {per100g}/100g cooked",
+  "@foodPickerCaloriesCooked": {
+    "placeholders": {
+      "portion": { "type": "String" },
+      "per100g": { "type": "String" }
+    }
+  },
+  "mealListTotals": "{amount} g  ·  P {protein}  ·  C {carbs}  ·  F {fat}  ·  Fiber {fiber}",
+  "@mealListTotals": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "protein": { "type": "String" },
+      "carbs": { "type": "String" },
+      "fat": { "type": "String" },
+      "fiber": { "type": "String" }
+    }
+  },
+  "foodPickerDone": "Done",
+  "mealFormSelectedSummary": "{count, plural, =0{No foods selected} =1{1 food selected} other{{count} foods selected}} · {calories} kcal",
+  "@mealFormSelectedSummary": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "calories": { "type": "String" }
+    }
+  },
+  "mealFormChooseFoods": "Choose foods",
+  "ingredientDetailOwnFoodTitle": "Loggable on its own",
+  "ingredientDetailOwnFoodBody": "This ingredient has a matching food, so you can log it directly without making a recipe. Its nutrition is the per-100g values above.",
+  "mealListAppBar": "Meals",
+  "mealListManageBtn": "Manage Ingredients",
+  "emptyMealsTitle": "No meals yet",
+  "emptyMealsBody": "Log your first meal to track calories and macros.",
+  "emptyMealsCta": "Log a meal",
+  "mealDeleted": "Meal \"{name}\" deleted",
+  "@mealDeleted": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "mealListFoodCount": "{count, plural, =0{no foods} =1{1 food} other{{count} foods}}",
+  "@mealListIngredientCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mealListCaloriesValue": "{calories} kcal",
+  "@mealListCaloriesValue": {
+    "placeholders": {
+      "calories": { "type": "String" }
+    }
+  },
+  "mealListMacroFormat": "{grams}g  ·  {calories} kcal  ·  P {protein}g  ·  C {carbs}g  ·  F {fat}g",
+  "@mealListMacroFormat": {
+    "placeholders": {
+      "grams": { "type": "String" },
+      "calories": { "type": "String" },
+      "protein": { "type": "String" },
+      "carbs": { "type": "String" },
+      "fat": { "type": "String" }
+    }
+  },
+  "mealFormNewTitle": "New Meal",
+  "mealFormEditTitle": "Edit Meal",
+  "mealFormNameLabel": "Meal Name",
+  "mealFormNameHint": "Optional",
+  "mealFormNameOptionalHint": "Leave empty and it will be labelled by its date",
+  "mealFormNameRequired": "Name is required",
+  "mealFormDateTime": "Date & Time",
+  "mealFormIngredients": "Ingredients",
+  "mealFormNoIngredients": "No ingredients available. Add some first.",
+  "mealFormAddIngredient": "Add at least one ingredient with grams",
+  "foodListAppBar": "Recipes",
+  "foodListPartCount": "{count, plural, =1{1 ingredient} other{{count} ingredients}}",
+  "@foodListPartCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "foodListUnresolved": "Ingredients missing — nutrition cannot be calculated",
+  "foodListCookedWeight": "Cooked weight {grams} g",
+  "@foodListCookedWeight": {
+    "placeholders": { "grams": { "type": "String" } }
+  },
+  "foodArchived": "{name} archived",
+  "@foodArchived": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "emptyFoodsTitle": "No recipes yet",
+  "emptyFoodsBody": "Combine two or more ingredients into a food you can log in one go. Nutrition is worked out from the ingredients you add.",
+  "emptyFoodsCta": "Create a recipe",
+  "foodFormNewTitle": "New recipe",
+  "foodFormEditTitle": "Edit recipe",
+  "foodFormNameLabel": "Name",
+  "foodFormNameHint": "e.g. Granola",
+  "foodFormNameRequired": "Name is required",
+  "foodFormComposition": "Ingredients",
+  "foodFormCompositionHint": "Amounts are how much of each ingredient goes in. They add up to the raw batch weight.",
+  "foodFormSearchPrompt": "Search an ingredient to add.",
+  "foodFormNoMatches": "No ingredients match your search.",
+  "foodFormCookedWeightLabel": "Final weight after cooking",
+  "foodFormCookedWeightHint": "Raw total {raw} g. Cooking changes the weight, not the calories — per-100g is worked out from this weight.",
+  "@foodFormCookedWeightHint": {
+    "placeholders": { "raw": { "type": "String" } }
+  },
+  "foodFormCookedWeightRequired": "Enter the final weight (greater than zero).",
+  "foodFormCookedYield": "{percent}% of the raw weight",
+  "@foodFormCookedYield": {
+    "placeholders": { "percent": { "type": "String" } }
+  },
+  "foodFormAddPart": "Add an ingredient",
+  "foodFormNoMoreParts": "No more ingredients to add.",
+  "foodFormRemovePart": "Remove ingredient",
+  "foodFormAmountLabel": "Amount",
+  "foodFormAmountPositive": "Amounts must be greater than zero.",
+  "foodFormNeedsParts": "Add at least one ingredient",
+  "foodFormPreview": "Nutrition per 100g",
+  "foodFormPreviewCooked": "Nutrition per 100 g cooked",
+  "foodFormPreviewEmpty": "Add an ingredient to see the nutrition.",
+  "foodFormPer100g": "Worked out from the amounts above.",
+  "foodFormRawToCooked": "Raw {raw} g → cooked {cooked} g",
+  "@foodFormRawToCooked": {
+    "placeholders": {
+      "raw": { "type": "String" },
+      "cooked": { "type": "String" }
+    }
+  },
+  "foodFormBatchCalories": "{calories} kcal in the whole batch",
+  "@foodFormBatchCalories": {
+    "placeholders": { "calories": { "type": "String" } }
+  },
+  "foodFormBatchTotal": "Batch weighs {total}",
+  "@foodFormBatchTotal": {
+    "placeholders": { "total": { "type": "String" } }
+  },
+  "foodFormSave": "Save recipe",
+  "foodFormSaving": "Saving…",
+  "mealFormFoods": "Foods",
+  "mealFormNoFoods": "No foods available yet. Add ingredients first — each one becomes a food you can log on its own.",
+  "mealFormAddFood": "Add at least one food with grams",
+  "mealFormFoodUnresolved": "One of the selected foods has ingredients that are missing, so its nutrition cannot be calculated. Sync or add those ingredients first.",
+  "mealFormFoodCalories": "{portion} kcal for this portion · {per100g}/100g",
+  "@mealFormFoodCalories": {
+    "placeholders": {
+      "portion": { "type": "String" },
+      "per100g": { "type": "String" }
+    }
+  },
+  "mealFormTotals": "Meal total",
+  "mealItemEditorAmountLabel": "Amount",
+  "mealFormGramsLabel": "g",
+  "mealFormSave": "Save",
+  "mealFormSaving": "Saving…",
+  "plannerAppBar": "Daily Plan",
+  "plannerToday": "Today",
+  "plannerPreviousDay": "Previous day",
+  "plannerNextDay": "Next day",
+  "plannerAnytime": "Anytime",
+  "plannerTimelineScheduled": "Scheduled",
+  "emptyPlannerTitle": "No tasks for this day",
+  "emptyPlannerBody": "Add a task to plan your routine.",
+  "emptyPlannerCta": "Add task",
+  "plannerTaskLabel": "Task",
+  "plannerTaskHint": "e.g. Morning run",
+  "plannerTaskRequired": "Title is required",
+  "plannerTagsLabel": "Tags",
+  "plannerTagsHint": "Add a tag, then press + (e.g. Work, Errand)",
+  "plannerTagsAdd": "Add tag",
+  "plannerNotesLabel": "Notes",
+  "plannerWorkoutLabel": "Workout (optional)",
+  "plannerWorkoutHint": "Link a workout",
+  "plannerWorkoutNone": "No workout",
+  "plannerLinkedWorkout": "Open linked workout",
+  "plannerDueDateNone": "No due date",
+  "plannerDueDateClear": "Clear due date",
+  "plannerDueTimeNone": "No due time",
+  "plannerDueTimeClear": "Clear due time",
+  "plannerStartTimeLabel": "Start time",
+  "plannerEndTimeLabel": "End time",
+  "plannerStartTimeNone": "No start time",
+  "plannerEndTimeNone": "No end time",
+  "plannerStartTimeClear": "Clear start time",
+  "plannerEndTimeClear": "Clear end time",
+  "plannerRepeatInvalid": "Check the repeat settings",
+  "plannerAddTask": "New Task",
+  "plannerEditTask": "Edit Task",
+  "plannerEditScopeTitle": "Edit scope",
+  "plannerDeleteScopeTitle": "Delete scope",
+  "plannerScopeBody": "This task repeats. How would you like to proceed?",
+  "plannerScopeThis": "This one only",
+  "plannerScopeFollowing": "This and all following ones",
+  "plannerDeleted": "Task \"{title}\" deleted",
+  "@plannerDeleted": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "plannerCancelled": "Task \"{title}\" cancelled",
+  "@plannerCancelled": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "plannerCopyPrevious": "Copy from yesterday",
+  "plannerMoreActions": "More actions",
+  "plannerTaskCancelled": "Cancelled",
+  "plannerActionMarkDone": "Mark done",
+  "plannerActionCancelTask": "Mark cancelled",
+  "plannerActionReopen": "Reopen",
+  "plannerCarryOverLabel": "Carry over if not done",
+  "plannerCarryOverHelp": "If the day ends and this task isn't done, it moves to today. Turn off to mark it cancelled instead.",
+  "plannerTaskDetailAppBar": "Task details",
+  "plannerDetailUpdatedAt": "Created {date}",
+  "@plannerDetailUpdatedAt": {
+    "description": "plannerDetailUpdatedAt",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "plannerDetailDueDate": "Due {date}",
+  "@plannerDetailDueDate": {
+    "description": "plannerDetailDueDate",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "plannerDetailTimeRange": "{start} – {end}",
+  "@plannerDetailTimeRange": {
+    "description": "plannerDetailTimeRange",
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "plannerDetailNotes": "Notes",
+  "plannerDetailTags": "Tags",
+  "plannerDetailRepeats": "Repeat",
+  "plannerDetailLinkedWorkout": "Linked workout",
+  "plannerDetailEdit": "Edit task",
+  "plannerDetailDelete": "Delete task",
+  "plannerDetailDeleteTitle": "Delete task?",
+  "plannerDetailDeleteBody": "This deletes the task \"{title}\".",
+  "@plannerDetailDeleteBody": {
+    "description": "plannerDetailDeleteBody",
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "plannerRepeatSummaryDaily": "Every day",
+  "plannerRepeatSummaryWeekly": "Every week on {days}",
+  "@plannerRepeatSummaryWeekly": {
+    "description": "plannerRepeatSummaryWeekly",
+    "placeholders": {
+      "days": { "type": "String" }
+    }
+  },
+  "plannerRepeatSummaryInterval": "Every {count} days",
+  "@plannerRepeatSummaryInterval": {
+    "description": "plannerRepeatSummaryInterval",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "plannerRepeatSummaryMonthly": "Monthly on day {day}",
+  "@plannerRepeatSummaryMonthly": {
+    "description": "plannerRepeatSummaryMonthly",
+    "placeholders": {
+      "day": { "type": "int" }
+    }
+  },
+  "plannerRepeatSummaryEndsDate": " · until {date}",
+  "@plannerRepeatSummaryEndsDate": {
+    "description": "plannerRepeatSummaryEndsDate",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "plannerRepeatSummaryEndsCount": " · {count} occurrences",
+  "@plannerRepeatSummaryEndsCount": {
+    "description": "plannerRepeatSummaryEndsCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "plannerCopyConfirmTitle": "Copy pending tasks?",
+  "plannerCopyConfirmBody": "{count} pending task from yesterday will be copied to today.",
+  "plannerCopyConfirmBody_plural": "{count} pending tasks from yesterday will be copied to today.",
+  "@plannerCopyConfirmBody": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "plannerRepeatLabel": "Repeat",
+  "plannerRepeatNone": "Does not repeat",
+  "plannerRepeatDaily": "Daily",
+  "plannerRepeatWeekly": "Weekly",
+  "plannerRepeatInterval": "Every N days",
+  "plannerRepeatMonthly": "Monthly",
+  "plannerRepeatWeekdays": "Repeat on",
+  "plannerRepeatEvery": "Every",
+  "plannerRepeatDays": "days",
+  "plannerRepeatMonthDay": "Day of month",
+  "plannerRepeatEnds": "Ends",
+  "plannerRepeatEndsNever": "Never",
+  "plannerRepeatEndsOnDate": "On date",
+  "plannerRepeatEndsAfter": "After",
+  "plannerRepeatOccurrences": "occurrences",
+  "notesAppBar": "Notes",
+  "notesEmptyTitle": "No notes yet",
+  "notesEmptyBody": "Capture anything on your mind — routines, recipes, lessons from a workout. Notes are private to this device.",
+  "notesFab": "New note",
+  "notesEditorNewTitle": "New Note",
+  "notesEditorEditTitle": "Edit Note",
+  "notesTitleLabel": "Title",
+  "notesBodyLabel": "Note",
+  "notesBodyPreviewTooltip": "Preview",
+  "notesBodyEditTooltip": "Edit",
+  "notesToolbarBold": "Bold",
+  "notesToolbarItalic": "Italic",
+  "notesToolbarHeading": "Heading",
+  "notesToolbarList": "List",
+  "notesTitleRequired": "Title is required",
+  "notesSave": "Save",
+  "notesEditing": "Saving…",
+  "notesDelete": "Delete note",
+  "notesDeleteConfirmTitle": "Delete note?",
+  "notesDeleteConfirmBody": "“{title}” will be permanently deleted. This can’t be undone.",
+  "notesVoiceRecord": "Add voice note",
+  "notesVoiceRecording": "Recording {elapsed}",
+  "@notesVoiceRecording": {
+    "placeholders": {
+      "elapsed": { "type": "String" }
+    }
+  },
+  "notesVoiceStopPlayback": "Stop playback",
+  "notesVoicePlay": "Play",
+  "notesVoiceRemove": "Remove voice note",
+  "notesVoicePermissionDenied": "Microphone permission is required to record voice notes.",
+  "notesVoiceNone": "No voice notes yet",
+  "notesVoiceClipLabel": "Clip {index}",
+  "@notesVoiceClipLabel": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "notesVoiceCount": "{count} voice note",
+  "notesVoiceCount_plural": "{count} voice notes",
+  "@notesVoiceCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "settingsAppBar": "Settings",
+  "settingsProfile": "Profile",
+  "settingsAgeLabel": "Age (years)",
+  "settingsAgeInvalid": "Enter an age between 0 and 120",
+  "settingsAppearance": "Appearance",
+  "settingsThemeSystem": "System",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsLanguage": "Language",
+  "settingsLangEn": "English",
+  "settingsLangFr": "Français",
+  "settingsLangEs": "Español",
+  "settingsLangSystem": "System",
+  "settingsProfileSubtitle": "Age, gender, activity and goals",
+  "settingsNotificationsSubtitle": "Task reminders and rest alarm",
+  "settingsAppearanceLanguage": "Appearance & Language",
+  "settingsAppearanceLanguageSubtitle": "Theme and app language",
+  "settingsBodyWeightGoal": "Body weight goal",
+  "settingsGoalLose": "Lose weight",
+  "settingsGoalMaintain": "Maintain weight",
+  "settingsGoalGain": "Gain weight",
+  "settingsGender": "Gender",
+  "settingsGenderMale": "Male",
+  "settingsGenderFemale": "Female",
+  "settingsActivityLevel": "Activity level",
+  "settingsActivitySedentary": "Sedentary",
+  "settingsActivityLight": "Light",
+  "settingsActivityModerate": "Moderate",
+  "settingsActivityActive": "Active",
+  "settingsActivityVeryActive": "Very active",
+  "settingsTrackBodyFat": "Track body fat",
+  "settingsBodyFatLabel": "Body fat (%)",
+  "settingsBodyFatInvalid": "Enter a body fat percentage between 0 and 70",
+  "settingsNotifications": "Notifications",
+  "settingsPlannerNotifications": "Task reminders",
+  "settingsPlannerNotificationsSubtitle": "Notify me about planner tasks with a due time.",
+  "settingsRestAlarmSound": "Rest alarm sound",
+  "settingsRestAlarmVibration": "Rest alarm vibration",
+  "settingsData": "Data",
+  "settingsResetData": "Reset all data",
+  "settingsAdvanced": "Advanced",
+  "settingsAdvancedSubtitle": "Planner horizon, calorie adjustment, timers",
+  "settingsPlannerHorizonLabel": "Planner look-ahead (days)",
+  "settingsPhasesLabel": "Phase",
+  "settingsPhasesHelp": "Your calorie and macro targets follow the phase you pick. Each phase keeps its own settings.",
+  "settingsPhaseProteinLabel": "Protein (g per kg bodyweight)",
+  "settingsPhaseProteinHelp": "Body weight times this number gives your daily protein target.",
+  "settingsPhaseFatLabel": "Fat (% of calories)",
+  "settingsPhaseFatHelp": "Share of your calorie target spent on fat. Carbs get whatever is left.",
+  "settingsPhaseFiberLabel": "Fiber (g)",
+  "settingsPhaseFiberHelp": "Daily fiber target for this phase.",
+  "settingsSetActiveGoal": "Set as active goal",
+  "settingsActiveGoalLabel": "Active goal",
+  "settingsMacrosExceedWarning": "Protein and fat use more calories than your target, so carbs are set to 0.",
+  "settingsBmrLabel": "BMR",
+  "settingsTdeeLabel": "TDEE",
+  "settingsEstimatedSuffix": "estimated",
+  "settingsCalorieAdjustmentLabel": "Calorie goal adjustment (kcal)",
+  "settingsDefaultRestLabel": "Default rest between sets (min)",
+  "settingsReminderLeadLabel": "Pre-reminder lead (min)",
+  "settingsUntimedReminderLabel": "Untimed default (min)",
+  "settingsApiTimeoutLabel": "Sync request timeout (s)",
+  "settingsPlannerHorizonHelp": "How many days ahead recurring tasks are pre-created in the planner.",
+  "settingsCalorieAdjustmentHelp": "kcal added to your daily target for this phase. Negative creates a deficit, positive a surplus.",
+  "settingsDefaultRestHelp": "Prefills the rest field when adding a new set to a workout. Leave blank for none.",
+  "settingsReminderLeadHelp": "Minutes before a task's start time when the advance notification fires.",
+  "settingsUntimedReminderHelp": "Time of day for untimed task reminders, as minutes after midnight (540 = 09:00).",
+  "settingsApiTimeoutHelp": "How long sync requests wait for the server before giving up.",
+  "settingsValueInvalid": "Enter a valid non-negative number.",
+  "settingsResetDataSubtitle": "Erase all workouts, meals, metrics, planner tasks and notes, and restore default settings.",
+  "settingsResetDataConfirmTitle": "Reset all data?",
+  "settingsResetDataConfirmBody": "This permanently deletes all of your data and resets your settings. This cannot be undone.",
+  "settingsResetDataConfirmAction": "Delete everything",
+  "taskReminderDueSoon": "Due in 30 minutes",
+  "taskReminderDueNow": "Due now",
+  "statusCompleted": "Completed",
+  "statusActive": "Active",
+  "statusPending": "Pending",
+  "exerciseTypeWeightlifting": "Weightlifting",
+  "exerciseTypeCardio": "Cardio",
+  "commonCancel": "Cancel",
+  "commonContinue": "Continue",
+  "commonSave": "Save",
+  "commonEdit": "Edit",
+  "commonUndo": "Undo",
+  "commonOk": "OK",
+  "commonSaving": "Saving…",
+  "commonSearch": "Search",
+  "errorWithMessage": "Error: {message}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "errorLoadingResource": "Error loading {resource}: {message}",
+  "@errorLoadingResource": {
+    "placeholders": {
+      "resource": { "type": "String" },
+      "message": { "type": "String" }
+    }
+  },
+  "macroGrams": "{value}g",
+  "@macroGrams": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "macroKcal": "{value} kcal",
+  "@macroKcal": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "ingredientMacroRow": "{grams}g  ·  {calories} kcal  ·  P {protein}g  ·  C {carbs}g  ·  F {fat}g",
+  "@ingredientMacroRow": {
+    "placeholders": {
+      "grams": { "type": "String" },
+      "calories": { "type": "String" },
+      "protein": { "type": "String" },
+      "carbs": { "type": "String" },
+      "fat": { "type": "String" }
+    }
+  },
+  "ingredientNutrientSodium": "Na {value}g",
+  "@ingredientNutrientSodium": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "ingredientNutrientFiber": "Fiber {value}g",
+  "@ingredientNutrientFiber": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "ingredientNutrientSugar": "Sugar {value}g",
+  "@ingredientNutrientSugar": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "ingredientFormBrandLabel": "Brand",
+  "ingredientFormBarcodeLabel": "Barcode",
+  "ingredientFormScanTile": "Scan barcode",
+  "ingredientFormScanning": "Scanning…",
+  "ingredientFormPicturesSection": "Pictures",
+  "ingredientFormAddPicture": "Add picture",
+  "ingredientDetailPricesTitle": "Prices",
+  "ingredientDetailNoPrices": "No prices recorded yet.",
+  "ingredientDetailCostPerKg": "{value} /kg",
+  "@ingredientDetailCostPerKg": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "ingredientPriceAdd": "Add price",
+  "ingredientPriceEdit": "Edit price",
+  "ingredientPriceStoreLabel": "Store",
+  "ingredientPriceAmountLabel": "Price",
+  "ingredientPriceGramsLabel": "Package size",
+  "ingredientPriceSourceUrlLabel": "Source URL (optional)",
+  "ingredientPriceHistoryTitle": "Price history",
+  "ingredientDetailManageStores": "Manage stores",
+  "storeManagerTitle": "Stores",
+  "storeManagerEmpty": "No stores yet. Add one to start tracking prices.",
+  "storeManagerAddTile": "Add store",
+  "storeNameLabel": "Store name",
+  "storeNameRequired": "Name is required",
+  "settingsFxAutoRefresh": "Auto-refresh rates",
+  "settingsFxAutoRefreshSubtitle": "Fetches exchange rates in the background",
+  "settingsFxRefreshInterval": "Refresh interval",
+  "settingsSyncServer": "Sync server",
+  "settingsSyncServerHint": "Point this at your sync server to pull exercises, ingredients and currencies. Leave empty to disable sync.",
+  "settingsSyncBaseUrl": "Server URL",
+  "settingsSyncApiKey": "API key",
+  "syncExercisesTooltip": "Sync exercises",
+  "syncIngredientsTooltip": "Sync ingredients",
+  "syncCurrenciesTooltip": "Sync currencies",
+  "syncPushIngredientTooltip": "Push to shared catalogue",
+  "syncServerNotConfigured": "Sync server URL is not configured",
+  "syncAll": "Sync all",
+  "syncSelect": "Select…",
+  "selectServerExercises": "Select server exercises",
+  "selectServerIngredients": "Select server ingredients",
+  "syncNothingNew": "Nothing new on the server — everything is already imported",
+  "ingredientListSearchHint": "Search ingredients",
+  "refreshList": "Refresh list",
+  "syncServerUnreachable": "Server not reachable — check the URL/key or increase the timeout in Settings",
+  "syncExercisesHelp": "Download the shared exercise catalogue and its media from the server.",
+  "syncIngredientsHelp": "Download the shared ingredient, store and price catalogue from the server.",
+  "syncCurrenciesHelp": "Download the latest currency exchange rates from the server.",
+  "settingsSyncEndpoints": "Endpoints",
+  "settingsSyncEndpointsHint": "Override the server path used for each operation. Leave a field at its default unless your server uses different paths.",
+  "endpointReset": "Reset to default",
+  "pushAllData": "Push all data",
+  "pushAllDataTooltip": "Upload all local data to the server (one-way)",
+  "pushAllSuccess": "All data pushed to the server.",
+  "exportServer": "Export backup to server",
+  "exportServerTooltip": "Upload a full backup of your local data to the server",
+  "importServer": "Import database from server",
+  "importServerTooltip": "Replace your local data with the server's copy",
+  "importConfirmTitle": "Replace local data?",
+  "importConfirmBody": "This replaces all local data with the server copy. This cannot be undone.",
+  "importSuccess": "Restored from the server copy.",
+  "importFailed": "Import failed",
+  "importNothing": "Nothing to import",
+  "exportSuccess": "Backup exported.",
+  "exportFailed": "Export failed",
+  "pushAllDataHelp": "Upload all your local data to the server (one-way copy).",
+  "exportServerHelp": "Upload a full backup of your local data to the server.",
+  "importServerHelp": "Replace your local data with the server copy. Asks for confirmation first.",
+  "settingsPlanner": "Planner",
+  "settingsPlannerSubtitle": "Workouts, tasks and goals",
+  "settingsNutrition": "Nutrition",
+  "settingsNutritionSubtitle": "Units and calorie targets",
+  "settingsBudgetCurrencySubtitle": "Base currency and exchange rates",
+  "settingsUnits": "Units",
+  "settingsWeightUnitLabel": "Weight",
+  "settingsLengthUnitLabel": "Height",
+  "settingsExportDb": "Export backup",
+  "settingsExportDbSubtitle": "Share a compressed JSON backup of all your data",
+  "settingsReplayPrefillLabel": "When replaying a workout, prefill sets from",
+  "settingsReplayPrefillActuals": "Previous actuals",
+  "settingsReplayPrefillPlanned": "Planned values",
+  "workoutSummaryDoAgain": "Do again",
+  "workoutActionReplay": "Replay",
+  "workoutActionDuplicate": "Duplicate",
+  "workoutDetailPlannedSetReps": "{reps} × {weight} {unit}",
+  "@workoutDetailPlannedSetReps": {
+    "placeholders": {
+      "reps": { "type": "String" },
+      "weight": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "workoutDetailPlannedSetDuration": "{minutes} min",
+  "@workoutDetailPlannedSetDuration": {
+    "placeholders": {
+      "minutes": { "type": "String" }
+    }
+  },
+  "workoutDetailPlannedSetEmpty": "—",
+  "workoutDetailPlannedSetRest": "{planned} · rest {rest}",
+  "workoutDetailActualSetReps": "{reps} × {weight} {unit}",
+  "@workoutDetailActualSetReps": {
+    "placeholders": {
+      "reps": { "type": "String" },
+      "weight": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "workoutDetailActualSetWeight": "{weight} {unit}",
+  "@workoutDetailActualSetWeight": {
+    "placeholders": {
+      "weight": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "workoutDetailActualSetDuration": "{reps} min",
+  "@workoutDetailActualSetDuration": {
+    "placeholders": {
+      "reps": { "type": "String" }
+    }
+  },
+  "workoutDetailActualSetDistance": "{distance} m",
+  "@workoutDetailActualSetDistance": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "workoutDetailActualSetTime": "{value} · {time}",
+  "@workoutDetailActualSetTime": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "workoutDetailActualSetEmpty": "—",
+  "bodyMetricsTitle": "Body Metrics",
+  "bodyMetricsAddWeight": "Add weight",
+  "bodyMetricsAddHeight": "Add height",
+  "bodyMetricsWeightLabel": "Weight (kg)",
+  "bodyMetricsHeightLabel": "Height (cm)",
+  "bodyMetricsDialogWeightTitle": "New weight entry",
+  "bodyMetricsDialogHeightTitle": "New height entry",
+  "bodyMetricsValueRequired": "Enter a value",
+  "bodyMetricsValuePositive": "Value must be greater than 0",
+  "bodyMetricsEmptyWeight": "No weight entries yet.",
+  "bodyMetricsEmptyHeight": "No height entries yet.",
+  "bodyMetricsLatestWeight": "Latest: {value} {unit}",
+  "@bodyMetricsLatestWeight": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "bodyMetricsLatestHeight": "Latest: {value} {unit}",
+  "@bodyMetricsLatestHeight": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "bodyMetricsValueKg": "{value} {unit}",
+  "@bodyMetricsValueKg": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "bodyMetricsValueCm": "{value} cm",
+  "@bodyMetricsValueCm": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "bodyMetricsGoal": "Goal: {goal}",
+  "@bodyMetricsGoal": {
+    "placeholders": {
+      "goal": { "type": "String" }
+    }
+  },
+  "restTimerTitle": "Rest timer",
+  "restTimerCancel": "Cancel rest",
+  "restTimerMinutes": "{minutes} min",
+  "@restTimerMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "activeWorkoutElapsedLabel": "Elapsed",
+  "activeWorkoutRestLabel": "Rest",
+  "activeWorkoutResume": "Resume",
+  "restAlarmTitle": "Rest is over",
+  "restAlarmBody": "Your planned rest is complete.",
+  "restAlarmBodyWithDuration": "Your planned rest of {duration} is complete.",
+  "@restAlarmBodyWithDuration": {
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "workoutSummaryAppBar": "Summary",
+  "workoutSummaryEdit": "Edit workout",
+  "workoutSummarySetLabel": "Set {number}",
+  "@workoutSummarySetLabel": {
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "workoutSummarySetRest": "rest {rest}",
+  "@workoutSummarySetRest": {
+    "placeholders": { "rest": { "type": "String" } }
+  },
+  "workoutSummaryDone": "Done",
+  "workoutSummaryDurationLabel": "Duration",
+  "workoutSummaryAvgRest": "Average rest",
+  "workoutSummaryVolume": "Volume",
+  "workoutSummaryMaxWeight": "Max weight",
+  "workoutSummaryTotalReps": "Total reps",
+  "workoutSummaryTotalDuration": "Total duration",
+  "workoutSummaryTotalDistance": "Total distance",
+  "workoutSummaryValueKg": "{value} {unit}",
+  "@workoutSummaryValueKg": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "unit": { "type": "String" }
+    }
+  },
+  "workoutSummaryDistanceValue": "{distance} m",
+  "@workoutSummaryDistanceValue": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "settingsRateRow": "{base} → {target}: {rate}",
+  "@settingsRateRow": {
+  "description": "settingsRateRow",
+  "placeholders": {
+    "target": {
+      "type": "String"
+    },
+    "rate": {
+      "type": "num"
+    },
+    "base": {
+      "type": "String"
+    }
+  }
+},
+  "settingsRateInverse": "1 {base} = {rate} {code}",
+  "@settingsRateInverse": {
+    "description": "settingsRateInverse",
+    "placeholders": {
+      "base": { "type": "String" },
+      "rate": { "type": "String" },
+      "code": { "type": "String" }
+    }
+  },
+  "settingsRateUpdated": "Updated {date}",
+  "@settingsRateUpdated": {
+    "description": "settingsRateUpdated",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "settingsRateManual": "Manual",
+  "@settingsRateManual": {
+    "description": "settingsRateManual"
+  },
+  "transactionRateUsed": "converted at {rate} {base} per {code}",
+  "@transactionRateUsed": {
+    "description": "transactionRateUsed",
+    "placeholders": {
+      "rate": { "type": "String" },
+      "base": { "type": "String" },
+      "code": { "type": "String" }
+    }
+  },
+  "accountDeleteBlockedBody": "This account is used by {count} transaction(s) and cannot be deleted.",
+  "@accountDeleteBlockedBody": {
+  "description": "accountDeleteBlockedBody",
+  "placeholders": {
+    "count": {
+      "type": "int"
+    }
+  }
+},
+  "accountDeleteBlockedTitle": "Account in use",
+  "@accountDeleteBlockedTitle": {
+  "description": "accountDeleteBlockedTitle"
+},
+  "accountDeleteConfirmBody": "Deleting account '{name}' will also delete its transactions and receipts.",
+  "@accountDeleteConfirmBody": {
+  "description": "accountDeleteConfirmBody",
+  "placeholders": {
+    "name": {
+      "type": "String"
+    }
+  }
+},
+  "accountDeleteConfirmTitle": "Delete account?",
+  "@accountDeleteConfirmTitle": {
+  "description": "accountDeleteConfirmTitle"
+},
+  "accountFormEditTitle": "Edit account",
+  "@accountFormEditTitle": {
+  "description": "accountFormEditTitle"
+},
+  "accountFormNameLabel": "Name",
+  "@accountFormNameLabel": {
+  "description": "accountFormNameLabel"
+},
+  "accountFormNameRequired": "Enter a name",
+  "@accountFormNameRequired": {
+  "description": "accountFormNameRequired"
+},
+  "accountFormNewTitle": "New account",
+  "@accountFormNewTitle": {
+  "description": "accountFormNewTitle"
+},
+  "accountFormOpeningHelper": "How much was already in this account when you started tracking it. Leave 0 if you are not sure.",
+  "@accountFormOpeningHelper": {
+    "description": "accountFormOpeningHelper"
+  },
+  "accountFormIntro": "Track a wallet, bank account, or card.",
+  "@accountFormIntro": {
+    "description": "accountFormIntro"
+  },
+  "accountFormNoteLabel": "Account Form Note Label",
+  "@accountFormNoteLabel": {
+  "description": "accountFormNoteLabel"
+},
+  "accountFormOpeningLabel": "Starting balance",
+  "@accountFormOpeningLabel": {
+  "description": "accountFormOpeningLabel"
+},
+  "accountFormTypeLabel": "Type",
+  "@accountFormTypeLabel": {
+  "description": "accountFormTypeLabel"
+},
+  "accountOpeningLabel": "Starting balance: {value}",
+  "@accountOpeningLabel": {
+  "description": "accountOpeningLabel",
+  "placeholders": {
+    "value": {
+      "type": "String"
+    }
+  }
+},
+  "accountReceipts": "Receipts",
+  "@accountReceipts": {
+  "description": "accountReceipts"
+},
+  "accountTransactions": "Transactions",
+  "@accountTransactions": {
+  "description": "accountTransactions"
+},
+  "accountTypeBank": "Bank account",
+  "@accountTypeBank": {
+  "description": "accountTypeBank"
+},
+  "accountTypeCash": "Cash",
+  "@accountTypeCash": {
+  "description": "accountTypeCash"
+},
+  "accountTypeCredit": "Credit card",
+  "@accountTypeCredit": {
+  "description": "accountTypeCredit"
+},
+  "accountTypeInvestment": "Investment",
+  "@accountTypeInvestment": {
+  "description": "accountTypeInvestment"
+},
+  "accountTypeOther": "Other",
+  "@accountTypeOther": {
+  "description": "accountTypeOther"
+},
+  "accountTypeSavings": "Savings",
+  "@accountTypeSavings": {
+  "description": "accountTypeSavings"
+},
+  "budgetAccounts": "Accounts",
+  "@budgetAccounts": {
+  "description": "budgetAccounts"
+},
+  "budgetAdd": "Budget Add",
+  "@budgetAdd": {
+  "description": "budgetAdd"
+},
+  "budgetEmptyBody": "Budget Empty Body",
+  "@budgetEmptyBody": {
+  "description": "budgetEmptyBody"
+},
+  "budgetEmptyTitle": "Budget Empty Title",
+  "@budgetEmptyTitle": {
+  "description": "budgetEmptyTitle"
+},
+  "budgetFabAccount": "Budget Fab Account",
+  "@budgetFabAccount": {
+  "description": "budgetFabAccount"
+},
+  "budgetFabExpense": "Budget Fab Expense",
+  "@budgetFabExpense": {
+  "description": "budgetFabExpense"
+},
+  "budgetFabIncome": "Budget Fab Income",
+  "@budgetFabIncome": {
+  "description": "budgetFabIncome"
+},
+  "budgetFabTransfer": "Budget Fab Transfer",
+  "@budgetFabTransfer": {
+  "description": "budgetFabTransfer"
+},
+  "budgetMonthExpense": "Expenses this month",
+  "@budgetMonthExpense": {
+  "description": "budgetMonthExpense"
+},
+  "budgetMonthIncome": "Income this month",
+  "@budgetMonthIncome": {
+  "description": "budgetMonthIncome"
+},
+  "budgetNoReceipts": "No receipts yet",
+  "@budgetNoReceipts": {
+  "description": "budgetNoReceipts"
+},
+  "budgetNoTransactions": "No transactions yet",
+  "@budgetNoTransactions": {
+  "description": "budgetNoTransactions"
+},
+  "budgetPendingReceipts": "{count} receipt(s) awaiting review",
+  "@budgetPendingReceipts": {
+  "description": "budgetPendingReceipts",
+  "placeholders": {
+    "count": {
+      "type": "int"
+    }
+  }
+},
+  "budgetRecentTransactions": "Recent transactions",
+  "@budgetRecentTransactions": {
+  "description": "budgetRecentTransactions"
+},
+  "budgetThisMonth": "Budget This Month",
+  "@budgetThisMonth": {
+  "description": "budgetThisMonth"
+},
+  "budgetViewAll": "View all",
+  "@budgetViewAll": {
+  "description": "budgetViewAll"
+},
+  "commonDelete": "Common Delete",
+  "@commonDelete": {
+  "description": "commonDelete"
+},
+  "receiptAppBar": "Receipt",
+  "@receiptAppBar": {
+  "description": "receiptAppBar"
+},
+  "receiptCreateDraft": "Create draft",
+  "@receiptCreateDraft": {
+  "description": "receiptCreateDraft"
+},
+  "receiptDeleteConfirmBody": "Delete this receipt?",
+  "@receiptDeleteConfirmBody": {
+  "description": "receiptDeleteConfirmBody"
+},
+  "receiptDeleteConfirmTitle": "Delete receipt?",
+  "@receiptDeleteConfirmTitle": {
+  "description": "receiptDeleteConfirmTitle"
+},
+  "receiptEmptyBody": "No receipts yet. Take a photo of a receipt to start tracking.",
+  "@receiptEmptyBody": {
+  "description": "receiptEmptyBody"
+},
+  "receiptListAppBar": "Receipts",
+  "@receiptListAppBar": {
+  "description": "receiptListAppBar"
+},
+  "receiptNotFound": "Receipt not found",
+  "@receiptNotFound": {
+  "description": "receiptNotFound"
+},
+  "receiptNotParsed": "Not parsed yet",
+  "@receiptNotParsed": {
+  "description": "receiptNotParsed"
+},
+  "receiptParsed": "Parsed",
+  "@receiptParsed": {
+  "description": "receiptParsed"
+},
+  "receiptParsing": "Parsing receipt\u2026",
+  "@receiptParsing": {
+  "description": "Shown while the server-side OCR job is running on a receipt"
+},
+  "receiptParsedData": "Parsed data",
+  "@receiptParsedData": {
+  "description": "receiptParsedData"
+},
+  "receiptPickGallery": "From gallery",
+  "@receiptPickGallery": {
+  "description": "receiptPickGallery"
+},
+  "receiptReviewDraft": "Review draft",
+  "@receiptReviewDraft": {
+  "description": "receiptReviewDraft"
+},
+  "receiptStatusLabel": "{status}",
+  "@receiptStatusLabel": {
+  "description": "receiptStatusLabel",
+  "placeholders": {
+    "status": {
+      "type": "String"
+    }
+  }
+},
+  "receiptStatusShort": "{status}",
+  "@receiptStatusShort": {
+  "description": "receiptStatusShort",
+  "placeholders": {
+    "status": {
+      "type": "String"
+    }
+  }
+},
+  "receiptTakePhoto": "Take photo",
+  "@receiptTakePhoto": {
+  "description": "receiptTakePhoto"
+},
+  "receiptUpload": "Upload",
+  "@receiptUpload": {
+  "description": "receiptUpload"
+},
+  "settingsCurrencyBudget": "Budget currency",
+  "@settingsCurrencyBudget": {
+  "description": "settingsCurrencyBudget"
+},
+  "settingsFxRates": "Exchange rates",
+  "@settingsFxRates": {
+  "description": "settingsFxRates"
+},
+  "settingsFxRatesEmpty": "No exchange rates configured",
+  "@settingsFxRatesEmpty": {
+  "description": "settingsFxRatesEmpty"
+},
+  "settingsFxRefresh": "Refresh rates",
+  "@settingsFxRefresh": {
+  "description": "settingsFxRefresh"
+},
+  "settingsRateEdit": "Edit rate",
+  "@settingsRateEdit": {
+  "description": "settingsRateEdit"
+},
+  "transactionAmountInvalid": "Enter a valid amount",
+  "@transactionAmountInvalid": {
+  "description": "transactionAmountInvalid"
+},
+  "transactionCategoryLabel": "Category",
+  "@transactionCategoryLabel": {
+  "description": "transactionCategoryLabel"
+},
+  "transactionConvertedLabel": "≈ {amount} in base currency",
+  "@transactionConvertedLabel": {
+  "description": "transactionConvertedLabel",
+  "placeholders": {
+    "amount": {
+      "type": "String"
+    }
+  }
+},
+  "transactionDraft": "Draft",
+  "@transactionDraft": {
+  "description": "transactionDraft"
+},
+  "transactionDraftHint": "Draft from a scanned receipt — check the details before saving",
+  "@transactionDraftHint": {
+  "description": "transactionDraftHint"
+},
+  "transactionHasReceipt": "Receipt attached",
+  "@transactionHasReceipt": {
+  "description": "transactionHasReceipt"
+},
+  "transactionListAppBar": "Transactions",
+  "@transactionListAppBar": {
+  "description": "transactionListAppBar"
+},
+  "transactionTypeExpense": "Expense",
+  "@transactionTypeExpense": {
+  "description": "transactionTypeExpense"
+},
+  "transactionTypeIncome": "Income",
+  "@transactionTypeIncome": {
+  "description": "transactionTypeIncome"
+},
+  "transactionTypeTransfer": "Transfer",
+  "@transactionTypeTransfer": {
+  "description": "transactionTypeTransfer"
+},
+  "budgetAppBar": "Budget",
+  "@budgetAppBar": {
+  "description": "budgetAppBar"
+},
+  "budgetSubtitle": "Accounts, transactions and receipts",
+  "@budgetSubtitle": {
+  "description": "budgetSubtitle"
+},
+  "budgetTotalBalance": "Total balance",
+  "@budgetTotalBalance": {
+  "description": "budgetTotalBalance"
+},
+  "budgetNetWorth": "Net worth",
+  "@budgetNetWorth": {
+  "description": "budgetNetWorth"
+},
+  "budgetIncomeLabel": "Income",
+  "@budgetIncomeLabel": {
+  "description": "budgetIncomeLabel"
+},
+  "budgetExpenseLabel": "Expense",
+  "@budgetExpenseLabel": {
+  "description": "budgetExpenseLabel"
+},
+  "budgetEmptyAccounts": "No accounts yet. Add one to start tracking.",
+  "@budgetEmptyAccounts": {
+  "description": "budgetEmptyAccounts"
+},
+  "budgetAddAccount": "Add account",
+  "@budgetAddAccount": {
+    "description": "budgetAddAccount"
+  },
+  "budgetAddTransaction": "Add transaction",
+  "@budgetAddTransaction": {
+    "description": "budgetAddTransaction"
+  },
+  "accountFormTitleNew": "New account",
+  "@accountFormTitleNew": {
+  "description": "accountFormTitleNew"
+},
+  "accountFormTitleEdit": "Edit account",
+  "@accountFormTitleEdit": {
+  "description": "accountFormTitleEdit"
+},
+  "accountNameLabel": "Name",
+  "@accountNameLabel": {
+  "description": "accountNameLabel"
+},
+  "accountTypeLabel": "Type",
+  "@accountTypeLabel": {
+  "description": "accountTypeLabel"
+},
+  "accountCurrencyLabel": "Currency",
+  "@accountCurrencyLabel": {
+  "description": "accountCurrencyLabel"
+},
+  "accountInitialBalanceLabel": "Initial balance",
+  "@accountInitialBalanceLabel": {
+  "description": "accountInitialBalanceLabel"
+},
+  "accountSave": "Save",
+  "@accountSave": {
+  "description": "accountSave"
+},
+  "accountDetailTitle": "Account",
+  "@accountDetailTitle": {
+  "description": "accountDetailTitle"
+},
+  "accountDelete": "Delete account",
+  "@accountDelete": {
+  "description": "accountDelete"
+},
+  "accountTransactionsTitle": "Transactions",
+  "@accountTransactionsTitle": {
+  "description": "accountTransactionsTitle"
+},
+  "accountBalanceLabel": "Balance",
+  "@accountBalanceLabel": {
+  "description": "accountBalanceLabel"
+},
+  "accountEdit": "Edit",
+  "@accountEdit": {
+  "description": "accountEdit"
+},
+  "transactionFormNewExpenseTitle": "New expense",
+  "@transactionFormNewExpenseTitle": {
+  "description": "transactionFormNewExpenseTitle"
+},
+  "transactionFormNewIncomeTitle": "New income",
+  "@transactionFormNewIncomeTitle": {
+  "description": "transactionFormNewIncomeTitle"
+},
+  "transactionFormTransferTitle": "Transfer",
+  "@transactionFormTransferTitle": {
+  "description": "transactionFormTransferTitle"
+},
+  "transactionFormEditTitle": "Edit transaction",
+  "@transactionFormEditTitle": {
+  "description": "transactionFormEditTitle"
+},
+  "transactionTypeLabel": "Type",
+  "@transactionTypeLabel": {
+  "description": "transactionTypeLabel"
+},
+  "transactionAmountLabel": "Amount",
+  "@transactionAmountLabel": {
+  "description": "transactionAmountLabel"
+},
+  "transactionCurrencyLabel": "Currency",
+  "@transactionCurrencyLabel": {
+  "description": "transactionCurrencyLabel"
+},
+  "transactionDateLabel": "Date",
+  "@transactionDateLabel": {
+  "description": "transactionDateLabel"
+},
+  "transactionNoteLabel": "Note",
+  "@transactionNoteLabel": {
+  "description": "transactionNoteLabel"
+},
+  "transactionAccountLabel": "Account",
+  "@transactionAccountLabel": {
+  "description": "transactionAccountLabel"
+},
+  "transactionToAccountLabel": "To account",
+  "@transactionToAccountLabel": {
+  "description": "transactionToAccountLabel"
+},
+  "transactionReceiptLabel": "Receipt",
+  "@transactionReceiptLabel": {
+  "description": "transactionReceiptLabel"
+},
+  "transactionSave": "Save",
+  "@transactionSave": {
+  "description": "transactionSave"
+},
+  "transactionDelete": "Delete",
+  "@transactionDelete": {
+  "description": "transactionDelete"
+},
+  "transactionDraftBadge": "Draft",
+  "@transactionDraftBadge": {
+  "description": "transactionDraftBadge"
+},
+  "transactionConfirmDraft": "Confirm",
+  "@transactionConfirmDraft": {
+  "description": "transactionConfirmDraft"
+},
+  "transactionTransferSameAccount": "Transfer needs two different accounts.",
+  "@transactionTransferSameAccount": {
+  "description": "transactionTransferSameAccount"
+},
+  "transactionAccountRequired": "An account is required.",
+  "@transactionAccountRequired": {
+  "description": "transactionAccountRequired"
+},
+  "transactionTransferAccountsRequired": "Both accounts are required for a transfer.",
+  "@transactionTransferAccountsRequired": {
+  "description": "transactionTransferAccountsRequired"
+},
+  "transactionAmountPositive": "Amount must be greater than zero.",
+  "@transactionAmountPositive": {
+  "description": "transactionAmountPositive"
+},
+  "receiptListTitle": "Receipts",
+  "@receiptListTitle": {
+  "description": "receiptListTitle"
+},
+  "receiptCapture": "Capture receipt",
+  "@receiptCapture": {
+  "description": "receiptCapture"
+},
+  "receiptCaptureStandalone": "Standalone receipt",
+  "@receiptCaptureStandalone": {
+  "description": "receiptCaptureStandalone"
+},
+  "receiptUploadSuccess": "Receipt uploaded",
+  "@receiptUploadSuccess": {
+  "description": "receiptUploadSuccess"
+},
+  "receiptUploadError": "Failed to upload receipt",
+  "@receiptUploadError": {
+  "description": "receiptUploadError"
+},
+  "receiptViewTitle": "Receipt",
+  "@receiptViewTitle": {
+  "description": "receiptViewTitle"
+},
+  "receiptStatusLocal": "Local",
+  "@receiptStatusLocal": {
+  "description": "receiptStatusLocal"
+},
+  "receiptStatusUploading": "Uploading",
+  "@receiptStatusUploading": {
+  "description": "receiptStatusUploading"
+},
+  "receiptStatusUploaded": "Uploaded",
+  "@receiptStatusUploaded": {
+  "description": "receiptStatusUploaded"
+},
+  "receiptStatusError": "Error",
+  "@receiptStatusError": {
+  "description": "receiptStatusError"
+},
+  "receiptAttach": "Attach to transaction",
+  "@receiptAttach": {
+  "description": "receiptAttach"
+},
+  "receiptChooseSource": "Choose source",
+  "@receiptChooseSource": {
+  "description": "receiptChooseSource"
+},
+  "receiptFromCamera": "Camera",
+  "@receiptFromCamera": {
+  "description": "receiptFromCamera"
+},
+  "receiptFromGallery": "Gallery",
+  "@receiptFromGallery": {
+  "description": "receiptFromGallery"
+},
+  "commonRetry": "Retry",
+  "@commonRetry": {
+  "description": "commonRetry"
+},
+  "settingsBaseCurrency": "Base currency",
+  "@settingsBaseCurrency": {
+  "description": "settingsBaseCurrency"
+},
+  "settingsCategoryFx": "Exchange rates",
+  "@settingsCategoryFx": {
+  "description": "settingsCategoryFx"
+},
+  "settingsRefreshRates": "Refresh rates",
+  "@settingsRefreshRates": {
+  "description": "settingsRefreshRates"
+},
+  "settingsEditRate": "Edit rate",
+  "@settingsEditRate": {
+  "description": "settingsEditRate"
+},
+  "settingsRateBase": "Per 1 {base}",
+  "@settingsRateBase": {
+  "description": "settingsRateBase"
+},
+  "settingsRateInvalid": "Enter a positive rate.",
+  "@settingsRateInvalid": {
+  "description": "settingsRateInvalid"
+},
+  "tabBudget": "Budget",
+  "@tabBudget": {
+  "description": "tabBudget"
+},
+  "plannerViewDay": "Day view",
+  "plannerViewWeek": "Week view",
+  "plannerViewMonth": "Month view",
+  "plannerGoToday": "Go to today",
+  "goalLinkTask": "Link task",
+  "goalUnlinkTask": "Unlink task",
+  "goalSearchTasksHint": "Search tasks…",
+  "linkGoal": "Link goal",
+  "unlinkGoal": "Unlink goal",
+  "linkNote": "Link note",
+  "unlinkNote": "Unlink note",
+  "plannerViewGoals": "Goals view",
+  "plannerModeTimeline": "Timeline",
+  "plannerModeInitiatives": "Initiatives",
+  "prioritiesTitle": "Tags",
+  "prioritiesManage": "Manage tags",
+  "prioritiesAdd": "Add tag",
+  "prioritiesRename": "Rename tag",
+  "prioritiesNameLabel": "Name",
+  "prioritiesNameRequired": "Enter a name",
+  "prioritiesAlreadyExists": "A tag with this name already exists.",
+  "prioritiesColor": "Color",
+  "prioritiesDeleteConfirmTitle": "Delete tag?",
+  "prioritiesDeleteConfirmBody": "“{name}” will be removed from {count, plural, =0{no items} other{{count} items}}.",
+  "prioritiesEmpty": "No tags yet. Create one to start organizing your goals, tasks and notes.",
+  "prioritiesUsageCount": "{count, plural, =0{unused} =1{1 item} other{{count} items}}",
+  "tagsFilterAll": "All",
+  "initiativesEmptyAllTitle": "No goals yet",
+  "initiativesEmptyAll": "Create a goal to aim at an outcome.",
+  "initiativesEmptyFilterTitle": "No matching initiatives",
+  "initiativesEmptyFilter": "No goals carry the selected tags.",
+  "goalsNew": "New goal",
+  "goalsEdit": "Edit goal",
+  "goalsMissing": "Goal not found.",
+  "goalsFormTitleLabel": "Goal",
+  "goalsFormTitleHint": "e.g. Run a 10k race",
+  "goalsFormTitleRequired": "Enter a goal",
+  "goalsFormDescriptionLabel": "Description",
+  "goalsFormStartLabel": "Start date",
+  "goalsFormEndLabel": "Target date (optional)",
+  "goalsNoEndDate": "Open-ended",
+  "goalsFormStatusLabel": "Status",
+  "goalsStatusPlanned": "Planned",
+  "goalsStatusActive": "Active",
+  "goalsStatusDone": "Done",
+  "goalsStatusAborted": "Aborted",
+  "goalsTargetTypeLabel": "Target",
+  "goalsTargetTypeNone": "None",
+  "goalsTargetTypeNumeric": "Numeric",
+  "goalsTargetTypeBoolean": "Achieve",
+  "goalsTargetValueLabel": "Target value",
+  "goalsTargetValueInvalid": "Enter a number",
+  "goalsUnitLabel": "Unit",
+  "goalsBaselineLabel": "Starting value",
+  "goalsReminderLabel": "Daily goal reminder",
+  "goalsReminderSubtitle": "A notification keeps this goal on your radar.",
+  "goalsReminderTimeLabel": "Reminder time",
+  "goalsRelatedTasks": "Related tasks",
+  "goalsNoLinkedTasks": "No related tasks yet.",
+  "goalsDeleteConfirmTitle": "Delete goal?",
+  "goalsDeleteConfirmBody": "The goal and its progress log will be permanently deleted.",
+  "goalsMarkActive": "Activate",
+  "goalsMarkDone": "Mark done",
+  "goalsAbort": "Abort",
+  "goalsReopen": "Reopen",
+  "goalsProgressSection": "Progress",
+  "goalsRecordProgress": "Record progress",
+  "goalsCurrentValueLabel": "Current",
+  "goalsTargetLabel": "Target",
+  "goalsAchievedQuestion": "Achieved? (1 = yes)",
+  "goalsAchieved": "Achieved",
+  "goalsNotAchieved": "Not yet",
+  "goalsProgressNoteHint": "Note (optional)",
+  "goalsProgressDateLabel": "Recorded on",
+  "goalsLogTitle": "Log",
+  "goalsNoProgressYet": "Nothing recorded yet.",
+  "goalsEmptyAllTitle": "No goals yet",
+  "goalsEmptyAll": "Set a long-term outcome to work toward and link it to your tags.",
+  "goalsEmptyFilterTitle": "No goals here",
+  "goalsEmptyFilter": "No goals carry the selected tags.",
+  "cascadeDeleteBody": "This will be permanently deleted.",
+  "cascadeDeleteBodyWithTasks": "Also delete {count} linked task(s)? You can keep them or delete them together.",
+  "@cascadeDeleteBodyWithTasks": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "cascadeDeleteOnly": "Delete only",
+  "cascadeDeleteWithTasks": "Delete with tasks",
+  "settingsCascadeDeleteLabel": "Delete behavior",
+  "settingsCascadeDeleteHelp": "When deleting a goal, choose whether to also delete its linked tasks.",
+  "settingsCascadeAsk": "Ask each time",
+  "settingsCascadeAlways": "Always delete tasks",
+  "settingsCascadeNever": "Never delete tasks",
+  "templatesDuplicate": "Duplicate",
+  "templatesDuplicated": "Template duplicated",
+  "cascadeDeleteTitleWithTasks": "Delete linked tasks?",
+  "cascadeDeleteKeepTasks": "Keep tasks",
+  "goalDeleted": "Goal \"{name}\" deleted",
+  "@goalDeleted": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  }
 
-  "navDiet": "Diet",
-  "navDashboard": "Dashboard",
-  "navExercise": "Exercise"
 }

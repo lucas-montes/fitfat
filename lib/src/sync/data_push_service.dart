@@ -1,0 +1,567 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
+
+import '../database/app_database.dart' as db;
+import '../database/database_provider.dart' as db;
+import '../network/api_client.dart';
+import '../settings/providers/settings.dart';
+import 'sync_service.dart';
+
+/// Result of pushing one entity type to the server (push-only sync).
+final class PushResult {
+  const PushResult({required this.count, this.error});
+
+  final int count;
+  final String? error;
+
+  bool get ok => error == null;
+}
+
+/// Pushes local data to the configured server (one-way, local -> server).
+///
+/// The wire format is a JSON object grouping the relevant Drift tables by
+/// name, e.g. `{"workouts":[...], "workoutExercises":[...], "exerciseSets":[...]}`
+/// POSTed to the operation's endpoint. This captures the full entity graph
+/// (parent rows + their child/relation tables) in one request.
+final class DataPushService {
+  const DataPushService(this.client);
+
+  final ApiClient client;
+
+  Future<PushResult> _pushObject(
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+    Map<String, Object?> body,
+  ) async {
+    try {
+      if (baseUrl.isEmpty) {
+        return const PushResult(count: 0, error: 'No server URL configured');
+      }
+      await client.postJson(endpoint, body: body, headers: authHeaders(apiKey));
+      return PushResult(count: 1);
+    } catch (e) {
+      return PushResult(count: 0, error: '$e');
+    }
+  }
+
+  /// Tag id -> name, so link rows can carry the real name alongside the id.
+  ///
+  /// Without this the server only sees the id and used to store a placeholder
+  /// tag (`name = id`), which the pull then sent back to the phone.
+  Future<Map<String, String>> _tagNames(db.AppDatabase database) async {
+    final rows = await database.select(database.tags).get();
+    return {for (final row in rows) row.id: row.name};
+  }
+
+  /// Enriches `{tagId, ...}` link rows with the tag's name (`tagName`).
+  List<Map<String, dynamic>> _withTagNames(
+    List<Map<String, dynamic>> rows,
+    Map<String, String> names,
+  ) => [
+    for (final row in rows)
+      if (names[row['tagId']] case final name?) {...row, 'tagName': name} else row,
+  ];
+
+  /// Merges the outbox tombstones for [entities] into one id list. The
+  /// workout/template push handlers apply every id to the parent *and* its
+  /// child tables, so one flat list is enough.
+  Future<List<String>> _pendingDeletes(
+    db.AppDatabase database,
+    Iterable<String> entities,
+  ) async {
+    final ids = <String>{};
+    for (final entity in entities) {
+      ids.addAll(await database.pendingSyncDeletes(entity));
+    }
+    return ids.toList();
+  }
+
+  /// Pushes every workout, its exercises and their sets, plus any deletions
+  /// recorded in the local outbox.
+  ///
+  /// The full graph goes every time (no delta): the phone is the driver, so a
+  /// push always mirrors its complete state and a pull always fetches the
+  /// server's complete state. Child tombstones ride in `deleted` because the
+  /// server applies each id to `workouts`, `workout_exercises` and
+  /// `exercise_sets` alike.
+  Future<PushResult> pushWorkouts(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final workouts = await database.select(database.workouts).get();
+    final exercises = await database.select(database.workoutExercises).get();
+    final sets = await database.select(database.exerciseSets).get();
+    final deleted = await _pendingDeletes(database, const [
+      'workouts',
+      'workoutExercises',
+      'exerciseSets',
+    ]);
+    final result = await _pushObject(baseUrl, apiKey, endpoint, {
+      'workouts': workouts.map((e) => e.toJson()).toList(),
+      'workoutExercises': exercises.map((e) => e.toJson()).toList(),
+      'exerciseSets': sets.map((e) => e.toJson()).toList(),
+      'deleted': deleted,
+    });
+    if (result.ok) {
+      for (final entity in const [
+        'workouts',
+        'workoutExercises',
+        'exerciseSets',
+      ]) {
+        await database.clearSyncDeletes(entity);
+      }
+    }
+    return result;
+  }
+
+  Future<PushResult> pushTemplates(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final templates = await database.select(database.workoutTemplates).get();
+    final exercises = await database
+        .select(database.workoutTemplateExercises)
+        .get();
+    final sets = await database.select(database.workoutTemplateSets).get();
+    final deleted = await _pendingDeletes(database, const [
+      'workoutTemplates',
+      'workoutTemplateExercises',
+      'workoutTemplateSets',
+    ]);
+    final result = await _pushObject(baseUrl, apiKey, endpoint, {
+      'workoutTemplates': templates.map((e) => e.toJson()).toList(),
+      'workoutTemplateExercises': exercises.map((e) => e.toJson()).toList(),
+      'workoutTemplateSets': sets.map((e) => e.toJson()).toList(),
+      'deleted': deleted,
+    });
+    if (result.ok) {
+      for (final entity in const [
+        'workoutTemplates',
+        'workoutTemplateExercises',
+        'workoutTemplateSets',
+      ]) {
+        await database.clearSyncDeletes(entity);
+      }
+    }
+    return result;
+  }
+
+  /// Pushes the user's own (non-catalog) exercises so a workout that
+  /// references one does not fail the server's foreign key.
+  ///
+  /// Runs as a pre-flight before workouts/templates and as a standalone action.
+  /// The server only inserts missing ids and revives tombstoned ones; it never
+  /// overwrites an existing row, so pushing an already-known exercise is safe.
+  Future<PushResult> pushExercises(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    // The shared catalog lists every exercise the server already has. Anything
+    // local that it does not know was created on this device.
+    final catalog = await database.select(database.exerciseCatalog).get();
+    final catalogIds = {for (final row in catalog) row.id};
+    final rows = await database.select(database.exercises).get();
+    final custom = [
+      for (final row in rows)
+        if (!catalogIds.contains(row.id))
+          (row.toJson()
+                ..remove('imagePath')
+                ..remove('videoPath')),
+    ];
+    final deleted = await _pendingDeletes(database, const ['exercises']);
+    final result = await _pushObject(baseUrl, apiKey, endpoint, {
+      'exercises': custom,
+      'deleted': deleted,
+    });
+    if (result.ok) await database.clearSyncDeletes('exercises');
+    return result;
+  }
+
+  Future<PushResult> pushNotes(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final notes = await database.select(database.notes).get();
+    final tags = await database.select(database.noteTags).get();
+    final clips = await database.select(database.noteAudio).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'notes': notes.map((e) => e.toJson()).toList(),
+      'noteTags': _withTagNames(
+        tags.map((e) => e.toJson()).toList(),
+        await _tagNames(database),
+      ),
+      'noteAudio': clips.map((e) => e.toJson()).toList(),
+    });
+  }
+
+  /// Pushes each note voice-clip row as JSON and, when a local audio file
+  /// exists, also uploads the bytes via multipart so the server gets the
+  /// record + audio together (mirrors [pushReceiptPictures]).
+  Future<PushResult> pushNoteAudio(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    try {
+      if (baseUrl.isEmpty) {
+        return const PushResult(count: 0, error: 'No server URL configured');
+      }
+      final database = ref.read(db.databaseProvider);
+      final rows = await database.select(database.noteAudio).get();
+      var pushed = 0;
+      for (final r in rows) {
+        final data = r.toJson();
+        final path = data['audioPath'] as String?;
+        Uint8List? bytes;
+        String? filename;
+        if (path != null && path.isNotEmpty) {
+          final file = File(path);
+          if (await file.exists()) {
+            bytes = await file.readAsBytes();
+            filename = p.basename(path);
+          }
+        }
+        if (bytes != null) {
+          await client.postMultipart(
+            endpoint,
+            fields: {'noteAudio': jsonEncode(data)},
+            files: {'audio': MultipartFilePart.fromFilename(filename!, bytes)},
+            headers: authHeaders(apiKey),
+          );
+        } else {
+          await client.postJson(
+            endpoint,
+            body: {
+              'noteAudio': [data],
+            },
+            headers: authHeaders(apiKey),
+          );
+        }
+        pushed++;
+      }
+      return PushResult(count: pushed);
+    } catch (e) {
+      return PushResult(count: 0, error: '$e');
+    }
+  }
+
+  Future<PushResult> pushTasks(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final tasks = await database.select(database.tasks).get();
+    final tags = await database.select(database.taskTags).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'tasks': tasks.map((e) => e.toJson()).toList(),
+      'taskTags': _withTagNames(
+        tags.map((e) => e.toJson()).toList(),
+        await _tagNames(database),
+      ),
+    });
+  }
+
+  Future<PushResult> pushGoals(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final goals = await database.select(database.goals).get();
+    final progress = await database.select(database.goalProgressEntries).get();
+    final tags = await database.select(database.goalTags).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'goals': goals.map((e) => e.toJson()).toList(),
+      'goalProgressEntries': progress.map((e) => e.toJson()).toList(),
+      'goalTags': _withTagNames(
+        tags.map((e) => e.toJson()).toList(),
+        await _tagNames(database),
+      ),
+    });
+  }
+
+  /// Pushes every meal with its logged foods.
+  ///
+  /// The `mealFoods` rows carry a snapshot of the portion that was eaten, so the
+  /// server can total a meal without resolving the food/ingredient graph — which
+  /// it could not do before, when the payload only had `(mealId, ingredientId,
+  /// grams)`.
+  Future<PushResult> pushMeals(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final meals = await database.select(database.meals).get();
+    final items = await database.select(database.mealFoods).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'meals': meals.map((e) => e.toJson()).toList(),
+      'mealFoods': items.map((e) => e.toJson()).toList(),
+    });
+  }
+
+  Future<PushResult> pushBodyMetrics(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final rows = await database.select(database.bodyMetrics).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'bodyMetrics': rows.map((e) => e.toJson()).toList(),
+    });
+  }
+
+  Future<PushResult> pushTransactions(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final rows = await database.select(database.transactions).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'transactions': rows.map((e) => e.toJson()).toList(),
+    });
+  }
+
+  Future<PushResult> pushBudgetAccounts(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final rows = await database.select(database.accounts).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'accounts': rows.map((e) => e.toJson()).toList(),
+    });
+  }
+
+  /// Pushes the shared tag vocabulary so the server has real tag names
+  /// (task/note/goal link pushes alone would name tags by id).
+  Future<PushResult> pushTags(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final rows = await database.select(database.tags).get();
+    final deleted = await _pendingDeletes(database, const ['tags']);
+    final result = await _pushObject(baseUrl, apiKey, endpoint, {
+      'tags': rows.map((e) => e.toJson()).toList(),
+      'deleted': deleted,
+    });
+    if (result.ok) await database.clearSyncDeletes('tags');
+    return result;
+  }
+
+  /// Pushes store rows so the server keeps human names (its price-driven
+  /// auto-create path names stores by id).
+  Future<PushResult> pushStores(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    final database = ref.read(db.databaseProvider);
+    final rows = await database.select(database.stores).get();
+    return _pushObject(baseUrl, apiKey, endpoint, {
+      'stores': rows.map((e) => e.toJson()).toList(),
+    });
+  }
+
+  /// Pushes each receipt row as JSON and, when a local picture exists, also
+  /// uploads the image via multipart so the server gets record + bytes.
+  Future<PushResult> pushReceiptPictures(
+    WidgetRef ref,
+    String baseUrl,
+    String apiKey,
+    String endpoint,
+  ) async {
+    try {
+      if (baseUrl.isEmpty) {
+        return const PushResult(count: 0, error: 'No server URL configured');
+      }
+      final database = ref.read(db.databaseProvider);
+      final rows = await database.select(database.receipts).get();
+      // Soft-deleted receipts stay in the table (so a pull cannot resurrect
+      // them), but they must not be uploaded as live rows: the server's upsert
+      // clears `deleted_at`. Send them in the tombstone list instead.
+      final deletedIds = [
+        for (final r in rows)
+          if (r.deletedAt != null) r.id,
+      ];
+      var pushed = 0;
+      for (final r in rows) {
+        if (r.deletedAt != null) continue;
+        final data = r.toJson();
+        // The Drift column is `localPath`; reading `picturePath` (which never
+        // existed) meant the multipart branch below was unreachable and every
+        // receipt pushed as metadata-only JSON.
+        final path = data['localPath'] as String?;
+        Uint8List? bytes;
+        String? filename;
+        if (path != null && path.isNotEmpty) {
+          final file = File(path);
+          if (await file.exists()) {
+            bytes = await file.readAsBytes();
+            filename = p.basename(path);
+          }
+        }
+        if (bytes != null) {
+          // Field names must match the server's `parse_multipart`, which looks
+          // for `receipt` (JSON) + `picture` (binary).
+          await client.postMultipart(
+            endpoint,
+            fields: {'receipt': jsonEncode(data)},
+            files: {
+              'picture': MultipartFilePart.fromFilename(filename!, bytes),
+            },
+            headers: authHeaders(apiKey),
+          );
+        } else {
+          await client.postJson(
+            endpoint,
+            body: {
+              'receipts': [data],
+            },
+            headers: authHeaders(apiKey),
+          );
+        }
+        pushed++;
+      }
+      if (deletedIds.isNotEmpty) {
+        await client.postJson(
+          endpoint,
+          body: {'receipts': <Object>[], 'deleted': deletedIds},
+          headers: authHeaders(apiKey),
+        );
+      }
+      return PushResult(count: pushed);
+    } catch (e) {
+      return PushResult(count: 0, error: '$e');
+    }
+  }
+}
+
+/// Convenience: resolves the configured [DataPushService] and pushes [type].
+Future<PushResult> pushDataType(WidgetRef ref, String type) async {
+  final settings = ref.read(settingsProvider);
+  final service = DataPushService(
+    HttpApiClient(
+      http.Client(),
+      baseUrl: settings.remoteSyncBaseUrl,
+      timeout: Duration(seconds: settings.apiTimeoutSeconds),
+    ),
+  );
+  final base = settings.remoteSyncBaseUrl;
+  final key = settings.remoteSyncApiKey;
+  switch (type) {
+    case 'exercises':
+      return service.pushExercises(
+        ref,
+        base,
+        key,
+        settings.endpointExercises,
+      );
+    case 'workouts': {
+      // Custom exercises must exist server-side before the workout rows that
+      // reference them (the server enforces the foreign key).
+      final pre = await service.pushExercises(
+        ref,
+        base,
+        key,
+        settings.endpointExercises,
+      );
+      if (!pre.ok) return pre;
+      return service.pushWorkouts(ref, base, key, settings.endpointWorkouts);
+    }
+    case 'bodyMetrics':
+      return service.pushBodyMetrics(
+        ref,
+        base,
+        key,
+        settings.endpointBodyMetrics,
+      );
+    case 'templates': {
+      final pre = await service.pushExercises(
+        ref,
+        base,
+        key,
+        settings.endpointExercises,
+      );
+      if (!pre.ok) return pre;
+      return service.pushTemplates(ref, base, key, settings.endpointTemplates);
+    }
+    case 'notes':
+      return service.pushNotes(ref, base, key, settings.endpointNotes);
+    case 'noteAudio':
+      return service.pushNoteAudio(ref, base, key, settings.endpointNotes);
+    case 'tasks':
+      return service.pushTasks(ref, base, key, settings.endpointTasks);
+    case 'goals':
+      return service.pushGoals(ref, base, key, settings.endpointGoals);
+    case 'meals':
+      return service.pushMeals(ref, base, key, settings.endpointMeals);
+    case 'transactions':
+      return service.pushTransactions(
+        ref,
+        base,
+        key,
+        settings.endpointTransactions,
+      );
+    case 'budgetAccounts':
+      return service.pushBudgetAccounts(
+        ref,
+        base,
+        key,
+        settings.endpointBudgetAccounts,
+      );
+    case 'tags':
+      return service.pushTags(ref, base, key, '/tags');
+    case 'stores':
+      return service.pushStores(ref, base, key, '/stores');
+    case 'foods': {
+      // Delegated to SyncService: it decides which foods are shareable and
+      // resolves each food's ingredient components (see FoodSyncClient.push).
+      final sync = ref.read(syncServiceProvider);
+      final result = await sync.pushFoods(base, key);
+      return PushResult(count: result.updated, error: result.error);
+    }
+    case 'receiptPictures':
+      return service.pushReceiptPictures(
+        ref,
+        base,
+        key,
+        settings.endpointReceiptPictures,
+      );
+    default:
+      return PushResult(count: 0, error: 'Unknown type: $type');
+  }
+}

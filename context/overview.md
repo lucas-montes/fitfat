@@ -1,32 +1,32 @@
 # FitFat — Project Overview
 
-A Flutter fitness tracking app with diet, exercise, and dashboard features.
+A Flutter fitness tracking app for logging exercises and calorie intake.
 
-## Architecture
+## Current state
 
-- **State management:** Riverpod (StateNotifierProvider with `AsyncValue`)
-- **Database:** Drift (SQLite), schema version 1 (reset — no migration chain)
-- **Persistence:** SQLite for all permanent data, no SharedPreferences for exercise module
-- **Navigation:** GoRouter with `StatefulShellRoute` (3-tab layout) + top-level routes `/active-workout`, `/create-workout`, `/workout-summary/:id`, `/workout-history/:id` (full-screen, no bottom nav)
+All previous source code was deleted in commit `2893826`. The project is being rebuilt from scratch with a barebone, minimal implementation using:
 
-## Domain modules
+- **Flutter** — UI framework
+- **Drift** — SQLite ORM for persistence
+- **Riverpod** — State management
+- **GoRouter** — Declarative routing
+- **Bottom navigation** — 6 tabs (Dashboard, Exercise, Diet, Plan, Notes, Budget); Settings is a pushed route. Experiments live inside Plan as a segment
+- **Settings** — theme mode (system/light/dark), language (en/fr/es), profile age, and body-weight goal (lose/maintain/gain), persisted via `shared_preferences` (see [settings/settings.md](settings/settings.md))
+- **Design system** — Material 3 with teal seed; tokens + `FitFatColors` status colors + shared widgets in `lib/src/ui/`; tuned light + dark themes (dark = teal-tinted surfaces), component themes in `lib/src/app/theme.dart` (see [ui/design-system.md](ui/design-system.md))
+- **Delete semantics** — ingredients are **soft-archived** (`ingredients.is_archived`, schema v4): hidden from list + meal-form picker, Undo on the top banner un-archives, no hard delete (see [diet/ingredient-crud.md](diet/ingredient-crud.md)). Meals / workouts / planner items are **hard-deleted with a "Deleted" top banner + Undo** (undo re-inserts the full aggregate; workouts via snapshot restore). Exercises referenced by a workout are **blocked** from deletion with a usage-count dialog; unused exercises delete with no Undo (see [diet/meal-crud.md](diet/meal-crud.md), [exercise/workout-crud.md](exercise/workout-crud.md), [exercise/exercise-crud.md](exercise/exercise-crud.md), [planner/planner.md](planner/planner.md)).
+- **Active workouts** — a running workout lives on a dedicated full-screen `ActiveWorkoutScreen` (top-level route `/active-workout`, outside the shell): live elapsed time (1 s ticker), one top info strip (status, elapsed, started-at, rest count-up line with overdue highlight + owning exercise, page indicator), per-exercise set lists (planned column includes rest; completed rows green/orange/red vs planned), actuals dialog with rest auto-start, fact-chips/history behind icons, AppBar Complete action + ongoing Android notification (duration + rest count-up) via `flutter_foreground_task`; best-effort iOS notification via `flutter_local_notifications`. Tapping the ongoing notification opens the active view (cold start via `notificationInitialRoute`, warm start via the task-data callback). `WorkoutDetailScreen` is the **pending (planning) screen only** — Start redirects to the active view (see [exercise/workout-crud.md](exercise/workout-crud.md), [notifications/notifications.md](notifications/notifications.md))
+- **Workout summary** — completing the active workout redirects to a read-only `WorkoutSummaryScreen` (top-level route `/workout-summary/:id`, outside the shell): header (name, completed badge, total duration) + per-exercise metrics — average rest (mean of recorded actual rest, falling back to planned), total volume (Σ weight × reps), max weight, total reps; cardio shows total duration/distance instead of volume/max-weight. Completed workouts reopen it from the list (replaces the old completed read-only detail) (see [exercise/workout-crud.md](exercise/workout-crud.md))
+- **Global active-workout bar** — while a workout is active, a slim strip above the `NavigationBar` on every tab shows the workout name + live elapsed time (1 s ticker); tapping it opens the dedicated active-workout view (`/active-workout`, no stacked copies). Powered by `activeWorkoutProvider` (see [exercise/workout-crud.md](exercise/workout-crud.md))
+- **Calorie target** — a daily kcal target computed from the profile (Mifflin-St Jeor by default; Katch-McArdle when body fat is tracked), an activity factor (static level or computed from workouts + steps via Health Connect on Android), and a body-weight-goal adjustment (lose −500 / gain +500). Providers live in `lib/src/diet/providers/calories.dart` (see [settings/settings.md](settings/settings.md))
+- **Dashboard Today-first** — horizontal **Today strip** (tasks sorted by priority/recency, inline toggle, tags/due time/workout), **nutrition hero** (calorie ring + macros in one card, maintenance fallback with Estimated badge when profile incomplete), **weight trend** with 7d/30d deltas and goal projection, **unified workout hero** (latest/Continue + weekly volume/minutes), **goals overview** (active goals with `progressFrom` bars) + **budget mini** (net worth + month income/expense when accounts exist). Greeting header removed; Welcome hub remains the no-data state (see [dashboard/dashboard.md](dashboard/dashboard.md), [body/body-metrics.md](body/body-metrics.md))
+- **Exercise catalog + history** — a prebuilt SQLite catalog (`assets/exercises.db`, ~3,800 exercises, git-ignored, generated by `tool/build_catalog.dart` from `data/parsed/*.json`) is imported into the live DB on first launch and **refreshed in place** on later launches (upsert-by-id, `is_locked`). Catalog metadata is normalized (equipment synonyms, wider cardio heuristic, structured JSON FAQs) and bundled with **16 curated videos** only (`tool/video_allowlist.txt` + `tool/prepare_media.sh`). The exercise list has **search + tag filters** (name/keywords/muscles + type/body-part/equipment/muscle chips); tap → `ExerciseDetailScreen` (pinned media + name + fact chips, **History | Details tabs** with PR, volume-over-time chart, per-workout planned-vs-actual metrics, instructions/tips/structured FAQs/muscles), long-press → edit, locked exercises blocked (see [exercise/exercise-crud.md](exercise/exercise-crud.md))
+- **Planner due time + task reminders** — planner tasks carry an optional due date + time (schema v8 `due_time_minutes`); timed tasks get a 30-min pre-reminder + due-time notification (channel `planner_reminders`), app-wide Settings toggle (default on), tap → Plan tab, cancelled on done/delete (see [planner/planner.md](planner/planner.md), [notifications/notifications.md](notifications/notifications.md))
+- **Accessibility & platform polish** — dynamic-type-safe set-table columns (flex widths, no clipping at large text), tooltips on every `IconButton`, `FitFatColors` status colors verified ≥ 4.5:1 in both themes, Android edge-to-edge with per-brightness status bar (see [ui/design-system.md](ui/design-system.md), [architecture.md](architecture.md))
 
-- **exercise/** — workout tracking, exercise library, stats. Unified Workout model with WeightSet/CardioSet. Completed rewrite. See [architecture.md](architecture.md).
-- **diet/** — meal logging, ingredient database, macro tracking
-- **dashboard/** — goals, body weight, TDEE, nutrition summaries, step/water tracking
+## Design principles
 
-## Completed work
+- Minimal, single-user, local-first
+- CRUD forms as the primary interaction pattern
+- No authentication, no sync, no cloud
 
-| Date | Plan | Summary |
-|------|------|---------|
-| Jun 18 | Exercise module rewrite | Unified Workout model, DB schema, DriftWorkoutRepository, new providers, restructured screens |
-| Jun 19 | Active workout exercise management | Exercise/set management in active workout, add-exercise sheet, exercise detail screen |
-| Jun 19 | Active workout UX fixes | Notification tap race condition, top card resume button, inline add-set form, history ordering |
-| Jun 20 | Workout UX enhancements | Auto-complete sets, live timer, summary screen, history detail view, swipe between exercises, elapsed rest timer |
-| Jun 22-23 | Exercise module refactor | Three-layer architecture: WorkoutRepository interface, service layer, ExerciseDetailNotifier, widget extraction |
-| Jun 24 | Active workout polish | Rest timer persistence, compact chips/notes/tiles, back nav, stat cards, independent history scroll, smaller heatmap, history snippet, duplicate timer removal |
-| Jun 25 | Provider init bugfix | Fix crash when adding exercise during active workout (uninitialized provider state) |
-| Jun 25 | Training tab blank fix | Remove full-screen empty state, always render three-section layout with per-section placeholders |
-| Jun 26-27 | Workout UX round 2 | History mini-tiles, compact form, free-form/planned separate forms, add-exercise pill, PageView performance, equal-height stat cards, exercise_translations DB table |
-| Jun 30 | Workout comparison & stats | Edit-set crash fix, per-exercise stats, planned-vs-accomplished display, PR attempt tracking (isFailed) |
-| Jun 30 | Remove free-form workouts | Removed free-form mode, reset DB to schema v1 with onUpgrade handler, simplified model (scheduledDate required), created planned-only creation UI |
+**Future direction (design only):** an offline-first data-sync contract has been drafted for a possible future server — see [sync/sync-contract.md](sync/sync-contract.md). The local-first principles above still govern all current code; nothing syncs today.

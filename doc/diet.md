@@ -1,43 +1,45 @@
 # Diet Module
 
-## Composite ingredients
+> **Status note.** This file predates the `restart` rewrite and described several
+> features that no longer exist (ingredient seeding, `creatorId`,
+> `DietPreferencesNotifier`, a permanent-delete surface, inline localization).
+> It has been trimmed to what is true today. Authoritative behaviour lives in
+> `context/diet/` — see `ingredient-crud.md` and `meal-crud.md`.
 
-A composite ingredient is a recipe made from other ingredients. Each component has a gram amount; the composite's per-100g macros are computed by summing all component macros at their specified amounts and scaling to 100g.
+## Meals log foods, not ingredients
 
-- Defined by non-empty `components` list on `Ingredient`.
-- Stored in the `IngredientComponents` junction table.
-- Created via the "Build from ingredients" toggle in the ingredient editor.
-- `Ingredient.fromComponents()` computes per-100g values at construction.
-- Selectable in the meal editor like any atomic ingredient.
+The chain is `meal → food → ingredient`. A **food** is a named recipe: a set of
+ingredients with amounts. Meals reference foods, so a recipe can be corrected
+later without rewriting what was already eaten.
+
+- `foods` (schema v34) holds a name and an archive flag and **no nutrition of its own**. Nutrition is resolved live through `foods → food_ingredients → ingredients`, so editing an ingredient is immediately visible in every food built from it.
+- `food_per100g = Σ(ingredient.per100g × amount) / Σ(amount)`. Amounts are absolute amounts in the batch and their sum is the denominator — there is no separate yield input.
+- `meal_foods` stores the amount eaten **plus a snapshot of that portion** (calories, protein, carbs, fat; sodium/fiber/sugar nullable). Reading a meal replays the snapshot, so history reads need no join. The snapshot is refreshed when the food behind it changes, so editing an ingredient or recipe updates meals already logged. The food name is joined live, so a rename shows up everywhere.
+- Resolution is **all-or-nothing**: a food missing one ingredient reports no nutrition rather than summing whatever is present. Half a recipe would under-report calories and would drop that part from the weight denominator, inflating the rest.
+- Every ingredient gets an auto-created 1:1 **derived food** (`id = "i:" + ingredientId`, one component at `amount = 100`) so it stays individually loggable. `IngredientRepository` is the only writer; `FoodRepository` rejects derived ids.
+- Components have no sort order — they are presented alphabetically by ingredient name.
+- Foods sync as their own resource (`GET/POST /foods`) with composition nested inside each food. Only user-created foods are pushed; derived ones mirror an ingredient.
 
 ## Archive/restore
 
 Soft-delete mechanism that hides an ingredient without losing historical meal references.
 
-- **Archive**: sets `isArchived = true`. The ingredient disappears from normal pickers.
+- **Archive**: sets `isArchived = true`. The ingredient disappears from the list and the meal-form picker.
 - **Restore**: sets `isArchived = false`. The ingredient reappears.
-- **Permanent delete**: only available from the "Archived Ingredients" view. Removes the row from the database.
-- Ingredient pickers filter to `isArchived = false` (or include archived when viewing the archived tab).
+- **Permanent delete**: does not exist. Ingredients are only ever soft-archived, so a referenced ingredient can never trigger an FK violation.
+- Past meals keep rendering archived ingredients: the meal repository joins ingredient rows without an `isArchived` filter.
 
-## Macro visibility preferences
+## Nutriment scope
 
-Users can toggle which macros appear in the UI (e.g., hide sodium, show fiber).
+Sodium (mg), fiber (g) and sugar (g) are **ingredient-only** optional per-100g values. They carry through a food's composition and are snapshotted onto `meal_foods` alongside the macros, but stay null unless some component actually provided a value — components that omit them count as zero rather than nulling the total.
 
-- Persisted via `SharedPreferences` (key: `macro_display_preference`), serialized as JSON.
-- Managed by `DietPreferencesNotifier` at `lib/src/diet/providers/diet_preferences.dart`.
-- Default visible macros: calories, protein, carbs, fat.
-- `toggleMacro(key)` updates state and persists immediately.
+An ingredient's macros are the only place they are stored. There is no per-100g copy on a food, so nothing can go stale between an ingredient edit and the foods built from it.
 
 ## Localization
 
-- Manual localization class at `lib/src/l10n/app_localizations.dart`.
-- Three languages: English (`en`), French (`fr`), Spanish (`es`).
-- Simple `_t()` switch on `localeName`.
-- No `.arb` files or code generation. Strings are maintained inline.
+- Generated from `lib/l10n/app_{en,fr,es}.arb` via `flutter gen-l10n` (config in `l10n.yaml`).
+- New UI strings must be added to all three ARB files.
 
-## Dataset import flow
+## Seed data
 
-1. On first launch, `AppDatabase._seedIngredients()` inserts bundled ingredients (name + 4 core macros).
-2. Bundled ingredients have `creatorId = null` (vs. user-created ingredients tagged with a local installation UUID).
-3. No CSV/JSON import/export in the current version.
-4. A future shared/common ingredient database (optional download/sync) is planned but not yet implemented.
+There is no bundled ingredient seed. Ingredients arrive either by user entry or by sync/selective import from the server (`GET /ingredients`, `GET /ingredients/catalog`, `GET /ingredients/item/:id`).

@@ -1,0 +1,198 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../database/app_database.dart' as db;
+import '../../models/exercise.dart';
+
+final class ExerciseRepository {
+  final db.AppDatabase _database;
+  const ExerciseRepository(this._database);
+
+  Future<List<Exercise>> getAll() async {
+    final rows =
+        await (_database.select(_database.exercises)..orderBy([
+              (t) => OrderingTerm(expression: t.name, mode: OrderingMode.asc),
+            ]))
+            .get();
+    return rows.map(_toDomain).toList();
+  }
+
+  Future<Exercise?> getById(String id) async {
+    final row = await (_database.select(
+      _database.exercises,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (row == null) return null;
+    return _toDomain(row);
+  }
+
+  Future<void> insert(Exercise exercise) async {
+    await _database
+        .into(_database.exercises)
+        .insert(
+          db.ExercisesCompanion.insert(
+            id: exercise.id,
+            name: exercise.name,
+            exerciseType: exercise.exerciseType,
+            bodyPart: Value(exercise.bodyPart),
+            equipment: Value(exercise.equipment),
+            primaryMuscle: Value(exercise.primaryMuscle),
+            secondaryMuscle: Value(exercise.secondaryMuscle),
+            instructions: Value(_encode(exercise.instructions)),
+            tips: Value(_encode(exercise.tips)),
+            faqs: Value(exercise.faqs),
+            keywords: Value(_encode(exercise.keywords)),
+            imagePath: Value(exercise.imagePath),
+            videoPath: Value(exercise.videoPath),
+            similarTo: Value(exercise.similarTo),
+            tags: Value(_encode(exercise.tags)),
+            isCanonical: Value(exercise.isCanonical),
+            createdAt: exercise.createdAt.millisecondsSinceEpoch,
+          ),
+        );
+  }
+
+  Future<void> update(Exercise exercise) async {
+    await (_database.update(
+      _database.exercises,
+    )..where((t) => t.id.equals(exercise.id))).write(
+      db.ExercisesCompanion(
+        name: Value(exercise.name),
+        exerciseType: Value(exercise.exerciseType),
+      ),
+    );
+  }
+
+  /// Refreshes an existing exercise in place with all of its metadata columns.
+  /// Used by [upsert] for server-authority synced updates; never deletes local
+  /// rows.
+  Future<void> updateFull(Exercise exercise) async {
+    await (_database.update(
+      _database.exercises,
+    )..where((t) => t.id.equals(exercise.id))).write(
+      db.ExercisesCompanion(
+        name: Value(exercise.name),
+        exerciseType: Value(exercise.exerciseType),
+        bodyPart: Value(exercise.bodyPart),
+        equipment: Value(exercise.equipment),
+        primaryMuscle: Value(exercise.primaryMuscle),
+        secondaryMuscle: Value(exercise.secondaryMuscle),
+        instructions: Value(_encode(exercise.instructions)),
+        tips: Value(_encode(exercise.tips)),
+        faqs: Value(exercise.faqs),
+        keywords: Value(_encode(exercise.keywords)),
+        imagePath: Value(exercise.imagePath),
+        videoPath: Value(exercise.videoPath),
+        similarTo: Value(exercise.similarTo),
+        tags: Value(_encode(exercise.tags)),
+        isCanonical: Value(exercise.isCanonical),
+      ),
+    );
+  }
+
+  /// Hard-deletes the row. A user-initiated delete records a sync tombstone;
+  /// the pull path passes [recordDeletion] `false` because the server already
+  /// knows (it sent the tombstone).
+  Future<void> delete(String id, {bool recordDeletion = true}) async {
+    if (recordDeletion) {
+      await _database.recordSyncDelete('exercises', id);
+    }
+    await (_database.delete(
+      _database.exercises,
+    )..where((t) => t.id.equals(id))).go();
+  }
+
+  static const _unset = Object();
+
+  /// Writes the local media-file paths for one exercise. Absent arguments
+  /// leave the column untouched; an explicit null clears it. Used by the sync
+  /// engine after downloading (or dropping) exercise media.
+  Future<void> updateMedia(
+    String id, {
+    Object? imagePath = _unset,
+    Object? videoPath = _unset,
+  }) async {
+    await (_database.update(
+      _database.exercises,
+    )..where((t) => t.id.equals(id))).write(
+      db.ExercisesCompanion(
+        imagePath: identical(imagePath, _unset)
+            ? const Value.absent()
+            : Value(imagePath as String?),
+        videoPath: identical(videoPath, _unset)
+            ? const Value.absent()
+            : Value(videoPath as String?),
+      ),
+    );
+  }
+
+  /// Inserts a synced exercise, or refreshes it in place when the id already
+  /// exists (server authority). Never deletes local rows.
+  Future<void> upsert(Exercise exercise) async {
+    final existing = await getById(exercise.id);
+    if (existing == null) {
+      await insert(exercise);
+    } else {
+      await updateFull(exercise);
+    }
+  }
+
+  /// Number of `workout_exercises` rows referencing this exercise — used to
+  /// block deletion of exercises that are still part of a workout.
+  Future<int> usageCount(String id) async {
+    final countColumn = _database.workoutExercises.id.count();
+    final row =
+        await (_database.selectOnly(_database.workoutExercises)
+              ..addColumns([countColumn])
+              ..where(_database.workoutExercises.exerciseId.equals(id)))
+            .getSingle();
+    return row.read(countColumn) ?? 0;
+  }
+
+  Exercise _toDomain(db.Exercise row) => Exercise(
+    id: row.id,
+    name: row.name,
+    exerciseType: normalizeExerciseType(
+      type: row.exerciseType,
+      bodyPart: row.bodyPart,
+    ),
+    bodyPart: row.bodyPart,
+    equipment: row.equipment,
+    primaryMuscle: row.primaryMuscle,
+    secondaryMuscle: row.secondaryMuscle,
+    instructions: _decode(row.instructions),
+    tips: _decode(row.tips),
+    faqs: row.faqs,
+    keywords: _decode(row.keywords),
+    imagePath: row.imagePath,
+    videoPath: row.videoPath,
+    similarTo: row.similarTo,
+    tags: _decode(row.tags),
+    isCanonical: row.isCanonical,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+  );
+
+  static String? _encode(List<String>? values) {
+    if (values == null || values.isEmpty) return null;
+    return jsonEncode(values);
+  }
+
+  static List<String>? _decode(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return decoded.cast<String>();
+    } catch (_) {}
+    return null;
+  }
+}
+
+/// Creates a new [Exercise] with a fresh UUID v7 and the current timestamp.
+Exercise newExercise({required String name, required String exerciseType}) =>
+    Exercise(
+      id: const Uuid().v7(),
+      name: name,
+      exerciseType: exerciseType,
+      createdAt: DateTime.now(),
+    );

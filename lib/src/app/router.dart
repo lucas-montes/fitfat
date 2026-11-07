@@ -1,92 +1,50 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../diet/screens/main.dart';
-import '../exercise/screens/main.dart';
-import '../exercise/screens/workout/active_screen.dart';
-import '../exercise/screens/workout/create_workout_screen.dart';
-import '../exercise/screens/workout/workout_summary_screen.dart';
-import '../exercise/screens/workout/workout_history_detail_screen.dart';
-import '../dashboard/screens/main.dart';
-import '../widgets/appbar_seance_indicator.dart' show SeanceFloatingPill;
-import 'package:fitfat/l10n/app_localizations.dart';
 
-class AppShell extends StatelessWidget {
-  const AppShell({super.key, required this.navigationShell});
+import '../../l10n/app_localizations.dart';
+import 'deferred_branch.dart';
+import '../budget/screens/account_detail_screen.dart';
+import '../budget/screens/account_form.dart';
+import '../budget/screens/receipt_list_screen.dart';
+import '../budget/screens/receipt_viewer_screen.dart';
+import '../budget/screens/transaction_form.dart';
+import '../budget/screens/transaction_list_screen.dart';
+import '../budget/tabs/budget_tab.dart';
+import '../exercise/providers/workouts.dart';
+import '../exercise/screens/active_workout_screen.dart';
+import '../exercise/screens/workout_summary_screen.dart';
+import '../models/workout.dart';
+import '../notifications/rest_timer.dart';
+import '../settings/screens/settings_screen.dart';
+import '../sync/screens/sync_hub_screen.dart';
+import '../ui/tokens.dart';
+import '../ui/theme_extensions.dart';
+import '../ui/widgets/status_badge.dart';
+import 'tabs/dashboard_tab.dart';
+import 'tabs/diet_tab.dart';
+import 'tabs/exercise_tab.dart';
+import 'tabs/notes_tab.dart';
+import 'tabs/plan_tab.dart';
 
-  final StatefulNavigationShell navigationShell;
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  // Destinations constructed at build time to support localized labels
-  // See T12: replaced hardcoded labels with AppLocalizations
-  // (was static const — now built with context)
-  // _destinations is intentionally a getter in build()
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final destinations = [
-      NavigationDestination(
-        icon: const Icon(Icons.restaurant_menu),
-        label: l10n.navDiet,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.dashboard),
-        label: l10n.navDashboard,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.fitness_center),
-        label: l10n.navExercise,
-      ),
-    ];
-
-    return Scaffold(
-      body: Stack(
-        children: [
-          navigationShell,
-          Positioned(right: 16, bottom: 16, child: const SeanceFloatingPill()),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        destinations: destinations,
-        onDestinationSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
-      ),
-    );
-  }
-}
-
-final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
-
-final appRouter = GoRouter(
-  navigatorKey: rootNavigatorKey,
+final GoRouter appRouter = GoRouter(
+  navigatorKey: _rootNavigatorKey,
   initialLocation: '/dashboard',
   routes: [
-    // Group of routes that share the same shell (bottom navigation bar)
-    // They are kept in memory when switching between them, so their state is preserved
     StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) {
-        return AppShell(navigationShell: navigationShell);
-      },
+      builder: (_, _, navigationShell) =>
+          _ShellWithNavBar(navigationShell: navigationShell),
       branches: [
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/diet',
-              name: 'diet',
-              builder: (context, state) => const DietScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
               path: '/dashboard',
-              name: 'dashboard',
-              builder: (context, state) => const DashboardScreen(),
+              builder: (_, _) =>
+                  DeferredBranch(index: 0, child: const DashboardTab()),
             ),
           ],
         ),
@@ -94,34 +52,280 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/exercise',
-              name: 'exercise',
-              builder: (context, state) => const ExerciseScreen(),
+              builder: (_, _) =>
+                  DeferredBranch(index: 1, child: const ExerciseTab()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/diet',
+              builder: (_, _) =>
+                  DeferredBranch(index: 2, child: const DietTab()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/plan',
+              builder: (_, _) =>
+                  DeferredBranch(index: 3, child: const PlanTab()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/notes',
+              builder: (_, _) =>
+                  DeferredBranch(index: 4, child: const NotesTab()),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/budget',
+              builder: (_, _) =>
+                  DeferredBranch(index: 5, child: const BudgetTab()),
+            ),
+            GoRoute(
+              path: '/budget/account/:id',
+              builder: (_, state) {
+                final id = state.pathParameters['id']!;
+                // 'new' is the create route; otherwise it's an account id.
+                if (id == 'new') {
+                  return const AccountFormScreen();
+                }
+                return AccountDetailScreen(accountId: id);
+              },
+            ),
+            GoRoute(
+              path: '/budget/account/:id/edit',
+              builder: (_, state) =>
+                  AccountFormScreen(accountId: state.pathParameters['id']!),
+            ),
+            GoRoute(
+              path: '/budget/transaction/:id',
+              builder: (_, state) {
+                final id = state.pathParameters['id']!;
+                if (id == 'new') {
+                  final type = state.uri.queryParameters['type'];
+                  final account = state.uri.queryParameters['account'];
+                  return TransactionFormScreen(
+                    initialType: type,
+                    initialAccountId: account,
+                  );
+                }
+                return TransactionFormScreen(transactionId: id);
+              },
+            ),
+            GoRoute(
+              path: '/budget/transactions',
+              builder: (_, _) => const TransactionListScreen(),
+            ),
+            GoRoute(
+              path: '/budget/receipts',
+              builder: (_, _) => const ReceiptListScreen(),
+            ),
+            GoRoute(
+              path: '/budget/receipt/:id',
+              builder: (_, state) =>
+                  ReceiptViewerScreen(receiptId: state.pathParameters['id']!),
             ),
           ],
         ),
       ],
     ),
-    GoRoute(
-      path: '/create-workout',
-      name: 'create-workout',
-      builder: (context, state) => const CreateWorkoutScreen(),
-    ),
+    GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+    GoRoute(path: '/sync', builder: (_, _) => const SyncHubScreen()),
     GoRoute(
       path: '/active-workout',
-      name: 'active-workout',
-      builder: (context, state) => const ActiveWorkoutScreen(),
+      builder: (_, _) => const ActiveWorkoutScreen(),
     ),
     GoRoute(
       path: '/workout-summary/:id',
-      name: 'workout-summary',
-      builder: (context, state) =>
+      builder: (_, state) =>
           WorkoutSummaryScreen(workoutId: state.pathParameters['id']!),
-    ),
-    GoRoute(
-      path: '/workout-history/:id',
-      name: 'workout-history',
-      builder: (context, state) =>
-          WorkoutHistoryDetailScreen(workoutId: state.pathParameters['id']!),
     ),
   ],
 );
+
+/// Shell scaffold rendered around every tab. While a workout is active it
+/// shows the global active-workout bar (T08) directly above the
+/// [NavigationBar]; the bar lives in the `bottomNavigationBar` area so
+/// per-screen FABs float clear of it.
+final class _ShellWithNavBar extends ConsumerWidget {
+  final StatefulNavigationShell navigationShell;
+
+  const _ShellWithNavBar({required this.navigationShell});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final activeWorkout = ref.watch(activeWorkoutProvider);
+    return Scaffold(
+      body: BranchVisibility(
+        currentIndex: navigationShell.currentIndex,
+        child: navigationShell,
+      ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedSwitcher(
+            duration: FitFatTokens.motionNormal,
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, animation) => SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).animate(animation),
+              child: FadeTransition(opacity: animation, child: child),
+            ),
+            child: activeWorkout == null
+                ? const SizedBox.shrink()
+                : _ActiveWorkoutBar(
+                    key: ValueKey(activeWorkout.id),
+                    workout: activeWorkout,
+                  ),
+          ),
+          NavigationBar(
+            selectedIndex: navigationShell.currentIndex,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+            onDestinationSelected: (index) {
+              navigationShell.goBranch(
+                index,
+                initialLocation: index == navigationShell.currentIndex,
+              );
+            },
+            destinations: [
+              NavigationDestination(
+                icon: Icon(Icons.dashboard_outlined),
+                selectedIcon: Icon(Icons.dashboard),
+                label: l10n.tabDashboard,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.fitness_center_outlined),
+                selectedIcon: Icon(Icons.fitness_center),
+                label: l10n.tabExercise,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.restaurant_outlined),
+                selectedIcon: Icon(Icons.restaurant),
+                label: l10n.tabDiet,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.checklist_outlined),
+                selectedIcon: Icon(Icons.checklist),
+                label: l10n.tabPlan,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.note_alt_outlined),
+                selectedIcon: Icon(Icons.note_alt),
+                label: l10n.tabNotes,
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.account_balance_wallet_outlined),
+                selectedIcon: Icon(Icons.account_balance_wallet),
+                label: l10n.tabBudget,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Slim global strip shown while a workout is active (T08): workout name,
+/// live elapsed time (1 s ticker) and a resume affordance. Tapping the bar
+/// or the play button reopens the workout detail over the shell via the root
+/// navigator. Only mounted while a workout is active (the [AnimatedSwitcher]
+/// removes it), so the ticker's lifecycle follows the active state.
+final class _ActiveWorkoutBar extends StatefulWidget {
+  final Workout workout;
+
+  const _ActiveWorkoutBar({super.key, required this.workout});
+
+  @override
+  State<_ActiveWorkoutBar> createState() => _ActiveWorkoutBarState();
+}
+
+final class _ActiveWorkoutBarState extends State<_ActiveWorkoutBar> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => setState(() {}),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _openDetail(BuildContext context) {
+    GoRouter.of(context).go('/active-workout');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final workout = widget.workout;
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final statusColors = theme.extension<FitFatColors>()!;
+
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      child: InkWell(
+        onTap: () => _openDetail(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: FitFatTokens.spaceL,
+            vertical: FitFatTokens.spaceS,
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.fitness_center, size: 18, color: statusColors.warning),
+              const SizedBox(width: FitFatTokens.spaceS),
+              Expanded(
+                child: Text(
+                  workout.name,
+                  style: theme.textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: FitFatTokens.spaceS),
+              StatusBadge(
+                label: l10n.statusActive,
+                color: statusColors.warning,
+              ),
+              const SizedBox(width: FitFatTokens.spaceM),
+              Text(
+                formatRestDuration(workout.duration),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: FitFatTokens.spaceS),
+              IconButton(
+                tooltip: l10n.activeWorkoutResume,
+                onPressed: () => _openDetail(context),
+                icon: const Icon(Icons.play_arrow),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -1,150 +1,156 @@
-class MacroNutrients {
-  const MacroNutrients({
-    required this.calories,
-    required this.protein,
-    required this.carbs,
-    required this.fat,
-  });
+import 'ingredient.dart';
 
-  final double calories;
-  final double protein;
-  final double carbs;
-  final double fat;
+/// The seven nutrition numbers for an ingredient.
+///
+/// The same shape describes a per-100g profile and an absolute portion —
+/// [FoodNutrition.per100g] is the former, a meal row's snapshot the latter.
+/// The three optional nutriments are null only when nothing in the source ever
+/// provided a value.
+typedef Nutrition = ({
+  double calories,
+  double protein,
+  double carbs,
+  double fat,
+  double sodium,
+  double fiber,
+  double sugar,
+});
 
-  static const zero = MacroNutrients(calories: 0, protein: 0, carbs: 0, fat: 0);
+/// One ingredient's contribution to a food: its per-100g profile plus the
+/// amount of it the food contains.
+typedef ComponentNutrition = ({
+  double caloriesPer100g,
+  double proteinPer100g,
+  double carbsPer100g,
+  double fatPer100g,
+  double sodiumPer100g,
+  double fiberPer100g,
+  double sugarPer100g,
+  double amount,
+});
 
-  MacroNutrients operator +(MacroNutrients other) {
-    return MacroNutrients(
-      calories: calories + other.calories,
-      protein: protein + other.protein,
-      carbs: carbs + other.carbs,
-      fat: fat + other.fat,
-    );
-  }
+/// A food resolved against its ingredients.
+///
+/// [per100g] is the food's own per-100g profile; [totalAmount] is the weight the
+/// figures are derived from — the final cooked weight when the recipe has one,
+/// otherwise the raw sum of its components.
+typedef FoodNutrition = ({Nutrition per100g, double totalAmount});
 
-  MacroNutrients scale(double factor) {
-    return MacroNutrients(
-      calories: calories * factor,
-      protein: protein * factor,
-      carbs: carbs * factor,
-      fat: fat * factor,
-    );
-  }
-}
+/// Prefix marking a **derived** food: the auto-created 1:1 wrapper the app
+/// creates for every ingredient so a meal can reference ingredients uniformly.
+///
+/// Encoding it in the id keeps `Food.isDerived` a prefix test rather than a
+/// query, and lets the sync layer decide what is shareable without loading a
+/// row.
+const String kDerivedFoodPrefix = 'i:';
 
-/// Lightweight data class for junction table rows (no circular refs).
-class IngredientComponentRef {
-  IngredientComponentRef({
-    required this.id,
-    required this.name,
-    required this.grams,
-  });
+/// The id of the auto-created food that wraps [ingredientId].
+///
+/// Deterministic, so logging the same ingredient from anywhere always lands on
+/// the same row instead of accumulating duplicates.
+String derivedFoodId(String ingredientId) => '$kDerivedFoodPrefix$ingredientId';
 
+/// Whether [id] denotes a derived (auto-created, read-only) food.
+bool isDerivedFoodId(String id) => id.startsWith(kDerivedFoodPrefix);
+
+/// A loggable thing: 1..N ingredients with amounts.
+///
+/// Foods carry **no nutrition of their own** — that is defined only on
+/// [Ingredient] and resolved through [FoodIngredients]. See
+/// `diet/services/food_nutrition.dart` for the single derivation used everywhere.
+final class Food {
   final String id;
   final String name;
-  final double grams;
-}
+  final DateTime createdAt;
 
-class Ingredient {
-  Ingredient({
+  /// Soft-delete marker; null means active. Foods are only ever hidden, never
+  /// hard-deleted, because `meal_foods` references them.
+  final DateTime? archivedAt;
+
+  /// Final weight of the batch after cooking, in grams — the denominator of the
+  /// per-100g figures. Null for legacy rows and the derived 1:1 wrappers, where
+  /// the raw component sum is used instead.
+  final double? cookedWeight;
+
+  /// Composition, alphabetical by ingredient name when loaded from the
+  /// repository. Empty for a food whose composition has not been loaded.
+  final List<FoodIngredient> components;
+
+  const Food({
     required this.id,
     required this.name,
-    required this.caloriesPer100g,
-    required this.proteinPer100g,
-    required this.carbsPer100g,
-    required this.fatPer100g,
+    required this.createdAt,
+    this.archivedAt,
+    this.cookedWeight,
     this.components = const [],
-    this.creatorId,
-    this.isArchived = false,
-    this.sodiumPer100g,
-    this.fiberPer100g,
-    this.sugarsPer100g,
-    this.saturatedFatPer100g,
-    this.cholesterolPer100g,
   });
 
-  factory Ingredient.fromComponents({
-    required String id,
-    required String name,
-    required List<IngredientPortion> components,
-  }) {
-    final totals = components.fold(
-      MacroNutrients.zero,
-      (sum, portion) => sum + portion.macros,
-    );
-    final totalGrams = components.fold(
-      0.0,
-      (sum, portion) => sum + portion.grams,
-    );
-    final factor = totalGrams == 0 ? 0.0 : 100.0 / totalGrams;
-    final per100g = totals.scale(factor);
+  bool get isArchived => archivedAt != null;
 
-    return Ingredient(
-      id: id,
-      name: name,
-      caloriesPer100g: per100g.calories,
-      proteinPer100g: per100g.protein,
-      carbsPer100g: per100g.carbs,
-      fatPer100g: per100g.fat,
-      components: components,
-    );
-  }
+  /// Auto-created 1:1 wrapper around a single ingredient. Derived foods are
+  /// read-only: their `name` and `archivedAt` mirror the ingredient row and are
+  /// written only by `IngredientRepository`.
+  bool get isDerived => isDerivedFoodId(id);
 
-  final String id;
-  final String name;
-  final double caloriesPer100g;
-  final double proteinPer100g;
-  final double carbsPer100g;
-  final double fatPer100g;
-  final List<IngredientPortion> components;
-  final String? creatorId;
-  final bool isArchived;
-  final double? sodiumPer100g;
-  final double? fiberPer100g;
-  final double? sugarsPer100g;
-  final double? saturatedFatPer100g;
-  final double? cholesterolPer100g;
+  /// A user-created combination of more than one ingredient.
+  bool get isCombination => components.length > 1;
 
-  bool get isComposite => components.isNotEmpty;
+  /// A food with no loaded composition cannot be resolved or logged.
+  bool get hasComposition => components.isNotEmpty;
 
-  MacroNutrients macrosForGrams(double grams) {
-    final factor = grams / 100;
-    return MacroNutrients(
-      calories: caloriesPer100g * factor,
-      protein: proteinPer100g * factor,
-      carbs: carbsPer100g * factor,
-      fat: fatPer100g * factor,
-    );
-  }
+  Food copyWith({
+    String? name,
+    DateTime? createdAt,
+    Object? archivedAt = _unset,
+    Object? cookedWeight = _unset,
+    List<FoodIngredient>? components,
+  }) => Food(
+    id: id,
+    name: name ?? this.name,
+    createdAt: createdAt ?? this.createdAt,
+    archivedAt: identical(archivedAt, _unset)
+        ? this.archivedAt
+        : archivedAt as DateTime?,
+    cookedWeight: identical(cookedWeight, _unset)
+        ? this.cookedWeight
+        : (cookedWeight as num?)?.toDouble(),
+    components: components ?? this.components,
+  );
+
+  static const _unset = Object();
 }
 
-class IngredientPortion {
-  IngredientPortion({required this.ingredient, required this.grams});
+/// One ingredient in a food, with the amount of it the food contains.
+///
+/// [ingredientName] is a read-model convenience resolved by joining
+/// `ingredients`; it is not persisted, so renaming an ingredient propagates
+/// without rewriting composition rows.
+final class FoodIngredient {
+  final String foodId;
+  final String ingredientId;
+  final String ingredientName;
+  final double amount;
 
-  final Ingredient ingredient;
-  final double grams;
-
-  MacroNutrients get macros => ingredient.macrosForGrams(grams);
-}
-
-class MealEntry {
-  MealEntry({
-    required this.id,
-    required this.eatenAt,
-    required this.items,
-    this.name,
+  const FoodIngredient({
+    required this.foodId,
+    required this.ingredientId,
+    required this.ingredientName,
+    required this.amount,
   });
 
-  final String id;
-  final String? name;
-  final DateTime eatenAt;
-  final List<IngredientPortion> items;
-
-  MacroNutrients get totalMacros {
-    return items.fold(MacroNutrients.zero, (sum, item) => sum + item.macros);
-  }
-
-  double get totalGrams {
-    return items.fold(0.0, (sum, item) => sum + item.grams);
-  }
+  /// The nutrition this component contributes, ready for
+  /// [resolveFoodPer100g].
+  ///
+  /// [ingredient] supplies the per-100g profile — passed in rather than looked
+  /// up, so callers can batch-resolve a whole food's composition in one pass.
+  ComponentNutrition toNutrition(Ingredient ingredient) => (
+    caloriesPer100g: ingredient.caloriesPer100g,
+    proteinPer100g: ingredient.proteinPer100g,
+    carbsPer100g: ingredient.carbsPer100g,
+    fatPer100g: ingredient.fatPer100g,
+    sodiumPer100g: ingredient.sodiumPer100g,
+    fiberPer100g: ingredient.fiberPer100g,
+    sugarPer100g: ingredient.sugarPer100g,
+    amount: amount,
+  );
 }

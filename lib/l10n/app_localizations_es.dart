@@ -9,1085 +9,3081 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get appTitle => 'fitfat';
+  String get appTitle => 'FitFat';
 
   @override
-  String get mealsTab => 'Comidas';
+  String get tabDashboard => 'Panel';
 
   @override
-  String get ingredientsTab => 'Ingredientes';
+  String get tabExercise => 'Ejercicio';
 
   @override
-  String get addMeal => 'Añadir comida';
+  String get tabDiet => 'Dieta';
 
   @override
-  String get addIngredient => 'Añadir ingrediente';
+  String get tabSettings => 'Ajustes';
 
   @override
-  String get editIngredient => 'Editar ingrediente';
+  String get tabPlan => 'Plan';
 
   @override
-  String get editMeal => 'Editar comida';
+  String get tabNotes => 'Notas';
 
   @override
-  String get archivedIngredients => 'Ingredientes archivados';
+  String get dashboardAppBar => 'Panel';
 
   @override
-  String get save => 'Guardar';
+  String get dashboardTodayCalories => 'Calorías de hoy';
 
   @override
-  String get cancel => 'Cancelar';
+  String get dashboardLatestWorkout => 'Último entrenamiento';
 
   @override
-  String get delete => 'Eliminar';
+  String get dashboardNoWorkouts => 'Aún no hay entrenamientos completados.';
 
   @override
-  String get archive => 'Archivar';
+  String get dashboardWelcomeTitle => 'Bienvenido a FitFat';
 
   @override
-  String get restore => 'Restaurar';
+  String get dashboardWelcomeBody =>
+      'Empieza añadiendo un ingrediente, una comida o un entrenamiento.';
 
   @override
-  String get add => 'Añadir';
+  String get dashboardWelcomeActionIngredients => 'Añadir un ingrediente';
 
   @override
-  String get change => 'Cambiar';
+  String get dashboardWelcomeActionMeals => 'Registrar una comida';
 
   @override
-  String get clear => 'Limpiar';
+  String get dashboardWelcomeActionWorkouts => 'Añadir un entrenamiento';
 
   @override
-  String get ingredientName => 'Nombre del ingrediente';
-
-  @override
-  String get buildFromIngredients => 'Componer a partir de ingredientes';
-
-  @override
-  String get components => 'Componentes';
-
-  @override
-  String get noComponentsAdded => 'No hay componentes añadidos';
-
-  @override
-  String get addComponents => 'Añadir ingredientes';
-
-  @override
-  String get searchIngredients => 'Buscar ingredientes';
-
-  @override
-  String get typeToSearchIngredient => 'Escriba para buscar';
-
-  @override
-  String get caloriesPer100g => 'Calorías por 100g';
-
-  @override
-  String get proteinPer100g => 'Proteínas por 100g (g)';
-
-  @override
-  String get carbsPer100g => 'Carbohidratos por 100g (g)';
-
-  @override
-  String get fatPer100g => 'Grasas por 100g (g)';
-
-  @override
-  String get sodiumPer100g => 'Sodio por 100g (mg)';
-
-  @override
-  String get fiberPer100g => 'Fibra por 100g (g)';
-
-  @override
-  String get amountInGrams => 'Cantidad en gramos';
-
-  @override
-  String get gramsHint => 'ej. 80';
-
-  @override
-  String get gramsHintMeal => 'ej. 120';
-
-  @override
-  String get createNewIngredient => 'Crear nuevo ingrediente';
-
-  @override
-  String get mealNameOptional => 'Nombre de la comida (opcional)';
-
-  @override
-  String get selectedIngredients => 'Ingredientes seleccionados';
-
-  @override
-  String get noIngredientsSelected => 'No hay ingredientes seleccionados';
-
-  @override
-  String get noIngredientsFound => 'No se encontraron ingredientes';
-
-  @override
-  String get archiveIngredientTitle => 'Archivar ingrediente';
-
-  @override
-  String get archiveIngredientContent =>
-      'Este ingrediente se ocultará de las vistas normales. Use la pestaña Ingredientes archivados para restaurarlo o eliminarlo.';
-
-  @override
-  String get deleteMealTitle => '¿Eliminar comida?';
-
-  @override
-  String get deleteMealContent => 'Esto eliminará la comida de su registro.';
-
-  @override
-  String get deleteIngredientTitle => '¿Eliminar ingrediente?';
-
-  @override
-  String get deleteIngredientContent =>
-      'Esto eliminará el ingrediente y sus porciones de las comidas.';
-
-  @override
-  String get permanentlyDeleteTitle => 'Eliminar ingrediente permanentemente';
-
-  @override
-  String get permanentlyDeleteContent =>
-      'Este ingrediente se eliminará permanentemente. No se puede restaurar.';
-
-  @override
-  String get restoreIngredientTitle => 'Restaurar ingrediente';
-
-  @override
-  String get deleteMealTooltip => 'Eliminar comida';
-
-  @override
-  String get deleteIngredientTooltip => 'Eliminar';
-
-  @override
-  String get ingredientArchived => 'Ingrediente archivado correctamente';
-
-  @override
-  String get ingredientDeleted => 'Ingrediente eliminado correctamente';
-
-  @override
-  String get ingredientRestored => 'Ingrediente restaurado correctamente';
-
-  @override
-  String get meal => 'Comida';
-
-  @override
-  String get sortAZ => 'Ordenar A-Z';
-
-  @override
-  String get sortZA => 'Ordenar Z-A';
-
-  @override
-  String get noIngredientsFoundSubtext =>
-      'Pruebe con otra búsqueda o añada un nuevo ingrediente';
-
-  @override
-  String get kcalAbbrev => 'kcal';
-
-  @override
-  String get proteinAbbrev => 'P';
-
-  @override
-  String get carbsAbbrev => 'C';
-
-  @override
-  String get fatAbbrev => 'G';
-
-  @override
-  String eatenAtLabel(Object time) {
-    return 'Comido a las: $time';
+  String dashboardDurationMin(int minutes) {
+    return 'Duración: $minutes min';
   }
 
   @override
-  String failedToSave(Object error) {
-    return 'Error al guardar la comida: $error';
+  String dashboardCaloriesValue(String calories) {
+    return '$calories kcal';
   }
 
   @override
-  String failedToUpdate(Object error) {
-    return 'Error al actualizar la comida: $error';
+  String dashboardError(String message) {
+    return 'Error: $message';
   }
 
   @override
-  String items(int count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
+  String get dashboardGreetingMorning => 'Buenos días';
 
+  @override
+  String get dashboardGreetingAfternoon => 'Buenas tardes';
+
+  @override
+  String get dashboardGreetingEvening => 'Buenas noches';
+
+  @override
+  String get dashboardMacroCalories => 'Calorías';
+
+  @override
+  String get dashboardMacroFiber => 'Fibra';
+
+  @override
+  String get dashboardMacroProtein => 'Proteínas';
+
+  @override
+  String get dashboardMacroCarbs => 'Carbohidratos';
+
+  @override
+  String get dashboardMacroFat => 'Grasas';
+
+  @override
+  String get dashboardContinueWorkout => 'Continuar entrenamiento';
+
+  @override
+  String get dashboardOpenWorkout => 'Abrir entrenamiento';
+
+  @override
+  String get dashboardCalorieTarget => 'Objetivo calórico diario';
+
+  @override
+  String dashboardConsumedOfTarget(String consumed, String target) {
+    return '$consumed / $target kcal';
+  }
+
+  @override
+  String dashboardMacroProgress(String consumed, String target) {
+    return '$consumed / $target g';
+  }
+
+  @override
+  String get dashboardWeightTrend => 'Evolución del peso';
+
+  @override
+  String get dashboardWeeklyWorkout => 'Entrenamiento semanal';
+
+  @override
+  String get dashboardVolume => 'Volumen';
+
+  @override
+  String get dashboardDaysTrained => 'Días';
+
+  @override
+  String dashboardDaysTrainedValue(int count) {
+    return '$count/7';
+  }
+
+  @override
+  String get dashboardHoursTrained => 'Tiempo';
+
+  @override
+  String dashboardHoursTrainedHours(Object hours) {
+    return '$hours h';
+  }
+
+  @override
+  String dashboardHoursTrainedMinutes(String minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String dashboardHoursTrainedHoursMinutes(Object hours, Object minutes) {
+    return '$hours h $minutes m';
+  }
+
+  @override
+  String get dashboardGoalsTitle => 'Objetivos';
+
+  @override
+  String get dashboardGoalsEmpty => 'No hay objetivos activos';
+
+  @override
+  String get dashboardGoalsCta => 'Objetivos';
+
+  @override
+  String get dashboardAddTitle => 'Añadir';
+
+  @override
+  String get dietAddMeal => 'Comida';
+
+  @override
+  String get dietAddRecipe => 'Receta';
+
+  @override
+  String get dietAddIngredient => 'Ingrediente';
+
+  @override
+  String get dashboardMinutes => 'Minutos';
+
+  @override
+  String get dashboardUpcomingTasks => 'Tareas próximas';
+
+  @override
+  String get dashboardNoUpcomingTasks => 'No hay tareas con hora próximas.';
+
+  @override
+  String dashboardSeeAllTasks(String count) {
+    return 'Ver las $count tareas';
+  }
+
+  @override
+  String get dashboardCalorieTargetEmptyTitle => 'Complete your profile';
+
+  @override
+  String get dashboardCalorieTargetEmptyBody =>
+      'Add your age, gender, weight and height to see your daily calorie target.';
+
+  @override
+  String get dashboardMacroEmptyTitle => 'Complete your profile';
+
+  @override
+  String get dashboardMacroEmptyBody =>
+      'Add your profile details to see macro targets.';
+
+  @override
+  String get dashboardMacroEmptyCta => 'Complete profile';
+
+  @override
+  String get dashboardWeeklyEmptyTitle => 'No workouts yet';
+
+  @override
+  String get dashboardWeeklyEmptyBody =>
+      'Log your first workout or sync from server.';
+
+  @override
+  String get dashboardWeeklyEmptyCtaCreate => 'Add workout';
+
+  @override
+  String get dashboardWeeklyEmptyCtaSync => 'Sync exercises';
+
+  @override
+  String get dashboardUpcomingEmptyCta => 'Add task';
+
+  @override
+  String get dashboardLatestEmptyCta => 'Add workout';
+
+  @override
+  String get exerciseListAppBar => 'Ejercicios';
+
+  @override
+  String get exerciseListManageBtn => 'Gestionar ejercicios';
+
+  @override
+  String get exerciseListSearchHint => 'Buscar ejercicios';
+
+  @override
+  String get exerciseFilterType => 'Tipo';
+
+  @override
+  String get exerciseFilterBodyPart => 'Parte del cuerpo';
+
+  @override
+  String get exerciseFilterEquipment => 'Equipamiento';
+
+  @override
+  String get exerciseFilterMuscle => 'Músculo';
+
+  @override
+  String exerciseFilterResults(int count) {
+    return '$count ejercicios';
+  }
+
+  @override
+  String get exerciseFilterClear => 'Borrar';
+
+  @override
+  String get exerciseFilterApply => 'Aplicar';
+
+  @override
+  String get exerciseFilterNoResults => 'Ningún ejercicio coincide';
+
+  @override
+  String get exerciseFilterSearchOptions => 'Buscar opciones';
+
+  @override
+  String get exerciseDetailTabHistory => 'Historial';
+
+  @override
+  String get exerciseDetailTabDetails => 'Detalles';
+
+  @override
+  String get emptyExercisesTitle => 'Aún no hay ejercicios';
+
+  @override
+  String get emptyExercisesBody =>
+      'Crea ejercicios para planificar tus entrenamientos.';
+
+  @override
+  String get emptyExercisesCta => 'Añadir ejercicio';
+
+  @override
+  String get activeWorkoutAddExercise => 'Añadir ejercicio';
+
+  @override
+  String get activeWorkoutAddExerciseTooltip =>
+      'Buscar y añadir ejercicios a este entrenamiento';
+
+  @override
+  String activeWorkoutPlannedSetsTitle(String exercise) {
+    return 'Series planificadas para $exercise';
+  }
+
+  @override
+  String get activeWorkoutPlannedRepsLabel => 'Repeticiones';
+
+  @override
+  String get activeWorkoutPlannedWeightLabel => 'Peso';
+
+  @override
+  String get activeWorkoutReorderSets => 'Reordenar series';
+
+  @override
+  String get activeWorkoutEditPlannedTitle => 'Editar serie planificada';
+
+  @override
+  String get commonRemove => 'Quitar';
+
+  @override
+  String get activeWorkoutPrevExercise => 'Ejercicio anterior';
+
+  @override
+  String get activeWorkoutNextExercise => 'Ejercicio siguiente';
+
+  @override
+  String get activeWorkoutInThisWorkout => 'En este entrenamiento';
+
+  @override
+  String get activeWorkoutAllExercises => 'Todos los ejercicios';
+
+  @override
+  String get activeWorkoutSearchPrompt => 'Escribe para buscar ejercicios';
+
+  @override
+  String get activeWorkoutExerciseNotes => 'Notas';
+
+  @override
+  String get activeWorkoutExerciseInfo => 'Info del ejercicio';
+
+  @override
+  String get activeWorkoutExerciseNotesDialogTitle =>
+      'Notas sobre el ejercicio';
+
+  @override
+  String get activeWorkoutExerciseNotesHint =>
+      'Anota qué repetir o cambiar la próxima vez (series, peso, dificultad)…';
+
+  @override
+  String get exerciseUsedTitle => 'Ejercicio en uso';
+
+  @override
+  String exerciseUsedBody(int count) {
+    return 'Utilizado en $count entrenamiento. Elimina primero el entrenamiento para quitar este ejercicio.';
+  }
+
+  @override
+  String exerciseUsedBody_plural(Object count) {
+    return 'Utilizado en $count entrenamientos. Elimina primero los entrenamientos para quitar este ejercicio.';
+  }
+
+  @override
+  String get exerciseDetailAppBar => 'Ejercicio';
+
+  @override
+  String get exerciseDetailNotFound => 'Ejercicio no encontrado.';
+
+  @override
+  String get exerciseDetailType => 'Tipo';
+
+  @override
+  String get exerciseDetailBodyPart => 'Parte del cuerpo';
+
+  @override
+  String get exerciseDetailEquipment => 'Equipamiento';
+
+  @override
+  String get exerciseDetailPrimaryMuscle => 'Músculos principales';
+
+  @override
+  String get exerciseDetailSecondaryMuscle => 'Músculos secundarios';
+
+  @override
+  String get exerciseDetailInstructions => 'Instrucciones';
+
+  @override
+  String get exerciseDetailTips => 'Consejos';
+
+  @override
+  String get exerciseDetailFaqs => 'Preguntas frecuentes';
+
+  @override
+  String get exerciseDetailKeywords => 'Palabras clave';
+
+  @override
+  String get exerciseDetailHistory => 'Historial';
+
+  @override
+  String get exerciseDetailHistoryEmpty =>
+      'Sin historial. Añade este ejercicio a un entrenamiento para ver tus estadísticas.';
+
+  @override
+  String get exerciseDetailBestWeight => 'Peso máximo';
+
+  @override
+  String get exerciseDetailBestVolume => 'Mejor volumen';
+
+  @override
+  String get exerciseDetailBestDuration => 'Duración máxima';
+
+  @override
+  String get exerciseDetailTotalWorkouts => 'Entrenamientos';
+
+  @override
+  String get exerciseDetailTotalSets => 'Series';
+
+  @override
+  String get exerciseDetailVolumeOverTime => 'Volumen a lo largo del tiempo';
+
+  @override
+  String get exerciseDetailDurationOverTime => 'Duración a lo largo del tiempo';
+
+  @override
+  String get exerciseDetailPlannedVsActual => 'Planificado vs real';
+
+  @override
+  String get exerciseDetailVolumeAdherence => 'Adherencia al volumen';
+
+  @override
+  String get exerciseDetailSetsCompleted => 'Series completadas';
+
+  @override
+  String exerciseDetailAdherenceValue(String percent) {
+    return '$percent%';
+  }
+
+  @override
+  String exerciseDetailSetNumber(int number) {
+    return 'Serie $number';
+  }
+
+  @override
+  String get exerciseDetailSetCompleted => 'Completada';
+
+  @override
+  String get exerciseDetailSetNotCompleted => 'No completada';
+
+  @override
+  String get exerciseDetailSetEmpty => '—';
+
+  @override
+  String exerciseDetailRepsDelta(String delta) {
+    return '$delta rep.';
+  }
+
+  @override
+  String exerciseDetailWeightDelta(String delta, String unit) {
+    return '$delta $unit';
+  }
+
+  @override
+  String exerciseDetailSetRest(String rest) {
+    return 'descanso $rest';
+  }
+
+  @override
+  String exerciseDetailSetRestTook(String rest) {
+    return '(tomó $rest)';
+  }
+
+  @override
+  String get exerciseDetailTrendSame => 'igual que el entrenamiento anterior';
+
+  @override
+  String exerciseDetailTrendDelta(String delta, String unit) {
+    return '$delta $unit vs el entrenamiento anterior';
+  }
+
+  @override
+  String get exerciseDetailPrBadge => 'Récord';
+
+  @override
+  String get exerciseDetailSetHeader => 'Serie';
+
+  @override
+  String get exerciseDetailSetHeaderPlanned => 'Planificado';
+
+  @override
+  String get exerciseDetailSetHeaderActual => 'Real';
+
+  @override
+  String get exerciseDetailSetHeaderDelta => 'Δ';
+
+  @override
+  String get exerciseDetailSetHeaderRest => 'Descanso';
+
+  @override
+  String get exerciseDetailWeightTrend => 'Peso máximo con el tiempo';
+
+  @override
+  String get exerciseDetailRepsTrend => 'Repeticiones con el tiempo';
+
+  @override
+  String get exerciseFormNewTitle => 'Nuevo ejercicio';
+
+  @override
+  String get exerciseFormEditTitle => 'Editar ejercicio';
+
+  @override
+  String get exerciseFormNameLabel => 'Nombre del ejercicio';
+
+  @override
+  String get exerciseFormNameHint => 'Ej.: Press de banca';
+
+  @override
+  String get exerciseFormNameRequired => 'El nombre es obligatorio';
+
+  @override
+  String get exerciseFormTypeLabel => 'Tipo';
+
+  @override
+  String get exerciseFormSave => 'Guardar';
+
+  @override
+  String get exerciseFormSaving => 'Guardando…';
+
+  @override
+  String get workoutListAppBar => 'Entrenamientos';
+
+  @override
+  String get templatesTitle => 'Plantillas';
+
+  @override
+  String get templatesEmptyTitle => 'Aún no hay plantillas';
+
+  @override
+  String get templatesEmptyBody =>
+      'Crea una rutina reutilizable o guarda un entrenamiento pasado como plantilla.';
+
+  @override
+  String get templatesNew => 'Nueva plantilla';
+
+  @override
+  String get templatesEdit => 'Editar plantilla';
+
+  @override
+  String get templatesStartToday => 'Empezar hoy';
+
+  @override
+  String templatesExercisesCount(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$countString elementos',
-      one: '$countString elemento',
+      other: '$count ejercicios',
+      one: '1 ejercicio',
+      zero: 'Sin ejercicios',
     );
     return '$_temp0';
   }
 
   @override
-  String formatMacros(Object kcal, Object protein, Object carbs, Object fat) {
-    return '$kcal kcal · P ${protein}g · C ${carbs}g · G ${fat}g';
+  String get templatesScheduleOff => 'Sin programar';
+
+  @override
+  String get templatesScheduleDaily => 'Todos los días';
+
+  @override
+  String templatesScheduleWeekly(Object days) {
+    return 'Semanal: $days';
   }
 
   @override
-  String formatPer100g(Object kcal, Object protein, Object carbs, Object fat) {
-    return 'Por 100g: $kcal kcal · P ${protein}g · C ${carbs}g · G ${fat}g';
+  String templatesScheduleInterval(Object days) {
+    return 'Cada $days días';
   }
 
   @override
-  String formatTotal(Object total) {
-    return 'Total: $total';
+  String get templatesSavedAsTemplate =>
+      'Entrenamiento guardado como plantilla';
+
+  @override
+  String get templatesDeleteConfirmTitle => '¿Eliminar plantilla?';
+
+  @override
+  String get templatesDeleteConfirmBody =>
+      'Se eliminará el esquema. Las sesiones ya iniciadas se conservan.';
+
+  @override
+  String get templatesAddSet => 'Añadir serie';
+
+  @override
+  String get workoutListManageBtn => 'Gestionar ejercicios';
+
+  @override
+  String get emptyWorkoutsTitle => 'Aún no hay entrenamientos';
+
+  @override
+  String get emptyWorkoutsBody =>
+      'Planifica tu primer entrenamiento y empieza a entrenar.';
+
+  @override
+  String get emptyWorkoutsCta => 'Añadir entrenamiento';
+
+  @override
+  String workoutDeleted(String name) {
+    return 'Entrenamiento «$name» eliminado';
   }
 
   @override
-  String get exercises => 'Ejercicios';
+  String get workoutFormTitle => 'Nuevo entrenamiento';
 
   @override
-  String get exercise => 'Ejercicio';
+  String get workoutFormEditTitle => 'Editar entrenamiento';
 
   @override
-  String get activeWorkout => 'Entrenamiento activo';
+  String get workoutFormNameLabel => 'Nombre del entrenamiento';
 
   @override
-  String get noActiveSeance => 'No hay entrenamiento activo';
+  String get workoutFormNameHint => 'Ej.: Entreno matutino';
 
   @override
-  String get guidedMode => 'Guiado';
+  String get workoutFormNameRequired => 'El nombre es obligatorio';
 
   @override
-  String get freeformMode => 'Libre';
+  String get workoutFormDate => 'Fecha';
 
   @override
-  String get cancelSeance => 'Cancelar entrenamiento';
+  String get workoutFormAddPlannerTask => 'Añadir al planificador';
 
   @override
-  String get backToApp => 'Volver a la app';
+  String get workoutFormAddPlannerTaskSubtitle =>
+      'Crea una tarea \"hacer este entrenamiento\" en el planificador para esta fecha.';
 
   @override
-  String get discardEmptySeance => '¿Descartar entrenamiento vacío?';
+  String get workoutFormExercises => 'Ejercicios';
 
   @override
-  String get discardEmptySeanceContent =>
-      'Este entrenamiento no tiene ejercicios y no se guardará en el historial.';
+  String get workoutFormAddExercise => 'Añadir ejercicio';
 
   @override
-  String get keepEditing => 'Seguir editando';
+  String get workoutFormRemoveSet => 'Eliminar serie';
 
   @override
-  String get discard => 'Descartar';
+  String get workoutFormReorderExercises => 'Reordenar ejercicios';
 
   @override
-  String get completeSeance => 'Completar entrenamiento';
+  String get workoutFormNoExercises =>
+      'No hay ejercicios disponibles. Añada algunos primero.';
 
   @override
-  String get addExercise => 'Añadir ejercicio';
+  String get workoutFormSave => 'Guardar';
 
   @override
-  String get followPlan => 'Seguir el plan';
+  String get workoutFormSaving => 'Guardando…';
 
   @override
-  String get searchToAdd => 'Buscar para añadir';
+  String get workoutFormAddSet => 'Añadir serie';
 
   @override
-  String get searchExercises => 'Buscar ejercicios';
+  String get workoutFormRepsLabel => 'Repeticiones';
 
   @override
-  String get exerciseTypeToSearch => 'Escriba para buscar...';
+  String get workoutFormWeightLabel => 'kg';
 
   @override
-  String get typeToFindExercises => 'Escriba para encontrar...';
+  String get workoutFormDurationLabel => 'min';
 
   @override
-  String get sets => 'Series';
+  String get workoutFormDistanceLabel => 'Distancia (m)';
 
   @override
-  String get set => 'Serie';
+  String get workoutFormSelectExercise => 'Seleccione al menos un ejercicio';
 
   @override
-  String get setsLower => 'series';
+  String get workoutFormSearchHint => 'Buscar ejercicios';
 
   @override
-  String get done => 'hecho';
+  String get workoutFormRestLabel => 'Descanso (min)';
 
   @override
-  String get summary => 'Resumen';
+  String get workoutFormSetDoneAt => 'Hecha a las';
 
   @override
-  String get totalReps => 'Reps totales';
+  String get workoutFormSetDoneAtTooltip =>
+      'Cuándo terminó esta serie: el descanso se mide desde aquí';
 
   @override
-  String get totalWeight => 'Peso total';
+  String get workoutFormSetTimeEmpty => 'Hora de la serie';
 
   @override
-  String get addSet => 'Añadir serie';
+  String get workoutFormSetIncomplete =>
+      'Completa cada serie añadida (valores y tiempo de descanso) o elimínala';
 
   @override
-  String get tapToComplete => 'Tocar para completar';
+  String get workoutFormRemoveExercise => 'Quitar ejercicio';
 
   @override
-  String get noExercisesFound => 'No se encontraron ejercicios para';
+  String workoutFormCreateExercise(Object query) {
+    return 'Crear ejercicio «$query»';
+  }
 
   @override
-  String get repsLower => 'reps';
+  String get workoutDetailAppBar => 'Entrenamiento';
 
   @override
-  String get preFilledFrom => 'Prellenado desde';
+  String get workoutDetailNotFound => 'Entrenamiento no encontrado';
 
   @override
-  String get allSetsComplete => '¡Todas las series completas!';
+  String get workoutDetailBtnStart => 'Iniciar';
 
   @override
-  String get restTimer => 'Temporizador de descanso';
+  String get workoutDetailBtnComplete => 'Completar';
 
   @override
-  String get skip => 'Saltar';
+  String workoutDetailStartedAt(String time) {
+    return 'Inicio: $time';
+  }
 
   @override
-  String get restOver => '¡Descanso terminado!';
+  String get workoutDetailExercises => 'Ejercicios';
 
   @override
-  String get getReadyNextSet => '¡Prepárate para la próxima serie!';
+  String get emptyWorkoutDetailTitle =>
+      'Este entrenamiento no tiene ejercicios';
 
   @override
-  String get editSet => 'Editar serie';
+  String get emptyWorkoutDetailBody =>
+      'Añade ejercicios al crear un entrenamiento.';
 
   @override
-  String get weightKg => 'Peso (kg)';
+  String get workoutDetailSetHeaderActual => 'Real';
 
   @override
-  String get history => 'Historial';
+  String workoutDetailSetChipRest(String planned, String rest) {
+    return '$planned · $rest';
+  }
 
   @override
-  String get records => 'Récords';
+  String workoutDetailSetActualsTitle(int number) {
+    return 'Serie $number — Real';
+  }
 
   @override
-  String get noHistory => 'Sin historial';
+  String get workoutDetailActualRepsLabel => 'Repeticiones reales';
 
   @override
-  String get sessions => 'Sesiones';
+  String get workoutDetailActualWeightLabel => 'Peso real (kg)';
 
   @override
-  String get volume => 'Volumen';
+  String workoutDetailActualWeightLabelUnit(String unit) {
+    return 'Peso real ($unit)';
+  }
 
   @override
-  String get time => 'Tiempo';
+  String get workoutDetailActualDurationLabel => 'Duración (min)';
 
   @override
-  String get searchHistory => 'Buscar en historial';
+  String get workoutDetailActualDistanceLabel => 'Distancia (m)';
 
   @override
-  String get searchByDateHint => 'Buscar por fecha o nombre...';
+  String workoutDetailSetCount(int count) {
+    return '$count serie';
+  }
 
   @override
-  String get volumeProgression => 'Progresión de volumen';
+  String workoutDetailSetCount_plural(Object count) {
+    return '$count series';
+  }
 
   @override
-  String get estimated1RM => 'Progresión de 1RM estimada';
+  String get ingredientListAppBar => 'Ingredientes';
 
   @override
-  String get bestEstimated1RM => 'Mejor 1RM estimada';
+  String get emptyIngredientsTitle => 'Aún no hay ingredientes';
 
   @override
-  String get maxWeight => 'Peso máximo';
+  String get emptyIngredientsBody =>
+      'Añade tu primer ingrediente para empezar a crear comidas.';
 
   @override
-  String get maxVolume => 'Volumen máximo (Serie)';
+  String get emptyIngredientsCta => 'Añadir ingrediente';
 
   @override
-  String get totalVolume => 'Volumen total';
+  String ingredientArchived(String name) {
+    return 'Ingrediente «$name» archivado';
+  }
 
   @override
-  String get noHistoryContent =>
-      'Completa un entrenamiento con este ejercicio para verlo aquí';
+  String get ingredientFormNewTitle => 'Nuevo ingrediente';
 
   @override
-  String get library => 'Biblioteca';
+  String get ingredientFormEditTitle => 'Editar ingrediente';
 
   @override
-  String get createExercise => 'Crear ejercicio';
+  String get ingredientFormNameLabel => 'Nombre';
 
   @override
-  String get exerciseName => 'Nombre del ejercicio';
+  String get ingredientFormNameHint => 'Ej.: Pechuga de pollo';
 
   @override
-  String get category => 'Categoría';
+  String get ingredientFormNameRequired => 'El nombre es obligatorio';
 
   @override
-  String get templates => 'Plantillas';
+  String get ingredientFormCaloriesLabel => 'Calorías (por 100 g)';
 
   @override
-  String get createTemplate => 'Crear plantilla';
+  String get ingredientFormCaloriesSuffix => 'kcal';
 
   @override
-  String exercisesCount(int count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
+  String get ingredientFormProteinLabel => 'Proteínas (por 100 g)';
 
+  @override
+  String get ingredientFormProteinSuffix => 'g';
+
+  @override
+  String get ingredientFormCarbsLabel => 'Carbohidratos (por 100 g)';
+
+  @override
+  String get ingredientFormCarbsSuffix => 'g';
+
+  @override
+  String get ingredientFormFatLabel => 'Grasas (por 100 g)';
+
+  @override
+  String get ingredientFormFatSuffix => 'g';
+
+  @override
+  String get ingredientFormSodiumLabel => 'Sodio (por 100 g)';
+
+  @override
+  String get ingredientFormSodiumSuffix => 'g';
+
+  @override
+  String get ingredientFormFiberLabel => 'Fibra (por 100 g)';
+
+  @override
+  String get ingredientFormFiberSuffix => 'g';
+
+  @override
+  String get ingredientFormSugarLabel => 'Azúcar (por 100 g)';
+
+  @override
+  String get ingredientFormSugarSuffix => 'g';
+
+  @override
+  String ingredientFormFieldRequired(String label) {
+    return '$label es obligatorio';
+  }
+
+  @override
+  String ingredientFormFieldPositive(String label) {
+    return '$label debe ser positivo';
+  }
+
+  @override
+  String ingredientFormFieldNonNegative(String label) {
+    return '$label no puede ser negativo';
+  }
+
+  @override
+  String mealListUnnamedMeal(String date, String time) {
+    return 'Comida · $date $time';
+  }
+
+  @override
+  String get foodPickerTitle => 'Añadir alimentos';
+
+  @override
+  String get foodPickerSearchHint => 'Buscar recetas e ingredientes';
+
+  @override
+  String get foodPickerSectionRecipes => 'Recetas';
+
+  @override
+  String get foodPickerSectionIngredients => 'Ingredientes sueltos';
+
+  @override
+  String get foodPickerEmpty => 'Nada coincide con su búsqueda.';
+
+  @override
+  String get foodPickerNoFoods =>
+      'Aún no hay alimentos. Añada un ingrediente para empezar: cada ingrediente se puede registrar por separado.';
+
+  @override
+  String foodPickerNeedsAmount(String name) {
+    return '$name necesita una cantidad antes de guardar';
+  }
+
+  @override
+  String foodPickerCaloriesCooked(String portion, String per100g) {
+    return '$portion kcal para esta porción · $per100g/100g cocinados';
+  }
+
+  @override
+  String mealListTotals(
+    String amount,
+    String protein,
+    String carbs,
+    String fat,
+    String fiber,
+  ) {
+    return '$amount g  ·  P $protein  ·  C $carbs  ·  F $fat  ·  Fibra $fiber';
+  }
+
+  @override
+  String get foodPickerDone => 'Listo';
+
+  @override
+  String mealFormSelectedSummary(int count, String calories) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$countString ejercicios',
-      one: '$countString ejercicio',
+      other: '$count alimentos seleccionados',
+      one: '1 alimento seleccionado',
+      zero: 'Sin alimentos seleccionados',
+    );
+    return '$_temp0 · $calories kcal';
+  }
+
+  @override
+  String get mealFormChooseFoods => 'Elegir alimentos';
+
+  @override
+  String get ingredientDetailOwnFoodTitle => 'Registrable por separado';
+
+  @override
+  String get ingredientDetailOwnFoodBody =>
+      'Este ingrediente tiene un alimento propio, así que puede registrarlo directamente sin crear una receta. Su nutrición son los valores por 100g de arriba.';
+
+  @override
+  String get mealListAppBar => 'Comidas';
+
+  @override
+  String get mealListManageBtn => 'Gestionar ingredientes';
+
+  @override
+  String get emptyMealsTitle => 'Aún no hay comidas';
+
+  @override
+  String get emptyMealsBody =>
+      'Registra tu primera comida para controlar calorías y macronutrientes.';
+
+  @override
+  String get emptyMealsCta => 'Registrar una comida';
+
+  @override
+  String mealDeleted(String name) {
+    return 'Comida «$name» eliminada';
+  }
+
+  @override
+  String mealListFoodCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alimentos',
+      one: '1 alimento',
+      zero: 'sin alimentos',
     );
     return '$_temp0';
   }
 
   @override
-  String setsCount(int count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
+  String mealListCaloriesValue(String calories) {
+    return '$calories kcal';
+  }
 
+  @override
+  String mealListMacroFormat(
+    String grams,
+    String calories,
+    String protein,
+    String carbs,
+    String fat,
+  ) {
+    return '${grams}g  ·  $calories kcal  ·  P ${protein}g  ·  C ${carbs}g  ·  G ${fat}g';
+  }
+
+  @override
+  String get mealFormNewTitle => 'Nueva comida';
+
+  @override
+  String get mealFormEditTitle => 'Editar comida';
+
+  @override
+  String get mealFormNameLabel => 'Nombre de la comida';
+
+  @override
+  String get mealFormNameHint => 'Opcional';
+
+  @override
+  String get mealFormNameOptionalHint =>
+      'Déjelo vacío y se etiquetará por su fecha';
+
+  @override
+  String get mealFormNameRequired => 'El nombre es obligatorio';
+
+  @override
+  String get mealFormDateTime => 'Fecha y hora';
+
+  @override
+  String get mealFormIngredients => 'Ingredientes';
+
+  @override
+  String get mealFormNoIngredients =>
+      'No hay ingredientes disponibles. Añada algunos primero.';
+
+  @override
+  String get mealFormAddIngredient =>
+      'Añada al menos un ingrediente con gramos';
+
+  @override
+  String get foodListAppBar => 'Recetas';
+
+  @override
+  String foodListPartCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$countString series',
-      one: '$countString serie',
+      other: '$count ingredientes',
+      one: '1 ingrediente',
     );
     return '$_temp0';
   }
 
   @override
-  String get workoutsTab => 'Entrenamientos';
+  String get foodListUnresolved =>
+      'Faltan ingredientes: no se puede calcular la nutrición';
 
   @override
-  String get trainingTab => 'Entrenamiento';
-
-  @override
-  String get quickLog => 'Registro rápido';
-
-  @override
-  String get followTodaysPlan => 'Seguir plan de hoy';
-
-  @override
-  String get startWorkout => 'Empezar';
-
-  @override
-  String get statsTab => 'Estadísticas';
-
-  @override
-  String get searchExercisesHint => 'Buscar ejercicios...';
-
-  @override
-  String get noExercisesFoundSimple => 'No se encontraron ejercicios';
-
-  @override
-  String get noExercisesFoundAction =>
-      'Pruebe con otra búsqueda o borre los filtros';
-
-  @override
-  String get cardio => 'Cardio';
-
-  @override
-  String get weightlifting => 'Musculación';
-
-  @override
-  String get cardioDuration => 'Duración cardio';
-
-  @override
-  String get minutesLower => 'min';
-
-  @override
-  String get minutes => 'Minutos';
-
-  @override
-  String get setDuration => 'Fijar duración';
-
-  @override
-  String get quickLogTitle => 'Registro rápido';
-
-  @override
-  String get quickLogSearchHint => 'Escriba para buscar ejercicios...';
-
-  @override
-  String get quickLogSelectExercise => 'Seleccione un ejercicio';
-
-  @override
-  String get quickLogEnterDuration => 'Ingrese una duración válida';
-
-  @override
-  String get quickLogEnterReps => 'Ingrese un número de repeticiones válido';
-
-  @override
-  String get quickLogEnterWeight => 'Ingrese un peso válido';
-
-  @override
-  String get quickLogSaved => '¡Entreno registrado!';
-
-  @override
-  String get quickLogDurationHint => 'ej. 30';
-
-  @override
-  String get quickLogRepsHint => 'ej. 10';
-
-  @override
-  String get quickLogWeightHint => 'ej. 50';
-
-  @override
-  String get quickLogNotes => 'Notas';
-
-  @override
-  String get quickLogNotesHint => 'Notas opcionales...';
-
-  @override
-  String get logWorkout => 'Registrar';
-
-  @override
-  String get noPlannedWorkoutsForDay =>
-      'Sin entrenamientos planificados para este día';
-
-  @override
-  String get addPlannedWorkout => 'Añadir entrenamiento planificado';
-
-  @override
-  String get completed => 'Completado';
-
-  @override
-  String get close => 'Cerrar';
-
-  @override
-  String get startPlan => 'Empezar';
-
-  @override
-  String get deletePlannedWorkout => 'Eliminar entrenamiento planificado';
-
-  @override
-  String get deletePlannedWorkoutContent =>
-      '¿Está seguro de eliminar este entrenamiento planificado?';
-
-  @override
-  String get noTemplatesAvailable => 'No hay plantillas disponibles';
-
-  @override
-  String get selectTemplate => 'Seleccionar plantilla';
-
-  @override
-  String get error => 'Error';
-
-  @override
-  String get enterWorkoutName => 'Ingrese un nombre de entrenamiento';
-
-  @override
-  String get addAtLeastOneExercise => 'Añada al menos un ejercicio';
-
-  @override
-  String get plannedWorkoutSaved => '¡Entrenamiento planificado guardado!';
-
-  @override
-  String get editPlannedWorkout => 'Editar entrenamiento planificado';
-
-  @override
-  String get planWorkout => 'Planificar entrenamiento';
-
-  @override
-  String get workoutName => 'Nombre del entrenamiento';
-
-  @override
-  String get copyFromTemplate => 'Copiar desde plantilla';
-
-  @override
-  String get saveChanges => 'Guardar cambios';
-
-  @override
-  String get savePlan => 'Guardar plan';
-
-  @override
-  String get runningWorkout => 'Sesión en curso';
-
-  @override
-  String get resumeWorkout => 'Reanudar';
-
-  @override
-  String get viewWorkout => 'Ver';
-
-  @override
-  String get stopWorkout => 'Detener';
-
-  @override
-  String get newSeance => 'Nueva sesión';
-
-  @override
-  String get startBlankSeance => 'Iniciar sesión en blanco';
-
-  @override
-  String get create => 'Crear';
-
-  @override
-  String get noTemplatesYet =>
-      'Aún no hay plantillas. ¡Crea una para empezar rápido!';
-
-  @override
-  String get browseAllTemplates => 'Explorar todas las plantillas';
-
-  @override
-  String get noWorkoutsYet =>
-      'Aún no hay entrenamientos. ¡Empieza el primero arriba!';
-
-  @override
-  String get allTime => 'Todo el tiempo';
-
-  @override
-  String get workouts => 'Entrenamientos';
-
-  @override
-  String get duration => 'Duración';
-
-  @override
-  String get thisWeek => 'Esta semana';
-
-  @override
-  String get activity => 'Actividad';
-
-  @override
-  String get trends => 'Tendencias';
-
-  @override
-  String get edit => 'Editar';
-
-  @override
-  String get clone => 'Duplicar';
-
-  @override
-  String get start => 'Iniciar';
-
-  @override
-  String get createTemplateFrom => 'Crear plantilla a partir de esto';
-
-  @override
-  String get workoutAlreadyRunning => 'Entrenamiento ya en curso';
-
-  @override
-  String get workoutAlreadyRunningContent =>
-      'Ya hay un entrenamiento en curso. ¿Cancelarlo y empezar uno nuevo?';
-
-  @override
-  String get startNewWorkout => 'Iniciar nuevo entrenamiento';
-
-  @override
-  String get workout => 'Entrenamiento';
-
-  @override
-  String get noExercises => 'Sin ejercicios';
-
-  @override
-  String get pr => '¡RP!';
-
-  @override
-  String get oneRM => '1RM est.';
-
-  @override
-  String get workoutSummary => 'Resumen del entrenamiento';
-
-  @override
-  String get exerciseBreakdown => 'Desglose de ejercicios';
-
-  @override
-  String get best => 'Mejor';
-
-  @override
-  String get finish => 'Finalizar';
-
-  @override
-  String previousSessions(int count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
-
-    return 'Sesiones anteriores ($countString)';
+  String foodListCookedWeight(String grams) {
+    return 'Peso cocinado $grams g';
   }
 
   @override
-  String get tapToExpand => 'Toque para expandir';
-
-  @override
-  String get reps => 'Repeticiones';
-
-  @override
-  String get templateLibrary => 'Biblioteca de plantillas';
-
-  @override
-  String get createFirstTemplate => 'Crea tu primera plantilla';
-
-  @override
-  String get editTemplate => 'Editar plantilla';
-
-  @override
-  String get templateNameLabel => 'Nombre de la plantilla';
-
-  @override
-  String get addCustom => 'Añadir como personalizado';
-
-  @override
-  String get searchAboveHint =>
-      'Busca un ejercicio arriba para añadirlo. Toca un ejercicio en la lista para configurar series y repeticiones.';
-
-  @override
-  String get noExercisesAdded => 'Aún no se han añadido ejercicios';
-
-  @override
-  String get noSetsConfigured => 'Sin series configuradas — toque para editar';
-
-  @override
-  String get remove => 'Eliminar';
-
-  @override
-  String get restSeconds => 'Descanso (s)';
-
-  @override
-  String get pastMonth => 'Último mes';
-
-  @override
-  String get past3Months => 'Últimos 3 meses';
-
-  @override
-  String get pastYear => 'Último año';
-
-  @override
-  String noHistoryFor(Object name) {
-    return 'Aún no hay historial para $name';
+  String foodArchived(String name) {
+    return '$name archivada';
   }
 
   @override
-  String get completeWorkoutToSee =>
-      'Completa un entrenamiento con este ejercicio para verlo aquí';
+  String get emptyFoodsTitle => 'Aún no hay recetas';
 
   @override
-  String get date => 'Fecha';
+  String get emptyFoodsBody =>
+      'Combine dos o más ingredientes en un alimento que pueda registrar de una vez. La nutrición se calcula a partir de los ingredientes que añada.';
 
   @override
-  String get searchByDateWorkout =>
-      'Buscar por fecha o nombre de entrenamiento...';
+  String get emptyFoodsCta => 'Crear una receta';
 
   @override
-  String sessionsCount(num count) {
+  String get foodFormNewTitle => 'Nueva receta';
+
+  @override
+  String get foodFormEditTitle => 'Editar receta';
+
+  @override
+  String get foodFormNameLabel => 'Nombre';
+
+  @override
+  String get foodFormNameHint => 'p. ej. Granola';
+
+  @override
+  String get foodFormNameRequired => 'El nombre es obligatorio';
+
+  @override
+  String get foodFormComposition => 'Ingredientes';
+
+  @override
+  String get foodFormCompositionHint =>
+      'Las cantidades indican cuánto de cada ingrediente se incluye. Su suma es el peso del lote en crudo.';
+
+  @override
+  String get foodFormSearchPrompt => 'Busque un ingrediente para añadirlo.';
+
+  @override
+  String get foodFormNoMatches =>
+      'Ningún ingrediente coincide con la búsqueda.';
+
+  @override
+  String get foodFormCookedWeightLabel => 'Peso final tras cocinar';
+
+  @override
+  String foodFormCookedWeightHint(String raw) {
+    return 'Peso en crudo $raw g. Cocinar cambia el peso, no las calorías: la nutrición por 100 g se calcula con este peso.';
+  }
+
+  @override
+  String get foodFormCookedWeightRequired =>
+      'Introduzca el peso final (mayor que cero).';
+
+  @override
+  String foodFormCookedYield(String percent) {
+    return '$percent% del peso en crudo';
+  }
+
+  @override
+  String get foodFormAddPart => 'Añadir un ingrediente';
+
+  @override
+  String get foodFormNoMoreParts => 'No hay más ingredientes que añadir.';
+
+  @override
+  String get foodFormRemovePart => 'Quitar ingrediente';
+
+  @override
+  String get foodFormAmountLabel => 'Cantidad';
+
+  @override
+  String get foodFormAmountPositive =>
+      'Las cantidades deben ser mayores que cero.';
+
+  @override
+  String get foodFormNeedsParts => 'Añada al menos un ingrediente';
+
+  @override
+  String get foodFormPreview => 'Nutrición por 100g';
+
+  @override
+  String get foodFormPreviewCooked => 'Nutrición por 100 g cocinados';
+
+  @override
+  String get foodFormPreviewEmpty =>
+      'Añada un ingrediente para ver la nutrición.';
+
+  @override
+  String get foodFormPer100g =>
+      'Calculado a partir de las cantidades anteriores.';
+
+  @override
+  String foodFormRawToCooked(String raw, String cooked) {
+    return 'En crudo $raw g → cocinado $cooked g';
+  }
+
+  @override
+  String foodFormBatchCalories(String calories) {
+    return '$calories kcal en todo el lote';
+  }
+
+  @override
+  String foodFormBatchTotal(String total) {
+    return 'El lote pesa $total';
+  }
+
+  @override
+  String get foodFormSave => 'Guardar receta';
+
+  @override
+  String get foodFormSaving => 'Guardando…';
+
+  @override
+  String get mealFormFoods => 'Alimentos';
+
+  @override
+  String get mealFormNoFoods =>
+      'Aún no hay alimentos. Añada ingredientes primero: cada uno se convierte en un alimento que puede registrar por separado.';
+
+  @override
+  String get mealFormAddFood => 'Añada al menos un alimento con gramos';
+
+  @override
+  String get mealFormFoodUnresolved =>
+      'Uno de los alimentos seleccionados tiene ingredientes que faltan, así que no se puede calcular su nutrición. Sincronice o añada esos ingredientes primero.';
+
+  @override
+  String mealFormFoodCalories(String portion, String per100g) {
+    return '$portion kcal por esta porción · $per100g/100g';
+  }
+
+  @override
+  String get mealFormTotals => 'Total de la comida';
+
+  @override
+  String get mealItemEditorAmountLabel => 'Cantidad';
+
+  @override
+  String get mealFormGramsLabel => 'g';
+
+  @override
+  String get mealFormSave => 'Guardar';
+
+  @override
+  String get mealFormSaving => 'Guardando…';
+
+  @override
+  String get plannerAppBar => 'Plan diario';
+
+  @override
+  String get plannerToday => 'Hoy';
+
+  @override
+  String get plannerPreviousDay => 'Día anterior';
+
+  @override
+  String get plannerNextDay => 'Día siguiente';
+
+  @override
+  String get plannerAnytime => 'En cualquier momento';
+
+  @override
+  String get plannerTimelineScheduled => 'Programado';
+
+  @override
+  String get emptyPlannerTitle => 'No hay tareas para este día';
+
+  @override
+  String get emptyPlannerBody => 'Añade una tarea para planificar tu rutina.';
+
+  @override
+  String get emptyPlannerCta => 'Añadir tarea';
+
+  @override
+  String get plannerTaskLabel => 'Tarea';
+
+  @override
+  String get plannerTaskHint => 'Ej.: Correr por la mañana';
+
+  @override
+  String get plannerTaskRequired => 'El título es obligatorio';
+
+  @override
+  String get plannerTagsLabel => 'Etiquetas';
+
+  @override
+  String get plannerTagsHint =>
+      'Añade una etiqueta y pulsa + (p. ej. Trabajo, Recado)';
+
+  @override
+  String get plannerTagsAdd => 'Añadir etiqueta';
+
+  @override
+  String get plannerNotesLabel => 'Notas';
+
+  @override
+  String get plannerWorkoutLabel => 'Entrenamiento (opcional)';
+
+  @override
+  String get plannerWorkoutHint => 'Vincular un entrenamiento';
+
+  @override
+  String get plannerWorkoutNone => 'Ningún entrenamiento';
+
+  @override
+  String get plannerLinkedWorkout => 'Abrir entrenamiento vinculado';
+
+  @override
+  String get plannerDueDateNone => 'Sin fecha límite';
+
+  @override
+  String get plannerDueDateClear => 'Borrar fecha límite';
+
+  @override
+  String get plannerDueTimeNone => 'Sin hora';
+
+  @override
+  String get plannerDueTimeClear => 'Borrar hora';
+
+  @override
+  String get plannerStartTimeLabel => 'Hora de inicio';
+
+  @override
+  String get plannerEndTimeLabel => 'Hora de fin';
+
+  @override
+  String get plannerStartTimeNone => 'Sin hora de inicio';
+
+  @override
+  String get plannerEndTimeNone => 'Sin hora de fin';
+
+  @override
+  String get plannerStartTimeClear => 'Borrar hora de inicio';
+
+  @override
+  String get plannerEndTimeClear => 'Borrar hora de fin';
+
+  @override
+  String get plannerRepeatInvalid => 'Revisa la configuración de repetición';
+
+  @override
+  String get plannerAddTask => 'Nueva tarea';
+
+  @override
+  String get plannerEditTask => 'Editar tarea';
+
+  @override
+  String get plannerEditScopeTitle => 'Alcance de edición';
+
+  @override
+  String get plannerDeleteScopeTitle => 'Alcance de eliminación';
+
+  @override
+  String get plannerScopeBody => 'Esta tarea se repite. ¿Cómo desea proceder?';
+
+  @override
+  String get plannerScopeThis => 'Solo esta';
+
+  @override
+  String get plannerScopeFollowing => 'Esta y todas las siguientes';
+
+  @override
+  String plannerDeleted(String title) {
+    return 'Tarea «$title» eliminada';
+  }
+
+  @override
+  String plannerCancelled(String title) {
+    return 'Tarea «$title» cancelada';
+  }
+
+  @override
+  String get plannerCopyPrevious => 'Copiar desde ayer';
+
+  @override
+  String get plannerMoreActions => 'Más acciones';
+
+  @override
+  String get plannerTaskCancelled => 'Cancelada';
+
+  @override
+  String get plannerActionMarkDone => 'Marcar hecha';
+
+  @override
+  String get plannerActionCancelTask => 'Marcar cancelada';
+
+  @override
+  String get plannerActionReopen => 'Reabrir';
+
+  @override
+  String get plannerCarryOverLabel => 'Arrastrar si no se completa';
+
+  @override
+  String get plannerCarryOverHelp =>
+      'Si el día termina y esta tarea no está hecha, pasa a hoy. Desactívalo para marcarla como cancelada.';
+
+  @override
+  String get plannerTaskDetailAppBar => 'Detalles de la tarea';
+
+  @override
+  String plannerDetailUpdatedAt(String date) {
+    return 'Creada el $date';
+  }
+
+  @override
+  String plannerDetailDueDate(String date) {
+    return 'Vence el $date';
+  }
+
+  @override
+  String plannerDetailTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get plannerDetailNotes => 'Notas';
+
+  @override
+  String get plannerDetailTags => 'Etiquetas';
+
+  @override
+  String get plannerDetailRepeats => 'Repetición';
+
+  @override
+  String get plannerDetailLinkedWorkout => 'Entrenamiento vinculado';
+
+  @override
+  String get plannerDetailEdit => 'Editar tarea';
+
+  @override
+  String get plannerDetailDelete => 'Eliminar tarea';
+
+  @override
+  String get plannerDetailDeleteTitle => '¿Eliminar tarea?';
+
+  @override
+  String plannerDetailDeleteBody(String title) {
+    return 'Esto elimina la tarea \"$title\".';
+  }
+
+  @override
+  String get plannerRepeatSummaryDaily => 'Todos los días';
+
+  @override
+  String plannerRepeatSummaryWeekly(String days) {
+    return 'Cada semana los $days';
+  }
+
+  @override
+  String plannerRepeatSummaryInterval(int count) {
+    return 'Cada $count días';
+  }
+
+  @override
+  String plannerRepeatSummaryMonthly(int day) {
+    return 'Mensual el día $day';
+  }
+
+  @override
+  String plannerRepeatSummaryEndsDate(String date) {
+    return ' · hasta el $date';
+  }
+
+  @override
+  String plannerRepeatSummaryEndsCount(int count) {
+    return ' · $count apariciones';
+  }
+
+  @override
+  String get plannerCopyConfirmTitle => '¿Copiar tareas pendientes?';
+
+  @override
+  String plannerCopyConfirmBody(int count) {
+    return '$count tarea pendiente de ayer se copiará hoy.';
+  }
+
+  @override
+  String plannerCopyConfirmBody_plural(Object count) {
+    return '$count tareas pendientes de ayer se copiarán hoy.';
+  }
+
+  @override
+  String get plannerRepeatLabel => 'Repetir';
+
+  @override
+  String get plannerRepeatNone => 'No se repite';
+
+  @override
+  String get plannerRepeatDaily => 'Diariamente';
+
+  @override
+  String get plannerRepeatWeekly => 'Semanalmente';
+
+  @override
+  String get plannerRepeatInterval => 'Cada N días';
+
+  @override
+  String get plannerRepeatMonthly => 'Mensualmente';
+
+  @override
+  String get plannerRepeatWeekdays => 'Repetir el';
+
+  @override
+  String get plannerRepeatEvery => 'Cada';
+
+  @override
+  String get plannerRepeatDays => 'días';
+
+  @override
+  String get plannerRepeatMonthDay => 'Día del mes';
+
+  @override
+  String get plannerRepeatEnds => 'Termina';
+
+  @override
+  String get plannerRepeatEndsNever => 'Nunca';
+
+  @override
+  String get plannerRepeatEndsOnDate => 'En la fecha';
+
+  @override
+  String get plannerRepeatEndsAfter => 'Después de';
+
+  @override
+  String get plannerRepeatOccurrences => 'veces';
+
+  @override
+  String get notesAppBar => 'Notas';
+
+  @override
+  String get notesEmptyTitle => 'Aún no hay notas';
+
+  @override
+  String get notesEmptyBody =>
+      'Anota cualquier cosa que tengas en mente — rutinas, recetas, aprendizajes de un entrenamiento. Las notas son privadas de este dispositivo.';
+
+  @override
+  String get notesFab => 'Nueva nota';
+
+  @override
+  String get notesEditorNewTitle => 'Nueva nota';
+
+  @override
+  String get notesEditorEditTitle => 'Editar nota';
+
+  @override
+  String get notesTitleLabel => 'Título';
+
+  @override
+  String get notesBodyLabel => 'Nota';
+
+  @override
+  String get notesBodyPreviewTooltip => 'Vista previa';
+
+  @override
+  String get notesBodyEditTooltip => 'Editar';
+
+  @override
+  String get notesToolbarBold => 'Negrita';
+
+  @override
+  String get notesToolbarItalic => 'Cursiva';
+
+  @override
+  String get notesToolbarHeading => 'Encabezado';
+
+  @override
+  String get notesToolbarList => 'Lista';
+
+  @override
+  String get notesTitleRequired => 'El título es obligatorio';
+
+  @override
+  String get notesSave => 'Guardar';
+
+  @override
+  String get notesEditing => 'Guardando…';
+
+  @override
+  String get notesDelete => 'Eliminar nota';
+
+  @override
+  String get notesDeleteConfirmTitle => '¿Eliminar nota?';
+
+  @override
+  String notesDeleteConfirmBody(Object title) {
+    return '«$title» se eliminará permanentemente. Esta acción no se puede deshacer.';
+  }
+
+  @override
+  String get notesVoiceRecord => 'Añadir nota de voz';
+
+  @override
+  String notesVoiceRecording(String elapsed) {
+    return 'Grabando $elapsed';
+  }
+
+  @override
+  String get notesVoiceStopPlayback => 'Detener reproducción';
+
+  @override
+  String get notesVoicePlay => 'Reproducir';
+
+  @override
+  String get notesVoiceRemove => 'Eliminar nota de voz';
+
+  @override
+  String get notesVoicePermissionDenied =>
+      'Se necesita permiso de micrófono para grabar notas de voz.';
+
+  @override
+  String get notesVoiceNone => 'Aún no hay notas de voz';
+
+  @override
+  String notesVoiceClipLabel(int index) {
+    return 'Clip $index';
+  }
+
+  @override
+  String notesVoiceCount(int count) {
+    return '$count nota de voz';
+  }
+
+  @override
+  String notesVoiceCount_plural(Object count) {
+    return '$count notas de voz';
+  }
+
+  @override
+  String get settingsAppBar => 'Ajustes';
+
+  @override
+  String get settingsProfile => 'Perfil';
+
+  @override
+  String get settingsAgeLabel => 'Edad (años)';
+
+  @override
+  String get settingsAgeInvalid => 'Introduce una edad entre 0 y 120';
+
+  @override
+  String get settingsAppearance => 'Apariencia';
+
+  @override
+  String get settingsThemeSystem => 'Sistema';
+
+  @override
+  String get settingsThemeLight => 'Claro';
+
+  @override
+  String get settingsThemeDark => 'Oscuro';
+
+  @override
+  String get settingsLanguage => 'Idioma';
+
+  @override
+  String get settingsLangEn => 'English';
+
+  @override
+  String get settingsLangFr => 'Francés';
+
+  @override
+  String get settingsLangEs => 'Español';
+
+  @override
+  String get settingsLangSystem => 'Sistema';
+
+  @override
+  String get settingsProfileSubtitle => 'Edad, sexo, actividad y objetivos';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Recordatorios de tareas y alarma de descanso';
+
+  @override
+  String get settingsAppearanceLanguage => 'Apariencia e idioma';
+
+  @override
+  String get settingsAppearanceLanguageSubtitle =>
+      'Tema e idioma de la aplicación';
+
+  @override
+  String get settingsBodyWeightGoal => 'Objetivo de peso';
+
+  @override
+  String get settingsGoalLose => 'Perder peso';
+
+  @override
+  String get settingsGoalMaintain => 'Mantener peso';
+
+  @override
+  String get settingsGoalGain => 'Subir de peso';
+
+  @override
+  String get settingsGender => 'Género';
+
+  @override
+  String get settingsGenderMale => 'Hombre';
+
+  @override
+  String get settingsGenderFemale => 'Mujer';
+
+  @override
+  String get settingsActivityLevel => 'Nivel de actividad';
+
+  @override
+  String get settingsActivitySedentary => 'Sedentario';
+
+  @override
+  String get settingsActivityLight => 'Ligero';
+
+  @override
+  String get settingsActivityModerate => 'Moderado';
+
+  @override
+  String get settingsActivityActive => 'Activo';
+
+  @override
+  String get settingsActivityVeryActive => 'Muy activo';
+
+  @override
+  String get settingsTrackBodyFat => 'Registrar grasa corporal';
+
+  @override
+  String get settingsBodyFatLabel => 'Grasa corporal (%)';
+
+  @override
+  String get settingsBodyFatInvalid =>
+      'Introduce un porcentaje de grasa corporal entre 0 y 70';
+
+  @override
+  String get settingsNotifications => 'Notificaciones';
+
+  @override
+  String get settingsPlannerNotifications => 'Recordatorios de tareas';
+
+  @override
+  String get settingsPlannerNotificationsSubtitle =>
+      'Notificarme las tareas del plan con hora prevista.';
+
+  @override
+  String get settingsRestAlarmSound => 'Sonido de la alarma de descanso';
+
+  @override
+  String get settingsRestAlarmVibration => 'Vibración de la alarma de descanso';
+
+  @override
+  String get settingsData => 'Datos';
+
+  @override
+  String get settingsResetData => 'Restablecer todos los datos';
+
+  @override
+  String get settingsAdvanced => 'Avanzado';
+
+  @override
+  String get settingsAdvancedSubtitle =>
+      'Horizonte del plan, ajuste de calorías, temporizadores';
+
+  @override
+  String get settingsPlannerHorizonLabel => 'Antelación del plan (días)';
+
+  @override
+  String get settingsPhasesLabel => 'Fase';
+
+  @override
+  String get settingsPhasesHelp =>
+      'Tus objetivos de calorías y macronutrientes siguen la fase que elijas. Cada fase guarda su propia configuración.';
+
+  @override
+  String get settingsPhaseProteinLabel => 'Proteína (g por kg de peso)';
+
+  @override
+  String get settingsPhaseProteinHelp =>
+      'El peso corporal por este número da tu objetivo diario de proteína.';
+
+  @override
+  String get settingsPhaseFatLabel => 'Grasa (% de calorías)';
+
+  @override
+  String get settingsPhaseFatHelp =>
+      'Parte de tu objetivo calórico dedicada a grasa. Los carbohidratos reciben lo que quede.';
+
+  @override
+  String get settingsPhaseFiberLabel => 'Fibra (g)';
+
+  @override
+  String get settingsPhaseFiberHelp =>
+      'Objetivo diario de fibra para esta fase.';
+
+  @override
+  String get settingsSetActiveGoal => 'Establecer como objetivo activo';
+
+  @override
+  String get settingsActiveGoalLabel => 'Objetivo activo';
+
+  @override
+  String get settingsMacrosExceedWarning =>
+      'Proteína y grasa usan más calorías que tu objetivo, así que los carbohidratos son 0.';
+
+  @override
+  String get settingsBmrLabel => 'TMB';
+
+  @override
+  String get settingsTdeeLabel => 'TDEE';
+
+  @override
+  String get settingsEstimatedSuffix => 'estimado';
+
+  @override
+  String get settingsCalorieAdjustmentLabel =>
+      'Ajuste del objetivo calórico (kcal)';
+
+  @override
+  String get settingsDefaultRestLabel =>
+      'Descanso por defecto entre series (min)';
+
+  @override
+  String get settingsReminderLeadLabel =>
+      'Antelación del recordatorio previo (min)';
+
+  @override
+  String get settingsUntimedReminderLabel => 'Valor por defecto sin hora (min)';
+
+  @override
+  String get settingsApiTimeoutLabel =>
+      'Tiempo de espera de sincronización (s)';
+
+  @override
+  String get settingsPlannerHorizonHelp =>
+      'Cuántos días por adelantado se crean las tareas recurrentes en el plan.';
+
+  @override
+  String get settingsCalorieAdjustmentHelp =>
+      'Kcal que se suman al objetivo diario de esta fase. Negativo crea un déficit, positivo un excedente.';
+
+  @override
+  String get settingsDefaultRestHelp =>
+      'Rellena el campo de descanso al añadir una serie nueva. Déjalo vacío para no usar ninguno.';
+
+  @override
+  String get settingsReminderLeadHelp =>
+      'Minutos antes de la hora de inicio de una tarea en que salta la notificación previa.';
+
+  @override
+  String get settingsUntimedReminderHelp =>
+      'Hora de los recordatorios de tareas sin hora, en minutos tras la medianoche (540 = 09:00).';
+
+  @override
+  String get settingsApiTimeoutHelp =>
+      'Cuánto esperan las peticiones de sincronización al servidor antes de rendirse.';
+
+  @override
+  String get settingsValueInvalid => 'Introduce un número válido no negativo.';
+
+  @override
+  String get settingsResetDataSubtitle =>
+      'Borra todos los entrenamientos, comidas, mediciones, tareas del plan y notas, y restablece los ajustes por defecto.';
+
+  @override
+  String get settingsResetDataConfirmTitle => '¿Restablecer todos los datos?';
+
+  @override
+  String get settingsResetDataConfirmBody =>
+      'Esto elimina permanentemente todos tus datos y restablece tus ajustes. No se puede deshacer.';
+
+  @override
+  String get settingsResetDataConfirmAction => 'Eliminar todo';
+
+  @override
+  String get taskReminderDueSoon => 'Vence en 30 minutos';
+
+  @override
+  String get taskReminderDueNow => 'Vence ahora';
+
+  @override
+  String get statusCompleted => 'Completado';
+
+  @override
+  String get statusActive => 'Activo';
+
+  @override
+  String get statusPending => 'Pendiente';
+
+  @override
+  String get exerciseTypeWeightlifting => 'Musculación';
+
+  @override
+  String get exerciseTypeCardio => 'Cardio';
+
+  @override
+  String get commonCancel => 'Cancelar';
+
+  @override
+  String get commonContinue => 'Continuar';
+
+  @override
+  String get commonSave => 'Guardar';
+
+  @override
+  String get commonEdit => 'Editar';
+
+  @override
+  String get commonUndo => 'Deshacer';
+
+  @override
+  String get commonOk => 'Aceptar';
+
+  @override
+  String get commonSaving => 'Guardando…';
+
+  @override
+  String get commonSearch => 'Buscar';
+
+  @override
+  String errorWithMessage(String message) {
+    return 'Error: $message';
+  }
+
+  @override
+  String errorLoadingResource(String resource, String message) {
+    return 'Error al cargar $resource: $message';
+  }
+
+  @override
+  String macroGrams(String value) {
+    return '${value}g';
+  }
+
+  @override
+  String macroKcal(String value) {
+    return '$value kcal';
+  }
+
+  @override
+  String ingredientMacroRow(
+    String grams,
+    String calories,
+    String protein,
+    String carbs,
+    String fat,
+  ) {
+    return '${grams}g  ·  $calories kcal  ·  P ${protein}g  ·  C ${carbs}g  ·  G ${fat}g';
+  }
+
+  @override
+  String ingredientNutrientSodium(String value) {
+    return 'Na ${value}g';
+  }
+
+  @override
+  String ingredientNutrientFiber(String value) {
+    return 'Fibra ${value}g';
+  }
+
+  @override
+  String ingredientNutrientSugar(String value) {
+    return 'Azúcar ${value}g';
+  }
+
+  @override
+  String get ingredientFormBrandLabel => 'Marca';
+
+  @override
+  String get ingredientFormBarcodeLabel => 'Código de barras';
+
+  @override
+  String get ingredientFormScanTile => 'Escanear código de barras';
+
+  @override
+  String get ingredientFormScanning => 'Escaneando…';
+
+  @override
+  String get ingredientFormPicturesSection => 'Fotos';
+
+  @override
+  String get ingredientFormAddPicture => 'Añadir foto';
+
+  @override
+  String get ingredientDetailPricesTitle => 'Precios';
+
+  @override
+  String get ingredientDetailNoPrices => 'Aún no hay precios registrados.';
+
+  @override
+  String ingredientDetailCostPerKg(String value) {
+    return '$value /kg';
+  }
+
+  @override
+  String get ingredientPriceAdd => 'Añadir precio';
+
+  @override
+  String get ingredientPriceEdit => 'Editar precio';
+
+  @override
+  String get ingredientPriceStoreLabel => 'Tienda';
+
+  @override
+  String get ingredientPriceAmountLabel => 'Precio';
+
+  @override
+  String get ingredientPriceGramsLabel => 'Tamaño del paquete';
+
+  @override
+  String get ingredientPriceSourceUrlLabel => 'URL de origen (opcional)';
+
+  @override
+  String get ingredientPriceHistoryTitle => 'Historial de precios';
+
+  @override
+  String get ingredientDetailManageStores => 'Gestionar tiendas';
+
+  @override
+  String get storeManagerTitle => 'Tiendas';
+
+  @override
+  String get storeManagerEmpty =>
+      'Aún no hay tiendas. Añade una para registrar precios.';
+
+  @override
+  String get storeManagerAddTile => 'Añadir tienda';
+
+  @override
+  String get storeNameLabel => 'Nombre de la tienda';
+
+  @override
+  String get storeNameRequired => 'El nombre es obligatorio';
+
+  @override
+  String get settingsFxAutoRefresh => 'Actualización automática de tasas';
+
+  @override
+  String get settingsFxAutoRefreshSubtitle =>
+      'Obtiene las tasas de cambio en segundo plano';
+
+  @override
+  String get settingsFxRefreshInterval => 'Intervalo de actualización';
+
+  @override
+  String get settingsSyncServer => 'Servidor de sincronización';
+
+  @override
+  String get settingsSyncServerHint =>
+      'Apunta esto a tu servidor de sincronización para obtener ejercicios, ingredientes y divisas. Déjalo vacío para desactivar la sincronización.';
+
+  @override
+  String get settingsSyncBaseUrl => 'URL del servidor';
+
+  @override
+  String get settingsSyncApiKey => 'Clave API';
+
+  @override
+  String get syncExercisesTooltip => 'Sincronizar ejercicios';
+
+  @override
+  String get syncIngredientsTooltip => 'Sincronizar ingredientes';
+
+  @override
+  String get syncCurrenciesTooltip => 'Sincronizar divisas';
+
+  @override
+  String get syncPushIngredientTooltip => 'Publicar en el catálogo compartido';
+
+  @override
+  String get syncServerNotConfigured =>
+      'La URL del servidor de sincronización no está configurada';
+
+  @override
+  String get syncAll => 'Sincronizar todo';
+
+  @override
+  String get syncSelect => 'Seleccionar…';
+
+  @override
+  String get selectServerExercises => 'Seleccionar ejercicios del servidor';
+
+  @override
+  String get selectServerIngredients => 'Seleccionar ingredientes del servidor';
+
+  @override
+  String get syncNothingNew =>
+      'Nada nuevo en el servidor — todo ya está importado';
+
+  @override
+  String get ingredientListSearchHint => 'Buscar ingredientes';
+
+  @override
+  String get refreshList => 'Actualizar la lista';
+
+  @override
+  String get syncServerUnreachable =>
+      'Servidor inalcanzable — comprueba la URL/clave o aumenta el tiempo de espera en Ajustes';
+
+  @override
+  String get syncExercisesHelp =>
+      'Descarga el catálogo de ejercicios compartido y sus medios desde el servidor.';
+
+  @override
+  String get syncIngredientsHelp =>
+      'Descarga el catálogo compartido de ingredientes, tiendas y precios desde el servidor.';
+
+  @override
+  String get syncCurrenciesHelp =>
+      'Descarga los tipos de cambio más recientes desde el servidor.';
+
+  @override
+  String get settingsSyncEndpoints => 'Puntos de acceso';
+
+  @override
+  String get settingsSyncEndpointsHint =>
+      'Sustituye la ruta del servidor para cada operación. Deja el valor predeterminado salvo que tu servidor use rutas distintas.';
+
+  @override
+  String get endpointReset => 'Restablecer';
+
+  @override
+  String get pushAllData => 'Enviar todos los datos';
+
+  @override
+  String get pushAllDataTooltip =>
+      'Sube todos los datos locales al servidor (unidireccional)';
+
+  @override
+  String get pushAllSuccess => 'Todos los datos enviados al servidor.';
+
+  @override
+  String get exportServer => 'Exportar copia de seguridad al servidor';
+
+  @override
+  String get exportServerTooltip =>
+      'Sube una copia de seguridad completa de tus datos locales al servidor';
+
+  @override
+  String get importServer => 'Importar base de datos del servidor';
+
+  @override
+  String get importServerTooltip =>
+      'Reemplaza tus datos locales con la copia del servidor';
+
+  @override
+  String get importConfirmTitle => '¿Reemplazar los datos locales?';
+
+  @override
+  String get importConfirmBody =>
+      'Esto reemplaza todos los datos locales con la copia del servidor. No se puede deshacer.';
+
+  @override
+  String get importSuccess => 'Restaurado desde la copia del servidor.';
+
+  @override
+  String get importFailed => 'Error al importar';
+
+  @override
+  String get importNothing => 'Nada que importar';
+
+  @override
+  String get exportSuccess => 'Copia de seguridad exportada.';
+
+  @override
+  String get exportFailed => 'Error al exportar';
+
+  @override
+  String get pushAllDataHelp =>
+      'Sube todos tus datos locales al servidor (copia unidireccional).';
+
+  @override
+  String get exportServerHelp =>
+      'Sube una copia de seguridad completa de tus datos locales al servidor.';
+
+  @override
+  String get importServerHelp =>
+      'Reemplaza tus datos locales con la copia del servidor. Pide confirmación primero.';
+
+  @override
+  String get settingsPlanner => 'Planificador';
+
+  @override
+  String get settingsPlannerSubtitle => 'Entrenamientos, tareas y metas';
+
+  @override
+  String get settingsNutrition => 'Nutrición';
+
+  @override
+  String get settingsNutritionSubtitle => 'Unidades y objetivos calóricos';
+
+  @override
+  String get settingsBudgetCurrencySubtitle => 'Divisa base y tipos de cambio';
+
+  @override
+  String get settingsUnits => 'Unidades';
+
+  @override
+  String get settingsWeightUnitLabel => 'Peso';
+
+  @override
+  String get settingsLengthUnitLabel => 'Altura';
+
+  @override
+  String get settingsExportDb => 'Exportar copia de seguridad';
+
+  @override
+  String get settingsExportDbSubtitle =>
+      'Comparte una copia de seguridad JSON comprimida de todos tus datos';
+
+  @override
+  String get settingsReplayPrefillLabel =>
+      'Al repetir una sesión, precargar las series desde';
+
+  @override
+  String get settingsReplayPrefillActuals => 'Los valores reales anteriores';
+
+  @override
+  String get settingsReplayPrefillPlanned => 'Los valores planificados';
+
+  @override
+  String get workoutSummaryDoAgain => 'Repetir';
+
+  @override
+  String get workoutActionReplay => 'Repetir sesión';
+
+  @override
+  String get workoutActionDuplicate => 'Duplicar';
+
+  @override
+  String workoutDetailPlannedSetReps(String reps, String weight, String unit) {
+    return '$reps × $weight $unit';
+  }
+
+  @override
+  String workoutDetailPlannedSetDuration(String minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get workoutDetailPlannedSetEmpty => '—';
+
+  @override
+  String workoutDetailPlannedSetRest(Object planned, Object rest) {
+    return '$planned · descanso $rest';
+  }
+
+  @override
+  String workoutDetailActualSetReps(String reps, String weight, String unit) {
+    return '$reps × $weight $unit';
+  }
+
+  @override
+  String workoutDetailActualSetWeight(String weight, String unit) {
+    return '$weight $unit';
+  }
+
+  @override
+  String workoutDetailActualSetDuration(String reps) {
+    return '$reps min';
+  }
+
+  @override
+  String workoutDetailActualSetDistance(String distance) {
+    return '$distance m';
+  }
+
+  @override
+  String workoutDetailActualSetTime(String value, String time) {
+    return '$value · $time';
+  }
+
+  @override
+  String get workoutDetailActualSetEmpty => '—';
+
+  @override
+  String get bodyMetricsTitle => 'Medidas corporales';
+
+  @override
+  String get bodyMetricsAddWeight => 'Añadir peso';
+
+  @override
+  String get bodyMetricsAddHeight => 'Añadir altura';
+
+  @override
+  String get bodyMetricsWeightLabel => 'Peso (kg)';
+
+  @override
+  String get bodyMetricsHeightLabel => 'Altura (cm)';
+
+  @override
+  String get bodyMetricsDialogWeightTitle => 'Nueva entrada de peso';
+
+  @override
+  String get bodyMetricsDialogHeightTitle => 'Nueva entrada de altura';
+
+  @override
+  String get bodyMetricsValueRequired => 'Introduce un valor';
+
+  @override
+  String get bodyMetricsValuePositive => 'El valor debe ser mayor que 0';
+
+  @override
+  String get bodyMetricsEmptyWeight => 'Aún no hay entradas de peso.';
+
+  @override
+  String get bodyMetricsEmptyHeight => 'Aún no hay entradas de altura.';
+
+  @override
+  String bodyMetricsLatestWeight(String value, String unit) {
+    return 'Último: $value $unit';
+  }
+
+  @override
+  String bodyMetricsLatestHeight(String value, String unit) {
+    return 'Última: $value $unit';
+  }
+
+  @override
+  String bodyMetricsValueKg(String value, String unit) {
+    return '$value $unit';
+  }
+
+  @override
+  String bodyMetricsValueCm(String value) {
+    return '$value cm';
+  }
+
+  @override
+  String bodyMetricsGoal(String goal) {
+    return 'Objetivo: $goal';
+  }
+
+  @override
+  String get restTimerTitle => 'Temporizador de descanso';
+
+  @override
+  String get restTimerCancel => 'Cancelar descanso';
+
+  @override
+  String restTimerMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get activeWorkoutElapsedLabel => 'Transcurrido';
+
+  @override
+  String get activeWorkoutRestLabel => 'Descanso';
+
+  @override
+  String get activeWorkoutResume => 'Reanudar';
+
+  @override
+  String get restAlarmTitle => 'El descanso ha terminado';
+
+  @override
+  String get restAlarmBody => 'Tu descanso planificado ha terminado.';
+
+  @override
+  String restAlarmBodyWithDuration(String duration) {
+    return 'Tu descanso planificado de $duration ha terminado.';
+  }
+
+  @override
+  String get workoutSummaryAppBar => 'Resumen';
+
+  @override
+  String get workoutSummaryEdit => 'Editar entrenamiento';
+
+  @override
+  String workoutSummarySetLabel(int number) {
+    return 'Serie $number';
+  }
+
+  @override
+  String workoutSummarySetRest(String rest) {
+    return 'descanso $rest';
+  }
+
+  @override
+  String get workoutSummaryDone => 'Hecho';
+
+  @override
+  String get workoutSummaryDurationLabel => 'Duración';
+
+  @override
+  String get workoutSummaryAvgRest => 'Descanso medio';
+
+  @override
+  String get workoutSummaryVolume => 'Volumen';
+
+  @override
+  String get workoutSummaryMaxWeight => 'Peso máximo';
+
+  @override
+  String get workoutSummaryTotalReps => 'Repeticiones';
+
+  @override
+  String get workoutSummaryTotalDuration => 'Duración total';
+
+  @override
+  String get workoutSummaryTotalDistance => 'Distancia total';
+
+  @override
+  String workoutSummaryValueKg(String value, String unit) {
+    return '$value $unit';
+  }
+
+  @override
+  String workoutSummaryDistanceValue(String distance) {
+    return '$distance m';
+  }
+
+  @override
+  String settingsRateRow(String target, num rate, String base) {
+    return '$base → $target: $rate';
+  }
+
+  @override
+  String settingsRateInverse(String base, String rate, String code) {
+    return '1 $base = $rate $code';
+  }
+
+  @override
+  String settingsRateUpdated(String date) {
+    return 'Actualizado el $date';
+  }
+
+  @override
+  String get settingsRateManual => 'Manual';
+
+  @override
+  String transactionRateUsed(String rate, String base, String code) {
+    return 'convertido a $rate $base por $code';
+  }
+
+  @override
+  String accountDeleteBlockedBody(int count) {
+    return 'Esta cuenta es usada por $count transacción(es) y no puede eliminarse.';
+  }
+
+  @override
+  String get accountDeleteBlockedTitle => 'Cuenta en uso';
+
+  @override
+  String accountDeleteConfirmBody(String name) {
+    return 'Eliminar la cuenta \'$name\' también eliminará sus transacciones y recibos.';
+  }
+
+  @override
+  String get accountDeleteConfirmTitle => '¿Eliminar la cuenta?';
+
+  @override
+  String get accountFormEditTitle => 'Editar cuenta';
+
+  @override
+  String get accountFormNameLabel => 'Nombre';
+
+  @override
+  String get accountFormNameRequired => 'Escribe un nombre';
+
+  @override
+  String get accountFormNewTitle => 'Nueva cuenta';
+
+  @override
+  String get accountFormOpeningHelper =>
+      'Importe ya presente en esta cuenta cuando empezaste a registrarla. Deja 0 si no estás seguro.';
+
+  @override
+  String get accountFormIntro =>
+      'Registra una cartera, una cuenta bancaria o una tarjeta.';
+
+  @override
+  String get accountFormNoteLabel => 'Account Form Note Label';
+
+  @override
+  String get accountFormOpeningLabel => 'Saldo inicial';
+
+  @override
+  String get accountFormTypeLabel => 'Tipo';
+
+  @override
+  String accountOpeningLabel(String value) {
+    return 'Saldo inicial: $value';
+  }
+
+  @override
+  String get accountReceipts => 'Recibos';
+
+  @override
+  String get accountTransactions => 'Transacciones';
+
+  @override
+  String get accountTypeBank => 'Cuenta bancaria';
+
+  @override
+  String get accountTypeCash => 'Efectivo';
+
+  @override
+  String get accountTypeCredit => 'Tarjeta de crédito';
+
+  @override
+  String get accountTypeInvestment => 'Inversión';
+
+  @override
+  String get accountTypeOther => 'Otro';
+
+  @override
+  String get accountTypeSavings => 'Ahorros';
+
+  @override
+  String get budgetAccounts => 'Cuentas';
+
+  @override
+  String get budgetAdd => 'Budget Add';
+
+  @override
+  String get budgetEmptyBody => 'Budget Empty Body';
+
+  @override
+  String get budgetEmptyTitle => 'Budget Empty Title';
+
+  @override
+  String get budgetFabAccount => 'Budget Fab Account';
+
+  @override
+  String get budgetFabExpense => 'Budget Fab Expense';
+
+  @override
+  String get budgetFabIncome => 'Budget Fab Income';
+
+  @override
+  String get budgetFabTransfer => 'Budget Fab Transfer';
+
+  @override
+  String get budgetMonthExpense => 'Gastos del mes';
+
+  @override
+  String get budgetMonthIncome => 'Ingresos del mes';
+
+  @override
+  String get budgetNoReceipts => 'Aún no hay recibos';
+
+  @override
+  String get budgetNoTransactions => 'Aún no hay transacciones';
+
+  @override
+  String budgetPendingReceipts(int count) {
+    return '$count recibo(s) pendiente(s)';
+  }
+
+  @override
+  String get budgetRecentTransactions => 'Transacciones recientes';
+
+  @override
+  String get budgetThisMonth => 'Budget This Month';
+
+  @override
+  String get budgetViewAll => 'Ver todo';
+
+  @override
+  String get commonDelete => 'Common Delete';
+
+  @override
+  String get receiptAppBar => 'Recibo';
+
+  @override
+  String get receiptCreateDraft => 'Crear borrador';
+
+  @override
+  String get receiptDeleteConfirmBody => '¿Eliminar este recibo?';
+
+  @override
+  String get receiptDeleteConfirmTitle => '¿Eliminar el recibo?';
+
+  @override
+  String get receiptEmptyBody =>
+      'Aún no hay recibos. Toma una foto de un recibo para empezar a registrar.';
+
+  @override
+  String get receiptListAppBar => 'Recibos';
+
+  @override
+  String get receiptNotFound => 'Recibo no encontrado';
+
+  @override
+  String get receiptNotParsed => 'Aún sin analizar';
+
+  @override
+  String get receiptParsed => 'Analizado';
+
+  @override
+  String get receiptParsing => 'Analizando el recibo…';
+
+  @override
+  String get receiptParsedData => 'Datos analizados';
+
+  @override
+  String get receiptPickGallery => 'Desde la galería';
+
+  @override
+  String get receiptReviewDraft => 'Revisar borrador';
+
+  @override
+  String receiptStatusLabel(String status) {
+    return '$status';
+  }
+
+  @override
+  String receiptStatusShort(String status) {
+    return '$status';
+  }
+
+  @override
+  String get receiptTakePhoto => 'Tomar foto';
+
+  @override
+  String get receiptUpload => 'Subir';
+
+  @override
+  String get settingsCurrencyBudget => 'Moneda del presupuesto';
+
+  @override
+  String get settingsFxRates => 'Tasas de cambio';
+
+  @override
+  String get settingsFxRatesEmpty => 'No hay tasas de cambio configuradas';
+
+  @override
+  String get settingsFxRefresh => 'Actualizar tasas';
+
+  @override
+  String get settingsRateEdit => 'Editar tasa';
+
+  @override
+  String get transactionAmountInvalid => 'Escribe un importe válido';
+
+  @override
+  String get transactionCategoryLabel => 'Categoría';
+
+  @override
+  String transactionConvertedLabel(String amount) {
+    return '≈ $amount en moneda base';
+  }
+
+  @override
+  String get transactionDraft => 'Borrador';
+
+  @override
+  String get transactionDraftHint =>
+      'Borrador de un recibo escaneado: revisa los datos antes de guardar';
+
+  @override
+  String get transactionHasReceipt => 'Recibo adjunto';
+
+  @override
+  String get transactionListAppBar => 'Transacciones';
+
+  @override
+  String get transactionTypeExpense => 'Gasto';
+
+  @override
+  String get transactionTypeIncome => 'Ingreso';
+
+  @override
+  String get transactionTypeTransfer => 'Transferencia';
+
+  @override
+  String get budgetAppBar => 'Presupuesto';
+
+  @override
+  String get budgetSubtitle => 'Cuentas, transacciones y recibos';
+
+  @override
+  String get budgetTotalBalance => 'Saldo total';
+
+  @override
+  String get budgetNetWorth => 'Patrimonio neto';
+
+  @override
+  String get budgetIncomeLabel => 'Ingresos';
+
+  @override
+  String get budgetExpenseLabel => 'Gastos';
+
+  @override
+  String get budgetEmptyAccounts =>
+      'Aún no hay cuentas. Agrega una para empezar.';
+
+  @override
+  String get budgetAddAccount => 'Agregar cuenta';
+
+  @override
+  String get budgetAddTransaction => 'Agregar transacción';
+
+  @override
+  String get accountFormTitleNew => 'Nueva cuenta';
+
+  @override
+  String get accountFormTitleEdit => 'Editar cuenta';
+
+  @override
+  String get accountNameLabel => 'Nombre';
+
+  @override
+  String get accountTypeLabel => 'Tipo';
+
+  @override
+  String get accountCurrencyLabel => 'Moneda';
+
+  @override
+  String get accountInitialBalanceLabel => 'Saldo inicial';
+
+  @override
+  String get accountSave => 'Guardar';
+
+  @override
+  String get accountDetailTitle => 'Cuenta';
+
+  @override
+  String get accountDelete => 'Eliminar cuenta';
+
+  @override
+  String get accountTransactionsTitle => 'Transacciones';
+
+  @override
+  String get accountBalanceLabel => 'Saldo';
+
+  @override
+  String get accountEdit => 'Editar';
+
+  @override
+  String get transactionFormNewExpenseTitle => 'Nuevo gasto';
+
+  @override
+  String get transactionFormNewIncomeTitle => 'Nuevo ingreso';
+
+  @override
+  String get transactionFormTransferTitle => 'Transferencia';
+
+  @override
+  String get transactionFormEditTitle => 'Editar transacción';
+
+  @override
+  String get transactionTypeLabel => 'Tipo';
+
+  @override
+  String get transactionAmountLabel => 'Monto';
+
+  @override
+  String get transactionCurrencyLabel => 'Moneda';
+
+  @override
+  String get transactionDateLabel => 'Fecha';
+
+  @override
+  String get transactionNoteLabel => 'Nota';
+
+  @override
+  String get transactionAccountLabel => 'Cuenta';
+
+  @override
+  String get transactionToAccountLabel => 'A la cuenta';
+
+  @override
+  String get transactionReceiptLabel => 'Recibo';
+
+  @override
+  String get transactionSave => 'Guardar';
+
+  @override
+  String get transactionDelete => 'Eliminar';
+
+  @override
+  String get transactionDraftBadge => 'Borrador';
+
+  @override
+  String get transactionConfirmDraft => 'Confirmar';
+
+  @override
+  String get transactionTransferSameAccount =>
+      'La transferencia requiere dos cuentas distintas.';
+
+  @override
+  String get transactionAccountRequired => 'Se requiere una cuenta.';
+
+  @override
+  String get transactionTransferAccountsRequired =>
+      'Ambas cuentas son requeridas para una transferencia.';
+
+  @override
+  String get transactionAmountPositive => 'El monto debe ser mayor que cero.';
+
+  @override
+  String get receiptListTitle => 'Recibos';
+
+  @override
+  String get receiptCapture => 'Capturar recibo';
+
+  @override
+  String get receiptCaptureStandalone => 'Recibo independiente';
+
+  @override
+  String get receiptUploadSuccess => 'Recibo enviado';
+
+  @override
+  String get receiptUploadError => 'Error al enviar el recibo';
+
+  @override
+  String get receiptViewTitle => 'Recibo';
+
+  @override
+  String get receiptStatusLocal => 'Local';
+
+  @override
+  String get receiptStatusUploading => 'Enviando';
+
+  @override
+  String get receiptStatusUploaded => 'Enviado';
+
+  @override
+  String get receiptStatusError => 'Error';
+
+  @override
+  String get receiptAttach => 'Adjuntar a la transacción';
+
+  @override
+  String get receiptChooseSource => 'Elegir origen';
+
+  @override
+  String get receiptFromCamera => 'Cámara';
+
+  @override
+  String get receiptFromGallery => 'Galería';
+
+  @override
+  String get commonRetry => 'Reintentar';
+
+  @override
+  String get settingsBaseCurrency => 'Moneda base';
+
+  @override
+  String get settingsCategoryFx => 'Tipos de cambio';
+
+  @override
+  String get settingsRefreshRates => 'Actualizar tasas';
+
+  @override
+  String get settingsEditRate => 'Editar tasa';
+
+  @override
+  String settingsRateBase(Object base) {
+    return 'Por 1 $base';
+  }
+
+  @override
+  String get settingsRateInvalid => 'Ingrese una tasa positiva.';
+
+  @override
+  String get tabBudget => 'Presupuesto';
+
+  @override
+  String get plannerViewDay => 'Vista de día';
+
+  @override
+  String get plannerViewWeek => 'Vista semanal';
+
+  @override
+  String get plannerViewMonth => 'Vista mensual';
+
+  @override
+  String get plannerGoToday => 'Ir a hoy';
+
+  @override
+  String get goalLinkTask => 'Vincular tarea';
+
+  @override
+  String get goalUnlinkTask => 'Desvincular tarea';
+
+  @override
+  String get goalSearchTasksHint => 'Buscar tareas…';
+
+  @override
+  String get linkGoal => 'Vincular meta';
+
+  @override
+  String get unlinkGoal => 'Desvincular meta';
+
+  @override
+  String get linkNote => 'Vincular nota';
+
+  @override
+  String get unlinkNote => 'Desvincular nota';
+
+  @override
+  String get plannerViewGoals => 'Vista de metas';
+
+  @override
+  String get plannerModeTimeline => 'Cronología';
+
+  @override
+  String get plannerModeInitiatives => 'Iniciativas';
+
+  @override
+  String get prioritiesTitle => 'Tags';
+
+  @override
+  String get prioritiesManage => 'Gestionar tags';
+
+  @override
+  String get prioritiesAdd => 'Añadir tag';
+
+  @override
+  String get prioritiesRename => 'Renombrar tag';
+
+  @override
+  String get prioritiesNameLabel => 'Nombre';
+
+  @override
+  String get prioritiesNameRequired => 'Introduce un nombre';
+
+  @override
+  String get prioritiesAlreadyExists => 'Ya existe un tag con este nombre.';
+
+  @override
+  String get prioritiesColor => 'Color';
+
+  @override
+  String get prioritiesDeleteConfirmTitle => '¿Eliminar tag?';
+
+  @override
+  String prioritiesDeleteConfirmBody(num count, Object name) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count sesiones',
-      one: '$count sesión',
+      other: '$count elementos',
+      zero: 'ningún elemento',
+    );
+    return '«$name» se quitará de $_temp0.';
+  }
+
+  @override
+  String get prioritiesEmpty =>
+      'Aún no hay tags. Crea uno para organizar tus metas, tareas y notas.';
+
+  @override
+  String prioritiesUsageCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementos',
+      one: '1 elemento',
+      zero: 'sin uso',
     );
     return '$_temp0';
   }
 
   @override
-  String get maxVolumeSet => 'Volumen máx. (serie)';
+  String get tagsFilterAll => 'Todos';
 
   @override
-  String get notAvailable => 'N/D';
+  String get initiativesEmptyAllTitle => 'Aún no hay metas';
 
   @override
-  String get across => 'En';
+  String get initiativesEmptyAll => 'Crea una meta a lograr.';
 
   @override
-  String get overviewTab => 'Resumen';
+  String get initiativesEmptyFilterTitle => 'No hay iniciativas que coincidan';
 
   @override
-  String get goalsTab => 'Objetivos';
+  String get initiativesEmptyFilter =>
+      'Ninguna meta lleva los tags seleccionados.';
 
   @override
-  String get settingsTab => 'Ajustes';
+  String get goalsNew => 'Nueva meta';
 
   @override
-  String get weight => 'Peso';
+  String get goalsEdit => 'Editar meta';
 
   @override
-  String get weightLogged => '¡Peso registrado!';
+  String get goalsMissing => 'Meta no encontrada.';
 
   @override
-  String get enterWeightKg => 'Ingrese peso (kg)';
+  String get goalsFormTitleLabel => 'Meta';
 
   @override
-  String get log => 'Registrar';
+  String get goalsFormTitleHint => 'p. ej. Correr una carrera de 10k';
 
   @override
-  String get weightTracker => 'Control de peso';
+  String get goalsFormTitleRequired => 'Introduce una meta';
 
   @override
-  String get noWeightEntries => 'Aún no hay registros de peso.';
+  String get goalsFormDescriptionLabel => 'Descripción';
 
   @override
-  String get latest => 'Último';
+  String get goalsFormStartLabel => 'Fecha de inicio';
 
   @override
-  String get logWeight => 'Registrar peso';
+  String get goalsFormEndLabel => 'Fecha objetivo (opcional)';
 
   @override
-  String get historyLast7Entries => 'Historial (últimas 7 entradas)';
+  String get goalsNoEndDate => 'Sin fecha límite';
 
   @override
-  String get waterIntake => 'Hidratación';
+  String get goalsFormStatusLabel => 'Estado';
 
   @override
-  String get goal => 'Objetivo';
+  String get goalsStatusPlanned => 'Planificada';
 
   @override
-  String get setDailyWaterGoal => 'Establecer objetivo de agua diario';
+  String get goalsStatusActive => 'Activa';
 
   @override
-  String get litersExample => 'Litros (ej. 2.5)';
+  String get goalsStatusDone => 'Completada';
 
   @override
-  String get todaysActivity => 'Actividad de hoy';
+  String get goalsStatusAborted => 'Abandonada';
 
   @override
-  String get workoutInProgress => 'Entrenamiento en curso';
+  String get goalsTargetTypeLabel => 'Objetivo';
 
   @override
-  String get exercisesCompleted => 'ejercicios completados';
+  String get goalsTargetTypeNone => 'Ninguno';
 
   @override
-  String get noWorkoutsToday =>
-      'Aún no hay entrenamientos. Inicia una sesión para ver el resumen aquí.';
+  String get goalsTargetTypeNumeric => 'Numérico';
 
   @override
-  String get elapsed => 'transcurrido';
+  String get goalsTargetTypeBoolean => 'Logro';
 
   @override
-  String get last84Days => 'Últimos 84 días';
+  String get goalsTargetValueLabel => 'Valor objetivo';
 
   @override
-  String get noTrainingRecorded =>
-      'No hay entrenamientos registrados este día.';
+  String get goalsTargetValueInvalid => 'Introduce un número';
 
   @override
-  String get today => 'Hoy';
+  String get goalsUnitLabel => 'Unidad';
 
   @override
-  String get calories => 'Calorías';
+  String get goalsBaselineLabel => 'Valor inicial';
 
   @override
-  String get protein => 'Proteínas';
+  String get goalsReminderLabel => 'Recordatorio diario de la meta';
 
   @override
-  String get carbs => 'Carbohidratos';
+  String get goalsReminderSubtitle =>
+      'Una notificación mantiene esta meta presente.';
 
   @override
-  String get fat => 'Grasas';
+  String get goalsReminderTimeLabel => 'Hora del recordatorio';
 
   @override
-  String get setProfileForTargets =>
-      'Establece un objetivo de peso y tu perfil para ver los objetivos diarios.';
+  String get goalsRelatedTasks => 'Tareas relacionadas';
 
   @override
-  String get bodyWeightGoal => 'Objetivo de peso';
+  String get goalsNoLinkedTasks => 'Aún no hay tareas relacionadas.';
 
   @override
-  String get noBodyweightGoalSet => 'No hay objetivo de peso establecido.';
+  String get goalsDeleteConfirmTitle => '¿Eliminar meta?';
 
   @override
-  String get addBodyWeightGoal => 'Añadir objetivo de peso';
+  String get goalsDeleteConfirmBody =>
+      'La meta y su registro de progreso se eliminarán permanentemente.';
 
   @override
-  String get target => 'Meta';
+  String get goalsMarkActive => 'Activar';
 
   @override
-  String get by => 'Para el';
+  String get goalsMarkDone => 'Marcar completada';
 
   @override
-  String get strengthGoals => 'Objetivos de fuerza';
+  String get goalsAbort => 'Abandonar';
 
   @override
-  String get addStrengthGoalTooltip => 'Añadir objetivo de fuerza';
+  String get goalsReopen => 'Reabrir';
 
   @override
-  String get noStrengthGoalsYet =>
-      'Aún no hay objetivos de fuerza. Toca + para añadir (uno por ejercicio).';
+  String get goalsProgressSection => 'Progreso';
 
   @override
-  String get setUpProfileFirst => 'Configura tu perfil primero';
+  String get goalsRecordProgress => 'Registrar progreso';
 
   @override
-  String get createProfile => 'Crear perfil';
+  String get goalsCurrentValueLabel => 'Actual';
 
   @override
-  String get editProfile => 'Editar perfil';
+  String get goalsTargetLabel => 'Objetivo';
 
   @override
-  String get yourProfile => 'Tu perfil';
+  String get goalsAchievedQuestion => '¿Logrado? (1 = sí)';
 
   @override
-  String get birthdate => 'Fecha de nacimiento';
+  String get goalsAchieved => 'Lograda';
 
   @override
-  String get sex => 'Sexo';
+  String get goalsNotAchieved => 'Todavía no';
 
   @override
-  String get heightCm => 'Altura (cm)';
+  String get goalsProgressNoteHint => 'Nota (opcional)';
 
   @override
-  String get activityLevel => 'Nivel de actividad';
+  String get goalsProgressDateLabel => 'Registrado el';
 
   @override
-  String get addBodyWeightGoalTitle => 'Añadir objetivo de peso';
+  String get goalsLogTitle => 'Registro';
 
   @override
-  String get editBodyWeightGoalTitle => 'Editar objetivo de peso';
+  String get goalsNoProgressYet => 'Nada registrado todavía.';
 
   @override
-  String get direction => 'Dirección';
+  String get goalsEmptyAllTitle => 'Aún no hay metas';
 
   @override
-  String get targetWeightKg => 'Peso objetivo (kg)';
+  String get goalsEmptyAll =>
+      'Define un resultado a largo plazo y vincúlalo a tus prioridades.';
 
   @override
-  String get targetDate => 'Fecha objetivo';
+  String get goalsEmptyFilterTitle => 'No hay metas aquí';
 
   @override
-  String get notSet => 'No establecido';
+  String get goalsEmptyFilter =>
+      'Ninguna meta lleva las prioridades seleccionadas.';
 
   @override
-  String get addStrengthGoalTitle => 'Añadir objetivo de fuerza';
+  String get cascadeDeleteBody => 'This will be permanently deleted.';
 
   @override
-  String get editStrengthGoalTitle => 'Editar objetivo de fuerza';
-
-  @override
-  String get searchOrTypeCustom => 'Buscar o escribir nombre personalizado';
-
-  @override
-  String get deleteBodyweightGoal => '¿Eliminar objetivo de peso?';
-
-  @override
-  String get deleteBodyweightGoalContent =>
-      'Esto borrará tu objetivo de peso y tus objetivos de macros.';
-
-  @override
-  String deleteStrengthGoalTitle(Object exercise) {
-    return '¿Eliminar objetivo de fuerza para $exercise?';
+  String cascadeDeleteBodyWithTasks(int count) {
+    return 'Also delete $count linked task(s)? You can keep them or delete them together.';
   }
 
   @override
-  String get deleteStrengthGoalContent => 'Esto eliminará el objetivo.';
+  String get cascadeDeleteOnly => 'Delete only';
 
   @override
-  String get deleteEverything => 'Eliminar todo';
+  String get cascadeDeleteWithTasks => 'Delete with tasks';
 
   @override
-  String get goalReached => '¡Objetivo alcanzado!';
+  String get settingsCascadeDeleteLabel => 'Delete behavior';
 
   @override
-  String get toGo => 'restante';
+  String get settingsCascadeDeleteHelp =>
+      'Al eliminar una meta, elige si también se eliminan sus tareas vinculadas.';
 
   @override
-  String get strengthTrend => 'Tendencia de fuerza';
+  String get settingsCascadeAsk => 'Ask each time';
 
   @override
-  String get noStrengthData => 'Sin datos de fuerza';
+  String get settingsCascadeAlways => 'Always delete tasks';
 
   @override
-  String get weightTrend90Days => 'Tendencia de peso (90 días)';
+  String get settingsCascadeNever => 'Never delete tasks';
 
   @override
-  String get profile => 'Perfil';
+  String get templatesDuplicate => 'Duplicate';
 
   @override
-  String get setUpProfile => 'Configurar perfil';
+  String get templatesDuplicated => 'Template duplicated';
 
   @override
-  String get nutrition => 'Nutrición';
+  String get cascadeDeleteTitleWithTasks => 'Delete linked tasks?';
 
   @override
-  String get visibleMacros => 'Macros visibles';
+  String get cascadeDeleteKeepTasks => 'Keep tasks';
 
   @override
-  String get defaultRestTimer => 'Temporizador de descanso predeterminado';
-
-  @override
-  String get secondsBetweenSets => '60 segundos entre series';
-
-  @override
-  String get restTimerComingSoon =>
-      'Próximamente: configuración del temporizador de descanso';
-
-  @override
-  String get appearance => 'Apariencia';
-
-  @override
-  String get theme => 'Tema';
-
-  @override
-  String get systemDefault => 'Predeterminado del sistema';
-
-  @override
-  String get themeComingSoon => 'Próximamente: configuración del tema';
-
-  @override
-  String get data => 'Datos';
-
-  @override
-  String get exportDatabase => 'Exportar base de datos';
-
-  @override
-  String get shareDbFile => 'Compartir el archivo SQLite';
-
-  @override
-  String get deleteAllData => 'Eliminar todos los datos';
-
-  @override
-  String get removeEverything => 'Eliminar todo y empezar de nuevo';
-
-  @override
-  String get noDbFound => 'No se encontró archivo de base de datos';
-
-  @override
-  String get deleteAllDataTitle => '¿Eliminar todos los datos?';
-
-  @override
-  String get deleteAllDataContent =>
-      'Esto eliminará todos tus datos, incluyendo comidas, ejercicios, entrenamientos, objetivos y perfil. Se creará una nueva base de datos al reiniciar.';
-
-  @override
-  String get dbDeleted =>
-      'Base de datos eliminada. Reinicia la aplicación para recrearla.';
-
-  @override
-  String get thisMonth => 'Este mes';
-
-  @override
-  String get couldNotLoadWeightHistory =>
-      'No se pudo cargar el historial de peso.';
-
-  @override
-  String get trainingHeatmap => 'Mapa de calor de entrenamientos';
-
-  @override
-  String get heatmapLegendLow => 'Bajo';
-
-  @override
-  String get heatmapLegendMid => 'Medio';
-
-  @override
-  String get heatmapLegendHigh => 'Alto';
-
-  @override
-  String get benchPress => 'Press de banca';
-
-  @override
-  String get deadlift => 'Peso muerto';
-
-  @override
-  String get squat => 'Sentadilla';
-
-  @override
-  String get enterDetailsForMacros =>
-      'Ingrese sus detalles para los cálculos de macros';
-
-  @override
-  String exportFailed(Object error) {
-    return 'Error al exportar: $error';
+  String goalDeleted(String name) {
+    return 'Goal \"$name\" deleted';
   }
-
-  @override
-  String deleteFailed(Object error) {
-    return 'Error al eliminar: $error';
-  }
-
-  @override
-  String get navDiet => 'Comidas';
-
-  @override
-  String get navDashboard => 'Panel';
-
-  @override
-  String get navExercise => 'Entrenamiento';
 }

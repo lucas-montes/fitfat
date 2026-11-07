@@ -1,0 +1,543 @@
+import 'package:drift/drift.dart';
+
+import '../../database/app_database.dart' as db;
+import '../../models/goal.dart';
+import '../../models/note.dart';
+import '../../models/task.dart';
+import '../../models/workout.dart';
+import '../../tags/repositories/tag_repository.dart';
+import 'task_repository.dart' show taskFromRow;
+
+/// One end of a link: the linked entity plus the optional relationship label.
+typedef LabeledTask = ({Task item, String? label});
+typedef LabeledGoal = ({Goal item, String? label});
+typedef LabeledNote = ({Note item, String? label});
+typedef LabeledWorkout = ({Workout item, String? label});
+
+/// Data access for the v27 link (junction) tables: typed many-to-many
+/// associations between tasks, goals, notes and workouts.
+///
+/// Every association has list helpers in both directions plus idempotent
+/// link/unlink operations; links are keyed by their pair, so re-linking with
+/// a new label updates it in place. The queries are written out per table on
+/// purpose: Drift's generated table classes share no common typed interface
+/// for "the column pointing at X", so explicit code keeps everything checked.
+final class LinksRepository {
+  final db.AppDatabase _database;
+  const LinksRepository(this._database);
+
+  // ---------------------------------------------------------------------------
+  // task ↔ goal
+  // ---------------------------------------------------------------------------
+
+  Future<List<LabeledTask>> tasksForGoal(String goalId) async {
+    final query =
+        _database.select(_database.taskGoals).join([
+            innerJoin(
+              _database.tasks,
+              _database.tasks.id.equalsExp(_database.taskGoals.taskId),
+            ),
+          ])
+          ..where(
+            _database.taskGoals.goalId.equals(goalId) &
+                _database.tasks.deletedAt.isNull(),
+          )
+          ..orderBy([
+            OrderingTerm.asc(_database.tasks.date),
+            OrderingTerm.asc(_database.tasks.sortOrder),
+          ]);
+    final rows = await query.get();
+    final items = await _attachTasks(
+      rows.map((r) => taskFromRow(r.readTable(_database.tasks))).toList(),
+    );
+    return [
+      for (var i = 0; i < items.length; i++)
+        (
+          item: items[i],
+          label: rows[i].readTable(_database.taskGoals).label,
+        ),
+    ];
+  }
+
+  Future<List<LabeledGoal>> goalsForTask(String taskId) async {
+    final query =
+        _database.select(_database.taskGoals).join([
+            innerJoin(
+              _database.goals,
+              _database.goals.id.equalsExp(_database.taskGoals.goalId),
+            ),
+          ])
+          ..where(
+            _database.taskGoals.taskId.equals(taskId) &
+                _database.goals.deletedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
+    final rows = await query.get();
+    final items = await _attachGoals(
+      rows.map((r) => _goalFrom(r.readTable(_database.goals))).toList(),
+    );
+    return [
+      for (var i = 0; i < items.length; i++)
+        (
+          item: items[i],
+          label: rows[i].readTable(_database.taskGoals).label,
+        ),
+    ];
+  }
+
+  Future<void> linkTaskGoal(String taskId, String goalId, {String? label}) {
+    return _database
+        .into(_database.taskGoals)
+        .insert(
+          db.TaskGoalsCompanion.insert(
+            taskId: taskId,
+            goalId: goalId,
+            label: Value(label),
+          ),
+          onConflict: DoUpdate(
+            (_) => db.TaskGoalsCompanion(label: Value(label)),
+          ),
+        );
+  }
+
+  Future<void> unlinkTaskGoal(String taskId, String goalId) {
+    return (_database.delete(
+      _database.taskGoals,
+    )..where((t) => t.taskId.equals(taskId) & t.goalId.equals(goalId))).go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // task ↔ note
+  // ---------------------------------------------------------------------------
+
+  Future<List<LabeledNote>> notesForTask(String taskId) async {
+    final query =
+        _database.select(_database.taskNotes).join([
+            innerJoin(
+              _database.notes,
+              _database.notes.id.equalsExp(_database.taskNotes.noteId),
+            ),
+          ])
+          ..where(
+            _database.taskNotes.taskId.equals(taskId) &
+                _database.notes.deletedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
+    final rows = await query.get();
+    final items = await _attachNotes(
+      rows.map((r) => _noteFrom(r.readTable(_database.notes))).toList(),
+    );
+    return [
+      for (var i = 0; i < items.length; i++)
+        (
+          item: items[i],
+          label: rows[i].readTable(_database.taskNotes).label,
+        ),
+    ];
+  }
+
+  Future<List<LabeledTask>> tasksForNote(String noteId) async {
+    final query =
+        _database.select(_database.taskNotes).join([
+            innerJoin(
+              _database.tasks,
+              _database.tasks.id.equalsExp(_database.taskNotes.taskId),
+            ),
+          ])
+          ..where(
+            _database.taskNotes.noteId.equals(noteId) &
+                _database.tasks.deletedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.desc(_database.tasks.date)]);
+    final rows = await query.get();
+    final items = await _attachTasks(
+      rows.map((r) => taskFromRow(r.readTable(_database.tasks))).toList(),
+    );
+    return [
+      for (var i = 0; i < items.length; i++)
+        (
+          item: items[i],
+          label: rows[i].readTable(_database.taskNotes).label,
+        ),
+    ];
+  }
+
+  Future<void> linkTaskNote(String taskId, String noteId, {String? label}) {
+    return _database
+        .into(_database.taskNotes)
+        .insert(
+          db.TaskNotesCompanion.insert(
+            taskId: taskId,
+            noteId: noteId,
+            label: Value(label),
+          ),
+          onConflict: DoUpdate(
+            (_) => db.TaskNotesCompanion(label: Value(label)),
+          ),
+        );
+  }
+
+  Future<void> unlinkTaskNote(String taskId, String noteId) {
+    return (_database.delete(
+      _database.taskNotes,
+    )..where((t) => t.taskId.equals(taskId) & t.noteId.equals(noteId))).go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // goal ↔ note
+  // ---------------------------------------------------------------------------
+
+  Future<List<LabeledNote>> notesForGoal(String goalId) async {
+    final query =
+        _database.select(_database.goalNotes).join([
+            innerJoin(
+              _database.notes,
+              _database.notes.id.equalsExp(_database.goalNotes.noteId),
+            ),
+          ])
+          ..where(
+            _database.goalNotes.goalId.equals(goalId) &
+                _database.notes.deletedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
+    final rows = await query.get();
+    final items = await _attachNotes(
+      rows.map((r) => _noteFrom(r.readTable(_database.notes))).toList(),
+    );
+    return [
+      for (var i = 0; i < items.length; i++)
+        (
+          item: items[i],
+          label: rows[i].readTable(_database.goalNotes).label,
+        ),
+    ];
+  }
+
+  Future<List<LabeledGoal>> goalsForNote(String noteId) async {
+    final query =
+        _database.select(_database.goalNotes).join([
+            innerJoin(
+              _database.goals,
+              _database.goals.id.equalsExp(_database.goalNotes.goalId),
+            ),
+          ])
+          ..where(
+            _database.goalNotes.noteId.equals(noteId) &
+                _database.goals.deletedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
+    final rows = await query.get();
+    final items = await _attachGoals(
+      rows.map((r) => _goalFrom(r.readTable(_database.goals))).toList(),
+    );
+    return [
+      for (var i = 0; i < items.length; i++)
+        (
+          item: items[i],
+          label: rows[i].readTable(_database.goalNotes).label,
+        ),
+    ];
+  }
+
+  Future<void> linkGoalNote(String goalId, String noteId, {String? label}) {
+    return _database
+        .into(_database.goalNotes)
+        .insert(
+          db.GoalNotesCompanion.insert(
+            goalId: goalId,
+            noteId: noteId,
+            label: Value(label),
+          ),
+          onConflict: DoUpdate(
+            (_) => db.GoalNotesCompanion(label: Value(label)),
+          ),
+        );
+  }
+
+  Future<void> unlinkGoalNote(String goalId, String noteId) {
+    return (_database.delete(
+      _database.goalNotes,
+    )..where((t) => t.goalId.equals(goalId) & t.noteId.equals(noteId))).go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // goal ↔ workout
+  // ---------------------------------------------------------------------------
+
+  Future<List<LabeledWorkout>> workoutsForGoal(String goalId) async {
+    final query =
+        _database.select(_database.goalWorkouts).join([
+            innerJoin(
+              _database.workouts,
+              _database.workouts.id.equalsExp(_database.goalWorkouts.workoutId),
+            ),
+          ])
+          ..where(
+            _database.goalWorkouts.goalId.equals(goalId) &
+                _database.workouts.deletedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.desc(_database.workouts.date)]);
+    final rows = await query.get();
+    return [
+      for (final row in rows)
+        (
+          item: _workoutFrom(row.readTable(_database.workouts)),
+          label: row.readTable(_database.goalWorkouts).label,
+        ),
+    ];
+  }
+
+  Future<List<LabeledGoal>> goalsForWorkout(String workoutId) async {
+    final query =
+        _database.select(_database.goalWorkouts).join([
+            innerJoin(
+              _database.goals,
+              _database.goals.id.equalsExp(_database.goalWorkouts.goalId),
+            ),
+          ])
+          ..where(
+            _database.goalWorkouts.workoutId.equals(workoutId) &
+                _database.goals.deletedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.asc(_database.goals.startDate)]);
+    final rows = await query.get();
+    return [
+      for (final row in rows)
+        (
+          item: _goalFrom(row.readTable(_database.goals)),
+          label: row.readTable(_database.goalWorkouts).label,
+        ),
+    ];
+  }
+
+  Future<void> linkGoalWorkout(
+    String goalId,
+    String workoutId, {
+    String? label,
+  }) {
+    return _database
+        .into(_database.goalWorkouts)
+        .insert(
+          db.GoalWorkoutsCompanion.insert(
+            goalId: goalId,
+            workoutId: workoutId,
+            label: Value(label),
+          ),
+          onConflict: DoUpdate(
+            (_) => db.GoalWorkoutsCompanion(label: Value(label)),
+          ),
+        );
+  }
+
+  Future<void> unlinkGoalWorkout(String goalId, String workoutId) {
+    return (_database.delete(_database.goalWorkouts)..where(
+          (t) => t.goalId.equals(goalId) & t.workoutId.equals(workoutId),
+        ))
+        .go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // note ↔ workout
+  // ---------------------------------------------------------------------------
+
+  Future<List<LabeledWorkout>> workoutsForNote(String noteId) async {
+    final query =
+        _database.select(_database.noteWorkouts).join([
+            innerJoin(
+              _database.workouts,
+              _database.workouts.id.equalsExp(_database.noteWorkouts.workoutId),
+            ),
+          ])
+          ..where(
+            _database.noteWorkouts.noteId.equals(noteId) &
+                _database.workouts.deletedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.desc(_database.workouts.date)]);
+    final rows = await query.get();
+    return [
+      for (final row in rows)
+        (
+          item: _workoutFrom(row.readTable(_database.workouts)),
+          label: row.readTable(_database.noteWorkouts).label,
+        ),
+    ];
+  }
+
+  Future<List<LabeledNote>> notesForWorkout(String workoutId) async {
+    final query =
+        _database.select(_database.noteWorkouts).join([
+            innerJoin(
+              _database.notes,
+              _database.notes.id.equalsExp(_database.noteWorkouts.noteId),
+            ),
+          ])
+          ..where(
+            _database.noteWorkouts.workoutId.equals(workoutId) &
+                _database.notes.deletedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.desc(_database.notes.updatedAt)]);
+    final rows = await query.get();
+    return [
+      for (final row in rows)
+        (
+          item: _noteFrom(row.readTable(_database.notes)),
+          label: row.readTable(_database.noteWorkouts).label,
+        ),
+    ];
+  }
+
+  Future<void> linkNoteWorkout(
+    String noteId,
+    String workoutId, {
+    String? label,
+  }) {
+    return _database
+        .into(_database.noteWorkouts)
+        .insert(
+          db.NoteWorkoutsCompanion.insert(
+            noteId: noteId,
+            workoutId: workoutId,
+            label: Value(label),
+          ),
+          onConflict: DoUpdate(
+            (_) => db.NoteWorkoutsCompanion(label: Value(label)),
+          ),
+        );
+  }
+
+  Future<void> unlinkNoteWorkout(String noteId, String workoutId) {
+    return (_database.delete(_database.noteWorkouts)..where(
+          (t) => t.noteId.equals(noteId) & t.workoutId.equals(workoutId),
+        ))
+        .go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cascade detach helpers — called from entity delete flows so no dangling
+  // link rows survive their target.
+  // ---------------------------------------------------------------------------
+
+  /// Removes every link row referencing [taskId].
+  Future<void> detachTask(String taskId) async {
+    await (_database.delete(
+      _database.taskGoals,
+    )..where((t) => t.taskId.equals(taskId))).go();
+    await (_database.delete(
+      _database.taskNotes,
+    )..where((t) => t.taskId.equals(taskId))).go();
+  }
+
+  /// Removes every link row referencing [goalId].
+  Future<void> detachGoal(String goalId) async {
+    await (_database.delete(
+      _database.taskGoals,
+    )..where((t) => t.goalId.equals(goalId))).go();
+    await (_database.delete(
+      _database.goalNotes,
+    )..where((t) => t.goalId.equals(goalId))).go();
+    await (_database.delete(
+      _database.goalWorkouts,
+    )..where((t) => t.goalId.equals(goalId))).go();
+  }
+
+  /// Removes every link row referencing [noteId].
+  Future<void> detachNote(String noteId) async {
+    await (_database.delete(
+      _database.taskNotes,
+    )..where((t) => t.noteId.equals(noteId))).go();
+    await (_database.delete(
+      _database.goalNotes,
+    )..where((t) => t.noteId.equals(noteId))).go();
+    await (_database.delete(
+      _database.noteWorkouts,
+    )..where((t) => t.noteId.equals(noteId))).go();
+  }
+
+  /// Removes every link row referencing [workoutId].
+  Future<void> detachWorkout(String workoutId) async {
+    await (_database.delete(
+      _database.goalWorkouts,
+    )..where((t) => t.workoutId.equals(workoutId))).go();
+    await (_database.delete(
+      _database.noteWorkouts,
+    )..where((t) => t.workoutId.equals(workoutId))).go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Row mappers (kept local so joined rows map identically everywhere).
+  // ---------------------------------------------------------------------------
+
+  Goal _goalFrom(db.Goal row) => Goal(
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    tags: null,
+    startDate: DateTime.fromMillisecondsSinceEpoch(row.startDate),
+    endDate: row.endDate == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(row.endDate!),
+    status: GoalStatusStorage.parse(row.status),
+    targetType: GoalTargetTypeStorage.parse(row.targetType),
+    targetValue: row.targetValue,
+    unit: row.unit,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
+  );
+
+  Note _noteFrom(db.Note row) => Note(
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    tags: null,
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+  );
+
+  Workout _workoutFrom(db.Workout row) => Workout(
+    id: row.id,
+    name: row.name,
+    date: DateTime.fromMillisecondsSinceEpoch(row.date),
+    startedAt: row.startedAt != null
+        ? DateTime.fromMillisecondsSinceEpoch(row.startedAt!)
+        : null,
+    completedAt: row.completedAt != null
+        ? DateTime.fromMillisecondsSinceEpoch(row.completedAt!)
+        : null,
+    notes: row.notes,
+    routineId: row.routineId,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+  );
+
+  /// Populates [Task.tags] for a batch of tasks in a single lookup.
+  Future<List<Task>> _attachTasks(List<Task> tasks) async {
+    if (tasks.isEmpty) return tasks;
+    final map = await TagRepository(
+      _database,
+    ).tagNamesForTasks(tasks.map((t) => t.id).toList());
+    return [
+      for (final t in tasks) t.copyWith(tags: map[t.id] ?? const []),
+    ];
+  }
+
+  /// Populates [Goal.tags] for a batch of goals in one lookup.
+  Future<List<Goal>> _attachGoals(List<Goal> items) async {
+    if (items.isEmpty) return items;
+    final map = await TagRepository(
+      _database,
+    ).tagNamesForGoals(items.map((g) => g.id).toList());
+    return [
+      for (final g in items) g.copyWith(tags: map[g.id] ?? const []),
+    ];
+  }
+
+  /// Populates [Note.tags] for a batch of notes in one lookup.
+  Future<List<Note>> _attachNotes(List<Note> items) async {
+    if (items.isEmpty) return items;
+    final map = await TagRepository(
+      _database,
+    ).tagNamesForNotes(items.map((n) => n.id).toList());
+    return [
+      for (final n in items) n.copyWith(tags: map[n.id] ?? const []),
+    ];
+  }
+}

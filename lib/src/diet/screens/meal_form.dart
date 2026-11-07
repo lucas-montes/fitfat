@@ -1,0 +1,564 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../../l10n/app_localizations.dart';
+import '../../models/food.dart';
+import '../../models/meal_entry.dart';
+import '../../models/meal_food.dart';
+import '../../ui/date_formats.dart';
+import '../providers/meals.dart';
+import '../providers/foods.dart';
+import '../repositories/food_repository.dart' show ResolvedFood;
+import '../widgets/food_picker_sheet.dart';
+import '../widgets/meal_item_editor_sheet.dart';
+import '../../dashboard/providers/dashboard.dart';
+import '../../ui/tokens.dart';
+import '../../ui/widgets/top_banner.dart';
+
+final class MealFormScreen extends ConsumerStatefulWidget {
+  final MealEntry? meal;
+  const MealFormScreen({super.key, this.meal});
+
+  @override
+  ConsumerState<MealFormScreen> createState() => _MealFormScreenState();
+}
+
+final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _searchCtrl;
+  late DateTime _eatenAt;
+  late TimeOfDay _eatenTime;
+  bool _saving = false;
+
+  /// Current name filter for the food picker (empty = show all).
+  String _filter = '';
+
+  /// Maps food id → grams eaten. A value > 0 means selected.
+  late Map<String, double> _amounts;
+
+  /// Live per-100g profile per food id, captured when the picker renders so
+  /// `_buildItem` can hand the repository a real profile to snapshot instead of
+  /// a zeroed placeholder.
+  final Map<String, FoodNutrition?> _profiles = {};
+
+  /// Food name per id, for labelling the current selection.
+  final Map<String, String> _names = {};
+
+  bool get _isEditing => widget.meal != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final meal = widget.meal;
+    _nameCtrl = TextEditingController(text: meal?.name ?? '');
+    _searchCtrl = TextEditingController();
+    _eatenAt = meal?.eatenAt ?? DateTime.now();
+    _eatenTime = TimeOfDay.fromDateTime(_eatenAt);
+    _amounts = {};
+    if (meal != null) {
+      for (final item in meal.items) {
+        _amounts[item.foodId] = item.amount;
+        // Seeded from the stored row so the first frame already has a name.
+        _names[item.foodId] = item.foodName;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Totals for what is currently selected, from the same pure resolution the
+  /// repository uses — so the preview cannot disagree with what gets stored.
+  Nutrition get _previewTotals {
+    var calories = 0.0, protein = 0.0, carbs = 0.0, fat = 0.0;
+    var sodium = 0.0, fiber = 0.0, sugar = 0.0;
+    for (final entry in _amounts.entries) {
+      if (entry.value <= 0) continue;
+      final per100g = _profiles[entry.key]?.per100g;
+      // A food whose composition does not resolve contributes nothing here; the
+      // save is refused later with a clearer message than a silent zero.
+      if (per100g == null) continue;
+      final f = entry.value / 100;
+      calories += per100g.calories * f;
+      protein += per100g.protein * f;
+      carbs += per100g.carbs * f;
+      fat += per100g.fat * f;
+      sodium += per100g.sodium * f;
+      fiber += per100g.fiber * f;
+      sugar += per100g.sugar * f;
+    }
+    return (
+      calories: calories,
+      protein: protein,
+      carbs: carbs,
+      fat: fat,
+      sodium: sodium,
+      fiber: fiber,
+      sugar: sugar,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final foodsAsync = ref.watch(foodListProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          _isEditing ? l10n.mealFormEditTitle : l10n.mealFormNewTitle,
+        ),
+        // Save is the primary action and the form can be long, so it lives in
+        // the app bar rather than pinned below the food list. Mirrors the state
+        // the bottom button carried: disabled while saving, with the in-flight
+        // label.
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : _save,
+            child: Text(_saving ? l10n.mealFormSaving : l10n.mealFormSave),
+          ),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Name — optional. Most meals do not need one, and forcing a name
+            // meant inventing filler. A blank name is stored as an empty string
+            // (the column is NOT NULL) and the list falls back to a date label.
+            TextFormField(
+              controller: _nameCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.mealFormNameLabel,
+                hintText: l10n.mealFormNameHint,
+                helperText: l10n.mealFormNameOptionalHint,
+              ),
+              textCapitalization: TextCapitalization.sentences,
+            ),
+            const SizedBox(height: 16),
+
+            // Date & time
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.mealFormDateTime),
+              subtitle: Text(
+                '${DateFormats.formatDate(context, _eatenAt)}  '
+                '${DateFormats.formatTime(context, _eatenTime)}',
+              ),
+              trailing: const Icon(Icons.edit_calendar),
+              onTap: _pickDateTime,
+            ),
+            const SizedBox(height: 16),
+
+            // Above the food list, not below it. The running total is what you
+            // are checking while adding and adjusting foods, and scrolling past
+            // them to read it defeats that.
+            _TotalsCard(totals: _previewTotals, l10n: l10n),
+            const SizedBox(height: FitFatTokens.spaceL),
+
+            // Food selection. The list lives in a debounced, virtualized
+            // sheet rather than inline: it holds every food, which is one per
+            // ingredient plus every recipe, and rendering that in the form's own
+            // ListView rebuilt hundreds of rows on every keystroke.
+            Text(
+              l10n.mealFormFoods,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+
+            foodsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) =>
+                  Text(l10n.errorLoadingResource(l10n.mealFormFoods, '$e')),
+              data: (resolved) {
+                // Remember each food's live profile for the snapshot, including
+                // ones already selected, so editing an existing meal keeps the
+                // stored macros in step with the current recipe.
+                for (final entry in resolved) {
+                  _profiles[entry.food.id] = entry.nutrition;
+                  _names[entry.food.id] = entry.food.name;
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => _pickFoods(context, resolved),
+                      icon: const Icon(Icons.restaurant_menu),
+                      label: Text(l10n.mealFormChooseFoods),
+                    ),
+                    if (_amounts.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      for (final entry in _amounts.entries)
+                        if (_profiles[entry.key] case final nutrition?
+                            when nutrition.per100g != null)
+                          _DraftFoodRow(
+                            key: ValueKey(entry.key),
+                            name: _names[entry.key] ?? entry.key,
+                            grams: entry.value,
+                            calories:
+                                nutrition.per100g.calories * entry.value / 100,
+                            onTap: () => _editDraftFood(
+                              entry.key,
+                              name: _names[entry.key] ?? entry.key,
+                              grams: entry.value,
+                              per100g: nutrition.per100g,
+                            ),
+                          ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Applies an amount change or a removal to this form's draft.
+  ///
+  /// Keyed by food id, which is also how [_amounts] is keyed: a food can only
+  /// appear once in a meal, so removing by id needs no further disambiguation.
+  ///
+  /// Deliberately does not touch the repository. This form owns an unsaved
+  /// draft and the existing Save persists the whole meal; writing through here
+  /// would change a row even if the user then backed out of the form.
+  Future<void> _editDraftFood(
+    String foodId, {
+    required String name,
+    required double grams,
+    required Nutrition per100g,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showMealItemEditorSheet(
+      context,
+      foodName: name,
+      currentGrams: grams,
+      currentSummary: l10n.mealListMacroFormat(
+        grams.toStringAsFixed(0),
+        (per100g.calories * grams / 100).toStringAsFixed(0),
+        (per100g.protein * grams / 100).toStringAsFixed(1),
+        (per100g.carbs * grams / 100).toStringAsFixed(1),
+        (per100g.fat * grams / 100).toStringAsFixed(1),
+      ),
+    );
+    // null = dismissed, keep the draft exactly as it was.
+    if (result == null) return;
+    setState(() {
+      switch (result) {
+        case MealItemAmountChanged(:final grams):
+          _amounts[foodId] = grams;
+        case MealItemRemoved():
+          _amounts.remove(foodId);
+      }
+    });
+  }
+
+  Future<void> _pickDateTime() async {
+    // Pick date
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _eatenAt,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    if (date == null || !mounted) return;
+
+    // Pick time
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _eatenTime,
+    );
+    if (time == null || !mounted) return;
+
+    setState(() {
+      _eatenAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+      _eatenTime = time;
+    });
+  }
+
+  Future<void> _pickFoods(
+    BuildContext context,
+    List<ResolvedFood> resolved,
+  ) async {
+    for (final entry in resolved) {
+      _names[entry.food.id] = entry.food.name;
+    }
+    final chosen = await showFoodPickerSheet(
+      context,
+      foods: resolved,
+      initialAmounts: _amounts,
+    );
+    // null means dismissed — keep whatever was already selected.
+    if (chosen == null || !mounted) return;
+    setState(() {
+      _amounts
+        ..clear()
+        ..addAll(chosen);
+    });
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    final selected = _amounts.entries.where((e) => e.value > 0).toList();
+    if (selected.isEmpty) {
+      showTopBanner(context, message: l10n.mealFormAddFood);
+      return;
+    }
+
+    // A food with an unresolvable composition would snapshot as zeros, so refuse
+    // the whole log rather than record a meal that silently under-reports.
+    final unresolved = selected
+        .where((e) => _profiles[e.key]?.per100g == null)
+        .map((e) => e.key)
+        .toList();
+    if (unresolved.isNotEmpty) {
+      showTopBanner(context, message: l10n.mealFormFoodUnresolved);
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final repo = ref.read(mealRepositoryProvider);
+      final name = _nameCtrl.text.trim();
+      final mealId = _isEditing ? widget.meal!.id : const Uuid().v7();
+
+      final items = selected
+          .map(
+            (e) => _buildItem(
+              e.key,
+              e.value,
+              nutrition: _profiles[e.key]!,
+              mealId: mealId,
+            ),
+          )
+          .toList();
+
+      final meal = MealEntry(
+        id: mealId,
+        name: name,
+        eatenAt: _eatenAt,
+        createdAt: _isEditing ? widget.meal!.createdAt : DateTime.now(),
+        items: items,
+      );
+      if (_isEditing) {
+        await repo.update(meal);
+      } else {
+        await repo.insert(meal);
+      }
+      invalidateDashboard(ref);
+
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  MealFood _buildItem(
+    String foodId,
+    double amount, {
+    required FoodNutrition nutrition,
+    required String mealId,
+  }) {
+    return MealFood(
+      id: const Uuid().v7(),
+      mealId: mealId,
+      foodId: foodId,
+      foodName: '', // filled in after save via getAll
+      amount: amount,
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      // The live profile is all the repository needs; it scales this to
+      // [amount] and writes the snapshot itself.
+      nutrition: nutrition,
+    );
+  }
+}
+
+final class _FoodRow extends StatelessWidget {
+  final Food food;
+  final double amount;
+  final FoodNutrition? nutrition;
+  final AppLocalizations l10n;
+  final void Function(double) onChanged;
+
+  const _FoodRow({
+    required this.food,
+    required this.amount,
+    required this.nutrition,
+    required this.l10n,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = amount > 0;
+    final per100g = nutrition?.per100g;
+    if (per100g == null) return const SizedBox.shrink();
+    final portionCalories = per100g.calories * amount / 100;
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            Checkbox(
+              value: isSelected,
+              onChanged: (v) => onChanged(v == true ? 100 : 0),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    food.name,
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                  if (isSelected)
+                    Text(
+                      l10n.mealFormFoodCalories(
+                        portionCalories.toStringAsFixed(0),
+                        per100g.calories.toStringAsFixed(0),
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 80,
+              child: TextFormField(
+                initialValue: isSelected ? amount.toStringAsFixed(0) : '',
+                decoration: InputDecoration(
+                  labelText: l10n.mealFormGramsLabel,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                enabled: isSelected,
+                onChanged: (v) {
+                  final parsed = double.tryParse(v);
+                  onChanged(parsed ?? 0);
+                },
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One food in the form's draft. Tappable, because adjusting a logged portion
+/// used to require finding the picker; the chevron is what makes that visible.
+final class _DraftFoodRow extends StatelessWidget {
+  final String name;
+  final double grams;
+  final double calories;
+  final VoidCallback onTap;
+
+  const _DraftFoodRow({
+    super.key,
+    required this.name,
+    required this.grams,
+    required this.calories,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Text(
+              '${grams.toStringAsFixed(0)} g  ·  ${calories.toStringAsFixed(0)} kcal',
+              style: theme.textTheme.bodySmall,
+            ),
+            Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _TotalsCard extends StatelessWidget {
+  final Nutrition totals;
+  final AppLocalizations l10n;
+
+  const _TotalsCard({required this.totals, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.mealFormTotals, style: theme.textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(
+              l10n.ingredientMacroRow(
+                totals.calories.toStringAsFixed(0),
+                totals.calories.toStringAsFixed(0),
+                totals.protein.toStringAsFixed(1),
+                totals.carbs.toStringAsFixed(1),
+                totals.fat.toStringAsFixed(1),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

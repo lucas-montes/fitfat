@@ -1,93 +1,64 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/food.dart';
-import '../../database/providers.dart';
-import '../../adapters/drift/ingredient_repository.dart';
-import '../../services/logger.dart';
+import '../../database/database_provider.dart';
+import '../../models/ingredient.dart';
 
-final _log = logger('ingredients_provider');
+import '../../models/ingredient_picture.dart';
+import '../../models/ingredient_price.dart';
+import '../../models/store.dart';
+import '../repositories/ingredient_repository.dart';
+import 'foods.dart';
 
-final ingredientRepositoryProvider = Provider<DriftIngredientRepository>((ref) {
-  final db = ref.watch(databaseProvider);
-  return DriftIngredientRepository(db);
+// ---------------------------------------------------------------------------
+// Repository provider
+// ---------------------------------------------------------------------------
+
+final ingredientRepositoryProvider = Provider<IngredientRepository>((ref) {
+  return IngredientRepository(ref.watch(databaseProvider));
 });
 
-class IngredientsController extends Notifier<List<Ingredient>> {
-  late final DriftIngredientRepository _repo;
-  bool _loaded = false;
+// ---------------------------------------------------------------------------
+// Ingredient list provider
+// ---------------------------------------------------------------------------
 
-  @override
-  List<Ingredient> build() {
-    _repo = ref.read(ingredientRepositoryProvider);
-    if (!_loaded) {
-      _loaded = true;
-      unawaited(_loadInitialData());
-    }
-    return const [];
-  }
+final ingredientListProvider = FutureProvider<List<Ingredient>>((ref) async {
+  return ref.watch(ingredientRepositoryProvider).getAll();
+});
 
-  Future<void> _loadInitialData() async {
-    try {
-      final items = await _repo.getAll();
-      state = items;
-    } catch (e, st) {
-      _log.warning('Failed to load ingredients', e, st);
-    }
-  }
+/// Resolves a single ingredient by id; `null` when it doesn't exist (the
+/// detail screen's not-found state).
+final ingredientByIdProvider = FutureProvider.autoDispose
+    .family<Ingredient?, String>((ref, id) async {
+      return ref.watch(ingredientRepositoryProvider).getById(id);
+    });
 
-  Future<void> addIngredient(Ingredient ingredient) async {
-    await _repo.insert(ingredient);
-    state = [...state, ingredient];
-  }
+// ---------------------------------------------------------------------------
+// Stores / pictures / prices providers (v20)
+// ---------------------------------------------------------------------------
 
-  Future<void> updateIngredient(Ingredient ingredient) async {
-    await _repo.update(ingredient);
-    state = [
-      for (final existing in state)
-        if (existing.id == ingredient.id) ingredient else existing,
-    ];
-  }
+final storesProvider = FutureProvider<List<Store>>((ref) async {
+  return ref.watch(ingredientRepositoryProvider).getStores();
+});
 
-  Future<void> removeIngredient(String id) async {
-    await _repo.deleteIngredient(id);
-    state = state.where((ingredient) => ingredient.id != id).toList();
-  }
+final ingredientPicturesProvider = FutureProvider.autoDispose
+    .family<List<IngredientPicture>, String>((ref, ingredientId) async {
+      return ref.watch(ingredientRepositoryProvider).getPictures(ingredientId);
+    });
 
-  Future<void> archiveIngredient(Ingredient ingredient) async {
-    await _repo.archiveIngredient(ingredient.id);
-    state = [
-      for (final existing in state)
-        if (existing.id == ingredient.id)
-          Ingredient(
-            id: existing.id,
-            name: existing.name,
-            caloriesPer100g: existing.caloriesPer100g,
-            proteinPer100g: existing.proteinPer100g,
-            carbsPer100g: existing.carbsPer100g,
-            fatPer100g: existing.fatPer100g,
-            creatorId: existing.creatorId,
-            isArchived: true,
-            sodiumPer100g: existing.sodiumPer100g,
-            fiberPer100g: existing.fiberPer100g,
-            sugarsPer100g: existing.sugarsPer100g,
-            saturatedFatPer100g: existing.saturatedFatPer100g,
-            cholesterolPer100g: existing.cholesterolPer100g,
-            components: existing.components,
-          )
-        else
-          existing,
-    ];
-  }
+/// Full price history per ingredient (newest first), each entry paired with
+/// its store.
+final ingredientPricesProvider = FutureProvider.autoDispose
+    .family<List<(IngredientPrice, Store)>, String>((ref, ingredientId) async {
+      return ref.watch(ingredientRepositoryProvider).getPrices(ingredientId);
+    });
 
-  Future<List<Ingredient>> getArchivedIngredients() async {
-    final repo = ref.read(ingredientRepositoryProvider);
-    return await repo.getArchivedIngredients();
-  }
+/// Invalidates the ingredient surface after an edit.
+///
+/// Also invalidates the foods list: foods resolve their nutrition **live** from
+/// ingredient rows, so a macro or name change has to reach the foods list and
+/// the meal picker too.
+void invalidateIngredients(WidgetRef ref) {
+  ref.invalidate(ingredientListProvider);
+  ref.invalidate(foodListProvider);
+  ref.invalidate(foodCombinationProvider);
 }
-
-final ingredientsProvider =
-    NotifierProvider<IngredientsController, List<Ingredient>>(
-      IngredientsController.new,
-    );

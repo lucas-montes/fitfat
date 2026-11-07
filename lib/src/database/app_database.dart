@@ -1,404 +1,964 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/enums.dart';
-import '../services/logger.dart';
+import '../planner/repositories/task_repository.dart' show decodeTagList;
 import 'tables.dart';
 
 part 'app_database.g.dart';
 
-final _log = logger('app_database');
-
 @DriftDatabase(
   tables: [
-    Exercises,
-    ExerciseBodyParts,
-    ExerciseTranslations,
-    Workouts,
-    WeightSets,
-    CardioSets,
     Ingredients,
-    IngredientComponents,
+    Stores,
+    IngredientPictures,
+    IngredientPrices,
+    Foods,
+    FoodIngredients,
     Meals,
-    MealIngredients,
+    MealFoods,
+    Exercises,
+    Workouts,
+    WorkoutExercises,
+    ExerciseSets,
+    WorkoutTemplates,
+    WorkoutTemplateExercises,
+    WorkoutTemplateSets,
+    Tasks,
+    BodyMetrics,
+    Notes,
+    Accounts,
+    Transactions,
+    Receipts,
+    FxRates,
+    Tags,
     Goals,
-    UserProfile,
-    BodyWeightEntries,
-    WaterConsumption,
+    GoalProgressEntries,
+    TaskGoals,
+    TaskNotes,
+    GoalNotes,
+    GoalWorkouts,
+    NoteWorkouts,
+    TaskTags,
+    GoalTags,
+    NoteTags,
+    NoteAudio,
+    ExerciseCatalog,
+    IngredientCatalog,
+    SyncDeletes,
   ],
 )
-class AppDatabase extends _$AppDatabase {
+final class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
-  @visibleForTesting
   AppDatabase.forTesting(super.executor);
 
-  /// Public constructor that allows creating an `AppDatabase` with a
-  /// custom [QueryExecutor]. This is useful for dev or non-production
-  /// databases (e.g. a separate file-backed DB) without touching the
-  /// default production connection.
-  AppDatabase.open(super.executor);
-
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 40;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (Migrator m) async {
-      await m.createAll();
-      await _seedExercises();
-      await _seedIngredients();
-    },
-    onUpgrade: (Migrator m, int from, int to) async {
-      // Fresh start: drop all existing tables and recreate from scratch.
-      // Data loss is intentional — old schema versions are incompatible with
-      // the current clean-slate schema (v1).
-      for (final table in allTables) {
-        await m.deleteTable(table.actualTableName);
+    onCreate: (m) => m.createAll(),
+    beforeOpen: (details) async {
+      // Barcode lookup index (v20). Created idempotently here so fresh
+      // installs and every upgrade path end up with the same index without
+      // per-version migration steps.
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_ingredients_barcode '
+        'ON ingredients (barcode)',
+      );
+      // Diet chain (v34) lookup indexes. `food_ingredients` has a composite
+      // primary key `(food_id, ingredient_id)` whose leading column already
+      // serves the per-food load, so these cover the remaining access paths:
+      // the reverse "which foods use this ingredient?" lookup, and a meal's
+      // foods.
+      const dietIndexes = [
+        (
+          'idx_food_ingredients_ingredient',
+          'food_ingredients',
+          'ingredient_id',
+        ),
+        ('idx_meal_foods_food', 'meal_foods', 'food_id'),
+        ('idx_meal_foods_meal', 'meal_foods', 'meal_id'),
+      ];
+      for (final (name, table, column) in dietIndexes) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS $name ON $table ($column)',
+        );
       }
-      await m.createAll();
-      await _seedExercises();
-      await _seedIngredients();
+      // Replay-lineage lookup index (v21) — same idempotent pattern.
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_workouts_routine '
+        'ON workouts (routine_id)',
+      );
+      // Link-table reverse-lookup indexes (v27). The composite primary keys
+      // already serve lookups on the leading column; these cover queries that
+      // start from the second column (e.g. goals for a task, tasks for a goal).
+      const linkIndexes = [
+        ('idx_task_goals_goal', 'task_goals', 'goal_id'),
+        ('idx_task_notes_note', 'task_notes', 'note_id'),
+        ('idx_goal_notes_note', 'goal_notes', 'note_id'),
+        ('idx_goal_workouts_workout', 'goal_workouts', 'workout_id'),
+        ('idx_note_workouts_workout', 'note_workouts', 'workout_id'),
+        ('idx_task_tags_task', 'task_tags', 'task_id'),
+        ('idx_goal_tags_goal', 'goal_tags', 'goal_id'),
+        ('idx_note_tags_note', 'note_tags', 'note_id'),
+      ];
+      for (final (name, table, column) in linkIndexes) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS $name ON $table ($column)',
+        );
+      }
+    },
+    onUpgrade: (m, from, to) async {
+      // Historical planner_items steps are frozen raw SQL: the table has since
+      // been renamed to `tasks` (v27) and its Dart class no longer exists, but
+      // upgrades from very old schemas still need the original statements.
+      if (from < 2) {
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS planner_items ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'date INTEGER NOT NULL, '
+          'title TEXT NOT NULL, '
+          'done INTEGER NOT NULL, '
+          'sort_order INTEGER NOT NULL, '
+          'created_at INTEGER NOT NULL)',
+        );
+      }
+      if (from < 3) {
+        // v3: optional ingredient nutriments, planner due date, body_metrics.
+        await m.addColumn(ingredients, ingredients.sodiumPer100g);
+        await m.addColumn(ingredients, ingredients.fiberPer100g);
+        await m.addColumn(ingredients, ingredients.sugarPer100g);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN due_date INTEGER NULL',
+        );
+        await m.createTable(bodyMetrics);
+        // Clean up orphaned meal_ingredients rows left by the pre-T02
+        // new-meal bug (rows whose meal_id points at no meals row).
+        await m.database.customStatement(
+          'DELETE FROM meal_ingredients WHERE meal_id NOT IN (SELECT id FROM meals)',
+        );
+      }
+      if (from < 4) {
+        // v4: ingredient soft-archive flag (default false).
+        await m.addColumn(ingredients, ingredients.isArchived);
+      }
+      if (from < 5) {
+        // v5: planned + actual rest per exercise set (seconds).
+        await m.addColumn(exerciseSets, exerciseSets.restSeconds);
+        await m.addColumn(exerciseSets, exerciseSets.actualRestSeconds);
+      }
+      if (from < 6) {
+        // v6: optional free-text note per planner task.
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN notes TEXT NULL',
+        );
+      }
+      if (from < 7) {
+        // v7: set completion timestamp (epoch millis), stamped when actuals
+        // are saved. Null for planned-only sets.
+        await m.addColumn(exerciseSets, exerciseSets.completedAt);
+      }
+      if (from < 8) {
+        // v8: exercise catalog metadata columns; planner due time.
+        // (is_locked was also added here once; dropped again in v23.)
+        await m.addColumn(exercises, exercises.bodyPart);
+        await m.addColumn(exercises, exercises.equipment);
+        await m.addColumn(exercises, exercises.primaryMuscle);
+        await m.addColumn(exercises, exercises.secondaryMuscle);
+        await m.addColumn(exercises, exercises.instructions);
+        await m.addColumn(exercises, exercises.tips);
+        await m.addColumn(exercises, exercises.faqs);
+        await m.addColumn(exercises, exercises.keywords);
+        await m.addColumn(exercises, exercises.imagePath);
+        await m.addColumn(exercises, exercises.videoPath);
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN due_time_minutes INTEGER NULL',
+        );
+      }
+      if (from < 9) {
+        // v9: free-form notes (Notes tab).
+        await m.createTable(notes);
+      }
+      if (from < 10) {
+        // v10: exercise canonicalization fields.
+        await m.addColumn(exercises, exercises.similarTo);
+        await m.addColumn(exercises, exercises.tags);
+        await m.addColumn(exercises, exercises.isCanonical);
+      }
+      if (from < 11) {
+        // v11: planner workout linking.
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN workout_id TEXT NULL',
+        );
+      }
+      if (from < 12) {
+        // v12: free-form planner task tags (JSON string[]).
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN tags TEXT NULL',
+        );
+      }
+      if (from < 13) {
+        // v13: recurring task rule + series grouping.
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN recurrence TEXT NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN series_id TEXT NULL',
+        );
+      }
+      if (from < 14) {
+        // v14: budget section — accounts, transactions, receipts, fx_rates.
+        await m.createTable(accounts);
+        await m.createTable(transactions);
+        await m.createTable(receipts);
+        await m.createTable(fxRates);
+      }
+      if (from < 15) {
+        // v15: planner task start/end time (replaces the single due time).
+        // Existing due_time_minutes is carried over into start_time_minutes.
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN start_time_minutes INTEGER NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN end_time_minutes INTEGER NULL',
+        );
+        await m.database.customStatement(
+          'UPDATE planner_items SET start_time_minutes = due_time_minutes '
+          'WHERE due_time_minutes IS NOT NULL',
+        );
+      }
+      if (from < 16) {
+        // v16: logged cardio actuals. Exercise sets used to overwrite the
+        // planned duration/distance columns when a cardio set was saved, which
+        // made it impossible to tell "done" from "planned". Old rows had their
+        // effective value (planned if never logged) in those columns, so carry
+        // them into the new actual columns to preserve existing data.
+        await m.addColumn(exerciseSets, exerciseSets.actualDurationMinutes);
+        await m.addColumn(exerciseSets, exerciseSets.actualDistanceMeters);
+        await m.database.customStatement(
+          'UPDATE exercise_sets SET actual_duration_minutes = duration_minutes, '
+          'actual_distance_meters = distance_meters',
+        );
+      }
+      if (from < 17) {
+        // v17: exercise-level free-text note on workout_exercises.
+        await m.addColumn(workoutExercises, workoutExercises.notes);
+      }
+      if (from < 18) {
+        // v18: experiments + daily check-ins. The standalone experiments
+        // table is raw-SQL-created (its Dart class is gone since v24) so the
+        // sequential v24 migration can copy rows out of it before dropping.
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiments ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'name TEXT NOT NULL, '
+          'purpose TEXT NULL, '
+          'start_date INTEGER NOT NULL, '
+          'end_date INTEGER NULL, '
+          'status TEXT NOT NULL, '
+          'categories TEXT NOT NULL, '
+          'reminder_enabled INTEGER NOT NULL DEFAULT 1, '
+          'reminder_time_minutes INTEGER NOT NULL DEFAULT 1200, '
+          'created_at INTEGER NOT NULL)',
+        );
+        // `experiment_checkins` is created with raw SQL: the feature was
+        // removed in v38, so no Dart table class exists for it any more, but
+        // the historical upgrade path still has to reproduce the old schema.
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiment_checkins ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'experiment_id TEXT NOT NULL, '
+          'day INTEGER NOT NULL, '
+          'rating INTEGER NOT NULL, '
+          'note TEXT NULL, '
+          'created_at INTEGER NOT NULL, '
+          'UNIQUE (experiment_id, day))',
+        );
+      }
+      if (from < 19) {
+        // v19: fx_rates.manual — marks hand-edited rates so a refresh can
+        // distinguish them from fetched ones.
+        await m.addColumn(fxRates, fxRates.manual);
+      }
+      if (from < 20) {
+        // v20: ingredient shopping metadata — brand + barcode columns and the
+        // stores / ingredient_pictures / ingredient_prices tables.
+        await m.addColumn(ingredients, ingredients.brand);
+        await m.addColumn(ingredients, ingredients.barcode);
+        await m.createTable(stores);
+        await m.createTable(ingredientPictures);
+        await m.createTable(ingredientPrices);
+      }
+      if (from < 21) {
+        // v21: workouts.routine_id — replay lineage shared by all occurrences
+        // of the same routine (workout-replay T01). The lookup index is
+        // created idempotently in beforeOpen.
+        await m.addColumn(workouts, workouts.routineId);
+      }
+      if (from < 22) {
+        // v22: fx_rates gains a daily-snapshot dimension (rate_date) and a
+        // composite PK (code, base_code, rate_date). The old table was keyed
+        // only by code, so rebuild it: rename, recreate with the new schema,
+        // and backfill existing rows as a single '0001-01-01' snapshot.
+        await m.database.customStatement(
+          'ALTER TABLE fx_rates RENAME TO fx_rates_old',
+        );
+        await m.createTable(fxRates);
+        await m.database.customStatement(
+          'INSERT INTO fx_rates '
+          '(code, rate_to_base, base_code, updated_at, manual, rate_date) '
+          "SELECT code, rate_to_base, base_code, updated_at, manual, '0001-01-01' "
+          'FROM fx_rates_old',
+        );
+        await m.database.customStatement('DROP TABLE fx_rates_old');
+      }
+      if (from < 23) {
+        // v23: drop exercises.is_locked. The bundled catalog and its locked
+        // exercises are no longer imported (data now arrives via the sync
+        // client), so the edit/delete guard column is dead. Drift cannot drop a
+        // column in place, so rebuild: rename, recreate without the column,
+        // backfill, then drop the old table.
+        await m.database.customStatement(
+          'ALTER TABLE exercises RENAME TO exercises_old',
+        );
+        await m.createTable(exercises);
+        await m.database.customStatement(
+          'INSERT INTO exercises '
+          '(id, name, exercise_type, body_part, equipment, primary_muscle, '
+          'secondary_muscle, instructions, tips, faqs, keywords, image_path, '
+          'video_path, similar_to, tags, is_canonical, created_at) '
+          'SELECT id, name, exercise_type, body_part, equipment, primary_muscle, '
+          'secondary_muscle, instructions, tips, faqs, keywords, image_path, '
+          'video_path, similar_to, tags, is_canonical, created_at '
+          'FROM exercises_old',
+        );
+        await m.database.customStatement('DROP TABLE exercises_old');
+      }
+      if (from < 24) {
+        // v24: experiments fold into planner_items as kind='experiment' rows
+        // (day = start date, end_date = required end, plus purpose/status/
+        // categories/reminder columns and a child-task experiment_id link).
+        // Check-ins re-point at planner ids (ids are preserved by the copy),
+        // losing their FK to the standalone table, which is then dropped.
+        await m.database.customStatement(
+          "ALTER TABLE planner_items ADD COLUMN kind TEXT NOT NULL DEFAULT 'task'",
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN end_date INTEGER NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN purpose TEXT NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN status TEXT NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN categories TEXT NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items '
+          'ADD COLUMN reminder_enabled INTEGER NOT NULL DEFAULT 1',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items '
+          'ADD COLUMN reminder_time_minutes INTEGER NOT NULL DEFAULT 1200',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN experiment_id TEXT NULL',
+        );
+        await m.database.customStatement(
+          'INSERT INTO planner_items '
+          '(id, date, title, done, sort_order, end_date, purpose, status, '
+          'categories, reminder_enabled, reminder_time_minutes, created_at) '
+          'SELECT id, start_date, name, '
+          "CASE WHEN status = 'done' THEN 1 ELSE 0 END, 0, "
+          // Open-ended experiments get a concrete end one week out so the
+          // new required-end rule holds for migrated rows.
+          'COALESCE(end_date, start_date + 604800000), purpose, status, '
+          'categories, reminder_enabled, reminder_time_minutes, created_at '
+          'FROM experiments',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE experiment_checkins RENAME TO experiment_checkins_old',
+        );
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiment_checkins ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'experiment_id TEXT NOT NULL, '
+          'day INTEGER NOT NULL, '
+          'rating INTEGER NOT NULL, '
+          'note TEXT NULL, '
+          'created_at INTEGER NOT NULL, '
+          'UNIQUE (experiment_id, day))',
+        );
+        await m.database.customStatement(
+          'INSERT INTO experiment_checkins '
+          '(id, experiment_id, day, rating, note, created_at) '
+          'SELECT id, experiment_id, day, rating, note, created_at '
+          'FROM experiment_checkins_old',
+        );
+        await m.database.customStatement('DROP TABLE experiment_checkins_old');
+        await m.database.customStatement('DROP TABLE IF EXISTS experiments');
+      }
+      if (from < 25) {
+        // v25: task lifecycle + carry-over. task_status distinguishes
+        // pending/done/cancelled for plain tasks (experiments stay null and
+        // keep using status); done stays the source of truth for "completed"
+        // and is kept in sync (done == task_status == 1).
+        await m.database.customStatement(
+          'ALTER TABLE planner_items ADD COLUMN task_status INTEGER NULL',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items '
+          'ADD COLUMN carry_over INTEGER NOT NULL DEFAULT 1',
+        );
+        await m.database.customStatement(
+          "UPDATE planner_items SET task_status = CASE WHEN done = 1 "
+          "THEN 1 ELSE 0 END WHERE kind = 'task'",
+        );
+      }
+      if (from < 26) {
+        // v26: goals & priorities. `tags` is the shared vocabulary behind the
+        // Priorities feature; notes gain tag support and goals link to tags
+        // by name via their own JSON string[] column. Progress entries are
+        // unique per goal per day.
+        await m.createTable(tags);
+        // `notes` gains a JSON `tags` string[] column (removed in v29 in favor
+        // of a dedicated tag link table; this only matters for the v26→v29
+        // upgrade path, where the column still physically exists on old DBs).
+        await m.database.customStatement(
+          'ALTER TABLE notes ADD COLUMN tags TEXT',
+        );
+        await m.createTable(goals);
+        await m.createTable(goalProgressEntries);
+      }
+      if (from < 27) {
+        // v27: un-merge the v24 experiment fold and introduce link tables.
+        //
+        // 1. Experiments move back into a standalone `experiments` table
+        //    (ids preserved so experiment_checkins keep resolving).
+        // 2. `planner_items` is rebuilt as `tasks` without the
+        //    experiment-only columns (kind, end_date, purpose, status,
+        //    categories, reminder_*, experiment_id).
+        // 3. Child-task → experiment back-references become rows in the
+        //    `task_experiments` link table; further junction tables are
+        //    created empty.
+        // 4. Goals gain reminder + baseline columns.
+        //
+        // The experiment tables are raw SQL: the feature was removed in v38 and
+        // has no Dart table class, but older databases still walk this path.
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiments ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'name TEXT NOT NULL, '
+          'purpose TEXT NULL, '
+          'start_date INTEGER NOT NULL, '
+          'end_date INTEGER NULL, '
+          "status TEXT NOT NULL DEFAULT 'planned', "
+          'categories TEXT NULL, '
+          'reminder_enabled INTEGER NOT NULL DEFAULT 1, '
+          'reminder_time_minutes INTEGER NOT NULL DEFAULT 1200, '
+          'created_at INTEGER NOT NULL)',
+        );
+        await m.database.customStatement(
+          'INSERT INTO experiments '
+          '(id, name, purpose, start_date, end_date, status, categories, '
+          'reminder_enabled, reminder_time_minutes, created_at) '
+          'SELECT id, title, purpose, date, end_date, '
+          "COALESCE(status, 'planned'), categories, reminder_enabled, "
+          'reminder_time_minutes, created_at '
+          "FROM planner_items WHERE kind = 'experiment'",
+        );
+        await m.database.customStatement(
+          'ALTER TABLE planner_items RENAME TO planner_items_old',
+        );
+        await m.createTable(tasks);
+        await m.database.customStatement(
+          'INSERT INTO tasks '
+          '(id, date, title, done, task_status, carry_over, sort_order, '
+          'due_date, due_time_minutes, start_time_minutes, end_time_minutes, '
+          'notes, workout_id, recurrence, series_id, created_at) '
+          'SELECT id, date, title, done, task_status, carry_over, sort_order, '
+          'due_date, due_time_minutes, start_time_minutes, end_time_minutes, '
+          'notes, workout_id, recurrence, series_id, created_at '
+          "FROM planner_items_old WHERE kind = 'task'",
+        );
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS task_experiments ('
+          'task_id TEXT NOT NULL REFERENCES tasks (id), '
+          'experiment_id TEXT NOT NULL REFERENCES experiments (id), '
+          'label TEXT NULL, '
+          'PRIMARY KEY (task_id, experiment_id))',
+        );
+        await m.database.customStatement(
+          'INSERT INTO task_experiments (task_id, experiment_id) '
+          'SELECT id, experiment_id FROM planner_items_old '
+          "WHERE kind = 'task' AND experiment_id IS NOT NULL",
+        );
+        await m.database.customStatement('DROP TABLE planner_items_old');
+        await m.createTable(taskGoals);
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiment_goals ('
+          'experiment_id TEXT NOT NULL REFERENCES experiments (id), '
+          'goal_id TEXT NOT NULL REFERENCES goals (id), '
+          'label TEXT NULL, '
+          'PRIMARY KEY (experiment_id, goal_id))',
+        );
+        await m.createTable(taskNotes);
+        await m.database.customStatement(
+          'CREATE TABLE IF NOT EXISTS experiment_notes ('
+          'experiment_id TEXT NOT NULL REFERENCES experiments (id), '
+          'note_id TEXT NOT NULL REFERENCES notes (id), '
+          'label TEXT NULL, '
+          'PRIMARY KEY (experiment_id, note_id))',
+        );
+        await m.createTable(goalNotes);
+        await m.createTable(goalWorkouts);
+        await m.createTable(noteWorkouts);
+        await m.addColumn(goals, goals.reminderEnabled);
+        await m.addColumn(goals, goals.reminderTimeMinutes);
+        await m.addColumn(goals, goals.baselineValue);
+      }
+      if (from < 28) {
+        // v28: workout templates + priorities backfill.
+        //
+        // 1. Template tables (blueprint exercises + planned sets) plus
+        //    provenance columns on workouts / tasks.
+        // 2. Every distinct replay lineage (routine_id) is auto-promoted to
+        //    a template seeded from its latest occurrence's planned sets;
+        //    that lineage's sessions get stamped with the template id.
+        // 3. Free-form tag references across tasks/experiments/notes/goals
+        //    are normalized and registered in the shared `tags` vocabulary.
+        await m.createTable(workoutTemplates);
+        await m.createTable(workoutTemplateExercises);
+        await m.createTable(workoutTemplateSets);
+        await m.addColumn(workouts, workouts.templateId);
+        await m.addColumn(tasks, tasks.workoutTemplateId);
+
+        final uuid = const Uuid();
+        String baseName(String raw) {
+          final stripped = raw.replaceAll(RegExp(r' (#\d+|\(Copy\))+$'), '');
+          return stripped.trim().isEmpty ? raw.trim() : stripped.trim();
+        }
+
+        // --- Auto-promote routine lineages -------------------------------
+        final lineageRows = await (select(
+          workouts,
+        )..where((t) => t.routineId.isNotNull())).get();
+        final byLineage = <String, List<Workout>>{};
+        for (final row in lineageRows) {
+          byLineage.putIfAbsent(row.routineId!, () => []).add(row);
+        }
+        for (final entry in byLineage.entries) {
+          final lineage = entry.value;
+          // Prefer the most recently completed occurrence; fall back to the
+          // newest one so never-completed routines still promote.
+          int rank(Workout w) =>
+              (w.completedAt ?? 0) * 2 + (w.date > 0 ? 1 : 0);
+          lineage.sort((a, b) => rank(b).compareTo(rank(a)));
+          final source = lineage.first;
+
+          final templateId = uuid.v7();
+          final now = DateTime.now().millisecondsSinceEpoch;
+          await into(workoutTemplates).insert(
+            WorkoutTemplatesCompanion.insert(
+              id: templateId,
+              name: baseName(source.name),
+              startDate: source.date,
+              sourceRoutineId: Value(entry.key),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+          final blocks = await (select(
+            workoutExercises,
+          )..where((t) => t.workoutId.equals(source.id))).get();
+          blocks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+          for (final block in blocks) {
+            final templateExerciseId = uuid.v7();
+            await into(workoutTemplateExercises).insert(
+              WorkoutTemplateExercisesCompanion.insert(
+                id: templateExerciseId,
+                templateId: templateId,
+                exerciseId: block.exerciseId,
+                sortOrder: block.sortOrder,
+                notes: Value(block.notes),
+              ),
+            );
+            final sets = await (select(
+              exerciseSets,
+            )..where((t) => t.workoutExerciseId.equals(block.id))).get();
+            sets.sort((a, b) => a.setNumber.compareTo(b.setNumber));
+            for (final set in sets) {
+              await into(workoutTemplateSets).insert(
+                WorkoutTemplateSetsCompanion.insert(
+                  id: uuid.v7(),
+                  templateExerciseId: templateExerciseId,
+                  setNumber: set.setNumber,
+                  reps: Value(set.reps),
+                  weightKg: Value(set.weightKg),
+                  restSeconds: Value(set.restSeconds),
+                  durationMinutes: Value(set.durationMinutes),
+                  distanceMeters: Value(set.distanceMeters),
+                ),
+              );
+            }
+          }
+          // Stamp provenance onto every session of this lineage.
+          await (update(workouts)..where((t) => t.routineId.equals(entry.key)))
+              .write(WorkoutsCompanion(templateId: Value(templateId)));
+        }
+
+        // --- Priorities vocabulary backfill ------------------------------
+        Future<void> registerRefs(List<String>? refs) async {
+          for (final ref in refs ?? const <String>[]) {
+            final clean = ref.trim().replaceAll(RegExp(r'\s+'), ' ');
+            if (clean.isEmpty) continue;
+            final existing = await (select(
+              tags,
+            )..where((t) => t.name.equals(clean))).getSingleOrNull();
+            if (existing != null) continue;
+            final maxOrderExp = tags.sortOrder.max();
+            final orderRow = await (selectOnly(
+              tags,
+            )..addColumns([maxOrderExp])).getSingleOrNull();
+            final now = DateTime.now().millisecondsSinceEpoch;
+            await into(tags).insert(
+              TagsCompanion.insert(
+                id: uuid.v7(),
+                name: clean,
+                sortOrder: Value((orderRow?.read(maxOrderExp) ?? -1) + 1),
+                createdAt: now,
+                updatedAt: now,
+              ),
+            );
+          }
+        }
+
+        Future<void> readRefs(String table) async {
+          try {
+            final rows = await m.database
+                .customSelect('SELECT id, tags FROM $table')
+                .get();
+            for (final row in rows) {
+              await registerRefs(decodeTagList(row.read<String?>('tags')));
+            }
+          } on Exception {
+            // The `tags` column may be absent on this table (e.g. when a
+            // cross-version upgrade created it from a model that no longer
+            // carries the JSON column). Nothing to backfill here.
+          }
+        }
+
+        await readRefs('tasks');
+        await readRefs('notes');
+        await readRefs('goals');
+      }
+      if (from < 29) {
+        // v29: tags become a real many-to-many. Each tagged entity now links
+        // to the shared `tags` (Priorities) vocabulary by id via a dedicated
+        // junction table, replacing the per-entity JSON name arrays.
+        //
+        // 1. Create the four junction tables.
+        // 2. Backfill links from the existing JSON columns (still present).
+        //    Every referenced name was already registered into `tags` by the
+        //    v28 backfill, but we still upsert defensively in case any slipped
+        //    through.
+        // 3. Drop the now-redundant JSON `tags` columns.
+        await m.createTable(taskTags);
+        await m.createTable(goalTags);
+        await m.createTable(noteTags);
+
+        String normalize(String raw) =>
+            raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+        Future<String> ensureTag(String rawName) async {
+          final clean = normalize(rawName);
+          if (clean.isEmpty) throw ArgumentError('Blank tag name');
+          final existing = await (select(
+            tags,
+          )..where((t) => t.name.equals(clean))).getSingleOrNull();
+          if (existing != null) return existing.id;
+          final maxOrderExp = tags.sortOrder.max();
+          final orderRow = await (selectOnly(
+            tags,
+          )..addColumns([maxOrderExp])).getSingleOrNull();
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final id = const Uuid().v7();
+          await into(tags).insert(
+            TagsCompanion.insert(
+              id: id,
+              name: clean,
+              sortOrder: Value((orderRow?.read(maxOrderExp) ?? -1) + 1),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+          return id;
+        }
+
+        Future<void> linkRows(
+          String table,
+          Future<void> Function(String id, List<String> names) insertLinks,
+        ) async {
+          List<QueryRow> rows;
+          try {
+            rows = await m.database
+                .customSelect('SELECT id, id AS entity_id, tags FROM $table')
+                .get();
+          } on Exception {
+            // The `tags` column is absent on this table (cross-version
+            // upgrade from a schema that never carried JSON tags here):
+            // there is nothing to link, so skip it.
+            return;
+          }
+          for (final row in rows) {
+            final id = row.read<String>('id');
+            final names = decodeTagList(row.read<String?>('tags'));
+            if (names == null || names.isEmpty) continue;
+            await insertLinks(id, names);
+          }
+        }
+
+        await linkRows('tasks', (id, names) async {
+          for (final name in names) {
+            final tagId = await ensureTag(name);
+            await into(taskTags).insert(
+              TaskTagsCompanion.insert(tagId: tagId, taskId: id),
+              onConflict: DoNothing(),
+            );
+          }
+        });
+        await linkRows('notes', (id, names) async {
+          for (final name in names) {
+            final tagId = await ensureTag(name);
+            await into(noteTags).insert(
+              NoteTagsCompanion.insert(tagId: tagId, noteId: id),
+              onConflict: DoNothing(),
+            );
+          }
+        });
+        await linkRows('goals', (id, names) async {
+          for (final name in names) {
+            final tagId = await ensureTag(name);
+            await into(goalTags).insert(
+              GoalTagsCompanion.insert(tagId: tagId, goalId: id),
+              onConflict: DoNothing(),
+            );
+          }
+        });
+
+        // Dropping the JSON columns is best-effort: SQLite < 3.35 lacks
+        // DROP COLUMN, in which case the unused column harmlessly lingers.
+        for (final table in ['tasks', 'experiments', 'notes', 'goals']) {
+          try {
+            await m.database.customStatement(
+              'ALTER TABLE $table DROP COLUMN tags',
+            );
+          } catch (_) {
+            // Leave the dead column in place on unsupported runtimes.
+          }
+        }
+      }
+
+      if (from < 30) {
+        // v30: voice clips attached to notes (one audio file per clip).
+        await m.createTable(noteAudio);
+      }
+
+      if (from < 31) {
+        // v31: selective-sync catalog index (no FK, no media stored here).
+        await m.createTable(exerciseCatalog);
+        await m.createTable(ingredientCatalog);
+      }
+
+      if (from < 32) {
+        // v32: `has_image` hint on the exercise catalog so the picker can
+        // skip thumbnail fetches for imageless rows (default false).
+        await m.addColumn(exerciseCatalog, exerciseCatalog.hasImage);
+      }
+
+      // v33 (composite recipe ingredients) is skipped: v34 supersedes it entirely
+      // and drops `ingredient_components` with `IF EXISTS`, so a v32 device
+      // upgrading straight to v34 lands on the same final schema.
+
+      if (from < 34) {
+        // v34: the diet chain is normalized to meal → food → ingredient.
+        //
+        // 1. `foods` / `food_ingredients` / `meal_foods` carry the new model:
+        //    foods are a composition, ingredients own every nutrient fact, and
+        //    each meal row carries a snapshot of the portion that was logged.
+        // 2. The two v33 composite tables are dropped. This is destructive and
+        //    intentionally un-migrated — the recipe data lives on in the new
+        //    `foods`/`food_ingredients` shape and old `meal_ingredients` rows
+        //    cannot be mapped (their grams were meal portions, not composition).
+        await m.createTable(foods);
+        await m.createTable(foodIngredients);
+        await m.createTable(mealFoods);
+        await m.database.customStatement(
+          'DROP TABLE IF EXISTS meal_ingredients',
+        );
+        await m.database.customStatement(
+          'DROP TABLE IF EXISTS ingredient_components',
+        );
+      }
+      if (from < 35) {
+        // v35: sodium/fiber/sugar become mandatory, zero-defaulted.
+        //
+        // They were nullable to mean "never recorded", and that null propagated
+        // into every aggregate touching them: a food whose components all lacked
+        // fiber produced a null fiber total, a meal summed across a mix of null
+        // and non-null parts, and every consumer had to special-case the result.
+        // Collapsing "unrecorded" to 0 removes that whole class of branch — at
+        // the cost of a missing value now reading as a real zero, which is the
+        // trade the user asked for.
+        //
+        // Backfill only; no table rebuild. SQLite cannot add a NOT NULL
+        // constraint to an existing column, and it would buy nothing here: the
+        // invariant that matters is the Dart type, and once no row holds a null
+        // the non-nullable getter is safe. Rebuilding would also drop and
+        // recreate every index for no additional guarantee.
+        for (final statement in [
+          'UPDATE ingredients SET sodium_per100g = 0 WHERE sodium_per100g IS NULL',
+          'UPDATE ingredients SET fiber_per100g = 0 WHERE fiber_per100g IS NULL',
+          'UPDATE ingredients SET sugar_per100g = 0 WHERE sugar_per100g IS NULL',
+          'UPDATE meal_foods SET sodium = 0 WHERE sodium IS NULL',
+          'UPDATE meal_foods SET fiber = 0 WHERE fiber IS NULL',
+          'UPDATE meal_foods SET sugar = 0 WHERE sugar IS NULL',
+        ]) {
+          await m.database.customStatement(statement);
+        }
+      }
+      if (from < 36) {
+        // v36: soft deletes for every top-level personal entity.
+        //
+        // Each portrait table gets a nullable `deleted_at` tombstone. Local
+        // deletions stamp it instead of removing the row, which is what makes
+        // the sync server honest about deletions: a hard delete was invisible
+        // to the next push, so the server kept the row alive and a pull
+        // resurrected it. Children (sets, meal Foods, links) follow their
+        // parent's aliveness, so they do not need a marker of their own.
+        await m.addColumn(meals, meals.deletedAt);
+        await m.addColumn(workouts, workouts.deletedAt);
+        await m.addColumn(workoutTemplates, workoutTemplates.deletedAt);
+        await m.addColumn(tasks, tasks.deletedAt);
+        await m.addColumn(notes, notes.deletedAt);
+        await m.addColumn(goals, goals.deletedAt);
+        await m.addColumn(bodyMetrics, bodyMetrics.deletedAt);
+        await m.addColumn(accounts, accounts.deletedAt);
+        await m.addColumn(transactions, transactions.deletedAt);
+        await m.addColumn(receipts, receipts.deletedAt);
+      }
+      if (from < 37) {
+        // v37: child-deletion outbox + experiments removal.
+        //
+        // `sync_deletes` carries hard-deleted child ids (workout exercises,
+        // sets, template blueprints, exercises) so a push can announce them;
+        // top-level rows use their own `deleted_at` tombstone instead.
+        await m.createTable(syncDeletes);
+        // The experiments feature is gone: drop its tables in FK-safe order.
+        // `IF EXISTS` covers upgrades that skipped a version which created them.
+        for (final table in [
+          'experiment_checkins',
+          'experiment_tags',
+          'task_experiments',
+          'experiment_goals',
+          'experiment_notes',
+          'experiments',
+        ]) {
+          await m.database.customStatement('DROP TABLE IF EXISTS $table');
+        }
+      }
+      if (from < 38) {
+        // v38: older exercise pulls stored the catalogue's body part
+        // (`Chest`, `Thighs`, …) in `exercise_type`. The UI treats anything
+        // that is not exactly `weightlifting` as cardio, so weightlifting
+        // exercises appeared as cardio. Normalize the stored values without
+        // touching the sync cursor.
+        await m.database.customStatement('''
+          UPDATE exercises
+          SET exercise_type = CASE
+            WHEN lower(coalesce(exercise_type, '')) = 'cardio'
+              OR lower(coalesce(body_part, '')) LIKE '%cardio%' THEN 'cardio'
+            ELSE 'weightlifting'
+          END
+          WHERE exercise_type IS NULL
+             OR exercise_type NOT IN ('cardio', 'weightlifting')
+        ''');
+      }
+      if (from < 39) {
+        // v39: a recipe's final weight after cooking. Cooking changes the mass
+        // of the batch (water leaves chicken, rice absorbs it) but not its
+        // calories or macros, so this becomes the per-100g denominator and a
+        // weighed cooked portion keeps the raw ingredients' numbers.
+        //
+        // No backfill: writing the raw sum into old rows would look right today
+        // and silently go stale the moment an ingredient amount changes. NULL
+        // already means "use the raw sum", which is exactly today's behaviour.
+        await m.addColumn(foods, foods.cookedWeight);
+      }
+      if (from < 40) {
+        // v40: an optional reference link for a price observation (e.g. the
+        // online catalogue page it was found on). Manual entry only.
+        await m.addColumn(ingredientPrices, ingredientPrices.sourceUrl);
+      }
     },
   );
 
-  Future<void> _seedExercises() async {
-    final bundled = _bundledExercises;
+  // --------------------------------------------------------------------------
+  // Sync outbox
+  // --------------------------------------------------------------------------
 
-    final existing = await select(exercises).get();
-    final existingNames = existing.map((e) => e.name.toLowerCase()).toSet();
+  /// Records child ids that must be announced to the sync server. Repositories
+  /// call this in the same transaction as the hard delete, so a crash can never
+  /// leave a row deleted locally but never reported.
+  Future<void> recordSyncDelete(String entity, String id) =>
+      recordSyncDeletes(entity, [id]);
 
-    for (final (name, type, met) in bundled) {
-      if (existingNames.contains(name.toLowerCase())) continue;
-
-      await into(exercises).insert(
-        ExercisesCompanion.insert(
-          id: const Uuid().v4(),
-          name: name,
-          type: Value(type),
-          met: Value(met),
-          creatorId: const Value('__system__'),
-        ),
+  Future<void> recordSyncDeletes(String entity, Iterable<String> ids) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (final id in ids) {
+      await into(syncDeletes).insertOnConflictUpdate(
+        SyncDeletesCompanion.insert(entity: entity, id: id, deletedAt: now),
       );
     }
   }
 
-  Future<void> _seedIngredients() async {
-    const seed = <(String, double, double, double, double)>[
-      ('Chicken Breast', 165, 31, 0, 3.6),
-      ('White Rice', 130, 2.7, 28, 0.3),
-      ('Eggs', 155, 13, 1.1, 11),
-      ('Milk', 42, 3.4, 5, 1),
-      ('Whey Protein', 400, 80, 10, 5),
-      ('Peanut Butter', 588, 25, 20, 50),
-      ('Oats', 389, 17, 66, 7),
-      ('Banana', 89, 1.1, 23, 0.3),
-      ('Olive Oil', 884, 0, 0, 100),
-      ('Broccoli', 34, 2.8, 7, 0.4),
-      ('Sweet Potato', 86, 1.6, 20, 0.1),
-      ('Salmon', 208, 20, 0, 13),
-    ];
-    for (final (name, cal, prot, carbs, fat) in seed) {
-      await into(ingredients).insert(
-        IngredientsCompanion.insert(
-          id: const Uuid().v4(),
-          name: name,
-          caloriesPer100g: cal,
-          proteinPer100g: prot,
-          carbsPer100g: carbs,
-          fatPer100g: fat,
-        ),
-      );
-    }
+  /// Ids pending deletion for [entity]. The pull path skips these so a
+  /// not-yet-pushed local delete is never resurrected by the server.
+  Future<Set<String>> pendingSyncDeletes(String entity) async {
+    final rows = await (select(
+      syncDeletes,
+    )..where((t) => t.entity.equals(entity))).get();
+    return rows.map((r) => r.id).toSet();
   }
 
-  // ---------------------------------------------------------------------------
-  // Exercises
-  // ---------------------------------------------------------------------------
-
-  Stream<List<Exercise>> watchExercises() => select(exercises).watch();
-  Future<List<Exercise>> getAllExercises() => select(exercises).get();
-  Future<void> insertExercise(ExercisesCompanion entry) =>
-      into(exercises).insert(entry);
-  Future<void> upsertExercises(List<ExercisesCompanion> entries) => batch((b) {
-    for (final e in entries) {
-      b.insert(exercises, e, mode: InsertMode.insertOrReplace);
+  /// Drains the outbox for [entity] (all ids, or just [ids]) after the server
+  /// acknowledged the tombstones.
+  Future<void> clearSyncDeletes(String entity, {Iterable<String>? ids}) async {
+    if (ids == null) {
+      await (delete(syncDeletes)..where((t) => t.entity.equals(entity))).go();
+      return;
     }
-  });
-
-  // ---------------------------------------------------------------------------
-  // Workouts
-  // ---------------------------------------------------------------------------
-
-  Stream<List<WorkoutRow>> watchWorkouts() => select(workouts).watch();
-  Future<WorkoutRow?> getWorkoutById(String id) =>
-      (select(workouts)..where((t) => t.id.equals(id))).getSingleOrNull();
-  Future<List<WorkoutRow>> getWorkoutsByDate(DateTime date) {
-    final start = DateTime(date.year, date.month, date.day);
-    final end = start.add(const Duration(days: 1));
-    return (select(workouts)..where(
-          (t) =>
-              t.scheduledDate.isBetweenValues(start, end) |
-              t.startedAt.isBetweenValues(start, end),
-        ))
-        .get();
-  }
-
-  Future<List<WorkoutRow>> getActiveWorkouts() => (select(
-    workouts,
-  )..where((t) => t.startedAt.isNotNull() & t.completedAt.isNull())).get();
-
-  Future<void> insertWorkout(WorkoutsCompanion entry) =>
-      into(workouts).insert(entry);
-  Future<void> updateWorkout(WorkoutsCompanion entry) =>
-      update(workouts).replace(entry);
-  Future<void> deleteWorkout(String id) =>
-      (delete(workouts)..where((t) => t.id.equals(id))).go();
-
-  // ---------------------------------------------------------------------------
-  // Weight sets
-  // ---------------------------------------------------------------------------
-
-  Stream<List<WeightSetRow>> watchWeightSets(String workoutId) =>
-      (select(weightSets)..where((t) => t.workoutId.equals(workoutId))).watch();
-  Future<List<WeightSetRow>> getWeightSets(String workoutId) =>
-      (select(weightSets)..where((t) => t.workoutId.equals(workoutId))).get();
-  Future<void> insertWeightSet(WeightSetsCompanion entry) =>
-      into(weightSets).insert(entry);
-  Future<void> updateWeightSet(WeightSetsCompanion entry) =>
-      update(weightSets).replace(entry);
-  Future<void> deleteWeightSetsByWorkout(String workoutId) =>
-      (delete(weightSets)..where((t) => t.workoutId.equals(workoutId))).go();
-
-  // ---------------------------------------------------------------------------
-  // Cardio sets
-  // ---------------------------------------------------------------------------
-
-  Stream<List<CardioSetRow>> watchCardioSets(String workoutId) =>
-      (select(cardioSets)..where((t) => t.workoutId.equals(workoutId))).watch();
-  Future<List<CardioSetRow>> getCardioSets(String workoutId) =>
-      (select(cardioSets)..where((t) => t.workoutId.equals(workoutId))).get();
-  Future<void> insertCardioSet(CardioSetsCompanion entry) =>
-      into(cardioSets).insert(entry);
-  Future<void> updateCardioSet(CardioSetsCompanion entry) =>
-      update(cardioSets).replace(entry);
-  Future<void> deleteCardioSetsByWorkout(String workoutId) =>
-      (delete(cardioSets)..where((t) => t.workoutId.equals(workoutId))).go();
-
-  // ---------------------------------------------------------------------------
-  // Exercise translations
-  // ---------------------------------------------------------------------------
-
-  Future<List<ExerciseTranslation>> getTranslations(String locale) => (select(
-    exerciseTranslations,
-  )..where((t) => t.locale.equals(locale))).get();
-
-  Future<ExerciseTranslation?> getTranslation(
-    String exerciseId,
-    String locale,
-  ) =>
-      (select(exerciseTranslations)..where(
-            (t) => t.exerciseId.equals(exerciseId) & t.locale.equals(locale),
-          ))
-          .getSingleOrNull();
-
-  Future<void> insertTranslation(ExerciseTranslationsCompanion entry) =>
-      into(exerciseTranslations).insert(entry);
-
-  Future<void> upsertTranslations(
-    List<ExerciseTranslationsCompanion> entries,
-  ) => batch((b) {
-    for (final e in entries) {
-      b.insert(exerciseTranslations, e, mode: InsertMode.insertOrReplace);
+    for (final id in ids) {
+      await (delete(
+        syncDeletes,
+      )..where((t) => t.entity.equals(entity) & t.id.equals(id))).go();
     }
-  });
-
-  // ---------------------------------------------------------------------------
-  // Exercise body parts
-  // ---------------------------------------------------------------------------
-
-  Future<List<ExerciseBodyPart>> getBodyParts(String exerciseId) => (select(
-    exerciseBodyParts,
-  )..where((t) => t.exerciseId.equals(exerciseId))).get();
-  Future<void> insertBodyPart(ExerciseBodyPartsCompanion entry) =>
-      into(exerciseBodyParts).insert(entry);
-  Future<void> deleteBodyPartsByExercise(String exerciseId) => (delete(
-    exerciseBodyParts,
-  )..where((t) => t.exerciseId.equals(exerciseId))).go();
-
-  // ---------------------------------------------------------------------------
-  // Ingredients
-  // ---------------------------------------------------------------------------
-
-  Stream<List<Ingredient>> watchIngredients() => select(ingredients).watch();
-  Stream<List<Ingredient>> watchNonArchivedIngredients() =>
-      (select(ingredients)..where((t) => t.isArchived.equals(false))).watch();
-  Future<List<Ingredient>> getAllIngredients() => select(ingredients).get();
-  Future<List<Ingredient>> getNonArchivedIngredients() =>
-      (select(ingredients)..where((t) => t.isArchived.equals(false))).get();
-  Future<List<Ingredient>> getIngredientByIds(List<String> ids) =>
-      (select(ingredients)..where((t) => t.id.isIn(ids))).get();
-  Future<List<IngredientComponent>> getComponentsForIngredient(String id) =>
-      (select(
-        ingredientComponents,
-      )..where((t) => t.ingredientId.equals(id))).get();
-  Future<List<Ingredient>> getArchivedIngredients() =>
-      (select(ingredients)..where((t) => t.isArchived.equals(true))).get();
-  Future<void> insertIngredient(IngredientsCompanion entry) =>
-      into(ingredients).insert(entry);
-  Future<void> updateIngredient(IngredientsCompanion entry) =>
-      update(ingredients).replace(entry);
-  Future<void> archiveIngredient(String id) =>
-      (update(ingredients)..where((t) => t.id.equals(id))).write(
-        IngredientsCompanion(isArchived: Value(true)),
-      );
-  Future<void> unarchiveIngredient(String id) =>
-      (update(ingredients)..where((t) => t.id.equals(id))).write(
-        IngredientsCompanion(isArchived: Value(false)),
-      );
-  Future<void> deleteIngredient(String id) =>
-      (delete(ingredients)..where((t) => t.id.equals(id))).go();
-
-  // ---------------------------------------------------------------------------
-  // Meals
-  // ---------------------------------------------------------------------------
-
-  Stream<List<Meal>> watchMeals() => select(meals).watch();
-  Future<List<Meal>> getMealsByDate(DateTime date) {
-    final start = DateTime(date.year, date.month, date.day);
-    final end = start.add(const Duration(days: 1));
-    return (select(
-      meals,
-    )..where((t) => t.eatenAt.isBetweenValues(start, end))).get();
   }
-
-  Future<void> insertMeal(MealsCompanion entry) => into(meals).insert(entry);
-  Future<void> deleteMeal(String id) =>
-      (delete(meals)..where((t) => t.id.equals(id))).go();
-
-  // ---------------------------------------------------------------------------
-  // Meal ingredients
-  // ---------------------------------------------------------------------------
-
-  Stream<List<MealIngredient>> watchMealIngredients(String mealId) =>
-      (select(mealIngredients)..where((t) => t.mealId.equals(mealId))).watch();
-  Future<void> insertMealIngredient(MealIngredientsCompanion entry) =>
-      into(mealIngredients).insert(entry);
-  Future<void> deleteMealIngredient(String id) =>
-      (delete(mealIngredients)..where((t) => t.id.equals(id))).go();
-  Future<void> deleteMealIngredientsByMeal(String mealId) =>
-      (delete(mealIngredients)..where((t) => t.mealId.equals(mealId))).go();
-
-  // ---------------------------------------------------------------------------
-  // Goals
-  // ---------------------------------------------------------------------------
-
-  Stream<List<Goal>> watchGoals() => select(goals).watch();
-  Future<void> insertGoal(GoalsCompanion entry) => into(goals).insert(entry);
-  Future<void> updateGoal(GoalsCompanion entry) => update(goals).replace(entry);
-  Future<void> deleteGoal(String id) =>
-      (delete(goals)..where((t) => t.id.equals(id))).go();
-
-  // ---------------------------------------------------------------------------
-  // User profile
-  // ---------------------------------------------------------------------------
-
-  Stream<UserProfileData?> watchProfile() =>
-      (select(userProfile)..limit(1)).watchSingleOrNull();
-  Future<void> upsertProfile(UserProfileCompanion entry) =>
-      into(userProfile).insert(entry, mode: InsertMode.insertOrReplace);
-
-  // ---------------------------------------------------------------------------
-  // Body weight entries
-  // ---------------------------------------------------------------------------
-
-  Stream<List<BodyWeightEntry>> watchBodyWeight() =>
-      select(bodyWeightEntries).watch();
-  Future<void> insertBodyWeight(BodyWeightEntriesCompanion entry) =>
-      into(bodyWeightEntries).insert(entry);
 }
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final dbPath = p.join(docsDir.path, 'fitfat.db');
-    try {
-      if (kDebugMode) {
-        print('[DB] Opening database at: $dbPath');
-      }
-    } catch (e, st) {
-      _log.warning('Failed to log database path', e, st);
-    }
-    return NativeDatabase(File(dbPath));
+    final dbFolder = await getApplicationDocumentsDirectory();
+    final file = File(p.join(dbFolder.path, 'fitfat.sqlite'));
+    return NativeDatabase.createInBackground(file);
   });
 }
-
-/// (name, type, met)
-const _bundledExercises = <(String, String, double)>[
-  // Cardio
-  ('Running', 'cardio', 8.0),
-  ('Walking', 'cardio', 3.5),
-  ('Cycling', 'cardio', 7.5),
-  ('Swimming', 'cardio', 6.0),
-  ('Jump Rope', 'cardio', 10.0),
-  ('Rowing', 'cardio', 6.0),
-  ('Elliptical', 'cardio', 5.0),
-  ('Stair Climber', 'cardio', 6.0),
-  // Chest
-  ('Bench Press', 'weightlifting', 5.5),
-  ('Incline Bench Press', 'weightlifting', 5.5),
-  ('Decline Bench Press', 'weightlifting', 5.5),
-  ('Dumbbell Fly', 'weightlifting', 4.0),
-  ('Cable Crossover', 'weightlifting', 4.0),
-  ('Push Up', 'weightlifting', 3.5),
-  ('Dumbbell Bench Press', 'weightlifting', 5.0),
-  // Back
-  ('Deadlift', 'weightlifting', 6.0),
-  ('Barbell Row', 'weightlifting', 5.0),
-  ('Pull Up', 'weightlifting', 5.0),
-  ('Lat Pulldown', 'weightlifting', 4.5),
-  ('Seated Cable Row', 'weightlifting', 4.5),
-  ('T-Bar Row', 'weightlifting', 5.0),
-  ('Face Pull', 'weightlifting', 3.0),
-  ('Dumbbell Row', 'weightlifting', 5.0),
-  // Shoulders
-  ('Overhead Press', 'weightlifting', 5.0),
-  ('Lateral Raise', 'weightlifting', 3.0),
-  ('Front Raise', 'weightlifting', 3.0),
-  ('Reverse Fly', 'weightlifting', 3.0),
-  ('Arnold Press', 'weightlifting', 4.5),
-  ('Shrug', 'weightlifting', 3.0),
-  // Legs
-  ('Squat', 'weightlifting', 6.0),
-  ('Leg Press', 'weightlifting', 5.0),
-  ('Leg Extension', 'weightlifting', 4.0),
-  ('Leg Curl', 'weightlifting', 4.0),
-  ('Romanian Deadlift', 'weightlifting', 5.0),
-  ('Calf Raise', 'weightlifting', 3.0),
-  ('Lunge', 'weightlifting', 4.5),
-  ('Bulgarian Split Squat', 'weightlifting', 5.0),
-  ('Hip Thrust', 'weightlifting', 4.5),
-  // Arms
-  ('Barbell Curl', 'weightlifting', 3.0),
-  ('Dumbbell Curl', 'weightlifting', 3.0),
-  ('Hammer Curl', 'weightlifting', 3.0),
-  ('Triceps Pushdown', 'weightlifting', 3.0),
-  ('Overhead Triceps Extension', 'weightlifting', 3.0),
-  ('Skull Crusher', 'weightlifting', 3.0),
-  ('Concentration Curl', 'weightlifting', 2.5),
-  ('Preacher Curl', 'weightlifting', 3.0),
-  // Core
-  ('Crunch', 'weightlifting', 2.5),
-  ('Russian Twist', 'weightlifting', 2.5),
-  ('Plank', 'weightlifting', 2.5),
-  ('Leg Raise', 'weightlifting', 2.5),
-  ('Cable Woodchop', 'weightlifting', 3.0),
-  ('Ab Wheel Rollout', 'weightlifting', 3.0),
-];
