@@ -20,6 +20,7 @@ import '../goals/providers/goals.dart';
 import '../notifications/task_reminders.dart';
 import '../planner/providers/planner.dart';
 import '../settings/providers/settings.dart';
+import '../sync/personal_pull_service.dart';
 import '../sync/sync_service.dart';
 import 'router.dart';
 import 'startup_gate.dart';
@@ -240,6 +241,7 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
     }
 
     unawaited(_refreshSelectiveCatalogs());
+    unawaited(pullPersonalFinance(ref));
   }
 
   /// Resume resync: rollover may have moved timed tasks to today; re-schedule
@@ -269,6 +271,7 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
     if (state == AppLifecycleState.resumed) {
       unawaited(_rollover().then((_) => _resyncTaskRemindersAfterRollover()));
       unawaited(_refreshSelectiveCatalogs());
+      unawaited(pullPersonalFinance(ref));
     }
   }
 

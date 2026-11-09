@@ -49,6 +49,15 @@ final class PersonalPullService {
 
   static const _error = 'Unexpected payload';
 
+  /// Consecutive rounds in which a resource's pull skipped rows (transactions
+  /// referencing an account that has not landed locally yet). Keyed per
+  /// resource; a clean round removes the entry.
+  static final _skipRounds = <SyncResource, int>{};
+
+  /// How many consecutive skip rounds may freeze the cursor before it advances
+  /// anyway, so one permanently missing account cannot wedge the pull.
+  static const _maxSkipRounds = 3;
+
   static Map<String, String> authHeaders(String apiKey) => {
     'Authorization': 'Bearer $apiKey',
   };
@@ -735,6 +744,7 @@ final class PersonalPullService {
       final accounts = await _idSet(_database.accounts);
       final pending = await _database.pendingSyncDeletes('transactions');
       var updated = 0;
+      var skipped = 0;
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
         if (id is! String || pending.contains(id)) continue;
@@ -744,6 +754,7 @@ final class PersonalPullService {
         // a row whose accounts never landed is skipped rather than aborting.
         if ((accountId != null && !accounts.contains(accountId)) ||
             (toAccountId != null && !accounts.contains(toAccountId))) {
+          skipped++;
           continue;
         }
         await _database.into(_database.transactions).insertOnConflictUpdate(
@@ -774,6 +785,20 @@ final class PersonalPullService {
         deleted += await (_database.delete(
           _database.transactions,
         )..where((t) => t.id.equals(id))).go();
+      }
+      // A skipped row must not consume the cursor: its account may still land
+      // on a later pull, and advancing the cursor now would lose the row
+      // forever. The cursor is frozen instead — but after three consecutive
+      // skip rounds it advances anyway, so a permanently missing account
+      // cannot wedge every future pull behind one row.
+      if (skipped > 0) {
+        final rounds = (_skipRounds[SyncResource.transactions] ?? 0) + 1;
+        _skipRounds[SyncResource.transactions] = rounds;
+        if (rounds < _maxSkipRounds) {
+          return _result(updated, deleted, serverTime);
+        }
+      } else {
+        _skipRounds.remove(SyncResource.transactions);
       }
       await _advance(SyncResource.transactions, serverTime, since);
       return _result(updated, deleted, serverTime);
@@ -1255,4 +1280,31 @@ Future<SyncResult> pullDataType(WidgetRef ref, String type) async {
     default:
       return SyncResult(error: 'Unknown pull type: $type');
   }
+}
+
+/// SharedPreferences key for [pullPersonalFinance]'s throttle stamp.
+const _financeLastPullKey = 'personal_finance_last_pull';
+
+/// One throttled auto-pull of the finance pool: budget accounts first, then
+/// their transactions.
+///
+/// The desktop app drives the finance stack; the phone only receives, and
+/// outside the sync hub's manual pulls nothing refreshed accounts after the
+/// transactions that reference them — a missing account froze the transaction
+/// cursor instead (see [PersonalPullService.pullTransactions]'s skip
+/// handling). Called from startup and on every resume, throttled to 15
+/// minutes like `_refreshSelectiveCatalogs`. Best-effort by construction:
+/// both pulls catch their own errors and never throw.
+Future<void> pullPersonalFinance(WidgetRef ref) async {
+  final settings = ref.read(settingsProvider);
+  if (settings.remoteSyncBaseUrl.isEmpty) return;
+  final prefs = ref.read(sharedPreferencesProvider);
+  final now = DateTime.now().millisecondsSinceEpoch;
+  const throttle = 15 * 60 * 1000;
+  if (now - (prefs.getInt(_financeLastPullKey) ?? 0) < throttle) return;
+  await prefs.setInt(_financeLastPullKey, now);
+  // Accounts before transactions: an arriving transaction whose accounts are
+  // already local applies on the spot instead of freezing the cursor.
+  await pullDataType(ref, 'budgetAccounts');
+  await pullDataType(ref, 'transactions');
 }
