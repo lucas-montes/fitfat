@@ -38,6 +38,12 @@ final receiptPendingProvider = FutureProvider<List<Receipt>>((ref) async {
   final rows = await (database.select(database.receipts)..where(
         (t) =>
             t.deletedAt.isNull() &
+            // Only phone-owned receipts sweep: the file must be local. A
+            // receipt pulled from the server (e.g. imported on the desktop)
+            // has no local file — re-uploading it would fail and the
+            // client-wins push would then clobber the server's parse result.
+            t.localPath.isNotNull() &
+            t.localPath.equals('').not() &
             t.parsed.equals(false) &
             t.uploadStatus.isIn([
               ReceiptStatus.uploading.code,
