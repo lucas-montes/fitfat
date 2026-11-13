@@ -358,7 +358,12 @@ final class DataPushService {
     final database = ref.read(db.databaseProvider);
     final rows = await database.select(database.accounts).get();
     return _pushObject(baseUrl, apiKey, endpoint, {
-      'accounts': rows.map((e) => e.toJson()).toList(),
+      // The type is the server's to decide. The pull sends it down, and a push
+      // that carried one would put the phone's own vocabulary back, so the
+      // phone leaves it out.
+      'accounts': rows
+          .map((e) => e.toJson()..remove('type'))
+          .toList(),
     });
   }
 
