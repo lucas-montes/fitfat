@@ -1,15 +1,25 @@
 import 'package:uuid/uuid.dart';
 
+/// What an account holds. The server owns the type: the pull sends it down
+/// and the phone never pushes it. The server's vocabulary is [cash],
+/// [savings] and [securities] (a broker's positions); [credit] is a card the server
+/// leaves alone, and the rest are the old vocabulary, kept only so a row that
+/// still holds one reads as itself until the server's renamed type arrives.
 enum AccountType {
-  savings,
-  investment,
   cash,
+  savings,
+  securities,
+  investment,
   bank,
   credit,
   other;
 
+  /// The types an account can be given: the ones the server knows.
+  static const choosable = [cash, savings, securities];
+
   static AccountType fromName(String? name) => switch (name) {
     'savings' => AccountType.savings,
+    'securities' => AccountType.securities,
     'investment' => AccountType.investment,
     'cash' => AccountType.cash,
     'bank' => AccountType.bank,

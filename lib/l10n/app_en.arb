@@ -1284,6 +1284,10 @@
   "@accountTypeSavings": {
   "description": "accountTypeSavings"
 },
+  "accountTypeSecurities": "Securities",
+  "@accountTypeSecurities": {
+  "description": "accountTypeSecurities"
+},
   "budgetAccounts": "Accounts",
   "@budgetAccounts": {
   "description": "budgetAccounts"

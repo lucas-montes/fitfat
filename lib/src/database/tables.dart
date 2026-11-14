@@ -652,7 +652,8 @@ class NoteAudio extends Table {
 class Accounts extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
-  // Account kind: 'savings' | 'investment' | 'cash' | 'bank' | 'credit' | 'other'
+  // What the account holds, owned by the server: 'cash' | 'savings' | 'securities'
+  // (or 'credit', or an old 'bank' | 'investment' | 'other' until the pull renames it).
   TextColumn get type => text()();
   // Opening balance expressed in the base currency (see Settings.baseCurrency).
   RealColumn get openingBalance => real().withDefault(const Constant(0.0))();

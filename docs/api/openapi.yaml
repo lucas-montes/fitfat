@@ -1401,7 +1401,7 @@ components:
           type: string
         type:
           type: string
-          description: "'savings' | 'investment' | 'cash' | 'bank' | 'credit' | 'other'"
+          description: "Owned by the server: 'cash' | 'savings' | 'securities' (or 'credit'). The phone never pushes it."
         openingBalance:
           type: number
           format: double

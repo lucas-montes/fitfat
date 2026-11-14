@@ -2427,6 +2427,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountTypeSavings => 'Ahorros';
 
   @override
+  String get accountTypeSecurities => 'Valores';
+
+  @override
   String get budgetAccounts => 'Cuentas';
 
   @override

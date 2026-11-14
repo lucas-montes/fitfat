@@ -2431,6 +2431,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get accountTypeSavings => 'Épargne';
 
   @override
+  String get accountTypeSecurities => 'Titres';
+
+  @override
   String get budgetAccounts => 'Comptes';
 
   @override

@@ -4270,6 +4270,12 @@ abstract class AppLocalizations {
   /// **'Savings'**
   String get accountTypeSavings;
 
+  /// accountTypeSecurities
+  ///
+  /// In en, this message translates to:
+  /// **'Securities'**
+  String get accountTypeSecurities;
+
   /// budgetAccounts
   ///
   /// In en, this message translates to:

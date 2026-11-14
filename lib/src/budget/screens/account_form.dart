@@ -30,6 +30,14 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
 
   bool get _isEditing => widget.accountId != null;
 
+  /// The types the server knows, plus the account's own when it still holds
+  /// one outside them (a credit card, or an old type the server has not
+  /// renamed yet) so the form shows what the account is.
+  List<AccountType> get _typeChoices => [
+    ...AccountType.choosable,
+    if (!AccountType.choosable.contains(_type)) _type,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -187,7 +195,7 @@ final class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: AccountType.values.map((type) {
+              children: _typeChoices.map((type) {
                 final selected = type == _type;
                 return FilterChip(
                   selected: selected,

@@ -1158,6 +1158,10 @@
   "@accountTypeSavings": {
     "description": "accountTypeSavings"
   },
+  "accountTypeSecurities": "Valores",
+  "@accountTypeSecurities": {
+    "description": "accountTypeSecurities"
+  },
   "budgetAccounts": "Cuentas",
   "@budgetAccounts": {
     "description": "budgetAccounts"
