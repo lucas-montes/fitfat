@@ -12,13 +12,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Scriptable stand-in for the server, recording the lifecycle as it goes.
 final class _FakeOcrService implements RemoteReceiptOcrService {
-  _FakeOcrService({this.failUpload = false, this.failParse = false});
+  _FakeOcrService({this.failUpload = false});
 
   final bool failUpload;
-  final bool failParse;
 
   final List<String> uploadIds = [];
-  final List<String> parseIds = [];
 
   @override
   Future<ReceiptUploadResult> upload(String receiptId, String localPath) async {
@@ -27,21 +25,6 @@ final class _FakeOcrService implements RemoteReceiptOcrService {
     return ReceiptUploadResult(receiptId);
   }
 
-  @override
-  Future<ReceiptParseResult> fetchParse(String remoteId) async {
-    parseIds.add(remoteId);
-    if (failParse) throw Exception('parse boom');
-    return ReceiptParseResult({
-      'merchant': 'Carrefour',
-      'date': '2026-08-15 14:30:00',
-      'total': 42.75,
-      'currency': 'EUR',
-      'items': [
-        {'name': 'Milk', 'price': 1.2, 'currency': 'EUR'},
-      ],
-      'discounts': <Object?>[],
-    });
-  }
 }
 
 void main() {
@@ -89,19 +72,18 @@ void main() {
             .getSingle());
   }
 
-  group('uploadAndParse', () {
-    test('once the server has parsed it, the phone forgets the receipt', () async {
+  group('send', () {
+    test('once the server has it, the phone forgets the receipt', () async {
       final receipt = newReceipt(localPath: writeImage());
       await insertReceipt(receipt);
       final ocr = _FakeOcrService();
 
-      await BudgetSyncService(database, ocr).uploadAndParse(receipt.id);
+      await BudgetSyncService(database, ocr).send(receipt.id);
 
       // The receipt id is sent to the server so both sides agree on the row id.
       expect(ocr.uploadIds, [receipt.id]);
-      expect(ocr.parseIds, [receipt.id]);
 
-      // The server holds the picture and the parse; the phone keeps neither.
+      // The server holds the picture; the phone keeps nothing, not even a log.
       // No row at all, not a tombstone: a tombstone is pushed, and would
       // delete the server's copy.
       expect(
@@ -121,7 +103,7 @@ void main() {
 
       await expectLater(
         BudgetSyncService(database, _FakeOcrService(failUpload: true))
-            .uploadAndParse(receipt.id),
+            .send(receipt.id),
         throwsA(anything),
       );
 
@@ -130,29 +112,11 @@ void main() {
       expect(row.parsed, isFalse);
       // A failed send keeps the picture, to be sent again.
       expect(File(receipt.localPath).existsSync(), isTrue);
-    });
-
-    test('marks the row as error when the parse fails', () async {
-      final receipt = newReceipt(localPath: writeImage());
-      await insertReceipt(receipt);
-
-      await expectLater(
-        BudgetSyncService(database, _FakeOcrService(failParse: true))
-            .uploadAndParse(receipt.id),
-        throwsA(anything),
-      );
-
-      final row = await rowFor(receipt.id);
-      expect(row.uploadStatus, ReceiptStatus.error.code);
-      expect(row.parsed, isFalse);
-      // A failed send keeps the picture, to be sent again.
-      expect(File(receipt.localPath).existsSync(), isTrue);
-      expect(row.transactionId, isNull);
     });
 
     test('is a no-op for an unknown receipt id', () async {
       final ocr = _FakeOcrService();
-      await BudgetSyncService(database, ocr).uploadAndParse('does-not-exist');
+      await BudgetSyncService(database, ocr).send('does-not-exist');
       expect(ocr.uploadIds, isEmpty);
     });
   });

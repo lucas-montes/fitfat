@@ -109,7 +109,7 @@ final class ReceiptViewerScreen extends ConsumerWidget {
   ) async {
     final l10n = AppLocalizations.of(context)!;
     try {
-      await ref.read(budgetSyncServiceProvider).uploadAndParse(receipt.id);
+      await ref.read(budgetSyncServiceProvider).send(receipt.id);
       // The server parsed it and the phone has forgotten it: nothing left to
       // show here.
       if (context.mounted) {

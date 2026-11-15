@@ -108,7 +108,7 @@ final class ReceiptListScreen extends ConsumerWidget {
 
       () async {
         try {
-          await ref.read(budgetSyncServiceProvider).uploadAndParse(receipt.id);
+          await ref.read(budgetSyncServiceProvider).send(receipt.id);
           if (context.mounted) ref.invalidate(receiptListProvider);
         } catch (_) {}
       }();

@@ -52,7 +52,7 @@ final _inFlightReceipts = <String>{};
 
 /// Retries every receipt left mid-flight by an interrupted upload.
 ///
-/// Capture starts `uploadAndParse` as a detached task and swallows its errors,
+/// Capture starts `send` as a detached task and swallows its errors,
 /// so a receipt can be stranded in `uploading`/`parsing`/`error` indefinitely.
 /// Watching this provider recovers those without the user re-picking the photo.
 /// Failures stay recorded on the row; the next sweep tries again.
@@ -77,7 +77,7 @@ class ReceiptResumeController extends Notifier<int> {
       _inFlightReceipts.add(receipt.id);
       attempted++;
       try {
-        await sync.uploadAndParse(receipt.id);
+        await sync.send(receipt.id);
       } catch (_) {
         // The error is already persisted on the row as `error` status; the next
         // sweep will pick it up again.
