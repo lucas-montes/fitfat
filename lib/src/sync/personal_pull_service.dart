@@ -1223,6 +1223,14 @@ Future<SyncResult> pullDataType(WidgetRef ref, String type) async {
       return service.pullTags(apiKey: key, endpoint: settings.endpointTags);
     case 'stores':
       return service.pullStores(apiKey: key, endpoint: '/stores');
+    case 'ingredients':
+      return ref
+          .read(syncServiceProvider)
+          .syncIngredients(
+            settings.remoteSyncBaseUrl,
+            key,
+            endpoint: settings.endpointIngredients,
+          );
     case 'foods':
       // Recipes have their own client (ingredient resolution + nutrition
       // snapshots); a full pull mirrors the server like the personal pool.

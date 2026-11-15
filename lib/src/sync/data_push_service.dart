@@ -9,6 +9,8 @@ import 'package:path/path.dart' as p;
 import '../database/app_database.dart' as db;
 import '../database/database_provider.dart' as db;
 import '../network/api_client.dart';
+import '../budget/providers/receipts.dart';
+import '../budget/providers/services.dart';
 import '../settings/providers/settings.dart';
 import 'sync_service.dart';
 
@@ -65,7 +67,10 @@ final class DataPushService {
     Map<String, String> names,
   ) => [
     for (final row in rows)
-      if (names[row['tagId']] case final name?) {...row, 'tagName': name} else row,
+      if (names[row['tagId']] case final name?)
+        {...row, 'tagName': name}
+      else
+        row,
   ];
 
   /// Merges the outbox tombstones for [entities] into one id list. The
@@ -180,8 +185,8 @@ final class DataPushService {
       for (final row in rows)
         if (!catalogIds.contains(row.id))
           (row.toJson()
-                ..remove('imagePath')
-                ..remove('videoPath')),
+            ..remove('imagePath')
+            ..remove('videoPath')),
     ];
     final deleted = await _pendingDeletes(database, const ['exercises']);
     final result = await _pushObject(baseUrl, apiKey, endpoint, {
@@ -214,7 +219,7 @@ final class DataPushService {
 
   /// Pushes each note voice-clip row as JSON and, when a local audio file
   /// exists, also uploads the bytes via multipart so the server gets the
-  /// record + audio together (mirrors [pushReceiptPictures]).
+  /// record + audio together.
   Future<PushResult> pushNoteAudio(
     WidgetRef ref,
     String baseUrl,
@@ -369,79 +374,28 @@ final class DataPushService {
       'stores': rows.map((e) => e.toJson()).toList(),
     });
   }
+}
 
-  /// Pushes each receipt row as JSON and, when a local picture exists, also
-  /// uploads the image via multipart so the server gets record + bytes.
-  Future<PushResult> pushReceiptPictures(
-    WidgetRef ref,
-    String baseUrl,
-    String apiKey,
-    String endpoint,
-  ) async {
-    try {
-      if (baseUrl.isEmpty) {
-        return const PushResult(count: 0, error: 'No server URL configured');
-      }
-      final database = ref.read(db.databaseProvider);
-      final rows = await database.select(database.receipts).get();
-      // Soft-deleted receipts stay in the table (so a pull cannot resurrect
-      // them), but they must not be uploaded as live rows: the server's upsert
-      // clears `deleted_at`. Send them in the tombstone list instead.
-      final deletedIds = [
-        for (final r in rows)
-          if (r.deletedAt != null) r.id,
-      ];
-      var pushed = 0;
-      for (final r in rows) {
-        if (r.deletedAt != null) continue;
-        final data = r.toJson();
-        // The Drift column is `localPath`; reading `picturePath` (which never
-        // existed) meant the multipart branch below was unreachable and every
-        // receipt pushed as metadata-only JSON.
-        final path = data['localPath'] as String?;
-        Uint8List? bytes;
-        String? filename;
-        if (path != null && path.isNotEmpty) {
-          final file = File(path);
-          if (await file.exists()) {
-            bytes = await file.readAsBytes();
-            filename = p.basename(path);
-          }
-        }
-        if (bytes != null) {
-          // Field names must match the server's `parse_multipart`, which looks
-          // for `receipt` (JSON) + `picture` (binary).
-          await client.postMultipart(
-            endpoint,
-            fields: {'receipt': jsonEncode(data)},
-            files: {
-              'picture': MultipartFilePart.fromFilename(filename!, bytes),
-            },
-            headers: authHeaders(apiKey),
-          );
-        } else {
-          await client.postJson(
-            endpoint,
-            body: {
-              'receipts': [data],
-            },
-            headers: authHeaders(apiKey),
-          );
-        }
-        pushed++;
-      }
-      if (deletedIds.isNotEmpty) {
-        await client.postJson(
-          endpoint,
-          body: {'receipts': <Object>[], 'deleted': deletedIds},
-          headers: authHeaders(apiKey),
-        );
-      }
-      return PushResult(count: pushed);
-    } catch (e) {
-      return PushResult(count: 0, error: '$e');
-    }
-  }
+/// Sends every receipt on the phone. Each one goes through the same upload as
+/// a capture and is forgotten once the server accepts it; nothing is sent as a
+/// JSON row or a deletion, which would overwrite or delete the server's copy.
+Future<PushResult> _sendReceipts(WidgetRef ref) async {
+  final outcome = await sendAllReceipts(
+    ref.read(db.databaseProvider),
+    ref.read(budgetSyncServiceProvider),
+  );
+  ref.invalidate(receiptListProvider);
+  ref.invalidate(receiptPendingProvider);
+  final problems = [
+    if (outcome.failed > 0)
+      '${outcome.failed} not sent (${outcome.firstError})',
+    if (outcome.noPicture > 0)
+      '${outcome.noPicture} without a picture on the phone',
+  ];
+  return PushResult(
+    count: outcome.sent,
+    error: outcome.failed > 0 ? problems.join('; ') : null,
+  );
 }
 
 /// Convenience: resolves the configured [DataPushService] and pushes [type].
@@ -458,24 +412,20 @@ Future<PushResult> pushDataType(WidgetRef ref, String type) async {
   final key = settings.remoteSyncApiKey;
   switch (type) {
     case 'exercises':
-      return service.pushExercises(
-        ref,
-        base,
-        key,
-        settings.endpointExercises,
-      );
-    case 'workouts': {
-      // Custom exercises must exist server-side before the workout rows that
-      // reference them (the server enforces the foreign key).
-      final pre = await service.pushExercises(
-        ref,
-        base,
-        key,
-        settings.endpointExercises,
-      );
-      if (!pre.ok) return pre;
-      return service.pushWorkouts(ref, base, key, settings.endpointWorkouts);
-    }
+      return service.pushExercises(ref, base, key, settings.endpointExercises);
+    case 'workouts':
+      {
+        // Custom exercises must exist server-side before the workout rows that
+        // reference them (the server enforces the foreign key).
+        final pre = await service.pushExercises(
+          ref,
+          base,
+          key,
+          settings.endpointExercises,
+        );
+        if (!pre.ok) return pre;
+        return service.pushWorkouts(ref, base, key, settings.endpointWorkouts);
+      }
     case 'bodyMetrics':
       return service.pushBodyMetrics(
         ref,
@@ -483,16 +433,22 @@ Future<PushResult> pushDataType(WidgetRef ref, String type) async {
         key,
         settings.endpointBodyMetrics,
       );
-    case 'templates': {
-      final pre = await service.pushExercises(
-        ref,
-        base,
-        key,
-        settings.endpointExercises,
-      );
-      if (!pre.ok) return pre;
-      return service.pushTemplates(ref, base, key, settings.endpointTemplates);
-    }
+    case 'templates':
+      {
+        final pre = await service.pushExercises(
+          ref,
+          base,
+          key,
+          settings.endpointExercises,
+        );
+        if (!pre.ok) return pre;
+        return service.pushTemplates(
+          ref,
+          base,
+          key,
+          settings.endpointTemplates,
+        );
+      }
     case 'notes':
       return service.pushNotes(ref, base, key, settings.endpointNotes);
     case 'noteAudio':
@@ -516,20 +472,31 @@ Future<PushResult> pushDataType(WidgetRef ref, String type) async {
       return service.pushTags(ref, base, key, '/tags');
     case 'stores':
       return service.pushStores(ref, base, key, '/stores');
-    case 'foods': {
-      // Delegated to SyncService: it decides which foods are shareable and
-      // resolves each food's ingredient components (see FoodSyncClient.push).
-      final sync = ref.read(syncServiceProvider);
-      final result = await sync.pushFoods(base, key);
-      return PushResult(count: result.updated, error: result.error);
-    }
+    case 'foods':
+      {
+        // Delegated to SyncService: it decides which foods are shareable and
+        // resolves each food's ingredient components (see FoodSyncClient.push).
+        final sync = ref.read(syncServiceProvider);
+        final result = await sync.pushFoods(base, key);
+        return PushResult(count: result.updated, error: result.error);
+      }
     case 'receiptPictures':
-      return service.pushReceiptPictures(
-        ref,
-        base,
-        key,
-        settings.endpointReceiptPictures,
-      );
+      return _sendReceipts(ref);
+    case 'ingredients':
+      {
+        // Prices name their store; pushing stores first keeps their names (the
+        // server would otherwise create a placeholder named by id).
+        final pre = await service.pushStores(ref, base, key, '/stores');
+        if (!pre.ok) return pre;
+        final result = await ref
+            .read(syncServiceProvider)
+            .pushIngredients(
+              base,
+              key,
+              timeout: Duration(seconds: settings.apiTimeoutSeconds),
+            );
+        return PushResult(count: result.updated, error: result.error);
+      }
     default:
       return PushResult(count: 0, error: 'Unknown type: $type');
   }

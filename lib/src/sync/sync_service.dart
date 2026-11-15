@@ -588,6 +588,59 @@ final class SyncService {
     }
   }
 
+  /// Pushes every live ingredient on the phone, each with its pictures and
+  /// prices, one request per ingredient. Stops at the first failure.
+  ///
+  /// The server upserts each one, but never revives an ingredient or a price it
+  /// deleted, and never overwrites a price a receipt made.
+  Future<SyncResult> pushIngredients(
+    String baseUrl,
+    String apiKey, {
+    Duration? timeout,
+  }) async {
+    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    if (normalizedBase.isEmpty) {
+      return const SyncResult(error: 'No server URL configured');
+    }
+    final httpClient = http.Client();
+    final client = IngredientSyncClient(
+      HttpApiClient(
+        httpClient,
+        baseUrl: normalizedBase,
+        timeout: timeout ?? const Duration(seconds: 15),
+      ),
+      ingredients,
+    );
+    var pushed = 0;
+    try {
+      for (final ingredient in await ingredients.getAll()) {
+        final res = await client.push(
+          ingredient: ingredient,
+          pictures: await ingredients.getPictures(ingredient.id),
+          prices: [
+            for (final (price, _) in await ingredients.getPrices(ingredient.id))
+              price,
+          ],
+          apiKey: apiKey,
+        );
+        if (!res.ok) {
+          _log.warning(
+            'pushIngredients failed at ${ingredient.id}: ${res.error}',
+          );
+          return SyncResult(
+            updated: pushed,
+            error: '${ingredient.name}: ${res.error}',
+          );
+        }
+        pushed++;
+      }
+      _log.info('pushIngredients ok pushed=$pushed');
+      return SyncResult(updated: pushed);
+    } finally {
+      httpClient.close();
+    }
+  }
+
   /// Contributes the given ingredient (with its pictures and prices) to the
   /// shared catalogue hosted at [baseUrl]. Idempotent by ingredient id.
   Future<SyncResult> pushIngredient({

@@ -909,7 +909,8 @@ final class _PersonalPoolSectionState
   ///
   /// Tags go first so links can name them; exercises go before workouts and
   /// templates because those reference exercise ids (the server enforces the
-  /// foreign key on push). Stores precede foods, and foods precede meals: the
+  /// foreign key on push). Stores precede ingredients (their prices name a
+  /// store), ingredients precede foods, and foods precede meals: the
   /// server skips a logged food whose recipe it does not know yet, and budget
   /// accounts precede transactions for the same reason.
   static const _order = [
@@ -921,6 +922,7 @@ final class _PersonalPoolSectionState
     'Workouts',
     'Templates',
     'Stores',
+    'Ingredients',
     'Foods',
     'Meals',
     'Body',
@@ -954,6 +956,7 @@ final class _PersonalPoolSectionState
     ('Workouts', Icons.fitness_center),
     ('Templates', Icons.view_module_outlined),
     ('Stores', Icons.storefront_outlined),
+    ('Ingredients', Icons.egg_outlined),
     ('Foods', Icons.local_grocery_store_outlined),
     ('Meals', Icons.restaurant_outlined),
     ('Body', Icons.monitor_weight_outlined),
@@ -1069,7 +1072,7 @@ final class _PersonalPoolSectionState
       await _importRelatedExercises(failures);
       if (!mounted) return;
       // Every entity just wrote to the database; refresh the tabs once rather
-      // than after each of the fourteen pulls.
+      // than after each pull.
       invalidateAllData(ref);
       showTopBanner(
         context,
@@ -1132,6 +1135,7 @@ final class _PersonalPoolSectionState
     'Transactions' => 'transactions',
     'Receipts' => 'receiptPictures',
     'Stores' => 'stores',
+    'Ingredients' => 'ingredients',
     'Foods' => 'foods',
     _ => 'tasks',
   };
@@ -1164,6 +1168,7 @@ final class _PersonalPoolSectionState
       'Transactions' => SyncResource.transactions,
       'Receipts' => SyncResource.receipts,
       'Stores' => SyncResource.stores,
+      'Ingredients' => SyncResource.ingredients,
       'Foods' => SyncResource.foods,
       _ => null,
     };
@@ -1268,6 +1273,9 @@ final class _PersonalPoolSectionState
     final tags = await dbInst.select(dbInst.tags).get();
     final exercises = await dbInst.select(dbInst.exercises).get();
     final stores = await dbInst.select(dbInst.stores).get();
+    final ingredients = await (dbInst.select(
+      dbInst.ingredients,
+    )..where((t) => t.isArchived.equals(false))).get();
     final foods = await dbInst.select(dbInst.foods).get();
     return {
       'Tags': tags.length,
@@ -1283,6 +1291,7 @@ final class _PersonalPoolSectionState
       'Transactions': transactions.length,
       'Receipts': receipts.length,
       'Stores': stores.length,
+      'Ingredients': ingredients.length,
       'Foods': foods.length,
     };
   }

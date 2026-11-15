@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:fitfat/src/budget/models/receipt.dart';
+import 'package:fitfat/src/budget/providers/services.dart';
 import 'package:fitfat/src/budget/services/budget_sync.dart';
 import 'package:fitfat/src/budget/services/remote_receipt_ocr.dart';
 import 'package:fitfat/src/database/app_database.dart' as db;
@@ -118,6 +119,47 @@ void main() {
       final ocr = _FakeOcrService();
       await BudgetSyncService(database, ocr).send('does-not-exist');
       expect(ocr.uploadIds, isEmpty);
+    });
+  });
+
+  group('sendAllReceipts', () {
+    test('sends every receipt with a picture and forgets each one', () async {
+      String image(String name) =>
+          (File('${tempDir.path}/$name.png')..writeAsStringSync('PNG')).path;
+      final a = newReceipt(localPath: image('a'));
+      final b = newReceipt(localPath: image('b'));
+      final missing = newReceipt(localPath: '${tempDir.path}/gone.png');
+      for (final r in [a, b, missing]) {
+        await insertReceipt(r);
+      }
+      final ocr = _FakeOcrService();
+
+      final outcome = await sendAllReceipts(
+        database,
+        BudgetSyncService(database, ocr),
+      );
+
+      expect(outcome.sent, 2);
+      expect(outcome.failed, 0);
+      expect(outcome.noPicture, 1);
+      expect(ocr.uploadIds, unorderedEquals([a.id, b.id]));
+      final left = await database.select(database.receipts).get();
+      expect(left.map((r) => r.id), [missing.id]);
+    });
+
+    test('keeps a receipt the server refused, to send again', () async {
+      final r = newReceipt(localPath: writeImage());
+      await insertReceipt(r);
+
+      final outcome = await sendAllReceipts(
+        database,
+        BudgetSyncService(database, _FakeOcrService(failUpload: true)),
+      );
+
+      expect(outcome.sent, 0);
+      expect(outcome.failed, 1);
+      expect(outcome.firstError, contains('upload boom'));
+      expect((await rowFor(r.id)).uploadStatus, ReceiptStatus.error.code);
     });
   });
 }

@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../../database/app_database.dart' as db;
 import '../../database/database_provider.dart';
 import '../../network/api_client.dart';
 import '../../settings/providers/settings.dart';
@@ -28,11 +31,7 @@ final remoteReceiptOcrProvider = Provider<RemoteReceiptOcrService>((ref) {
   final timeout = Duration(seconds: settings.apiTimeoutSeconds);
 
   return HttpRemoteReceiptOcrService(
-    client: HttpApiClient(
-      http.Client(),
-      baseUrl: baseUrl,
-      timeout: timeout,
-    ),
+    client: HttpApiClient(http.Client(), baseUrl: baseUrl, timeout: timeout),
     apiKey: settings.remoteSyncApiKey,
     baseEndpoint: settings.endpointReceiptPictures,
     requestTimeout: timeout,
@@ -93,5 +92,61 @@ class ReceiptResumeController extends Notifier<int> {
   }
 }
 
-final receiptResumeProvider =
-    NotifierProvider<ReceiptResumeController, int>(ReceiptResumeController.new);
+final receiptResumeProvider = NotifierProvider<ReceiptResumeController, int>(
+  ReceiptResumeController.new,
+);
+
+/// What sending every receipt on the phone did.
+final class ReceiptSendOutcome {
+  const ReceiptSendOutcome({
+    required this.sent,
+    required this.failed,
+    required this.noPicture,
+    this.firstError,
+  });
+
+  final int sent;
+  final int failed;
+
+  /// Receipts whose picture is not on the phone, so there is nothing to send.
+  final int noPicture;
+  final String? firstError;
+}
+
+/// Sends every receipt still on the phone, each forgotten once the server
+/// accepts it (see [BudgetSyncService.send]). Shares the in-flight guard with
+/// the resume sweep, so a receipt is never uploaded twice at once.
+Future<ReceiptSendOutcome> sendAllReceipts(
+  db.AppDatabase database,
+  BudgetSyncService sync,
+) async {
+  final rows = await (database.select(
+    database.receipts,
+  )..where((t) => t.deletedAt.isNull())).get();
+  var sent = 0;
+  var failed = 0;
+  var noPicture = 0;
+  String? firstError;
+  for (final row in rows) {
+    if (row.localPath.isEmpty || !await File(row.localPath).exists()) {
+      noPicture++;
+      continue;
+    }
+    if (!_inFlightReceipts.add(row.id)) continue;
+    try {
+      await sync.send(row.id);
+      sent++;
+    } catch (e) {
+      failed++;
+      firstError ??= '$e';
+    } finally {
+      _inFlightReceipts.remove(row.id);
+    }
+  }
+  return ReceiptSendOutcome(
+    sent: sent,
+    failed: failed,
+    noPicture: noPicture,
+    firstError: firstError,
+  );
+}
