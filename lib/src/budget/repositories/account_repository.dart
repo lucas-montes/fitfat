@@ -1,9 +1,11 @@
 import 'package:drift/drift.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../database/app_database.dart' as db;
 import '../models/account.dart';
 
+/// Reads the accounts the pull brought down. The server owns them: the
+/// desktop and the statement imports make them, and the phone never pushes one
+/// back, so there is nothing here that writes.
 final class AccountRepository {
   final db.AppDatabase _database;
   const AccountRepository(this._database);
@@ -26,54 +28,6 @@ final class AccountRepository {
     return row == null ? null : _toDomain(row);
   }
 
-  /// Number of alive transactions referencing this account (source or
-  /// destination).
-  Future<int> usageCount(String id) async {
-    final source = await (_database.select(
-      _database.transactions,
-    )..where((t) => t.accountId.equals(id) & t.deletedAt.isNull())).get();
-    final dest = await (_database.select(
-      _database.transactions,
-    )..where((t) => t.toAccountId.equals(id) & t.deletedAt.isNull())).get();
-    return source.length + dest.length;
-  }
-
-  Future<void> insert(Account account) async {
-    await _database
-        .into(_database.accounts)
-        .insert(
-          db.AccountsCompanion.insert(
-            id: account.id,
-            name: account.name,
-            type: account.type.name,
-            openingBalance: Value(account.openingBalance),
-            note: Value(account.note),
-            createdAt: account.createdAt.millisecondsSinceEpoch,
-          ),
-        );
-  }
-
-  Future<void> update(Account account) async {
-    await (_database.update(
-      _database.accounts,
-    )..where((t) => t.id.equals(account.id))).write(
-      db.AccountsCompanion(
-        name: Value(account.name),
-        type: Value(account.type.name),
-        openingBalance: Value(account.openingBalance),
-        note: Value(account.note),
-      ),
-    );
-  }
-
-  /// Soft-deletes the account (tombstone). Its transactions keep the account
-  /// reference and are hidden together with it — no forced child cleanup.
-  Future<void> delete(String id) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    await (_database.update(_database.accounts)..where((t) => t.id.equals(id)))
-        .write(db.AccountsCompanion(deletedAt: Value(now)));
-  }
-
   Account _toDomain(db.Account row) => Account(
     id: row.id,
     name: row.name,
@@ -83,17 +37,3 @@ final class AccountRepository {
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
   );
 }
-
-Account newAccountFrom({
-  required String name,
-  required AccountType type,
-  double openingBalance = 0,
-  String? note,
-}) => Account(
-  id: const Uuid().v7(),
-  name: name,
-  type: type,
-  openingBalance: openingBalance,
-  note: note,
-  createdAt: DateTime.now(),
-);

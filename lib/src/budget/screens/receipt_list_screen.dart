@@ -10,9 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
-import '../../settings/providers/settings.dart';
 import '../models/receipt.dart';
-import '../providers/fx_rates.dart';
 import '../providers/receipts.dart';
 import '../providers/services.dart';
 
@@ -30,7 +28,8 @@ final class ReceiptListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.receiptListAppBar)),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
         tooltip: l10n.receiptCapture,
         onPressed: () => _capture(context, ref),
         child: const Icon(Icons.add_a_photo_outlined),
@@ -107,20 +106,9 @@ final class ReceiptListScreen extends ConsumerWidget {
       final receipt = newReceipt(localPath: saved.path);
       await ref.read(receiptRepositoryProvider).insert(receipt);
 
-      final base = ref.read(settingsProvider).baseCurrency;
-      final rates = Map<String, double>.from(
-        ref.read(fxRatesProvider).value ?? {},
-      );
-      rates[base] = 1.0;
       () async {
         try {
-          await ref
-              .read(budgetSyncServiceProvider)
-              .uploadAndParse(
-                receipt.id,
-                baseCurrency: base,
-                ratesToBase: rates,
-              );
+          await ref.read(budgetSyncServiceProvider).uploadAndParse(receipt.id);
           if (context.mounted) ref.invalidate(receiptListProvider);
         } catch (_) {}
       }();

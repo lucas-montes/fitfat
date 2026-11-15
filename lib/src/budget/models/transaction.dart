@@ -1,5 +1,3 @@
-import 'package:uuid/uuid.dart';
-
 enum TransactionType {
   income,
   expense,
@@ -83,33 +81,3 @@ final class Transaction {
     createdAt: createdAt ?? this.createdAt,
   );
 }
-
-Transaction newTransaction({
-  required TransactionType type,
-  required double amount,
-  required String currencyCode,
-  required double amountBase,
-  required double rateUsed,
-  String? accountId,
-  String? toAccountId,
-  String? category,
-  required DateTime date,
-  String? note,
-  String? receiptId,
-  bool isDraft = false,
-}) => Transaction(
-  id: const Uuid().v7(),
-  type: type,
-  amount: amount,
-  currencyCode: currencyCode,
-  amountBase: amountBase,
-  rateUsed: rateUsed,
-  accountId: accountId,
-  toAccountId: toAccountId,
-  category: category,
-  date: date,
-  note: note,
-  receiptId: receiptId,
-  isDraft: isDraft,
-  createdAt: DateTime.now(),
-);

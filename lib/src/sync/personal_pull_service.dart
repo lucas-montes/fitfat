@@ -24,9 +24,9 @@ import 'sync_state_store.dart';
 ///    server row only when the id is absent locally, so a local edit always
 ///    wins. Tombstoned ids delete the local row with its dependents — a
 ///    deletion anywhere is a deletion everywhere.
-///  * **Server-wins** resources (tags, receipts) upsert over local state: the
-///    server is their source of truth. Receipt metadata + OCR parse ride
-///    along; the image itself stays server-side and is never downloaded.
+///  * **Server-wins** resources (tags) upsert over local state: the server is
+///    their source of truth. Receipts are never pulled: the phone sends one and
+///    forgets it once the server has parsed it.
 ///
 /// The `since` cursor advances only on success, per resource, matching the
 /// other sync clients.
@@ -928,50 +928,6 @@ final class PersonalPullService {
     }
   }
 
-  /// Receipts mirror the server rows, including the OCR parse — the images
-  /// themselves stay server-side and are never downloaded here.
-  Future<SyncResult> pullReceipts({
-    required String apiKey,
-    required String endpoint,
-  }) async {
-    final since = _state.getLastSyncedAt(SyncResource.receipts);
-    try {
-      final (payload, serverTime) = await _fetch(endpoint, apiKey, since);
-      final pending = await _database.pendingSyncDeletes('receipts');
-      var updated = 0;
-      for (final raw in _maps(payload['items'])) {
-        final id = raw['id'];
-        if (id is! String || pending.contains(id)) continue;
-        await _database.into(_database.receipts).insertOnConflictUpdate(
-          db.ReceiptsCompanion.insert(
-            id: id,
-            localPath: _str(raw['localPath'], ''),
-            remotePath: Value(_optStr(raw['remotePath'])),
-            uploadStatus: Value(_int(raw['uploadStatus'])),
-            parsed: Value(raw['parsed'] == true),
-            parsedJson: Value(_optStr(raw['parsedJson'])),
-            transactionId: Value(_optStr(raw['transactionId'])),
-            createdAt: _int(raw['createdAt']),
-            deletedAt: const Value(null),
-          ),
-        );
-        updated++;
-      }
-      var deleted = 0;
-      for (final id in _names(payload['deleted'])) {
-        deleted += await (_database.delete(
-          _database.receipts,
-        )..where((t) => t.id.equals(id))).go();
-      }
-      await _advance(SyncResource.receipts, serverTime, since);
-      return _result(updated, deleted, serverTime);
-    } on ApiException catch (e) {
-      return SyncResult(error: 'Pull failed (HTTP ${e.statusCode})');
-    } catch (e) {
-      return SyncResult(error: e.toString());
-    }
-  }
-
   // --------------------------------------------------------------------------
   // Scaffolding
   // --------------------------------------------------------------------------
@@ -1257,10 +1213,11 @@ Future<SyncResult> pullDataType(WidgetRef ref, String type) async {
         apiKey: key,
         endpoint: settings.endpointTransactions,
       );
+    // Receipts are push-only: the phone sends one and forgets it once the
+    // server has parsed it, so pulling would only bring the forgotten back.
     case 'receiptPictures':
-      return service.pullReceipts(
-        apiKey: key,
-        endpoint: settings.endpointReceiptPictures,
+      return const SyncResult(
+        error: 'Receipts go to the server; the phone does not pull them',
       );
     case 'tags':
       return service.pullTags(apiKey: key, endpoint: settings.endpointTags);

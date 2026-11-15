@@ -2587,7 +2587,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get budgetEmptyAccounts =>
-      'No accounts yet. Add one to start tracking.';
+      'No accounts yet. They come from the server: pull Budget in Sync to fetch them.';
 
   @override
   String get budgetAddAccount => 'Add account';

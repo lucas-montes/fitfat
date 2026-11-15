@@ -2606,7 +2606,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get budgetEmptyAccounts =>
-      'Aún no hay cuentas. Agrega una para empezar.';
+      'Aún no hay cuentas. Vienen del servidor: descarga Budget en Sync.';
 
   @override
   String get budgetAddAccount => 'Agregar cuenta';

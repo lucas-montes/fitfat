@@ -2610,7 +2610,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get budgetEmptyAccounts =>
-      'Aucun compte pour le moment. Ajoutez-en un.';
+      'Aucun compte pour le moment. Ils viennent du serveur : récupérez Budget dans Sync.';
 
   @override
   String get budgetAddAccount => 'Ajouter un compte';

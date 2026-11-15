@@ -336,37 +336,6 @@ final class DataPushService {
     });
   }
 
-  Future<PushResult> pushTransactions(
-    WidgetRef ref,
-    String baseUrl,
-    String apiKey,
-    String endpoint,
-  ) async {
-    final database = ref.read(db.databaseProvider);
-    final rows = await database.select(database.transactions).get();
-    return _pushObject(baseUrl, apiKey, endpoint, {
-      'transactions': rows.map((e) => e.toJson()).toList(),
-    });
-  }
-
-  Future<PushResult> pushBudgetAccounts(
-    WidgetRef ref,
-    String baseUrl,
-    String apiKey,
-    String endpoint,
-  ) async {
-    final database = ref.read(db.databaseProvider);
-    final rows = await database.select(database.accounts).get();
-    return _pushObject(baseUrl, apiKey, endpoint, {
-      // The type is the server's to decide. The pull sends it down, and a push
-      // that carried one would put the phone's own vocabulary back, so the
-      // phone leaves it out.
-      'accounts': rows
-          .map((e) => e.toJson()..remove('type'))
-          .toList(),
-    });
-  }
-
   /// Pushes the shared tag vocabulary so the server has real tag names
   /// (task/note/goal link pushes alone would name tags by id).
   Future<PushResult> pushTags(
@@ -534,19 +503,14 @@ Future<PushResult> pushDataType(WidgetRef ref, String type) async {
       return service.pushGoals(ref, base, key, settings.endpointGoals);
     case 'meals':
       return service.pushMeals(ref, base, key, settings.endpointMeals);
-    case 'transactions':
-      return service.pushTransactions(
-        ref,
-        base,
-        key,
-        settings.endpointTransactions,
-      );
+    // Accounts and transactions are pull-only: the server owns them, and a
+    // push would put the phone's stale copy back over what the desktop and
+    // the statement imports changed.
     case 'budgetAccounts':
-      return service.pushBudgetAccounts(
-        ref,
-        base,
-        key,
-        settings.endpointBudgetAccounts,
+    case 'transactions':
+      return PushResult(
+        count: 0,
+        error: '$type comes from the server; the phone does not push it',
       );
     case 'tags':
       return service.pushTags(ref, base, key, '/tags');

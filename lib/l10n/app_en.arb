@@ -1528,7 +1528,7 @@
   "@budgetExpenseLabel": {
   "description": "budgetExpenseLabel"
 },
-  "budgetEmptyAccounts": "No accounts yet. Add one to start tracking.",
+  "budgetEmptyAccounts": "No accounts yet. They come from the server: pull Budget in Sync to fetch them.",
   "@budgetEmptyAccounts": {
   "description": "budgetEmptyAccounts"
 },

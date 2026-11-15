@@ -477,40 +477,6 @@ void main() {
     expect(ids, {'tx1'});
   });
 
-  test('pullReceipts mirrors metadata including the OCR parse, never images', () async {
-    final api = _FakeApi({
-      '/receipt-pictures': <String, Object?>{
-        'server_time': 950,
-        'items': [
-          {
-            'id': 'r1',
-            'localPath': '',
-            'remotePath': 'receipts/r1.jpg',
-            'uploadStatus': 2,
-            'parsed': true,
-            'parsedJson': '{"total":42.75}',
-            'transactionId': 'tx1',
-            'createdAt': 90,
-            'updatedAt': 90,
-          },
-        ],
-        'deleted': <String>[],
-      },
-    });
-    final service = PersonalPullService(api, database, state);
-    final result = await service.pullReceipts(
-      apiKey: 'k',
-      endpoint: '/receipt-pictures',
-    );
-    expect(result.updated, 1);
-    final receipt = await database
-        .select(database.receipts)
-        .getSingle();
-    expect(receipt.parsedJson, '{"total":42.75}');
-    expect(receipt.uploadStatus, 2);
-    expect(receipt.parsed, isTrue);
-  });
-
   test('pullStores upserts server rows and applies tombstones', () async {
     await database.into(database.stores).insert(
       db.StoresCompanion.insert(id: 's0', name: 'Local', createdAt: 1),

@@ -1778,8 +1778,6 @@ final class _SyncServerCardState extends ConsumerState<_SyncServerCard> {
           'tasks',
           'goals',
           'meals',
-          'transactions',
-          'budgetAccounts',
           'receiptPictures',
         ];
         final failures = <String>[];

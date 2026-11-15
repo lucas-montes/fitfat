@@ -1417,7 +1417,7 @@
   "@budgetExpenseLabel": {
     "description": "budgetExpenseLabel"
   },
-  "budgetEmptyAccounts": "Aucun compte pour le moment. Ajoutez-en un.",
+  "budgetEmptyAccounts": "Aucun compte pour le moment. Ils viennent du serveur : récupérez Budget dans Sync.",
   "@budgetEmptyAccounts": {
     "description": "budgetEmptyAccounts"
   },

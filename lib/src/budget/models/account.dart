@@ -1,5 +1,3 @@
-import 'package:uuid/uuid.dart';
-
 /// What an account holds. The server owns the type: the pull sends it down
 /// and the phone never pushes it. The server's vocabulary is [cash],
 /// [savings] and [securities] (a broker's positions); [credit] is a card the server
@@ -13,9 +11,6 @@ enum AccountType {
   bank,
   credit,
   other;
-
-  /// The types an account can be given: the ones the server knows.
-  static const choosable = [cash, savings, securities];
 
   static AccountType fromName(String? name) => switch (name) {
     'savings' => AccountType.savings,
@@ -61,18 +56,3 @@ final class Account {
     createdAt: createdAt ?? this.createdAt,
   );
 }
-
-/// Creates a new [Account] with a fresh UUID v7 and the current timestamp.
-Account newAccount({
-  required String name,
-  required AccountType type,
-  double openingBalance = 0,
-  String? note,
-}) => Account(
-  id: const Uuid().v7(),
-  name: name,
-  type: type,
-  openingBalance: openingBalance,
-  note: note,
-  createdAt: DateTime.now(),
-);

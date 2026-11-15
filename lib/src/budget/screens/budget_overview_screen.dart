@@ -31,11 +31,6 @@ class BudgetScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.budgetAppBar)),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
-        onPressed: () => context.push('/budget/transaction/new'),
-        tooltip: l10n.budgetAddTransaction,
-        child: const Icon(Icons.add),
-      ),
       body: overviewAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
@@ -78,18 +73,10 @@ class BudgetScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    l10n.budgetAccounts,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  TextButton(
-                    onPressed: () => context.push('/budget/account/new'),
-                    child: Text(l10n.budgetAddAccount),
-                  ),
-                ],
+              // Accounts come from the server; the phone only reads them.
+              Text(
+                l10n.budgetAccounts,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               if (overview.accounts.isEmpty)
@@ -224,18 +211,7 @@ class _EmptyAccounts extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.budgetEmptyAccounts),
-        const SizedBox(height: 8),
-        FilledButton.icon(
-          onPressed: () => context.push('/budget/account/new'),
-          icon: const Icon(Icons.add),
-          label: Text(l10n.budgetAddAccount),
-        ),
-      ],
-    ),
+    child: Text(l10n.budgetEmptyAccounts),
   );
 }
 
@@ -274,7 +250,6 @@ class _TransactionTile extends StatelessWidget {
           Text(bf.formatMoney(t.amountBase, base)),
         ],
       ),
-      onTap: () => context.push('/budget/transaction/${t.id}'),
     );
   }
 }

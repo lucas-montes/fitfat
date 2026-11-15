@@ -1402,7 +1402,7 @@
   "@budgetExpenseLabel": {
     "description": "budgetExpenseLabel"
   },
-  "budgetEmptyAccounts": "Aún no hay cuentas. Agrega una para empezar.",
+  "budgetEmptyAccounts": "Aún no hay cuentas. Vienen del servidor: descarga Budget en Sync.",
   "@budgetEmptyAccounts": {
     "description": "budgetEmptyAccounts"
   },

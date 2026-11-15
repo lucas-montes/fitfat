@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../settings/providers/settings.dart';
-import '../providers/budget_overview.dart';
 import '../providers/transactions.dart';
 import '../widgets/transaction_tile.dart';
 
-/// Global, filterable transaction list. Tapping a row opens the editor.
+/// Global, filterable transaction list. Read-only: transactions come from the server.
 final class TransactionListScreen extends ConsumerWidget {
   final String? accountId;
 
@@ -24,15 +22,6 @@ final class TransactionListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.transactionListAppBar)),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
-        tooltip: l10n.budgetFabExpense,
-        onPressed: () async {
-          await context.push('/budget/transaction/new?type=expense');
-          ref.invalidate(transactionListProvider);
-          ref.invalidate(budgetOverviewProvider);
-        },
-        child: const Icon(Icons.add),
-      ),
       body: txnsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
@@ -49,11 +38,6 @@ final class TransactionListScreen extends ConsumerWidget {
                 txn: txn,
                 baseCode: base,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                onTap: () async {
-                  await context.push('/budget/transaction/${txn.id}');
-                  ref.invalidate(transactionListProvider);
-                  ref.invalidate(budgetOverviewProvider);
-                },
               );
             },
           );

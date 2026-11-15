@@ -929,6 +929,15 @@ final class _PersonalPoolSectionState
     'Receipts',
   ];
 
+  /// Entities the phone only pulls. Accounts and transactions are the
+  /// server's: the desktop and the statement imports make them, and a push
+  /// would put the phone's stale copy back over them.
+  static const _pullOnly = {'Budget', 'Transactions'};
+
+  /// Entities the phone only pushes. A receipt is sent, parsed by the server
+  /// and forgotten here; pulling would only bring the forgotten back.
+  static const _pushOnly = {'Receipts'};
+
   /// Pull-all deliberately skips the catalogue. Workouts and templates bring
   /// only the exercises they reference (see [_importRelatedExercises]); the
   /// rest arrive through the exercise search.
@@ -1031,6 +1040,7 @@ final class _PersonalPoolSectionState
     try {
       for (final entity in _order) {
         if (!mounted) return;
+        if (_pullOnly.contains(entity)) continue;
         final error = await _pushOne(entity, announce: false);
         if (error != null) {
           if (mounted) showTopBanner(context, message: error);
@@ -1051,6 +1061,7 @@ final class _PersonalPoolSectionState
     try {
       for (final entity in _pullOrder) {
         if (!mounted) return;
+        if (_pushOnly.contains(entity)) continue;
         final error = await _pullOne(entity, announce: false);
         if (error != null) failures.add(entity);
       }
@@ -1182,23 +1193,26 @@ final class _PersonalPoolSectionState
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.cloud_upload_outlined),
-                            tooltip: 'Push $name',
-                            onPressed: () => _pushOne(name),
-                          ),
-                          const SizedBox(width: 4),
-                          IconButton(
-                            icon: Icon(
-                              name == 'Exercises'
-                                  ? Icons.sync
-                                  : Icons.cloud_download_outlined,
+                          if (!_pullOnly.contains(name)) ...[
+                            IconButton(
+                              icon: const Icon(Icons.cloud_upload_outlined),
+                              tooltip: 'Push $name',
+                              onPressed: () => _pushOne(name),
                             ),
-                            tooltip: name == 'Exercises'
-                                ? 'Sync exercise updates'
-                                : 'Pull $name',
-                            onPressed: () => _pullOne(name),
-                          ),
+                            const SizedBox(width: 4),
+                          ],
+                          if (!_pushOnly.contains(name))
+                            IconButton(
+                              icon: Icon(
+                                name == 'Exercises'
+                                    ? Icons.sync
+                                    : Icons.cloud_download_outlined,
+                              ),
+                              tooltip: name == 'Exercises'
+                                  ? 'Sync exercise updates'
+                                  : 'Pull $name',
+                              onPressed: () => _pullOne(name),
+                            ),
                         ],
                       ),
               ),

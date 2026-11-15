@@ -8,7 +8,6 @@ import '../models/receipt.dart';
 import '../services/budget_sync.dart';
 import '../services/http_remote_receipt_ocr.dart';
 import '../services/remote_receipt_ocr.dart';
-import 'fx_rates.dart';
 import 'receipts.dart';
 
 /// Server-side receipt OCR backend.
@@ -70,9 +69,6 @@ class ReceiptResumeController extends Notifier<int> {
 
   Future<void> _resume() async {
     final pending = await ref.read(receiptPendingProvider.future);
-    final settings = ref.read(settingsProvider);
-    final rates = Map<String, double>.from(ref.read(fxRatesProvider).value ?? {});
-    rates[settings.baseCurrency] = 1.0;
     final sync = ref.read(budgetSyncServiceProvider);
 
     var attempted = 0;
@@ -81,11 +77,7 @@ class ReceiptResumeController extends Notifier<int> {
       _inFlightReceipts.add(receipt.id);
       attempted++;
       try {
-        await sync.uploadAndParse(
-          receipt.id,
-          baseCurrency: settings.baseCurrency,
-          ratesToBase: rates,
-        );
+        await sync.uploadAndParse(receipt.id);
       } catch (_) {
         // The error is already persisted on the row as `error` status; the next
         // sweep will pick it up again.

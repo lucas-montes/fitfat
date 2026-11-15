@@ -38,25 +38,7 @@ final class AccountDetailScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(account?.name ?? l10n.budgetAppBar),
-        actions: [
-          if (account != null)
-            IconButton(
-              tooltip: l10n.commonEdit,
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () => context.push('/budget/account/$accountId/edit'),
-            ),
-        ],
-      ),
-      floatingActionButton: account == null
-          ? null
-          : FloatingActionButton(heroTag: null, 
-              onPressed: () =>
-                  context.push('/budget/transaction/new?account=$accountId'),
-              tooltip: l10n.budgetAddTransaction,
-              child: const Icon(Icons.add),
-            ),
+      appBar: AppBar(title: Text(account?.name ?? l10n.budgetAppBar)),
       body: account == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -124,11 +106,7 @@ final class AccountDetailScreen extends ConsumerWidget {
   ) {
     if (txns.isEmpty) return [Text(l10n.budgetNoTransactions)];
     return txns.map((txn) {
-      return TransactionTile(
-        txn: txn,
-        baseCode: base,
-        onTap: () => context.push('/budget/transaction/${txn.id}'),
-      );
+      return TransactionTile(txn: txn, baseCode: base);
     }).toList();
   }
 

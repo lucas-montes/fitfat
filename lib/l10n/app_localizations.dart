@@ -4609,7 +4609,7 @@ abstract class AppLocalizations {
   /// budgetEmptyAccounts
   ///
   /// In en, this message translates to:
-  /// **'No accounts yet. Add one to start tracking.'**
+  /// **'No accounts yet. They come from the server: pull Budget in Sync to fetch them.'**
   String get budgetEmptyAccounts;
 
   /// budgetAddAccount

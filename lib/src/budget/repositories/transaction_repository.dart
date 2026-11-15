@@ -3,6 +3,9 @@ import 'package:drift/drift.dart';
 import '../../database/app_database.dart' as db;
 import '../models/transaction.dart';
 
+/// Reads the transactions the pull brought down. The server owns them: the
+/// desktop and the statement imports make them, and the phone never pushes one,
+/// so there is nothing here that writes.
 final class TransactionRepository {
   final db.AppDatabase _database;
   const TransactionRepository(this._database);
@@ -62,57 +65,6 @@ final class TransactionRepository {
               ..limit(limit))
             .get();
     return rows.map(_toDomain).toList();
-  }
-
-  Future<void> insert(Transaction txn) async {
-    await _database
-        .into(_database.transactions)
-        .insert(
-          db.TransactionsCompanion.insert(
-            id: txn.id,
-            type: txn.type.name,
-            amount: txn.amount,
-            currencyCode: txn.currencyCode,
-            amountBase: txn.amountBase,
-            rateUsed: txn.rateUsed,
-            accountId: Value(txn.accountId),
-            toAccountId: Value(txn.toAccountId),
-            category: Value(txn.category),
-            date: txn.date.millisecondsSinceEpoch,
-            note: Value(txn.note),
-            receiptId: Value(txn.receiptId),
-            isDraft: Value(txn.isDraft),
-            createdAt: txn.createdAt.millisecondsSinceEpoch,
-          ),
-        );
-  }
-
-  Future<void> update(Transaction txn) async {
-    await (_database.update(
-      _database.transactions,
-    )..where((t) => t.id.equals(txn.id))).write(
-      db.TransactionsCompanion(
-        type: Value(txn.type.name),
-        amount: Value(txn.amount),
-        currencyCode: Value(txn.currencyCode),
-        amountBase: Value(txn.amountBase),
-        rateUsed: Value(txn.rateUsed),
-        accountId: Value(txn.accountId),
-        toAccountId: Value(txn.toAccountId),
-        category: Value(txn.category),
-        date: Value(txn.date.millisecondsSinceEpoch),
-        note: Value(txn.note),
-        receiptId: Value(txn.receiptId),
-        isDraft: Value(txn.isDraft),
-      ),
-    );
-  }
-
-  Future<void> delete(String id) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    await (_database.update(_database.transactions)
-          ..where((t) => t.id.equals(id)))
-        .write(db.TransactionsCompanion(deletedAt: Value(now)));
   }
 
   Transaction _toDomain(db.Transaction row) => Transaction(

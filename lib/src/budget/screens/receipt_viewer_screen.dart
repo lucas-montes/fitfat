@@ -10,15 +10,11 @@ import '../../../l10n/app_localizations.dart';
 import '../../settings/providers/settings.dart';
 import '../format.dart' as bf;
 import '../models/receipt.dart';
-import '../models/transaction.dart';
-import '../providers/fx_rates.dart';
 import '../providers/receipts.dart';
 import '../providers/services.dart';
-import '../providers/transactions.dart';
-import '../services/currency.dart';
 
-/// Receipt detail: image, upload status, parsed OCR data, and actions to
-/// upload (if pending) or review the draft expense created from the parse.
+/// Receipt detail: image, upload status, parsed OCR data, and the action to
+/// upload it (if pending).
 final class ReceiptViewerScreen extends ConsumerWidget {
   final String receiptId;
 
@@ -98,21 +94,6 @@ final class ReceiptViewerScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 _ParsedData(json: receipt.parsedJson, base: base),
-                const SizedBox(height: 16),
-                if (receipt.transactionId != null)
-                  FilledButton.icon(
-                    onPressed: () => context.push(
-                      '/budget/transaction/${receipt.transactionId}',
-                    ),
-                    icon: const Icon(Icons.edit_note_outlined),
-                    label: Text(l10n.receiptReviewDraft),
-                  )
-                else
-                  OutlinedButton.icon(
-                    onPressed: () => _createDraft(context, ref, receipt),
-                    icon: const Icon(Icons.note_add_outlined),
-                    label: Text(l10n.receiptCreateDraft),
-                  ),
               ],
             ],
           );
@@ -127,67 +108,18 @@ final class ReceiptViewerScreen extends ConsumerWidget {
     Receipt receipt,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    final base = ref.read(settingsProvider).baseCurrency;
-    final rates = Map<String, double>.from(
-      ref.read(fxRatesProvider).value ?? {},
-    );
-    rates[base] = 1.0;
     try {
-      await ref
-          .read(budgetSyncServiceProvider)
-          .uploadAndParse(receipt.id, baseCurrency: base, ratesToBase: rates);
+      await ref.read(budgetSyncServiceProvider).uploadAndParse(receipt.id);
+      // The server parsed it and the phone has forgotten it: nothing left to
+      // show here.
       if (context.mounted) {
-        ref.invalidate(receiptByIdProvider(receipt.id));
         ref.invalidate(receiptListProvider);
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (context.mounted) {
         showTopBanner(context, message: l10n.errorWithMessage('$e'));
       }
-    }
-  }
-
-  Future<void> _createDraft(
-    BuildContext context,
-    WidgetRef ref,
-    Receipt receipt,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    if (receipt.parsedJson == null) {
-      showTopBanner(context, message: l10n.receiptNotParsed);
-      return;
-    }
-    final json = jsonDecode(receipt.parsedJson!) as Map<String, dynamic>;
-    final base = ref.read(settingsProvider).baseCurrency;
-    final rates = Map<String, double>.from(
-      ref.read(fxRatesProvider).value ?? {},
-    );
-    rates[base] = 1.0;
-    final total = (json['total'] is num)
-        ? (json['total'] as num).toDouble()
-        : 0.0;
-    final currency = (json['currency'] as String?) ?? base;
-    final (amountBase, rateUsed) = convertToBase(total, currency, base, rates);
-    final txn = newTransaction(
-      type: TransactionType.expense,
-      amount: total,
-      currencyCode: currency,
-      amountBase: amountBase,
-      rateUsed: rateUsed,
-      accountId: null,
-      category: json['merchant'] as String?,
-      date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
-      note: 'Parsed from receipt',
-      receiptId: receipt.id,
-      isDraft: true,
-    );
-    await ref.read(transactionRepositoryProvider).insert(txn);
-    await ref
-        .read(receiptRepositoryProvider)
-        .update(receipt.copyWith(transactionId: txn.id));
-    if (context.mounted) {
-      ref.invalidate(receiptByIdProvider(receipt.id));
-      context.push('/budget/transaction/${txn.id}');
     }
   }
 
