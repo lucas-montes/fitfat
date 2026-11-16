@@ -1,5 +1,7 @@
 # Plan: Performance — slow startup + laggy workout editing (Phase PF)
 
+**Status:** completed — the deferred branch and the cached exercise map.
+
 ## Change Summary
 
 Two complaints (review 2026-08-19):

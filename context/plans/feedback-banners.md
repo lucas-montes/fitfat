@@ -1,5 +1,7 @@
 # Plan: Feedback banners — keep only deletion-undo
 
+**Status:** partially implemented — the banner widget and its 2-second default shipped, but roughly 15 informational (non-undo, non-error) banners remain, which this policy forbids.
+
 ## Change Summary
 
 The app uses a custom top banner (`showTopBanner` / `showTopBannerOverlay` in
@@ -26,7 +28,7 @@ they are critical feedback, not noise.
 
 ## Task Stack
 
-- [x] T01: `Remove non-undo banner call sites` (status:done)
+- [x] T01: `Remove non-undo banner call sites` (status:done) — the policy has since drifted: roughly 15 informational (non-undo, non-error) banners remain
   - Task ID: T01
   - Goal: Remove every `showTopBanner` / `showTopBannerOverlay` call that is not a
     deletion-undo banner or an error banner.

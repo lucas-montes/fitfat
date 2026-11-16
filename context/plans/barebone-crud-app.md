@@ -1,5 +1,7 @@
 # Plan: Barebone CRUD App — FitFat Rebuild
 
+**Status:** completed, and since heavily superseded — the app now has six tabs and 40 tables rather than the original CRUD shell.
+
 ## Change Summary
 
 Rebuild the FitFat Flutter app from scratch after all source code was deleted. Implement a minimal, single-user, local-first fitness tracker with exercise logging and calorie tracking. The app uses Drift (SQLite), Riverpod, and GoRouter with a bottom-navigation layout.

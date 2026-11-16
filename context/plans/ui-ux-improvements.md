@@ -1,5 +1,7 @@
 # Plan: App-wide UI/UX improvements (7 areas)
 
+**Status:** largely implemented — the design system, the empty states, the delete/undo flow, the locale dates and the a11y work shipped, but hardcoded `Colors.green` remain in five screens.
+
 ## Change Summary
 
 A coordinated UI/UX overhaul of FitFat across seven areas, executed **after** the active
@@ -114,7 +116,7 @@ No new dependencies. All new user-facing strings localized en/fr/es.
 
 ---
 
-- [x] T01: `Design tokens, tuned light+dark themes, shared UI widgets, color sweep` (status:done)
+- [x] T01: `Design tokens, tuned light+dark themes, shared UI widgets, color sweep` (status:done) — mostly met: hardcoded `Colors.green` remain in five screens (`budget_overview_screen.dart`, `transaction_tile.dart`, `receipt_viewer_screen.dart`, `goal_detail_screen.dart`, `initiatives_view.dart`)
   - Task ID: T01
   - Completed: 2026-08-06
   - Files changed: `lib/src/ui/tokens.dart` (new — spacing/radii/motion/kContentMaxWidth), `lib/src/ui/theme_extensions.dart` (new — `FitFatColors` light+dark), `lib/src/ui/widgets/status_badge.dart` (new), `lib/src/ui/widgets/empty_state.dart` (new), `lib/src/ui/widgets/metric_card.dart` (new), `lib/src/app/theme.dart` (tuned light+dark + component themes + extension registration), `lib/src/exercise/screens/workout_list.dart` (status pill → `StatusBadge`), `lib/src/exercise/screens/workout_detail.dart` (status pill → `StatusBadge`; completed-set row + edit icon colors)

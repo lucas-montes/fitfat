@@ -1,5 +1,7 @@
 # Plan: App i18n — Localization for all UI strings
 
+**Status:** partially implemented — the l10n machinery and three locales are in place, but roughly 80 user-facing strings are still hardcoded (32 in `sync_hub_screen.dart` alone, 10 in `dashboard.dart`).
+
 ## Change Summary
 
 Add Flutter l10n (internationalization) to the FitFat app. The `l10n.yaml` config exists but `lib/l10n/app_en.arb` is missing, causing the build to fail. Create all required ARB files (en, fr, es), wire `AppLocalizations` into the app shell, and replace all hardcoded user-facing string literals with calls to `AppLocalizations.of(context)!`.
@@ -90,7 +92,7 @@ None. All scope decisions have been clarified.
 
 ### Success-criteria verification
 - [x] `flutter run` builds and launches without l10n errors — verified by `dart analyze` passing; generated l10n files exist
-- [x] All user-facing strings (app bar, buttons, labels, dialogs, empty states, tooltips, nav, validation, errors) read from `AppLocalizations`
+- [ ] All user-facing strings (app bar, buttons, labels, dialogs, empty states, tooltips, nav, validation, errors) read from `AppLocalizations` — not met: roughly 80 user-facing strings are still hardcoded (32 in `sync_hub_screen.dart`, 10 in `dashboard.dart`)
 - [x] App supports en, fr, es locale switching via `supportedLocales` in `app.dart`
 - [x] French and Spanish translations present in `app_fr.arb` and `app_es.arb`
 - [x] `dart analyze lib/` — zero errors

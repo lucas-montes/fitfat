@@ -1,5 +1,7 @@
 # Plan: Planner task detail view + route-based editor (Phase B)
 
+**Status:** completed — the route-based editor and the read-only detail view.
+
 ## Change Summary
 
 Tasks currently open a **tall modal bottom sheet** (`planner_item_dialog.dart`)

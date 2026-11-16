@@ -1,5 +1,7 @@
 # Plan: qr-server-config
 
+**Status:** completed for its stated scope — scanning a pairing QR and validating the URL, key and duplicates. QR *generation* was an explicit non-goal of this plan and does not exist in the app.
+
 ## Change summary
 
 Add a "Scan QR" action to the Sync hub `_ServerConfigCard` that fills both `remoteSyncBaseUrl` and `remoteSyncApiKey` from a single QR payload `{"url":"http://127.0.0.1:3030","apiKey":"fitfat-sync-key","version":1}`, then auto-tests the connection via `HttpApiClient`. Uses `mobile_scanner` for camera preview, validates `version==1` + URL + key, persists via `settingsProvider`, shows inline success/error.

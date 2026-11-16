@@ -1,5 +1,7 @@
 # Plan: Settings — hub subviews + System language default
 
+**Status:** completed — the hub of five sub-screens (Profile, Notifications, Appearance & Language, Budget & Currency, Data) and the System language segment that clears the stored locale.
+
 ## Change Summary
 
 1. Split the single scrolling `SettingsScreen` into a hub of `ListTile`s that

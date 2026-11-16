@@ -3,29 +3,87 @@
 | Area | File | Description |
 |------|------|-------------|
 | Overview | [overview.md](overview.md) | Project overview and design principles |
-| Architecture | [architecture.md](architecture.md) | App shell layout, navigation, routing, database |
+| Architecture | [architecture.md](architecture.md) | App shell layout, navigation, routing, database, data sync |
 | Glossary | [glossary.md](glossary.md) | Domain terminology |
-| Plans | [plans/barebone-crud-app.md](plans/barebone-crud-app.md) | Original CRUD implementation plan (completed) |
-| Plans | [plans/app-i18n.md](plans/app-i18n.md) | App i18n — localization for all UI strings (completed) |
-| Plans | [plans/daily-planner.md](plans/daily-planner.md) | Daily planner — per-day todo list for routine tracking (completed) |
-| Plans | [plans/app-improvements.md](plans/app-improvements.md) | App-wide improvements batch: nutriments, search, due dates, body metrics, settings, notifications (completed) |
-| Plans | [plans/ui-ux-improvements.md](plans/ui-ux-improvements.md) | App-wide UI/UX overhaul: design system, dashboard, empty states, interactions, delete/undo, locale dates, floating bar, a11y, platform polish (completed) |
-| Plans | [plans/active-workout-flow.md](plans/active-workout-flow.md) | Active workout flow redesign: unique active view (`/active-workout`), rest per set (schema v5), summary (completed) |
-| Plans | [plans/app-polish-batch.md](plans/app-polish-batch.md) | App polish batch: dashboard settings button, BW goal, quick-action chips, planner notes + day swipe, set decimals, active-workout back button, set completion time (completed) |
-| Plans | [plans/remove-dashboard-quick-actions.md](plans/remove-dashboard-quick-actions.md) | Remove dashboard quick-action chips — weight/height entry only via the BodyMetricsCard (completed) |
-| Plans | [plans/dashboard-calories-catalog-reminders.md](plans/dashboard-calories-catalog-reminders.md) | Dashboard rework (calorie ring, macros, weight trend, weekly volume), calorie target engine, exercise catalog + history/detail, planner due time + task reminders (completed) |
-| Plans | [plans/exercise-filters-metadata.md](plans/exercise-filters-metadata.md) | Exercise search + tag filters, tabbed detail screen (History/Details), curated video subset, catalog metadata normalization + structured FAQs, importer refresh (completed) |
+| Patterns | [patterns.md](patterns.md) | Placeholder — reserved for recurring implementation patterns; nothing recorded yet |
+
+## Domain context
+| Area | File | Description |
+|------|------|-------------|
+| Database | [database/schema.md](database/schema.md) | Full schema: tables, columns, types, generated code, and the migration history up to the current version |
 | UI | [ui/design-system.md](ui/design-system.md) | Design system: tokens, tuned light+dark themes, `FitFatColors`, `DateFormats`, shared widgets (incl. `EmptyState`), `lib/src/ui/` layout |
-| Database | [database/schema.md](database/schema.md) | Full schema: tables, columns, types, generated code |
-| Diet | [diet/ingredient-crud.md](diet/ingredient-crud.md) | Ingredient CRUD: repository, providers, screens, soft-archive semantics (v4) |
+| Diet | [diet/ingredient-crud.md](diet/ingredient-crud.md) | Ingredient CRUD: repository, providers, screens, soft-archive semantics |
+| Diet | [diet/food-crud.md](diet/food-crud.md) | Food CRUD: the `meal → food → ingredient` layer, per-100g resolution, repository, providers, screens |
 | Diet | [diet/meal-crud.md](diet/meal-crud.md) | Meal CRUD: repository, providers, screens |
-| Exercise | [exercise/exercise-crud.md](exercise/exercise-crud.md) | Exercise definition CRUD + catalog: repository, providers, screens, search + filters, catalog build/import/refresh, tabbed detail screen (History/Details) |
-| Exercise | [exercise/workout-crud.md](exercise/workout-crud.md) | Workout CRUD: repository, providers, screens, workflow |
-| Dashboard | [dashboard/dashboard.md](dashboard/dashboard.md) | Dashboard: greeting header, calorie progress ring (consumed vs target), macro-targets progress, weight trend (Add weight/height), weekly workout volume/minutes, upcoming timed tasks, latest workout card, welcome hub |
+| Exercise | [exercise/exercise-crud.md](exercise/exercise-crud.md) | Exercise definition CRUD + catalog: repository, providers, screens, search + filters, the server-synced catalogue, tabbed detail screen |
+| Exercise | [exercise/workout-crud.md](exercise/workout-crud.md) | Workout CRUD: repository, providers, screens, workflow, active workout, summary |
+| Dashboard | [dashboard/dashboard.md](dashboard/dashboard.md) | Dashboard: today strip, nutrition hero, weight trend, workout hero, goals overview, budget mini, welcome hub |
 | Body | [body/body-metrics.md](body/body-metrics.md) | Body metrics: weight/height table, model, repository, providers, dashboard card |
 | Settings | [settings/settings.md](settings/settings.md) | App settings: theme mode, language, calorie profile (age/gender/activity/body-fat), body-weight goal, task-reminder toggle; shared_preferences storage |
 | Notifications | [notifications/notifications.md](notifications/notifications.md) | Active-workout rest timer + ongoing foreground notification + planner task reminders (due-time + 30-min pre-reminder, Settings toggle, tap → Plan) |
-| Planner | [planner/planner.md](planner/planner.md) | Daily planner: table, model, repository, providers, screens; optional due date + due time with reminders |
-| Network | [network/network.md](network/network.md) | Decoupled HTTP layer (Phase E): ApiClient (`HttpApiClient`/`MockApiClient`) + `apiClientProvider`; FX endpoint seam `FX_API_BASE_URL` behind `FxRateRemoteService` |
+| Planner | [planner/planner.md](planner/planner.md) | Daily planner: table, model, repository, providers, screens; optional due date + due time with reminders; recurring series and carry-over |
+| Network | [network/network.md](network/network.md) | Decoupled HTTP layer (`ApiClient`/`HttpApiClient`/`MockApiClient` + `apiClientProvider`); FX endpoint seam `FX_API_BASE_URL` behind `FxRateRemoteService` |
 | Performance | [performance.md](performance.md) | Perf guardrails: lazy tab branches (DeferredBranch), memoized workout-form catalog map, bulk history/stats queries, scoped tickers |
-| Sync | [sync/sync-contract.md](sync/sync-contract.md) | Data-sync contract (v1 draft + MVP client shipped 2026-08-23): offline-first delta protocol, entity inventory, LWW conflict policy, device/account bootstrap, batch/idempotency guards; §11 records the implemented pull envelope — Bearer API key, `since=` cursor, full-payload exercises/ingredients (with nested pictures/prices + top-level stores), daily FX snapshots, and ingredient push |
+| Sync | [sync/sync-contract.md](sync/sync-contract.md) | Data-sync contract (v1 draft + the implemented pull envelope): offline-first delta protocol, entity inventory, LWW conflict policy, device/account bootstrap, batch/idempotency guards |
+
+## Plans
+
+Every plan in `context/plans/` carries a `**Status:**` line directly under its
+title. That line — not the checkboxes — is the authoritative statement of
+whether the work shipped. A plan can be `completed` with a task still
+unchecked when that task was verified only by inspection or is a device-side
+manual check.
+
+### In progress
+| Plan | Status | Description |
+|---|---|---|
+| `multi-server-secure-link` | partially implemented | The server profile list, the active-server switch, the QR scan and the `/health` test shipped. The API keys are still in plain SharedPreferences: `FlutterSecureStorage` is declared in `lib/src/settings/providers/settings.dart` and never used, and the planned `getApiKeyFor(id)` accessor does not exist. **This is the one real security gap in the app** |
+| `selective-sync-catalog` | code complete, manual QA outstanding | The minimal catalogue tables, the server catalogue endpoints, the background refresh, the bulk-vs-selective menus and the hub de-duplication all shipped. The four acceptance criteria are device-side checks: AC1/AC3/AC4 were verified by inspection only, and AC2's automated test (`test/catalog_selective_sync_test.dart`) compiles but has never executed in this environment |
+| `task-carryover-notifications-fix` | code complete, manual device QA outstanding | The rollover ordering, the reminder rescheduling for rolled tasks, the reminder lifecycle on task mutations, the settings-based default time for untimed tasks and the exact-alarm fallback all shipped. All five acceptance criteria are device checks that have not been run |
+| `app-i18n` | partially implemented | The l10n machinery and three locales are in place, but roughly 80 user-facing strings are still hardcoded (32 in `sync_hub_screen.dart`, 10 in `dashboard.dart`) |
+| `feedback-banners` | partially implemented | The banner widget and its 2-second default shipped, but roughly 15 informational (non-undo, non-error) banners remain, which this policy forbids |
+| `sync-import-export` | partially implemented | The sync hub, the personal-pool push and pull and the JSON backup export/import shipped. The whole-SQLite export was dropped (`BackupFormat` is JSON only), and `lib/src/sync/user_data_sync_client.dart` is dead code whose `pullSelected()` is a no-op |
+| `settings-additions` | partially implemented | The units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent |
+| `dashboard-redesign` | partially implemented | The nutrition and workout hero cards, the weight trend, the today strip and the goals overview shipped. The experiments nudge card is impossible (the feature was removed in schema v37) and the projection reads "trending down" rather than "goal in ~X weeks" |
+| `dashboard-calories-catalog-reminders` | partially implemented | The calorie target engine, the exercise history/detail tabs and the task reminders shipped. The progress "ring" is now bars, and the bundled `assets/exercises.db` seeding is gone — the catalogue now arrives by server sync |
+| `rest-timer-data-reset-catalog-polish` | partially implemented | The count-up rest timer, the rest alarm, the data reset and the Notes tab shipped; "reset re-imports the bundled catalogue" cannot work because there is no bundled catalogue any more |
+| `ui-ux-improvements` | largely implemented | The design system, the empty states, the delete/undo flow, the locale dates and the a11y work shipped, but hardcoded `Colors.green` remain in five screens |
+| `app-polish-batch` | completed with one deviation | Set values always print one decimal, rather than only when fractional (`formatWeightValue` in `lib/src/ui/units.dart`) |
+| `appbar-declutter` | partially implemented | The feature it declutters, "copy previous day", no longer exists anywhere in the app, and the planner appbar now shows a two-segment control rather than a More menu |
+| `daily-planner` | partially implemented | The planner tab, per-day CRUD, reordering and persistence shipped; "copy from previous day" is gone, superseded by recurrence and carry-over |
+
+### Completed
+| Plan | Description |
+|---|---|
+| `barebone-crud-app` | The original CRUD implementation, since heavily superseded (six tabs, 40 tables) |
+| `app-improvements` | The app-wide batch: nutriments, meal-form search, due dates, body metrics, the profile, theme and language, the foreground notification, the rest timer |
+| `active-workout-flow` | The active workout redesign: the unique `/active-workout` route, per-set rest (schema v5), the workout summary |
+| `active-workout-redo` | The exercise cards (notes, media, fact chips, history) and the set rows (no number, stacked plan/actual, progress colouring) |
+| `active-workout-declutter` | The merged top card, the rest-to-current-exercise jump, the set markings |
+| `workout-replay` | The routine id, the replay action and the prefill preference |
+| `exercise-detail-rework` | The exercise detail summary row, the trend chart and the History/Details tabs |
+| `exercise-filters-metadata` | The type/body-part/equipment/muscle filters, the tabbed detail screen, the metadata normalisation. The curated-video allowlist and its asset pipeline live outside `lib/` |
+| `foods-meal-food-ingredient` | Normalising the diet to `meal → food → ingredient`, with the per-100g resolution and the food form |
+| `ingredient-metadata` | Barcode, brand, stores, prices and pictures on an ingredient; the planned mock scanner was replaced by a real scanner plus a server-side Open Food Facts lookup |
+| `calorie-macro-phases` | The named-step calorie derivation, the configurable cutting/bulking/maintenance phases and the uniform dashboard row |
+| `planner-task-detail` | The planner task detail view and the route-based editor |
+| `recurring-task-scope` | "This one" / "This and all following" for editing and deleting a recurring series |
+| `remove-dashboard-quick-actions` | Removing the dashboard quick-action chips — weight and height are entered only through the body-metrics card |
+| `quick-wins` | The vertical planned-set column and the 48x48 picker thumbnails |
+| `notification-timers` | The event-driven notification refresh and the resume resync |
+| `notification-lock-screen` | The rest-timer notification on the lock screen (public visibility + alarm category) |
+| `settings-rework` | Settings as a hub of five sub-screens, with the System language segment that clears the stored locale |
+| `network-client` | The decoupled, mockable HTTP layer (`ApiClient` / `HttpApiClient` / `MockApiClient`) |
+| `picker-server-fetch-fix` | The API timeout, the loading spinners and the friendly failure banner |
+| `qr-server-config` | Scanning a pairing QR, validating the URL/key/duplicates and auto-testing the server |
+| `sync-picker-reuse` | The shared picker reused across the sync flows |
+| `sync-contract` | The offline-first delta contract, the entity inventory, the LWW policy and the implemented pull envelope |
+| `performance` | The isolated elapsed ticker, the debounced picker, the bulk set query and the bulk weekly stats |
+| `performance-startup-edit` | The deferred tab branches and the cached workout-form exercise map |
+| `fx-display` | The manual-override marker and the rate display |
+
+## Dropped plans
+| Plan | Why it was dropped |
+|---|---|
+| `composite-ingredients` | The `ingredient_components` schema (v33) was dropped in v34 and the capability re-architected as `meal → food → ingredient`; see `foods-meal-food-ingredient` |
+| `experiments` | The feature was removed from the app entirely — schema v37 drops `experiments`, `experiment_checkins` and their junction tables. The server still carries the tables, so the desktop's Experiments tab is the one loose end (see `ui-unified-tabs` in the server repo) |

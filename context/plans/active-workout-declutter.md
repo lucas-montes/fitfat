@@ -1,5 +1,7 @@
 # Plan: Active workout — declutter, set markings, rest → current exercise (Phase AW)
 
+**Status:** completed — the merged top card, the rest-to-current-exercise jump and the set markings all shipped.
+
 ## Change Summary
 
 Give the active-workout screen breathing room and fix its feedback signals

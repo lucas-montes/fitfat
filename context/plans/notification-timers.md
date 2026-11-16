@@ -1,5 +1,7 @@
 # Plan: Notification timers — event-driven refresh + resume resync
 
+**Status:** completed — the event-driven notification refresh and the resume resync.
+
 ## Change Summary
 
 The ongoing active-workout notification's elapsed and rest timers occasionally

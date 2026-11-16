@@ -1,5 +1,7 @@
 # Plan: App polish batch — dashboard, settings, planner, workout sets
 
+**Status:** completed with one deviation — set values always print one decimal, rather than only when fractional.
+
 ## Change Summary
 
 Eight user-requested UX/data changes across the dashboard, settings, planner, and workout screens
@@ -44,7 +46,7 @@ Two sequential schema bumps: **v5 → v6** (`planner_items.notes`, T04) and **v6
   tile, carried by copy-from-previous-day, and round-tripped through insert/update/delete+undo.
 - Planner day body swipes left/right to change the day (chevrons + Today still work; swiping on a
   tile still deletes).
-- Set weights/distances display one decimal only when fractional in detail, active, and summary
+- Set weights/distances display one decimal only when fractional in detail, active, and summary — not met: `formatWeightValue` in `lib/src/ui/units.dart` always uses `toStringAsFixed(1)`
   screens.
 - `ActiveWorkoutScreen` has a leading back button: pops when possible, else returns to `/exercise`.
 - Recording a set's actuals stamps `completed_at`; the active screen shows the completion time
@@ -142,7 +144,7 @@ Two sequential schema bumps: **v5 → v6** (`planner_items.notes`, T04) and **v6
 
 ---
 
-- [x] T03: `Dashboard quick actions — equal-width row, weight + height chips` (status:done)
+- [x] T03: `Dashboard quick actions — equal-width row, weight + height chips` (status:done) — the quick-action chips were later removed outright by `remove-dashboard-quick-actions.md`
   - Task ID: T03
   - Goal: Replace the dashboard quick-action `Wrap` with an equal-width row of exactly two chips
     (log body weight + log height), removing the meal and start/resume-workout chips.
@@ -293,7 +295,7 @@ Two sequential schema bumps: **v5 → v6** (`planner_items.notes`, T04) and **v6
 
 ---
 
-- [x] T06: `Set value decimals — one decimal only when fractional` (status:done)
+- [ ] T06: `Set value decimals — one decimal only when fractional` (status:done) — not met: `formatWeightValue` in `lib/src/ui/units.dart` always uses `toStringAsFixed(1)`
   - Task ID: T06
   - Goal: Stop rounding set weights/distances to integers — display one decimal only when the value
     is fractional, consistently across the workout detail, active-workout screen, and summary.
@@ -589,7 +591,7 @@ listed under "Residual risks" are owed by the user; no further tasks remain in t
   on a tile still deletes)** — infinite `PageView.builder` `planner_screen.dart:111`,
   `PageController` `:27/:33`, `animateToPage` `:75`, `onPageChanged` `:113` (T05 evidence). Manual
   swipe deferred.
-- [x] **Set weights/distances display one decimal only when fractional in detail, active, and
+- [ ] **Set weights/distances display one decimal only when fractional in detail, active, and — not met: `formatWeightValue` in `lib/src/ui/units.dart` always uses `toStringAsFixed(1)`
   summary** — shared `formatDecimal` `ui/format.dart:4`; used at `workout_detail.dart:252/263/266`,
   `active_workout_screen.dart:422/440/443`, `workout_summary_screen.dart:197/204/210` (T06 evidence).
 - [x] **`ActiveWorkoutScreen` has a leading back button: pops when possible, else returns to

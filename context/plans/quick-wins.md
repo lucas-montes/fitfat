@@ -1,5 +1,7 @@
 # Plan: Quick wins — vertical planned sets + form picker thumbnails
 
+**Status:** completed — the vertical planned-set column and the 48x48 picker thumbnails.
+
 ## Change Summary
 
 Two small UI fixes requested during review (2026-08-17):

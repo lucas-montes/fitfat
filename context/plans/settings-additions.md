@@ -1,5 +1,7 @@
 # Plan: Settings additions — FX auto-refresh, experiment reminders, units, backup (Phase G)
 
+**Status:** partially implemented — the units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent.
+
 ## Change Summary
 
 Fill the settings gaps surfaced in the 2026-08-18 review:
@@ -34,7 +36,7 @@ Fill the settings gaps surfaced in the 2026-08-18 review:
 
 ## Task Stack
 
-- [x] T01: `FX auto-refresh toggle + interval` (status:done)
+- [ ] T01: `FX auto-refresh toggle + interval` (status:done) — not met: there is no FX auto-refresh key in `settings.dart`
   - Task ID: T01
   - Goal: Periodically refresh cached FX rates while enabled.
   - Boundaries (in/out of scope):
@@ -50,7 +52,7 @@ Fill the settings gaps surfaced in the 2026-08-18 review:
   - Verification notes (commands or checks):
     - `flutter gen-l10n`; `dart analyze lib/src/settings/ lib/src/budget/`.
 
-- [x] T02: `App-wide experiment reminder toggle` (status:done)
+- [x] T02: `App-wide experiment reminder toggle` (status:done) — moot: the experiments feature was removed from the app in schema v37
   - Task ID: T02
   - Goal: Master switch for experiment check-in reminders.
   - Boundaries (in/out of scope):

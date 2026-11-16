@@ -1,5 +1,7 @@
 # Plan: selective-sync-catalog
 
+**Status:** code complete, manual QA outstanding — the minimal catalogue tables, the server catalogue endpoints, the background refresh, the bulk-vs-selective menus and the hub de-duplication all shipped. The four acceptance criteria are unchecked because their checks are device-side: AC1/AC3/AC4 were verified by inspection only, and AC2's automated test (`test/catalog_selective_sync_test.dart`) compiles but has never executed in this environment.
+
 ## Change summary
 
 The sync icons in `IngredientListScreen` and `ExerciseListScreen` currently bulk-import every available server row via `SyncService.syncIngredients` / `syncExercises`. This change keeps that bulk path but adds a fine-grained path: a minimal local catalog (`exercises: id + name`; `ingredients: id + name + barcode`) browsed through the existing shared `showSelectSheet` picker, importing only the chosen IDs into the real user tables. The `exercises` / `ingredients` tables remain the imported-data store; two new catalog tables hold the available-data index.
@@ -119,8 +121,10 @@ None. Hub retains its Select buttons (user decision) — selective import stays 
 
 ## Validation Report
 
-**Status:** failed  
+**Validation:** blocked by the environment, not by the code  
 **Date:** 2026-09-13
+
+> The seven failures below are all `Failed to load dynamic library 'libsqlite3.so'` — the library is absent from this Nix shell. They are not failures of the feature. The device-side acceptance criteria (AC1–AC4) were never run.
 
 ### Commands run
 

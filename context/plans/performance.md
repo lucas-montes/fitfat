@@ -1,5 +1,7 @@
 # Plan: Performance — kill the lag
 
+**Status:** completed — the isolated elapsed ticker, the debounced picker, the bulk set query and the bulk weekly stats.
+
 ## Change Summary
 
 The app feels laggy (review 2026-08-17). Three concrete causes + fixes:

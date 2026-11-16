@@ -1,5 +1,7 @@
 # Plan: AppBar decluttering (Phase A)
 
+**Status:** partially implemented — the feature it declutters, "copy previous day", no longer exists anywhere in the app, and the planner appbar now shows a two-segment control rather than the planned single icon plus overflow menu.
+
 ## Change Summary
 
 Stop the appbar from becoming a dumping ground as features grow. Adopt the rule
@@ -25,7 +27,7 @@ the appbar is currently busiest.
 
 ## Task Stack
 
-- [x] T01: `Planner appbar — More menu (copy previous day)` (status:done)
+- [ ] T01: `Planner appbar — More menu (copy previous day)` (status:done) — not met: the copy-previous-day action no longer exists, and the planner appbar shows a two-segment control rather than a More menu
   - Task ID: T01
   - Goal: Reduce the Planner appbar to a single always-visible action by moving
     the copy-previous-day `IconButton` into a `PopupMenuButton`.

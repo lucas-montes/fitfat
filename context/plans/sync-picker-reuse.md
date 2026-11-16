@@ -1,5 +1,7 @@
 # Plan: sync-picker-reuse
 
+**Status:** completed — the shared picker reused across the sync flows.
+
 ## Change summary
 
 Refactor sync hub select lists for exercises/ingredients to reuse the same picker as adding exercises to a workout, with 48×48 picture + name + id, search + tag filters, debounce, ranking, and per-item checkbox. Ingredients show image if `IngredientPicture.imagePath` exists.

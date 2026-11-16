@@ -1,5 +1,7 @@
 # Plan: Ingredient metadata — barcode, brand, stores, prices, pictures (Phase D)
 
+**Status:** completed, and superseded — the barcode, brand, stores, prices and pictures all shipped; the planned mock scanner was replaced by a real scanner plus a server-side Open Food Facts lookup.
+
 ## Change Summary
 
 Give ingredients rich shopping metadata (user-approved scope, 2026-08-18):

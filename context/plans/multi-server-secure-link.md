@@ -1,5 +1,7 @@
 # Plan: multi-server-secure-link
 
+**Status:** partially implemented — the server profile list, the active-server switch, the QR scan and the `/health` test shipped. But the API keys sit in plain SharedPreferences: `FlutterSecureStorage` is declared in `lib/src/settings/providers/settings.dart` and never used, and the planned `getApiKeyFor(id)` accessor does not exist.
+
 ## Change summary
 
 Keep `adb reverse + http://127.0.0.1:3030` for hotspot dev, add multiple `{url,apiKey}` pairs with add/remove only (no edit), persist apiKey in `flutter_secure_storage`, select active server via radio, and add Sync as link tile in Settings that navigates to `/sync` hub (Dashboard stays primary). Endpoints remain global (one set for all servers).
@@ -8,7 +10,7 @@ Keep `adb reverse + http://127.0.0.1:3030` for hotspot dev, add multiple `{url,a
 
 - [x] AC1: Server list supports multiple pairs, add via Scan QR or Add dialog, remove via Delete, select active via radio, no edit
   - Validate: add 2 servers via QR → dropdown shows 2, select second as active → `sharedPreferences` active id + secure storage has 2 keys, delete one → list shows 1
-- [x] AC2: API keys stored in secure storage, not plain prefs
+- [ ] AC2: API keys stored in secure storage, not plain prefs — not met: the keys are written to plain SharedPreferences; `FlutterSecureStorage` is declared in `lib/src/settings/providers/settings.dart` and never used, and the planned `getApiKeyFor(id)` accessor does not exist
   - Validate: `flutter_secure_storage` dep added, `grep -r "sync_api_key" lib/src/settings/providers/settings.dart` shows secure storage, `flutter test` mock secure storage passes
 - [x] AC3: Sync hub and push/pull use active server's URL/key (global endpoints unchanged)
   - Validate: `flutter analyze` clean, manual: select server A → sync uses A, select B → uses B

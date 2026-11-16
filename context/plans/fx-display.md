@@ -1,5 +1,7 @@
 # Plan: Budget FX — rate display upgrade + manual override marker (Phase C)
 
+**Status:** completed — the manual-override marker and the rate display.
+
 ## Change Summary
 
 Make the FX rates the budget uses transparent and auditable:

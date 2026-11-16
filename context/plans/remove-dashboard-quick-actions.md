@@ -1,5 +1,7 @@
 # Plan: Remove dashboard quick-action chips (weight/height)
 
+**Status:** completed — the quick-action chips are gone; weight and height are entered only through the body-metrics card.
+
 ## Change Summary
 
 After app-polish-batch, the dashboard had two duplicated weight/height entry points: the

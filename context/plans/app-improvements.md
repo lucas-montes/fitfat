@@ -1,5 +1,7 @@
 # Plan: App-wide improvements batch (10 items)
 
+**Status:** completed — all ten items (nutriments, meal-form search, due dates, body metrics, the profile, theme and language, the foreground notification, the rest timer).
+
 ## Change Summary
 
 A batch of 10 improvements across FitFat's diet, exercise, planner, dashboard, and settings areas:

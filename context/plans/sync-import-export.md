@@ -1,5 +1,7 @@
 # Plan: sync-import-export
 
+**Status:** partially implemented — the sync hub, the personal-pool push and pull and the JSON backup export/import shipped. The whole-SQLite export was dropped (`BackupFormat` is JSON only), and `lib/src/sync/user_data_sync_client.dart` is dead code whose `pullSelected()` is a no-op placeholder.
+
 ## Change summary
 
 Make import/export and sync discoverable and one-tap easy, replacing the buried Settings → Data view. Extract sync UI into a dedicated Sync hub (`/sync`) reachable from Dashboard (not Settings), with three sections: **Global pool** (pull exercises/ingredients/currencies from shared catalogue — now with selective sync so the user can pick which exercises/ingredients to pull instead of all; currencies stays global), **Personal pool** (push/pull the user's own data — tasks, notes, goals, workouts, workout templates, experiments, meals, body metrics, accounts/transactions, receipts — to their private server namespace, manual only), and **Local backup** (file-based export/import via share sheet + file picker — JSON per-entity or SQLite whole DB). Keep the existing `ApiClient`/`SyncService` and `remoteSyncBaseUrl`/`remoteSyncApiKey` seam, but surface last-sync time, progress, and errors inline. This extends the MVP sync without new tables.
@@ -10,11 +12,11 @@ Make import/export and sync discoverable and one-tap easy, replacing the buried 
   - Validate: `grep -r "/sync" lib/src/app/router.dart` shows route; manual: Dashboard → Sync card → hub renders three sections; Settings has no Sync tile
 - [x] AC2: Global pool sync for exercises, ingredients and currencies is one-tap from the hub (and still from list app bars) with last-sync timestamp and error banner, and supports selective sync for exercises/ingredients (pick which to pull); currencies stays global
   - Validate: `flutter test` for `ExerciseSyncClient`/`IngredientSyncClient` still passes; manual: hub → Select exercises → pick 3 → Sync → only those 3 upserted; currencies sync from hub Global section
-- [x] AC3: Personal pool push/pull for user data (tasks, notes, goals, workouts, workout templates, experiments, meals, body metrics, accounts/transactions, receipts) works via the same base URL + per-entity endpoints — export everything
+- [x] AC3: Personal pool push/pull for user data (tasks, notes, goals, workouts, workout templates, experiments, meals, body metrics, accounts/transactions, receipts) works via the same base URL + per-entity endpoints — export everything — the experiments entity no longer exists
   - Validate: `flutter test` for new `UserDataSyncClient`; manual: Push my data → server receives JSON for all entities including experiments/templates; Pull my data → local rows upserted
 - [x] AC4: Local file backup export/import is one-tap (share sheet for export, file picker for import) and does not require navigating Settings → Data → Export DB — supports JSON per-entity and SQLite whole DB, covering all entities (including experiments, templates)
   - Validate: `flutter test` for file backup helper; manual: Export whole DB → share `fitfat-YYYY-MM-DD.sqlite`; Export selected → share `fitfat-YYYY-MM-DD.json` with all entities; Import → file picker → confirm → data restored
-- [x] AC5: Existing Settings → Data view is simplified (keeps Export/Reset, no sync controls — sync is Dashboard-only)
+- [ ] AC5: Existing Settings → Data view is simplified (keeps Export/Reset, no sync controls — sync is Dashboard-only) — superseded: a Settings → Sync tile was re-added by the later multi-server plan
   - Validate: `grep -r "SyncServerCard\|_SyncServerCard" lib/src/settings/screens/settings_screen.dart` shows no sync controls; Settings Data shows only Export/Reset
 
 ### Full validation
@@ -64,7 +66,7 @@ Make import/export and sync discoverable and one-tap easy, replacing the buried 
   - Context impact: context/sync/sync-contract.md, context/architecture.md need hub docs
   - Context synchronization: synced
 
-- [x] T02: Local backup export/import — JSON per-entity or SQLite whole DB, all entities (status:done)
+- [x] T02: Local backup export/import — JSON per-entity or SQLite whole DB, all entities (status:done) — the SQLite whole-DB export was dropped; the format is JSON only (`BackupFormat {json, jsonGzip}`)
   - Task ID: T02
   - Scope: In — add `file_picker` dep, helper `lib/src/sync/local_backup.dart` (export: if whole DB → copy `fitfat.sqlite` to temp `fitfat-YYYY-MM-DD.sqlite` + `SharePlus.instance.share`; if per-entity → JSON dump per entity via `DataPushService` tables covering all entities (tasks, notes, goals, workouts, workout templates, experiments, meals, body metrics, accounts/transactions, receipts) → share `fitfat-YYYY-MM-DD.json`; import: pick `.sqlite` or `.json` + confirm dialog + replace DB or upsert JSON + restart prompt), wire to Sync hub Local section with per-entity toggles + "Whole database" toggle. Out — server sync.
   - Dependencies: T01
@@ -76,7 +78,7 @@ Make import/export and sync discoverable and one-tap easy, replacing the buried 
   - Context impact: context/sync/sync-contract.md needs local backup docs
   - Context synchronization: synced
 
-- [x] T03: Personal pool push/pull for user data — per-entity toggles + Push all, all entities (status:done)
+- [x] T03: Personal pool push/pull for user data — per-entity toggles + Push all, all entities (status:done) — the per-entity client in `lib/src/sync/user_data_sync_client.dart` is dead code whose `pullSelected()` is a no-op; the real pull lives in `personal_pull_service.dart`
   - Task ID: T03
   - Scope: In — new `lib/src/sync/user_data_sync_client.dart` (push/pull for tasks, notes, goals, workouts, workout templates, experiments, meals, body metrics, accounts/transactions, receipts via `ApiClient` + `endpoint*` + `SyncStateStore` cursors), extend `SyncService` with `pushUserData`/`pullUserData`, wire to Sync hub Personal section with per-entity toggles + "Push all" shortcut covering all entities. Out — global pool changes.
   - Dependencies: T01

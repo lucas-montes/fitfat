@@ -1,5 +1,7 @@
 # Plan: dashboard-redesign
 
+**Status:** partially implemented — the nutrition and workout hero cards, the weight trend, the today strip and the goals overview shipped. The experiments nudge card is impossible (the feature was removed in schema v37) and the projection reads "trending down" rather than "goal in ~X weeks".
+
 ## Change summary
 
 Redesign the Dashboard (`lib/src/dashboard/screens/dashboard.dart`) from a static "today at a glance" summary into an actionable **Today-first** view. Remove the greeting header to reclaim space, merge the calorie ring + macro bars into one nutrition hero (always showing a target, falling back to maintenance when profile is incomplete), merge latest workout + weekly volume/minutes into one workout card, enhance the weight trend with deltas and a projection to the body-weight goal, replace the vertical upcoming-tasks list with a horizontally scrollable **Today strip** that aggregates tasks + goals needing progress + experiments needing check-in (sorted by priority/recency, inline done toggle), and surface ongoing goals, experiments and budget overview on the dashboard. This extends existing dashboard behavior and reuses existing providers/repositories; no new tables.
@@ -8,15 +10,15 @@ Redesign the Dashboard (`lib/src/dashboard/screens/dashboard.dart`) from a stati
 
 - [x] AC1: Dashboard no longer renders the greeting header; reclaimed vertical space is used by content cards
   - Validate: `grep -r "_GreetingHeader\|dashboardGreeting" lib/src/dashboard/screens/dashboard.dart` shows no greeting widget; visual inspection on `/dashboard` shows no greeting
-- [x] AC2: Nutrition hero shows calorie ring + macro targets together in one card and always displays a target (maintenance fallback when age/gender/weight/height incomplete)
+- [x] AC2: Nutrition hero shows calorie ring + macro targets together in one card and always displays a target (maintenance fallback when age/gender/weight/height incomplete) — the ring became bars (`_MacroTargetRow`); the single card and the always-visible target are as planned
   - Validate: `flutter test` for `calorieTargetProvider` fallback; manual: clear profile (no age/gender) → dashboard still shows ring with maintenance estimate and macro bars
 - [x] AC3: Workout card merges latest workout (or Continue) + weekly volume/minutes into a single card
   - Validate: `grep -r "_LatestWorkoutCard\|_WeeklyWorkoutCard" lib/src/dashboard/screens/dashboard.dart` shows single merged widget; visual: one card shows latest workout + 7d volume/minutes
 - [x] AC4: Weight trend card shows deltas (7d / 30d) and a projection to the body-weight goal when a goal is set
   - Validate: `flutter test` for delta/projection helpers; visual: weight card shows "−0.6 kg (7d) · −2.1 kg (30d)" and "→ goal in ~X weeks" when `bodyWeightGoal` != null and entries ≥2
-- [x] AC5: Horizontally scrollable Today strip aggregates today's tasks + goals needing action + experiments needing check-in, sorted by priority/recency, with inline done toggle and navigation
+- [x] AC5: Horizontally scrollable Today strip aggregates today's tasks + goals needing action + experiments needing check-in, sorted by priority/recency, with inline done toggle and navigation — the experiments part is gone (the feature was removed in schema v37)
   - Validate: `flutter test` for Today strip provider sorting; visual: horizontal `ListView` on dashboard, tasks show checkbox toggle inline, tapping opens detail, sorted by tags/priority then due time
-- [x] AC6: Ongoing goals and experiments are visible on dashboard (progress bars for active goals, check-in nudge for active experiments)
+- [ ] AC6: Ongoing goals and experiments are visible on dashboard (progress bars for active goals, check-in nudge for active experiments) — the goals half shipped; the experiments half is gone (the feature was removed in schema v37)
   - Validate: create active goal + active experiment → dashboard shows goals section (progress bar via `progressFrom`) and experiment check-in affordance; `flutter test` for goal progress provider
 - [x] AC7: Budget mini is visible when accounts exist (net worth + month income/expense), hidden otherwise
   - Validate: with no accounts → no budget card; with accounts → card shows net worth + month income/expense from `budgetOverviewProvider`; `flutter test` for budget overview

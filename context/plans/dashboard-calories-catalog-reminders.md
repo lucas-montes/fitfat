@@ -1,5 +1,7 @@
 # Plan: Dashboard rework, calorie needs, exercise catalog + history, task reminders
 
+**Status:** partially implemented — the calorie target engine, the exercise history/detail tabs and the task reminders shipped; the progress "ring" is now bars, and the bundled `assets/exercises.db` seeding is gone (the catalog now arrives by server sync).
+
 ## Change Summary
 
 Four user-requested features (decisions resolved with the user 2026-08-10):
@@ -144,7 +146,7 @@ documented as an optional, deferred build step).
     `dart analyze lib/` zero errors.
   - Verification notes: `dart analyze lib/`; manual on-device deferred.
 
-- [x] T05: `Dashboard rework — ring, macros, weight trend, weekly volume, tasks` (status:done)
+- [x] T05: `Dashboard rework — ring, macros, weight trend, weekly volume, tasks` (status:done) — the ring became bars
   - Task ID: T05
   - Goal: Rebuild the dashboard card set per the decisions: calorie progress ring (hidden until
     inputs complete), macro-targets progress, body-weight trend (with Add weight/height moved in;
@@ -169,7 +171,7 @@ documented as an optional, deferred build step).
   - Done when: interactions reroute correctly; locked guards active; `dart analyze lib/` zero errors.
   - Verification notes: `rg -n "onLongPress|isLocked|exerciseLocked" lib/src/exercise`.
 
-- [x] T07: `Catalog tooling — JSON → assets/exercises.db + media prep` (status:done)
+- [x] T07: `Catalog tooling — JSON → assets/exercises.db + media prep` (status:done) — the `tool/` pipeline and `assets/exercises.db` are gone from the repo
   - Task ID: T07
   - Goal: A Dart build script (`tool/build_catalog.dart`) that reads `data/parsed/*.json`, applies
     the heuristic type, and writes `assets/exercises.db` (SQLite, catalog rows); plus
@@ -184,7 +186,7 @@ documented as an optional, deferred build step).
     media files are in `assets/exercises/`; script exits 0.
   - Verification notes: `dart run tool/build_catalog.dart` exit 0; `sqlite3 assets/exercises.db 'select count(*) from exercises'`.
 
-- [x] T08: `Catalog first-launch import + media asset wiring` (status:done)
+- [x] T08: `Catalog first-launch import + media asset wiring` (status:done) — the bundled `assets/exercises.db` import was removed; the catalog now arrives by server sync
   - Task ID: T08
   - Goal: On first launch, import catalog rows from the bundled `assets/exercises.db` into the live
     DB (copy asset to cache, insert locked rows skip-by-name, one-time flag); register media assets

@@ -1,5 +1,7 @@
 # Plan: Active workout flow redesign (unique active view, rest per set, summary)
 
+**Status:** completed — the unique `/active-workout` route, per-set rest (schema v5) and the workout summary.
+
 ## Change Summary
 
 Rework the workout interaction model around a **single dedicated active-workout view** and a

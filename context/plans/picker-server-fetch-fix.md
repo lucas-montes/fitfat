@@ -1,5 +1,7 @@
 # Plan: picker-server-fetch-fix
 
+**Status:** completed — the API timeout, the loading spinners and the friendly failure banner.
+
 ## Change summary
 
 Fix picker timeout and missing visual hint when selecting exercises/ingredients to import. Make `HttpApiClient` respect `settings.apiTimeoutSeconds`, normalize `baseUrl` trailing slash, add busy/loading UI to picker buttons, map `TimeoutException` to friendly banner, and ensure `GET /health` and `GET /exercises?since=0` with `authHeaders` work for the reachable server `http://10.229.34.33:3030/health`.

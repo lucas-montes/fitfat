@@ -1,5 +1,7 @@
 # Plan: Exercise detail — history presentation rework (Phase F)
 
+**Status:** completed — the summary row, the trend chart and the History/Details tabs.
+
 ## Change Summary
 
 Improve the per-workout history card on `ExerciseDetailScreen` (History tab):

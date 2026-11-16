@@ -1,5 +1,7 @@
 # Plan: Active workout redo — exercise cards (notes, media/metadata/history) + set rows
 
+**Status:** completed — exercise cards with notes, media, fact chips and history; the `_SetRow` with no number, stacked plan/actual and progress colouring; the `workout_exercises.notes` migration.
+
 ## Change Summary
 
 Rework the active-workout experience per review (2026-08-17):

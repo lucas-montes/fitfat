@@ -1,5 +1,7 @@
 # Plan: Rest-timer notifications on the lock screen (Phase NT)
 
+**Status:** completed — the public visibility and the alarm category on the ongoing rest-timer notification.
+
 ## Change Summary
 
 **Q (review 2026-08-19):** "Why doesn't the timer notification appear on the

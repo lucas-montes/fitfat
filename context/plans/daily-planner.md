@@ -1,5 +1,7 @@
 # Plan: Daily Planner — per-day todo list for routine tracking
 
+**Status:** partially implemented — the planner tab, per-day CRUD, reordering and persistence shipped; "copy from previous day" is gone, superseded by recurrence and carry-over.
+
 ## Change Summary
 
 Add a new "Plan" tab to FitFat that provides a per-day planning/todo list to track the user's daily routine. Each day has its own independent list of simple tasks (title, done state, sort order). Features: day navigation (previous/next arrows + "Today" button), add/edit/delete/toggle tasks, reorder tasks within a day, and "copy from previous day" to carry pending tasks forward. Follows the existing repo pattern: new Drift table + domain model, repository, Riverpod providers, screens, l10n via ARB (en/fr/es), and a 5th `StatefulShellBranch` in the router.
@@ -166,7 +168,7 @@ Add a new "Plan" tab to FitFat that provides a per-day planning/todo list to tra
 
 ---
 
-- [x] T07: `Reorder tasks + copy from previous day` (status:done)
+- [x] T07: `Reorder tasks + copy from previous day` (status:done) — the copy-from-previous-day action was later removed; recurrence and carry-over superseded it
   - Task ID: T07
   - Goal: Add drag-to-reorder within a day and the "copy from previous day" action to the planner screen.
   - Boundaries (in/out of scope):
@@ -247,7 +249,7 @@ Plan complete — all 8 tasks (T01–T08) are done. Run sce-validation to produc
 - [x] Each day is independent -> `PlannerRepository.getByDay` normalizes to start-of-day and filters by day; analyzer clean. Runtime check deferred (headless).
 - [x] Task CRUD (FAB + dialog create, tap edit, checkbox toggle, swipe-delete with confirmation) -> `planner_screen.dart` + `planner_item_dialog.dart`; analyzer clean.
 - [x] Reorder within a day persists -> `ReorderableListView.builder` + `updateSortOrder` per changed index; analyzer clean. Runtime restart check deferred.
-- [x] Copy from yesterday -> `copyFromPreviousDay` copies only `done == false` items with fresh UUID v7 ids, preserves relative order, returns count; SnackBar `plannerCopyDone(count)` / `plannerCopyNothing`. Runtime check deferred.
+- [ ] Copy from yesterday -> `copyFromPreviousDay` copies only `done == false` items with fresh UUID v7 ids, preserves relative order, returns count; SnackBar `plannerCopyDone(count)` / `plannerCopyNothing`. Runtime check deferred. — the action no longer exists in the app
 - [x] Data persists across restarts -> Drift `planner_items` table in local SQLite. Runtime check deferred.
 - [x] v1 → v2 migration keeps existing data -> `schemaVersion => 2` + explicit `MigrationStrategy` (`onCreate: createAll()`; `onUpgrade: createTable(plannerItems)` for `from < 2`). Runtime migration check deferred.
 - [x] `dart run build_runner build` clean -> `flutter pub run build_runner build` exit 0 (Nix env requires `flutter pub run`).

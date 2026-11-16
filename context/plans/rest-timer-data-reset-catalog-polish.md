@@ -1,5 +1,7 @@
 # Plan: Rest timer, data reset, catalog polish, instant startup, Notes
 
+**Status:** partially implemented — the count-up rest timer, the rest alarm, the data reset and the Notes tab shipped; "reset re-imports the bundled catalog" cannot work because the bundled assets were removed in favour of server-synced catalogue data.
+
 ## Change Summary
 
 Batch of user-requested improvements (decided with the user 2026-08-12; implemented on branch
@@ -59,7 +61,7 @@ Batch of user-requested improvements (decided with the user 2026-08-12; implemen
 
 ## Tasks
 
-- [x] T1 — Reset all data (`data_reset.dart`, Settings destructive row + confirm dialog)
+- [x] T1 — Reset all data (`data_reset.dart`, Settings destructive row + confirm dialog) — reset no longer re-imports a bundled catalog — there is none bundled
 - [x] T2 — Rest count-up timer (`rest_timer.dart` rewrite, `_RestStrip`)
 - [x] T3 — Rest alarm notification (`rest_alarm.dart`, shared `notification_plugin.dart`,
   sound/vibrate toggles, `SCHEDULE_EXACT_ALARM`)
@@ -68,7 +70,7 @@ Batch of user-requested improvements (decided with the user 2026-08-12; implemen
 - [x] T6 — Collapsible detail header + full-screen zoomable image viewer
 - [x] T7 — Workout-form picker: debounce, lazy capped list, create row + auto-select
 - [x] T8 — Summary Done action → `/exercise` (+ `workoutSummaryDone` keys)
-- [x] T9 — Instant startup (`main.dart` trims; `_BackgroundStartup`; transactional catalog import;
+- [x] T9 — Instant startup (`main.dart` trims; `_BackgroundStartup`; transactional catalog import; — the transactional bundled-catalog import is gone; the catalog arrives by server sync
   self-constructing `taskReminderSchedulerProvider`)
 - [x] T10 — Notes: schema v9 table + migration, model, repository, providers, screens, tab,
   build_runner regen, l10n keys

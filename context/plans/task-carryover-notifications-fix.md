@@ -1,5 +1,7 @@
 # Plan: task-carryover-notifications-fix
 
+**Status:** code complete, manual device QA outstanding — the rollover ordering, the reminder rescheduling for rolled tasks, the reminder lifecycle on task mutations, the settings-based default time for untimed tasks and the exact-alarm fallback all shipped. All five acceptance criteria are unchecked because they are device checks that have not been run.
+
 ## Change summary
 
 Fixes two linked planner defects: past pending tasks only appear on today after a manual create/edit (stale timeline / week / dashboard caches and rollover running after the reminder reschedule), and timed-task reminders never fire for carried-over tasks and are unreliable for newly timed tasks (startup/resume ordering, missing timezone init on toggle-on, and reminder lifecycle gaps on rollover/edit). This extends the existing `TaskRepository.rolloverPastTasks` + `TaskReminderScheduler` behavior in `lib/src/app/app.dart`, `lib/src/planner/`, and `lib/src/notifications/task_reminders.dart`; it does not replace the carry-over model (`Task.carryOver`) or the reminder channels.

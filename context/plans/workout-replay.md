@@ -1,5 +1,7 @@
 # Plan: Workout replay + session count tracking (Phase WR)
 
+**Status:** completed — the routine id, the replay action and the prefill preference.
+
 ## Change Summary
 
 Replace the "re-copy each time" flow with a real **replay** concept

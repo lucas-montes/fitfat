@@ -1,5 +1,7 @@
 # Plan: Sync contract design — offline-first design only, no server (Phase H)
 
+**Status:** completed — the offline-first delta contract, the entity inventory, the LWW policy and the implemented pull envelope.
+
 ## Change Summary
 
 Design and document the **data-sync contract** for future server sync —

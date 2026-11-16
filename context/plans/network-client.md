@@ -1,5 +1,7 @@
 # Plan: Network client — decoupled mockable HTTP (Phase E)
 
+**Status:** completed — the `ApiClient` seam with `HttpApiClient` / `MockApiClient` and the `apiClientProvider`.
+
 ## Change Summary
 
 Introduce a small, decoupled network layer so the app can fetch remote data in

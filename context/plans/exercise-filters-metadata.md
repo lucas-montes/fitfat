@@ -1,5 +1,7 @@
 # Plan: Exercise filters, detail tabs, curated videos, metadata cleanup
 
+**Status:** completed — the type / body-part / equipment / muscle filters, the tabbed detail screen and the metadata normalisation. The curated-video allowlist and its asset pipeline live outside `lib/`.
+
 ## Change Summary
 
 Four user-requested improvements to the exercise catalog experience (decided with the user

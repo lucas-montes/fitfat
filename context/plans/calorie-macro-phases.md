@@ -1,5 +1,7 @@
 # Calories, macros and phases
 
+**Status:** completed — the named-step calorie derivation, the configurable cutting / bulking / maintenance phases and the uniform dashboard row all shipped (see the per-task status notes in the plan body).
+
 Split the calorie derivation into named steps, make the optional nutriments
 mandatory, let the user configure cutting / bulking / maintenance separately, and
 rebuild the dashboard card on one uniform row shape.
@@ -37,7 +39,7 @@ until ingredients are backfilled.
 
 ## Stage A' — split BMR from TDEE
 
-**Status:** DONE — `f3330a2`. `BmrFormula`, `bmrFor`/`tdeeFrom`, `bmrMetaProvider`/`tdeeProvider`, 14 tests in `calorie_math_test.dart`. No dashboard number moved.
+**Task outcome:** DONE — `f3330a2`. `BmrFormula`, `bmrFor`/`tdeeFrom`, `bmrMetaProvider`/`tdeeProvider`, 14 tests in `calorie_math_test.dart`. No dashboard number moved.
 
 Behaviour-preserving. No dashboard number moves. Done first so the rest is readable
 and so a regression here is unambiguously a refactor fault rather than a changed value.
@@ -87,7 +89,7 @@ weight, height, age, gender, body fat
 
 ## Stage A — nutriments non-null (schema v35)
 
-**Status:** DONE — mobile `b6128c9`, server/desktop `9133e2b`. Migration backfills six columns without a table rebuild; the COALESCE in `totalsBetween` survives because an empty SQL `SUM` is NULL regardless of column constraints.
+**Task outcome:** DONE — mobile `b6128c9`, server/desktop `9133e2b`. Migration backfills six columns without a table rebuild; the COALESCE in `totalsBetween` survives because an empty SQL `SUM` is NULL regardless of column constraints.
 
 `sodium_per100g`, `fiber_per100g`, `sugar_per100g` → `NOT NULL DEFAULT 0`,
 backfilled with `COALESCE(col, 0)`. No data lost; unknown becomes an explicit zero.
@@ -173,7 +175,7 @@ that `_MacroTargetRow` fills red past 100%.
 
 ## Notes editor (unrelated, small)
 
-**Status:** DONE — `04e4d1a`.
+**Task outcome:** DONE — `04e4d1a`.
 
 Pure swap: Save becomes the app bar action in a labelled `TextButton`, present in
 both new and edit mode, disabled while saving. The bottom filled Save is removed and

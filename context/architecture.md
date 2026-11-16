@@ -28,7 +28,7 @@ Bottom navigation uses Material 3 `NavigationBar`. Tab state is preserved when s
 
 - Material 3 with teal seed color; design system in `lib/src/ui/` (tokens, `FitFatColors` theme extension, shared widgets) — see [ui/design-system.md](ui/design-system.md)
 - Tuned light + dark themes (`FitFatTheme.light` / `FitFatTheme.dark` in `lib/src/app/theme.dart`) with component themes; dark mode uses a teal-tinted surface family; cards = `surfaceContainerLow`; switched via `ThemeMode` (system/light/dark)
-- App-level settings (theme mode, language en/fr/es, calorie profile: age/gender/activity/body-fat, body-weight goal, app-wide task-reminder toggle) live in `lib/src/settings/` and persist via `shared_preferences` — see [settings.md](../settings/settings.md)
+- App-level settings (theme mode, language en/fr/es, calorie profile: age/gender/activity/body-fat, body-weight goal, app-wide task-reminder toggle) live in `lib/src/settings/` and persist via `shared_preferences` — see [settings.md](settings/settings.md)
 - `FitFatApp` is a `ConsumerWidget` watching `settingsProvider`; `MaterialApp.router` gets `theme`, `darkTheme`, `themeMode`, `locale` and mounts the one-shot `_StartupReminderSync` via `builder`
 - `main.dart` awaits `SharedPreferences.getInstance()`, overrides `sharedPreferencesProvider` + `taskReminderSchedulerProvider` inside `ProviderScope`, and opts into Android edge-to-edge (`SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)`)
 
@@ -125,25 +125,55 @@ for tests), and an overridable `apiClientProvider`. `remoteFxProvider`
 is chosen → refresh surfaces a clear error banner; `MockRemoteFxService` is kept
 for tests. See [network/network.md](network/network.md).
 
-## Data sync (2026-08-23)
+## Data sync
 
- First sync client in `lib/src/sync/`, wired to a user-configured server
- (Settings → Budget & Currency → "Sync server" URL + Bearer API key). Pulls
- three resources with **full payloads**: exercises and ingredients
- (`GET /exercises`, `GET /ingredients` return `{items, stores?, deleted,
- server_time}`; every item is upserted, `deleted[]` removes rows — exercises
- hard-deleted, ingredients soft-archived), and currency FX as a **daily
- snapshot** (`GET /fx-rates?base=&date=YYYY-MM-DD`) upserted into `fx_rates`
- keyed by `(code, baseCode, date)`. Ingredients can also be **pushed** to the
- shared catalogue (`POST /ingredients`, Bearer). All pulls use a `since=<cursor
- ms>` query (currencies add `date=YYYY-MM-DD`) and a per-resource cursor
- persisted in `SyncStateStore` (SharedPreferences); `fx_rates` manual edits are
- preserved per-day. UI entry points: `SyncButton` in the exercise and ingredient
- list app bars, a "Push to shared catalogue" action on the ingredient detail
- screen, and a currencies sync button in the sync-server card. Full target
- protocol (push batches, device/account bootstrap, idempotency) is the
- `/v1/sync/{entity}` envelope in
- [sync/sync-contract.md](sync/sync-contract.md); the MVP diverges (§11).
+The phone talks to a self-hosted Maia server over HTTP with a Bearer API key.
+The full target protocol (push batches, device/account bootstrap, idempotency)
+is the `/v1/sync/{entity}` envelope in
+[sync/sync-contract.md](sync/sync-contract.md); the implementation diverges
+(§11 records the implemented pull envelope).
+
+**Server configuration** lives in Settings → Sync and in the sync hub
+(`/sync`). It holds **one or more server profiles** (URL + API key) with one
+marked active, reachable through the dashboard's sync card. The pairing QR is
+scanned by the app (`mobile_scanner`); the server's API key is currently stored
+in plain SharedPreferences, not in secure storage. See
+[plans/multi-server-secure-link.md](plans/multi-server-secure-link.md).
+
+**Catalogue (global pool).** Exercises, foods and stores come from the server.
+A *lightweight catalogue* pair of endpoints
+(`GET /exercises/catalog`, `GET /ingredients/catalog`) backs a **selective**
+import flow: the list screens offer bulk or selective sync, and a selective
+import pulls only the checked rows and never advances the bulk cursor. The
+catalogue is refreshed in the background on a 15-minute throttle
+(`CatalogSyncClient`, `app/app.dart`), so the pickers work offline once
+synced. A minimal local catalogue table holds the synced rows, and
+"hide imported" filters against them.
+
+**Personal pool.** The phone pushes and pulls its own data — tasks, notes,
+goals, workouts, workout templates, meals, body metrics, and (historically)
+experiments. `PersonalPullService` is the pull side: per-resource cursors,
+soft-delete tombstones and the `noteAudio` metadata carry-over. Tags and
+stores are pushed alongside. Ingredients go the other way as well: a push
+sends the stores, then every live ingredient with its pictures and prices, so
+the server holds the phone's catalogue too. Finance is **read-only** on the
+phone: accounts and transactions are pulled and never pushed; receipts go the
+other way — the phone sends each one through the capture upload and then
+forgets it, dropping its own row and image once the server has accepted it.
+The parse poll is gone from the client: the server reads and matches a
+receipt on its own.
+
+**Other client services.** `ExerciseMediaSync` downloads the exercise images
+and videos that belong to synced exercises; `IngredientLookupClient` resolves a
+scanned barcode against the server, which proxies Open Food Facts;
+`LocalBackup` exports the local data as JSON (share sheet) and imports it back
+(file picker).
+
+UI entry points: the dashboard's sync card, the `SyncButton` in the exercise
+and ingredient list app bars, the ingredient detail screen's push action, and
+the currency sync button in the sync-server card. Cursors live in
+`SyncStateStore` (SharedPreferences); `fx_rates` manual edits are preserved
+per-day.
 
 ---
 

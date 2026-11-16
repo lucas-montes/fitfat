@@ -1,5 +1,7 @@
 # Plan: Recurring planner tasks — "This one / This and all following" (edit + delete)
 
+**Status:** completed — "this one" / "this and all following" for edit and delete.
+
 ## Change Summary
 
 Recurring planner tasks materialize concrete occurrences from an anchor carrying

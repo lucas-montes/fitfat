@@ -1,5 +1,7 @@
 # Plan: Foods — normalizing diet to `meal → food → ingredient`
 
+**Status:** completed — the `foods` / `food_ingredients` / `meal_foods` layer, the per-100g resolution, the food form and the sync client.
+
 ## Change Summary
 
 Replace the composite-ingredient model with a three-layer chain. The difference
