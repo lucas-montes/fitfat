@@ -1,6 +1,6 @@
 # Plan: Settings additions — FX auto-refresh, experiment reminders, units, backup (Phase G)
 
-**Status:** partially implemented — the units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent.
+**Status:** partially implemented — the units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent, and are no longer wanted on the phone: since 2026-11-20 the server pulls rates itself.
 
 ## Change Summary
 

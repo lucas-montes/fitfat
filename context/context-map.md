@@ -22,7 +22,7 @@
 | Settings | [settings/settings.md](settings/settings.md) | App settings: theme mode, language, calorie profile (age/gender/activity/body-fat), body-weight goal, task-reminder toggle; shared_preferences storage |
 | Notifications | [notifications/notifications.md](notifications/notifications.md) | Active-workout rest timer + ongoing foreground notification + planner task reminders (due-time + 30-min pre-reminder, Settings toggle, tap → Plan) |
 | Planner | [planner/planner.md](planner/planner.md) | Daily planner: table, model, repository, providers, screens; optional due date + due time with reminders; recurring series and carry-over |
-| Network | [network/network.md](network/network.md) | Decoupled HTTP layer (`ApiClient`/`HttpApiClient`/`MockApiClient` + `apiClientProvider`); FX endpoint seam `FX_API_BASE_URL` behind `FxRateRemoteService` |
+| Network | [network/network.md](network/network.md) | Decoupled HTTP layer (`ApiClient`/`HttpApiClient`/`MockApiClient` + `apiClientProvider`); no phone-side FX endpoint: rates come from the sync server |
 | Performance | [performance.md](performance.md) | Perf guardrails: lazy tab branches (DeferredBranch), memoized workout-form catalog map, bulk history/stats queries, scoped tickers |
 | Sync | [sync/sync-contract.md](sync/sync-contract.md) | Data-sync contract (v1 draft + the implemented pull envelope): offline-first delta protocol, entity inventory, LWW conflict policy, device/account bootstrap, batch/idempotency guards |
 
@@ -43,7 +43,7 @@ manual check.
 | `app-i18n` | partially implemented | The l10n machinery and three locales are in place, but roughly 80 user-facing strings are still hardcoded (32 in `sync_hub_screen.dart`, 10 in `dashboard.dart`) |
 | `feedback-banners` | partially implemented | The banner widget and its 2-second default shipped, but roughly 15 informational (non-undo, non-error) banners remain, which this policy forbids |
 | `sync-import-export` | partially implemented | The sync hub, the personal-pool push and pull and the JSON backup export/import shipped. The whole-SQLite export was dropped (`BackupFormat` is JSON only), and `lib/src/sync/user_data_sync_client.dart` is dead code whose `pullSelected()` is a no-op |
-| `settings-additions` | partially implemented | The units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent |
+| `settings-additions` | partially implemented | The units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent, and no longer wanted: the server pulls rates itself (2026-11-20) |
 | `dashboard-redesign` | partially implemented | The nutrition and workout hero cards, the weight trend, the today strip and the goals overview shipped. The experiments nudge card is impossible (the feature was removed in schema v37) and the projection reads "trending down" rather than "goal in ~X weeks" |
 | `dashboard-calories-catalog-reminders` | partially implemented | The calorie target engine, the exercise history/detail tabs and the task reminders shipped. The progress "ring" is now bars, and the bundled `assets/exercises.db` seeding is gone — the catalogue now arrives by server sync |
 | `rest-timer-data-reset-catalog-polish` | partially implemented | The count-up rest timer, the rest alarm, the data reset and the Notes tab shipped; "reset re-imports the bundled catalogue" cannot work because there is no bundled catalogue any more |
@@ -80,7 +80,7 @@ manual check.
 | `sync-contract` | The offline-first delta contract, the entity inventory, the LWW policy and the implemented pull envelope |
 | `performance` | The isolated elapsed ticker, the debounced picker, the bulk set query and the bulk weekly stats |
 | `performance-startup-edit` | The deferred tab branches and the cached workout-form exercise map |
-| `fx-display` | The manual-override marker and the rate display |
+| `fx-display` | The rate display. The manual-override marker and edit dialog were removed 2026-11-20, because rates come only from the server |
 
 ## Dropped plans
 | Plan | Why it was dropped |

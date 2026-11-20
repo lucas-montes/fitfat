@@ -1,6 +1,6 @@
 # Plan: Budget FX — rate display upgrade + manual override marker (Phase C)
 
-**Status:** completed — the manual-override marker and the rate display.
+**Status:** completed — the manual-override marker and the rate display. **Partly superseded 2026-11-20:** rates now come only from the server and are read-only on the phone, so the manual-override marker and the edit dialog were removed; the rate display remains.
 
 ## Change Summary
 

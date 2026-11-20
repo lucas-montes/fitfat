@@ -3,9 +3,10 @@
 ## Overview
 
 A small, decoupled HTTP layer (`lib/src/network/`) so higher-level services can
-fetch remote data while staying fully unit-testable without a socket. There is
-**no real endpoint configured yet** — the FX endpoint is a configurable seam
-("other/later", decision 2026-08-19).
+fetch remote data while staying fully unit-testable without a socket. FX rates do
+not go through it: the phone pulls them from the sync server (`GET /fx-rates`,
+`CurrencySyncClient`, see [sync-contract.md](../sync/sync-contract.md) §11),
+and the server fetches them from the ECB itself (server `src/fx.rs`).
 
 ## `ApiClient`
 
@@ -37,29 +38,20 @@ compile-time `API_BASE_URL`. Tests override it in `ProviderScope`:
 apiClientProvider.overrideWithValue(MockApiClient(onRequest: ...))
 ```
 
-## FX rates seam
+## Remote services
 
-- `remoteFxProvider` (`lib/src/budget/providers/services.dart`) now returns
-  `FxRateRemoteService(apiClientProvider, baseUrl: fxRatesApiBaseUrl)` instead
-  of the mock.
-- `fxRatesApiBaseUrl` (`lib/src/budget/services/remote_fx.dart`) is a
-  compile-time `String.fromEnvironment('FX_API_BASE_URL')` const, **empty until a
-  provider is chosen**. Calling `fetchRates` while unconfigured throws a clear
-  `StateError` ("FX endpoint not configured…"), which surfaces as the standard
-  error banner in the Settings refresh flow.
-- Expected payload: `{"base": "<base>", "rates": {"<CODE>": rate, …}}` at
-  `{baseUrl}/rates?base=<base>`.
-- `MockRemoteFxService` is retained for tests.
+- There is no phone-side FX endpoint any more. The old `FX_API_BASE_URL` seam
+  (`remoteFxProvider`, `FxRateRemoteService`, `MockRemoteFxService`) was removed,
+  and since 2026-11-20 the sync server is the only source of rates.
 - `remoteReceiptOcrProvider` returns `HttpRemoteReceiptOcrService` (real backend). It POSTs the image to `/receipt-pictures/upload` and polls `/receipt-pictures/{id}/parse` until the status is terminal. `MockRemoteReceiptOcrService` is retained for tests/offline dev.
 
 ## Tests
 
-`test/network_client_test.dart` verifies `FxRateRemoteService` parses
-`MockApiClient` responses and fails clearly while unconfigured.
+The network layer is exercised through the sync clients' tests with
+`MockApiClient`. The old `test/network_client_test.dart` went with the FX seam.
 
 ## Future work
 
-- Choose the real FX endpoint and set `FX_API_BASE_URL`.
 - Wire Open Food Facts lookups (ingredient-metadata plan) and the sync contract
   (sync-contract plan) through `ApiClient`.
 - Retries/backoff and auth are explicitly non-goals today.

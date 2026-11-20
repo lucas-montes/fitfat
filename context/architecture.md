@@ -119,11 +119,9 @@ Separate plain Dart classes in `lib/src/models/` mirror the database rows. Repos
 Small decoupled HTTP layer in `lib/src/network/`: `ApiClient` (abstract,
 `getJson`/`postJson`/`putJson`/`deleteJson`), `HttpApiClient` (production,
 `package:http`, 15 s timeout, User-Agent, base URL), `MockApiClient` (scripted,
-for tests), and an overridable `apiClientProvider`. `remoteFxProvider`
-(`lib/src/budget/providers/services.dart`) now serves `FxRateRemoteService`
-(real) behind the compile-time `FX_API_BASE_URL` seam — empty until an endpoint
-is chosen → refresh surfaces a clear error banner; `MockRemoteFxService` is kept
-for tests. See [network/network.md](network/network.md).
+for tests), and an overridable `apiClientProvider`. FX rates are
+not fetched by the phone: they arrive with the sync pull (`GET /fx-rates`), and
+the server is their only source. See [network/network.md](network/network.md).
 
 ## Data sync
 
@@ -172,8 +170,8 @@ scanned barcode against the server, which proxies Open Food Facts;
 UI entry points: the dashboard's sync card, the `SyncButton` in the exercise
 and ingredient list app bars, the ingredient detail screen's push action, and
 the currency sync button in the sync-server card. Cursors live in
-`SyncStateStore` (SharedPreferences); `fx_rates` manual edits are preserved
-per-day.
+`SyncStateStore` (SharedPreferences); `fx_rates` is pull-only and read-only on
+the phone: a pulled rate replaces the local row for its day.
 
 ---
 

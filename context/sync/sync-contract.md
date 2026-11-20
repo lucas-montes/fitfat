@@ -56,9 +56,10 @@ Table names match `context/database/schema.md` exactly.
 
 - **`fx_rates`** — originally out of scope (a derived cache, and syncing it
   would fight the manual-edit flag and the base-currency setting). **Updated
-  (2026-08-23):** `fx_rates` is now a *pull-only* synced resource (see §11);
-  the client preserves any locally hand-edited `manual` flag so a sync never
-  clobbers a user override. Push of local rate edits is still out of scope.
+  (2026-08-23):** `fx_rates` is now a *pull-only* synced resource (see §11).
+  **Updated (2026-11-20):** the server is the only source of rates (it pulls
+  them from the ECB itself), the phone cannot edit or push them, and
+  `POST /fx-rates` no longer exists. A pulled rate always replaces the local row.
 - **Receipt/ingredient picture binaries** — local files under the app documents
   directory. Metadata rows sync; bytes need a separate blob decision (OQ-2).
 - **Settings/preferences** — device-local by nature (units, theme, locale).
@@ -452,9 +453,9 @@ All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
     Exercise media is the exception to "full upsert": `imagePath`/`videoPath`
     are client-local download state, reconciled per §11.2 rather than taken
     from the payload.
- - **Currencies:** upsert into `fx_rates` but **preserve** the local `manual`
-   flag for the exact `(code, baseCode, date)` row, so a hand-edited rate is
-   never overwritten by a sync. Snapshots are daily, so `rateDate` history is
+ - **Currencies:** upsert into `fx_rates`, replacing the local row for the
+   exact `(code, baseCode, date)` with `manual = false`; the server is the only
+   source of rates (2026-11-20). Snapshots are daily, so `rateDate` history is
    retained.
 - **Ingredient push:** `POST /ingredients` (Bearer) with the full ingredient
   plus nested `pictures[]`, `prices[]` and `components[]`; idempotent by
