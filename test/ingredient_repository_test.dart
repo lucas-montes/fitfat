@@ -198,6 +198,12 @@ void main() {
       expect(await repo.getAll(), isEmpty);
       // Still resolvable so past meals keep rendering it.
       expect((await repo.getById(id))!.isArchived, isTrue);
+      // ...and still pushed: a meal or recipe that uses it must resolve on
+      // the server, which otherwise rejects the meal push.
+      expect(
+        (await repo.getAll(includeArchived: true)).map((i) => i.id),
+        [id],
+      );
     });
   });
 }

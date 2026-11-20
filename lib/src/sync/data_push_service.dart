@@ -458,7 +458,17 @@ Future<PushResult> pushDataType(WidgetRef ref, String type) async {
     case 'goals':
       return service.pushGoals(ref, base, key, settings.endpointGoals);
     case 'meals':
-      return service.pushMeals(ref, base, key, settings.endpointMeals);
+      {
+        // Every logged food must already be on the server: a plain ingredient
+        // resolves through its ingredient, a recipe through the recipe. The
+        // server rejects a meal it cannot resolve rather than dropping the
+        // item, so these go first, the way workouts push their exercises.
+        final ingredients = await pushDataType(ref, 'ingredients');
+        if (!ingredients.ok) return ingredients;
+        final foods = await pushDataType(ref, 'foods');
+        if (!foods.ok) return foods;
+        return service.pushMeals(ref, base, key, settings.endpointMeals);
+      }
     // Accounts and transactions are pull-only: the server owns them, and a
     // push would put the phone's stale copy back over what the desktop and
     // the statement imports changed.

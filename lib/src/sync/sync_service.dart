@@ -613,7 +613,9 @@ final class SyncService {
     );
     var pushed = 0;
     try {
-      for (final ingredient in await ingredients.getAll()) {
+      for (final ingredient in await ingredients.getAll(
+        includeArchived: true,
+      )) {
         final res = await client.push(
           ingredient: ingredient,
           pictures: await ingredients.getPictures(ingredient.id),

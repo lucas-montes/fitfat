@@ -29,10 +29,13 @@ final class IngredientRepository {
   final db.AppDatabase _database;
   const IngredientRepository(this._database);
 
-  Future<List<Ingredient>> getAll() async {
-    final rows = await (_database.select(
-      _database.ingredients,
-    )..where((t) => t.isArchived.equals(false))).get();
+  /// Live ingredients, or every one with [includeArchived] — which the push
+  /// needs, because an archived ingredient can still be in a recipe or a
+  /// logged meal the server has to resolve.
+  Future<List<Ingredient>> getAll({bool includeArchived = false}) async {
+    final query = _database.select(_database.ingredients);
+    if (!includeArchived) query.where((t) => t.isArchived.equals(false));
+    final rows = await query.get();
     return rows.map(_toDomain).toList();
   }
 
