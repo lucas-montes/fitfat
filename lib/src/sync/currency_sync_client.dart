@@ -4,8 +4,9 @@ import 'sync_models.dart';
 
 /// Pulls currency/FX rates from the sync server: GET /fx-rates?base=BASE&
 /// date=DATE with a Bearer API key. Each returned rate is upserted into the
-/// local `fx_rates` daily snapshot (preserving any hand-edited manual flag for
-/// that day). The server returns the rates for the requested day only.
+/// local `fx_rates` daily snapshot, replacing whatever was there: the server is
+/// the only source of rates. The server returns the rates for the requested
+/// day only.
 final class CurrencySyncClient {
   final ApiClient _api;
   final FxRepository _repo;

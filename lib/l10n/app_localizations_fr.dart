@@ -2349,9 +2349,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get settingsRateManual => 'Manuel';
-
-  @override
   String transactionRateUsed(String rate, String base, String code) {
     return 'converti à $rate $base pour $code';
   }
@@ -2553,9 +2550,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsFxRefresh => 'Actualiser les taux';
-
-  @override
-  String get settingsRateEdit => 'Modifier le taux';
 
   @override
   String get transactionAmountInvalid => 'Saisissez un montant valide';

@@ -1051,10 +1051,6 @@
       }
     }
   },
-  "settingsRateManual": "Manuel",
-  "@settingsRateManual": {
-    "description": "settingsRateManual"
-  },
   "transactionRateUsed": "converti à {rate} {base} pour {code}",
   "@transactionRateUsed": {
     "description": "transactionRateUsed",
@@ -1343,10 +1339,6 @@
   "settingsFxRefresh": "Actualiser les taux",
   "@settingsFxRefresh": {
     "description": "settingsFxRefresh"
-  },
-  "settingsRateEdit": "Modifier le taux",
-  "@settingsRateEdit": {
-    "description": "settingsRateEdit"
   },
   "transactionAmountInvalid": "Saisissez un montant valide",
   "@transactionAmountInvalid": {

@@ -4126,12 +4126,6 @@ abstract class AppLocalizations {
   /// **'Updated {date}'**
   String settingsRateUpdated(String date);
 
-  /// settingsRateManual
-  ///
-  /// In en, this message translates to:
-  /// **'Manual'**
-  String get settingsRateManual;
-
   /// transactionRateUsed
   ///
   /// In en, this message translates to:
@@ -4503,12 +4497,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Refresh rates'**
   String get settingsFxRefresh;
-
-  /// settingsRateEdit
-  ///
-  /// In en, this message translates to:
-  /// **'Edit rate'**
-  String get settingsRateEdit;
 
   /// transactionAmountInvalid
   ///

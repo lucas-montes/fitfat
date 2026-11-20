@@ -1527,132 +1527,22 @@ final class _CurrencySection extends ConsumerWidget {
                           l10n.settingsRateInverse(base, inverse, e.code),
                           style: theme.textTheme.bodySmall,
                         ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              l10n.settingsRateUpdated(
-                                DateFormats.formatDate(context, e.updatedAt),
-                              ),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          if (e.manual) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(
-                                  FitFatTokens.radiusFull,
-                                ),
-                              ),
-                              child: Text(
-                                l10n.settingsRateManual,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSecondaryContainer,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                      // Rates come from the server's daily pull and are not
+                      // editable here: the server is their only source.
+                      Text(
+                        l10n.settingsRateUpdated(
+                          DateFormats.formatDate(context, e.updatedAt),
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
-                  ),
-                  trailing: IconButton(
-                    tooltip: l10n.settingsRateEdit,
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () =>
-                        _editRate(context, ref, base, e.code, e.rateToBase),
                   ),
                 );
               }).toList(),
             );
           },
-        ),
-      ],
-    );
-  }
-
-  Future<void> _editRate(
-    BuildContext context,
-    WidgetRef ref,
-    String base,
-    String code,
-    double current,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    // The dialog owns the controller (see [_RateEditDialog]) so it is disposed
-    // only after the route — including its exit animation — is torn down.
-    final value = await showDialog<double>(
-      context: context,
-      builder: (_) => _RateEditDialog(
-        title: l10n.settingsRateEdit,
-        label: l10n.settingsRateRow(code, 0, base),
-        initial: current,
-      ),
-    );
-    if (value == null || !context.mounted) return;
-    await ref.read(fxRepositoryProvider).setRate(code, value, base);
-    ref.invalidate(fxRatesProvider);
-  }
-}
-
-/// Numeric prompt for editing one cached FX rate. Owns its text controller so
-/// disposal happens after the route exit animation (never mid-rebuild).
-final class _RateEditDialog extends StatefulWidget {
-  final String title;
-  final String label;
-  final double initial;
-
-  const _RateEditDialog({
-    required this.title,
-    required this.label,
-    required this.initial,
-  });
-
-  @override
-  State<_RateEditDialog> createState() => _RateEditDialogState();
-}
-
-final class _RateEditDialogState extends State<_RateEditDialog> {
-  late final TextEditingController _controller = TextEditingController(
-    text: widget.initial.toString(),
-  );
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(widget.title),
-      content: TextFormField(
-        controller: _controller,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: InputDecoration(labelText: widget.label),
-        autofocus: true,
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.commonCancel),
-        ),
-        FilledButton(
-          onPressed: () {
-            final value = double.tryParse(_controller.text.trim());
-            if (value != null) Navigator.of(context).pop(value);
-          },
-          child: Text(l10n.commonSave),
         ),
       ],
     );
