@@ -1748,6 +1748,77 @@
   "dashboardWeeklyEmptyCtaCreate": "Add workout",
   "dashboardWeeklyEmptyCtaSync": "Sync exercises",
   "dashboardUpcomingEmptyCta": "Add task",
-  "dashboardLatestEmptyCta": "Add workout"
+  "dashboardLatestEmptyCta": "Add workout",
+  "receiptsNonePending": "Rien à envoyer",
+  "@receiptsNonePending": {
+    "description": "receiptsNonePending"
+  },
+  "receiptListSentNote": "Les reçus envoyés sont supprimés du téléphone et restent sur le serveur.",
+  "@receiptListSentNote": {
+    "description": "receiptListSentNote"
+  },
+  "receiptSendAll": "Tout envoyer",
+  "@receiptSendAll": {
+    "description": "receiptSendAll"
+  },
+  "receiptSendSelected": "Envoyer la sélection",
+  "@receiptSendSelected": {
+    "description": "receiptSendSelected"
+  },
+  "receiptSelectedCount": "{count} sélectionné(s)",
+  "@receiptSelectedCount": {
+    "description": "receiptSelectedCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptSendingProgress": "Envoi de {done} sur {total}",
+  "@receiptSendingProgress": {
+    "description": "receiptSendingProgress",
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "receiptSentCount": "{count} envoyé(s)",
+  "@receiptSentCount": {
+    "description": "receiptSentCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptFailedCount": "{count} échoué(s)",
+  "@receiptFailedCount": {
+    "description": "receiptFailedCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptNoPictureCount": "{count} sans image",
+  "@receiptNoPictureCount": {
+    "description": "receiptNoPictureCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptSaveFailedCount": "{count} n'a pas pu être ajouté",
+  "@receiptSaveFailedCount": {
+    "description": "receiptSaveFailedCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptsNoServer": "Aucun serveur de synchronisation configuré — les reçus restent sur ce téléphone.",
+  "@receiptsNoServer": {
+    "description": "receiptsNoServer"
+  },
+  "receiptOpenSync": "Ouvrir les réglages de synchronisation",
+  "@receiptOpenSync": {
+    "description": "receiptOpenSync"
+  },
+  "receiptStatusParsing": "Lecture…",
+  "@receiptStatusParsing": {
+    "description": "receiptStatusParsing"
+  }
 
 }

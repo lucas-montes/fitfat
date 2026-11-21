@@ -62,17 +62,22 @@ class BudgetScreen extends ConsumerWidget {
                 monthExpense: overview.monthExpense,
               ),
               const SizedBox(height: 16),
-              if (pendingReceipts > 0)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: InkWell(
-                    onTap: () => context.push('/budget/receipts'),
-                    child: Chip(
-                      avatar: const Icon(Icons.receipt_long_outlined, size: 18),
-                      label: Text(l10n.budgetPendingReceipts(pendingReceipts)),
-                    ),
+              // Always visible, so a phone with no receipts yet can still
+              // reach the capture screen.
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.receipt_long_outlined),
+                  title: Text(l10n.receiptListTitle),
+                  subtitle: Text(
+                    pendingReceipts > 0
+                        ? l10n.budgetPendingReceipts(pendingReceipts)
+                        : l10n.receiptsNonePending,
                   ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/budget/receipts'),
                 ),
+              ),
+              const SizedBox(height: 16),
               // Accounts come from the server; the phone only reads them.
               Text(
                 l10n.budgetAccounts,

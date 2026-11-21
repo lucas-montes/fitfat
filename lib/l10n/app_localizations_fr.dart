@@ -3088,4 +3088,57 @@ class AppLocalizationsFr extends AppLocalizations {
   String goalDeleted(String name) {
     return 'Goal \"$name\" deleted';
   }
+
+  @override
+  String get receiptsNonePending => 'Rien à envoyer';
+
+  @override
+  String get receiptListSentNote =>
+      'Les reçus envoyés sont supprimés du téléphone et restent sur le serveur.';
+
+  @override
+  String get receiptSendAll => 'Tout envoyer';
+
+  @override
+  String get receiptSendSelected => 'Envoyer la sélection';
+
+  @override
+  String receiptSelectedCount(int count) {
+    return '$count sélectionné(s)';
+  }
+
+  @override
+  String receiptSendingProgress(int done, int total) {
+    return 'Envoi de $done sur $total';
+  }
+
+  @override
+  String receiptSentCount(int count) {
+    return '$count envoyé(s)';
+  }
+
+  @override
+  String receiptFailedCount(int count) {
+    return '$count échoué(s)';
+  }
+
+  @override
+  String receiptNoPictureCount(int count) {
+    return '$count sans image';
+  }
+
+  @override
+  String receiptSaveFailedCount(int count) {
+    return '$count n\'a pas pu être ajouté';
+  }
+
+  @override
+  String get receiptsNoServer =>
+      'Aucun serveur de synchronisation configuré — les reçus restent sur ce téléphone.';
+
+  @override
+  String get receiptOpenSync => 'Ouvrir les réglages de synchronisation';
+
+  @override
+  String get receiptStatusParsing => 'Lecture…';
 }

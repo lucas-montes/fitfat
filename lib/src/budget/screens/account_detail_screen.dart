@@ -121,7 +121,13 @@ final class AccountDetailScreen extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         child: ListTile(
           leading: const Icon(Icons.receipt_long_outlined),
-          title: Text(l10n.receiptStatusLabel(r.status.name)),
+          title: Text(switch (r.status) {
+            ReceiptStatus.local => l10n.receiptStatusLocal,
+            ReceiptStatus.uploading => l10n.receiptStatusUploading,
+            ReceiptStatus.uploaded => l10n.receiptStatusUploaded,
+            ReceiptStatus.error => l10n.receiptStatusError,
+            ReceiptStatus.parsing => l10n.receiptStatusParsing,
+          }),
           subtitle: r.parsed ? Text(l10n.receiptParsed) : null,
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/budget/receipt/${r.id}'),

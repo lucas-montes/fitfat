@@ -159,7 +159,9 @@ phone: accounts and transactions are pulled and never pushed; receipts go the
 other way — the phone sends each one through the capture upload and then
 forgets it, dropping its own row and image once the server has accepted it.
 The parse poll is gone from the client: the server reads and matches a
-receipt on its own.
+receipt on its own. The receipts screen (`/budget/receipts`) is reachable from
+an always-visible tile on Budget and owns capture, selection, per-receipt
+retry and Send all / Send selected (`sendReceipts`, `sendAllReceipts`).
 
 **Other client services.** `ExerciseMediaSync` downloads the exercise images
 and videos that belong to synced exercises; `IngredientLookupClient` resolves a

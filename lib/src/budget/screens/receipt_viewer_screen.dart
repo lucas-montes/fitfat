@@ -164,7 +164,13 @@ final class _StatusRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final label = l10n.receiptStatusLabel(receipt.status.name);
+    final label = switch (receipt.status) {
+      ReceiptStatus.local => l10n.receiptStatusLocal,
+      ReceiptStatus.uploading => l10n.receiptStatusUploading,
+      ReceiptStatus.uploaded => l10n.receiptStatusUploaded,
+      ReceiptStatus.error => l10n.receiptStatusError,
+      ReceiptStatus.parsing => l10n.receiptStatusParsing,
+    };
     final color = switch (receipt.status) {
       ReceiptStatus.local => theme.colorScheme.outline,
       ReceiptStatus.uploading => theme.colorScheme.primary,

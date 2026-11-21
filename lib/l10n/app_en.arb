@@ -1851,6 +1851,77 @@
     "placeholders": {
       "name": { "type": "String" }
     }
+  },
+  "receiptsNonePending": "Nothing waiting to be sent",
+  "@receiptsNonePending": {
+    "description": "receiptsNonePending"
+  },
+  "receiptListSentNote": "Sent receipts are removed from the phone and live on the server.",
+  "@receiptListSentNote": {
+    "description": "receiptListSentNote"
+  },
+  "receiptSendAll": "Send all",
+  "@receiptSendAll": {
+    "description": "receiptSendAll"
+  },
+  "receiptSendSelected": "Send selected",
+  "@receiptSendSelected": {
+    "description": "receiptSendSelected"
+  },
+  "receiptSelectedCount": "{count} selected",
+  "@receiptSelectedCount": {
+    "description": "receiptSelectedCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptSendingProgress": "Sending {done} of {total}",
+  "@receiptSendingProgress": {
+    "description": "receiptSendingProgress",
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "receiptSentCount": "{count} sent",
+  "@receiptSentCount": {
+    "description": "receiptSentCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptFailedCount": "{count} failed",
+  "@receiptFailedCount": {
+    "description": "receiptFailedCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptNoPictureCount": "{count} without a picture",
+  "@receiptNoPictureCount": {
+    "description": "receiptNoPictureCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptSaveFailedCount": "{count} could not be added",
+  "@receiptSaveFailedCount": {
+    "description": "receiptSaveFailedCount",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "receiptsNoServer": "No sync server configured — receipts stay on this phone.",
+  "@receiptsNoServer": {
+    "description": "receiptsNoServer"
+  },
+  "receiptOpenSync": "Open sync settings",
+  "@receiptOpenSync": {
+    "description": "receiptOpenSync"
+  },
+  "receiptStatusParsing": "Reading…",
+  "@receiptStatusParsing": {
+    "description": "receiptStatusParsing"
   }
 
 }

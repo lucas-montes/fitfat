@@ -5499,6 +5499,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Goal \"{name}\" deleted'**
   String goalDeleted(String name);
+
+  /// receiptsNonePending
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing waiting to be sent'**
+  String get receiptsNonePending;
+
+  /// receiptListSentNote
+  ///
+  /// In en, this message translates to:
+  /// **'Sent receipts are removed from the phone and live on the server.'**
+  String get receiptListSentNote;
+
+  /// receiptSendAll
+  ///
+  /// In en, this message translates to:
+  /// **'Send all'**
+  String get receiptSendAll;
+
+  /// receiptSendSelected
+  ///
+  /// In en, this message translates to:
+  /// **'Send selected'**
+  String get receiptSendSelected;
+
+  /// receiptSelectedCount
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String receiptSelectedCount(int count);
+
+  /// receiptSendingProgress
+  ///
+  /// In en, this message translates to:
+  /// **'Sending {done} of {total}'**
+  String receiptSendingProgress(int done, int total);
+
+  /// receiptSentCount
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sent'**
+  String receiptSentCount(int count);
+
+  /// receiptFailedCount
+  ///
+  /// In en, this message translates to:
+  /// **'{count} failed'**
+  String receiptFailedCount(int count);
+
+  /// receiptNoPictureCount
+  ///
+  /// In en, this message translates to:
+  /// **'{count} without a picture'**
+  String receiptNoPictureCount(int count);
+
+  /// receiptSaveFailedCount
+  ///
+  /// In en, this message translates to:
+  /// **'{count} could not be added'**
+  String receiptSaveFailedCount(int count);
+
+  /// receiptsNoServer
+  ///
+  /// In en, this message translates to:
+  /// **'No sync server configured — receipts stay on this phone.'**
+  String get receiptsNoServer;
+
+  /// receiptOpenSync
+  ///
+  /// In en, this message translates to:
+  /// **'Open sync settings'**
+  String get receiptOpenSync;
+
+  /// receiptStatusParsing
+  ///
+  /// In en, this message translates to:
+  /// **'Reading…'**
+  String get receiptStatusParsing;
 }
 
 class _AppLocalizationsDelegate

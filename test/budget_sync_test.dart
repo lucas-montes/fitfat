@@ -5,10 +5,13 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:fitfat/src/budget/models/receipt.dart';
+import 'package:fitfat/src/budget/providers/receipts.dart';
 import 'package:fitfat/src/budget/providers/services.dart';
 import 'package:fitfat/src/budget/services/budget_sync.dart';
 import 'package:fitfat/src/budget/services/remote_receipt_ocr.dart';
 import 'package:fitfat/src/database/app_database.dart' as db;
+import 'package:fitfat/src/database/database_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Scriptable stand-in for the server, recording the lifecycle as it goes.
@@ -25,7 +28,6 @@ final class _FakeOcrService implements RemoteReceiptOcrService {
     if (failUpload) throw Exception('upload boom');
     return ReceiptUploadResult(receiptId);
   }
-
 }
 
 void main() {
@@ -51,26 +53,28 @@ void main() {
   }
 
   Future<void> insertReceipt(Receipt receipt) async {
-    await database.into(database.receipts).insert(
-      db.ReceiptsCompanion.insert(
-        id: receipt.id,
-        localPath: receipt.localPath,
-        remotePath: Value(receipt.remotePath),
-        uploadStatus: Value(receipt.status.code),
-        parsed: Value(receipt.parsed),
-        parsedJson: Value(receipt.parsedJson),
-        transactionId: Value(receipt.transactionId),
-        createdAt: receipt.createdAt.millisecondsSinceEpoch,
-      ),
-    );
+    await database
+        .into(database.receipts)
+        .insert(
+          db.ReceiptsCompanion.insert(
+            id: receipt.id,
+            localPath: receipt.localPath,
+            remotePath: Value(receipt.remotePath),
+            uploadStatus: Value(receipt.status.code),
+            parsed: Value(receipt.parsed),
+            parsedJson: Value(receipt.parsedJson),
+            transactionId: Value(receipt.transactionId),
+            createdAt: receipt.createdAt.millisecondsSinceEpoch,
+          ),
+        );
   }
 
   // Drift generates a row class also called `Receipt`, so the generated
   // classes are referenced through an explicit prefix.
   Future<db.Receipt> rowFor(String id) async {
-    return (await (database.select(database.receipts)
-              ..where((t) => t.id.equals(id)))
-            .getSingle());
+    return (await (database.select(
+      database.receipts,
+    )..where((t) => t.id.equals(id))).getSingle());
   }
 
   group('send', () {
@@ -103,8 +107,10 @@ void main() {
       await insertReceipt(receipt);
 
       await expectLater(
-        BudgetSyncService(database, _FakeOcrService(failUpload: true))
-            .send(receipt.id),
+        BudgetSyncService(
+          database,
+          _FakeOcrService(failUpload: true),
+        ).send(receipt.id),
         throwsA(anything),
       );
 
@@ -122,10 +128,11 @@ void main() {
     });
   });
 
+  String image(String name) =>
+      (File('${tempDir.path}/$name.png')..writeAsStringSync('PNG')).path;
+
   group('sendAllReceipts', () {
     test('sends every receipt with a picture and forgets each one', () async {
-      String image(String name) =>
-          (File('${tempDir.path}/$name.png')..writeAsStringSync('PNG')).path;
       final a = newReceipt(localPath: image('a'));
       final b = newReceipt(localPath: image('b'));
       final missing = newReceipt(localPath: '${tempDir.path}/gone.png');
@@ -160,6 +167,91 @@ void main() {
       expect(outcome.failed, 1);
       expect(outcome.firstError, contains('upload boom'));
       expect((await rowFor(r.id)).uploadStatus, ReceiptStatus.error.code);
+    });
+
+    test('reports progress while it works', () async {
+      final a = newReceipt(localPath: image('a'));
+      final b = newReceipt(localPath: image('b'));
+      for (final r in [a, b]) {
+        await insertReceipt(r);
+      }
+      final progress = <(int, int)>[];
+
+      await sendAllReceipts(
+        database,
+        BudgetSyncService(database, _FakeOcrService()),
+        onProgress: (done, total) => progress.add((done, total)),
+      );
+
+      expect(progress, [(0, 2), (1, 2), (2, 2)]);
+    });
+  });
+
+  group('sendReceipts', () {
+    test('sends only the chosen rows, in the queue order', () async {
+      final a = newReceipt(localPath: image('a'));
+      final b = newReceipt(localPath: image('b'));
+      final c = newReceipt(localPath: image('c'));
+      for (final r in [a, b, c]) {
+        await insertReceipt(r);
+      }
+      final ocr = _FakeOcrService();
+
+      final outcome = await sendReceipts(
+        database,
+        BudgetSyncService(database, ocr),
+        [a.id, c.id],
+      );
+
+      expect(outcome.sent, 2);
+      expect(ocr.uploadIds, unorderedEquals([a.id, c.id]));
+      // The row that was not chosen stays exactly as it was.
+      expect((await rowFor(b.id)).uploadStatus, ReceiptStatus.local.code);
+    });
+
+    test('an empty selection calls nothing', () async {
+      final ocr = _FakeOcrService();
+      final progress = <(int, int)>[];
+
+      final outcome = await sendReceipts(
+        database,
+        BudgetSyncService(database, ocr),
+        const [],
+        onProgress: (done, total) => progress.add((done, total)),
+      );
+
+      expect(outcome.sent, 0);
+      expect(ocr.uploadIds, isEmpty);
+      expect(progress, [(0, 0)]);
+    });
+  });
+
+  group('receiptPendingProvider', () {
+    test('sweeps a receipt a killed capture left local and unsent', () async {
+      final local = newReceipt(localPath: writeImage());
+      final pulled = Receipt(
+        id: 'pulled',
+        localPath: '',
+        status: ReceiptStatus.uploaded,
+        parsed: true,
+        createdAt: DateTime.now(),
+      );
+      final sent = newReceipt(
+        localPath: image('sent'),
+      ).copyWith(status: ReceiptStatus.uploaded);
+      for (final r in [local, pulled, sent]) {
+        await insertReceipt(r);
+      }
+
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(database)],
+      );
+      addTearDown(container.dispose);
+
+      final pending = await container.read(receiptPendingProvider.future);
+
+      // Local rows need a retry; server-owned and already-sent rows do not.
+      expect(pending.map((r) => r.id), [local.id]);
     });
   });
 }

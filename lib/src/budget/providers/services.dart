@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
@@ -7,7 +8,6 @@ import '../../database/app_database.dart' as db;
 import '../../database/database_provider.dart';
 import '../../network/api_client.dart';
 import '../../settings/providers/settings.dart';
-import '../models/receipt.dart';
 import '../services/budget_sync.dart';
 import '../services/http_remote_receipt_ocr.dart';
 import '../services/remote_receipt_ocr.dart';
@@ -116,32 +116,69 @@ final class ReceiptSendOutcome {
 /// Sends every receipt still on the phone, each forgotten once the server
 /// accepts it (see [BudgetSyncService.send]). Shares the in-flight guard with
 /// the resume sweep, so a receipt is never uploaded twice at once.
+///
+/// [onProgress] is called once with `(0, total)` and then after every receipt,
+/// so a screen can show "sending 2 of 5" without guessing.
 Future<ReceiptSendOutcome> sendAllReceipts(
   db.AppDatabase database,
-  BudgetSyncService sync,
-) async {
+  BudgetSyncService sync, {
+  void Function(int done, int total)? onProgress,
+}) async {
   final rows = await (database.select(
     database.receipts,
   )..where((t) => t.deletedAt.isNull())).get();
+  return _sendRows(sync, rows, onProgress: onProgress);
+}
+
+/// Sends only [ids], leaving every other receipt alone.
+///
+/// Used by the receipts screen when the user picks a subset (or captures a new
+/// batch). Unknown, tombstoned and already-sent ids are simply skipped.
+Future<ReceiptSendOutcome> sendReceipts(
+  db.AppDatabase database,
+  BudgetSyncService sync,
+  Iterable<String> ids, {
+  void Function(int done, int total)? onProgress,
+}) async {
+  final wanted = ids.toSet();
+  if (wanted.isEmpty) {
+    onProgress?.call(0, 0);
+    return const ReceiptSendOutcome(sent: 0, failed: 0, noPicture: 0);
+  }
+  final rows = await (database.select(
+    database.receipts,
+  )..where((t) => t.deletedAt.isNull() & t.id.isIn(wanted))).get();
+  return _sendRows(sync, rows, onProgress: onProgress);
+}
+
+Future<ReceiptSendOutcome> _sendRows(
+  BudgetSyncService sync,
+  List<db.Receipt> rows, {
+  void Function(int done, int total)? onProgress,
+}) async {
   var sent = 0;
   var failed = 0;
   var noPicture = 0;
   String? firstError;
+  final total = rows.length;
+  var done = 0;
+  onProgress?.call(0, total);
   for (final row in rows) {
     if (row.localPath.isEmpty || !await File(row.localPath).exists()) {
       noPicture++;
-      continue;
+    } else if (_inFlightReceipts.add(row.id)) {
+      try {
+        await sync.send(row.id);
+        sent++;
+      } catch (e) {
+        failed++;
+        firstError ??= '$e';
+      } finally {
+        _inFlightReceipts.remove(row.id);
+      }
     }
-    if (!_inFlightReceipts.add(row.id)) continue;
-    try {
-      await sync.send(row.id);
-      sent++;
-    } catch (e) {
-      failed++;
-      firstError ??= '$e';
-    } finally {
-      _inFlightReceipts.remove(row.id);
-    }
+    done++;
+    onProgress?.call(done, total);
   }
   return ReceiptSendOutcome(
     sent: sent,

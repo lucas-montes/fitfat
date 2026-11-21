@@ -43,7 +43,8 @@ apiClientProvider.overrideWithValue(MockApiClient(onRequest: ...))
 - There is no phone-side FX endpoint any more. The old `FX_API_BASE_URL` seam
   (`remoteFxProvider`, `FxRateRemoteService`, `MockRemoteFxService`) was removed,
   and since 2026-11-20 the sync server is the only source of rates.
-- `remoteReceiptOcrProvider` returns `HttpRemoteReceiptOcrService` (real backend). It POSTs the image to `/receipt-pictures/upload` and polls `/receipt-pictures/{id}/parse` until the status is terminal. `MockRemoteReceiptOcrService` is retained for tests/offline dev.
+- `remoteReceiptOcrProvider` returns `HttpRemoteReceiptOcrService` (real backend). It POSTs the image to `/receipt-pictures/upload` with the client-generated `receiptId`; the server answers `202` and reads/matches the receipt on its own. The phone does not poll: once the upload is accepted it drops its row and image. `MockRemoteReceiptOcrService` is retained for tests/offline dev.
+- The receipts screen (`/budget/receipts`) is the send surface: capture (camera or multi-image gallery), per-receipt retry, long-press selection, and Send all / Send selected through `sendReceipts`/`sendAllReceipts`. It is reachable from the always-visible Receipts tile on Budget, and shows a warning with a shortcut to Sync when no server is configured.
 
 ## Tests
 

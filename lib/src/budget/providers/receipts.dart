@@ -35,23 +35,27 @@ final receiptsByAccountProvider = FutureProvider.family<List<Receipt>, String>((
 /// them, so this is the query that decides what needs another attempt.
 final receiptPendingProvider = FutureProvider<List<Receipt>>((ref) async {
   final database = ref.watch(databaseProvider);
-  final rows = await (database.select(database.receipts)..where(
-        (t) =>
-            t.deletedAt.isNull() &
-            // Only phone-owned receipts sweep: the file must be local. A
-            // receipt pulled from the server (e.g. imported on the desktop)
-            // has no local file — re-uploading it would fail and the
-            // client-wins push would then clobber the server's parse result.
-            t.localPath.isNotNull() &
-            t.localPath.equals('').not() &
-            t.parsed.equals(false) &
-            t.uploadStatus.isIn([
-              ReceiptStatus.uploading.code,
-              ReceiptStatus.parsing.code,
-              ReceiptStatus.error.code,
-            ]),
-      ))
-      .get();
+  final rows =
+      await (database.select(database.receipts)..where(
+            (t) =>
+                t.deletedAt.isNull() &
+                // Only phone-owned receipts sweep: the file must be local. A
+                // receipt pulled from the server (e.g. imported on the desktop)
+                // has no local file — re-uploading it would fail and the
+                // client-wins push would then clobber the server's parse result.
+                t.localPath.isNotNull() &
+                t.localPath.equals('').not() &
+                t.parsed.equals(false) &
+                t.uploadStatus.isIn([
+                  // `local` matters too: a capture that never reached `send` (the
+                  // app was killed first) would otherwise sit here unsent forever.
+                  ReceiptStatus.local.code,
+                  ReceiptStatus.uploading.code,
+                  ReceiptStatus.parsing.code,
+                  ReceiptStatus.error.code,
+                ]),
+          ))
+          .get();
   return rows
       .map(
         (r) => Receipt(
