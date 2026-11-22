@@ -96,7 +96,7 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
           actions: [
             TextButton(
               onPressed: () => _complete(skipped: true),
-              child: const Text('Skip'),
+              child: Text(l10n.wizardSkip),
             ),
           ],
         ),
@@ -122,7 +122,7 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
               width: double.infinity,
               child: FilledButton(
                 onPressed: _next,
-                child: Text(_page == 3 ? 'Done' : l10n.commonContinue),
+                child: Text(_page == 3 ? l10n.wizardDone : l10n.commonContinue),
               ),
             ),
           ),

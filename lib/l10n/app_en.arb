@@ -265,7 +265,6 @@
   "templatesScheduleDaily": "Every day",
   "templatesScheduleWeekly": "Weekly on {days}",
   "templatesScheduleInterval": "Every {days} days",
-  "templatesSavedAsTemplate": "Workout saved as template",
   "templatesDeleteConfirmTitle": "Delete template?",
   "templatesDeleteConfirmBody": "The blueprint will be deleted. Workouts you already started are kept.",
   "templatesAddSet": "Add set",
@@ -938,11 +937,8 @@
   "settingsFxRefreshInterval": "Refresh interval",
   "settingsSyncServer": "Sync server",
   "settingsSyncServerHint": "Point this at your sync server to pull exercises, ingredients and currencies. Leave empty to disable sync.",
-  "settingsSyncBaseUrl": "Server URL",
-  "settingsSyncApiKey": "API key",
   "syncExercisesTooltip": "Sync exercises",
   "syncIngredientsTooltip": "Sync ingredients",
-  "syncCurrenciesTooltip": "Sync currencies",
   "syncPushIngredientTooltip": "Push to shared catalogue",
   "syncServerNotConfigured": "Sync server URL is not configured",
   "syncAll": "Sync all",
@@ -953,29 +949,11 @@
   "ingredientListSearchHint": "Search ingredients",
   "refreshList": "Refresh list",
   "syncServerUnreachable": "Server not reachable — check the URL/key or increase the timeout in Settings",
-  "syncExercisesHelp": "Download the shared exercise catalogue and its media from the server.",
-  "syncIngredientsHelp": "Download the shared ingredient, store and price catalogue from the server.",
-  "syncCurrenciesHelp": "Download the latest currency exchange rates from the server.",
-  "settingsSyncEndpoints": "Endpoints",
-  "settingsSyncEndpointsHint": "Override the server path used for each operation. Leave a field at its default unless your server uses different paths.",
-  "endpointReset": "Reset to default",
-  "pushAllData": "Push all data",
   "pushAllDataTooltip": "Upload all local data to the server (one-way)",
-  "pushAllSuccess": "All data pushed to the server.",
-  "exportServer": "Export backup to server",
   "exportServerTooltip": "Upload a full backup of your local data to the server",
-  "importServer": "Import database from server",
   "importServerTooltip": "Replace your local data with the server's copy",
-  "importConfirmTitle": "Replace local data?",
-  "importConfirmBody": "This replaces all local data with the server copy. This cannot be undone.",
-  "importSuccess": "Restored from the server copy.",
   "importFailed": "Import failed",
-  "importNothing": "Nothing to import",
-  "exportSuccess": "Backup exported.",
   "exportFailed": "Export failed",
-  "pushAllDataHelp": "Upload all your local data to the server (one-way copy).",
-  "exportServerHelp": "Upload a full backup of your local data to the server.",
-  "importServerHelp": "Replace your local data with the server copy. Asks for confirmation first.",
   "settingsPlanner": "Planner",
   "settingsPlannerSubtitle": "Workouts, tasks and goals",
   "settingsNutrition": "Nutrition",
@@ -1672,10 +1650,6 @@
   "@receiptCaptureStandalone": {
   "description": "receiptCaptureStandalone"
 },
-  "receiptUploadSuccess": "Receipt uploaded",
-  "@receiptUploadSuccess": {
-  "description": "receiptUploadSuccess"
-},
   "receiptUploadError": "Failed to upload receipt",
   "@receiptUploadError": {
   "description": "receiptUploadError"
@@ -1843,7 +1817,6 @@
   "settingsCascadeAlways": "Always delete tasks",
   "settingsCascadeNever": "Never delete tasks",
   "templatesDuplicate": "Duplicate",
-  "templatesDuplicated": "Template duplicated",
   "cascadeDeleteTitleWithTasks": "Delete linked tasks?",
   "cascadeDeleteKeepTasks": "Keep tasks",
   "goalDeleted": "Goal \"{name}\" deleted",
@@ -1922,6 +1895,287 @@
   "receiptStatusParsing": "Reading…",
   "@receiptStatusParsing": {
     "description": "receiptStatusParsing"
+  },
+  "syncHubTitle": "Sync & Backup",
+  "syncGlobalPool": "Global pool",
+  "syncGlobalPoolHint": "Pull shared exercises, ingredients and currencies",
+  "syncPersonalPool": "Personal pool",
+  "syncPersonalPoolHint": "Push/pull your tasks, notes, goals, workouts, templates, meals, body, budget",
+  "syncLocalBackup": "Local backup",
+  "syncLocalBackupHint": "Export to file or restore from file",
+  "syncErrorUnreachable": "Cannot reach the server at {url}. Check that the sync server is running on the computer and that the phone is on the same Wi-Fi network (or configured via adb reverse). Use \"Test /health\" above to retry.",
+  "@syncErrorUnreachable": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "syncErrorServerTooOld": "This server is an older version that cannot receive this data yet. Update the sync server on the computer, then push again.",
+  "syncErrorUnknownOperation": "The server does not recognise this sync operation — its version may be too old. Update the sync server on the computer, then try again.",
+  "syncErrorKeyRejected": "The server rejected the API key. Check the key for this server (remove it, then re-add or re-scan the QR code).",
+  "syncErrorTooLarge": "This data set is too large for the server to accept in one go. Push fewer categories at once (uncheck some boxes above).",
+  "syncErrorServerInternal": "The server hit an internal problem while receiving this data. Its recent activity was logged on the computer — check the server console output.",
+  "syncConnected": "✓ Connected ({url})",
+  "@syncConnected": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "syncConnectionFailed": "Connection failed — {reason}",
+  "@syncConnectionFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "syncAddServer": "Add server",
+  "syncServerUrl": "Server URL",
+  "syncApiKey": "API key",
+  "commonAdd": "Add",
+  "syncInvalidUrl": "Invalid URL",
+  "syncApiKeyRequired": "API key required",
+  "syncServerExists": "Server already exists",
+  "syncServers": "Servers",
+  "syncServersHint": "Add multiple server URL + API key pairs. Select active to sync. Keep adb reverse + http://127.0.0.1:3030 for hotspot.",
+  "syncNoServers": "No servers yet — add one via Scan QR or Add",
+  "syncRemoveServerTitle": "Remove server?",
+  "syncRemoveServerBody": "Remove {label}?",
+  "@syncRemoveServerBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "syncScanQr": "Scan QR",
+  "syncNoActiveServer": "No active server",
+  "syncTestHealth": "Test /health",
+  "syncNever": "never",
+  "syncMinutesAgo": "{n}m ago",
+  "@syncMinutesAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "syncHoursAgo": "{n}h ago",
+  "@syncHoursAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "syncDaysAgo": "{n}d ago",
+  "@syncDaysAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "syncLastSync": "Last sync: {when}",
+  "@syncLastSync": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "commonLoading": "Loading…",
+  "syncSelectExercises": "Select exercises…",
+  "syncSelectIngredients": "Select ingredients…",
+  "syncNoExercisesOnServer": "No exercises on server",
+  "syncNoIngredientsOnServer": "No ingredients on server",
+  "syncSelectServerExercises": "Select server exercises",
+  "syncSearchServerExercises": "Search server exercises",
+  "syncSelectServerIngredients": "Select server ingredients",
+  "syncSearchServerIngredients": "Search server ingredients",
+  "syncRefreshList": "Refresh list",
+  "syncCouldNotPush": "Could not push {entity} — {reason}",
+  "@syncCouldNotPush": {
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "syncCouldNotPull": "Could not pull {entity} — {reason}",
+  "@syncCouldNotPull": {
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "syncUnknownError": "unknown error",
+  "syncPulledWithErrors": "Pulled with errors: {entities}",
+  "@syncPulledWithErrors": {
+    "placeholders": {
+      "entities": {
+        "type": "String"
+      }
+    }
+  },
+  "syncRelatedExercises": "Exercises (related)",
+  "syncPushEntity": "Push {entity}",
+  "@syncPushEntity": {
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      }
+    }
+  },
+  "syncPullEntity": "Pull {entity}",
+  "@syncPullEntity": {
+    "placeholders": {
+      "entity": {
+        "type": "String"
+      }
+    }
+  },
+  "syncExerciseUpdates": "Sync exercise updates",
+  "syncPushAll": "Push all",
+  "syncPullAll": "Pull all",
+  "syncEntityTags": "Tags",
+  "syncEntityExercises": "Exercises",
+  "syncEntityTasks": "Tasks",
+  "syncEntityNotes": "Notes",
+  "syncEntityGoals": "Goals",
+  "syncEntityWorkouts": "Workouts",
+  "syncEntityTemplates": "Templates",
+  "syncEntityStores": "Stores",
+  "syncEntityIngredients": "Ingredients",
+  "syncEntityFoods": "Foods",
+  "syncEntityMeals": "Meals",
+  "syncEntityBody": "Body",
+  "syncEntityBudget": "Budget",
+  "syncEntityTransactions": "Transactions",
+  "syncEntityReceipts": "Receipts",
+  "syncBackupFormatHint": "JSON → .json.gz (compressed, filtered by selection)",
+  "syncBackupGroupsSelected": "{selected}/{total} groups — applies to both Export and Import",
+  "@syncBackupGroupsSelected": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "syncExport": "Export",
+  "syncImport": "Import",
+  "syncSelectOneGroup": "Select at least one group",
+  "syncExportJson": "Export JSON ({count})",
+  "@syncExportJson": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncImportJson": "Import JSON",
+  "syncServerCopy": "Server copy",
+  "syncServerCopyHint": "Upload a compressed JSON backup, or restore the one stored on the computer",
+  "syncBackUpToServer": "Back up to server",
+  "syncRestoreFromServer": "Restore from server",
+  "syncReplaceLocalTitle": "Replace local data?",
+  "syncReplaceFromServerBody": "Importing will delete the existing rows in every backed-up group and restore the copy stored on the server.",
+  "syncReplaceFromFileBody": "Importing will delete the existing rows in these groups and restore the backup: {groups}.",
+  "@syncReplaceFromFileBody": {
+    "placeholders": {
+      "groups": {
+        "type": "String"
+      }
+    }
+  },
+  "syncEntityCurrencies": "Currencies",
+  "syncNotConfiguredOpenHub": "Sync server not configured — open Sync & Backup to set URL",
+  "syncTimeoutWithSeconds": "Server not reachable — check URL/key or increase timeout in Settings → Advanced ({seconds}s)",
+  "@syncTimeoutWithSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "commonOpen": "Open",
+  "syncNow": "Sync now",
+  "syncBackup": "Backup",
+  "commonError": "Error",
+  "dashboardStableTrend": "Stable trend",
+  "dashboardTrendingDown": "→ trending down",
+  "dashboardTrendingUp": "→ trending up",
+  "dashboardDelta7d": "{delta} (7d)",
+  "@dashboardDelta7d": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardDelta30d": "{delta} (30d)",
+  "@dashboardDelta30d": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardToday": "Today",
+  "budgetRecent": "Recent",
+  "settingsSync": "Sync",
+  "settingsSyncSubtitle": "Servers & backup — open Sync & Backup",
+  "selectSheetTitle": "Select",
+  "selectSheetCount": "{count} items",
+  "@selectSheetCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectSheetSelectAll": "Select all",
+  "selectSheetSyncSelected": "Sync selected ({count})",
+  "@selectSheetSyncSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wizardSkip": "Skip",
+  "wizardDone": "Done",
+  "ingredientOffApply": "Apply to form",
+  "ingredientOffImport": "Save to server & apply",
+  "ingredientOffShare": "Share OpenFoodFacts link",
+  "workoutStartedNoNotification": "Workout started, but the notification could not be shown. Allow notifications and set battery to Unrestricted.",
+  "syncQrInvalid": "Invalid QR — expected {payload}",
+  "@syncQrInvalid": {
+    "placeholders": {
+      "payload": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQrHint": "Point camera at QR with {payload}",
+  "@syncQrHint": {
+    "placeholders": {
+      "payload": {
+        "type": "String"
+      }
+    }
   }
-
 }

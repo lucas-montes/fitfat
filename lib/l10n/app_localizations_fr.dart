@@ -559,9 +559,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get templatesSavedAsTemplate => 'Séance enregistrée comme modèle';
-
-  @override
   String get templatesDeleteConfirmTitle => 'Supprimer le modèle ?';
 
   @override
@@ -1966,19 +1963,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Indiquez votre serveur de sync pour récupérer exercices, ingrédients et devises. Laissez vide pour désactiver la sync.';
 
   @override
-  String get settingsSyncBaseUrl => 'URL du serveur';
-
-  @override
-  String get settingsSyncApiKey => 'Clé API';
-
-  @override
   String get syncExercisesTooltip => 'Synchroniser les exercices';
 
   @override
   String get syncIngredientsTooltip => 'Synchroniser les ingrédients';
-
-  @override
-  String get syncCurrenciesTooltip => 'Synchroniser les devises';
 
   @override
   String get syncPushIngredientTooltip => 'Publier dans le catalogue partagé';
@@ -2015,85 +2003,22 @@ class AppLocalizationsFr extends AppLocalizations {
       'Serveur injoignable — vérifiez l\'URL/clé ou augmentez le délai dans Réglages';
 
   @override
-  String get syncExercisesHelp =>
-      'Télécharge le catalogue d\'exercices partagé et ses médias depuis le serveur.';
-
-  @override
-  String get syncIngredientsHelp =>
-      'Télécharge le catalogue partagé d\'ingrédients, magasins et prix depuis le serveur.';
-
-  @override
-  String get syncCurrenciesHelp =>
-      'Télécharge les derniers taux de change depuis le serveur.';
-
-  @override
-  String get settingsSyncEndpoints => 'Points d\'accès';
-
-  @override
-  String get settingsSyncEndpointsHint =>
-      'Remplace le chemin serveur utilisé pour chaque opération. Gardez la valeur par défaut sauf si votre serveur utilise d\'autres chemins.';
-
-  @override
-  String get endpointReset => 'Réinitialiser';
-
-  @override
-  String get pushAllData => 'Envoyer toutes les données';
-
-  @override
   String get pushAllDataTooltip =>
       'Téléverse toutes les données locales vers le serveur (sens unique)';
-
-  @override
-  String get pushAllSuccess =>
-      'Toutes les données ont été envoyées au serveur.';
-
-  @override
-  String get exportServer => 'Exporter la sauvegarde vers le serveur';
 
   @override
   String get exportServerTooltip =>
       'Téléverse une sauvegarde complète de vos données locales vers le serveur';
 
   @override
-  String get importServer => 'Importer la base depuis le serveur';
-
-  @override
   String get importServerTooltip =>
       'Remplace vos données locales par la copie du serveur';
-
-  @override
-  String get importConfirmTitle => 'Remplacer les données locales ?';
-
-  @override
-  String get importConfirmBody =>
-      'Cela remplace toutes les données locales par la copie du serveur. Action irréversible.';
-
-  @override
-  String get importSuccess => 'Restauré depuis la copie du serveur.';
 
   @override
   String get importFailed => 'Échec de l\'import';
 
   @override
-  String get importNothing => 'Rien à importer';
-
-  @override
-  String get exportSuccess => 'Sauvegarde exportée.';
-
-  @override
   String get exportFailed => 'Échec de l\'export';
-
-  @override
-  String get pushAllDataHelp =>
-      'Téléverse toutes vos données locales vers le serveur (copie unidirectionnelle).';
-
-  @override
-  String get exportServerHelp =>
-      'Téléverse une sauvegarde complète de vos données locales vers le serveur.';
-
-  @override
-  String get importServerHelp =>
-      'Remplace vos données locales par la copie du serveur. Demande confirmation au préalable.';
 
   @override
   String get settingsPlanner => 'Planificateur';
@@ -2721,9 +2646,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get receiptCaptureStandalone => 'Reçu indépendant';
 
   @override
-  String get receiptUploadSuccess => 'Reçu envoyé';
-
-  @override
   String get receiptUploadError => 'Échec de l\'envoi du reçu';
 
   @override
@@ -3076,9 +2998,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get templatesDuplicate => 'Duplicate';
 
   @override
-  String get templatesDuplicated => 'Template duplicated';
-
-  @override
   String get cascadeDeleteTitleWithTasks => 'Delete linked tasks?';
 
   @override
@@ -3141,4 +3060,405 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get receiptStatusParsing => 'Lecture…';
+
+  @override
+  String get syncHubTitle => 'Synchronisation et sauvegarde';
+
+  @override
+  String get syncGlobalPool => 'Pool global';
+
+  @override
+  String get syncGlobalPoolHint =>
+      'Récupérer les exercices, ingrédients et devises partagés';
+
+  @override
+  String get syncPersonalPool => 'Pool personnel';
+
+  @override
+  String get syncPersonalPoolHint =>
+      'Envoyer/récupérer vos tâches, notes, objectifs, séances, modèles, repas, corps, budget';
+
+  @override
+  String get syncLocalBackup => 'Sauvegarde locale';
+
+  @override
+  String get syncLocalBackupHint =>
+      'Exporter vers un fichier ou restaurer depuis un fichier';
+
+  @override
+  String syncErrorUnreachable(String url) {
+    return 'Impossible de joindre le serveur à $url. Vérifiez que le serveur de synchronisation tourne sur l\'ordinateur et que le téléphone est sur le même réseau Wi-Fi (ou configuré via adb reverse). Utilisez « Tester /health » ci-dessus pour réessayer.';
+  }
+
+  @override
+  String get syncErrorServerTooOld =>
+      'Ce serveur est une ancienne version qui ne peut pas encore recevoir ces données. Mettez à jour le serveur de synchronisation sur l\'ordinateur, puis renvoyez.';
+
+  @override
+  String get syncErrorUnknownOperation =>
+      'Le serveur ne reconnaît pas cette opération de synchronisation — sa version est peut-être trop ancienne. Mettez à jour le serveur sur l\'ordinateur, puis réessayez.';
+
+  @override
+  String get syncErrorKeyRejected =>
+      'Le serveur a refusé la clé API. Vérifiez la clé de ce serveur (supprimez-le, puis rajoutez-le ou rescannez le QR code).';
+
+  @override
+  String get syncErrorTooLarge =>
+      'Ces données sont trop volumineuses pour être acceptées en une fois. Envoyez moins de catégories à la fois (décochez des cases ci-dessus).';
+
+  @override
+  String get syncErrorServerInternal =>
+      'Le serveur a rencontré un problème interne en recevant ces données. Son activité récente est journalisée sur l\'ordinateur — consultez la console du serveur.';
+
+  @override
+  String syncConnected(String url) {
+    return '✓ Connecté ($url)';
+  }
+
+  @override
+  String syncConnectionFailed(String reason) {
+    return 'Échec de la connexion — $reason';
+  }
+
+  @override
+  String get syncAddServer => 'Ajouter un serveur';
+
+  @override
+  String get syncServerUrl => 'URL du serveur';
+
+  @override
+  String get syncApiKey => 'Clé API';
+
+  @override
+  String get commonAdd => 'Ajouter';
+
+  @override
+  String get syncInvalidUrl => 'URL invalide';
+
+  @override
+  String get syncApiKeyRequired => 'Clé API requise';
+
+  @override
+  String get syncServerExists => 'Ce serveur existe déjà';
+
+  @override
+  String get syncServers => 'Serveurs';
+
+  @override
+  String get syncServersHint =>
+      'Ajoutez plusieurs paires URL + clé API. Sélectionnez le serveur actif pour synchroniser. Gardez adb reverse + http://127.0.0.1:3030 pour le partage de connexion.';
+
+  @override
+  String get syncNoServers =>
+      'Aucun serveur — ajoutez-en un via Scanner le QR ou Ajouter';
+
+  @override
+  String get syncRemoveServerTitle => 'Supprimer le serveur ?';
+
+  @override
+  String syncRemoveServerBody(String label) {
+    return 'Supprimer $label ?';
+  }
+
+  @override
+  String get syncScanQr => 'Scanner le QR';
+
+  @override
+  String get syncNoActiveServer => 'Aucun serveur actif';
+
+  @override
+  String get syncTestHealth => 'Tester /health';
+
+  @override
+  String get syncNever => 'jamais';
+
+  @override
+  String syncMinutesAgo(int n) {
+    return 'il y a $n min';
+  }
+
+  @override
+  String syncHoursAgo(int n) {
+    return 'il y a $n h';
+  }
+
+  @override
+  String syncDaysAgo(int n) {
+    return 'il y a $n j';
+  }
+
+  @override
+  String syncLastSync(String when) {
+    return 'Dernière synchro : $when';
+  }
+
+  @override
+  String get commonLoading => 'Chargement…';
+
+  @override
+  String get syncSelectExercises => 'Choisir des exercices…';
+
+  @override
+  String get syncSelectIngredients => 'Choisir des ingrédients…';
+
+  @override
+  String get syncNoExercisesOnServer => 'Aucun exercice sur le serveur';
+
+  @override
+  String get syncNoIngredientsOnServer => 'Aucun ingrédient sur le serveur';
+
+  @override
+  String get syncSelectServerExercises => 'Choisir des exercices du serveur';
+
+  @override
+  String get syncSearchServerExercises => 'Rechercher les exercices du serveur';
+
+  @override
+  String get syncSelectServerIngredients =>
+      'Choisir des ingrédients du serveur';
+
+  @override
+  String get syncSearchServerIngredients =>
+      'Rechercher les ingrédients du serveur';
+
+  @override
+  String get syncRefreshList => 'Actualiser la liste';
+
+  @override
+  String syncCouldNotPush(String entity, String reason) {
+    return 'Impossible d\'envoyer $entity — $reason';
+  }
+
+  @override
+  String syncCouldNotPull(String entity, String reason) {
+    return 'Impossible de récupérer $entity — $reason';
+  }
+
+  @override
+  String get syncUnknownError => 'erreur inconnue';
+
+  @override
+  String syncPulledWithErrors(String entities) {
+    return 'Récupéré avec des erreurs : $entities';
+  }
+
+  @override
+  String get syncRelatedExercises => 'Exercices (liés)';
+
+  @override
+  String syncPushEntity(String entity) {
+    return 'Envoyer $entity';
+  }
+
+  @override
+  String syncPullEntity(String entity) {
+    return 'Récupérer $entity';
+  }
+
+  @override
+  String get syncExerciseUpdates =>
+      'Synchroniser les mises à jour d\'exercices';
+
+  @override
+  String get syncPushAll => 'Tout envoyer';
+
+  @override
+  String get syncPullAll => 'Tout récupérer';
+
+  @override
+  String get syncEntityTags => 'Étiquettes';
+
+  @override
+  String get syncEntityExercises => 'Exercices';
+
+  @override
+  String get syncEntityTasks => 'Tâches';
+
+  @override
+  String get syncEntityNotes => 'Notes';
+
+  @override
+  String get syncEntityGoals => 'Objectifs';
+
+  @override
+  String get syncEntityWorkouts => 'Séances';
+
+  @override
+  String get syncEntityTemplates => 'Modèles';
+
+  @override
+  String get syncEntityStores => 'Magasins';
+
+  @override
+  String get syncEntityIngredients => 'Ingrédients';
+
+  @override
+  String get syncEntityFoods => 'Aliments';
+
+  @override
+  String get syncEntityMeals => 'Repas';
+
+  @override
+  String get syncEntityBody => 'Corps';
+
+  @override
+  String get syncEntityBudget => 'Budget';
+
+  @override
+  String get syncEntityTransactions => 'Transactions';
+
+  @override
+  String get syncEntityReceipts => 'Tickets';
+
+  @override
+  String get syncBackupFormatHint =>
+      'JSON → .json.gz (compressé, filtré par la sélection)';
+
+  @override
+  String syncBackupGroupsSelected(int selected, int total) {
+    return '$selected/$total groupes — s\'applique à l\'export et à l\'import';
+  }
+
+  @override
+  String get syncExport => 'Exporter';
+
+  @override
+  String get syncImport => 'Importer';
+
+  @override
+  String get syncSelectOneGroup => 'Sélectionnez au moins un groupe';
+
+  @override
+  String syncExportJson(int count) {
+    return 'Exporter en JSON ($count)';
+  }
+
+  @override
+  String get syncImportJson => 'Importer un JSON';
+
+  @override
+  String get syncServerCopy => 'Copie sur le serveur';
+
+  @override
+  String get syncServerCopyHint =>
+      'Envoyer une sauvegarde JSON compressée, ou restaurer celle stockée sur l\'ordinateur';
+
+  @override
+  String get syncBackUpToServer => 'Sauvegarder sur le serveur';
+
+  @override
+  String get syncRestoreFromServer => 'Restaurer depuis le serveur';
+
+  @override
+  String get syncReplaceLocalTitle => 'Remplacer les données locales ?';
+
+  @override
+  String get syncReplaceFromServerBody =>
+      'L\'import supprimera les lignes existantes de chaque groupe sauvegardé et restaurera la copie stockée sur le serveur.';
+
+  @override
+  String syncReplaceFromFileBody(String groups) {
+    return 'L\'import supprimera les lignes existantes de ces groupes et restaurera la sauvegarde : $groups.';
+  }
+
+  @override
+  String get syncEntityCurrencies => 'Devises';
+
+  @override
+  String get syncNotConfiguredOpenHub =>
+      'Serveur de synchronisation non configuré — ouvrez Synchronisation et sauvegarde pour définir l\'URL';
+
+  @override
+  String syncTimeoutWithSeconds(int seconds) {
+    return 'Serveur injoignable — vérifiez l\'URL/la clé ou augmentez le délai dans Réglages → Avancé ($seconds s)';
+  }
+
+  @override
+  String get commonOpen => 'Ouvrir';
+
+  @override
+  String get syncNow => 'Synchroniser';
+
+  @override
+  String get syncBackup => 'Sauvegarder';
+
+  @override
+  String get commonError => 'Erreur';
+
+  @override
+  String get dashboardStableTrend => 'Tendance stable';
+
+  @override
+  String get dashboardTrendingDown => '→ tendance à la baisse';
+
+  @override
+  String get dashboardTrendingUp => '→ tendance à la hausse';
+
+  @override
+  String dashboardDelta7d(String delta) {
+    return '$delta (7 j)';
+  }
+
+  @override
+  String dashboardDelta30d(String delta) {
+    return '$delta (30 j)';
+  }
+
+  @override
+  String get dashboardToday => 'Aujourd\'hui';
+
+  @override
+  String get budgetRecent => 'Récentes';
+
+  @override
+  String get settingsSync => 'Synchronisation';
+
+  @override
+  String get settingsSyncSubtitle =>
+      'Serveurs et sauvegarde — ouvrir Synchronisation et sauvegarde';
+
+  @override
+  String get selectSheetTitle => 'Sélectionner';
+
+  @override
+  String selectSheetCount(int count) {
+    return '$count éléments';
+  }
+
+  @override
+  String get selectSheetSelectAll => 'Tout sélectionner';
+
+  @override
+  String selectSheetSyncSelected(int count) {
+    return 'Synchroniser la sélection ($count)';
+  }
+
+  @override
+  String get wizardSkip => 'Passer';
+
+  @override
+  String get wizardDone => 'Terminé';
+
+  @override
+  String get ingredientOffApply => 'Appliquer au formulaire';
+
+  @override
+  String get ingredientOffImport => 'Enregistrer sur le serveur et appliquer';
+
+  @override
+  String get ingredientOffShare => 'Partager le lien OpenFoodFacts';
+
+  @override
+  String get workoutStartedNoNotification =>
+      'Séance démarrée, mais la notification n\'a pas pu s\'afficher. Autorisez les notifications et réglez la batterie sur Non restreinte.';
+
+  @override
+  String syncQrInvalid(String payload) {
+    return 'QR invalide — attendu $payload';
+  }
+
+  @override
+  String syncQrHint(String payload) {
+    return 'Pointez l\'appareil photo vers un QR $payload';
+  }
 }

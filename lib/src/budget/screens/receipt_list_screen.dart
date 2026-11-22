@@ -343,14 +343,15 @@ final class _ReceiptListScreenState extends ConsumerState<ReceiptListScreen> {
       if (outcome.noPicture > 0) l10n.receiptNoPictureCount(outcome.noPicture),
       if (saveFailures > 0) l10n.receiptSaveFailedCount(saveFailures),
     ];
-    final onlyOneClean =
-        outcome.sent == 1 &&
+    // A clean send needs no banner: the list already shows the new status.
+    final clean =
+        outcome.sent > 0 &&
         outcome.failed == 0 &&
         outcome.noPicture == 0 &&
-        saveFailures == 0;
-    var message = onlyOneClean
-        ? l10n.receiptUploadSuccess
-        : (parts.isEmpty ? l10n.receiptUploadError : parts.join(', '));
+        saveFailures == 0 &&
+        outcome.firstError == null;
+    if (clean) return;
+    var message = parts.isEmpty ? l10n.receiptUploadError : parts.join(', ');
     if (outcome.firstError != null) {
       message = '$message — ${outcome.firstError}';
     }

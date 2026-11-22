@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 Future<({String url, String apiKey})?> showQrScanSheet(
   BuildContext context,
 ) async {
@@ -24,6 +26,8 @@ final class _QrScanSheetState extends State<_QrScanSheet> {
   bool _handled = false;
   String? _error;
 
+  static const _payloadShape = '{"url","apiKey","version":1}';
+
   void _onDetect(BarcodeCapture capture) {
     if (_handled) return;
     final raw = capture.barcodes.firstOrNull?.rawValue;
@@ -31,7 +35,8 @@ final class _QrScanSheetState extends State<_QrScanSheet> {
     final parsed = _parsePayload(raw);
     if (parsed == null) {
       setState(
-        () => _error = 'Invalid QR — expected {"url","apiKey","version":1}',
+        () =>
+            _error = AppLocalizations.of(context)!.syncQrInvalid(_payloadShape),
       );
       return;
     }
@@ -73,7 +78,10 @@ final class _QrScanSheetState extends State<_QrScanSheet> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Text('Scan QR', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  AppLocalizations.of(context)!.syncScanQr,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.flash_on),
@@ -106,7 +114,7 @@ final class _QrScanSheetState extends State<_QrScanSheet> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Point camera at QR with {"url","apiKey","version":1}',
+              AppLocalizations.of(context)!.syncQrHint(_payloadShape),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),

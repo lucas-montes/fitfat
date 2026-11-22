@@ -161,10 +161,9 @@ final class _WorkoutDetailContent extends StatelessWidget {
       router.go('/active-workout');
       if (!notificationUp) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Workout started, but the notification could not be shown. '
-              'Allow notifications and set battery to Unrestricted.',
+              AppLocalizations.of(context)!.workoutStartedNoNotification,
             ),
           ),
         );

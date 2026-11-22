@@ -1072,12 +1072,6 @@ abstract class AppLocalizations {
   /// **'Every {days} days'**
   String templatesScheduleInterval(Object days);
 
-  /// No description provided for @templatesSavedAsTemplate.
-  ///
-  /// In en, this message translates to:
-  /// **'Workout saved as template'**
-  String get templatesSavedAsTemplate;
-
   /// No description provided for @templatesDeleteConfirmTitle.
   ///
   /// In en, this message translates to:
@@ -3490,18 +3484,6 @@ abstract class AppLocalizations {
   /// **'Point this at your sync server to pull exercises, ingredients and currencies. Leave empty to disable sync.'**
   String get settingsSyncServerHint;
 
-  /// No description provided for @settingsSyncBaseUrl.
-  ///
-  /// In en, this message translates to:
-  /// **'Server URL'**
-  String get settingsSyncBaseUrl;
-
-  /// No description provided for @settingsSyncApiKey.
-  ///
-  /// In en, this message translates to:
-  /// **'API key'**
-  String get settingsSyncApiKey;
-
   /// No description provided for @syncExercisesTooltip.
   ///
   /// In en, this message translates to:
@@ -3513,12 +3495,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync ingredients'**
   String get syncIngredientsTooltip;
-
-  /// No description provided for @syncCurrenciesTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync currencies'**
-  String get syncCurrenciesTooltip;
 
   /// No description provided for @syncPushIngredientTooltip.
   ///
@@ -3580,65 +3556,11 @@ abstract class AppLocalizations {
   /// **'Server not reachable — check the URL/key or increase the timeout in Settings'**
   String get syncServerUnreachable;
 
-  /// No description provided for @syncExercisesHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Download the shared exercise catalogue and its media from the server.'**
-  String get syncExercisesHelp;
-
-  /// No description provided for @syncIngredientsHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Download the shared ingredient, store and price catalogue from the server.'**
-  String get syncIngredientsHelp;
-
-  /// No description provided for @syncCurrenciesHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Download the latest currency exchange rates from the server.'**
-  String get syncCurrenciesHelp;
-
-  /// No description provided for @settingsSyncEndpoints.
-  ///
-  /// In en, this message translates to:
-  /// **'Endpoints'**
-  String get settingsSyncEndpoints;
-
-  /// No description provided for @settingsSyncEndpointsHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Override the server path used for each operation. Leave a field at its default unless your server uses different paths.'**
-  String get settingsSyncEndpointsHint;
-
-  /// No description provided for @endpointReset.
-  ///
-  /// In en, this message translates to:
-  /// **'Reset to default'**
-  String get endpointReset;
-
-  /// No description provided for @pushAllData.
-  ///
-  /// In en, this message translates to:
-  /// **'Push all data'**
-  String get pushAllData;
-
   /// No description provided for @pushAllDataTooltip.
   ///
   /// In en, this message translates to:
   /// **'Upload all local data to the server (one-way)'**
   String get pushAllDataTooltip;
-
-  /// No description provided for @pushAllSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'All data pushed to the server.'**
-  String get pushAllSuccess;
-
-  /// No description provided for @exportServer.
-  ///
-  /// In en, this message translates to:
-  /// **'Export backup to server'**
-  String get exportServer;
 
   /// No description provided for @exportServerTooltip.
   ///
@@ -3646,35 +3568,11 @@ abstract class AppLocalizations {
   /// **'Upload a full backup of your local data to the server'**
   String get exportServerTooltip;
 
-  /// No description provided for @importServer.
-  ///
-  /// In en, this message translates to:
-  /// **'Import database from server'**
-  String get importServer;
-
   /// No description provided for @importServerTooltip.
   ///
   /// In en, this message translates to:
   /// **'Replace your local data with the server\'s copy'**
   String get importServerTooltip;
-
-  /// No description provided for @importConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace local data?'**
-  String get importConfirmTitle;
-
-  /// No description provided for @importConfirmBody.
-  ///
-  /// In en, this message translates to:
-  /// **'This replaces all local data with the server copy. This cannot be undone.'**
-  String get importConfirmBody;
-
-  /// No description provided for @importSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Restored from the server copy.'**
-  String get importSuccess;
 
   /// No description provided for @importFailed.
   ///
@@ -3682,41 +3580,11 @@ abstract class AppLocalizations {
   /// **'Import failed'**
   String get importFailed;
 
-  /// No description provided for @importNothing.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing to import'**
-  String get importNothing;
-
-  /// No description provided for @exportSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Backup exported.'**
-  String get exportSuccess;
-
   /// No description provided for @exportFailed.
   ///
   /// In en, this message translates to:
   /// **'Export failed'**
   String get exportFailed;
-
-  /// No description provided for @pushAllDataHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload all your local data to the server (one-way copy).'**
-  String get pushAllDataHelp;
-
-  /// No description provided for @exportServerHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload a full backup of your local data to the server.'**
-  String get exportServerHelp;
-
-  /// No description provided for @importServerHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace your local data with the server copy. Asks for confirmation first.'**
-  String get importServerHelp;
 
   /// No description provided for @settingsPlanner.
   ///
@@ -4822,12 +4690,6 @@ abstract class AppLocalizations {
   /// **'Standalone receipt'**
   String get receiptCaptureStandalone;
 
-  /// receiptUploadSuccess
-  ///
-  /// In en, this message translates to:
-  /// **'Receipt uploaded'**
-  String get receiptUploadSuccess;
-
   /// receiptUploadError
   ///
   /// In en, this message translates to:
@@ -5476,12 +5338,6 @@ abstract class AppLocalizations {
   /// **'Duplicate'**
   String get templatesDuplicate;
 
-  /// No description provided for @templatesDuplicated.
-  ///
-  /// In en, this message translates to:
-  /// **'Template duplicated'**
-  String get templatesDuplicated;
-
   /// No description provided for @cascadeDeleteTitleWithTasks.
   ///
   /// In en, this message translates to:
@@ -5577,6 +5433,678 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reading…'**
   String get receiptStatusParsing;
+
+  /// No description provided for @syncHubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync & Backup'**
+  String get syncHubTitle;
+
+  /// No description provided for @syncGlobalPool.
+  ///
+  /// In en, this message translates to:
+  /// **'Global pool'**
+  String get syncGlobalPool;
+
+  /// No description provided for @syncGlobalPoolHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull shared exercises, ingredients and currencies'**
+  String get syncGlobalPoolHint;
+
+  /// No description provided for @syncPersonalPool.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal pool'**
+  String get syncPersonalPool;
+
+  /// No description provided for @syncPersonalPoolHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Push/pull your tasks, notes, goals, workouts, templates, meals, body, budget'**
+  String get syncPersonalPoolHint;
+
+  /// No description provided for @syncLocalBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Local backup'**
+  String get syncLocalBackup;
+
+  /// No description provided for @syncLocalBackupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Export to file or restore from file'**
+  String get syncLocalBackupHint;
+
+  /// No description provided for @syncErrorUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot reach the server at {url}. Check that the sync server is running on the computer and that the phone is on the same Wi-Fi network (or configured via adb reverse). Use \"Test /health\" above to retry.'**
+  String syncErrorUnreachable(String url);
+
+  /// No description provided for @syncErrorServerTooOld.
+  ///
+  /// In en, this message translates to:
+  /// **'This server is an older version that cannot receive this data yet. Update the sync server on the computer, then push again.'**
+  String get syncErrorServerTooOld;
+
+  /// No description provided for @syncErrorUnknownOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'The server does not recognise this sync operation — its version may be too old. Update the sync server on the computer, then try again.'**
+  String get syncErrorUnknownOperation;
+
+  /// No description provided for @syncErrorKeyRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'The server rejected the API key. Check the key for this server (remove it, then re-add or re-scan the QR code).'**
+  String get syncErrorKeyRejected;
+
+  /// No description provided for @syncErrorTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This data set is too large for the server to accept in one go. Push fewer categories at once (uncheck some boxes above).'**
+  String get syncErrorTooLarge;
+
+  /// No description provided for @syncErrorServerInternal.
+  ///
+  /// In en, this message translates to:
+  /// **'The server hit an internal problem while receiving this data. Its recent activity was logged on the computer — check the server console output.'**
+  String get syncErrorServerInternal;
+
+  /// No description provided for @syncConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Connected ({url})'**
+  String syncConnected(String url);
+
+  /// No description provided for @syncConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed — {reason}'**
+  String syncConnectionFailed(String reason);
+
+  /// No description provided for @syncAddServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add server'**
+  String get syncAddServer;
+
+  /// No description provided for @syncServerUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Server URL'**
+  String get syncServerUrl;
+
+  /// No description provided for @syncApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get syncApiKey;
+
+  /// No description provided for @commonAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get commonAdd;
+
+  /// No description provided for @syncInvalidUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid URL'**
+  String get syncInvalidUrl;
+
+  /// No description provided for @syncApiKeyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'API key required'**
+  String get syncApiKeyRequired;
+
+  /// No description provided for @syncServerExists.
+  ///
+  /// In en, this message translates to:
+  /// **'Server already exists'**
+  String get syncServerExists;
+
+  /// No description provided for @syncServers.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers'**
+  String get syncServers;
+
+  /// No description provided for @syncServersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add multiple server URL + API key pairs. Select active to sync. Keep adb reverse + http://127.0.0.1:3030 for hotspot.'**
+  String get syncServersHint;
+
+  /// No description provided for @syncNoServers.
+  ///
+  /// In en, this message translates to:
+  /// **'No servers yet — add one via Scan QR or Add'**
+  String get syncNoServers;
+
+  /// No description provided for @syncRemoveServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove server?'**
+  String get syncRemoveServerTitle;
+
+  /// No description provided for @syncRemoveServerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {label}?'**
+  String syncRemoveServerBody(String label);
+
+  /// No description provided for @syncScanQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR'**
+  String get syncScanQr;
+
+  /// No description provided for @syncNoActiveServer.
+  ///
+  /// In en, this message translates to:
+  /// **'No active server'**
+  String get syncNoActiveServer;
+
+  /// No description provided for @syncTestHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Test /health'**
+  String get syncTestHealth;
+
+  /// No description provided for @syncNever.
+  ///
+  /// In en, this message translates to:
+  /// **'never'**
+  String get syncNever;
+
+  /// No description provided for @syncMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n}m ago'**
+  String syncMinutesAgo(int n);
+
+  /// No description provided for @syncHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n}h ago'**
+  String syncHoursAgo(int n);
+
+  /// No description provided for @syncDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n}d ago'**
+  String syncDaysAgo(int n);
+
+  /// No description provided for @syncLastSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sync: {when}'**
+  String syncLastSync(String when);
+
+  /// No description provided for @commonLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get commonLoading;
+
+  /// No description provided for @syncSelectExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Select exercises…'**
+  String get syncSelectExercises;
+
+  /// No description provided for @syncSelectIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'Select ingredients…'**
+  String get syncSelectIngredients;
+
+  /// No description provided for @syncNoExercisesOnServer.
+  ///
+  /// In en, this message translates to:
+  /// **'No exercises on server'**
+  String get syncNoExercisesOnServer;
+
+  /// No description provided for @syncNoIngredientsOnServer.
+  ///
+  /// In en, this message translates to:
+  /// **'No ingredients on server'**
+  String get syncNoIngredientsOnServer;
+
+  /// No description provided for @syncSelectServerExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Select server exercises'**
+  String get syncSelectServerExercises;
+
+  /// No description provided for @syncSearchServerExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Search server exercises'**
+  String get syncSearchServerExercises;
+
+  /// No description provided for @syncSelectServerIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'Select server ingredients'**
+  String get syncSelectServerIngredients;
+
+  /// No description provided for @syncSearchServerIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'Search server ingredients'**
+  String get syncSearchServerIngredients;
+
+  /// No description provided for @syncRefreshList.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh list'**
+  String get syncRefreshList;
+
+  /// No description provided for @syncCouldNotPush.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not push {entity} — {reason}'**
+  String syncCouldNotPush(String entity, String reason);
+
+  /// No description provided for @syncCouldNotPull.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not pull {entity} — {reason}'**
+  String syncCouldNotPull(String entity, String reason);
+
+  /// No description provided for @syncUnknownError.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown error'**
+  String get syncUnknownError;
+
+  /// No description provided for @syncPulledWithErrors.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulled with errors: {entities}'**
+  String syncPulledWithErrors(String entities);
+
+  /// No description provided for @syncRelatedExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercises (related)'**
+  String get syncRelatedExercises;
+
+  /// No description provided for @syncPushEntity.
+  ///
+  /// In en, this message translates to:
+  /// **'Push {entity}'**
+  String syncPushEntity(String entity);
+
+  /// No description provided for @syncPullEntity.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull {entity}'**
+  String syncPullEntity(String entity);
+
+  /// No description provided for @syncExerciseUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync exercise updates'**
+  String get syncExerciseUpdates;
+
+  /// No description provided for @syncPushAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Push all'**
+  String get syncPushAll;
+
+  /// No description provided for @syncPullAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull all'**
+  String get syncPullAll;
+
+  /// No description provided for @syncEntityTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get syncEntityTags;
+
+  /// No description provided for @syncEntityExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercises'**
+  String get syncEntityExercises;
+
+  /// No description provided for @syncEntityTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get syncEntityTasks;
+
+  /// No description provided for @syncEntityNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get syncEntityNotes;
+
+  /// No description provided for @syncEntityGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get syncEntityGoals;
+
+  /// No description provided for @syncEntityWorkouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts'**
+  String get syncEntityWorkouts;
+
+  /// No description provided for @syncEntityTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates'**
+  String get syncEntityTemplates;
+
+  /// No description provided for @syncEntityStores.
+  ///
+  /// In en, this message translates to:
+  /// **'Stores'**
+  String get syncEntityStores;
+
+  /// No description provided for @syncEntityIngredients.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients'**
+  String get syncEntityIngredients;
+
+  /// No description provided for @syncEntityFoods.
+  ///
+  /// In en, this message translates to:
+  /// **'Foods'**
+  String get syncEntityFoods;
+
+  /// No description provided for @syncEntityMeals.
+  ///
+  /// In en, this message translates to:
+  /// **'Meals'**
+  String get syncEntityMeals;
+
+  /// No description provided for @syncEntityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Body'**
+  String get syncEntityBody;
+
+  /// No description provided for @syncEntityBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get syncEntityBudget;
+
+  /// No description provided for @syncEntityTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get syncEntityTransactions;
+
+  /// No description provided for @syncEntityReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipts'**
+  String get syncEntityReceipts;
+
+  /// No description provided for @syncBackupFormatHint.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON → .json.gz (compressed, filtered by selection)'**
+  String get syncBackupFormatHint;
+
+  /// No description provided for @syncBackupGroupsSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected}/{total} groups — applies to both Export and Import'**
+  String syncBackupGroupsSelected(int selected, int total);
+
+  /// No description provided for @syncExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get syncExport;
+
+  /// No description provided for @syncImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get syncImport;
+
+  /// No description provided for @syncSelectOneGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one group'**
+  String get syncSelectOneGroup;
+
+  /// No description provided for @syncExportJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Export JSON ({count})'**
+  String syncExportJson(int count);
+
+  /// No description provided for @syncImportJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Import JSON'**
+  String get syncImportJson;
+
+  /// No description provided for @syncServerCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Server copy'**
+  String get syncServerCopy;
+
+  /// No description provided for @syncServerCopyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a compressed JSON backup, or restore the one stored on the computer'**
+  String get syncServerCopyHint;
+
+  /// No description provided for @syncBackUpToServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up to server'**
+  String get syncBackUpToServer;
+
+  /// No description provided for @syncRestoreFromServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from server'**
+  String get syncRestoreFromServer;
+
+  /// No description provided for @syncReplaceLocalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace local data?'**
+  String get syncReplaceLocalTitle;
+
+  /// No description provided for @syncReplaceFromServerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing will delete the existing rows in every backed-up group and restore the copy stored on the server.'**
+  String get syncReplaceFromServerBody;
+
+  /// No description provided for @syncReplaceFromFileBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing will delete the existing rows in these groups and restore the backup: {groups}.'**
+  String syncReplaceFromFileBody(String groups);
+
+  /// No description provided for @syncEntityCurrencies.
+  ///
+  /// In en, this message translates to:
+  /// **'Currencies'**
+  String get syncEntityCurrencies;
+
+  /// No description provided for @syncNotConfiguredOpenHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync server not configured — open Sync & Backup to set URL'**
+  String get syncNotConfiguredOpenHub;
+
+  /// No description provided for @syncTimeoutWithSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Server not reachable — check URL/key or increase timeout in Settings → Advanced ({seconds}s)'**
+  String syncTimeoutWithSeconds(int seconds);
+
+  /// No description provided for @commonOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get commonOpen;
+
+  /// No description provided for @syncNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get syncNow;
+
+  /// No description provided for @syncBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get syncBackup;
+
+  /// No description provided for @commonError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get commonError;
+
+  /// No description provided for @dashboardStableTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Stable trend'**
+  String get dashboardStableTrend;
+
+  /// No description provided for @dashboardTrendingDown.
+  ///
+  /// In en, this message translates to:
+  /// **'→ trending down'**
+  String get dashboardTrendingDown;
+
+  /// No description provided for @dashboardTrendingUp.
+  ///
+  /// In en, this message translates to:
+  /// **'→ trending up'**
+  String get dashboardTrendingUp;
+
+  /// No description provided for @dashboardDelta7d.
+  ///
+  /// In en, this message translates to:
+  /// **'{delta} (7d)'**
+  String dashboardDelta7d(String delta);
+
+  /// No description provided for @dashboardDelta30d.
+  ///
+  /// In en, this message translates to:
+  /// **'{delta} (30d)'**
+  String dashboardDelta30d(String delta);
+
+  /// No description provided for @dashboardToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dashboardToday;
+
+  /// No description provided for @budgetRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get budgetRecent;
+
+  /// No description provided for @settingsSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get settingsSync;
+
+  /// No description provided for @settingsSyncSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Servers & backup — open Sync & Backup'**
+  String get settingsSyncSubtitle;
+
+  /// No description provided for @selectSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get selectSheetTitle;
+
+  /// No description provided for @selectSheetCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items'**
+  String selectSheetCount(int count);
+
+  /// No description provided for @selectSheetSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get selectSheetSelectAll;
+
+  /// No description provided for @selectSheetSyncSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync selected ({count})'**
+  String selectSheetSyncSelected(int count);
+
+  /// No description provided for @wizardSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get wizardSkip;
+
+  /// No description provided for @wizardDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get wizardDone;
+
+  /// No description provided for @ingredientOffApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply to form'**
+  String get ingredientOffApply;
+
+  /// No description provided for @ingredientOffImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to server & apply'**
+  String get ingredientOffImport;
+
+  /// No description provided for @ingredientOffShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share OpenFoodFacts link'**
+  String get ingredientOffShare;
+
+  /// No description provided for @workoutStartedNoNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout started, but the notification could not be shown. Allow notifications and set battery to Unrestricted.'**
+  String get workoutStartedNoNotification;
+
+  /// No description provided for @syncQrInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid QR — expected {payload}'**
+  String syncQrInvalid(String payload);
+
+  /// No description provided for @syncQrHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point camera at QR with {payload}'**
+  String syncQrHint(String payload);
 }
 
 class _AppLocalizationsDelegate

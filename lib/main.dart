@@ -12,6 +12,7 @@ import 'src/app/app.dart';
 import 'src/app/router.dart';
 import 'src/notifications/active_workout_notifier.dart';
 import 'src/settings/providers/settings.dart';
+import 'src/settings/providers/sync_api_keys.dart';
 import 'src/sync/phone_log_shipper.dart';
 
 /// The container backing the currently mounted tree. The foreground-task
@@ -84,8 +85,12 @@ final class _AppRootState extends State<_AppRoot> {
     final container = ProviderContainer();
     _activeContainer = container;
     unawaited(
-      SharedPreferences.getInstance().then((loaded) {
+      SharedPreferences.getInstance().then((loaded) async {
+        // The sync keys come from secure storage before the prefs are
+        // published, so the first settings build already has them.
+        final keys = await SyncKeyStore.load(loaded);
         try {
+          container.read(syncApiKeysProvider.notifier).set(keys);
           container.read(sharedPreferencesHolderProvider.notifier).set(loaded);
         } catch (_) {
           // The container was disposed before prefs resolved.

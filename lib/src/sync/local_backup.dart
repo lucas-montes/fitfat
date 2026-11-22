@@ -9,8 +9,10 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../database/app_database.dart';
 import '../database/database_provider.dart' as db;
+import 'entity_labels.dart';
 import 'sync_refresh.dart';
 
 /// Which tables belong to which backup entity, parents always before their
@@ -369,34 +371,30 @@ Future<void> importBackup(
 
   final groups = expandEntities(entities);
   if (!context.mounted) return;
+  final l10n = AppLocalizations.of(context)!;
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Replace local data?'),
-      content: Text(
-        'Importing will delete the existing rows in these groups and restore '
-        'the backup: ${_labels(groups)}.',
-      ),
+      title: Text(l10n.syncReplaceLocalTitle),
+      content: Text(l10n.syncReplaceFromFileBody(_labels(l10n, groups))),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Continue'),
+          child: Text(l10n.commonContinue),
         ),
       ],
     ),
   );
   if (confirmed != true) return;
 
-  final imported = await importBackupArchive(ref, bytes, entities: entities);
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('Restored $imported rows')),
-  );
+  await importBackupArchive(ref, bytes, entities: entities);
 }
 
-String _labels(Set<String> groups) =>
-    backupEntityGroups.where(groups.contains).join(', ');
+String _labels(AppLocalizations l10n, Set<String> groups) => backupEntityGroups
+    .where(groups.contains)
+    .map((g) => syncEntityLabel(l10n, g))
+    .join(', ');

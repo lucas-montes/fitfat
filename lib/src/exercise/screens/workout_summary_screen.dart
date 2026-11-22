@@ -109,8 +109,6 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
           .saveAsTemplate(workoutId: detail.workout.id);
       ref.invalidate(workoutTemplateListProvider);
       ref.invalidate(workoutTemplateDetailsProvider(templateId));
-      if (!context.mounted) return;
-      showTopBanner(context, message: l10n.templatesSavedAsTemplate);
     } catch (e) {
       if (!context.mounted) return;
       showTopBanner(context, message: l10n.errorWithMessage('$e'));

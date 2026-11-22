@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../network/api_client.dart';
 import '../../database/database_provider.dart' as db;
 import '../../exercise/widgets/select_sheet.dart';
@@ -23,10 +24,11 @@ import '../sync_state_store.dart';
 import '../phone_log_shipper.dart';
 import '../sync_models.dart';
 import '../../ui/widgets/top_banner.dart';
+import '../entity_labels.dart';
 
 /// Translates raw sync/HTTP failures into the sentence a regular user can act
 /// on. Anything unrecognised is shown as-is for power users.
-String friendlySyncError(String url, String error) {
+String friendlySyncError(AppLocalizations l10n, String url, String error) {
   final e = error.toLowerCase();
   final unreachable =
       e.contains('timeoutexception') ||
@@ -36,32 +38,22 @@ String friendlySyncError(String url, String error) {
       e.contains('connection closed') ||
       e.contains('failed host lookup');
   if (unreachable) {
-    return 'Cannot reach the server at $url. Check that the sync server is '
-        'running on the computer and that the phone is on the same Wi-Fi '
-        'network (or configured via adb reverse). Use "Test /health" above to '
-        'retry.';
+    return l10n.syncErrorUnreachable(url);
   }
   if (e.contains('apiexception(405') || e.contains('apiexception(501')) {
-    return 'This server is an older version that cannot receive this data '
-        'yet. Update the sync server on the computer, then push again.';
+    return l10n.syncErrorServerTooOld;
   }
   if (e.contains('apiexception(404')) {
-    return 'The server does not recognise this sync operation — its version '
-        'may be too old. Update the sync server on the computer, then try '
-        'again.';
+    return l10n.syncErrorUnknownOperation;
   }
   if (e.contains('apiexception(401') || e.contains('apiexception(403')) {
-    return 'The server rejected the API key. Check the key for this server '
-        '(remove it, then re-add or re-scan the QR code).';
+    return l10n.syncErrorKeyRejected;
   }
   if (e.contains('apiexception(413')) {
-    return 'This data set is too large for the server to accept in one go. '
-        'Push fewer categories at once (uncheck some boxes above).';
+    return l10n.syncErrorTooLarge;
   }
   if (e.contains('apiexception(5')) {
-    return 'The server hit an internal problem while receiving this data. Its '
-        'recent activity was logged on the computer — check the server '
-        'console output.';
+    return l10n.syncErrorServerInternal;
   }
   return error;
 }
@@ -80,9 +72,10 @@ final class SyncHubScreen extends ConsumerWidget {
   const SyncHubScreen({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sync & Backup'),
+        title: Text(l10n.syncHubTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/dashboard'),
@@ -95,23 +88,22 @@ final class SyncHubScreen extends ConsumerWidget {
           const SizedBox(height: FitFatTokens.spaceL),
           _SectionCard(
             icon: Icons.cloud_download_outlined,
-            title: 'Global pool',
-            subtitle: 'Pull shared exercises, ingredients and currencies',
+            title: l10n.syncGlobalPool,
+            subtitle: l10n.syncGlobalPoolHint,
             child: _GlobalPoolSection(),
           ),
           const SizedBox(height: FitFatTokens.spaceL),
           _SectionCard(
             icon: Icons.cloud_upload_outlined,
-            title: 'Personal pool',
-            subtitle:
-                'Push/pull your tasks, notes, goals, workouts, templates, meals, body, budget',
+            title: l10n.syncPersonalPool,
+            subtitle: l10n.syncPersonalPoolHint,
             child: _PersonalPoolSection(),
           ),
           const SizedBox(height: FitFatTokens.spaceL),
           _SectionCard(
             icon: Icons.backup_outlined,
-            title: 'Local backup',
-            subtitle: 'Export to file or restore from file',
+            title: l10n.syncLocalBackup,
+            subtitle: l10n.syncLocalBackupHint,
             child: _LocalBackupSection(),
           ),
         ],
@@ -130,6 +122,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
   String? _testStatus;
   bool _testing = false;
   final _log = Logger('SyncHub.Server');
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
   Future<void> _autoTest(String url, String key) async {
     setState(() {
       _testing = true;
@@ -193,7 +186,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
       await tryHealthNoAuth();
       if (!mounted) return;
       _log.info('autoTest health (no auth) ok url=$normalizedUrl');
-      setState(() => _testStatus = '✓ Connected ($normalizedUrl)');
+      setState(() => _testStatus = l10n.syncConnected(normalizedUrl));
       success = true;
     } catch (e, st) {
       _log.warning(
@@ -207,7 +200,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
         await tryHealthAuth();
         if (!mounted) return;
         _log.info('autoTest health (auth) ok url=$normalizedUrl');
-        setState(() => _testStatus = '✓ Connected ($normalizedUrl)');
+        setState(() => _testStatus = l10n.syncConnected(normalizedUrl));
         success = true;
       } catch (e, st) {
         _log.warning('autoTest health (auth) failed url=$normalizedUrl', e, st);
@@ -218,7 +211,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
         await tryExercises();
         if (!mounted) return;
         _log.info('autoTest exercises ok url=$normalizedUrl');
-        setState(() => _testStatus = '✓ Connected ($normalizedUrl)');
+        setState(() => _testStatus = l10n.syncConnected(normalizedUrl));
         success = true;
       } catch (e2, st2) {
         _log.severe('autoTest failed url=$normalizedUrl', e2, st2);
@@ -226,9 +219,9 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
         setState(() => _testStatus = null);
         showTopBanner(
           context,
-          message:
-              'Connection failed — '
-              '${friendlySyncError(normalizedUrl, e2.toString())}',
+          message: l10n.syncConnectionFailed(
+            friendlySyncError(l10n, normalizedUrl, e2.toString()),
+          ),
         );
       }
     }
@@ -241,14 +234,14 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
     final result = await showDialog<({String url, String apiKey})>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add server'),
+        title: Text(l10n.syncAddServer),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: urlCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Server URL',
+              decoration: InputDecoration(
+                labelText: l10n.syncServerUrl,
                 hintText: 'http://127.0.0.1:3030',
               ),
               autofocus: true,
@@ -256,7 +249,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
             const SizedBox(height: 12),
             TextField(
               controller: keyCtrl,
-              decoration: const InputDecoration(labelText: 'API key'),
+              decoration: InputDecoration(labelText: l10n.syncApiKey),
               obscureText: true,
             ),
           ],
@@ -264,7 +257,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () {
@@ -273,7 +266,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
               if (url.isEmpty || key.isEmpty) return;
               Navigator.pop(ctx, (url: url, apiKey: key));
             },
-            child: const Text('Add'),
+            child: Text(l10n.commonAdd),
           ),
         ],
       ),
@@ -282,16 +275,16 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
     final normalized = result.url.trim().replaceAll(RegExp(r'/+$'), '');
     final uri = Uri.tryParse(normalized);
     if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
-      showTopBanner(context, message: 'Invalid URL');
+      showTopBanner(context, message: l10n.syncInvalidUrl);
       return;
     }
     if (result.apiKey.isEmpty) {
-      showTopBanner(context, message: 'API key required');
+      showTopBanner(context, message: l10n.syncApiKeyRequired);
       return;
     }
     final notifier = ref.read(settingsProvider.notifier);
     if (ref.read(settingsProvider).servers.any((s) => s.url == normalized)) {
-      showTopBanner(context, message: 'Server already exists');
+      showTopBanner(context, message: l10n.syncServerExists);
       return;
     }
     await notifier.addServer(normalized, result.apiKey);
@@ -314,7 +307,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
               children: [
                 Icon(Icons.settings_outlined, color: theme.colorScheme.primary),
                 const SizedBox(width: FitFatTokens.spaceS),
-                Text('Servers', style: theme.textTheme.titleMedium),
+                Text(l10n.syncServers, style: theme.textTheme.titleMedium),
                 const Spacer(),
                 if (_testing)
                   const SizedBox(
@@ -342,7 +335,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
             ),
             const SizedBox(height: FitFatTokens.spaceS),
             Text(
-              'Add multiple server URL + API key pairs. Select active to sync. Keep adb reverse + http://127.0.0.1:3030 for hotspot.',
+              l10n.syncServersHint,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -352,7 +345,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'No servers yet — add one via Scan QR or Add',
+                  l10n.syncNoServers,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -387,23 +380,23 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Remove',
+                  tooltip: l10n.commonRemove,
                   onPressed: servers.length <= 1
                       ? null
                       : () async {
                           final confirmed = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Remove server?'),
-                              content: Text('Remove ${s.label}?'),
+                              title: Text(l10n.syncRemoveServerTitle),
+                              content: Text(l10n.syncRemoveServerBody(s.label)),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Cancel'),
+                                  child: Text(l10n.commonCancel),
                                 ),
                                 FilledButton(
                                   onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Remove'),
+                                  child: Text(l10n.commonRemove),
                                 ),
                               ],
                             ),
@@ -427,7 +420,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
                   child: FilledButton.icon(
                     onPressed: _addServerDialog,
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add'),
+                    label: Text(l10n.commonAdd),
                   ),
                 ),
                 const SizedBox(width: FitFatTokens.spaceS),
@@ -444,10 +437,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
                           .read(settingsProvider)
                           .servers
                           .any((s) => s.url == normalized)) {
-                        showTopBanner(
-                          context,
-                          message: 'Server already exists',
-                        );
+                        showTopBanner(context, message: l10n.syncServerExists);
                         return;
                       }
                       await ref
@@ -456,7 +446,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
                       await _autoTest(normalized, result.apiKey);
                     },
                     icon: const Icon(Icons.qr_code_scanner, size: 18),
-                    label: const Text('Scan QR'),
+                    label: Text(l10n.syncScanQr),
                   ),
                 ),
               ],
@@ -468,7 +458,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
                 onPressed: () async {
                   final active = settings.activeServer;
                   if (active == null) {
-                    showTopBanner(context, message: 'No active server');
+                    showTopBanner(context, message: l10n.syncNoActiveServer);
                     return;
                   }
                   final key = ref.read(settingsProvider).remoteSyncApiKey;
@@ -481,7 +471,7 @@ final class _ServerConfigCardState extends ConsumerState<_ServerConfigCard> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.wifi_tethering, size: 18),
-                label: const Text('Test /health'),
+                label: Text(l10n.syncTestHealth),
               ),
             ),
           ],
@@ -547,6 +537,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
   bool _busyPickerEx = false;
   bool _busyPickerIng = false;
   final _log = Logger('SyncHub.Global');
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
   Future<void> _run(
     Future<SyncResult> Function() fn,
     void Function(bool) setBusy,
@@ -558,6 +549,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       if (!result.ok && result.error != null) {
         _log.warning('sync failed: ${result.error}');
         final msg = friendlySyncError(
+          l10n,
           ref.read(settingsProvider).remoteSyncBaseUrl,
           result.error!,
         );
@@ -577,6 +569,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
         showTopBanner(
           context,
           message: friendlySyncError(
+            l10n,
             ref.read(settingsProvider).remoteSyncBaseUrl,
             '$e',
           ),
@@ -593,15 +586,8 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     final base = settings.remoteSyncBaseUrl;
     final key = settings.remoteSyncApiKey;
     final state = PrefsSyncStateStore(ref.watch(sharedPreferencesProvider));
-    String last(SyncResource r) {
-      final ms = state.getLastSyncedAt(r);
-      if (ms == 0) return 'never';
-      final dt = DateTime.fromMillisecondsSinceEpoch(ms);
-      final diff = DateTime.now().difference(dt);
-      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24) return '${diff.inHours}h ago';
-      return '${diff.inDays}d ago';
-    }
+    String last(SyncResource r) =>
+        l10n.syncLastSync(lastSyncedLabel(l10n, state.getLastSyncedAt(r)));
 
     final timeout = Duration(seconds: settings.apiTimeoutSeconds);
     return Column(
@@ -609,8 +595,8 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       children: [
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Exercises'),
-          subtitle: Text('Last sync: ${last(SyncResource.exercises)}'),
+          title: Text(l10n.syncEntityExercises),
+          subtitle: Text(last(SyncResource.exercises)),
           trailing: _busyEx
               ? const SizedBox(
                   width: 18,
@@ -634,8 +620,8 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Ingredients'),
-          subtitle: Text('Last sync: ${last(SyncResource.ingredients)}'),
+          title: Text(l10n.syncEntityIngredients),
+          subtitle: Text(last(SyncResource.ingredients)),
           trailing: _busyIng
               ? const SizedBox(
                   width: 18,
@@ -659,8 +645,8 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Currencies'),
-          subtitle: Text('Last sync: ${last(SyncResource.currencies)}'),
+          title: Text(l10n.syncEntityCurrencies),
+          subtitle: Text(last(SyncResource.currencies)),
           trailing: _busyFx
               ? const SizedBox(
                   width: 18,
@@ -695,7 +681,9 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.checklist, size: 18),
-          label: Text(_busyPickerEx ? 'Loading…' : 'Select exercises…'),
+          label: Text(
+            _busyPickerEx ? l10n.commonLoading : l10n.syncSelectExercises,
+          ),
         ),
         const SizedBox(height: FitFatTokens.spaceS),
         OutlinedButton.icon(
@@ -709,7 +697,9 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.checklist, size: 18),
-          label: Text(_busyPickerIng ? 'Loading…' : 'Select ingredients…'),
+          label: Text(
+            _busyPickerIng ? l10n.commonLoading : l10n.syncSelectIngredients,
+          ),
         ),
       ],
     );
@@ -720,7 +710,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     final base = settings.remoteSyncBaseUrl;
     final key = settings.remoteSyncApiKey;
     if (base.isEmpty) {
-      showTopBanner(context, message: 'Server URL not configured');
+      showTopBanner(context, message: l10n.syncServerNotConfigured);
       return;
     }
     setState(() => _busyPickerEx = true);
@@ -729,10 +719,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       final timeout = Duration(seconds: settings.apiTimeoutSeconds);
       if (!await svc.pingServer(base, key, timeout: timeout)) {
         if (mounted) {
-          showTopBanner(
-            context,
-            message: 'Server not reachable — check URL/key or increase timeout',
-          );
+          showTopBanner(context, message: l10n.syncServerUnreachable);
         }
         return;
       }
@@ -766,7 +753,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
         if (!refreshed.ok) {
           showTopBanner(
             context,
-            message: friendlySyncError('server', refreshed.error!),
+            message: friendlySyncError(l10n, 'server', refreshed.error!),
           );
           return null;
         }
@@ -776,16 +763,16 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       final displayItems = await loadDisplay();
       if (!mounted) return;
       if (displayItems.isEmpty) {
-        showTopBanner(context, message: 'No exercises on server');
+        showTopBanner(context, message: l10n.syncNoExercisesOnServer);
         return;
       }
       final selected = await showSelectSheet(
         context,
         items: displayItems,
         initialSelected: const {},
-        title: 'Select server exercises',
-        hint: 'Search server exercises',
-        refreshTooltip: 'Refresh list',
+        title: l10n.syncSelectServerExercises,
+        hint: l10n.syncSearchServerExercises,
+        refreshTooltip: l10n.syncRefreshList,
         onRefresh: refreshDisplay,
       );
       if (selected == null || selected.isEmpty) return;
@@ -816,7 +803,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
     final base = settings.remoteSyncBaseUrl;
     final key = settings.remoteSyncApiKey;
     if (base.isEmpty) {
-      showTopBanner(context, message: 'Server URL not configured');
+      showTopBanner(context, message: l10n.syncServerNotConfigured);
       return;
     }
     setState(() => _busyPickerIng = true);
@@ -825,10 +812,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
       final timeout = Duration(seconds: settings.apiTimeoutSeconds);
       if (!await svc.pingServer(base, key, timeout: timeout)) {
         if (mounted) {
-          showTopBanner(
-            context,
-            message: 'Server not reachable — check URL/key or increase timeout',
-          );
+          showTopBanner(context, message: l10n.syncServerUnreachable);
         }
         return;
       }
@@ -843,7 +827,7 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
         if (!refreshed.ok) {
           showTopBanner(
             context,
-            message: friendlySyncError('server', refreshed.error!),
+            message: friendlySyncError(l10n, 'server', refreshed.error!),
           );
           return null;
         }
@@ -857,16 +841,16 @@ final class _GlobalPoolSectionState extends ConsumerState<_GlobalPoolSection> {
           .searchHideImported('');
       if (!mounted) return;
       if (displayItems.isEmpty) {
-        showTopBanner(context, message: 'No ingredients on server');
+        showTopBanner(context, message: l10n.syncNoIngredientsOnServer);
         return;
       }
       final selected = await showSelectSheet(
         context,
         items: displayItems,
         initialSelected: const {},
-        title: 'Select server ingredients',
-        hint: 'Search server ingredients',
-        refreshTooltip: 'Refresh list',
+        title: l10n.syncSelectServerIngredients,
+        hint: l10n.syncSearchServerIngredients,
+        refreshTooltip: l10n.syncRefreshList,
         onRefresh: refreshDisplay,
       );
       if (selected == null || selected.isEmpty) return;
@@ -903,6 +887,7 @@ final class _PersonalPoolSectionState
   bool _pushingAll = false;
   bool _pullingAll = false;
   bool _isBusy(String key) => _busy[key] ?? false;
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
   void _setBusy(String key, bool v) => setState(() => _busy[key] = v);
 
   /// Dependency order for both directions.
@@ -974,18 +959,23 @@ final class _PersonalPoolSectionState
       await shipPhoneLogs(ref);
       if (!mounted) return null;
       if (res.ok) {
-        if (announce) showTopBanner(context, message: 'Pushed $entity');
         setState(() {});
         return null;
       }
-      final message =
-          'Could not push $entity — '
-          '${friendlySyncError(ref.read(settingsProvider).remoteSyncBaseUrl, res.error ?? 'unknown error')}';
+      final message = l10n.syncCouldNotPush(
+        syncEntityLabel(l10n, entity),
+        friendlySyncError(
+          l10n,
+          ref.read(settingsProvider).remoteSyncBaseUrl,
+          res.error ?? l10n.syncUnknownError,
+        ),
+      );
       if (announce) showTopBanner(context, message: message);
       return message;
     } catch (e) {
       await shipPhoneLogs(ref);
       final message = friendlySyncError(
+        l10n,
         ref.read(settingsProvider).remoteSyncBaseUrl,
         '$e',
       );
@@ -1005,27 +995,26 @@ final class _PersonalPoolSectionState
       await shipPhoneLogs(ref);
       if (!mounted) return null;
       if (res.ok) {
-        if (announce) {
-          // A single pull can touch any table, so refresh every cached list
-          // before showing the banner. Pull-all does this once at the end.
-          invalidateAllData(ref);
-          showTopBanner(
-            context,
-            message:
-                'Pulled $entity — ${res.updated} updated, ${res.deleted} deleted',
-          );
-        }
+        // A single pull can touch any table, so refresh every cached list.
+        // Pull-all does this once at the end.
+        if (announce) invalidateAllData(ref);
         setState(() {});
         return null;
       }
-      final message =
-          'Could not pull $entity — '
-          '${friendlySyncError(ref.read(settingsProvider).remoteSyncBaseUrl, res.error ?? 'unknown error')}';
+      final message = l10n.syncCouldNotPull(
+        syncEntityLabel(l10n, entity),
+        friendlySyncError(
+          l10n,
+          ref.read(settingsProvider).remoteSyncBaseUrl,
+          res.error ?? l10n.syncUnknownError,
+        ),
+      );
       if (announce) showTopBanner(context, message: message);
       return message;
     } catch (e) {
       await shipPhoneLogs(ref);
       final message = friendlySyncError(
+        l10n,
         ref.read(settingsProvider).remoteSyncBaseUrl,
         '$e',
       );
@@ -1050,7 +1039,6 @@ final class _PersonalPoolSectionState
           return;
         }
       }
-      if (mounted) showTopBanner(context, message: 'Pushed all data');
     } finally {
       if (mounted) setState(() => _pushingAll = false);
     }
@@ -1074,12 +1062,14 @@ final class _PersonalPoolSectionState
       // Every entity just wrote to the database; refresh the tabs once rather
       // than after each pull.
       invalidateAllData(ref);
-      showTopBanner(
-        context,
-        message: failures.isEmpty
-            ? 'Pulled all data'
-            : 'Pulled with errors: ${failures.join(', ')}',
-      );
+      if (failures.isNotEmpty) {
+        showTopBanner(
+          context,
+          message: l10n.syncPulledWithErrors(
+            failures.map((e) => syncEntityLabel(l10n, e)).join(', '),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _pullingAll = false);
     }
@@ -1118,7 +1108,7 @@ final class _PersonalPoolSectionState
       endpoint: settings.endpointExercises,
       timeout: Duration(seconds: settings.apiTimeoutSeconds),
     );
-    if (!result.ok) failures.add('Exercises (related)');
+    if (!result.ok) failures.add(kRelatedExercisesEntity);
   }
 
   String _entityToType(String e) => switch (e) {
@@ -1143,16 +1133,9 @@ final class _PersonalPoolSectionState
   @override
   Widget build(BuildContext context) {
     final state = PrefsSyncStateStore(ref.watch(sharedPreferencesProvider));
-    String last(SyncResource? r) {
-      if (r == null) return '—';
-      final ms = state.getLastSyncedAt(r);
-      if (ms == 0) return 'never';
-      final dt = DateTime.fromMillisecondsSinceEpoch(ms);
-      final diff = DateTime.now().difference(dt);
-      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24) return '${diff.inHours}h ago';
-      return '${diff.inDays}d ago';
-    }
+    String last(SyncResource? r) => l10n.syncLastSync(
+      r == null ? '—' : lastSyncedLabel(l10n, state.getLastSyncedAt(r)),
+    );
 
     SyncResource? resourceOf(String entity) => switch (entity) {
       'Tags' => SyncResource.tags,
@@ -1187,8 +1170,10 @@ final class _PersonalPoolSectionState
                   size: 20,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                title: Text('$name · ${counts[name] ?? 0}'),
-                subtitle: Text('Last sync: ${last(resourceOf(name))}'),
+                title: Text(
+                  '${syncEntityLabel(l10n, name)} · ${counts[name] ?? 0}',
+                ),
+                subtitle: Text(last(resourceOf(name))),
                 trailing: _isBusy(name)
                     ? const SizedBox(
                         width: 18,
@@ -1201,7 +1186,9 @@ final class _PersonalPoolSectionState
                           if (!_pullOnly.contains(name)) ...[
                             IconButton(
                               icon: const Icon(Icons.cloud_upload_outlined),
-                              tooltip: 'Push $name',
+                              tooltip: l10n.syncPushEntity(
+                                syncEntityLabel(l10n, name),
+                              ),
                               onPressed: () => _pushOne(name),
                             ),
                             const SizedBox(width: 4),
@@ -1214,8 +1201,10 @@ final class _PersonalPoolSectionState
                                     : Icons.cloud_download_outlined,
                               ),
                               tooltip: name == 'Exercises'
-                                  ? 'Sync exercise updates'
-                                  : 'Pull $name',
+                                  ? l10n.syncExerciseUpdates
+                                  : l10n.syncPullEntity(
+                                      syncEntityLabel(l10n, name),
+                                    ),
                               onPressed: () => _pullOne(name),
                             ),
                         ],
@@ -1237,7 +1226,7 @@ final class _PersonalPoolSectionState
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.cloud_upload, size: 18),
-                  label: const Text('Push all'),
+                  label: Text(l10n.syncPushAll),
                 ),
                 OutlinedButton.icon(
                   onPressed: _pushingAll || _pullingAll ? null : _pullAll,
@@ -1248,7 +1237,7 @@ final class _PersonalPoolSectionState
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.cloud_download, size: 18),
-                  label: const Text('Pull all'),
+                  label: Text(l10n.syncPullAll),
                 ),
               ],
             ),
@@ -1312,6 +1301,7 @@ final class _LocalBackupSectionState
   bool _busyServerBackup = false;
   bool _busyServerRestore = false;
   static const _prefsKey = 'local_backup_selected';
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
   @override
   void initState() {
     super.initState();
@@ -1348,7 +1338,7 @@ final class _LocalBackupSectionState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'JSON → .json.gz (compressed, filtered by selection)',
+          l10n.syncBackupFormatHint,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -1359,7 +1349,7 @@ final class _LocalBackupSectionState
           children: [
             for (final e in backupEntityGroups)
               FilterChip(
-                label: Text(e),
+                label: Text(syncEntityLabel(l10n, e)),
                 selected: _selected.contains(e),
                 onSelected: (v) => setState(() {
                   if (v)
@@ -1372,8 +1362,10 @@ final class _LocalBackupSectionState
           ],
         ),
         Text(
-          '${_selected.length}/${backupEntityGroups.length} groups — applies '
-          'to both Export and Import',
+          l10n.syncBackupGroupsSelected(
+            _selected.length,
+            backupEntityGroups.length,
+          ),
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -1385,7 +1377,7 @@ final class _LocalBackupSectionState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Export', style: theme.textTheme.labelMedium),
+                  Text(l10n.syncExport, style: theme.textTheme.labelMedium),
                   const SizedBox(height: 4),
                   FilledButton.icon(
                     onPressed: _busyExport
@@ -1396,7 +1388,7 @@ final class _LocalBackupSectionState
                               if (_selected.isEmpty) {
                                 showTopBanner(
                                   context,
-                                  message: 'Select at least one group',
+                                  message: l10n.syncSelectOneGroup,
                                 );
                                 return;
                               }
@@ -1419,7 +1411,7 @@ final class _LocalBackupSectionState
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.ios_share, size: 18),
-                    label: Text('Export JSON (${_selected.length})'),
+                    label: Text(l10n.syncExportJson(_selected.length)),
                   ),
                 ],
               ),
@@ -1429,7 +1421,7 @@ final class _LocalBackupSectionState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Import', style: theme.textTheme.labelMedium),
+                  Text(l10n.syncImport, style: theme.textTheme.labelMedium),
                   const SizedBox(height: 4),
                   OutlinedButton.icon(
                     onPressed: _busyImport
@@ -1456,7 +1448,7 @@ final class _LocalBackupSectionState
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.file_open, size: 18),
-                    label: const Text('Import JSON'),
+                    label: Text(l10n.syncImportJson),
                   ),
                 ],
               ),
@@ -1464,11 +1456,10 @@ final class _LocalBackupSectionState
           ],
         ),
         const SizedBox(height: FitFatTokens.spaceM),
-        Text('Server copy', style: theme.textTheme.labelMedium),
+        Text(l10n.syncServerCopy, style: theme.textTheme.labelMedium),
         const SizedBox(height: 4),
         Text(
-          'Upload a compressed JSON backup, or restore the one stored on the '
-          'computer',
+          l10n.syncServerCopyHint,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -1488,7 +1479,7 @@ final class _LocalBackupSectionState
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.backup, size: 18),
-                label: const Text('Back up to server'),
+                label: Text(l10n.syncBackUpToServer),
               ),
             ),
             const SizedBox(width: FitFatTokens.spaceM),
@@ -1504,7 +1495,7 @@ final class _LocalBackupSectionState
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.restore, size: 18),
-                label: const Text('Restore from server'),
+                label: Text(l10n.syncRestoreFromServer),
               ),
             ),
           ],
@@ -1533,7 +1524,6 @@ final class _LocalBackupSectionState
       } finally {
         httpClient.close();
       }
-      if (mounted) showTopBanner(context, message: 'Backup uploaded');
     } catch (e, st) {
       Logger('SyncHub.Backup').severe('server backup failed', e, st);
       await shipPhoneLogs(ref);
@@ -1541,6 +1531,7 @@ final class _LocalBackupSectionState
         showTopBanner(
           context,
           message: friendlySyncError(
+            l10n,
             ref.read(settingsProvider).remoteSyncBaseUrl,
             '$e',
           ),
@@ -1554,19 +1545,16 @@ final class _LocalBackupSectionState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Replace local data?'),
-        content: const Text(
-          'Importing will delete the existing rows in every backed-up group '
-          'and restore the copy stored on the server.',
-        ),
+        title: Text(l10n.syncReplaceLocalTitle),
+        content: Text(l10n.syncReplaceFromServerBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Continue'),
+            child: Text(l10n.commonContinue),
           ),
         ],
       ),
@@ -1590,10 +1578,7 @@ final class _LocalBackupSectionState
       } finally {
         httpClient.close();
       }
-      final imported = await importBackupArchive(ref, bytes);
-      if (mounted) {
-        showTopBanner(context, message: 'Restored $imported rows');
-      }
+      await importBackupArchive(ref, bytes);
     } catch (e, st) {
       Logger('SyncHub.Backup').severe('server restore failed', e, st);
       await shipPhoneLogs(ref);
@@ -1601,6 +1586,7 @@ final class _LocalBackupSectionState
         showTopBanner(
           context,
           message: friendlySyncError(
+            l10n,
             ref.read(settingsProvider).remoteSyncBaseUrl,
             '$e',
           ),

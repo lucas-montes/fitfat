@@ -558,9 +558,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get templatesSavedAsTemplate => 'Workout saved as template';
-
-  @override
   String get templatesDeleteConfirmTitle => 'Delete template?';
 
   @override
@@ -1949,19 +1946,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Point this at your sync server to pull exercises, ingredients and currencies. Leave empty to disable sync.';
 
   @override
-  String get settingsSyncBaseUrl => 'Server URL';
-
-  @override
-  String get settingsSyncApiKey => 'API key';
-
-  @override
   String get syncExercisesTooltip => 'Sync exercises';
 
   @override
   String get syncIngredientsTooltip => 'Sync ingredients';
-
-  @override
-  String get syncCurrenciesTooltip => 'Sync currencies';
 
   @override
   String get syncPushIngredientTooltip => 'Push to shared catalogue';
@@ -1996,84 +1984,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Server not reachable — check the URL/key or increase the timeout in Settings';
 
   @override
-  String get syncExercisesHelp =>
-      'Download the shared exercise catalogue and its media from the server.';
-
-  @override
-  String get syncIngredientsHelp =>
-      'Download the shared ingredient, store and price catalogue from the server.';
-
-  @override
-  String get syncCurrenciesHelp =>
-      'Download the latest currency exchange rates from the server.';
-
-  @override
-  String get settingsSyncEndpoints => 'Endpoints';
-
-  @override
-  String get settingsSyncEndpointsHint =>
-      'Override the server path used for each operation. Leave a field at its default unless your server uses different paths.';
-
-  @override
-  String get endpointReset => 'Reset to default';
-
-  @override
-  String get pushAllData => 'Push all data';
-
-  @override
   String get pushAllDataTooltip =>
       'Upload all local data to the server (one-way)';
-
-  @override
-  String get pushAllSuccess => 'All data pushed to the server.';
-
-  @override
-  String get exportServer => 'Export backup to server';
 
   @override
   String get exportServerTooltip =>
       'Upload a full backup of your local data to the server';
 
   @override
-  String get importServer => 'Import database from server';
-
-  @override
   String get importServerTooltip =>
       'Replace your local data with the server\'s copy';
-
-  @override
-  String get importConfirmTitle => 'Replace local data?';
-
-  @override
-  String get importConfirmBody =>
-      'This replaces all local data with the server copy. This cannot be undone.';
-
-  @override
-  String get importSuccess => 'Restored from the server copy.';
 
   @override
   String get importFailed => 'Import failed';
 
   @override
-  String get importNothing => 'Nothing to import';
-
-  @override
-  String get exportSuccess => 'Backup exported.';
-
-  @override
   String get exportFailed => 'Export failed';
-
-  @override
-  String get pushAllDataHelp =>
-      'Upload all your local data to the server (one-way copy).';
-
-  @override
-  String get exportServerHelp =>
-      'Upload a full backup of your local data to the server.';
-
-  @override
-  String get importServerHelp =>
-      'Replace your local data with the server copy. Asks for confirmation first.';
 
   @override
   String get settingsPlanner => 'Planner';
@@ -2697,9 +2623,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receiptCaptureStandalone => 'Standalone receipt';
 
   @override
-  String get receiptUploadSuccess => 'Receipt uploaded';
-
-  @override
   String get receiptUploadError => 'Failed to upload receipt';
 
   @override
@@ -3050,9 +2973,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get templatesDuplicate => 'Duplicate';
 
   @override
-  String get templatesDuplicated => 'Template duplicated';
-
-  @override
   String get cascadeDeleteTitleWithTasks => 'Delete linked tasks?';
 
   @override
@@ -3115,4 +3035,399 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get receiptStatusParsing => 'Reading…';
+
+  @override
+  String get syncHubTitle => 'Sync & Backup';
+
+  @override
+  String get syncGlobalPool => 'Global pool';
+
+  @override
+  String get syncGlobalPoolHint =>
+      'Pull shared exercises, ingredients and currencies';
+
+  @override
+  String get syncPersonalPool => 'Personal pool';
+
+  @override
+  String get syncPersonalPoolHint =>
+      'Push/pull your tasks, notes, goals, workouts, templates, meals, body, budget';
+
+  @override
+  String get syncLocalBackup => 'Local backup';
+
+  @override
+  String get syncLocalBackupHint => 'Export to file or restore from file';
+
+  @override
+  String syncErrorUnreachable(String url) {
+    return 'Cannot reach the server at $url. Check that the sync server is running on the computer and that the phone is on the same Wi-Fi network (or configured via adb reverse). Use \"Test /health\" above to retry.';
+  }
+
+  @override
+  String get syncErrorServerTooOld =>
+      'This server is an older version that cannot receive this data yet. Update the sync server on the computer, then push again.';
+
+  @override
+  String get syncErrorUnknownOperation =>
+      'The server does not recognise this sync operation — its version may be too old. Update the sync server on the computer, then try again.';
+
+  @override
+  String get syncErrorKeyRejected =>
+      'The server rejected the API key. Check the key for this server (remove it, then re-add or re-scan the QR code).';
+
+  @override
+  String get syncErrorTooLarge =>
+      'This data set is too large for the server to accept in one go. Push fewer categories at once (uncheck some boxes above).';
+
+  @override
+  String get syncErrorServerInternal =>
+      'The server hit an internal problem while receiving this data. Its recent activity was logged on the computer — check the server console output.';
+
+  @override
+  String syncConnected(String url) {
+    return '✓ Connected ($url)';
+  }
+
+  @override
+  String syncConnectionFailed(String reason) {
+    return 'Connection failed — $reason';
+  }
+
+  @override
+  String get syncAddServer => 'Add server';
+
+  @override
+  String get syncServerUrl => 'Server URL';
+
+  @override
+  String get syncApiKey => 'API key';
+
+  @override
+  String get commonAdd => 'Add';
+
+  @override
+  String get syncInvalidUrl => 'Invalid URL';
+
+  @override
+  String get syncApiKeyRequired => 'API key required';
+
+  @override
+  String get syncServerExists => 'Server already exists';
+
+  @override
+  String get syncServers => 'Servers';
+
+  @override
+  String get syncServersHint =>
+      'Add multiple server URL + API key pairs. Select active to sync. Keep adb reverse + http://127.0.0.1:3030 for hotspot.';
+
+  @override
+  String get syncNoServers => 'No servers yet — add one via Scan QR or Add';
+
+  @override
+  String get syncRemoveServerTitle => 'Remove server?';
+
+  @override
+  String syncRemoveServerBody(String label) {
+    return 'Remove $label?';
+  }
+
+  @override
+  String get syncScanQr => 'Scan QR';
+
+  @override
+  String get syncNoActiveServer => 'No active server';
+
+  @override
+  String get syncTestHealth => 'Test /health';
+
+  @override
+  String get syncNever => 'never';
+
+  @override
+  String syncMinutesAgo(int n) {
+    return '${n}m ago';
+  }
+
+  @override
+  String syncHoursAgo(int n) {
+    return '${n}h ago';
+  }
+
+  @override
+  String syncDaysAgo(int n) {
+    return '${n}d ago';
+  }
+
+  @override
+  String syncLastSync(String when) {
+    return 'Last sync: $when';
+  }
+
+  @override
+  String get commonLoading => 'Loading…';
+
+  @override
+  String get syncSelectExercises => 'Select exercises…';
+
+  @override
+  String get syncSelectIngredients => 'Select ingredients…';
+
+  @override
+  String get syncNoExercisesOnServer => 'No exercises on server';
+
+  @override
+  String get syncNoIngredientsOnServer => 'No ingredients on server';
+
+  @override
+  String get syncSelectServerExercises => 'Select server exercises';
+
+  @override
+  String get syncSearchServerExercises => 'Search server exercises';
+
+  @override
+  String get syncSelectServerIngredients => 'Select server ingredients';
+
+  @override
+  String get syncSearchServerIngredients => 'Search server ingredients';
+
+  @override
+  String get syncRefreshList => 'Refresh list';
+
+  @override
+  String syncCouldNotPush(String entity, String reason) {
+    return 'Could not push $entity — $reason';
+  }
+
+  @override
+  String syncCouldNotPull(String entity, String reason) {
+    return 'Could not pull $entity — $reason';
+  }
+
+  @override
+  String get syncUnknownError => 'unknown error';
+
+  @override
+  String syncPulledWithErrors(String entities) {
+    return 'Pulled with errors: $entities';
+  }
+
+  @override
+  String get syncRelatedExercises => 'Exercises (related)';
+
+  @override
+  String syncPushEntity(String entity) {
+    return 'Push $entity';
+  }
+
+  @override
+  String syncPullEntity(String entity) {
+    return 'Pull $entity';
+  }
+
+  @override
+  String get syncExerciseUpdates => 'Sync exercise updates';
+
+  @override
+  String get syncPushAll => 'Push all';
+
+  @override
+  String get syncPullAll => 'Pull all';
+
+  @override
+  String get syncEntityTags => 'Tags';
+
+  @override
+  String get syncEntityExercises => 'Exercises';
+
+  @override
+  String get syncEntityTasks => 'Tasks';
+
+  @override
+  String get syncEntityNotes => 'Notes';
+
+  @override
+  String get syncEntityGoals => 'Goals';
+
+  @override
+  String get syncEntityWorkouts => 'Workouts';
+
+  @override
+  String get syncEntityTemplates => 'Templates';
+
+  @override
+  String get syncEntityStores => 'Stores';
+
+  @override
+  String get syncEntityIngredients => 'Ingredients';
+
+  @override
+  String get syncEntityFoods => 'Foods';
+
+  @override
+  String get syncEntityMeals => 'Meals';
+
+  @override
+  String get syncEntityBody => 'Body';
+
+  @override
+  String get syncEntityBudget => 'Budget';
+
+  @override
+  String get syncEntityTransactions => 'Transactions';
+
+  @override
+  String get syncEntityReceipts => 'Receipts';
+
+  @override
+  String get syncBackupFormatHint =>
+      'JSON → .json.gz (compressed, filtered by selection)';
+
+  @override
+  String syncBackupGroupsSelected(int selected, int total) {
+    return '$selected/$total groups — applies to both Export and Import';
+  }
+
+  @override
+  String get syncExport => 'Export';
+
+  @override
+  String get syncImport => 'Import';
+
+  @override
+  String get syncSelectOneGroup => 'Select at least one group';
+
+  @override
+  String syncExportJson(int count) {
+    return 'Export JSON ($count)';
+  }
+
+  @override
+  String get syncImportJson => 'Import JSON';
+
+  @override
+  String get syncServerCopy => 'Server copy';
+
+  @override
+  String get syncServerCopyHint =>
+      'Upload a compressed JSON backup, or restore the one stored on the computer';
+
+  @override
+  String get syncBackUpToServer => 'Back up to server';
+
+  @override
+  String get syncRestoreFromServer => 'Restore from server';
+
+  @override
+  String get syncReplaceLocalTitle => 'Replace local data?';
+
+  @override
+  String get syncReplaceFromServerBody =>
+      'Importing will delete the existing rows in every backed-up group and restore the copy stored on the server.';
+
+  @override
+  String syncReplaceFromFileBody(String groups) {
+    return 'Importing will delete the existing rows in these groups and restore the backup: $groups.';
+  }
+
+  @override
+  String get syncEntityCurrencies => 'Currencies';
+
+  @override
+  String get syncNotConfiguredOpenHub =>
+      'Sync server not configured — open Sync & Backup to set URL';
+
+  @override
+  String syncTimeoutWithSeconds(int seconds) {
+    return 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${seconds}s)';
+  }
+
+  @override
+  String get commonOpen => 'Open';
+
+  @override
+  String get syncNow => 'Sync now';
+
+  @override
+  String get syncBackup => 'Backup';
+
+  @override
+  String get commonError => 'Error';
+
+  @override
+  String get dashboardStableTrend => 'Stable trend';
+
+  @override
+  String get dashboardTrendingDown => '→ trending down';
+
+  @override
+  String get dashboardTrendingUp => '→ trending up';
+
+  @override
+  String dashboardDelta7d(String delta) {
+    return '$delta (7d)';
+  }
+
+  @override
+  String dashboardDelta30d(String delta) {
+    return '$delta (30d)';
+  }
+
+  @override
+  String get dashboardToday => 'Today';
+
+  @override
+  String get budgetRecent => 'Recent';
+
+  @override
+  String get settingsSync => 'Sync';
+
+  @override
+  String get settingsSyncSubtitle => 'Servers & backup — open Sync & Backup';
+
+  @override
+  String get selectSheetTitle => 'Select';
+
+  @override
+  String selectSheetCount(int count) {
+    return '$count items';
+  }
+
+  @override
+  String get selectSheetSelectAll => 'Select all';
+
+  @override
+  String selectSheetSyncSelected(int count) {
+    return 'Sync selected ($count)';
+  }
+
+  @override
+  String get wizardSkip => 'Skip';
+
+  @override
+  String get wizardDone => 'Done';
+
+  @override
+  String get ingredientOffApply => 'Apply to form';
+
+  @override
+  String get ingredientOffImport => 'Save to server & apply';
+
+  @override
+  String get ingredientOffShare => 'Share OpenFoodFacts link';
+
+  @override
+  String get workoutStartedNoNotification =>
+      'Workout started, but the notification could not be shown. Allow notifications and set battery to Unrestricted.';
+
+  @override
+  String syncQrInvalid(String payload) {
+    return 'Invalid QR — expected $payload';
+  }
+
+  @override
+  String syncQrHint(String payload) {
+    return 'Point camera at QR with $payload';
+  }
 }

@@ -621,10 +621,7 @@ final class _IngredientFormScreenState
       switch (result.source) {
         case LookupSource.local:
           final item = result.item;
-          if (item != null) {
-            _applyMap(item, overwriteName: false);
-            showTopBanner(context, message: '${item['name'] ?? code}');
-          }
+          if (item != null) _applyMap(item, overwriteName: false);
         case LookupSource.openfoodfacts:
           final draft = result.draft;
           if (draft != null) {
@@ -691,17 +688,17 @@ final class _IngredientFormScreenState
             ),
             ListTile(
               leading: const Icon(Icons.check),
-              title: const Text('Apply to form'),
+              title: Text(AppLocalizations.of(ctx)!.ingredientOffApply),
               onTap: () => Navigator.of(ctx).pop('apply'),
             ),
             ListTile(
               leading: const Icon(Icons.cloud_download_outlined),
-              title: const Text('Save to server & apply'),
+              title: Text(AppLocalizations.of(ctx)!.ingredientOffImport),
               onTap: () => Navigator.of(ctx).pop('import'),
             ),
             ListTile(
               leading: const Icon(Icons.share_outlined),
-              title: const Text('Share OpenFoodFacts link'),
+              title: Text(AppLocalizations.of(ctx)!.ingredientOffShare),
               onTap: () => Navigator.of(ctx).pop('share'),
             ),
           ],

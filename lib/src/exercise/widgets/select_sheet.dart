@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 final class DisplayItem {
   final String id;
   final String name;
@@ -105,13 +107,14 @@ final class _SelectSheetContentState extends State<_SelectSheetContent> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final q = _query.trim().toLowerCase();
     final filtered = q.isEmpty ? _items : _items.where((it) => it.name.toLowerCase().contains(q) || (it.subtitle ?? '').toLowerCase().contains(q)).toList();
     return DraggableScrollableSheet(initialChildSize: 0.9, minChildSize: 0.5, maxChildSize: 0.95, expand: false, builder: (ctx, scrollController) {
       return Column(children: [
-        Padding(padding: const EdgeInsets.fromLTRB(16, 16, 8, 8), child: Row(children: [Expanded(child: Text(widget.title ?? 'Select', style: Theme.of(context).textTheme.titleMedium)), if (widget.onRefresh != null) (_refreshing ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))) : IconButton(tooltip: widget.refreshTooltip, icon: const Icon(Icons.refresh), onPressed: _doRefresh)), IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)) ])),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: TextField(controller: _searchCtrl, autofocus: true, decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: widget.hint ?? 'Search', isDense: true), onChanged: _onSearchChanged)),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), child: Row(children: [Text('${filtered.length} items'), const Spacer(), TextButton(onPressed: () => setState(() { if (_selected.length == filtered.length) _selected.clear(); else _selected.addAll(filtered.map((e) => e.id)); }), child: Text(_selected.length == filtered.length ? 'Clear' : 'Select all'))])),
+        Padding(padding: const EdgeInsets.fromLTRB(16, 16, 8, 8), child: Row(children: [Expanded(child: Text(widget.title ?? l10n.selectSheetTitle, style: Theme.of(context).textTheme.titleMedium)), if (widget.onRefresh != null) (_refreshing ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))) : IconButton(tooltip: widget.refreshTooltip, icon: const Icon(Icons.refresh), onPressed: _doRefresh)), IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)) ])),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: TextField(controller: _searchCtrl, autofocus: true, decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: widget.hint ?? l10n.commonSearch, isDense: true), onChanged: _onSearchChanged)),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), child: Row(children: [Text(l10n.selectSheetCount(filtered.length)), const Spacer(), TextButton(onPressed: () => setState(() { if (_selected.length == filtered.length) _selected.clear(); else _selected.addAll(filtered.map((e) => e.id)); }), child: Text(_selected.length == filtered.length ? l10n.exerciseFilterClear : l10n.selectSheetSelectAll))])),
         Expanded(child: ListView.builder(controller: scrollController, itemCount: filtered.length, itemBuilder: (_, i) {
           final it = filtered[i];
           return ListTile(
@@ -122,7 +125,7 @@ final class _SelectSheetContentState extends State<_SelectSheetContent> {
             onTap: () => setState(() { if (_selected.contains(it.id)) _selected.remove(it.id); else _selected.add(it.id); }),
           );
         })),
-        SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: FilledButton(onPressed: () => Navigator.pop(ctx, _selected), child: Text('Sync selected (${_selected.length})')))),
+        SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: FilledButton(onPressed: () => Navigator.pop(ctx, _selected), child: Text(l10n.selectSheetSyncSelected(_selected.length))))),
       ]);
     });
   }

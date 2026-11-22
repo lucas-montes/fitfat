@@ -7,13 +7,10 @@ import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../../l10n/app_localizations.dart';
-import '../../network/api_client.dart';
-import '../../sync/data_push_service.dart';
 import '../../budget/providers/fx_rates.dart';
 import '../../models/activity_level.dart';
 import '../../models/gender.dart';
@@ -21,12 +18,10 @@ import '../../models/units.dart';
 import '../../notifications/task_reminders.dart';
 import '../../planner/providers/planner.dart';
 import '../../tags/screens/tag_manager_screen.dart';
-import '../../sync/sync_button.dart';
 import '../../body/providers/body_metrics.dart';
 import '../../models/bmr_formula.dart';
 import '../../models/diet_phase.dart';
 import '../../diet/providers/calories.dart';
-import '../../sync/sync_service.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/format.dart';
 import '../../ui/tokens.dart';
@@ -111,8 +106,8 @@ final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         _HubDestination(
           icon: Icons.sync_outlined,
-          label: 'Sync',
-          subtitle: 'Servers & backup — open Sync & Backup',
+          label: l10n.settingsSync,
+          subtitle: l10n.settingsSyncSubtitle,
           build: ({required embed}) => const SyncHubScreen(),
         ),
         _HubDestination(
@@ -1301,19 +1296,6 @@ final class _BudgetCurrencyScreen extends ConsumerWidget {
 }
 
 
-final class _SyncLinkScreen extends StatelessWidget {
-  final bool embed;
-  const _SyncLinkScreen({this.embed = false});
-  @override
-  Widget build(BuildContext context) {
-    final body = ListView(padding: const EdgeInsets.all(FitFatTokens.spaceL), children: [
-      Card(child: ListTile(leading: const Icon(Icons.sync), title: const Text('Open Sync & Backup'), subtitle: const Text('Servers, global & personal pools, local backup — same as Dashboard → Sync & Backup'), trailing: const Icon(Icons.chevron_right), onTap: () => context.go('/sync'))),
-    ]);
-    if (embed) return SettingsBody(child: body);
-    return SettingsSubScreenScaffold(title: 'Sync', body: body);
-  }
-}
-
 /// Data: destructive reset-all with its confirm dialog.
 final class _DataScreen extends ConsumerStatefulWidget {
   final bool embed;
@@ -1547,353 +1529,4 @@ final class _CurrencySection extends ConsumerWidget {
       ],
     );
   }
-}
-
-/// Configures the user's sync server (URL + API key) and lets them pull the
-/// latest currency rates. The same URL/key is reused by the exercise and
-/// ingredient list screens.
-final class _SyncServerCard extends ConsumerStatefulWidget {
-  const _SyncServerCard();
-
-  @override
-  ConsumerState<_SyncServerCard> createState() => _SyncServerCardState();
-}
-
-final class _SyncServerCardState extends ConsumerState<_SyncServerCard> {
-  final _urlController = TextEditingController();
-  final _keyController = TextEditingController();
-  final Map<String, TextEditingController> _epControllers = {};
-  bool _busy = false;
-
-  AppLocalizations get l10n => AppLocalizations.of(context)!;
-
-  @override
-  void initState() {
-    super.initState();
-    final settings = ref.read(settingsProvider);
-    _urlController.text = settings.remoteSyncBaseUrl;
-    _keyController.text = settings.remoteSyncApiKey;
-  }
-
-  @override
-  void dispose() {
-    _urlController.dispose();
-    _keyController.dispose();
-    for (final c in _epControllers.values) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  TextEditingController _epController(String key, String value) {
-    return _epControllers.putIfAbsent(
-      key,
-      () => TextEditingController(text: value),
-    );
-  }
-
-  Widget _syncAction({required String description, required Widget button}) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(description, style: theme.textTheme.bodySmall),
-        const SizedBox(height: FitFatTokens.spaceS),
-        SizedBox(width: double.infinity, child: button),
-      ],
-    );
-  }
-
-  Future<void> _runBusy(Future<void> Function() action) async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    try {
-      await action();
-    } catch (e) {
-      if (mounted) showTopBanner(context, message: e.toString());
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  List<_EndpointDef> _endpointDefs(SettingsState s) {
-    final defaults = const SettingsState();
-    return [
-      _EndpointDef('Exercises', s.endpointExercises, defaults.endpointExercises,
-          ref.read(settingsProvider.notifier).setEndpointExercises),
-      _EndpointDef('Ingredients', s.endpointIngredients,
-          defaults.endpointIngredients,
-          ref.read(settingsProvider.notifier).setEndpointIngredients),
-      _EndpointDef('Currencies', s.endpointCurrencies, defaults.endpointCurrencies,
-          ref.read(settingsProvider.notifier).setEndpointCurrencies),
-      _EndpointDef('Workouts', s.endpointWorkouts, defaults.endpointWorkouts,
-          ref.read(settingsProvider.notifier).setEndpointWorkouts),
-      _EndpointDef('Templates', s.endpointTemplates, defaults.endpointTemplates,
-          ref.read(settingsProvider.notifier).setEndpointTemplates),
-      _EndpointDef('Notes', s.endpointNotes, defaults.endpointNotes,
-          ref.read(settingsProvider.notifier).setEndpointNotes),
-      _EndpointDef('Tasks', s.endpointTasks, defaults.endpointTasks,
-          ref.read(settingsProvider.notifier).setEndpointTasks),
-      _EndpointDef('Goals', s.endpointGoals, defaults.endpointGoals,
-          ref.read(settingsProvider.notifier).setEndpointGoals),
-      _EndpointDef('Meals', s.endpointMeals, defaults.endpointMeals,
-          ref.read(settingsProvider.notifier).setEndpointMeals),
-      _EndpointDef('Transactions', s.endpointTransactions,
-          defaults.endpointTransactions,
-          ref.read(settingsProvider.notifier).setEndpointTransactions),
-      _EndpointDef('Budget accounts', s.endpointBudgetAccounts,
-          defaults.endpointBudgetAccounts,
-          ref.read(settingsProvider.notifier).setEndpointBudgetAccounts),
-      _EndpointDef('Receipt pictures', s.endpointReceiptPictures,
-          defaults.endpointReceiptPictures,
-          ref.read(settingsProvider.notifier).setEndpointReceiptPictures),
-      _EndpointDef('Export', s.endpointExport, defaults.endpointExport,
-          ref.read(settingsProvider.notifier).setEndpointExport),
-      _EndpointDef('Import', s.endpointImport, defaults.endpointImport,
-          ref.read(settingsProvider.notifier).setEndpointImport),
-    ];
-  }
-
-  Future<void> _pushAll() => _runBusy(() async {
-        final s = ref.read(settingsProvider);
-        if (s.remoteSyncBaseUrl.isEmpty) {
-          showTopBanner(context, message: l10n.syncServerNotConfigured);
-          return;
-        }
-        final types = <String>[
-          'workouts',
-          'templates',
-          'notes',
-          'noteAudio',
-          'tasks',
-          'goals',
-          'meals',
-          'receiptPictures',
-        ];
-        final failures = <String>[];
-        for (final t in types) {
-          final res = await pushDataType(ref, t);
-          if (!res.ok) failures.add('$t: ${res.error}');
-        }
-        if (!mounted) return;
-        if (failures.isEmpty) {
-          showTopBanner(context, message: l10n.pushAllSuccess);
-        } else {
-          showTopBanner(context, message: failures.join('\n'));
-        }
-      });
-
-  Future<void> _export() => _runBusy(() async {
-        final s = ref.read(settingsProvider);
-        if (s.remoteSyncBaseUrl.isEmpty) {
-          showTopBanner(context, message: l10n.syncServerNotConfigured);
-          return;
-        }
-        final bytes = await buildBackupArchive(ref, allBackupEntities);
-        final client = HttpApiClient(http.Client(), baseUrl: s.remoteSyncBaseUrl);
-        await client.postBytes(
-          s.endpointExport,
-          body: bytes,
-          headers: authHeaders(s.remoteSyncApiKey),
-        );
-        if (!mounted) return;
-        showTopBanner(context, message: l10n.exportSuccess);
-      });
-
-  Future<void> _import() => _runBusy(() async {
-        final s = ref.read(settingsProvider);
-        if (s.remoteSyncBaseUrl.isEmpty) {
-          showTopBanner(context, message: l10n.syncServerNotConfigured);
-          return;
-        }
-        final client = HttpApiClient(http.Client(), baseUrl: s.remoteSyncBaseUrl);
-        final bytes = await client.getBytes(
-          s.endpointImport,
-          headers: authHeaders(s.remoteSyncApiKey),
-        );
-        if (bytes.isEmpty) {
-          if (!mounted) return;
-          showTopBanner(context, message: l10n.importNothing);
-          return;
-        }
-        if (!mounted) return;
-        final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: Text(l10n.importConfirmTitle),
-                content: Text(l10n.importConfirmBody),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: Text(l10n.commonCancel),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    child: Text(l10n.commonContinue),
-                  ),
-                ],
-              ),
-            ) ??
-            false;
-        if (!confirmed || !mounted) return;
-        await importBackupArchive(ref, bytes);
-        if (!mounted) return;
-        showTopBanner(context, message: l10n.importSuccess);
-      });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final settings = ref.watch(settingsProvider);
-    final sync = ref.read(syncServiceProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: FitFatTokens.spaceS,
-      children: [
-        TextField(
-          controller: _urlController,
-          decoration: InputDecoration(labelText: l10n.settingsSyncBaseUrl),
-          onChanged: ref.read(settingsProvider.notifier).setRemoteSyncBaseUrl,
-        ),
-        TextField(
-          controller: _keyController,
-          decoration: InputDecoration(labelText: l10n.settingsSyncApiKey),
-          obscureText: true,
-          onChanged: ref.read(settingsProvider.notifier).setRemoteSyncApiKey,
-        ),
-        ExpansionTile(
-              title: Text(l10n.settingsSyncEndpoints),
-              subtitle: Text(
-                l10n.settingsSyncEndpointsHint,
-                style: theme.textTheme.bodySmall,
-              ),
-              children: [
-                ..._endpointDefs(settings).map((def) {
-                  final c = _epController(def.label, def.value);
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: c,
-                            decoration: InputDecoration(
-                              labelText: def.label,
-                              hintText: def.defaultValue,
-                            ),
-                            onChanged: def.onChanged,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.restore),
-                          tooltip: l10n.endpointReset,
-                          onPressed: () {
-                            c.text = def.defaultValue;
-                            def.onChanged(def.defaultValue);
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ),
-            const SizedBox(height: FitFatTokens.spaceM),
-            _syncAction(
-              description: l10n.syncExercisesHelp,
-              button: SizedBox(
-                width: double.infinity,
-                child: SyncButton(
-                  tooltip: l10n.syncExercisesTooltip,
-                  label: Text(l10n.syncExercisesTooltip),
-                  run: () => sync.syncExercises(
-                    settings.remoteSyncBaseUrl,
-                    settings.remoteSyncApiKey,
-                    endpoint: settings.endpointExercises,
-                  ),
-                ),
-              ),
-            ),
-            _syncAction(
-              description: l10n.syncIngredientsHelp,
-              button: SizedBox(
-                width: double.infinity,
-                child: SyncButton(
-                  tooltip: l10n.syncIngredientsTooltip,
-                  label: Text(l10n.syncIngredientsTooltip),
-                  run: () => sync.syncIngredients(
-                    settings.remoteSyncBaseUrl,
-                    settings.remoteSyncApiKey,
-                    endpoint: settings.endpointIngredients,
-                  ),
-                ),
-              ),
-            ),
-            _syncAction(
-              description: l10n.syncCurrenciesHelp,
-              button: SizedBox(
-                width: double.infinity,
-                child: SyncButton(
-                  tooltip: l10n.syncCurrenciesTooltip,
-                  label: Text(l10n.syncCurrenciesTooltip),
-                  run: () => sync.syncCurrencies(
-                    settings.remoteSyncBaseUrl,
-                    settings.remoteSyncApiKey,
-                    settings.baseCurrency,
-                    endpoint: settings.endpointCurrencies,
-                  ),
-                ),
-              ),
-            ),
-            _syncAction(
-              description: l10n.pushAllDataHelp,
-              button: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _busy ? null : _pushAll,
-                  icon: const Icon(Icons.cloud_upload),
-                  label: Text(l10n.pushAllData),
-                ),
-              ),
-            ),
-            _syncAction(
-              description: l10n.exportServerHelp,
-              button: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _busy ? null : _export,
-                  icon: const Icon(Icons.backup),
-                  label: Text(l10n.exportServer),
-                ),
-              ),
-            ),
-            _syncAction(
-              description: l10n.importServerHelp,
-              button: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _busy ? null : _import,
-                  icon: const Icon(Icons.restore),
-                  label: Text(l10n.importServer),
-                ),
-              ),
-            ),
-          ],
-        );
-  }
-}
-
-final class _EndpointDef {
-  const _EndpointDef(
-    this.label,
-    this.value,
-    this.defaultValue,
-    this.onChanged,
-  );
-
-  final String label;
-  final String value;
-  final String defaultValue;
-  final void Function(String) onChanged;
 }

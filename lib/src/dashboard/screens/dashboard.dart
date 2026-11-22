@@ -28,6 +28,7 @@ import '../../settings/providers/settings.dart';
 import '../../sync/local_backup.dart';
 import '../../sync/sync_models.dart';
 import '../../sync/sync_state_store.dart';
+import '../../sync/entity_labels.dart';
 import '../../sync/sync_service.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/widgets/top_banner.dart';
@@ -100,12 +101,9 @@ final class _SyncHubCardState extends ConsumerState<_SyncHubCard> {
   String _lastSyncText() {
     final state = PrefsSyncStateStore(ref.watch(sharedPreferencesProvider));
     final times = [state.getLastSyncedAt(SyncResource.exercises), state.getLastSyncedAt(SyncResource.ingredients), state.getLastSyncedAt(SyncResource.currencies)].where((v) => v > 0).toList();
-    if (times.isEmpty) return 'never';
-    final last = times.reduce((a, b) => a > b ? a : b);
-    final diff = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(last));
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
+    final l10n = AppLocalizations.of(context)!;
+    final last = times.isEmpty ? 0 : times.reduce((a, b) => a > b ? a : b);
+    return lastSyncedLabel(l10n, last);
   }
   Future<void> _syncNow() async {
     if (_busySync) return;
@@ -113,7 +111,7 @@ final class _SyncHubCardState extends ConsumerState<_SyncHubCard> {
     try {
       final s = ref.read(settingsProvider);
       if (s.remoteSyncBaseUrl.isEmpty) {
-        if (mounted) showTopBanner(context, message: 'Sync server not configured — open Sync & Backup to set URL');
+        if (mounted) showTopBanner(context, message: AppLocalizations.of(context)!.syncNotConfiguredOpenHub);
         return;
       }
       final svc = ref.read(syncServiceProvider);
@@ -123,11 +121,12 @@ final class _SyncHubCardState extends ConsumerState<_SyncHubCard> {
         svc.syncIngredients(s.remoteSyncBaseUrl, s.remoteSyncApiKey, endpoint: s.endpointIngredients, timeout: timeout),
         svc.syncCurrencies(s.remoteSyncBaseUrl, s.remoteSyncApiKey, s.baseCurrency, endpoint: s.endpointCurrencies, timeout: timeout),
       ]);
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       final errors = results.where((r) => !r.ok && r.error != null).map((r) {
         final e = r.error!;
-        return e.contains('TimeoutException') ? 'Server not reachable — check URL/key or increase timeout in Settings → Advanced (${s.apiTimeoutSeconds}s)' : e;
+        return e.contains('TimeoutException') ? l10n.syncTimeoutWithSeconds(s.apiTimeoutSeconds) : e;
       }).toList();
-      if (!mounted) return;
       if (errors.isNotEmpty) showTopBanner(context, message: errors.join('\n'));
       setState(() {});
     } finally {
@@ -148,14 +147,15 @@ final class _SyncHubCardState extends ConsumerState<_SyncHubCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Icon(Icons.sync, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Sync & Backup', style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/sync'), icon: const Icon(Icons.chevron_right, size: 18), label: const Text('Open'))]),
+      Row(children: [Icon(Icons.sync, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text(l10n.syncHubTitle, style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/sync'), icon: const Icon(Icons.chevron_right, size: 18), label: Text(l10n.commonOpen))]),
       const SizedBox(height: FitFatTokens.spaceS),
-      Text('Last sync: ${_lastSyncText()}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      Text(l10n.syncLastSync(_lastSyncText()), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       const SizedBox(height: FitFatTokens.spaceM),
       Wrap(spacing: FitFatTokens.spaceS, runSpacing: FitFatTokens.spaceS, children: [
-        FilledButton.icon(onPressed: _busySync ? null : _syncNow, icon: _busySync ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.cloud_sync, size: 18), label: const Text('Sync now')),
-        OutlinedButton.icon(onPressed: _busyBackup ? null : _backupNow, icon: _busyBackup ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.backup, size: 18), label: const Text('Backup')),
+        FilledButton.icon(onPressed: _busySync ? null : _syncNow, icon: _busySync ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.cloud_sync, size: 18), label: Text(l10n.syncNow)),
+        OutlinedButton.icon(onPressed: _busyBackup ? null : _backupNow, icon: _busyBackup ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.backup, size: 18), label: Text(l10n.syncBackup)),
       ]),
     ])));
   }
@@ -181,7 +181,7 @@ final class _NutritionHeroCard extends ConsumerWidget {
     final targetsAsync = ref.watch(macroTargetsProvider);
     return metaAsync.when(
       loading: () => const Card(child: SizedBox(height: 120, child: Center(child: CircularProgressIndicator()))),
-      error: (e, _) => Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Text('Error'))),
+      error: (e, _) => Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Text(l10n.commonError))),
       data: (meta) => Card(
         child: Padding(
           padding: const EdgeInsets.all(FitFatTokens.spaceL),
@@ -405,13 +405,13 @@ final class _WeightEvolution extends StatelessWidget {
     final now = DateTime.now();
     final delta7 = _computeDelta(points, now, 7);
     final delta30 = _computeDelta(points, now, 30);
-    final projection = _computeProjection(points, goal);
+    final projection = _computeProjection(l10n, points, goal);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       SizedBox(height: 160, child: _WeightLineChart(points: points)),
       const SizedBox(height: FitFatTokens.spaceS),
       Wrap(spacing: FitFatTokens.spaceM, children: [
-        if (delta7 != null) Text('${_deltaText(delta7, unit)} (7d)', style: theme.textTheme.bodySmall?.copyWith(color: delta7 < 0 ? theme.extension<FitFatColors>()!.success : theme.extension<FitFatColors>()!.warning)),
-        if (delta30 != null) Text('${_deltaText(delta30, unit)} (30d)', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        if (delta7 != null) Text(l10n.dashboardDelta7d(_deltaText(delta7, unit)), style: theme.textTheme.bodySmall?.copyWith(color: delta7 < 0 ? theme.extension<FitFatColors>()!.success : theme.extension<FitFatColors>()!.warning)),
+        if (delta30 != null) Text(l10n.dashboardDelta30d(_deltaText(delta30, unit)), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         if (projection != null) Text(projection, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
       ]),
     ]);
@@ -423,7 +423,7 @@ final class _WeightEvolution extends StatelessWidget {
     if (recent.length < 2) return null;
     return recent.last.$2 - recent.first.$2;
   }
-  String? _computeProjection(List<(DateTime, double)> points, BodyWeightGoal? goal) {
+  String? _computeProjection(AppLocalizations l10n, List<(DateTime, double)> points, BodyWeightGoal? goal) {
     if (goal == null || points.length < 2) return null;
     final first = points.first.$2;
     final last = points.last.$2;
@@ -433,9 +433,9 @@ final class _WeightEvolution extends StatelessWidget {
     if (slopePerDay == 0) return null;
     if (goal == BodyWeightGoal.lose && slopePerDay >= 0) return null;
     if (goal == BodyWeightGoal.gain && slopePerDay <= 0) return null;
-    if (goal == BodyWeightGoal.maintain) return 'Stable trend';
-    final weeksToGoal = (last - first).abs() > 0 ? '→ trending ${slopePerDay < 0 ? 'down' : 'up'}' : null;
-    return weeksToGoal;
+    if (goal == BodyWeightGoal.maintain) return l10n.dashboardStableTrend;
+    if ((last - first).abs() == 0) return null;
+    return slopePerDay < 0 ? l10n.dashboardTrendingDown : l10n.dashboardTrendingUp;
   }
 }
 
@@ -570,7 +570,7 @@ final class _TodayStrip extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final tasksAsync = ref.watch(upcomingTasksProvider);
     return Card(child: Padding(padding: const EdgeInsets.all(FitFatTokens.spaceL), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Icon(Icons.today_outlined, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text('Today', style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.chevron_right, size: 18), label: Text(l10n.plannerAppBar))]),
+      Row(children: [Icon(Icons.today_outlined, size: 20, color: theme.colorScheme.primary), const SizedBox(width: FitFatTokens.spaceS), Text(l10n.dashboardToday, style: theme.textTheme.titleMedium), const Spacer(), TextButton.icon(onPressed: () => context.go('/plan'), icon: const Icon(Icons.chevron_right, size: 18), label: Text(l10n.plannerAppBar))]),
       const SizedBox(height: FitFatTokens.spaceM),
       tasksAsync.when(
         loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
@@ -703,7 +703,7 @@ final class _BudgetMiniCard extends ConsumerWidget {
           Row(children: [
             Expanded(child: MetricCard(icon: Icons.trending_down, title: l10n.budgetMonthExpense, value: overview.monthExpense.toStringAsFixed(0))),
             const SizedBox(width: FitFatTokens.spaceS),
-            Expanded(child: MetricCard(icon: Icons.receipt_long, title: 'Recent', value: overview.recent.length.toString())),
+            Expanded(child: MetricCard(icon: Icons.receipt_long, title: l10n.budgetRecent, value: overview.recent.length.toString())),
           ]),
         ])));
       },

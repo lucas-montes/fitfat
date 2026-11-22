@@ -166,12 +166,6 @@ final class _TemplateTile extends ConsumerWidget {
   Future<void> _duplicate(BuildContext context, WidgetRef ref) async {
     await ref.read(workoutTemplateRepositoryProvider).duplicate(template.id);
     ref.invalidate(workoutTemplateListProvider);
-    if (context.mounted) {
-      showTopBanner(
-        context,
-        message: AppLocalizations.of(context)!.templatesDuplicated,
-      );
-    }
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
@@ -650,9 +644,9 @@ final class _BlockCard extends StatelessWidget {
                       child: TextFormField(
                         controller: set.reps,
                         keyboardType: const TextInputType.numberWithOptions(),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           isDense: true,
-                          labelText: 'Reps',
+                          labelText: l10n.workoutFormRepsLabel,
                         ),
                         onChanged: (_) => onChanged(),
                       ),
@@ -664,9 +658,9 @@ final class _BlockCard extends StatelessWidget {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           isDense: true,
-                          labelText: 'Kg',
+                          labelText: l10n.workoutFormWeightLabel,
                         ),
                         onChanged: (_) => onChanged(),
                       ),
@@ -678,9 +672,9 @@ final class _BlockCard extends StatelessWidget {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           isDense: true,
-                          labelText: 'Rest min',
+                          labelText: l10n.workoutFormRestLabel,
                         ),
                         onChanged: (_) => onChanged(),
                       ),

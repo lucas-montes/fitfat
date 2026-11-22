@@ -1844,7 +1844,8 @@ final class _ActiveWorkoutExerciseSearchSheetState
             Expanded(
               child: exercisesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
+                error: (e, _) =>
+                    Center(child: Text(widget.l10n.errorWithMessage('$e'))),
                 data: (exercises) {
                   final options = _optionsFor(exercises);
                   final hasFilters =
