@@ -318,8 +318,9 @@ names); envelope fields (`op`, `version`, cursors) are contract-level.
  | currencies | `GET /fx-rates` | `?base=<ISO base>&date=YYYY-MM-DD` |
  | ingredient push | `POST /ingredients` | body (see §11.3) |
 
-All calls send `Authorization: Bearer <apiKey>`. The URL and key live in
-`SettingsState.remoteSyncBaseUrl` / `remoteSyncApiKey` (SharedPreferences).
+All calls send `Authorization: Bearer <apiKey>`. The URL and key are read from
+`SettingsState.remoteSyncBaseUrl` / `remoteSyncApiKey`, derived from the active
+server profile; the key itself is stored in `flutter_secure_storage`.
 
 ### 11.2 Pull envelope (actual, not §5)
 

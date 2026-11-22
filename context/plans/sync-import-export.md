@@ -1,6 +1,6 @@
 # Plan: sync-import-export
 
-**Status:** partially implemented — the sync hub, the personal-pool push and pull and the JSON backup export/import shipped. The whole-SQLite export was dropped (`BackupFormat` is JSON only), and `lib/src/sync/user_data_sync_client.dart` is dead code whose `pullSelected()` is a no-op placeholder.
+**Status:** completed 2026-11-22, with one part dropped — the sync hub, the personal-pool push and pull and the JSON backup export/import shipped. The whole-SQLite export was dropped (`BackupFormat` is JSON only). The dead `lib/src/sync/user_data_sync_client.dart`, whose `pullSelected()` was a no-op, was deleted on 2026-11-22; the real pull is `personal_pull_service.dart`.
 
 ## Change summary
 
@@ -78,7 +78,7 @@ Make import/export and sync discoverable and one-tap easy, replacing the buried 
   - Context impact: context/sync/sync-contract.md needs local backup docs
   - Context synchronization: synced
 
-- [x] T03: Personal pool push/pull for user data — per-entity toggles + Push all, all entities (status:done) — the per-entity client in `lib/src/sync/user_data_sync_client.dart` is dead code whose `pullSelected()` is a no-op; the real pull lives in `personal_pull_service.dart`
+- [x] T03: Personal pool push/pull for user data — per-entity toggles + Push all, all entities (status:done) — the per-entity client in `lib/src/sync/user_data_sync_client.dart` was dead code whose `pullSelected()` was a no-op, and was deleted on 2026-11-22; the real pull lives in `personal_pull_service.dart`
   - Task ID: T03
   - Scope: In — new `lib/src/sync/user_data_sync_client.dart` (push/pull for tasks, notes, goals, workouts, workout templates, experiments, meals, body metrics, accounts/transactions, receipts via `ApiClient` + `endpoint*` + `SyncStateStore` cursors), extend `SyncService` with `pushUserData`/`pullUserData`, wire to Sync hub Personal section with per-entity toggles + "Push all" shortcut covering all entities. Out — global pool changes.
   - Dependencies: T01

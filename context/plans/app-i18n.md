@@ -1,6 +1,6 @@
 # Plan: App i18n — Localization for all UI strings
 
-**Status:** partially implemented — the l10n machinery and three locales are in place, but roughly 80 user-facing strings are still hardcoded (32 in `sync_hub_screen.dart` alone, 10 in `dashboard.dart`).
+**Status:** completed 2026-11-22 — the l10n machinery and three locales are in place, and the strings that were still hardcoded (the sync hub, the dashboard sync card and weight trend, the settings Sync tile, the QR sheet, the select sheet, the wizard, the Open Food Facts sheet, the template set fields) now read from `AppLocalizations`. What stays in English on purpose: Android notification channel names and their pre-localisation fallbacks (set before any `BuildContext` exists), exception messages thrown by the data layer, and unit symbols (`kg`, `cm`, `ml`).
 
 ## Change Summary
 
@@ -92,7 +92,7 @@ None. All scope decisions have been clarified.
 
 ### Success-criteria verification
 - [x] `flutter run` builds and launches without l10n errors — verified by `dart analyze` passing; generated l10n files exist
-- [ ] All user-facing strings (app bar, buttons, labels, dialogs, empty states, tooltips, nav, validation, errors) read from `AppLocalizations` — not met: roughly 80 user-facing strings are still hardcoded (32 in `sync_hub_screen.dart`, 10 in `dashboard.dart`)
+- [x] All user-facing strings (app bar, buttons, labels, dialogs, empty states, tooltips, nav, validation, errors) read from `AppLocalizations` — met 2026-11-22. The sync groups keep English identifiers ('Tasks', 'Body', …) for dispatch and saved selections; `syncEntityLabel` in `lib/src/sync/entity_labels.dart` translates them for display
 - [x] App supports en, fr, es locale switching via `supportedLocales` in `app.dart`
 - [x] French and Spanish translations present in `app_fr.arb` and `app_es.arb`
 - [x] `dart analyze lib/` — zero errors

@@ -1,6 +1,6 @@
 # Plan: multi-server-secure-link
 
-**Status:** partially implemented — the server profile list, the active-server switch, the QR scan and the `/health` test shipped. But the API keys sit in plain SharedPreferences: `FlutterSecureStorage` is declared in `lib/src/settings/providers/settings.dart` and never used, and the planned `getApiKeyFor(id)` accessor does not exist.
+**Status:** completed 2026-11-22 — the server profile list, the active-server switch, the QR scan and the `/health` test shipped, and the API keys now live only in `flutter_secure_storage` (`sync_api_key_<id>`). `lib/src/settings/providers/sync_api_keys.dart` holds `SyncKeyStore` and the in-memory `syncApiKeysProvider`; `main.dart` loads the keys before publishing SharedPreferences, so the synchronous `SettingsState.remoteSyncApiKey` readers never see an empty key at startup. On first start it moves any key left in plain prefs (the per-server `apiKey` field, `settings_remote_sync_api_key`, and the oldest scalar URL) into secure storage, and removes the plain copy only after the secure write succeeds. `SettingsNotifier.apiKeyFor(id)` is the accessor. Tests: `test/sync_api_keys_test.dart`. Not yet checked on a device: the Android keystore itself (the tests use the plugin's in-memory mock).
 
 ## Change summary
 
@@ -10,7 +10,7 @@ Keep `adb reverse + http://127.0.0.1:3030` for hotspot dev, add multiple `{url,a
 
 - [x] AC1: Server list supports multiple pairs, add via Scan QR or Add dialog, remove via Delete, select active via radio, no edit
   - Validate: add 2 servers via QR → dropdown shows 2, select second as active → `sharedPreferences` active id + secure storage has 2 keys, delete one → list shows 1
-- [ ] AC2: API keys stored in secure storage, not plain prefs — not met: the keys are written to plain SharedPreferences; `FlutterSecureStorage` is declared in `lib/src/settings/providers/settings.dart` and never used, and the planned `getApiKeyFor(id)` accessor does not exist
+- [x] AC2: API keys stored in secure storage, not plain prefs — met 2026-11-22: `SyncKeyStore` writes `sync_api_key_<id>`, the server list in prefs holds only `{id,url,label}`, and the migration strips old plain-text copies (`test/sync_api_keys_test.dart`). The unused Settings `_SyncServerCard`, which still wrote the key to plain prefs, and `setRemoteSyncApiKey` / `setRemoteSyncBaseUrl` were deleted
   - Validate: `flutter_secure_storage` dep added, `grep -r "sync_api_key" lib/src/settings/providers/settings.dart` shows secure storage, `flutter test` mock secure storage passes
 - [x] AC3: Sync hub and push/pull use active server's URL/key (global endpoints unchanged)
   - Validate: `flutter analyze` clean, manual: select server A → sync uses A, select B → uses B

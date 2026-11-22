@@ -37,12 +37,8 @@ manual check.
 ### In progress
 | Plan | Status | Description |
 |---|---|---|
-| `multi-server-secure-link` | partially implemented | The server profile list, the active-server switch, the QR scan and the `/health` test shipped. The API keys are still in plain SharedPreferences: `FlutterSecureStorage` is declared in `lib/src/settings/providers/settings.dart` and never used, and the planned `getApiKeyFor(id)` accessor does not exist. **This is the one real security gap in the app** |
 | `selective-sync-catalog` | code complete, manual QA outstanding | The minimal catalogue tables, the server catalogue endpoints, the background refresh, the bulk-vs-selective menus and the hub de-duplication all shipped. The four acceptance criteria are device-side checks: AC1/AC3/AC4 were verified by inspection only, and AC2's automated test (`test/catalog_selective_sync_test.dart`) compiles but has never executed in this environment |
 | `task-carryover-notifications-fix` | code complete, manual device QA outstanding | The rollover ordering, the reminder rescheduling for rolled tasks, the reminder lifecycle on task mutations, the settings-based default time for untimed tasks and the exact-alarm fallback all shipped. All five acceptance criteria are device checks that have not been run |
-| `app-i18n` | partially implemented | The l10n machinery and three locales are in place, but roughly 80 user-facing strings are still hardcoded (32 in `sync_hub_screen.dart`, 10 in `dashboard.dart`) |
-| `feedback-banners` | partially implemented | The banner widget and its 2-second default shipped, but roughly 15 informational (non-undo, non-error) banners remain, which this policy forbids |
-| `sync-import-export` | partially implemented | The sync hub, the personal-pool push and pull and the JSON backup export/import shipped. The whole-SQLite export was dropped (`BackupFormat` is JSON only), and `lib/src/sync/user_data_sync_client.dart` is dead code whose `pullSelected()` is a no-op |
 | `settings-additions` | partially implemented | The units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent, and no longer wanted: the server pulls rates itself (2026-11-20) |
 | `dashboard-redesign` | partially implemented | The nutrition and workout hero cards, the weight trend, the today strip and the goals overview shipped. The experiments nudge card is impossible (the feature was removed in schema v37) and the projection reads "trending down" rather than "goal in ~X weeks" |
 | `dashboard-calories-catalog-reminders` | partially implemented | The calorie target engine, the exercise history/detail tabs and the task reminders shipped. The progress "ring" is now bars, and the bundled `assets/exercises.db` seeding is gone — the catalogue now arrives by server sync |
@@ -77,6 +73,10 @@ manual check.
 | `picker-server-fetch-fix` | The API timeout, the loading spinners and the friendly failure banner |
 | `qr-server-config` | Scanning a pairing QR, validating the URL/key/duplicates and auto-testing the server |
 | `sync-picker-reuse` | The shared picker reused across the sync flows |
+| `multi-server-secure-link` | Several server profiles with one active, the QR scan and the `/health` test; API keys in `flutter_secure_storage`, moved out of plain prefs on first start (2026-11-22) |
+| `app-i18n` | Every user-facing string reads from `AppLocalizations` in en/fr/es (finished 2026-11-22); notification channel names and data-layer exception text stay English |
+| `feedback-banners` | Only deletion-undo, error, validation and "nothing to pick" banners remain (finished 2026-11-22) |
+| `sync-import-export` | The sync hub, personal-pool push/pull and JSON backup export/import; the whole-SQLite export was dropped and the dead `user_data_sync_client.dart` deleted (2026-11-22) |
 | `sync-contract` | The offline-first delta contract, the entity inventory, the LWW policy and the implemented pull envelope |
 | `performance` | The isolated elapsed ticker, the debounced picker, the bulk set query and the bulk weekly stats |
 | `performance-startup-edit` | The deferred tab branches and the cached workout-form exercise map |

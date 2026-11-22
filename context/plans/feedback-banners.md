@@ -1,6 +1,6 @@
 # Plan: Feedback banners — keep only deletion-undo
 
-**Status:** partially implemented — the banner widget and its 2-second default shipped, but roughly 15 informational (non-undo, non-error) banners remain, which this policy forbids.
+**Status:** completed 2026-11-22 — the banner widget and its 2-second default shipped, and the success banners that had crept back were removed: push/pull per entity, push all, a clean pull all, backup uploaded, restored N rows (banner and snackbar), template duplicated, saved as template, the barcode-lookup name, and a clean receipt send. What remains is deletion-undo, errors, form validation, and "nothing to pick" notices (an empty server catalogue), which explain why an action did nothing.
 
 ## Change Summary
 
@@ -28,7 +28,7 @@ they are critical feedback, not noise.
 
 ## Task Stack
 
-- [x] T01: `Remove non-undo banner call sites` (status:done) — the policy has since drifted: roughly 15 informational (non-undo, non-error) banners remain
+- [x] T01: `Remove non-undo banner call sites` (status:done) — the policy drifted later, and the informational banners that came back were removed again on 2026-11-22
   - Task ID: T01
   - Goal: Remove every `showTopBanner` / `showTopBannerOverlay` call that is not a
     deletion-undo banner or an error banner.

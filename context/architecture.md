@@ -134,8 +134,10 @@ is the `/v1/sync/{entity}` envelope in
 **Server configuration** lives in Settings → Sync and in the sync hub
 (`/sync`). It holds **one or more server profiles** (URL + API key) with one
 marked active, reachable through the dashboard's sync card. The pairing QR is
-scanned by the app (`mobile_scanner`); the server's API key is currently stored
-in plain SharedPreferences, not in secure storage. See
+scanned by the app (`mobile_scanner`). The profiles (`{id,url,label}`) are in
+SharedPreferences; each server's API key is only in `flutter_secure_storage`
+(`sync_api_key_<id>`), read once at startup into `syncApiKeysProvider`
+(`lib/src/settings/providers/sync_api_keys.dart`). See
 [plans/multi-server-secure-link.md](plans/multi-server-secure-link.md).
 
 **Catalogue (global pool).** Exercises, foods and stores come from the server.
