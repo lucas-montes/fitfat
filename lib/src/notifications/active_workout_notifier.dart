@@ -97,15 +97,17 @@ Future<void> restoreWorkoutServiceIfNeeded(SharedPreferences prefs) async {
     if (prefs.getInt(activeWorkoutStartedAtKey) == null) return;
     if (await FlutterForegroundTask.isRunningService) return;
     final name =
-        prefs.getString(_watchdogNameKey) ?? prefs.getString(activeWorkoutNameKey) ?? '';
-    final startedAtMillis = prefs.getInt(_watchdogStartedAtKey) ??
+        prefs.getString(_watchdogNameKey) ??
+        prefs.getString(activeWorkoutNameKey) ??
+        '';
+    final startedAtMillis =
+        prefs.getInt(_watchdogStartedAtKey) ??
         prefs.getInt(activeWorkoutStartedAtKey)!;
     final elapsedLabel =
         prefs.getString(notificationElapsedLabelKey) ?? 'Elapsed';
     final elapsed = formatRestDuration(
       Duration(
-        milliseconds:
-            DateTime.now().millisecondsSinceEpoch - startedAtMillis,
+        milliseconds: DateTime.now().millisecondsSinceEpoch - startedAtMillis,
       ),
     );
     final result = await FlutterForegroundTask.startService(
@@ -427,7 +429,9 @@ final class ActiveWorkoutNotifier {
       } catch (e) {
         _log.warning('workout service retry threw', e);
       }
-      _log.info('workout service running=$running allowed=$notificationsAllowed');
+      _log.info(
+        'workout service running=$running allowed=$notificationsAllowed',
+      );
       _lastWorkoutName = workoutName;
       _lastStartedAt = startedAt;
       _startWatchdog();
@@ -479,8 +483,10 @@ final class ActiveWorkoutNotifier {
     _watchdog = Timer.periodic(const Duration(seconds: 5), (_) async {
       try {
         final active =
-            (await SharedPreferences.getInstance()).getInt(activeWorkoutStartedAtKey) !=
-                null;
+            (await SharedPreferences.getInstance()).getInt(
+              activeWorkoutStartedAtKey,
+            ) !=
+            null;
         if (!active) {
           _stopWatchdog();
           return;
@@ -488,10 +494,12 @@ final class ActiveWorkoutNotifier {
         final running = await FlutterForegroundTask.isRunningService;
         if (!running) {
           final sp = await SharedPreferences.getInstance();
-          final name = _lastWorkoutName ??
+          final name =
+              _lastWorkoutName ??
               sp.getString(_watchdogNameKey) ??
               sp.getString(activeWorkoutNameKey);
-          final startedAtMillis = _lastStartedAt?.millisecondsSinceEpoch ??
+          final startedAtMillis =
+              _lastStartedAt?.millisecondsSinceEpoch ??
               sp.getInt(_watchdogStartedAtKey) ??
               sp.getInt(activeWorkoutStartedAtKey);
           if (name != null && startedAtMillis != null) {
@@ -511,8 +519,9 @@ final class ActiveWorkoutNotifier {
                 _log.warning('watchdog service restart failed', result.error);
               } else {
                 _lastWorkoutName = name;
-                _lastStartedAt =
-                    DateTime.fromMillisecondsSinceEpoch(startedAtMillis);
+                _lastStartedAt = DateTime.fromMillisecondsSinceEpoch(
+                  startedAtMillis,
+                );
               }
             } catch (e) {
               _log.warning('watchdog service restart threw', e);
@@ -520,13 +529,18 @@ final class ActiveWorkoutNotifier {
           }
           return;
         }
-        final last = (await SharedPreferences.getInstance()).getInt(_lastTickKey);
+        final last = (await SharedPreferences.getInstance()).getInt(
+          _lastTickKey,
+        );
         final now = DateTime.now().millisecondsSinceEpoch;
         if (last != null && now - last > 15000) {
           // Service is alive but the ticker has stalled — restart it.
           final restarted = await FlutterForegroundTask.restartService();
           if (restarted is ServiceRequestFailure) {
-            _log.warning('watchdog stalled-tick restart failed', restarted.error);
+            _log.warning(
+              'watchdog stalled-tick restart failed',
+              restarted.error,
+            );
           }
         }
       } catch (_) {

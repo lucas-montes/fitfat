@@ -128,10 +128,7 @@ final class WorkoutTemplateRepository {
         'workoutTemplateExercises',
         oldExerciseIds.map((r) => r.id),
       );
-      await _database.recordSyncDeletes(
-        'workoutTemplateSets',
-        removedSetIds,
-      );
+      await _database.recordSyncDeletes('workoutTemplateSets', removedSetIds);
 
       for (final (i, block) in blocks.indexed) {
         final exerciseId = const Uuid().v7();
@@ -221,10 +218,7 @@ final class WorkoutTemplateRepository {
         'workoutTemplateExercises',
         exercises.map((r) => r.id),
       );
-      await _database.recordSyncDeletes(
-        'workoutTemplateSets',
-        removedSetIds,
-      );
+      await _database.recordSyncDeletes('workoutTemplateSets', removedSetIds);
       final now = DateTime.now().millisecondsSinceEpoch;
       await (_database.update(_database.workoutTemplates)
             ..where((t) => t.id.equals(id)))
