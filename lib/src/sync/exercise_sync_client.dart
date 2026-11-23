@@ -226,6 +226,7 @@ final class ExerciseSyncClient {
       similarTo: raw['similarTo'] as String?,
       tags: _stringList(raw['tags']),
       isCanonical: (raw['isCanonical'] as bool?) ?? false,
+      met: (raw['met'] as num?)?.toDouble(),
       createdAt: toSyncDateTime(ts, serverTime),
     );
     return (exercise, raw['hasImage'] == true, raw['hasVideo'] == true);

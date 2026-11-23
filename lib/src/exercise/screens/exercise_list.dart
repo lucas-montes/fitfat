@@ -96,7 +96,7 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
 
   /// Long-press opens the edit form.
   void _openEdit(BuildContext context, Exercise exercise) {
-    _openForm(context, null, exercise);
+    _openForm(context, exercise, null);
   }
 
   Future<void> _openForm(
@@ -167,7 +167,10 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
   /// icon with zero round trips.
   Future<List<DisplayItem>> _loadExerciseDisplay() async {
     final s = ref.read(settingsProvider);
-    final normalizedBase = s.remoteSyncBaseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final normalizedBase = s.remoteSyncBaseUrl.trim().replaceAll(
+      RegExp(r'/+$'),
+      '',
+    );
     final headers = authHeaders(s.remoteSyncApiKey);
     final entries = await ref
         .read(exerciseCatalogRepositoryProvider)
@@ -177,7 +180,9 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
         DisplayItem(
           id: e.id,
           name: e.name,
-          imagePath: e.hasImage ? '$normalizedBase/exercises/${e.id}.jpg' : null,
+          imagePath: e.hasImage
+              ? '$normalizedBase/exercises/${e.id}.jpg'
+              : null,
           imageHeaders: e.hasImage ? headers : null,
         ),
     ];
@@ -187,7 +192,9 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
   /// failure and returns null so the sheet keeps its current rows.
   Future<List<DisplayItem>?> _refreshExerciseDisplay() async {
     final s = ref.read(settingsProvider);
-    final refreshed = await ref.read(syncServiceProvider).refreshExerciseCatalog(
+    final refreshed = await ref
+        .read(syncServiceProvider)
+        .refreshExerciseCatalog(
           s.remoteSyncBaseUrl,
           s.remoteSyncApiKey,
           endpoint: '${s.endpointExercises}/catalog',
@@ -448,7 +455,8 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: () => _openForm(context, null, null),
         child: const Icon(Icons.add),
       ),

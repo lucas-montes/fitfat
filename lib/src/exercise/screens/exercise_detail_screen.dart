@@ -1272,12 +1272,15 @@ final class _WorkoutHistoryCardState extends State<_WorkoutHistoryCard> {
                     theme: theme,
                     alignEnd: true,
                   ),
-                  _SummaryCell(
-                    label: l10n.workoutSummaryTotalDistance,
-                    value: formatDecimal(totalDistance),
-                    theme: theme,
-                    alignEnd: true,
-                  ),
+                  // Time-only cardio (skating) never has a distance; a "0" cell
+                  // would read as "did nothing".
+                  if (totalDistance > 0)
+                    _SummaryCell(
+                      label: l10n.workoutSummaryTotalDistance,
+                      value: formatDecimal(totalDistance),
+                      theme: theme,
+                      alignEnd: true,
+                    ),
                   _SummaryCell(
                     label: l10n.exerciseDetailSetsCompleted,
                     value: '$completed/${sets.length}',

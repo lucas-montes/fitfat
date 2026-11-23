@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../body/providers/body_metrics.dart';
 import '../../models/exercise_set.dart';
 import '../../notifications/rest_timer.dart';
 import '../../settings/providers/settings.dart';
@@ -17,6 +18,7 @@ import '../providers/exercises.dart';
 import '../providers/workout_templates.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+import '../services/workout_energy.dart';
 import '../widgets/set_actuals_dialog.dart';
 import 'workout_form.dart';
 
@@ -161,6 +163,11 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
     final w = detail.workout;
     final theme = Theme.of(context);
     final statusColors = theme.extension<FitFatColors>()!;
+    final energy = estimateWorkoutEnergy(
+      detail: detail,
+      exerciseById: (id) => ref.watch(exerciseByIdProvider(id)).value,
+      weightKg: ref.watch(latestBodyMetricsProvider).value?.weightKg,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -220,6 +227,23 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
                     label: l10n.workoutSummaryDurationLabel,
                     value: formatRestDuration(w.duration),
                   ),
+                  if (energy != null) ...[
+                    _MetricRow(
+                      label: l10n.workoutSummaryEnergyLabel,
+                      value: l10n.workoutSummaryEnergyValue(
+                        energy.kcal.round(),
+                      ),
+                    ),
+                    if (energy.notCounted.isNotEmpty)
+                      Text(
+                        l10n.workoutSummaryEnergyNotCounted(
+                          energy.notCounted.join(', '),
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ),
@@ -301,12 +325,13 @@ final class _ExerciseSummaryCard extends ConsumerWidget {
                   Duration(minutes: metrics.totalDurationMinutes),
                 ),
               ),
-              _MetricRow(
-                label: l10n.workoutSummaryTotalDistance,
-                value: l10n.workoutSummaryDistanceValue(
-                  formatDecimal(metrics.totalDistanceMeters),
+              if (metrics.totalDistanceMeters > 0)
+                _MetricRow(
+                  label: l10n.workoutSummaryTotalDistance,
+                  value: l10n.workoutSummaryDistanceValue(
+                    formatDecimal(metrics.totalDistanceMeters),
+                  ),
                 ),
-              ),
             ] else ...[
               _MetricRow(
                 label: l10n.workoutSummaryVolume,
@@ -373,6 +398,12 @@ final class _SummarySetRow extends ConsumerWidget {
       isWeightlifting: isWeightlifting,
       isCardio: isCardio,
       unit: unit,
+      hasDistanceHistory:
+          ref
+              .read(exerciseDistanceHistoryProvider)
+              .value
+              ?.contains(block.exercise.exerciseId) ??
+          false,
     );
     if (result == null) return;
     await ref

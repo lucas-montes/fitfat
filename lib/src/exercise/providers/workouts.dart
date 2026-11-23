@@ -55,6 +55,15 @@ final workoutDetailProvider =
 // Exercise history provider (family by exercise id)
 // ---------------------------------------------------------------------------
 
+/// Exercise ids that have ever had a distance (see
+/// [WorkoutRepository.exerciseIdsWithDistance]). Decides whether cardio
+/// editors open with the distance field shown. Not invalidated on every set
+/// save: a stale answer only changes whether the field starts collapsed.
+final exerciseDistanceHistoryProvider = FutureProvider<Set<String>>((ref) {
+  if (!ref.watch(startupGateProvider)) return Future.value(const {});
+  return ref.watch(workoutRepositoryProvider).exerciseIdsWithDistance();
+});
+
 final exerciseHistoryProvider =
     FutureProvider.family<List<ExerciseHistoryEntry>, String>((ref, id) async {
       return ref.watch(workoutRepositoryProvider).getExerciseHistory(id);

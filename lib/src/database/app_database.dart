@@ -58,7 +58,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 40;
+  int get schemaVersion => 41;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -908,6 +908,11 @@ final class AppDatabase extends _$AppDatabase {
         // v40: an optional reference link for a price observation (e.g. the
         // online catalogue page it was found on). Manual entry only.
         await m.addColumn(ingredientPrices, ingredientPrices.sourceUrl);
+      }
+      if (from < 41) {
+        // v41: per-exercise MET. Filled by the next exercise pull (the
+        // server bumps every catalogue row it rates), never computed here.
+        await m.addColumn(exercises, exercises.met);
       }
     },
   );

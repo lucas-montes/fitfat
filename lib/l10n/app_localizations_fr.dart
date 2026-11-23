@@ -503,6 +503,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get exerciseFormTypeLabel => 'Type';
 
   @override
+  String get exerciseFormMetLabel => 'Dépense énergétique (MET, facultatif)';
+
+  @override
+  String get exerciseFormMetHelper =>
+      'Sert à estimer les calories. La marche vaut environ 3,5, la course environ 8. Choisissez une valeur prédéfinie ou laissez vide.';
+
+  @override
+  String get exerciseFormMetInvalid => 'Saisissez un nombre de 1 à 25';
+
+  @override
+  String get metPresetSkating => 'Patin';
+
+  @override
+  String get metPresetCycling => 'Vélo';
+
+  @override
+  String get metPresetSwimming => 'Natation';
+
+  @override
+  String get metPresetHiking => 'Randonnée';
+
+  @override
+  String get metPresetFootball => 'Football';
+
+  @override
   String get exerciseFormSave => 'Enregistrer';
 
   @override
@@ -669,7 +694,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get workoutFormSetIncomplete =>
-      'Complétez chaque série ajoutée (valeurs et temps de repos) ou retirez-la';
+      'Complétez les valeurs de chaque série ajoutée ou retirez-la';
+
+  @override
+  String get cardioAddDistance => 'Ajouter la distance';
+
+  @override
+  String get activeWorkoutStartRest => 'Repos';
+
+  @override
+  String get activeWorkoutStopRest => 'Arrêter le repos';
 
   @override
   String get workoutFormRemoveExercise => 'Retirer l\'exercice';
@@ -2229,6 +2263,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get workoutSummaryDurationLabel => 'Durée';
+
+  @override
+  String get workoutSummaryEnergyLabel => 'Énergie estimée';
+
+  @override
+  String workoutSummaryEnergyValue(int kcal) {
+    return '~$kcal kcal';
+  }
+
+  @override
+  String workoutSummaryEnergyNotCounted(String names) {
+    return 'Non comptabilisé : $names';
+  }
 
   @override
   String get workoutSummaryAvgRest => 'Repos moyen';

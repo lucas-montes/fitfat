@@ -3832,6 +3832,15 @@ class $ExercisesTable extends Exercises
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _metMeta = const VerificationMeta('met');
+  @override
+  late final GeneratedColumn<double> met = GeneratedColumn<double>(
+    'met',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -3861,6 +3870,7 @@ class $ExercisesTable extends Exercises
     similarTo,
     tags,
     isCanonical,
+    met,
     createdAt,
   ];
   @override
@@ -3989,6 +3999,12 @@ class $ExercisesTable extends Exercises
         ),
       );
     }
+    if (data.containsKey('met')) {
+      context.handle(
+        _metMeta,
+        met.isAcceptableOrUnknown(data['met']!, _metMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4070,6 +4086,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.bool,
         data['${effectivePrefix}is_canonical'],
       )!,
+      met: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}met'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -4100,6 +4120,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final String? similarTo;
   final String? tags;
   final bool isCanonical;
+  final double? met;
   final int createdAt;
   const Exercise({
     required this.id,
@@ -4118,6 +4139,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     this.similarTo,
     this.tags,
     required this.isCanonical,
+    this.met,
     required this.createdAt,
   });
   @override
@@ -4163,6 +4185,9 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       map['tags'] = Variable<String>(tags);
     }
     map['is_canonical'] = Variable<bool>(isCanonical);
+    if (!nullToAbsent || met != null) {
+      map['met'] = Variable<double>(met);
+    }
     map['created_at'] = Variable<int>(createdAt);
     return map;
   }
@@ -4203,6 +4228,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           : Value(similarTo),
       tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
       isCanonical: Value(isCanonical),
+      met: met == null && nullToAbsent ? const Value.absent() : Value(met),
       createdAt: Value(createdAt),
     );
   }
@@ -4229,6 +4255,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       similarTo: serializer.fromJson<String?>(json['similarTo']),
       tags: serializer.fromJson<String?>(json['tags']),
       isCanonical: serializer.fromJson<bool>(json['isCanonical']),
+      met: serializer.fromJson<double?>(json['met']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
   }
@@ -4252,6 +4279,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'similarTo': serializer.toJson<String?>(similarTo),
       'tags': serializer.toJson<String?>(tags),
       'isCanonical': serializer.toJson<bool>(isCanonical),
+      'met': serializer.toJson<double?>(met),
       'createdAt': serializer.toJson<int>(createdAt),
     };
   }
@@ -4273,6 +4301,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     Value<String?> similarTo = const Value.absent(),
     Value<String?> tags = const Value.absent(),
     bool? isCanonical,
+    Value<double?> met = const Value.absent(),
     int? createdAt,
   }) => Exercise(
     id: id ?? this.id,
@@ -4295,6 +4324,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     similarTo: similarTo.present ? similarTo.value : this.similarTo,
     tags: tags.present ? tags.value : this.tags,
     isCanonical: isCanonical ?? this.isCanonical,
+    met: met.present ? met.value : this.met,
     createdAt: createdAt ?? this.createdAt,
   );
   Exercise copyWithCompanion(ExercisesCompanion data) {
@@ -4325,6 +4355,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       isCanonical: data.isCanonical.present
           ? data.isCanonical.value
           : this.isCanonical,
+      met: data.met.present ? data.met.value : this.met,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -4348,6 +4379,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('similarTo: $similarTo, ')
           ..write('tags: $tags, ')
           ..write('isCanonical: $isCanonical, ')
+          ..write('met: $met, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -4371,6 +4403,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     similarTo,
     tags,
     isCanonical,
+    met,
     createdAt,
   );
   @override
@@ -4393,6 +4426,7 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.similarTo == this.similarTo &&
           other.tags == this.tags &&
           other.isCanonical == this.isCanonical &&
+          other.met == this.met &&
           other.createdAt == this.createdAt);
 }
 
@@ -4413,6 +4447,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<String?> similarTo;
   final Value<String?> tags;
   final Value<bool> isCanonical;
+  final Value<double?> met;
   final Value<int> createdAt;
   final Value<int> rowid;
   const ExercisesCompanion({
@@ -4432,6 +4467,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.similarTo = const Value.absent(),
     this.tags = const Value.absent(),
     this.isCanonical = const Value.absent(),
+    this.met = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -4452,6 +4488,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.similarTo = const Value.absent(),
     this.tags = const Value.absent(),
     this.isCanonical = const Value.absent(),
+    this.met = const Value.absent(),
     required int createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -4475,6 +4512,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<String>? similarTo,
     Expression<String>? tags,
     Expression<bool>? isCanonical,
+    Expression<double>? met,
     Expression<int>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -4495,6 +4533,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (similarTo != null) 'similar_to': similarTo,
       if (tags != null) 'tags': tags,
       if (isCanonical != null) 'is_canonical': isCanonical,
+      if (met != null) 'met': met,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -4517,6 +4556,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<String?>? similarTo,
     Value<String?>? tags,
     Value<bool>? isCanonical,
+    Value<double?>? met,
     Value<int>? createdAt,
     Value<int>? rowid,
   }) {
@@ -4537,6 +4577,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       similarTo: similarTo ?? this.similarTo,
       tags: tags ?? this.tags,
       isCanonical: isCanonical ?? this.isCanonical,
+      met: met ?? this.met,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -4593,6 +4634,9 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (isCanonical.present) {
       map['is_canonical'] = Variable<bool>(isCanonical.value);
     }
+    if (met.present) {
+      map['met'] = Variable<double>(met.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -4621,6 +4665,7 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('similarTo: $similarTo, ')
           ..write('tags: $tags, ')
           ..write('isCanonical: $isCanonical, ')
+          ..write('met: $met, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -20686,6 +20731,7 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       Value<String?> similarTo,
       Value<String?> tags,
       Value<bool> isCanonical,
+      Value<double?> met,
       required int createdAt,
       Value<int> rowid,
     });
@@ -20707,6 +20753,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<String?> similarTo,
       Value<String?> tags,
       Value<bool> isCanonical,
+      Value<double?> met,
       Value<int> createdAt,
       Value<int> rowid,
     });
@@ -20853,6 +20900,11 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<bool> get isCanonical => $composableBuilder(
     column: $table.isCanonical,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get met => $composableBuilder(
+    column: $table.met,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21003,6 +21055,11 @@ class $$ExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get met => $composableBuilder(
+    column: $table.met,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -21075,6 +21132,9 @@ class $$ExercisesTableAnnotationComposer
     column: $table.isCanonical,
     builder: (column) => column,
   );
+
+  GeneratedColumn<double> get met =>
+      $composableBuilder(column: $table.met, builder: (column) => column);
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -21179,6 +21239,7 @@ class $$ExercisesTableTableManager
                 Value<String?> similarTo = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
                 Value<bool> isCanonical = const Value.absent(),
+                Value<double?> met = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion(
@@ -21198,6 +21259,7 @@ class $$ExercisesTableTableManager
                 similarTo: similarTo,
                 tags: tags,
                 isCanonical: isCanonical,
+                met: met,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -21219,6 +21281,7 @@ class $$ExercisesTableTableManager
                 Value<String?> similarTo = const Value.absent(),
                 Value<String?> tags = const Value.absent(),
                 Value<bool> isCanonical = const Value.absent(),
+                Value<double?> met = const Value.absent(),
                 required int createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion.insert(
@@ -21238,6 +21301,7 @@ class $$ExercisesTableTableManager
                 similarTo: similarTo,
                 tags: tags,
                 isCanonical: isCanonical,
+                met: met,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

@@ -22,6 +22,7 @@ import '../providers/exercises.dart';
 import '../providers/workouts.dart';
 import '../../dashboard/providers/dashboard.dart';
 import '../repositories/workout_repository.dart';
+import '../widgets/cardio_fields.dart';
 import 'exercise_picker_sheet.dart';
 
 /// One set in the form before saving.
@@ -48,6 +49,10 @@ final class _SetEntry {
   double? actualWeightKg;
   int? actualDurationMinutes;
   double? actualDistanceMeters;
+
+  /// Distance is hidden behind "+ distance" for cardio that has none yet
+  /// (skating); true once the user reveals it for this set.
+  bool distanceExpanded = false;
 
   /// The completion time as loaded from the row. Kept verbatim (seconds
   /// included) so opening the form and saving does not rewrite a timestamp.
@@ -466,6 +471,13 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
     final distance = _isCompletedEdit
         ? entry.actualDistanceMeters
         : entry.distanceMeters;
+    // Duration-first: distance only shows when this set or the exercise
+    // already uses one, or the user asks for it.
+    final showDistance =
+        entry.distanceExpanded ||
+        !_unset(distance) ||
+        (ref.watch(exerciseDistanceHistoryProvider).value?.contains(ex.id) ??
+            false);
 
     void setWeight(String v) {
       final parsed = double.tryParse(v.replaceAll(',', '.'));
@@ -556,32 +568,42 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               },
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextFormField(
-              key: ValueKey('${entry.id}-distance'),
-              initialValue: distance == null ? '' : formatDecimal(distance),
-              decoration: InputDecoration(
-                labelText: l10n.workoutFormDistanceLabel,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
+          if (!showDistance)
+            AddDistanceButton(
+              label: l10n.cardioAddDistance,
+              compact: true,
+              onPressed: () => setState(() => entry.distanceExpanded = true),
+            )
+          else ...[
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                key: ValueKey('${entry.id}-distance'),
+                initialValue: distance == null ? '' : formatDecimal(distance),
+                decoration: InputDecoration(
+                  labelText: l10n.workoutFormDistanceLabel,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
                 ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                onChanged: (v) {
+                  // Clearing the value must not collapse the field mid-edit.
+                  entry.distanceExpanded = true;
+                  final parsed = double.tryParse(v.replaceAll(',', '.'));
+                  if (_isCompletedEdit) {
+                    entry.actualDistanceMeters = parsed;
+                  } else {
+                    entry.distanceMeters = parsed;
+                  }
+                },
               ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              onChanged: (v) {
-                final parsed = double.tryParse(v.replaceAll(',', '.'));
-                if (_isCompletedEdit) {
-                  entry.actualDistanceMeters = parsed;
-                } else {
-                  entry.distanceMeters = parsed;
-                }
-              },
             ),
-          ),
+          ],
         ],
         // Rest is a plan value; a completed session already has a recorded
         // actual rest and must not invite rewriting it here.
@@ -808,14 +830,16 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
       final setGroups = <List<ExerciseSet>>[];
       var sortOrder = 0;
 
-      // Every added set must be complete: reps/weight (or duration) AND rest.
+      // Every added set needs its primary measure: reps/weight, or duration
+      // for cardio. Rest is optional; it can be taken on the fly with the
+      // manual rest timer.
       for (final entry in _selected.entries) {
         final ex = exerciseMap[entry.key];
         for (final plan in entry.value.sets) {
           final baseOk = ex?.isWeightlifting == true
               ? (plan.reps ?? 0) > 0 && (plan.weightKg ?? 0) > 0
               : (plan.durationMinutes ?? 0) > 0;
-          if (!baseOk || (plan.restSeconds ?? 0) <= 0) {
+          if (!baseOk) {
             if (mounted) {
               showTopBanner(context, message: l10n.workoutFormSetIncomplete);
             }

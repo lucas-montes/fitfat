@@ -27,6 +27,7 @@ import '../exercise_filter.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+import '../widgets/cardio_fields.dart';
 import '../widgets/set_actuals_dialog.dart';
 import '../../planner/providers/planner.dart';
 
@@ -300,6 +301,13 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
                             ),
                             style: theme.textTheme.bodySmall,
                           ),
+                        const SizedBox(width: FitFatTokens.spaceS),
+                        _RestToggleButton(
+                          rest: rest,
+                          lastCompletedSetId: _lastCompletedSetId(),
+                          l10n: l10n,
+                          ref: _ref,
+                        ),
                       ],
                     ),
                     _RestLine(exerciseName: _exerciseNameForSet(rest.setId)),
@@ -370,6 +378,20 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
       }
     }
     return null;
+  }
+
+  /// The most recently logged set in this workout: a manual rest belongs to
+  /// it, since rest is the gap after the set you just finished.
+  String? _lastCompletedSetId() {
+    ExerciseSet? latest;
+    for (final block in _detail.exercises) {
+      for (final set in block.sets) {
+        final at = set.completedAt;
+        if (!set.isCompleted || at == null) continue;
+        if (latest == null || at.isAfter(latest.completedAt!)) latest = set;
+      }
+    }
+    return latest?.id;
   }
 
   Widget _buildPagerBar(ThemeData theme) {
@@ -618,6 +640,51 @@ final class _ElapsedTextState extends State<_ElapsedText> {
   }
 }
 
+/// Manual rest control in the info strip. Rest is decided on the fly, so a
+/// planned value is optional: tapping starts an open count-up rest attached to
+/// the last logged set, tapping again stops it and records the time taken.
+/// A rest that auto-started from a planned value can be stopped here too.
+final class _RestToggleButton extends StatelessWidget {
+  final RestTimerState rest;
+  final String? lastCompletedSetId;
+  final AppLocalizations l10n;
+  final WidgetRef ref;
+
+  const _RestToggleButton({
+    required this.rest,
+    required this.lastCompletedSetId,
+    required this.l10n,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = ref.read(restTimerProvider.notifier);
+    if (rest.isResting) {
+      return FilledButton.tonalIcon(
+        key: const ValueKey('rest-toggle-stop'),
+        onPressed: () async {
+          await notifier.cancelRest();
+          final workoutId = ref.read(activeWorkoutProvider)?.id;
+          if (workoutId != null) {
+            ref.invalidate(workoutDetailProvider(workoutId));
+          }
+        },
+        icon: const Icon(Icons.stop, size: 18),
+        label: Text(l10n.activeWorkoutStopRest),
+      );
+    }
+    final setId = lastCompletedSetId;
+    return OutlinedButton.icon(
+      key: const ValueKey('rest-toggle-start'),
+      // Nothing logged yet means nothing to rest after.
+      onPressed: setId == null ? null : () => notifier.startRest(setId: setId),
+      icon: const Icon(Icons.timer_outlined, size: 18),
+      label: Text(l10n.activeWorkoutStartRest),
+    );
+  }
+}
+
 /// Rest countdown line inside the top info strip. Hidden when no rest is
 /// running; otherwise shows a count-up (own scoped 1 s ticker so only this
 /// leaf rebuilds) with an overdue highlight, plus the exercise the rest
@@ -752,11 +819,23 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
         );
   }
 
+  // Whether this exercise has tracked a distance before; decides if the
+  // cardio editors open with distance shown. build() watches the provider so
+  // the answer is loaded by the time an editor opens.
+  bool get _hasDistanceHistory =>
+      ref
+          .read(exerciseDistanceHistoryProvider)
+          .value
+          ?.contains(block.exercise.exerciseId) ??
+      false;
+
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
     final theme = Theme.of(context);
     final unit = ref.watch(settingsProvider).weightUnit;
+    ref.watch(exerciseDistanceHistoryProvider);
+    final hasDistanceHistory = _hasDistanceHistory;
     final exercise = ref
         .watch(exerciseByIdProvider(block.exercise.exerciseId))
         .value;
@@ -901,6 +980,7 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
                               unit: unit,
                               isWeightlifting: isWeightlifting,
                               isCardio: isCardio,
+                              hasDistanceHistory: hasDistanceHistory,
                             ),
                         ],
                       ),
@@ -954,6 +1034,7 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
         l10n: l10n,
         isWeightlifting: _isWeightlifting,
         isCardio: _isCardio,
+        hasDistanceHistory: _hasDistanceHistory,
       ),
     );
     if (result == null || result.deleted || !context.mounted) return;
@@ -965,6 +1046,7 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
           weightKg: result.weightKg,
           restSeconds: result.restSeconds,
           durationMinutes: result.durationMinutes,
+          distanceMeters: result.distanceMeters,
         );
     ref.invalidate(workoutDetailProvider(workout.id));
   }
@@ -1076,6 +1158,7 @@ final class _SetRow extends StatelessWidget {
   final WidgetRef ref;
   final WeightUnit unit;
   final bool isWeightlifting;
+  final bool hasDistanceHistory;
   final bool isCardio;
 
   const _SetRow({
@@ -1086,6 +1169,7 @@ final class _SetRow extends StatelessWidget {
     required this.unit,
     required this.isWeightlifting,
     required this.isCardio,
+    required this.hasDistanceHistory,
   });
 
   @override
@@ -1166,6 +1250,7 @@ final class _SetRow extends StatelessWidget {
         l10n: l10n,
         isWeightlifting: isWeightlifting,
         isCardio: isCardio,
+        hasDistanceHistory: hasDistanceHistory,
       ),
     );
     if (result == null || !context.mounted) return;
@@ -1203,6 +1288,7 @@ final class _SetRow extends StatelessWidget {
           weightKg: result.weightKg,
           restSeconds: result.restSeconds,
           durationMinutes: result.durationMinutes,
+          distanceMeters: result.distanceMeters,
         );
     ref.invalidate(workoutDetailProvider(workout.id));
   }
@@ -1217,6 +1303,13 @@ final class _SetRow extends StatelessWidget {
         : set.durationMinutes != null
         ? l10n.workoutDetailPlannedSetDuration(set.durationMinutes.toString())
         : l10n.workoutDetailPlannedSetEmpty;
+    final plannedDistance = set.distanceMeters;
+    if (set.reps == null && plannedDistance != null) {
+      final distance = l10n.workoutDetailActualSetDistance(
+        formatDecimal(plannedDistance),
+      );
+      planned = set.durationMinutes != null ? '$planned · $distance' : distance;
+    }
     final restSeconds = set.restSeconds;
     if (restSeconds != null) {
       planned = l10n.workoutDetailPlannedSetRest(
@@ -1274,6 +1367,7 @@ final class _SetRow extends StatelessWidget {
       isWeightlifting: isWeightlifting,
       isCardio: isCardio,
       unit: unit,
+      hasDistanceHistory: hasDistanceHistory,
     );
     if (result == null) return;
 
@@ -1287,6 +1381,9 @@ final class _SetRow extends StatelessWidget {
           actualDistanceMeters: result.actualDistanceMeters,
         );
     unawaited(Haptics.lightImpact());
+    if (result.actualDistanceMeters != null && !hasDistanceHistory) {
+      ref.invalidate(exerciseDistanceHistoryProvider);
+    }
     // Push the notification text so a set-save is reflected immediately even if
     // the background tick stalls (notification-timers T02).
     unawaited(refreshActiveWorkoutNotification());
@@ -1304,10 +1401,21 @@ final class _SetRow extends StatelessWidget {
           (b) => b.sets.any((s) => s.id != set.id && !s.isCompleted),
         );
     final restSeconds = set.restSeconds;
+    final restTimer = ref.read(restTimerProvider.notifier);
     if (savedActuals && hasOtherIncomplete && restSeconds != null) {
-      await ref
-          .read(restTimerProvider.notifier)
-          .startRest(Duration(seconds: restSeconds), setId: set.id);
+      // startRest finalizes any running rest before replacing it.
+      await restTimer.startRest(
+        planned: Duration(seconds: restSeconds),
+        setId: set.id,
+      );
+    } else if (savedActuals) {
+      // Logging the next set ends the rest that preceded it (often a manual
+      // one with no target), so the time taken is recorded. Re-editing the
+      // set being rested after leaves its rest running.
+      final running = ref.read(restTimerProvider);
+      if (running.isResting && running.setId != set.id) {
+        await restTimer.cancelRest();
+      }
     }
     ref.invalidate(workoutDetailProvider(workout.id));
   }
@@ -1319,6 +1427,7 @@ final class _PlannedSetResult {
   final int? reps;
   final double? weightKg;
   final int? durationMinutes;
+  final double? distanceMeters;
   final int? restSeconds;
   final bool deleted;
 
@@ -1326,6 +1435,7 @@ final class _PlannedSetResult {
     this.reps,
     this.weightKg,
     this.durationMinutes,
+    this.distanceMeters,
     this.restSeconds,
     this.deleted = false,
   });
@@ -1340,6 +1450,7 @@ final class _EditPlannedSetDialog extends StatefulWidget {
   final AppLocalizations l10n;
   final bool isWeightlifting;
   final bool isCardio;
+  final bool hasDistanceHistory;
 
   const _EditPlannedSetDialog({
     required this.set,
@@ -1347,6 +1458,7 @@ final class _EditPlannedSetDialog extends StatefulWidget {
     required this.l10n,
     required this.isWeightlifting,
     required this.isCardio,
+    required this.hasDistanceHistory,
   });
 
   @override
@@ -1357,6 +1469,7 @@ final class _EditPlannedSetDialogState extends State<_EditPlannedSetDialog> {
   late final TextEditingController _repsCtrl;
   late final TextEditingController _weightCtrl;
   late final TextEditingController _durationCtrl;
+  late final TextEditingController _distanceCtrl;
   late final TextEditingController _restCtrl;
 
   @override
@@ -1372,6 +1485,9 @@ final class _EditPlannedSetDialogState extends State<_EditPlannedSetDialog> {
     _durationCtrl = TextEditingController(
       text: s?.durationMinutes?.toString() ?? '',
     );
+    _distanceCtrl = TextEditingController(
+      text: s?.distanceMeters == null ? '' : formatDecimal(s!.distanceMeters!),
+    );
     _restCtrl = TextEditingController(
       text: s?.restSeconds == null ? '' : (s!.restSeconds! / 60).toString(),
     );
@@ -1382,6 +1498,7 @@ final class _EditPlannedSetDialogState extends State<_EditPlannedSetDialog> {
     _repsCtrl.dispose();
     _weightCtrl.dispose();
     _durationCtrl.dispose();
+    _distanceCtrl.dispose();
     _restCtrl.dispose();
     super.dispose();
   }
@@ -1424,12 +1541,13 @@ final class _EditPlannedSetDialogState extends State<_EditPlannedSetDialog> {
               const SizedBox(height: 8),
             ],
             if (isCardio) ...[
-              TextField(
-                controller: _durationCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutFormDurationLabel,
-                ),
-                keyboardType: TextInputType.number,
+              CardioFields(
+                durationController: _durationCtrl,
+                distanceController: _distanceCtrl,
+                durationLabel: l10n.workoutFormDurationLabel,
+                distanceLabel: l10n.workoutFormDistanceLabel,
+                addDistanceLabel: l10n.cardioAddDistance,
+                initiallyExpanded: widget.hasDistanceHistory,
               ),
               const SizedBox(height: 8),
             ],
@@ -1469,9 +1587,15 @@ final class _EditPlannedSetDialogState extends State<_EditPlannedSetDialog> {
             ? null
             : weightToKg(weightValue, widget.unit),
         durationMinutes: int.tryParse(_durationCtrl.text.trim()),
+        distanceMeters: _parseDistance(_distanceCtrl.text),
         restSeconds: _parseRestMinutes(_restCtrl.text),
       ),
     );
+  }
+
+  double? _parseDistance(String v) {
+    final meters = double.tryParse(v.trim().replaceAll(',', '.'));
+    return meters == null || meters <= 0 ? null : meters;
   }
 
   /// Rest field is entered in minutes (decimals allowed), stored in seconds.

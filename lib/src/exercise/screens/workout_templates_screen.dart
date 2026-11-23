@@ -11,6 +11,7 @@ import '../providers/exercises.dart';
 import '../providers/workout_templates.dart';
 import '../providers/workouts.dart';
 import '../../ui/widgets/empty_state.dart';
+import '../widgets/cardio_fields.dart';
 import 'exercise_picker_sheet.dart';
 import 'workout_detail.dart';
 
@@ -44,7 +45,8 @@ final class WorkoutTemplatesScreen extends ConsumerWidget {
                 ],
               ),
       ),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
         tooltip: l10n.templatesNew,
         onPressed: () => _openEditor(context),
         child: const Icon(Icons.add),
@@ -212,6 +214,9 @@ class _SetDraft {
   final restSeconds = TextEditingController();
   final durationMinutes = TextEditingController();
   final distanceMeters = TextEditingController();
+
+  /// True once "+ distance" was tapped (or a distance was loaded).
+  bool distanceExpanded = false;
 
   void dispose() {
     reps.dispose();
@@ -577,7 +582,7 @@ class _WorkoutTemplateFormScreenState
   }
 }
 
-final class _BlockCard extends StatelessWidget {
+final class _BlockCard extends ConsumerWidget {
   final int index;
   final _BlockDraft block;
   final VoidCallback onChanged;
@@ -592,9 +597,21 @@ final class _BlockCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final exercise = ref
+        .watch(exerciseListProvider)
+        .value
+        ?.where((e) => e.id == block.exerciseId)
+        .firstOrNull;
+    final isCardio = exercise?.isCardio ?? false;
+    final distanceHistory =
+        ref
+            .watch(exerciseDistanceHistoryProvider)
+            .value
+            ?.contains(block.exerciseId) ??
+        false;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -640,31 +657,76 @@ final class _BlockCard extends StatelessWidget {
                       width: 28,
                       child: Text('${j + 1}', textAlign: TextAlign.center),
                     ),
-                    Expanded(
-                      child: TextFormField(
-                        controller: set.reps,
-                        keyboardType: const TextInputType.numberWithOptions(),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          labelText: l10n.workoutFormRepsLabel,
+                    if (isCardio) ...[
+                      Expanded(
+                        child: TextFormField(
+                          controller: set.durationMinutes,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            labelText: l10n.workoutFormDurationLabel,
+                          ),
+                          onChanged: (_) => onChanged(),
                         ),
-                        onChanged: (_) => onChanged(),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: set.weightKg,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
+                      // Duration-first: distance only when asked for, or
+                      // already used by this set or exercise.
+                      if (set.distanceExpanded ||
+                          distanceHistory ||
+                          set.distanceMeters.text.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            controller: set.distanceMeters,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              labelText: l10n.workoutFormDistanceLabel,
+                            ),
+                            onChanged: (_) {
+                              set.distanceExpanded = true;
+                              onChanged();
+                            },
+                          ),
                         ),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          labelText: l10n.workoutFormWeightLabel,
+                      ] else
+                        AddDistanceButton(
+                          label: l10n.cardioAddDistance,
+                          compact: true,
+                          onPressed: () {
+                            set.distanceExpanded = true;
+                            onChanged();
+                          },
                         ),
-                        onChanged: (_) => onChanged(),
+                    ] else ...[
+                      Expanded(
+                        child: TextFormField(
+                          controller: set.reps,
+                          keyboardType: const TextInputType.numberWithOptions(),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            labelText: l10n.workoutFormRepsLabel,
+                          ),
+                          onChanged: (_) => onChanged(),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          controller: set.weightKg,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            labelText: l10n.workoutFormWeightLabel,
+                          ),
+                          onChanged: (_) => onChanged(),
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextFormField(

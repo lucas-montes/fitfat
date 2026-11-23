@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise_set.dart';
 import '../../models/units.dart';
+import '../../ui/format.dart';
 import '../../ui/units.dart';
+import 'cardio_fields.dart';
 
 /// What the user entered for one set's actuals.
 ///
@@ -47,6 +49,10 @@ final class SetActualsDialog extends StatefulWidget {
   final bool isCardio;
   final WeightUnit unit;
 
+  /// The exercise has tracked a distance before, so the distance field opens
+  /// shown instead of behind "+ distance".
+  final bool hasDistanceHistory;
+
   const SetActualsDialog({
     super.key,
     required this.set,
@@ -54,6 +60,7 @@ final class SetActualsDialog extends StatefulWidget {
     required this.isWeightlifting,
     required this.isCardio,
     required this.unit,
+    this.hasDistanceHistory = false,
   });
 
   @override
@@ -78,10 +85,11 @@ final class _SetActualsDialogState extends State<SetActualsDialog> {
       text: weight == null ? '' : formatWeightValue(weight, widget.unit),
     );
     _durationCtrl = TextEditingController(
-      text: s.actualDurationMinutes?.toString() ?? '',
+      text: (s.actualDurationMinutes ?? s.durationMinutes)?.toString() ?? '',
     );
+    final distance = s.actualDistanceMeters ?? s.distanceMeters;
     _distanceCtrl = TextEditingController(
-      text: s.actualDistanceMeters?.toStringAsFixed(0) ?? '',
+      text: distance == null ? '' : formatDecimal(distance),
     );
   }
 
@@ -127,22 +135,15 @@ final class _SetActualsDialogState extends State<SetActualsDialog> {
                 ),
               ),
             ],
-            if (isCardio) ...[
-              TextField(
-                controller: _durationCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualDurationLabel,
-                ),
-                keyboardType: TextInputType.number,
+            if (isCardio)
+              CardioFields(
+                durationController: _durationCtrl,
+                distanceController: _distanceCtrl,
+                durationLabel: l10n.workoutDetailActualDurationLabel,
+                distanceLabel: l10n.workoutDetailActualDistanceLabel,
+                addDistanceLabel: l10n.cardioAddDistance,
+                initiallyExpanded: widget.hasDistanceHistory,
               ),
-              TextField(
-                controller: _distanceCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.workoutDetailActualDistanceLabel,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-            ],
           ],
         ),
       ),
@@ -184,6 +185,7 @@ Future<SetActuals?> showSetActualsDialog(
   required bool isWeightlifting,
   required bool isCardio,
   required WeightUnit unit,
+  bool hasDistanceHistory = false,
 }) {
   return showDialog<SetActuals>(
     context: context,
@@ -193,6 +195,7 @@ Future<SetActuals?> showSetActualsDialog(
       isWeightlifting: isWeightlifting,
       isCardio: isCardio,
       unit: unit,
+      hasDistanceHistory: hasDistanceHistory,
     ),
   );
 }

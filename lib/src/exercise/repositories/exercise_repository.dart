@@ -48,6 +48,7 @@ final class ExerciseRepository {
             similarTo: Value(exercise.similarTo),
             tags: Value(_encode(exercise.tags)),
             isCanonical: Value(exercise.isCanonical),
+            met: Value(exercise.met),
             createdAt: exercise.createdAt.millisecondsSinceEpoch,
           ),
         );
@@ -60,6 +61,7 @@ final class ExerciseRepository {
       db.ExercisesCompanion(
         name: Value(exercise.name),
         exerciseType: Value(exercise.exerciseType),
+        met: Value(exercise.met),
       ),
     );
   }
@@ -87,6 +89,7 @@ final class ExerciseRepository {
         similarTo: Value(exercise.similarTo),
         tags: Value(_encode(exercise.tags)),
         isCanonical: Value(exercise.isCanonical),
+        met: Value(exercise.met),
       ),
     );
   }
@@ -170,6 +173,7 @@ final class ExerciseRepository {
     similarTo: row.similarTo,
     tags: _decode(row.tags),
     isCanonical: row.isCanonical,
+    met: row.met,
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
   );
 

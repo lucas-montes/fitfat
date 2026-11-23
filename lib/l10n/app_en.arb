@@ -251,6 +251,14 @@
   "exerciseFormNameHint": "e.g. Bench Press",
   "exerciseFormNameRequired": "Name is required",
   "exerciseFormTypeLabel": "Type",
+  "exerciseFormMetLabel": "Energy cost (MET, optional)",
+  "exerciseFormMetHelper": "Used to estimate calories. Walking is about 3.5, running about 8. Tap a preset or leave empty.",
+  "exerciseFormMetInvalid": "Enter a number from 1 to 25",
+  "metPresetSkating": "Skating",
+  "metPresetCycling": "Cycling",
+  "metPresetSwimming": "Swimming",
+  "metPresetHiking": "Hiking",
+  "metPresetFootball": "Football",
   "exerciseFormSave": "Save",
   "exerciseFormSaving": "Saving…",
   "workoutListAppBar": "Workouts",
@@ -304,7 +312,10 @@
   "workoutFormSetDoneAt": "Done at",
   "workoutFormSetDoneAtTooltip": "When this set was finished — rest is measured from here",
   "workoutFormSetTimeEmpty": "Set time",
-  "workoutFormSetIncomplete": "Complete every added set with its values and rest time (or remove the empty set)",
+  "workoutFormSetIncomplete": "Complete every added set with its values (or remove the empty set)",
+  "cardioAddDistance": "Add distance",
+  "activeWorkoutStartRest": "Rest",
+  "activeWorkoutStopRest": "Stop rest",
   "workoutFormRemoveExercise": "Remove exercise",
   "workoutFormCreateExercise": "Create new exercise “{query}”",
   "workoutDetailAppBar": "Workout",
@@ -1096,6 +1107,19 @@
   },
   "workoutSummaryDone": "Done",
   "workoutSummaryDurationLabel": "Duration",
+  "workoutSummaryEnergyLabel": "Estimated energy",
+  "workoutSummaryEnergyValue": "~{kcal} kcal",
+  "@workoutSummaryEnergyValue": {
+    "placeholders": {
+      "kcal": { "type": "int" }
+    }
+  },
+  "workoutSummaryEnergyNotCounted": "Not counted: {names}",
+  "@workoutSummaryEnergyNotCounted": {
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
   "workoutSummaryAvgRest": "Average rest",
   "workoutSummaryVolume": "Volume",
   "workoutSummaryMaxWeight": "Max weight",

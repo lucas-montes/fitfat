@@ -36,6 +36,10 @@ final class Exercise {
   final String? similarTo; // ID of canonical exercise this is a variant of
   final List<String>? tags; // User-defined tags
   final bool isCanonical; // True if this is the canonical exercise
+
+  /// Energy cost in METs (kcal ≈ MET × body weight kg × hours), from the
+  /// server catalogue. Null when unknown (user-created, not yet rated).
+  final double? met;
   final DateTime createdAt;
 
   const Exercise({
@@ -55,6 +59,7 @@ final class Exercise {
     this.similarTo,
     this.tags,
     this.isCanonical = true,
+    this.met,
     required this.createdAt,
   });
 
@@ -75,6 +80,7 @@ final class Exercise {
     Object? similarTo = _unset,
     Object? tags = _unset,
     bool? isCanonical,
+    Object? met = _unset,
     DateTime? createdAt,
   }) => Exercise(
     id: id ?? this.id,
@@ -109,6 +115,7 @@ final class Exercise {
         : similarTo as String?,
     tags: identical(tags, _unset) ? this.tags : tags as List<String>?,
     isCanonical: isCanonical ?? this.isCanonical,
+    met: identical(met, _unset) ? this.met : met as double?,
     createdAt: createdAt ?? this.createdAt,
   );
 

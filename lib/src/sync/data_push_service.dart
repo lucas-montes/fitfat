@@ -169,6 +169,8 @@ final class DataPushService {
   /// Runs as a pre-flight before workouts/templates and as a standalone action.
   /// The server only inserts missing ids and revives tombstoned ones; it never
   /// overwrites an existing row, so pushing an already-known exercise is safe.
+  /// The one exception is `met` on a user-created exercise, which takes the
+  /// pushed value so a re-rated exercise reaches the server.
   Future<PushResult> pushExercises(
     WidgetRef ref,
     String baseUrl,

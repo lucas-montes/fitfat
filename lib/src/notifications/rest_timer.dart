@@ -65,7 +65,11 @@ final class RestTimerNotifier extends Notifier<RestTimerState> {
     );
   }
 
-  Future<void> startRest(Duration duration, {String? setId}) async {
+  /// Starts a count-up rest. [planned] is the optional target: with one, the
+  /// strip highlights once it is reached and the rest alarm fires; without
+  /// one (a manual rest) the timer just counts. Either way the elapsed time
+  /// is recorded on [setId] when the rest ends.
+  Future<void> startRest({Duration? planned, String? setId}) async {
     // Finalize any running rest first so its actual elapsed time is recorded
     // and its alarm is cancelled before the timer is replaced. Guarded: a
     // recording failure must never abort the new rest (which would leave no
@@ -78,33 +82,38 @@ final class RestTimerNotifier extends Notifier<RestTimerState> {
     final startedAt = DateTime.now();
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(restStartedAtKey, startedAt.millisecondsSinceEpoch);
+    // A target only means something for a rest attached to a set.
+    final plannedSeconds = setId != null ? planned?.inSeconds : null;
     if (setId != null) {
       await prefs.setString(restSetIdKey, setId);
-      await prefs.setInt(restPlannedSecondsKey, duration.inSeconds);
     } else {
       await prefs.remove(restSetIdKey);
+    }
+    if (plannedSeconds != null) {
+      await prefs.setInt(restPlannedSecondsKey, plannedSeconds);
+    } else {
       await prefs.remove(restPlannedSecondsKey);
     }
     state = RestTimerState(
       startedAt: startedAt,
       setId: setId,
-      plannedSeconds: setId != null ? duration.inSeconds : null,
+      plannedSeconds: plannedSeconds,
     );
     // Allow the foreground handler to fire its "rest is over" popup again.
     await prefs.setBool(restNotifiedKey, false);
 
     // Schedule the one-shot rest alarm (sound/vibration from settings) to
-    // fire when the planned rest elapses.
-    if (setId != null) {
+    // fire when the planned rest elapses. A manual rest has no alarm.
+    if (setId != null && plannedSeconds != null) {
       final settings = ref.read(settingsProvider);
       await ref
           .read(restAlarmSchedulerProvider)
           .schedule(
             setId: setId,
-            fireAt: startedAt.add(duration),
+            fireAt: startedAt.add(Duration(seconds: plannedSeconds)),
             sound: settings.restAlarmSound,
             vibrate: settings.restAlarmVibration,
-            plannedSeconds: duration.inSeconds,
+            plannedSeconds: plannedSeconds,
           );
     }
 
@@ -133,12 +142,12 @@ final class RestTimerNotifier extends Notifier<RestTimerState> {
 
   /// Records the actual rest taken for the running rest (if any) before it is
   /// replaced or cleared. The count-up rest keeps running past the planned
-  /// duration, so the recorded value is the full elapsed time, uncapped.
+  /// duration (or has none, for a manual rest), so the recorded value is the
+  /// full elapsed time, uncapped.
   Future<void> _finalizeRunningRest() async {
     final rest = state;
     final setId = rest.setId;
-    final plannedSeconds = rest.plannedSeconds;
-    if (!rest.isResting || setId == null || plannedSeconds == null) return;
+    if (!rest.isResting || setId == null) return;
     final elapsedSeconds = rest.elapsedAt(DateTime.now()).inSeconds;
     await ref
         .read(workoutRepositoryProvider)

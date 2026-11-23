@@ -938,6 +938,40 @@ final class WorkoutRepository {
     );
   }
 
+  /// Exercise ids that have ever had a distance, planned or logged, in a
+  /// non-deleted workout. Cardio editors use it to show the distance field
+  /// up front for exercises that track one (running) and keep it behind
+  /// "+ distance" for those that don't (skating).
+  Future<Set<String>> exerciseIdsWithDistance() async {
+    final sets = _database.exerciseSets;
+    final query =
+        _database.selectOnly(sets, distinct: true).join([
+            innerJoin(
+              _database.workoutExercises,
+              _database.workoutExercises.id.equalsExp(sets.workoutExerciseId),
+              useColumns: false,
+            ),
+            innerJoin(
+              _database.workouts,
+              _database.workouts.id.equalsExp(
+                _database.workoutExercises.workoutId,
+              ),
+              useColumns: false,
+            ),
+          ])
+          ..addColumns([_database.workoutExercises.exerciseId])
+          ..where(
+            _database.workouts.deletedAt.isNull() &
+                (sets.distanceMeters.isBiggerThanValue(0) |
+                    sets.actualDistanceMeters.isBiggerThanValue(0)),
+          );
+    final rows = await query.get();
+    return {
+      for (final row in rows)
+        ?row.read(_database.workoutExercises.exerciseId),
+    };
+  }
+
   /// Completed-workout volume (kg) per day, oldest first, for workouts
   /// completed on or after [fromDay]. Used by experiments charts.
   Future<List<({DateTime day, double volumeKg})>> getDailyVolumes(

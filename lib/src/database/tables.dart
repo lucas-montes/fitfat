@@ -228,6 +228,9 @@ class Exercises extends Table {
   TextColumn? get similarTo => text().nullable()();
   TextColumn? get tags => text().nullable()(); // JSON string[]
   BoolColumn get isCanonical => boolean().withDefault(const Constant(true))();
+  // Energy cost (v41), synced from the server catalogue: kcal ≈ MET × kg ×
+  // hours. Null for user-created exercises nobody has rated.
+  RealColumn? get met => real().nullable()();
   IntColumn get createdAt => integer()();
 
   @override

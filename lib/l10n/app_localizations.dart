@@ -988,6 +988,54 @@ abstract class AppLocalizations {
   /// **'Type'**
   String get exerciseFormTypeLabel;
 
+  /// No description provided for @exerciseFormMetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Energy cost (MET, optional)'**
+  String get exerciseFormMetLabel;
+
+  /// No description provided for @exerciseFormMetHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Used to estimate calories. Walking is about 3.5, running about 8. Tap a preset or leave empty.'**
+  String get exerciseFormMetHelper;
+
+  /// No description provided for @exerciseFormMetInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number from 1 to 25'**
+  String get exerciseFormMetInvalid;
+
+  /// No description provided for @metPresetSkating.
+  ///
+  /// In en, this message translates to:
+  /// **'Skating'**
+  String get metPresetSkating;
+
+  /// No description provided for @metPresetCycling.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycling'**
+  String get metPresetCycling;
+
+  /// No description provided for @metPresetSwimming.
+  ///
+  /// In en, this message translates to:
+  /// **'Swimming'**
+  String get metPresetSwimming;
+
+  /// No description provided for @metPresetHiking.
+  ///
+  /// In en, this message translates to:
+  /// **'Hiking'**
+  String get metPresetHiking;
+
+  /// No description provided for @metPresetFootball.
+  ///
+  /// In en, this message translates to:
+  /// **'Football'**
+  String get metPresetFootball;
+
   /// No description provided for @exerciseFormSave.
   ///
   /// In en, this message translates to:
@@ -1279,8 +1327,26 @@ abstract class AppLocalizations {
   /// No description provided for @workoutFormSetIncomplete.
   ///
   /// In en, this message translates to:
-  /// **'Complete every added set with its values and rest time (or remove the empty set)'**
+  /// **'Complete every added set with its values (or remove the empty set)'**
   String get workoutFormSetIncomplete;
+
+  /// No description provided for @cardioAddDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Add distance'**
+  String get cardioAddDistance;
+
+  /// No description provided for @activeWorkoutStartRest.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest'**
+  String get activeWorkoutStartRest;
+
+  /// No description provided for @activeWorkoutStopRest.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop rest'**
+  String get activeWorkoutStopRest;
 
   /// No description provided for @workoutFormRemoveExercise.
   ///
@@ -3927,6 +3993,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Duration'**
   String get workoutSummaryDurationLabel;
+
+  /// No description provided for @workoutSummaryEnergyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated energy'**
+  String get workoutSummaryEnergyLabel;
+
+  /// No description provided for @workoutSummaryEnergyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'~{kcal} kcal'**
+  String workoutSummaryEnergyValue(int kcal);
+
+  /// No description provided for @workoutSummaryEnergyNotCounted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not counted: {names}'**
+  String workoutSummaryEnergyNotCounted(String names);
 
   /// No description provided for @workoutSummaryAvgRest.
   ///
