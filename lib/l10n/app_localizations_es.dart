@@ -701,12 +701,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get cardioAddDistance => 'Añadir distancia';
 
   @override
-  String get activeWorkoutStartRest => 'Descanso';
-
-  @override
-  String get activeWorkoutStopRest => 'Parar descanso';
-
-  @override
   String get workoutFormRemoveExercise => 'Quitar ejercicio';
 
   @override

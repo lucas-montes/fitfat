@@ -301,13 +301,6 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
                             ),
                             style: theme.textTheme.bodySmall,
                           ),
-                        const SizedBox(width: FitFatTokens.spaceS),
-                        _RestToggleButton(
-                          rest: rest,
-                          lastCompletedSetId: _lastCompletedSetId(),
-                          l10n: l10n,
-                          ref: _ref,
-                        ),
                       ],
                     ),
                     _RestLine(exerciseName: _exerciseNameForSet(rest.setId)),
@@ -378,20 +371,6 @@ final class _ActiveWorkoutContentState extends State<_ActiveWorkoutContent> {
       }
     }
     return null;
-  }
-
-  /// The most recently logged set in this workout: a manual rest belongs to
-  /// it, since rest is the gap after the set you just finished.
-  String? _lastCompletedSetId() {
-    ExerciseSet? latest;
-    for (final block in _detail.exercises) {
-      for (final set in block.sets) {
-        final at = set.completedAt;
-        if (!set.isCompleted || at == null) continue;
-        if (latest == null || at.isAfter(latest.completedAt!)) latest = set;
-      }
-    }
-    return latest?.id;
   }
 
   Widget _buildPagerBar(ThemeData theme) {
@@ -636,51 +615,6 @@ final class _ElapsedTextState extends State<_ElapsedText> {
         fontWeight: FontWeight.bold,
         fontFeatures: const [FontFeature.tabularFigures()],
       ),
-    );
-  }
-}
-
-/// Manual rest control in the info strip. Rest is decided on the fly, so a
-/// planned value is optional: tapping starts an open count-up rest attached to
-/// the last logged set, tapping again stops it and records the time taken.
-/// A rest that auto-started from a planned value can be stopped here too.
-final class _RestToggleButton extends StatelessWidget {
-  final RestTimerState rest;
-  final String? lastCompletedSetId;
-  final AppLocalizations l10n;
-  final WidgetRef ref;
-
-  const _RestToggleButton({
-    required this.rest,
-    required this.lastCompletedSetId,
-    required this.l10n,
-    required this.ref,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final notifier = ref.read(restTimerProvider.notifier);
-    if (rest.isResting) {
-      return FilledButton.tonalIcon(
-        key: const ValueKey('rest-toggle-stop'),
-        onPressed: () async {
-          await notifier.cancelRest();
-          final workoutId = ref.read(activeWorkoutProvider)?.id;
-          if (workoutId != null) {
-            ref.invalidate(workoutDetailProvider(workoutId));
-          }
-        },
-        icon: const Icon(Icons.stop, size: 18),
-        label: Text(l10n.activeWorkoutStopRest),
-      );
-    }
-    final setId = lastCompletedSetId;
-    return OutlinedButton.icon(
-      key: const ValueKey('rest-toggle-start'),
-      // Nothing logged yet means nothing to rest after.
-      onPressed: setId == null ? null : () => notifier.startRest(setId: setId),
-      icon: const Icon(Icons.timer_outlined, size: 18),
-      label: Text(l10n.activeWorkoutStartRest),
     );
   }
 }
@@ -1387,8 +1321,10 @@ final class _SetRow extends StatelessWidget {
     // Push the notification text so a set-save is reflected immediately even if
     // the background tick stalls (notification-timers T02).
     unawaited(refreshActiveWorkoutNotification());
-    // T05: auto-start the rest timer with this set's planned rest, unless it
-    // was the last incomplete set or has no planned rest.
+    // Rest runs between sets with no manual stop: logging a set ends the rest
+    // that preceded it (recording the time taken) and starts the next one —
+    // targeted (alarm + popup) when the set has a planned rest, an open
+    // count-up otherwise. No rest starts after the last incomplete set.
     final savedActuals =
         result.reps != null ||
         result.weightKg != null ||
@@ -1402,18 +1338,17 @@ final class _SetRow extends StatelessWidget {
         );
     final restSeconds = set.restSeconds;
     final restTimer = ref.read(restTimerProvider.notifier);
-    if (savedActuals && hasOtherIncomplete && restSeconds != null) {
-      // startRest finalizes any running rest before replacing it.
-      await restTimer.startRest(
-        planned: Duration(seconds: restSeconds),
-        setId: set.id,
-      );
-    } else if (savedActuals) {
-      // Logging the next set ends the rest that preceded it (often a manual
-      // one with no target), so the time taken is recorded. Re-editing the
-      // set being rested after leaves its rest running.
-      final running = ref.read(restTimerProvider);
-      if (running.isResting && running.setId != set.id) {
+    final running = ref.read(restTimerProvider);
+    // Re-editing the set being rested after leaves its rest untouched.
+    final isRestedSet = running.isResting && running.setId == set.id;
+    if (savedActuals && !isRestedSet) {
+      if (hasOtherIncomplete) {
+        // startRest finalizes any running rest before replacing it.
+        await restTimer.startRest(
+          planned: restSeconds == null ? null : Duration(seconds: restSeconds),
+          setId: set.id,
+        );
+      } else if (running.isResting) {
         await restTimer.cancelRest();
       }
     }
@@ -2545,7 +2480,8 @@ final class _HistorySheet extends ConsumerWidget {
 }
 
 /// Compact per-workout history row: name + date, then volume (or duration for
-/// cardio) + completed/total sets.
+/// cardio) + completed/total sets, then every set's reps × weight so the last
+/// sessions can be matched mid-workout.
 final class _ExerciseHistoryRow extends StatelessWidget {
   final ExerciseHistoryEntry entry;
   final AppLocalizations l10n;
@@ -2580,46 +2516,131 @@ final class _ExerciseHistoryRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.workout.name,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  DateFormats.formatShortDate(context, entry.workout.date),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: [
-              Text(primary, style: theme.textTheme.titleSmall),
-              Text(
-                '$completed/${sets.length}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.workout.name,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      DateFormats.formatShortDate(context, entry.workout.date),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(primary, style: theme.textTheme.titleSmall),
+                  Text(
+                    '$completed/${sets.length}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
+          if (sets.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            for (final set in sets)
+              _HistorySetLine(
+                set: set,
+                usesWeight: usesWeight,
+                l10n: l10n,
+                unit: unit,
+              ),
+          ],
+          const Divider(height: 12),
         ],
       ),
     );
+  }
+}
+
+/// One set of a past session, e.g. `1  10 × 60 kg` (or `30 min · 5 km` for
+/// cardio). Logged values win over the plan; a set that was never logged
+/// shows its plan, dimmed.
+final class _HistorySetLine extends StatelessWidget {
+  final ExerciseSet set;
+  final bool usesWeight;
+  final AppLocalizations l10n;
+  final WeightUnit unit;
+
+  const _HistorySetLine({
+    required this.set,
+    required this.usesWeight,
+    required this.l10n,
+    required this.unit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final style = theme.textTheme.bodySmall?.copyWith(
+      fontFeatures: const [FontFeature.tabularFigures()],
+      color: set.isCompleted
+          ? theme.colorScheme.onSurface
+          : muted.withValues(alpha: 0.6),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 22,
+            child: Text(
+              '${set.setNumber}',
+              style: style?.copyWith(color: muted),
+            ),
+          ),
+          Expanded(child: Text(_value(), style: style)),
+        ],
+      ),
+    );
+  }
+
+  String _value() {
+    final done = set.isCompleted;
+    if (usesWeight || set.reps != null || set.actualReps != null) {
+      final reps = done ? set.actualReps ?? set.reps : set.reps;
+      final weight = done ? set.actualWeightKg ?? set.weightKg : set.weightKg;
+      return l10n.workoutDetailActualSetReps(
+        reps == null ? '?' : '$reps',
+        weight == null ? '?' : formatWeightValue(weight, unit),
+        weightUnitLabel(unit),
+      );
+    }
+    final minutes = done
+        ? set.actualDurationMinutes ?? set.durationMinutes
+        : set.durationMinutes;
+    final meters = done
+        ? set.actualDistanceMeters ?? set.distanceMeters
+        : set.distanceMeters;
+    final parts = [
+      if (minutes != null) l10n.workoutDetailPlannedSetDuration('$minutes'),
+      if (meters != null && meters > 0)
+        l10n.workoutDetailActualSetDistance(formatDecimal(meters)),
+    ];
+    return parts.isEmpty ? '—' : parts.join(' · ');
   }
 }
 

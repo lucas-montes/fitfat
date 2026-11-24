@@ -1336,18 +1336,6 @@ abstract class AppLocalizations {
   /// **'Add distance'**
   String get cardioAddDistance;
 
-  /// No description provided for @activeWorkoutStartRest.
-  ///
-  /// In en, this message translates to:
-  /// **'Rest'**
-  String get activeWorkoutStartRest;
-
-  /// No description provided for @activeWorkoutStopRest.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop rest'**
-  String get activeWorkoutStopRest;
-
   /// No description provided for @workoutFormRemoveExercise.
   ///
   /// In en, this message translates to:

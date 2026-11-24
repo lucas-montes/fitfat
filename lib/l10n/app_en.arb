@@ -314,8 +314,6 @@
   "workoutFormSetTimeEmpty": "Set time",
   "workoutFormSetIncomplete": "Complete every added set with its values (or remove the empty set)",
   "cardioAddDistance": "Add distance",
-  "activeWorkoutStartRest": "Rest",
-  "activeWorkoutStopRest": "Stop rest",
   "workoutFormRemoveExercise": "Remove exercise",
   "workoutFormCreateExercise": "Create new exercise “{query}”",
   "workoutDetailAppBar": "Workout",

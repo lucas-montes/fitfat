@@ -327,8 +327,6 @@
   "workoutFormSetTimeEmpty": "Hora de la serie",
   "workoutFormSetIncomplete": "Completa los valores de cada serie añadida o elimínala",
   "cardioAddDistance": "Añadir distancia",
-  "activeWorkoutStartRest": "Descanso",
-  "activeWorkoutStopRest": "Parar descanso",
   "workoutFormRemoveExercise": "Quitar ejercicio",
   "workoutFormCreateExercise": "Crear ejercicio «{query}»",
   "workoutDetailAppBar": "Entrenamiento",

@@ -700,12 +700,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get cardioAddDistance => 'Ajouter la distance';
 
   @override
-  String get activeWorkoutStartRest => 'Repos';
-
-  @override
-  String get activeWorkoutStopRest => 'Arrêter le repos';
-
-  @override
   String get workoutFormRemoveExercise => 'Retirer l\'exercice';
 
   @override
