@@ -355,8 +355,9 @@ Future<void> importBackup(
 }) async {
   // `FileType.any` is required: WhatsApp delivers documents without a suffix
   // and file_picker's custom filter silently drops them.
-  final result = await FilePicker.platform.pickFiles(type: FileType.any);
-  final path = result?.files.single.path;
+  // An empty list means the user cancelled.
+  final files = await FilePicker.pickFiles(type: FileType.any);
+  final path = files.isEmpty ? null : files.first.path;
   if (path == null) return;
 
   final bytes = await File(path).readAsBytes();

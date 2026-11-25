@@ -208,7 +208,7 @@ final class ActiveWorkoutTaskHandler extends TaskHandler {
     // Idempotent init for the background isolate (no tap handler here — the
     // main isolate already routes rest-alarm taps to the active-workout view).
     await _plugin!.initialize(
-      const InitializationSettings(
+      settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         iOS: DarwinInitializationSettings(),
       ),
@@ -291,10 +291,10 @@ final class ActiveWorkoutTaskHandler extends TaskHandler {
       final body =
           prefs.getString(restAlarmBodyKey) ?? 'Your planned rest is complete.';
       await plugin.show(
-        restPopupNotificationId,
-        title,
-        body,
-        NotificationDetails(
+        id: restPopupNotificationId,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             restAlarmChannelId,
             restAlarmChannelName,
@@ -317,7 +317,7 @@ final class ActiveWorkoutTaskHandler extends TaskHandler {
       final setId = prefs.getString(restSetIdKey);
       if (setId != null) {
         try {
-          await plugin.cancel(restAlarmNotificationId(setId));
+          await plugin.cancel(id: restAlarmNotificationId(setId));
         } catch (_) {}
       }
     } catch (_) {
@@ -452,10 +452,10 @@ final class ActiveWorkoutNotifier {
     // gets stuck after completion.
     try {
       final plugin = FlutterLocalNotificationsPlugin();
-      await plugin.cancel(restPopupNotificationId);
+      await plugin.cancel(id: restPopupNotificationId);
       final setId = _prefs.getString(restSetIdKey);
       if (setId != null) {
-        await plugin.cancel(restAlarmNotificationId(setId));
+        await plugin.cancel(id: restAlarmNotificationId(setId));
       }
     } catch (_) {
       // Best-effort.
@@ -470,7 +470,7 @@ final class ActiveWorkoutNotifier {
         await FlutterForegroundTask.stopService();
       } catch (_) {}
     } else if (Platform.isIOS) {
-      await _iosPlugin.cancel(_iosNotificationId);
+      await _iosPlugin.cancel(id: _iosNotificationId);
     }
   }
 
@@ -561,7 +561,7 @@ final class ActiveWorkoutNotifier {
     required AppLocalizations l10n,
   }) async {
     await _iosPlugin.initialize(
-      const InitializationSettings(
+      settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         iOS: DarwinInitializationSettings(),
       ),
@@ -572,10 +572,12 @@ final class ActiveWorkoutNotifier {
         >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
     await _iosPlugin.show(
-      _iosNotificationId,
-      workoutName,
-      l10n.activeWorkoutElapsedLabel,
-      const NotificationDetails(iOS: DarwinNotificationDetails()),
+      id: _iosNotificationId,
+      title: workoutName,
+      body: l10n.activeWorkoutElapsedLabel,
+      notificationDetails: const NotificationDetails(
+        iOS: DarwinNotificationDetails(),
+      ),
     );
   }
 }

@@ -36,28 +36,38 @@ dependencies:
   cupertino_icons: ^1.0.8
   intl: ^0.20.2
   pedometer: ^4.0.1
-  permission_handler: ^11.3.1
+  # 13.x pulls permission_handler_android 14, which needs AGP 9 + compileSdk
+  # 37; this app is on AGP 8.11 and Flutter 3.38 does not support AGP 9 yet.
+  permission_handler: ^12.0.1
   flutter_riverpod: ^3.3.1
   riverpod_annotation: ^4.0.2
   fl_chart: ^1.2.0
   uuid: ^4.5.3
-  flutter_foreground_task: ^9.2.2
-  flutter_local_notifications: ^18.0.0
+  flutter_foreground_task: ^10.0.0
+  flutter_local_notifications: ^22.3.3
   shared_preferences: ^2.5.5
-  drift: ^2.20.0
-  sqlite3_flutter_libs: ^0.5.0
-  path_provider: ^2.0.0
+  drift: ^2.31.0
+  # Bundles the native libsqlite3 that sqlite3 2.x (drift <=2.31) loads on
+  # Android. Must stay on 0.5.x: 0.6.0+eol is an empty stub for sqlite3 3.x,
+  # which bundles via build hooks instead. Drop this package only together with
+  # moving to drift >=2.32 — that needs a newer Flutter (analyzer >=9).
+  sqlite3_flutter_libs: ^0.5.42
+  path_provider: ^2.1.6
   path: ^1.8.0
-  share_plus: ^12.0.1
-  file_picker: ^8.1.2
-  mobile_scanner: ^6.0.7
-  flutter_secure_storage: ^9.2.2
+  share_plus: ^13.3.1
+  file_picker: ^13.4.1
+  mobile_scanner: ^7.5.0
+  # Stay on 10.x for one release: v10 migrates data written by v9 (RSA-PKCS1 /
+  # AES-CBC) to the new ciphers, and v11 removed the old ones, so jumping 9 -> 11
+  # would make existing installs lose their stored sync API keys. Move to ^11
+  # once a v10 build has run on every device.
+  flutter_secure_storage: ^10.0.0
   logging: ^1.3.0
-  go_router: ^15.1.0
+  go_router: ^17.5.0
   health: ^13.3.1
   image_picker: ^1.1.2
   video_player: ^2.11.1
-  timezone: ^0.10.1
+  timezone: ^0.11.2
   flutter_timezone: ^5.1.0
   http: ^1.2.0
   # MediaType for multipart file parts; a transitive dep of `http` that we use
@@ -74,7 +84,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  drift_dev: ^2.20.0
+  drift_dev: ^2.31.0
   build_runner: ^2.4.0
 
 # For information on the generic Dart part of this file, see the

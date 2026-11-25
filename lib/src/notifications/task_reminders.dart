@@ -207,26 +207,22 @@ final class TaskReminderScheduler {
     // The due-time reminder is always the last (and only when pre-reminder
     // falls in the past) scheduled instant.
     await _plugin.zonedSchedule(
-      dueNotificationId(item.id),
-      item.title,
-      dueNowText,
-      tzDue,
-      details,
+      id: dueNotificationId(item.id),
+      title: item.title,
+      body: dueNowText,
+      scheduledDate: tzDue,
+      notificationDetails: details,
       androidScheduleMode: mode,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
       payload: plannerReminderPayload,
     );
     if (times.length == 2) {
       await _plugin.zonedSchedule(
-        preReminderNotificationId(item.id),
-        item.title,
-        dueSoonText,
-        tz.TZDateTime.from(times.first, tz.local),
-        details,
+        id: preReminderNotificationId(item.id),
+        title: item.title,
+        body: dueSoonText,
+        scheduledDate: tz.TZDateTime.from(times.first, tz.local),
+        notificationDetails: details,
         androidScheduleMode: mode,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
         payload: plannerReminderPayload,
       );
     }
@@ -235,16 +231,16 @@ final class TaskReminderScheduler {
 
   /// Cancels both reminders for [taskId] (done/delete/edit-away-time).
   Future<void> cancelForTask(String taskId) async {
-    await _plugin.cancel(dueNotificationId(taskId));
-    await _plugin.cancel(preReminderNotificationId(taskId));
+    await _plugin.cancel(id: dueNotificationId(taskId));
+    await _plugin.cancel(id: preReminderNotificationId(taskId));
     await _removeFromRegistry(taskId);
   }
 
   /// Cancels every currently-scheduled task reminder (app-wide toggle off).
   Future<void> cancelAll() async {
     for (final taskId in _registeredIds()) {
-      await _plugin.cancel(dueNotificationId(taskId));
-      await _plugin.cancel(preReminderNotificationId(taskId));
+      await _plugin.cancel(id: dueNotificationId(taskId));
+      await _plugin.cancel(id: preReminderNotificationId(taskId));
     }
     await _prefs.remove(scheduledTasksKey);
   }

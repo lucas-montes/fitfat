@@ -75,11 +75,11 @@ final class RestAlarmScheduler {
       final tzFire = tz.TZDateTime.from(fireAt, tz.local);
       if (!tzFire.isAfter(now)) return;
       await _plugin.zonedSchedule(
-        notificationId(setId),
-        title,
-        body,
-        tzFire,
-        NotificationDetails(
+        id: notificationId(setId),
+        title: title,
+        body: body,
+        scheduledDate: tzFire,
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             restAlarmChannelId,
             restAlarmChannelName,
@@ -94,8 +94,6 @@ final class RestAlarmScheduler {
           iOS: const DarwinNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
         payload: restAlarmPayload,
       );
     } catch (e) {
@@ -107,7 +105,7 @@ final class RestAlarmScheduler {
   /// completed). No-op when none is scheduled.
   Future<void> cancel(String setId) async {
     try {
-      await _plugin.cancel(notificationId(setId));
+      await _plugin.cancel(id: notificationId(setId));
     } catch (_) {}
   }
 

@@ -66,15 +66,13 @@ final class GoalReminderScheduler {
     );
 
     await _plugin.zonedSchedule(
-      notificationId(goal.id),
-      title,
-      body,
-      fireAt,
-      details,
+      id: notificationId(goal.id),
+      title: title,
+      body: body,
+      scheduledDate: fireAt,
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
       payload: goalReminderPayload,
     );
   }
@@ -82,7 +80,7 @@ final class GoalReminderScheduler {
   /// Cancels the daily reminder for [goalId] (done/aborted/delete).
   Future<void> cancelForGoal(String goalId) async {
     if (kIsWeb) return;
-    await _plugin.cancel(notificationId(goalId));
+    await _plugin.cancel(id: notificationId(goalId));
   }
 
   static int notificationId(String goalId) => _stableHash(goalId) & 0x3FFFFFFF;

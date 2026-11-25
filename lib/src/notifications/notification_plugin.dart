@@ -23,7 +23,7 @@ Future<void> initializeNotifications({
   required void Function() onTapActiveWorkout,
 }) async {
   await plugin.initialize(
-    const InitializationSettings(
+    settings: const InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(),
     ),
