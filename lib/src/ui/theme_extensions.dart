@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Hand-picked status colors for FitFat, exposed as a `ThemeExtension`.
 ///

@@ -29,17 +29,14 @@ void main() {
     });
 
     test('falls with age and rises with height and weight', () {
-      double bmr({
-        double weight = 80,
-        double height = 180,
-        int age = 30,
-      }) => mifflin.calculate(
-        gender: Gender.male,
-        weightKg: weight,
-        heightCm: height,
-        age: age,
-        bodyFatPercent: null,
-      );
+      double bmr({double weight = 80, double height = 180, int age = 30}) =>
+          mifflin.calculate(
+            gender: Gender.male,
+            weightKg: weight,
+            heightCm: height,
+            age: age,
+            bodyFatPercent: null,
+          );
 
       expect(bmr(weight: 90), greaterThan(bmr()));
       expect(bmr(height: 190), greaterThan(bmr()));

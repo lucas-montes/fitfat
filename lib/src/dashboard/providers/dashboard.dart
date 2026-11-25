@@ -10,7 +10,12 @@ import '../../models/workout.dart';
 import '../../planner/repositories/task_repository.dart';
 
 /// Today's macro totals in grams, read-only composition data for the hero card.
-typedef TodayMacros = ({double protein, double carbs, double fat, double fiber});
+typedef TodayMacros = ({
+  double protein,
+  double carbs,
+  double fat,
+  double fiber,
+});
 
 // ---------------------------------------------------------------------------
 // Dashboard refresh signal
@@ -136,10 +141,11 @@ typedef WeeklyWorkoutStats = ({
 /// except the seventh, and a rolling window silently attributes last
 /// weekend's training to this week — which reads as "3/7 days" on a week
 /// where nothing was done.
-DateTime startOfCalendarWeek(DateTime now) =>
-    DateTime(now.year, now.month, now.day).subtract(
-      Duration(days: now.weekday - DateTime.monday),
-    );
+DateTime startOfCalendarWeek(DateTime now) => DateTime(
+  now.year,
+  now.month,
+  now.day,
+).subtract(Duration(days: now.weekday - DateTime.monday));
 
 // Days trained renders as `x/7` (`dashboardDaysTrainedValue`). The denominator
 // is the whole week even on a Monday: the tile reads as progress toward a
@@ -155,7 +161,9 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
 
   // Bulk aggregate — no per-workout `workoutDetailProvider` resolution
   // (perf T03).
-  final stats = await ref.watch(_workoutRepositoryProvider).getVolumeAndMinutesBetween(
+  final stats = await ref
+      .watch(_workoutRepositoryProvider)
+      .getVolumeAndMinutesBetween(
         weekStart,
         weekStart.add(const Duration(days: 7)),
       );

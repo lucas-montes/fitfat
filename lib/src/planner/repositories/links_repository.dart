@@ -52,10 +52,7 @@ final class LinksRepository {
     );
     return [
       for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.taskGoals).label,
-        ),
+        (item: items[i], label: rows[i].readTable(_database.taskGoals).label),
     ];
   }
 
@@ -78,10 +75,7 @@ final class LinksRepository {
     );
     return [
       for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.taskGoals).label,
-        ),
+        (item: items[i], label: rows[i].readTable(_database.taskGoals).label),
     ];
   }
 
@@ -129,10 +123,7 @@ final class LinksRepository {
     );
     return [
       for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.taskNotes).label,
-        ),
+        (item: items[i], label: rows[i].readTable(_database.taskNotes).label),
     ];
   }
 
@@ -155,10 +146,7 @@ final class LinksRepository {
     );
     return [
       for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.taskNotes).label,
-        ),
+        (item: items[i], label: rows[i].readTable(_database.taskNotes).label),
     ];
   }
 
@@ -206,10 +194,7 @@ final class LinksRepository {
     );
     return [
       for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.goalNotes).label,
-        ),
+        (item: items[i], label: rows[i].readTable(_database.goalNotes).label),
     ];
   }
 
@@ -232,10 +217,7 @@ final class LinksRepository {
     );
     return [
       for (var i = 0; i < items.length; i++)
-        (
-          item: items[i],
-          label: rows[i].readTable(_database.goalNotes).label,
-        ),
+        (item: items[i], label: rows[i].readTable(_database.goalNotes).label),
     ];
   }
 
@@ -505,7 +487,7 @@ final class LinksRepository {
         : null,
     notes: row.notes,
     routineId: row.routineId,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
   );
 
   /// Populates [Task.tags] for a batch of tasks in a single lookup.
@@ -514,9 +496,7 @@ final class LinksRepository {
     final map = await TagRepository(
       _database,
     ).tagNamesForTasks(tasks.map((t) => t.id).toList());
-    return [
-      for (final t in tasks) t.copyWith(tags: map[t.id] ?? const []),
-    ];
+    return [for (final t in tasks) t.copyWith(tags: map[t.id] ?? const [])];
   }
 
   /// Populates [Goal.tags] for a batch of goals in one lookup.
@@ -525,9 +505,7 @@ final class LinksRepository {
     final map = await TagRepository(
       _database,
     ).tagNamesForGoals(items.map((g) => g.id).toList());
-    return [
-      for (final g in items) g.copyWith(tags: map[g.id] ?? const []),
-    ];
+    return [for (final g in items) g.copyWith(tags: map[g.id] ?? const [])];
   }
 
   /// Populates [Note.tags] for a batch of notes in one lookup.
@@ -536,8 +514,6 @@ final class LinksRepository {
     final map = await TagRepository(
       _database,
     ).tagNamesForNotes(items.map((n) => n.id).toList());
-    return [
-      for (final n in items) n.copyWith(tags: map[n.id] ?? const []),
-    ];
+    return [for (final n in items) n.copyWith(tags: map[n.id] ?? const [])];
   }
 }

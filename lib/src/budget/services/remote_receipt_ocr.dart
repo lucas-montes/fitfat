@@ -27,6 +27,8 @@ final class MockRemoteReceiptOcrService implements RemoteReceiptOcrService {
   Future<ReceiptUploadResult> upload(String receiptId, String localPath) async {
     await Future<void>.delayed(const Duration(milliseconds: 600));
     final name = localPath.split('/').last;
-    return ReceiptUploadResult(receiptId.isEmpty ? 'remote://ocr/$name' : receiptId);
+    return ReceiptUploadResult(
+      receiptId.isEmpty ? 'remote://ocr/$name' : receiptId,
+    );
   }
 }

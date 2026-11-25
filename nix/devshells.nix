@@ -17,7 +17,7 @@ let
     NDK_HOME = android.ndkHome;
     GRADLE_OPTS = "-Dorg.gradle.project.android.aapt2FromMavenOverride=${android.androidHome}/build-tools/${android.buildToolsVersion}/aapt2";
 
-    JAVA_HOME = "${pkgs.jdk17}/lib/openjdk";
+    JAVA_HOME = "${pkgs.jdk21}/lib/openjdk";
 
     # Used by `flutter run -d chrome`.
     CHROME_EXECUTABLE = "${pkgs.chromium}/bin/chromium";
@@ -36,16 +36,16 @@ let
         vulkan-loader
         libdrm
         wayland
-        xorg.libX11
-        xorg.libxcb
-        xorg.libXrandr
-        xorg.libXi
-        xorg.libXcursor
-        xorg.libXdamage
-        xorg.libXcomposite
-        xorg.libXfixes
-        xorg.libXrender
-        xorg.libXtst
+        libx11
+        libxcb
+        libxrandr
+        libxi
+        libxcursor
+        libxdamage
+        libxcomposite
+        libxfixes
+        libxrender
+        libxtst
         fontconfig
         freetype
         stdenv.cc.cc.lib
@@ -70,7 +70,7 @@ let
         sqlite
 
         # JVM toolchain required by Gradle / Android builds
-        jdk17
+        jdk21
         gradle
 
         # Flutter SDK (mobile + Linux desktop + web)
@@ -83,7 +83,7 @@ let
         libepoxy
         libsysprof-capture
         mesa
-        xorg.libX11
+        libx11
 
         # Extra graphics libs the Android emulator needs at runtime
         # (its bundled binary is not wrapped against your system drivers).
@@ -93,15 +93,15 @@ let
         vulkan-tools
         libdrm
         wayland
-        xorg.libxcb
-        xorg.libXrandr
-        xorg.libXi
-        xorg.libXcursor
-        xorg.libXdamage
-        xorg.libXcomposite
-        xorg.libXfixes
-        xorg.libXrender
-        xorg.libXtst
+        libxcb
+        libxrandr
+        libxi
+        libxcursor
+        libxdamage
+        libxcomposite
+        libxfixes
+        libxrender
+        libxtst
         fontconfig
         freetype
 

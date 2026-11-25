@@ -7,8 +7,9 @@ import 'package:fitfat/src/models/body_weight_goal.dart';
 import 'package:fitfat/src/models/diet_phase.dart';
 import 'package:fitfat/src/settings/providers/settings.dart';
 import 'package:fitfat/src/settings/screens/settings_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'
+    hide GlobalMaterialLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';

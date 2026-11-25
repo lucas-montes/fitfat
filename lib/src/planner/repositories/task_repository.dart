@@ -48,11 +48,11 @@ final class TaskRepository {
                       fromStart.millisecondsSinceEpoch,
                     ),
               )
-            ..orderBy([
-              (t) => OrderingTerm(expression: t.date),
-              (t) => OrderingTerm(expression: t.startTimeMinutes),
-            ]))
-        .get();
+              ..orderBy([
+                (t) => OrderingTerm(expression: t.date),
+                (t) => OrderingTerm(expression: t.startTimeMinutes),
+              ]))
+            .get();
     return _attachTags(rows.map(_toDomain).toList());
   }
 
@@ -91,9 +91,10 @@ final class TaskRepository {
     // Upsert so re-inserting a task whose tombstoned row still exists (the
     // undo path of a cascading delete) revives it instead of tripping the
     // primary key; shared with [restore] so both stay consistent.
-    final companion = _companionFor(item, createdAt: item.createdAt).copyWith(
-      deletedAt: const Value(null),
-    );
+    final companion = _companionFor(
+      item,
+      createdAt: item.createdAt,
+    ).copyWith(deletedAt: const Value(null));
     await _database
         .into(_database.tasks)
         .insert(companion, onConflict: DoUpdate((_) => companion));
@@ -169,11 +170,8 @@ final class TaskRepository {
   /// junction rows so they cannot dangle or be re-pushed with stale links.
   Future<void> _tombstone(List<String> ids) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    await (_database.update(
-      _database.tasks,
-    )..where((t) => t.id.isIn(ids))).write(
-      db.TasksCompanion(deletedAt: Value(now)),
-    );
+    await (_database.update(_database.tasks)..where((t) => t.id.isIn(ids)))
+        .write(db.TasksCompanion(deletedAt: Value(now)));
     await (_database.delete(
       _database.taskTags,
     )..where((t) => t.taskId.isIn(ids))).go();
@@ -231,11 +229,13 @@ final class TaskRepository {
   /// All distinct tags across every task, sorted. Powers the autocomplete
   /// suggestions in the add/edit dialog.
   Future<List<String>> distinctTags() async {
-    final result = await _database.customSelect(
-      'SELECT DISTINCT t.name AS name FROM tags t '
-      'INNER JOIN task_tags l ON l.tag_id = t.id '
-      'ORDER BY t.name COLLATE NOCASE',
-    ).get();
+    final result = await _database
+        .customSelect(
+          'SELECT DISTINCT t.name AS name FROM tags t '
+          'INNER JOIN task_tags l ON l.tag_id = t.id '
+          'ORDER BY t.name COLLATE NOCASE',
+        )
+        .get();
     return result.map((r) => r.read<String>('name')).toList();
   }
 
@@ -453,15 +453,15 @@ final class TaskRepository {
   Future<void> deleteFutureOccurrences(String seriesId, DateTime from) async {
     final ids =
         (await (_database.select(_database.tasks)..where(
-              (t) =>
-                  t.seriesId.equals(seriesId) &
-                  t.date.isBiggerThanValue(
-                    _startOfDay(from).millisecondsSinceEpoch,
-                  ),
-            ))
-            .get())
-        .map((row) => row.id)
-        .toList();
+                  (t) =>
+                      t.seriesId.equals(seriesId) &
+                      t.date.isBiggerThanValue(
+                        _startOfDay(from).millisecondsSinceEpoch,
+                      ),
+                ))
+                .get())
+            .map((row) => row.id)
+            .toList();
     if (ids.isEmpty) return;
     await _tombstone(ids);
   }
@@ -500,14 +500,15 @@ final class TaskRepository {
           ),
         );
     if (tags != null) {
-      final affected = await (_database.select(_database.tasks)..where(
-            (t) =>
-                t.deletedAt.isNull() &
-                t.seriesId.equals(seriesId) &
-                t.id.isNotValue(seriesId) &
-                t.date.isBiggerOrEqualValue(fromStart),
-          ))
-          .get();
+      final affected =
+          await (_database.select(_database.tasks)..where(
+                (t) =>
+                    t.deletedAt.isNull() &
+                    t.seriesId.equals(seriesId) &
+                    t.id.isNotValue(seriesId) &
+                    t.date.isBiggerOrEqualValue(fromStart),
+              ))
+              .get();
       for (final row in affected) {
         await _tags.setTaskTags(row.id, tags);
       }
@@ -526,14 +527,14 @@ final class TaskRepository {
     await _database.transaction(() async {
       final ids =
           (await (_database.select(_database.tasks)..where(
-                (t) =>
-                    t.seriesId.equals(seriesId) &
-                    t.id.isNotValue(seriesId) &
-                    t.date.isBiggerOrEqualValue(dayStart),
-              ))
-              .get())
-          .map((row) => row.id)
-          .toList();
+                    (t) =>
+                        t.seriesId.equals(seriesId) &
+                        t.id.isNotValue(seriesId) &
+                        t.date.isBiggerOrEqualValue(dayStart),
+                  ))
+                  .get())
+              .map((row) => row.id)
+              .toList();
       if (ids.isNotEmpty) await _tombstone(ids);
       final anchor = await getById(seriesId);
       if (anchor == null) return;
@@ -619,9 +620,11 @@ final class TaskRepository {
 
   /// The alive task linked to [workoutId] via its `workout_id` column, if any.
   Future<Task?> getByWorkoutId(String workoutId) async {
-    final rows = await (_database.select(
-      _database.tasks,
-    )..where((t) => t.workoutId.equals(workoutId) & t.deletedAt.isNull())).get();
+    final rows =
+        await (_database.select(_database.tasks)..where(
+              (t) => t.workoutId.equals(workoutId) & t.deletedAt.isNull(),
+            ))
+            .get();
     return rows.isEmpty ? null : _toDomain(rows.first);
   }
 
@@ -661,12 +664,8 @@ final class TaskRepository {
   /// Populates [Task.tags] for a batch of tasks in a single lookup.
   Future<List<Task>> _attachTags(List<Task> tasks) async {
     if (tasks.isEmpty) return tasks;
-    final map = await _tags.tagNamesForTasks(
-      tasks.map((t) => t.id).toList(),
-    );
-    return [
-      for (final t in tasks) t.copyWith(tags: map[t.id] ?? const []),
-    ];
+    final map = await _tags.tagNamesForTasks(tasks.map((t) => t.id).toList());
+    return [for (final t in tasks) t.copyWith(tags: map[t.id] ?? const [])];
   }
 }
 

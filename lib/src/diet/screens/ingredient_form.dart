@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -427,7 +427,7 @@ final class _IngredientFormScreenState
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _pictures.length + 1,
-            onReorder: _onReorderPictures,
+            onReorderItem: _onReorderPictures,
             itemBuilder: (context, i) {
               if (i == _pictures.length) {
                 return OutlinedButton.icon(
@@ -492,7 +492,6 @@ final class _IngredientFormScreenState
 
   void _onReorderPictures(int oldIndex, int newIndex) {
     setState(() {
-      if (newIndex > oldIndex) newIndex--;
       final moved = _pictures.removeAt(oldIndex);
       _pictures.insert(newIndex.clamp(0, _pictures.length), moved);
     });

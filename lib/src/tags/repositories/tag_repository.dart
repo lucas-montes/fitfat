@@ -17,7 +17,8 @@ final class DuplicateTagException implements Exception {
 
 /// Normalizes a priority name: trims the edges and collapses internal runs
 /// of whitespace so "Leg  day" and " leg day " all store as "Leg day".
-String normalizeTagName(String raw) => raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+String normalizeTagName(String raw) =>
+    raw.trim().replaceAll(RegExp(r'\s+'), ' ');
 
 final class TagRepository {
   final db.AppDatabase _database;
@@ -166,14 +167,14 @@ final class TagRepository {
     if (clash != null && clash.name != oldName) {
       throw DuplicateTagException(clean);
     }
-    await (_database.update(_database.tags)
-          ..where((t) => t.name.equals(oldName)))
-        .write(
-          db.TagsCompanion(
-            name: Value(clean),
-            updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
-          ),
-        );
+    await (_database.update(
+      _database.tags,
+    )..where((t) => t.name.equals(oldName))).write(
+      db.TagsCompanion(
+        name: Value(clean),
+        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
   }
 
   /// Deletes a priority and (via ON DELETE CASCADE) every link to it. Returns
@@ -263,7 +264,9 @@ final class TagRepository {
         _database.taskTags,
       )..where((t) => t.taskId.equals(taskId))).go();
       for (final tagId in tagIds) {
-        await _database.into(_database.taskTags).insert(
+        await _database
+            .into(_database.taskTags)
+            .insert(
               db.TaskTagsCompanion.insert(tagId: tagId, taskId: taskId),
               onConflict: DoNothing(),
             );
@@ -278,7 +281,9 @@ final class TagRepository {
         _database.goalTags,
       )..where((t) => t.goalId.equals(goalId))).go();
       for (final tagId in tagIds) {
-        await _database.into(_database.goalTags).insert(
+        await _database
+            .into(_database.goalTags)
+            .insert(
               db.GoalTagsCompanion.insert(tagId: tagId, goalId: goalId),
               onConflict: DoNothing(),
             );
@@ -293,7 +298,9 @@ final class TagRepository {
         _database.noteTags,
       )..where((t) => t.noteId.equals(noteId))).go();
       for (final tagId in tagIds) {
-        await _database.into(_database.noteTags).insert(
+        await _database
+            .into(_database.noteTags)
+            .insert(
               db.NoteTagsCompanion.insert(tagId: tagId, noteId: noteId),
               onConflict: DoNothing(),
             );
@@ -318,13 +325,15 @@ final class TagRepository {
     String idColumn,
     String entityId,
   ) async {
-    final result = await _database.customSelect(
-      'SELECT t.name AS name FROM tags t '
-      'INNER JOIN $linkTable l ON l.tag_id = t.id '
-      'WHERE l.$idColumn = ? '
-      'ORDER BY t.sort_order, t.name COLLATE NOCASE',
-      variables: [Variable<String>(entityId)],
-    ).get();
+    final result = await _database
+        .customSelect(
+          'SELECT t.name AS name FROM tags t '
+          'INNER JOIN $linkTable l ON l.tag_id = t.id '
+          'WHERE l.$idColumn = ? '
+          'ORDER BY t.sort_order, t.name COLLATE NOCASE',
+          variables: [Variable<String>(entityId)],
+        )
+        .get();
     return result.map((r) => r.read<String>('name')).toList();
   }
 
@@ -336,13 +345,15 @@ final class TagRepository {
     final map = <String, List<String>>{for (final id in ids) id: <String>[]};
     if (ids.isEmpty) return map;
     final placeholders = List.filled(ids.length, '?').join(',');
-    final result = await _database.customSelect(
-      'SELECT l.$idColumn AS eid, t.name AS name FROM tags t '
-      'INNER JOIN $linkTable l ON l.tag_id = t.id '
-      'WHERE l.$idColumn IN ($placeholders) '
-      'ORDER BY t.sort_order, t.name COLLATE NOCASE',
-      variables: [for (final id in ids) Variable<String>(id)],
-    ).get();
+    final result = await _database
+        .customSelect(
+          'SELECT l.$idColumn AS eid, t.name AS name FROM tags t '
+          'INNER JOIN $linkTable l ON l.tag_id = t.id '
+          'WHERE l.$idColumn IN ($placeholders) '
+          'ORDER BY t.sort_order, t.name COLLATE NOCASE',
+          variables: [for (final id in ids) Variable<String>(id)],
+        )
+        .get();
     for (final row in result) {
       final eid = row.read<String>('eid');
       (map[eid] ??= []).add(row.read<String>('name'));
@@ -351,11 +362,11 @@ final class TagRepository {
   }
 
   Tag _toDomain(db.Tag row) => Tag(
-        id: row.id,
-        name: row.name,
-        color: row.color,
-        sortOrder: row.sortOrder,
-        createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
-      );
+    id: row.id,
+    name: row.name,
+    color: row.color,
+    sortOrder: row.sortOrder,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
+  );
 }

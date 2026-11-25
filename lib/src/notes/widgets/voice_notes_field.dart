@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
 import 'package:uuid/uuid.dart';
@@ -67,7 +67,8 @@ final class _VoiceNotesFieldState extends ConsumerState<VoiceNotesField> {
     if (!granted) {
       if (mounted) {
         setState(
-          () => _error = AppLocalizations.of(context)!.notesVoicePermissionDenied,
+          () =>
+              _error = AppLocalizations.of(context)!.notesVoicePermissionDenied,
         );
       }
       return;
@@ -90,7 +91,9 @@ final class _VoiceNotesFieldState extends ConsumerState<VoiceNotesField> {
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_recordStart != null && mounted) {
         setState(
-          () => _elapsedMs = DateTime.now().difference(_recordStart!).inMilliseconds,
+          () => _elapsedMs = DateTime.now()
+              .difference(_recordStart!)
+              .inMilliseconds,
         );
       }
     });
@@ -149,7 +152,6 @@ final class _VoiceNotesFieldState extends ConsumerState<VoiceNotesField> {
 
   void _reorder(int oldIndex, int newIndex) {
     final list = [...widget.clips];
-    if (newIndex > oldIndex) newIndex -= 1;
     final item = list.removeAt(oldIndex);
     list.insert(newIndex, item);
     widget.onChanged(list);
@@ -207,15 +209,19 @@ final class _VoiceNotesFieldState extends ConsumerState<VoiceNotesField> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: widget.clips.length,
-            onReorder: _reorder,
+            onReorderItem: _reorder,
             itemBuilder: (context, i) {
               final clip = widget.clips[i];
               final playing = _playingId == clip.id;
               return ListTile(
                 key: ValueKey(clip.id),
                 leading: IconButton(
-                  tooltip: playing ? l10n.notesVoiceStopPlayback : l10n.notesVoicePlay,
-                  icon: Icon(playing ? Icons.stop_circle : Icons.play_circle_outline),
+                  tooltip: playing
+                      ? l10n.notesVoiceStopPlayback
+                      : l10n.notesVoicePlay,
+                  icon: Icon(
+                    playing ? Icons.stop_circle : Icons.play_circle_outline,
+                  ),
                   onPressed: () => _togglePlay(clip),
                 ),
                 title: Text(l10n.notesVoiceClipLabel(i + 1)),

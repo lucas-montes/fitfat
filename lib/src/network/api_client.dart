@@ -331,8 +331,7 @@ final class MockApiClient implements ApiClient {
     String path, {
     required Uint8List body,
     Map<String, String>? headers,
-  }) =>
-      _handle('POST', path, body);
+  }) => _handle('POST', path, body);
 
   @override
   Future<Object?> postMultipart(
@@ -340,24 +339,24 @@ final class MockApiClient implements ApiClient {
     required Map<String, String> fields,
     required Map<String, MultipartFilePart> files,
     Map<String, String>? headers,
-  }) =>
-      _handle('POST', path, {
-        'fields': fields,
-        // Surface the part metadata too, so tests can assert filenames and
-        // content types without inspecting a real socket.
-        'files': files.map(
-          (k, part) => MapEntry(k, {
-            'filename': part.filename,
-            'contentType': part.contentType,
-            'length': part.bytes.length,
-          }),
-        ),
-      });
+  }) => _handle('POST', path, {
+    'fields': fields,
+    // Surface the part metadata too, so tests can assert filenames and
+    // content types without inspecting a real socket.
+    'files': files.map(
+      (k, part) => MapEntry(k, {
+        'filename': part.filename,
+        'contentType': part.contentType,
+        'length': part.bytes.length,
+      }),
+    ),
+  });
 }
 
 /// Standard `Bearer` auth header for sync/export/import requests.
-Map<String, String> authHeaders(String apiKey) =>
-    {'Authorization': 'Bearer ${apiKey.trim()}'};
+Map<String, String> authHeaders(String apiKey) => {
+  'Authorization': 'Bearer ${apiKey.trim()}',
+};
 
 /// Overridable network client. Tests inject [MockApiClient] via
 /// `apiClientProvider.overrideWithValue(...)`; the default hits [baseUrl]

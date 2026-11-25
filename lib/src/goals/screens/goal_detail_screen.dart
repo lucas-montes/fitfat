@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -90,8 +90,12 @@ final class GoalDetailScreen extends ConsumerWidget {
       case 'delete':
         {
           final container = ProviderScope.containerOf(context);
-          final behavior = container.read(settingsProvider).cascadeDeleteBehavior;
-          final links = await container.read(linksRepositoryProvider).tasksForGoal(goalId);
+          final behavior = container
+              .read(settingsProvider)
+              .cascadeDeleteBehavior;
+          final links = await container
+              .read(linksRepositoryProvider)
+              .tasksForGoal(goalId);
           if (!context.mounted) return;
           if (behavior == CascadeDeleteBehavior.ask) {
             final choice = await showCascadeDeleteDialog(
@@ -105,12 +109,18 @@ final class GoalDetailScreen extends ConsumerWidget {
             container.read(dismissedTaskIdsProvider.notifier).add(goalId);
             if (cascade) {
               for (final t in links) {
-                container.read(dismissedTaskIdsProvider.notifier).add(t.item.id);
+                container
+                    .read(dismissedTaskIdsProvider.notifier)
+                    .add(t.item.id);
               }
             }
             try {
-              await container.read(goalReminderSchedulerProvider).cancelForGoal(goalId);
-              await container.read(goalRepositoryProvider).deleteGoal(goalId, cascadeTasks: cascade);
+              await container
+                  .read(goalReminderSchedulerProvider)
+                  .cancelForGoal(goalId);
+              await container
+                  .read(goalRepositoryProvider)
+                  .deleteGoal(goalId, cascadeTasks: cascade);
               container.invalidate(goalListProvider);
               container.invalidate(goalByIdProvider(goalId));
               container.invalidate(goalProgressProvider(goalId));
@@ -119,13 +129,25 @@ final class GoalDetailScreen extends ConsumerWidget {
               if (cascade) {
                 for (final link in links) {
                   final d = link.item.day;
-                  container.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
+                  container.invalidate(
+                    dayEntriesProvider(DateTime(d.year, d.month, d.day)),
+                  );
                   final utc = DateTime.utc(d.year, d.month, d.day);
-                  final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
-                  final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
+                  final mondayUtc = utc.subtract(
+                    Duration(days: utc.weekday - 1),
+                  );
+                  final weekStart = DateTime(
+                    mondayUtc.year,
+                    mondayUtc.month,
+                    mondayUtc.day,
+                  );
                   final weekEnd = weekStart.add(const Duration(days: 6));
-                  container.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
-                  container.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+                  container.invalidate(
+                    rangeEntriesProvider((weekStart, weekEnd)),
+                  );
+                  container.invalidate(
+                    monthEntriesProvider(DateTime(d.year, d.month, 1)),
+                  );
                 }
               }
               if (context.mounted) Navigator.of(context).pop(true);
@@ -133,7 +155,9 @@ final class GoalDetailScreen extends ConsumerWidget {
               container.read(dismissedTaskIdsProvider.notifier).remove(goalId);
               if (cascade) {
                 for (final t in links) {
-                  container.read(dismissedTaskIdsProvider.notifier).remove(t.item.id);
+                  container
+                      .read(dismissedTaskIdsProvider.notifier)
+                      .remove(t.item.id);
                 }
               }
               if (context.mounted) {
@@ -144,16 +168,24 @@ final class GoalDetailScreen extends ConsumerWidget {
             }
           } else {
             final cascade = behavior == CascadeDeleteBehavior.alwaysCascade;
-            final goalSnapshot = await container.read(goalRepositoryProvider).getGoalById(goalId);
-            final snapshotTasks = cascade ? links.map((e) => e.item).toList() : <Task>[];
+            final goalSnapshot = await container
+                .read(goalRepositoryProvider)
+                .getGoalById(goalId);
+            final snapshotTasks = cascade
+                ? links.map((e) => e.item).toList()
+                : <Task>[];
             final overlay = Overlay.of(context);
             container.read(dismissedTaskIdsProvider.notifier).add(goalId);
             for (final t in snapshotTasks) {
               container.read(dismissedTaskIdsProvider.notifier).add(t.id);
             }
             try {
-              await container.read(goalReminderSchedulerProvider).cancelForGoal(goalId);
-              await container.read(goalRepositoryProvider).deleteGoal(goalId, cascadeTasks: cascade);
+              await container
+                  .read(goalReminderSchedulerProvider)
+                  .cancelForGoal(goalId);
+              await container
+                  .read(goalRepositoryProvider)
+                  .deleteGoal(goalId, cascadeTasks: cascade);
               container.invalidate(goalListProvider);
               container.invalidate(goalByIdProvider(goalId));
               container.invalidate(goalProgressProvider(goalId));
@@ -162,13 +194,25 @@ final class GoalDetailScreen extends ConsumerWidget {
               if (cascade) {
                 for (final link in links) {
                   final d = link.item.day;
-                  container.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
+                  container.invalidate(
+                    dayEntriesProvider(DateTime(d.year, d.month, d.day)),
+                  );
                   final utc = DateTime.utc(d.year, d.month, d.day);
-                  final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
-                  final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
+                  final mondayUtc = utc.subtract(
+                    Duration(days: utc.weekday - 1),
+                  );
+                  final weekStart = DateTime(
+                    mondayUtc.year,
+                    mondayUtc.month,
+                    mondayUtc.day,
+                  );
                   final weekEnd = weekStart.add(const Duration(days: 6));
-                  container.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
-                  container.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+                  container.invalidate(
+                    rangeEntriesProvider((weekStart, weekEnd)),
+                  );
+                  container.invalidate(
+                    monthEntriesProvider(DateTime(d.year, d.month, 1)),
+                  );
                 }
               }
             } catch (e) {
@@ -192,28 +236,48 @@ final class GoalDetailScreen extends ConsumerWidget {
               actionLabel: l10n.commonUndo,
               onAction: () async {
                 if (goalSnapshot != null) {
-                  await container.read(goalRepositoryProvider).upsertGoal(goalSnapshot);
+                  await container
+                      .read(goalRepositoryProvider)
+                      .upsertGoal(goalSnapshot);
                   for (final task in snapshotTasks) {
                     await container.read(taskRepositoryProvider).insert(task);
-                    await container.read(linksRepositoryProvider).linkTaskGoal(task.id, goalId);
+                    await container
+                        .read(linksRepositoryProvider)
+                        .linkTaskGoal(task.id, goalId);
                   }
                 }
-                container.read(dismissedTaskIdsProvider.notifier).remove(goalId);
+                container
+                    .read(dismissedTaskIdsProvider.notifier)
+                    .remove(goalId);
                 for (final t in snapshotTasks) {
-                  container.read(dismissedTaskIdsProvider.notifier).remove(t.id);
+                  container
+                      .read(dismissedTaskIdsProvider.notifier)
+                      .remove(t.id);
                 }
                 container.invalidate(goalListProvider);
                 container.invalidate(goalByIdProvider(goalId));
                 if (cascade) {
                   for (final t in snapshotTasks) {
                     final d = t.day;
-                    container.invalidate(dayEntriesProvider(DateTime(d.year, d.month, d.day)));
+                    container.invalidate(
+                      dayEntriesProvider(DateTime(d.year, d.month, d.day)),
+                    );
                     final utc = DateTime.utc(d.year, d.month, d.day);
-                    final mondayUtc = utc.subtract(Duration(days: utc.weekday - 1));
-                    final weekStart = DateTime(mondayUtc.year, mondayUtc.month, mondayUtc.day);
+                    final mondayUtc = utc.subtract(
+                      Duration(days: utc.weekday - 1),
+                    );
+                    final weekStart = DateTime(
+                      mondayUtc.year,
+                      mondayUtc.month,
+                      mondayUtc.day,
+                    );
                     final weekEnd = weekStart.add(const Duration(days: 6));
-                    container.invalidate(rangeEntriesProvider((weekStart, weekEnd)));
-                    container.invalidate(monthEntriesProvider(DateTime(d.year, d.month, 1)));
+                    container.invalidate(
+                      rangeEntriesProvider((weekStart, weekEnd)),
+                    );
+                    container.invalidate(
+                      monthEntriesProvider(DateTime(d.year, d.month, 1)),
+                    );
                   }
                 }
               },
@@ -775,10 +839,12 @@ final class _GoalTaskPickerSheet extends ConsumerStatefulWidget {
   const _GoalTaskPickerSheet({required this.goalId});
 
   @override
-  ConsumerState<_GoalTaskPickerSheet> createState() => _GoalTaskPickerSheetState();
+  ConsumerState<_GoalTaskPickerSheet> createState() =>
+      _GoalTaskPickerSheetState();
 }
 
-final class _GoalTaskPickerSheetState extends ConsumerState<_GoalTaskPickerSheet> {
+final class _GoalTaskPickerSheetState
+    extends ConsumerState<_GoalTaskPickerSheet> {
   final _controller = TextEditingController();
   List<Task>? _results;
   Set<String> _linkedIds = {};
@@ -796,10 +862,12 @@ final class _GoalTaskPickerSheetState extends ConsumerState<_GoalTaskPickerSheet
   }
 
   Future<void> _search() async {
-    final results =
-        await ref.read(taskRepositoryProvider).searchTasks(_controller.text);
-    final linked =
-        await ref.read(linksRepositoryProvider).tasksForGoal(widget.goalId);
+    final results = await ref
+        .read(taskRepositoryProvider)
+        .searchTasks(_controller.text);
+    final linked = await ref
+        .read(linksRepositoryProvider)
+        .tasksForGoal(widget.goalId);
     if (!mounted) return;
     setState(() {
       _results = results;
@@ -839,34 +907,36 @@ final class _GoalTaskPickerSheetState extends ConsumerState<_GoalTaskPickerSheet
                 child: _results == null
                     ? const Center(child: CircularProgressIndicator())
                     : _results!.isEmpty
-                        ? Center(child: Text(l10n.goalsNoLinkedTasks))
-                        : ListView(
-                            children: [
-                              for (final task in _results!)
-                                ListTile(
-                                  leading: Icon(
-                                    _linkedIds.contains(task.id)
-                                        ? Icons.link
-                                        : Icons.add_link,
-                                    size: 20,
-                                  ),
-                                  title: Text(
-                                    task.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  onTap: () async {
-                                    final nav = Navigator.of(context);
-                                    await ref
-                                        .read(linksRepositoryProvider)
-                                        .linkTaskGoal(task.id, widget.goalId);
-                                    if (!mounted) return;
-                                    ref.invalidate(tasksByGoalProvider(widget.goalId));
-                                    nav.pop();
-                                  },
-                                ),
-                            ],
-                          ),
+                    ? Center(child: Text(l10n.goalsNoLinkedTasks))
+                    : ListView(
+                        children: [
+                          for (final task in _results!)
+                            ListTile(
+                              leading: Icon(
+                                _linkedIds.contains(task.id)
+                                    ? Icons.link
+                                    : Icons.add_link,
+                                size: 20,
+                              ),
+                              title: Text(
+                                task.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              onTap: () async {
+                                final nav = Navigator.of(context);
+                                await ref
+                                    .read(linksRepositoryProvider)
+                                    .linkTaskGoal(task.id, widget.goalId);
+                                if (!mounted) return;
+                                ref.invalidate(
+                                  tasksByGoalProvider(widget.goalId),
+                                );
+                                nav.pop();
+                              },
+                            ),
+                        ],
+                      ),
               ),
             ],
           ),

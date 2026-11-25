@@ -2,7 +2,7 @@ import 'package:fitfat/l10n/app_localizations.dart';
 import 'package:fitfat/src/exercise/widgets/set_actuals_dialog.dart';
 import 'package:fitfat/src/models/exercise_set.dart';
 import 'package:fitfat/src/models/units.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Skating has a duration but no distance. The actuals dialog must lead with

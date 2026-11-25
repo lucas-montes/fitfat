@@ -54,9 +54,7 @@ final class HttpRemoteReceiptOcrService implements RemoteReceiptOcrService {
     final response = await _client.postMultipart(
       '$baseEndpoint/upload',
       fields: {'receiptId': receiptId},
-      files: {
-        'picture': MultipartFilePart.fromFilename(filename, bytes),
-      },
+      files: {'picture': MultipartFilePart.fromFilename(filename, bytes)},
       headers: authHeaders(_apiKey),
     );
 
@@ -69,7 +67,6 @@ final class HttpRemoteReceiptOcrService implements RemoteReceiptOcrService {
         : id;
     return ReceiptUploadResult(remotePath);
   }
-
 
   static Map<String, dynamic>? _asMap(Object? value) =>
       value is Map ? value.cast<String, dynamic>() : null;

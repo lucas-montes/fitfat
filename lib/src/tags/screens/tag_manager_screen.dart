@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -202,9 +202,8 @@ final class _TagManagerScreenState extends ConsumerState<TagManagerScreen> {
           final counts = countsAsync.value ?? const <String, int>{};
           return ReorderableListView.builder(
             itemCount: tags.length,
-            onReorder: (oldIndex, newIndex) async {
+            onReorderItem: (oldIndex, newIndex) async {
               setState(() {
-                if (newIndex > oldIndex) newIndex -= 1;
                 final moved = tags.removeAt(oldIndex);
                 tags.insert(newIndex, moved);
               });
@@ -265,7 +264,8 @@ final class _TagManagerScreenState extends ConsumerState<TagManagerScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
         tooltip: l10n.prioritiesAdd,
         onPressed: _addTag,
         child: const Icon(Icons.add),

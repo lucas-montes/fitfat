@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
@@ -484,7 +484,7 @@ final class _ExerciseReorderList extends StatelessWidget {
     return ReorderableListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       itemCount: detail.exercises.length,
-      onReorder: (oldIndex, newIndex) => _move(context, oldIndex, newIndex),
+      onReorderItem: (oldIndex, newIndex) => _move(context, oldIndex, newIndex),
       itemBuilder: (context, index) {
         final block = detail.exercises[index];
         return Card(
@@ -519,7 +519,6 @@ final class _ExerciseReorderList extends StatelessWidget {
   }
 
   Future<void> _move(BuildContext context, int oldIndex, int newIndex) async {
-    if (oldIndex < newIndex) newIndex -= 1;
     final ids = detail.exercises.map((b) => b.exercise.id).toList();
     final moved = ids.removeAt(oldIndex);
     ids.insert(newIndex, moved);
@@ -1008,7 +1007,7 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
         Expanded(
           child: ReorderableListView.builder(
             itemCount: block.sets.length,
-            onReorder: (oldIndex, newIndex) =>
+            onReorderItem: (oldIndex, newIndex) =>
                 _moveSet(ref, oldIndex, newIndex),
             itemBuilder: (context, index) {
               final set = block.sets[index];
@@ -1032,7 +1031,6 @@ final class _ExercisePageState extends ConsumerState<_ExercisePage> {
   }
 
   Future<void> _moveSet(WidgetRef ref, int oldIndex, int newIndex) async {
-    if (oldIndex < newIndex) newIndex -= 1;
     final ids = block.sets.map((s) => s.id).toList();
     final moved = ids.removeAt(oldIndex);
     ids.insert(newIndex, moved);

@@ -200,10 +200,7 @@ void main() {
       expect((await repo.getById(id))!.isArchived, isTrue);
       // ...and still pushed: a meal or recipe that uses it must resolve on
       // the server, which otherwise rejects the meal push.
-      expect(
-        (await repo.getAll(includeArchived: true)).map((i) => i.id),
-        [id],
-      );
+      expect((await repo.getAll(includeArchived: true)).map((i) => i.id), [id]);
     });
   });
 }

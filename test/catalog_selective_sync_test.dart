@@ -103,10 +103,7 @@ void main() {
     expect(ingCount, 1);
     expect(await database.select(database.exercises).get(), isEmpty);
     expect(await database.select(database.ingredients).get(), isEmpty);
-    expect(
-      (await database.select(database.exerciseCatalog).get()).length,
-      2,
-    );
+    expect((await database.select(database.exerciseCatalog).get()).length, 2);
   });
 
   test('repository normalizes a legacy body-part exercise type', () async {
@@ -146,10 +143,7 @@ void main() {
   });
 
   test('missing ids are skipped without error', () async {
-    final result = await catalog.importExercises(
-      ids: {'nope'},
-      apiKey: 'k',
-    );
+    final result = await catalog.importExercises(ids: {'nope'}, apiKey: 'k');
     expect(result.ok, isTrue);
     expect(result.updated, 0);
   });

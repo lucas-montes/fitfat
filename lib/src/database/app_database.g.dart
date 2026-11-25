@@ -17383,10 +17383,7 @@ final class $$IngredientsTableReferences
   _ingredientPicturesRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.ingredientPictures,
-        aliasName: $_aliasNameGenerator(
-          db.ingredients.id,
-          db.ingredientPictures.ingredientId,
-        ),
+        aliasName: 'ingredients__id__ingredient_pictures__ingredient_id',
       );
 
   $$IngredientPicturesTableProcessedTableManager get ingredientPicturesRefs {
@@ -17406,10 +17403,7 @@ final class $$IngredientsTableReferences
   static MultiTypedResultKey<$IngredientPricesTable, List<IngredientPrice>>
   _ingredientPricesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.ingredientPrices,
-    aliasName: $_aliasNameGenerator(
-      db.ingredients.id,
-      db.ingredientPrices.ingredientId,
-    ),
+    aliasName: 'ingredients__id__ingredient_prices__ingredient_id',
   );
 
   $$IngredientPricesTableProcessedTableManager get ingredientPricesRefs {
@@ -17429,10 +17423,7 @@ final class $$IngredientsTableReferences
   static MultiTypedResultKey<$FoodIngredientsTable, List<FoodIngredient>>
   _foodIngredientsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.foodIngredients,
-    aliasName: $_aliasNameGenerator(
-      db.ingredients.id,
-      db.foodIngredients.ingredientId,
-    ),
+    aliasName: 'ingredients__id__food_ingredients__ingredient_id',
   );
 
   $$FoodIngredientsTableProcessedTableManager get foodIngredientsRefs {
@@ -17913,7 +17904,7 @@ class $$IngredientsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$IngredientsTable, Ingredient>(table),
                   $$IngredientsTableReferences(db, table, e),
                 ),
               )
@@ -17935,10 +17926,11 @@ class $$IngredientsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (ingredientPicturesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Ingredient,
                           $IngredientsTable,
-                          IngredientPicture
+                          IngredientPicture,
+                          $IngredientPicturesTable
                         >(
                           currentTable: table,
                           referencedTable: $$IngredientsTableReferences
@@ -17949,17 +17941,16 @@ class $$IngredientsTableTableManager
                                 table,
                                 p0,
                               ).ingredientPicturesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.ingredientId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'ingredient_id',
                           typedResults: items,
                         ),
                       if (ingredientPricesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Ingredient,
                           $IngredientsTable,
-                          IngredientPrice
+                          IngredientPrice,
+                          $IngredientPricesTable
                         >(
                           currentTable: table,
                           referencedTable: $$IngredientsTableReferences
@@ -17970,17 +17961,16 @@ class $$IngredientsTableTableManager
                                 table,
                                 p0,
                               ).ingredientPricesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.ingredientId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'ingredient_id',
                           typedResults: items,
                         ),
                       if (foodIngredientsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Ingredient,
                           $IngredientsTable,
-                          FoodIngredient
+                          FoodIngredient,
+                          $FoodIngredientsTable
                         >(
                           currentTable: table,
                           referencedTable: $$IngredientsTableReferences
@@ -17991,10 +17981,8 @@ class $$IngredientsTableTableManager
                                 table,
                                 p0,
                               ).foodIngredientsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.ingredientId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'ingredient_id',
                           typedResults: items,
                         ),
                     ];
@@ -18045,7 +18033,7 @@ final class $$StoresTableReferences
   static MultiTypedResultKey<$IngredientPricesTable, List<IngredientPrice>>
   _ingredientPricesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.ingredientPrices,
-    aliasName: $_aliasNameGenerator(db.stores.id, db.ingredientPrices.storeId),
+    aliasName: 'stores__id__ingredient_prices__store_id',
   );
 
   $$IngredientPricesTableProcessedTableManager get ingredientPricesRefs {
@@ -18234,8 +18222,10 @@ class $$StoresTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$StoresTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$StoresTable, Store>(table),
+                  $$StoresTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback: ({ingredientPricesRefs = false}) {
@@ -18248,10 +18238,11 @@ class $$StoresTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (ingredientPricesRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       Store,
                       $StoresTable,
-                      IngredientPrice
+                      IngredientPrice,
+                      $IngredientPricesTable
                     >(
                       currentTable: table,
                       referencedTable: $$StoresTableReferences
@@ -18261,8 +18252,8 @@ class $$StoresTableTableManager
                         table,
                         p0,
                       ).ingredientPricesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.storeId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'store_id',
                       typedResults: items,
                     ),
                 ];
@@ -18319,13 +18310,9 @@ final class $$IngredientPicturesTableReferences
     super.$_typedResult,
   );
 
-  static $IngredientsTable _ingredientIdTable(_$AppDatabase db) =>
-      db.ingredients.createAlias(
-        $_aliasNameGenerator(
-          db.ingredientPictures.ingredientId,
-          db.ingredients.id,
-        ),
-      );
+  static $IngredientsTable _ingredientIdTable(_$AppDatabase db) => db
+      .ingredients
+      .createAlias('ingredient_pictures__ingredient_id__ingredients__id');
 
   $$IngredientsTableProcessedTableManager get ingredientId {
     final $_column = $_itemColumn<String>('ingredient_id')!;
@@ -18559,7 +18546,9 @@ class $$IngredientPicturesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$IngredientPicturesTable, IngredientPicture>(
+                    table,
+                  ),
                   $$IngredientPicturesTableReferences(db, table, e),
                 ),
               )
@@ -18661,13 +18650,9 @@ final class $$IngredientPricesTableReferences
     super.$_typedResult,
   );
 
-  static $IngredientsTable _ingredientIdTable(_$AppDatabase db) =>
-      db.ingredients.createAlias(
-        $_aliasNameGenerator(
-          db.ingredientPrices.ingredientId,
-          db.ingredients.id,
-        ),
-      );
+  static $IngredientsTable _ingredientIdTable(_$AppDatabase db) => db
+      .ingredients
+      .createAlias('ingredient_prices__ingredient_id__ingredients__id');
 
   $$IngredientsTableProcessedTableManager get ingredientId {
     final $_column = $_itemColumn<String>('ingredient_id')!;
@@ -18683,9 +18668,8 @@ final class $$IngredientPricesTableReferences
     );
   }
 
-  static $StoresTable _storeIdTable(_$AppDatabase db) => db.stores.createAlias(
-    $_aliasNameGenerator(db.ingredientPrices.storeId, db.stores.id),
-  );
+  static $StoresTable _storeIdTable(_$AppDatabase db) =>
+      db.stores.createAlias('ingredient_prices__store_id__stores__id');
 
   $$StoresTableProcessedTableManager get storeId {
     final $_column = $_itemColumn<String>('store_id')!;
@@ -19046,7 +19030,7 @@ class $$IngredientPricesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$IngredientPricesTable, IngredientPrice>(table),
                   $$IngredientPricesTableReferences(db, table, e),
                 ),
               )
@@ -19153,7 +19137,7 @@ final class $$FoodsTableReferences
   static MultiTypedResultKey<$FoodIngredientsTable, List<FoodIngredient>>
   _foodIngredientsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.foodIngredients,
-    aliasName: $_aliasNameGenerator(db.foods.id, db.foodIngredients.foodId),
+    aliasName: 'foods__id__food_ingredients__food_id',
   );
 
   $$FoodIngredientsTableProcessedTableManager get foodIngredientsRefs {
@@ -19173,7 +19157,7 @@ final class $$FoodsTableReferences
   static MultiTypedResultKey<$MealFoodsTable, List<MealFood>>
   _mealFoodsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.mealFoods,
-    aliasName: $_aliasNameGenerator(db.foods.id, db.mealFoods.foodId),
+    aliasName: 'foods__id__meal_foods__food_id',
   );
 
   $$MealFoodsTableProcessedTableManager get mealFoodsRefs {
@@ -19447,8 +19431,10 @@ class $$FoodsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$FoodsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$FoodsTable, Food>(table),
+                  $$FoodsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
@@ -19463,10 +19449,11 @@ class $$FoodsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (foodIngredientsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Food,
                           $FoodsTable,
-                          FoodIngredient
+                          FoodIngredient,
+                          $FoodIngredientsTable
                         >(
                           currentTable: table,
                           referencedTable: $$FoodsTableReferences
@@ -19477,14 +19464,17 @@ class $$FoodsTableTableManager
                                 table,
                                 p0,
                               ).foodIngredientsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.foodId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'food_id',
                           typedResults: items,
                         ),
                       if (mealFoodsRefs)
-                        await $_getPrefetchedData<Food, $FoodsTable, MealFood>(
+                        await $_getPrefetchedDataByColumns<
+                          Food,
+                          $FoodsTable,
+                          MealFood,
+                          $MealFoodsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$FoodsTableReferences
                               ._mealFoodsRefsTable(db),
@@ -19494,10 +19484,8 @@ class $$FoodsTableTableManager
                                 table,
                                 p0,
                               ).mealFoodsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.foodId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'food_id',
                           typedResults: items,
                         ),
                     ];
@@ -19546,9 +19534,8 @@ final class $$FoodIngredientsTableReferences
     super.$_typedResult,
   );
 
-  static $FoodsTable _foodIdTable(_$AppDatabase db) => db.foods.createAlias(
-    $_aliasNameGenerator(db.foodIngredients.foodId, db.foods.id),
-  );
+  static $FoodsTable _foodIdTable(_$AppDatabase db) =>
+      db.foods.createAlias('food_ingredients__food_id__foods__id');
 
   $$FoodsTableProcessedTableManager get foodId {
     final $_column = $_itemColumn<String>('food_id')!;
@@ -19564,13 +19551,9 @@ final class $$FoodIngredientsTableReferences
     );
   }
 
-  static $IngredientsTable _ingredientIdTable(_$AppDatabase db) =>
-      db.ingredients.createAlias(
-        $_aliasNameGenerator(
-          db.foodIngredients.ingredientId,
-          db.ingredients.id,
-        ),
-      );
+  static $IngredientsTable _ingredientIdTable(_$AppDatabase db) => db
+      .ingredients
+      .createAlias('food_ingredients__ingredient_id__ingredients__id');
 
   $$IngredientsTableProcessedTableManager get ingredientId {
     final $_column = $_itemColumn<String>('ingredient_id')!;
@@ -19823,7 +19806,7 @@ class $$FoodIngredientsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$FoodIngredientsTable, FoodIngredient>(table),
                   $$FoodIngredientsTableReferences(db, table, e),
                 ),
               )
@@ -19930,7 +19913,7 @@ final class $$MealsTableReferences
   static MultiTypedResultKey<$MealFoodsTable, List<MealFood>>
   _mealFoodsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.mealFoods,
-    aliasName: $_aliasNameGenerator(db.meals.id, db.mealFoods.mealId),
+    aliasName: 'meals__id__meal_foods__meal_id',
   );
 
   $$MealFoodsTableProcessedTableManager get mealFoodsRefs {
@@ -20150,8 +20133,10 @@ class $$MealsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$MealsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$MealsTable, Meal>(table),
+                  $$MealsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback: ({mealFoodsRefs = false}) {
@@ -20162,14 +20147,19 @@ class $$MealsTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (mealFoodsRefs)
-                    await $_getPrefetchedData<Meal, $MealsTable, MealFood>(
+                    await $_getPrefetchedDataByColumns<
+                      Meal,
+                      $MealsTable,
+                      MealFood,
+                      $MealFoodsTable
+                    >(
                       currentTable: table,
                       referencedTable: $$MealsTableReferences
                           ._mealFoodsRefsTable(db),
                       managerFromTypedResult: (p0) =>
                           $$MealsTableReferences(db, table, p0).mealFoodsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.mealId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'meal_id',
                       typedResults: items,
                     ),
                 ];
@@ -20229,9 +20219,8 @@ final class $$MealFoodsTableReferences
     extends BaseReferences<_$AppDatabase, $MealFoodsTable, MealFood> {
   $$MealFoodsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $MealsTable _mealIdTable(_$AppDatabase db) => db.meals.createAlias(
-    $_aliasNameGenerator(db.mealFoods.mealId, db.meals.id),
-  );
+  static $MealsTable _mealIdTable(_$AppDatabase db) =>
+      db.meals.createAlias('meal_foods__meal_id__meals__id');
 
   $$MealsTableProcessedTableManager get mealId {
     final $_column = $_itemColumn<String>('meal_id')!;
@@ -20247,9 +20236,8 @@ final class $$MealFoodsTableReferences
     );
   }
 
-  static $FoodsTable _foodIdTable(_$AppDatabase db) => db.foods.createAlias(
-    $_aliasNameGenerator(db.mealFoods.foodId, db.foods.id),
-  );
+  static $FoodsTable _foodIdTable(_$AppDatabase db) =>
+      db.foods.createAlias('meal_foods__food_id__foods__id');
 
   $$FoodsTableProcessedTableManager get foodId {
     final $_column = $_itemColumn<String>('food_id')!;
@@ -20636,7 +20624,7 @@ class $$MealFoodsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$MealFoodsTable, MealFood>(table),
                   $$MealFoodsTableReferences(db, table, e),
                 ),
               )
@@ -20765,10 +20753,7 @@ final class $$ExercisesTableReferences
   static MultiTypedResultKey<$WorkoutExercisesTable, List<WorkoutExercise>>
   _workoutExercisesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.workoutExercises,
-    aliasName: $_aliasNameGenerator(
-      db.exercises.id,
-      db.workoutExercises.exerciseId,
-    ),
+    aliasName: 'exercises__id__workout_exercises__exercise_id',
   );
 
   $$WorkoutExercisesTableProcessedTableManager get workoutExercisesRefs {
@@ -20792,10 +20777,7 @@ final class $$ExercisesTableReferences
   _workoutTemplateExercisesRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.workoutTemplateExercises,
-        aliasName: $_aliasNameGenerator(
-          db.exercises.id,
-          db.workoutTemplateExercises.exerciseId,
-        ),
+        aliasName: 'exercises__id__workout_template_exercises__exercise_id',
       );
 
   $$WorkoutTemplateExercisesTableProcessedTableManager
@@ -21308,7 +21290,7 @@ class $$ExercisesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ExercisesTable, Exercise>(table),
                   $$ExercisesTableReferences(db, table, e),
                 ),
               )
@@ -21329,10 +21311,11 @@ class $$ExercisesTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (workoutExercisesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Exercise,
                           $ExercisesTable,
-                          WorkoutExercise
+                          WorkoutExercise,
+                          $WorkoutExercisesTable
                         >(
                           currentTable: table,
                           referencedTable: $$ExercisesTableReferences
@@ -21343,17 +21326,16 @@ class $$ExercisesTableTableManager
                                 table,
                                 p0,
                               ).workoutExercisesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.exerciseId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'exercise_id',
                           typedResults: items,
                         ),
                       if (workoutTemplateExercisesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Exercise,
                           $ExercisesTable,
-                          WorkoutTemplateExercise
+                          WorkoutTemplateExercise,
+                          $WorkoutTemplateExercisesTable
                         >(
                           currentTable: table,
                           referencedTable: $$ExercisesTableReferences
@@ -21364,10 +21346,8 @@ class $$ExercisesTableTableManager
                                 table,
                                 p0,
                               ).workoutTemplateExercisesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.exerciseId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'exercise_id',
                           typedResults: items,
                         ),
                     ];
@@ -21431,10 +21411,7 @@ final class $$WorkoutsTableReferences
   static MultiTypedResultKey<$WorkoutExercisesTable, List<WorkoutExercise>>
   _workoutExercisesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.workoutExercises,
-    aliasName: $_aliasNameGenerator(
-      db.workouts.id,
-      db.workoutExercises.workoutId,
-    ),
+    aliasName: 'workouts__id__workout_exercises__workout_id',
   );
 
   $$WorkoutExercisesTableProcessedTableManager get workoutExercisesRefs {
@@ -21454,7 +21431,7 @@ final class $$WorkoutsTableReferences
   static MultiTypedResultKey<$GoalWorkoutsTable, List<GoalWorkout>>
   _goalWorkoutsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.goalWorkouts,
-    aliasName: $_aliasNameGenerator(db.workouts.id, db.goalWorkouts.workoutId),
+    aliasName: 'workouts__id__goal_workouts__workout_id',
   );
 
   $$GoalWorkoutsTableProcessedTableManager get goalWorkoutsRefs {
@@ -21472,7 +21449,7 @@ final class $$WorkoutsTableReferences
   static MultiTypedResultKey<$NoteWorkoutsTable, List<NoteWorkout>>
   _noteWorkoutsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.noteWorkouts,
-    aliasName: $_aliasNameGenerator(db.workouts.id, db.noteWorkouts.workoutId),
+    aliasName: 'workouts__id__note_workouts__workout_id',
   );
 
   $$NoteWorkoutsTableProcessedTableManager get noteWorkoutsRefs {
@@ -21887,7 +21864,7 @@ class $$WorkoutsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$WorkoutsTable, Workout>(table),
                   $$WorkoutsTableReferences(db, table, e),
                 ),
               )
@@ -21909,10 +21886,11 @@ class $$WorkoutsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (workoutExercisesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Workout,
                           $WorkoutsTable,
-                          WorkoutExercise
+                          WorkoutExercise,
+                          $WorkoutExercisesTable
                         >(
                           currentTable: table,
                           referencedTable: $$WorkoutsTableReferences
@@ -21923,17 +21901,16 @@ class $$WorkoutsTableTableManager
                                 table,
                                 p0,
                               ).workoutExercisesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.workoutId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'workout_id',
                           typedResults: items,
                         ),
                       if (goalWorkoutsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Workout,
                           $WorkoutsTable,
-                          GoalWorkout
+                          GoalWorkout,
+                          $GoalWorkoutsTable
                         >(
                           currentTable: table,
                           referencedTable: $$WorkoutsTableReferences
@@ -21944,17 +21921,16 @@ class $$WorkoutsTableTableManager
                                 table,
                                 p0,
                               ).goalWorkoutsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.workoutId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'workout_id',
                           typedResults: items,
                         ),
                       if (noteWorkoutsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Workout,
                           $WorkoutsTable,
-                          NoteWorkout
+                          NoteWorkout,
+                          $NoteWorkoutsTable
                         >(
                           currentTable: table,
                           referencedTable: $$WorkoutsTableReferences
@@ -21965,10 +21941,8 @@ class $$WorkoutsTableTableManager
                                 table,
                                 p0,
                               ).noteWorkoutsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.workoutId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'workout_id',
                           typedResults: items,
                         ),
                     ];
@@ -22026,9 +22000,7 @@ final class $$WorkoutExercisesTableReferences
   );
 
   static $WorkoutsTable _workoutIdTable(_$AppDatabase db) =>
-      db.workouts.createAlias(
-        $_aliasNameGenerator(db.workoutExercises.workoutId, db.workouts.id),
-      );
+      db.workouts.createAlias('workout_exercises__workout_id__workouts__id');
 
   $$WorkoutsTableProcessedTableManager get workoutId {
     final $_column = $_itemColumn<String>('workout_id')!;
@@ -22045,9 +22017,7 @@ final class $$WorkoutExercisesTableReferences
   }
 
   static $ExercisesTable _exerciseIdTable(_$AppDatabase db) =>
-      db.exercises.createAlias(
-        $_aliasNameGenerator(db.workoutExercises.exerciseId, db.exercises.id),
-      );
+      db.exercises.createAlias('workout_exercises__exercise_id__exercises__id');
 
   $$ExercisesTableProcessedTableManager get exerciseId {
     final $_column = $_itemColumn<String>('exercise_id')!;
@@ -22066,10 +22036,7 @@ final class $$WorkoutExercisesTableReferences
   static MultiTypedResultKey<$ExerciseSetsTable, List<ExerciseSet>>
   _exerciseSetsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.exerciseSets,
-    aliasName: $_aliasNameGenerator(
-      db.workoutExercises.id,
-      db.exerciseSets.workoutExerciseId,
-    ),
+    aliasName: 'workout_exercises__id__exercise_sets__workout_exercise_id',
   );
 
   $$ExerciseSetsTableProcessedTableManager get exerciseSetsRefs {
@@ -22409,7 +22376,7 @@ class $$WorkoutExercisesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$WorkoutExercisesTable, WorkoutExercise>(table),
                   $$WorkoutExercisesTableReferences(db, table, e),
                 ),
               )
@@ -22477,10 +22444,11 @@ class $$WorkoutExercisesTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (exerciseSetsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           WorkoutExercise,
                           $WorkoutExercisesTable,
-                          ExerciseSet
+                          ExerciseSet,
+                          $ExerciseSetsTable
                         >(
                           currentTable: table,
                           referencedTable: $$WorkoutExercisesTableReferences
@@ -22491,10 +22459,8 @@ class $$WorkoutExercisesTableTableManager
                                 table,
                                 p0,
                               ).exerciseSetsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.workoutExerciseId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'workout_exercise_id',
                           typedResults: items,
                         ),
                     ];
@@ -22566,13 +22532,9 @@ final class $$ExerciseSetsTableReferences
     extends BaseReferences<_$AppDatabase, $ExerciseSetsTable, ExerciseSet> {
   $$ExerciseSetsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $WorkoutExercisesTable _workoutExerciseIdTable(_$AppDatabase db) =>
-      db.workoutExercises.createAlias(
-        $_aliasNameGenerator(
-          db.exerciseSets.workoutExerciseId,
-          db.workoutExercises.id,
-        ),
-      );
+  static $WorkoutExercisesTable _workoutExerciseIdTable(_$AppDatabase db) => db
+      .workoutExercises
+      .createAlias('exercise_sets__workout_exercise_id__workout_exercises__id');
 
   $$WorkoutExercisesTableProcessedTableManager get workoutExerciseId {
     final $_column = $_itemColumn<String>('workout_exercise_id')!;
@@ -22989,7 +22951,7 @@ class $$ExerciseSetsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ExerciseSetsTable, ExerciseSet>(table),
                   $$ExerciseSetsTableReferences(db, table, e),
                 ),
               )
@@ -23098,10 +23060,8 @@ final class $$WorkoutTemplatesTableReferences
   _workoutTemplateExercisesRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.workoutTemplateExercises,
-        aliasName: $_aliasNameGenerator(
-          db.workoutTemplates.id,
-          db.workoutTemplateExercises.templateId,
-        ),
+        aliasName:
+            'workout_templates__id__workout_template_exercises__template_id',
       );
 
   $$WorkoutTemplateExercisesTableProcessedTableManager
@@ -23423,7 +23383,7 @@ class $$WorkoutTemplatesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$WorkoutTemplatesTable, WorkoutTemplate>(table),
                   $$WorkoutTemplatesTableReferences(db, table, e),
                 ),
               )
@@ -23438,10 +23398,11 @@ class $$WorkoutTemplatesTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (workoutTemplateExercisesRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       WorkoutTemplate,
                       $WorkoutTemplatesTable,
-                      WorkoutTemplateExercise
+                      WorkoutTemplateExercise,
+                      $WorkoutTemplateExercisesTable
                     >(
                       currentTable: table,
                       referencedTable: $$WorkoutTemplatesTableReferences
@@ -23452,8 +23413,8 @@ class $$WorkoutTemplatesTableTableManager
                             table,
                             p0,
                           ).workoutTemplateExercisesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.templateId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'template_id',
                       typedResults: items,
                     ),
                 ];
@@ -23512,10 +23473,7 @@ final class $$WorkoutTemplateExercisesTableReferences
 
   static $WorkoutTemplatesTable _templateIdTable(_$AppDatabase db) =>
       db.workoutTemplates.createAlias(
-        $_aliasNameGenerator(
-          db.workoutTemplateExercises.templateId,
-          db.workoutTemplates.id,
-        ),
+        'workout_template_exercises__template_id__workout_templates__id',
       );
 
   $$WorkoutTemplatesTableProcessedTableManager get templateId {
@@ -23532,13 +23490,8 @@ final class $$WorkoutTemplateExercisesTableReferences
     );
   }
 
-  static $ExercisesTable _exerciseIdTable(_$AppDatabase db) =>
-      db.exercises.createAlias(
-        $_aliasNameGenerator(
-          db.workoutTemplateExercises.exerciseId,
-          db.exercises.id,
-        ),
-      );
+  static $ExercisesTable _exerciseIdTable(_$AppDatabase db) => db.exercises
+      .createAlias('workout_template_exercises__exercise_id__exercises__id');
 
   $$ExercisesTableProcessedTableManager get exerciseId {
     final $_column = $_itemColumn<String>('exercise_id')!;
@@ -23558,14 +23511,13 @@ final class $$WorkoutTemplateExercisesTableReferences
     $WorkoutTemplateSetsTable,
     List<WorkoutTemplateSet>
   >
-  _workoutTemplateSetsRefsTable(_$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(
-        db.workoutTemplateSets,
-        aliasName: $_aliasNameGenerator(
-          db.workoutTemplateExercises.id,
-          db.workoutTemplateSets.templateExerciseId,
-        ),
-      );
+  _workoutTemplateSetsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.workoutTemplateSets,
+    aliasName:
+        'workout_template_exercises__id__workout_template_sets__template_exercise_id',
+  );
 
   $$WorkoutTemplateSetsTableProcessedTableManager get workoutTemplateSetsRefs {
     final manager =
@@ -23919,7 +23871,10 @@ class $$WorkoutTemplateExercisesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<
+                    $WorkoutTemplateExercisesTable,
+                    WorkoutTemplateExercise
+                  >(table),
                   $$WorkoutTemplateExercisesTableReferences(db, table, e),
                 ),
               )
@@ -23987,10 +23942,11 @@ class $$WorkoutTemplateExercisesTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (workoutTemplateSetsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           WorkoutTemplateExercise,
                           $WorkoutTemplateExercisesTable,
-                          WorkoutTemplateSet
+                          WorkoutTemplateSet,
+                          $WorkoutTemplateSetsTable
                         >(
                           currentTable: table,
                           referencedTable:
@@ -24002,10 +23958,8 @@ class $$WorkoutTemplateExercisesTableTableManager
                                 table,
                                 p0,
                               ).workoutTemplateSetsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.templateExerciseId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'template_exercise_id',
                           typedResults: items,
                         ),
                     ];
@@ -24075,10 +24029,7 @@ final class $$WorkoutTemplateSetsTableReferences
   static $WorkoutTemplateExercisesTable _templateExerciseIdTable(
     _$AppDatabase db,
   ) => db.workoutTemplateExercises.createAlias(
-    $_aliasNameGenerator(
-      db.workoutTemplateSets.templateExerciseId,
-      db.workoutTemplateExercises.id,
-    ),
+    'workout_template_sets__template_exercise_id__workout_template_exercises__id',
   );
 
   $$WorkoutTemplateExercisesTableProcessedTableManager get templateExerciseId {
@@ -24376,7 +24327,9 @@ class $$WorkoutTemplateSetsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$WorkoutTemplateSetsTable, WorkoutTemplateSet>(
+                    table,
+                  ),
                   $$WorkoutTemplateSetsTableReferences(db, table, e),
                 ),
               )
@@ -24494,7 +24447,7 @@ final class $$TasksTableReferences
   static MultiTypedResultKey<$TaskGoalsTable, List<TaskGoal>>
   _taskGoalsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.taskGoals,
-    aliasName: $_aliasNameGenerator(db.tasks.id, db.taskGoals.taskId),
+    aliasName: 'tasks__id__task_goals__task_id',
   );
 
   $$TaskGoalsTableProcessedTableManager get taskGoalsRefs {
@@ -24512,7 +24465,7 @@ final class $$TasksTableReferences
   static MultiTypedResultKey<$TaskNotesTable, List<TaskNote>>
   _taskNotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.taskNotes,
-    aliasName: $_aliasNameGenerator(db.tasks.id, db.taskNotes.taskId),
+    aliasName: 'tasks__id__task_notes__task_id',
   );
 
   $$TaskNotesTableProcessedTableManager get taskNotesRefs {
@@ -24531,7 +24484,7 @@ final class $$TasksTableReferences
     _$AppDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.taskTags,
-    aliasName: $_aliasNameGenerator(db.tasks.id, db.taskTags.taskId),
+    aliasName: 'tasks__id__task_tags__task_id',
   );
 
   $$TaskTagsTableProcessedTableManager get taskTagsRefs {
@@ -25088,8 +25041,10 @@ class $$TasksTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$TasksTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$TasksTable, Task>(table),
+                  $$TasksTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
@@ -25109,7 +25064,12 @@ class $$TasksTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (taskGoalsRefs)
-                        await $_getPrefetchedData<Task, $TasksTable, TaskGoal>(
+                        await $_getPrefetchedDataByColumns<
+                          Task,
+                          $TasksTable,
+                          TaskGoal,
+                          $TaskGoalsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TasksTableReferences
                               ._taskGoalsRefsTable(db),
@@ -25119,14 +25079,17 @@ class $$TasksTableTableManager
                                 table,
                                 p0,
                               ).taskGoalsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.taskId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'task_id',
                           typedResults: items,
                         ),
                       if (taskNotesRefs)
-                        await $_getPrefetchedData<Task, $TasksTable, TaskNote>(
+                        await $_getPrefetchedDataByColumns<
+                          Task,
+                          $TasksTable,
+                          TaskNote,
+                          $TaskNotesTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TasksTableReferences
                               ._taskNotesRefsTable(db),
@@ -25136,14 +25099,17 @@ class $$TasksTableTableManager
                                 table,
                                 p0,
                               ).taskNotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.taskId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'task_id',
                           typedResults: items,
                         ),
                       if (taskTagsRefs)
-                        await $_getPrefetchedData<Task, $TasksTable, TaskTag>(
+                        await $_getPrefetchedDataByColumns<
+                          Task,
+                          $TasksTable,
+                          TaskTag,
+                          $TaskTagsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TasksTableReferences
                               ._taskTagsRefsTable(db),
@@ -25153,10 +25119,8 @@ class $$TasksTableTableManager
                                 table,
                                 p0,
                               ).taskTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.taskId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'task_id',
                           typedResults: items,
                         ),
                     ];
@@ -25380,7 +25344,16 @@ class $$BodyMetricsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$BodyMetricsTable, BodyMetric>(table),
+                  BaseReferences<_$AppDatabase, $BodyMetricsTable, BodyMetric>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -25432,7 +25405,7 @@ final class $$NotesTableReferences
   static MultiTypedResultKey<$TaskNotesTable, List<TaskNote>>
   _taskNotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.taskNotes,
-    aliasName: $_aliasNameGenerator(db.notes.id, db.taskNotes.noteId),
+    aliasName: 'notes__id__task_notes__note_id',
   );
 
   $$TaskNotesTableProcessedTableManager get taskNotesRefs {
@@ -25450,7 +25423,7 @@ final class $$NotesTableReferences
   static MultiTypedResultKey<$GoalNotesTable, List<GoalNote>>
   _goalNotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.goalNotes,
-    aliasName: $_aliasNameGenerator(db.notes.id, db.goalNotes.noteId),
+    aliasName: 'notes__id__goal_notes__note_id',
   );
 
   $$GoalNotesTableProcessedTableManager get goalNotesRefs {
@@ -25468,7 +25441,7 @@ final class $$NotesTableReferences
   static MultiTypedResultKey<$NoteWorkoutsTable, List<NoteWorkout>>
   _noteWorkoutsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.noteWorkouts,
-    aliasName: $_aliasNameGenerator(db.notes.id, db.noteWorkouts.noteId),
+    aliasName: 'notes__id__note_workouts__note_id',
   );
 
   $$NoteWorkoutsTableProcessedTableManager get noteWorkoutsRefs {
@@ -25487,7 +25460,7 @@ final class $$NotesTableReferences
     _$AppDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.noteTags,
-    aliasName: $_aliasNameGenerator(db.notes.id, db.noteTags.noteId),
+    aliasName: 'notes__id__note_tags__note_id',
   );
 
   $$NoteTagsTableProcessedTableManager get noteTagsRefs {
@@ -25505,7 +25478,7 @@ final class $$NotesTableReferences
   static MultiTypedResultKey<$NoteAudioTable, List<NoteAudioData>>
   _noteAudioRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.noteAudio,
-    aliasName: $_aliasNameGenerator(db.notes.id, db.noteAudio.noteId),
+    aliasName: 'notes__id__note_audio__note_id',
   );
 
   $$NoteAudioTableProcessedTableManager get noteAudioRefs {
@@ -25948,8 +25921,10 @@ class $$NotesTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$NotesTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$NotesTable, Note>(table),
+                  $$NotesTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
@@ -25973,7 +25948,12 @@ class $$NotesTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (taskNotesRefs)
-                        await $_getPrefetchedData<Note, $NotesTable, TaskNote>(
+                        await $_getPrefetchedDataByColumns<
+                          Note,
+                          $NotesTable,
+                          TaskNote,
+                          $TaskNotesTable
+                        >(
                           currentTable: table,
                           referencedTable: $$NotesTableReferences
                               ._taskNotesRefsTable(db),
@@ -25983,14 +25963,17 @@ class $$NotesTableTableManager
                                 table,
                                 p0,
                               ).taskNotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.noteId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'note_id',
                           typedResults: items,
                         ),
                       if (goalNotesRefs)
-                        await $_getPrefetchedData<Note, $NotesTable, GoalNote>(
+                        await $_getPrefetchedDataByColumns<
+                          Note,
+                          $NotesTable,
+                          GoalNote,
+                          $GoalNotesTable
+                        >(
                           currentTable: table,
                           referencedTable: $$NotesTableReferences
                               ._goalNotesRefsTable(db),
@@ -26000,17 +25983,16 @@ class $$NotesTableTableManager
                                 table,
                                 p0,
                               ).goalNotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.noteId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'note_id',
                           typedResults: items,
                         ),
                       if (noteWorkoutsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Note,
                           $NotesTable,
-                          NoteWorkout
+                          NoteWorkout,
+                          $NoteWorkoutsTable
                         >(
                           currentTable: table,
                           referencedTable: $$NotesTableReferences
@@ -26021,14 +26003,17 @@ class $$NotesTableTableManager
                                 table,
                                 p0,
                               ).noteWorkoutsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.noteId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'note_id',
                           typedResults: items,
                         ),
                       if (noteTagsRefs)
-                        await $_getPrefetchedData<Note, $NotesTable, NoteTag>(
+                        await $_getPrefetchedDataByColumns<
+                          Note,
+                          $NotesTable,
+                          NoteTag,
+                          $NoteTagsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$NotesTableReferences
                               ._noteTagsRefsTable(db),
@@ -26038,17 +26023,16 @@ class $$NotesTableTableManager
                                 table,
                                 p0,
                               ).noteTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.noteId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'note_id',
                           typedResults: items,
                         ),
                       if (noteAudioRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Note,
                           $NotesTable,
-                          NoteAudioData
+                          NoteAudioData,
+                          $NoteAudioTable
                         >(
                           currentTable: table,
                           referencedTable: $$NotesTableReferences
@@ -26059,10 +26043,8 @@ class $$NotesTableTableManager
                                 table,
                                 p0,
                               ).noteAudioRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.noteId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'note_id',
                           typedResults: items,
                         ),
                     ];
@@ -26123,7 +26105,7 @@ final class $$AccountsTableReferences
   static MultiTypedResultKey<$TransactionsTable, List<Transaction>>
   _sourceTransactionsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.transactions,
-    aliasName: $_aliasNameGenerator(db.accounts.id, db.transactions.accountId),
+    aliasName: 'accounts__id__transactions__account_id',
   );
 
   $$TransactionsTableProcessedTableManager get sourceTransactions {
@@ -26142,10 +26124,7 @@ final class $$AccountsTableReferences
   _destinationTransactionsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
         db.transactions,
-        aliasName: $_aliasNameGenerator(
-          db.accounts.id,
-          db.transactions.toAccountId,
-        ),
+        aliasName: 'accounts__id__transactions__to_account_id',
       );
 
   $$TransactionsTableProcessedTableManager get destinationTransactions {
@@ -26458,7 +26437,7 @@ class $$AccountsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$AccountsTable, Account>(table),
                   $$AccountsTableReferences(db, table, e),
                 ),
               )
@@ -26475,10 +26454,11 @@ class $$AccountsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (sourceTransactions)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Account,
                           $AccountsTable,
-                          Transaction
+                          Transaction,
+                          $TransactionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$AccountsTableReferences
@@ -26489,17 +26469,16 @@ class $$AccountsTableTableManager
                                 table,
                                 p0,
                               ).sourceTransactions,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.accountId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'account_id',
                           typedResults: items,
                         ),
                       if (destinationTransactions)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Account,
                           $AccountsTable,
-                          Transaction
+                          Transaction,
+                          $TransactionsTable
                         >(
                           currentTable: table,
                           referencedTable: $$AccountsTableReferences
@@ -26510,10 +26489,8 @@ class $$AccountsTableTableManager
                                 table,
                                 p0,
                               ).destinationTransactions,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.toAccountId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'to_account_id',
                           typedResults: items,
                         ),
                     ];
@@ -26575,7 +26552,7 @@ final class $$ReceiptsTableReferences
   static MultiTypedResultKey<$TransactionsTable, List<Transaction>>
   _transactionsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.transactions,
-    aliasName: $_aliasNameGenerator(db.receipts.id, db.transactions.receiptId),
+    aliasName: 'receipts__id__transactions__receipt_id',
   );
 
   $$TransactionsTableProcessedTableManager get transactionsRefs {
@@ -26873,7 +26850,7 @@ class $$ReceiptsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ReceiptsTable, Receipt>(table),
                   $$ReceiptsTableReferences(db, table, e),
                 ),
               )
@@ -26886,10 +26863,11 @@ class $$ReceiptsTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (transactionsRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       Receipt,
                       $ReceiptsTable,
-                      Transaction
+                      Transaction,
+                      $TransactionsTable
                     >(
                       currentTable: table,
                       referencedTable: $$ReceiptsTableReferences
@@ -26899,8 +26877,8 @@ class $$ReceiptsTableTableManager
                         table,
                         p0,
                       ).transactionsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.receiptId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'receipt_id',
                       typedResults: items,
                     ),
                 ];
@@ -26969,9 +26947,7 @@ final class $$TransactionsTableReferences
   $$TransactionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $AccountsTable _accountIdTable(_$AppDatabase db) =>
-      db.accounts.createAlias(
-        $_aliasNameGenerator(db.transactions.accountId, db.accounts.id),
-      );
+      db.accounts.createAlias('transactions__account_id__accounts__id');
 
   $$AccountsTableProcessedTableManager? get accountId {
     final $_column = $_itemColumn<String>('account_id');
@@ -26988,9 +26964,7 @@ final class $$TransactionsTableReferences
   }
 
   static $AccountsTable _toAccountIdTable(_$AppDatabase db) =>
-      db.accounts.createAlias(
-        $_aliasNameGenerator(db.transactions.toAccountId, db.accounts.id),
-      );
+      db.accounts.createAlias('transactions__to_account_id__accounts__id');
 
   $$AccountsTableProcessedTableManager? get toAccountId {
     final $_column = $_itemColumn<String>('to_account_id');
@@ -27007,9 +26981,7 @@ final class $$TransactionsTableReferences
   }
 
   static $ReceiptsTable _receiptIdTable(_$AppDatabase db) =>
-      db.receipts.createAlias(
-        $_aliasNameGenerator(db.transactions.receiptId, db.receipts.id),
-      );
+      db.receipts.createAlias('transactions__receipt_id__receipts__id');
 
   $$ReceiptsTableProcessedTableManager? get receiptId {
     final $_column = $_itemColumn<String>('receipt_id');
@@ -27528,7 +27500,7 @@ class $$TransactionsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TransactionsTable, Transaction>(table),
                   $$TransactionsTableReferences(db, table, e),
                 ),
               )
@@ -27819,7 +27791,16 @@ class $$FxRatesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$FxRatesTable, FxRate>(table),
+                  BaseReferences<_$AppDatabase, $FxRatesTable, FxRate>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -27869,7 +27850,7 @@ final class $$TagsTableReferences
     _$AppDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.taskTags,
-    aliasName: $_aliasNameGenerator(db.tags.id, db.taskTags.tagId),
+    aliasName: 'tags__id__task_tags__tag_id',
   );
 
   $$TaskTagsTableProcessedTableManager get taskTagsRefs {
@@ -27888,7 +27869,7 @@ final class $$TagsTableReferences
     _$AppDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.goalTags,
-    aliasName: $_aliasNameGenerator(db.tags.id, db.goalTags.tagId),
+    aliasName: 'tags__id__goal_tags__tag_id',
   );
 
   $$GoalTagsTableProcessedTableManager get goalTagsRefs {
@@ -27907,7 +27888,7 @@ final class $$TagsTableReferences
     _$AppDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.noteTags,
-    aliasName: $_aliasNameGenerator(db.tags.id, db.noteTags.tagId),
+    aliasName: 'tags__id__note_tags__tag_id',
   );
 
   $$NoteTagsTableProcessedTableManager get noteTagsRefs {
@@ -28247,8 +28228,10 @@ class $$TagsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$TagsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$TagsTable, Tag>(table),
+                  $$TagsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
@@ -28268,42 +28251,51 @@ class $$TagsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (taskTagsRefs)
-                        await $_getPrefetchedData<Tag, $TagsTable, TaskTag>(
+                        await $_getPrefetchedDataByColumns<
+                          Tag,
+                          $TagsTable,
+                          TaskTag,
+                          $TaskTagsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TagsTableReferences
                               ._taskTagsRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$TagsTableReferences(db, table, p0).taskTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tagId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'tag_id',
                           typedResults: items,
                         ),
                       if (goalTagsRefs)
-                        await $_getPrefetchedData<Tag, $TagsTable, GoalTag>(
+                        await $_getPrefetchedDataByColumns<
+                          Tag,
+                          $TagsTable,
+                          GoalTag,
+                          $GoalTagsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TagsTableReferences
                               ._goalTagsRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$TagsTableReferences(db, table, p0).goalTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tagId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'tag_id',
                           typedResults: items,
                         ),
                       if (noteTagsRefs)
-                        await $_getPrefetchedData<Tag, $TagsTable, NoteTag>(
+                        await $_getPrefetchedDataByColumns<
+                          Tag,
+                          $TagsTable,
+                          NoteTag,
+                          $NoteTagsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TagsTableReferences
                               ._noteTagsRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$TagsTableReferences(db, table, p0).noteTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tagId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'tag_id',
                           typedResults: items,
                         ),
                     ];
@@ -28378,7 +28370,7 @@ final class $$GoalsTableReferences
   static MultiTypedResultKey<$TaskGoalsTable, List<TaskGoal>>
   _taskGoalsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.taskGoals,
-    aliasName: $_aliasNameGenerator(db.goals.id, db.taskGoals.goalId),
+    aliasName: 'goals__id__task_goals__goal_id',
   );
 
   $$TaskGoalsTableProcessedTableManager get taskGoalsRefs {
@@ -28396,7 +28388,7 @@ final class $$GoalsTableReferences
   static MultiTypedResultKey<$GoalNotesTable, List<GoalNote>>
   _goalNotesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.goalNotes,
-    aliasName: $_aliasNameGenerator(db.goals.id, db.goalNotes.goalId),
+    aliasName: 'goals__id__goal_notes__goal_id',
   );
 
   $$GoalNotesTableProcessedTableManager get goalNotesRefs {
@@ -28414,7 +28406,7 @@ final class $$GoalsTableReferences
   static MultiTypedResultKey<$GoalWorkoutsTable, List<GoalWorkout>>
   _goalWorkoutsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.goalWorkouts,
-    aliasName: $_aliasNameGenerator(db.goals.id, db.goalWorkouts.goalId),
+    aliasName: 'goals__id__goal_workouts__goal_id',
   );
 
   $$GoalWorkoutsTableProcessedTableManager get goalWorkoutsRefs {
@@ -28433,7 +28425,7 @@ final class $$GoalsTableReferences
     _$AppDatabase db,
   ) => MultiTypedResultKey.fromTable(
     db.goalTags,
-    aliasName: $_aliasNameGenerator(db.goals.id, db.goalTags.goalId),
+    aliasName: 'goals__id__goal_tags__goal_id',
   );
 
   $$GoalTagsTableProcessedTableManager get goalTagsRefs {
@@ -28990,8 +28982,10 @@ class $$GoalsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$GoalsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$GoalsTable, Goal>(table),
+                  $$GoalsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
@@ -29013,7 +29007,12 @@ class $$GoalsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (taskGoalsRefs)
-                        await $_getPrefetchedData<Goal, $GoalsTable, TaskGoal>(
+                        await $_getPrefetchedDataByColumns<
+                          Goal,
+                          $GoalsTable,
+                          TaskGoal,
+                          $TaskGoalsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$GoalsTableReferences
                               ._taskGoalsRefsTable(db),
@@ -29023,14 +29022,17 @@ class $$GoalsTableTableManager
                                 table,
                                 p0,
                               ).taskGoalsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.goalId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'goal_id',
                           typedResults: items,
                         ),
                       if (goalNotesRefs)
-                        await $_getPrefetchedData<Goal, $GoalsTable, GoalNote>(
+                        await $_getPrefetchedDataByColumns<
+                          Goal,
+                          $GoalsTable,
+                          GoalNote,
+                          $GoalNotesTable
+                        >(
                           currentTable: table,
                           referencedTable: $$GoalsTableReferences
                               ._goalNotesRefsTable(db),
@@ -29040,17 +29042,16 @@ class $$GoalsTableTableManager
                                 table,
                                 p0,
                               ).goalNotesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.goalId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'goal_id',
                           typedResults: items,
                         ),
                       if (goalWorkoutsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Goal,
                           $GoalsTable,
-                          GoalWorkout
+                          GoalWorkout,
+                          $GoalWorkoutsTable
                         >(
                           currentTable: table,
                           referencedTable: $$GoalsTableReferences
@@ -29061,14 +29062,17 @@ class $$GoalsTableTableManager
                                 table,
                                 p0,
                               ).goalWorkoutsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.goalId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'goal_id',
                           typedResults: items,
                         ),
                       if (goalTagsRefs)
-                        await $_getPrefetchedData<Goal, $GoalsTable, GoalTag>(
+                        await $_getPrefetchedDataByColumns<
+                          Goal,
+                          $GoalsTable,
+                          GoalTag,
+                          $GoalTagsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$GoalsTableReferences
                               ._goalTagsRefsTable(db),
@@ -29078,10 +29082,8 @@ class $$GoalsTableTableManager
                                 table,
                                 p0,
                               ).goalTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.goalId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'goal_id',
                           typedResults: items,
                         ),
                     ];
@@ -29320,7 +29322,18 @@ class $$GoalProgressEntriesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$GoalProgressEntriesTable, GoalProgressEntry>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $GoalProgressEntriesTable,
+                    GoalProgressEntry
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -29367,9 +29380,8 @@ final class $$TaskGoalsTableReferences
     extends BaseReferences<_$AppDatabase, $TaskGoalsTable, TaskGoal> {
   $$TaskGoalsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $TasksTable _taskIdTable(_$AppDatabase db) => db.tasks.createAlias(
-    $_aliasNameGenerator(db.taskGoals.taskId, db.tasks.id),
-  );
+  static $TasksTable _taskIdTable(_$AppDatabase db) =>
+      db.tasks.createAlias('task_goals__task_id__tasks__id');
 
   $$TasksTableProcessedTableManager get taskId {
     final $_column = $_itemColumn<String>('task_id')!;
@@ -29385,9 +29397,8 @@ final class $$TaskGoalsTableReferences
     );
   }
 
-  static $GoalsTable _goalIdTable(_$AppDatabase db) => db.goals.createAlias(
-    $_aliasNameGenerator(db.taskGoals.goalId, db.goals.id),
-  );
+  static $GoalsTable _goalIdTable(_$AppDatabase db) =>
+      db.goals.createAlias('task_goals__goal_id__goals__id');
 
   $$GoalsTableProcessedTableManager get goalId {
     final $_column = $_itemColumn<String>('goal_id')!;
@@ -29638,7 +29649,7 @@ class $$TaskGoalsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TaskGoalsTable, TaskGoal>(table),
                   $$TaskGoalsTableReferences(db, table, e),
                 ),
               )
@@ -29734,9 +29745,8 @@ final class $$TaskNotesTableReferences
     extends BaseReferences<_$AppDatabase, $TaskNotesTable, TaskNote> {
   $$TaskNotesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $TasksTable _taskIdTable(_$AppDatabase db) => db.tasks.createAlias(
-    $_aliasNameGenerator(db.taskNotes.taskId, db.tasks.id),
-  );
+  static $TasksTable _taskIdTable(_$AppDatabase db) =>
+      db.tasks.createAlias('task_notes__task_id__tasks__id');
 
   $$TasksTableProcessedTableManager get taskId {
     final $_column = $_itemColumn<String>('task_id')!;
@@ -29752,9 +29762,8 @@ final class $$TaskNotesTableReferences
     );
   }
 
-  static $NotesTable _noteIdTable(_$AppDatabase db) => db.notes.createAlias(
-    $_aliasNameGenerator(db.taskNotes.noteId, db.notes.id),
-  );
+  static $NotesTable _noteIdTable(_$AppDatabase db) =>
+      db.notes.createAlias('task_notes__note_id__notes__id');
 
   $$NotesTableProcessedTableManager get noteId {
     final $_column = $_itemColumn<String>('note_id')!;
@@ -30005,7 +30014,7 @@ class $$TaskNotesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TaskNotesTable, TaskNote>(table),
                   $$TaskNotesTableReferences(db, table, e),
                 ),
               )
@@ -30101,9 +30110,8 @@ final class $$GoalNotesTableReferences
     extends BaseReferences<_$AppDatabase, $GoalNotesTable, GoalNote> {
   $$GoalNotesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $GoalsTable _goalIdTable(_$AppDatabase db) => db.goals.createAlias(
-    $_aliasNameGenerator(db.goalNotes.goalId, db.goals.id),
-  );
+  static $GoalsTable _goalIdTable(_$AppDatabase db) =>
+      db.goals.createAlias('goal_notes__goal_id__goals__id');
 
   $$GoalsTableProcessedTableManager get goalId {
     final $_column = $_itemColumn<String>('goal_id')!;
@@ -30119,9 +30127,8 @@ final class $$GoalNotesTableReferences
     );
   }
 
-  static $NotesTable _noteIdTable(_$AppDatabase db) => db.notes.createAlias(
-    $_aliasNameGenerator(db.goalNotes.noteId, db.notes.id),
-  );
+  static $NotesTable _noteIdTable(_$AppDatabase db) =>
+      db.notes.createAlias('goal_notes__note_id__notes__id');
 
   $$NotesTableProcessedTableManager get noteId {
     final $_column = $_itemColumn<String>('note_id')!;
@@ -30372,7 +30379,7 @@ class $$GoalNotesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$GoalNotesTable, GoalNote>(table),
                   $$GoalNotesTableReferences(db, table, e),
                 ),
               )
@@ -30468,9 +30475,8 @@ final class $$GoalWorkoutsTableReferences
     extends BaseReferences<_$AppDatabase, $GoalWorkoutsTable, GoalWorkout> {
   $$GoalWorkoutsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $GoalsTable _goalIdTable(_$AppDatabase db) => db.goals.createAlias(
-    $_aliasNameGenerator(db.goalWorkouts.goalId, db.goals.id),
-  );
+  static $GoalsTable _goalIdTable(_$AppDatabase db) =>
+      db.goals.createAlias('goal_workouts__goal_id__goals__id');
 
   $$GoalsTableProcessedTableManager get goalId {
     final $_column = $_itemColumn<String>('goal_id')!;
@@ -30487,9 +30493,7 @@ final class $$GoalWorkoutsTableReferences
   }
 
   static $WorkoutsTable _workoutIdTable(_$AppDatabase db) =>
-      db.workouts.createAlias(
-        $_aliasNameGenerator(db.goalWorkouts.workoutId, db.workouts.id),
-      );
+      db.workouts.createAlias('goal_workouts__workout_id__workouts__id');
 
   $$WorkoutsTableProcessedTableManager get workoutId {
     final $_column = $_itemColumn<String>('workout_id')!;
@@ -30740,7 +30744,7 @@ class $$GoalWorkoutsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$GoalWorkoutsTable, GoalWorkout>(table),
                   $$GoalWorkoutsTableReferences(db, table, e),
                 ),
               )
@@ -30836,9 +30840,8 @@ final class $$NoteWorkoutsTableReferences
     extends BaseReferences<_$AppDatabase, $NoteWorkoutsTable, NoteWorkout> {
   $$NoteWorkoutsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $NotesTable _noteIdTable(_$AppDatabase db) => db.notes.createAlias(
-    $_aliasNameGenerator(db.noteWorkouts.noteId, db.notes.id),
-  );
+  static $NotesTable _noteIdTable(_$AppDatabase db) =>
+      db.notes.createAlias('note_workouts__note_id__notes__id');
 
   $$NotesTableProcessedTableManager get noteId {
     final $_column = $_itemColumn<String>('note_id')!;
@@ -30855,9 +30858,7 @@ final class $$NoteWorkoutsTableReferences
   }
 
   static $WorkoutsTable _workoutIdTable(_$AppDatabase db) =>
-      db.workouts.createAlias(
-        $_aliasNameGenerator(db.noteWorkouts.workoutId, db.workouts.id),
-      );
+      db.workouts.createAlias('note_workouts__workout_id__workouts__id');
 
   $$WorkoutsTableProcessedTableManager get workoutId {
     final $_column = $_itemColumn<String>('workout_id')!;
@@ -31108,7 +31109,7 @@ class $$NoteWorkoutsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$NoteWorkoutsTable, NoteWorkout>(table),
                   $$NoteWorkoutsTableReferences(db, table, e),
                 ),
               )
@@ -31203,7 +31204,7 @@ final class $$TaskTagsTableReferences
   $$TaskTagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $TagsTable _tagIdTable(_$AppDatabase db) =>
-      db.tags.createAlias($_aliasNameGenerator(db.taskTags.tagId, db.tags.id));
+      db.tags.createAlias('task_tags__tag_id__tags__id');
 
   $$TagsTableProcessedTableManager get tagId {
     final $_column = $_itemColumn<String>('tag_id')!;
@@ -31219,9 +31220,8 @@ final class $$TaskTagsTableReferences
     );
   }
 
-  static $TasksTable _taskIdTable(_$AppDatabase db) => db.tasks.createAlias(
-    $_aliasNameGenerator(db.taskTags.taskId, db.tasks.id),
-  );
+  static $TasksTable _taskIdTable(_$AppDatabase db) =>
+      db.tasks.createAlias('task_tags__task_id__tasks__id');
 
   $$TasksTableProcessedTableManager get taskId {
     final $_column = $_itemColumn<String>('task_id')!;
@@ -31452,7 +31452,7 @@ class $$TaskTagsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TaskTagsTable, TaskTag>(table),
                   $$TaskTagsTableReferences(db, table, e),
                 ),
               )
@@ -31547,7 +31547,7 @@ final class $$GoalTagsTableReferences
   $$GoalTagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $TagsTable _tagIdTable(_$AppDatabase db) =>
-      db.tags.createAlias($_aliasNameGenerator(db.goalTags.tagId, db.tags.id));
+      db.tags.createAlias('goal_tags__tag_id__tags__id');
 
   $$TagsTableProcessedTableManager get tagId {
     final $_column = $_itemColumn<String>('tag_id')!;
@@ -31563,9 +31563,8 @@ final class $$GoalTagsTableReferences
     );
   }
 
-  static $GoalsTable _goalIdTable(_$AppDatabase db) => db.goals.createAlias(
-    $_aliasNameGenerator(db.goalTags.goalId, db.goals.id),
-  );
+  static $GoalsTable _goalIdTable(_$AppDatabase db) =>
+      db.goals.createAlias('goal_tags__goal_id__goals__id');
 
   $$GoalsTableProcessedTableManager get goalId {
     final $_column = $_itemColumn<String>('goal_id')!;
@@ -31796,7 +31795,7 @@ class $$GoalTagsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$GoalTagsTable, GoalTag>(table),
                   $$GoalTagsTableReferences(db, table, e),
                 ),
               )
@@ -31891,7 +31890,7 @@ final class $$NoteTagsTableReferences
   $$NoteTagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $TagsTable _tagIdTable(_$AppDatabase db) =>
-      db.tags.createAlias($_aliasNameGenerator(db.noteTags.tagId, db.tags.id));
+      db.tags.createAlias('note_tags__tag_id__tags__id');
 
   $$TagsTableProcessedTableManager get tagId {
     final $_column = $_itemColumn<String>('tag_id')!;
@@ -31907,9 +31906,8 @@ final class $$NoteTagsTableReferences
     );
   }
 
-  static $NotesTable _noteIdTable(_$AppDatabase db) => db.notes.createAlias(
-    $_aliasNameGenerator(db.noteTags.noteId, db.notes.id),
-  );
+  static $NotesTable _noteIdTable(_$AppDatabase db) =>
+      db.notes.createAlias('note_tags__note_id__notes__id');
 
   $$NotesTableProcessedTableManager get noteId {
     final $_column = $_itemColumn<String>('note_id')!;
@@ -32140,7 +32138,7 @@ class $$NoteTagsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$NoteTagsTable, NoteTag>(table),
                   $$NoteTagsTableReferences(db, table, e),
                 ),
               )
@@ -32242,9 +32240,8 @@ final class $$NoteAudioTableReferences
     extends BaseReferences<_$AppDatabase, $NoteAudioTable, NoteAudioData> {
   $$NoteAudioTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $NotesTable _noteIdTable(_$AppDatabase db) => db.notes.createAlias(
-    $_aliasNameGenerator(db.noteAudio.noteId, db.notes.id),
-  );
+  static $NotesTable _noteIdTable(_$AppDatabase db) =>
+      db.notes.createAlias('note_audio__note_id__notes__id');
 
   $$NotesTableProcessedTableManager get noteId {
     final $_column = $_itemColumn<String>('note_id')!;
@@ -32492,7 +32489,7 @@ class $$NoteAudioTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$NoteAudioTable, NoteAudioData>(table),
                   $$NoteAudioTableReferences(db, table, e),
                 ),
               )
@@ -32700,7 +32697,18 @@ class $$ExerciseCatalogTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$ExerciseCatalogTable, ExerciseCatalogData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ExerciseCatalogTable,
+                    ExerciseCatalogData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -32875,7 +32883,18 @@ class $$IngredientCatalogTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$IngredientCatalogTable, IngredientCatalogData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $IngredientCatalogTable,
+                    IngredientCatalogData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -33041,7 +33060,16 @@ class $$SyncDeletesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$SyncDeletesTable, SyncDelete>(table),
+                  BaseReferences<_$AppDatabase, $SyncDeletesTable, SyncDelete>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

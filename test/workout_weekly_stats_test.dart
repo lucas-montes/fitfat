@@ -25,9 +25,11 @@ void main() {
   tearDown(() => database.close());
 
   /// The Monday that starts the week containing [day].
-  DateTime mondayOf(DateTime day) =>
-      DateTime(day.year, day.month, day.day)
-          .subtract(Duration(days: day.weekday - DateTime.monday));
+  DateTime mondayOf(DateTime day) => DateTime(
+    day.year,
+    day.month,
+    day.day,
+  ).subtract(Duration(days: day.weekday - DateTime.monday));
 
   /// The window the dashboard uses, expressed from a reference day so the tests
   /// do not silently depend on the day they happen to run on.
@@ -44,21 +46,24 @@ void main() {
     int minutesBeforeEnd = 45,
     bool started = true,
   }) async {
-    await database.into(database.workouts).insert(
-      db.WorkoutsCompanion.insert(
-        id: id,
-        name: id,
-        date: day.millisecondsSinceEpoch,
-        startedAt: started
-            ? Value(
-                day.add(Duration(minutes: -minutesBeforeEnd))
-                    .millisecondsSinceEpoch,
-              )
-            : const Value.absent(),
-        completedAt: Value(day.millisecondsSinceEpoch),
-        createdAt: day.millisecondsSinceEpoch,
-      ),
-    );
+    await database
+        .into(database.workouts)
+        .insert(
+          db.WorkoutsCompanion.insert(
+            id: id,
+            name: id,
+            date: day.millisecondsSinceEpoch,
+            startedAt: started
+                ? Value(
+                    day
+                        .add(Duration(minutes: -minutesBeforeEnd))
+                        .millisecondsSinceEpoch,
+                  )
+                : const Value.absent(),
+            completedAt: Value(day.millisecondsSinceEpoch),
+            createdAt: day.millisecondsSinceEpoch,
+          ),
+        );
   }
 
   /// Adds a set with logged actuals to [workoutId], creating the exercise and
@@ -80,16 +85,18 @@ void main() {
             sortOrder: 0,
           ),
         );
-    await database.into(database.exerciseSets).insert(
-      db.ExerciseSetsCompanion.insert(
-        id: 'set-$workoutId',
-        workoutExerciseId: workoutExId,
-        setNumber: 1,
-        actualReps: Value(actualReps),
-        actualWeightKg: Value(actualWeightKg),
-        actualDurationMinutes: Value(actualMinutes),
-      ),
-    );
+    await database
+        .into(database.exerciseSets)
+        .insert(
+          db.ExerciseSetsCompanion.insert(
+            id: 'set-$workoutId',
+            workoutExerciseId: workoutExId,
+            setNumber: 1,
+            actualReps: Value(actualReps),
+            actualWeightKg: Value(actualWeightKg),
+            actualDurationMinutes: Value(actualMinutes),
+          ),
+        );
   }
 
   group('days trained', () {
@@ -158,15 +165,21 @@ void main() {
       );
     });
 
-    test('every day of the current week counts, Monday through Sunday', () async {
-      final w = windowFor(DateTime.now());
-      for (var i = 0; i < 7; i++) {
-        await complete('d$i', w.from.add(Duration(days: i)));
-      }
+    test(
+      'every day of the current week counts, Monday through Sunday',
+      () async {
+        final w = windowFor(DateTime.now());
+        for (var i = 0; i < 7; i++) {
+          await complete('d$i', w.from.add(Duration(days: i)));
+        }
 
-      final stats = await workouts.getVolumeAndMinutesBetween(w.from, w.until);
-      expect(stats.daysTrained, 7);
-    });
+        final stats = await workouts.getVolumeAndMinutesBetween(
+          w.from,
+          w.until,
+        );
+        expect(stats.daysTrained, 7);
+      },
+    );
 
     test('the next week is excluded by the upper bound', () async {
       final w = windowFor(DateTime.now());
@@ -177,20 +190,23 @@ void main() {
       expect(stats.daysTrained, 0);
     });
 
-    test('Sunday the 11th and Monday the 12th fall in different weeks', () async {
-      // Pins mondayOf itself rather than the aggregate: if the week started on
-      // the wrong day, this is the boundary that would catch it.
-      final sunday = DateTime(2026, 10, 11);
-      final monday = DateTime(2026, 10, 12);
-      expect(sunday.weekday, DateTime.sunday);
-      expect(monday.weekday, DateTime.monday);
+    test(
+      'Sunday the 11th and Monday the 12th fall in different weeks',
+      () async {
+        // Pins mondayOf itself rather than the aggregate: if the week started on
+        // the wrong day, this is the boundary that would catch it.
+        final sunday = DateTime(2026, 10, 11);
+        final monday = DateTime(2026, 10, 12);
+        expect(sunday.weekday, DateTime.sunday);
+        expect(monday.weekday, DateTime.monday);
 
-      final sundayWeek = windowFor(sunday);
-      final mondayWeek = windowFor(monday);
-      expect(mondayOf(sunday), DateTime(2026, 10, 5));
-      expect(mondayOf(monday), DateTime(2026, 10, 12));
-      expect(sundayWeek.until, mondayWeek.from);
-    });
+        final sundayWeek = windowFor(sunday);
+        final mondayWeek = windowFor(monday);
+        expect(mondayOf(sunday), DateTime(2026, 10, 5));
+        expect(mondayOf(monday), DateTime(2026, 10, 12));
+        expect(sundayWeek.until, mondayWeek.from);
+      },
+    );
   });
 
   group('startOfCalendarWeek', () {
@@ -204,7 +220,8 @@ void main() {
         expect(
           startOfCalendarWeek(date),
           DateTime(2026, 10, 5),
-          reason: '${date.toIso8601String()} (${date.weekday}) is not in the '
+          reason:
+              '${date.toIso8601String()} (${date.weekday}) is not in the '
               'week beginning 2026-10-05',
         );
       }
@@ -292,8 +309,11 @@ void main() {
       // complete() never sets startedAt, so a session finished outside the
       // active-workout flow has no duration at all.
       final w = windowFor(DateTime.now());
-      await complete('noStart', w.from.add(const Duration(days: 1)),
-          started: false);
+      await complete(
+        'noStart',
+        w.from.add(const Duration(days: 1)),
+        started: false,
+      );
       await addSet('noStart', actualMinutes: 20);
       await addSet('noStart2', actualMinutes: 0);
 
@@ -304,8 +324,11 @@ void main() {
 
     test('is zero when nothing was logged', () async {
       final w = windowFor(DateTime.now());
-      await complete('noStart', w.from.add(const Duration(days: 1)),
-          started: false);
+      await complete(
+        'noStart',
+        w.from.add(const Duration(days: 1)),
+        started: false,
+      );
 
       final stats = await workouts.getVolumeAndMinutesBetween(w.from, w.until);
       expect(stats.minutes, 0);

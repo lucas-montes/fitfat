@@ -15,11 +15,11 @@ final class GoalRepository {
         await (_database.select(_database.goals)
               ..where((t) => t.deletedAt.isNull())
               ..orderBy([
-              (t) => OrderingTerm(
-                expression: t.startDate,
-                mode: OrderingMode.desc,
-              ),
-            ]))
+                (t) => OrderingTerm(
+                  expression: t.startDate,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
             .get();
     return _attachTags(rows.map(_toDomain).toList());
   }
@@ -89,11 +89,9 @@ final class GoalRepository {
         for (final link in links) {
           final taskId = link.taskId;
           final now = DateTime.now().millisecondsSinceEpoch;
-          await (_database.update(
-            _database.tasks,
-          )..where((t) => t.id.equals(taskId))).write(
-            db.TasksCompanion(deletedAt: Value(now)),
-          );
+          await (_database.update(_database.tasks)
+                ..where((t) => t.id.equals(taskId)))
+              .write(db.TasksCompanion(deletedAt: Value(now)));
           await (_database.delete(
             _database.taskTags,
           )..where((t) => t.taskId.equals(taskId))).go();
@@ -121,11 +119,8 @@ final class GoalRepository {
         _database.goalWorkouts,
       )..where((t) => t.goalId.equals(id))).go();
       final now = DateTime.now().millisecondsSinceEpoch;
-      await (_database.update(
-        _database.goals,
-      )..where((t) => t.id.equals(id))).write(
-        db.GoalsCompanion(deletedAt: Value(now)),
-      );
+      await (_database.update(_database.goals)..where((t) => t.id.equals(id)))
+          .write(db.GoalsCompanion(deletedAt: Value(now)));
     });
   }
 

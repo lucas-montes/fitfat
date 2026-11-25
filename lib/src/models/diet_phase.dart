@@ -54,6 +54,7 @@ const double kDefaultFiberTarget = 30.0;
 const double kDefaultCuttingAdjustment = -500;
 const double kDefaultBulkingAdjustment = 500;
 const double kDefaultMaintenanceAdjustment = 0;
+
 extension PhaseConfigCopy on PhaseConfig {
   /// Records have no built-in copyWith, and reconstructing one field at a time
   /// at every call site is where a knob gets dropped by accident.

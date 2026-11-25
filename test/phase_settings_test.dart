@@ -44,8 +44,10 @@ void main() {
 
     test('an unset goal means the maintenance phase', () async {
       await loadWith({});
-      expect(container.read(settingsProvider).activePhase,
-          DietPhase.maintenance);
+      expect(
+        container.read(settingsProvider).activePhase,
+        DietPhase.maintenance,
+      );
     });
 
     test('a stored goal selects its phase', () async {
@@ -57,16 +59,19 @@ void main() {
   });
 
   group('legacy adjustment', () {
-    test('a stored magnitude seeds cutting and bulking symmetrically', () async {
-      // The old knob was unsigned and applied +/- depending on the goal, so a
-      // 750 setting has to become -750 cutting and +750 bulking.
-      await loadWith({'settings_calorie_goal_adjustment': 750.0});
-      final configs = container.read(settingsProvider).phaseConfigs;
+    test(
+      'a stored magnitude seeds cutting and bulking symmetrically',
+      () async {
+        // The old knob was unsigned and applied +/- depending on the goal, so a
+        // 750 setting has to become -750 cutting and +750 bulking.
+        await loadWith({'settings_calorie_goal_adjustment': 750.0});
+        final configs = container.read(settingsProvider).phaseConfigs;
 
-      expect(configs[DietPhase.cutting]!.adjustment, -750);
-      expect(configs[DietPhase.bulking]!.adjustment, 750);
-      expect(configs[DietPhase.maintenance]!.adjustment, 0);
-    });
+        expect(configs[DietPhase.cutting]!.adjustment, -750);
+        expect(configs[DietPhase.bulking]!.adjustment, 750);
+        expect(configs[DietPhase.maintenance]!.adjustment, 0);
+      },
+    );
 
     test('an explicit phase value wins over the legacy magnitude', () async {
       await loadWith({
@@ -104,24 +109,30 @@ void main() {
       await notifier.setPhaseAdjustment(DietPhase.cutting, -650);
 
       expect(
-        container.read(settingsProvider).phaseConfigs[DietPhase.cutting]!
+        container
+            .read(settingsProvider)
+            .phaseConfigs[DietPhase.cutting]!
             .adjustment,
         -650,
       );
     });
 
-    test('fat percent is clamped to 0-100 and others to non-negative', () async {
-      await loadWith({});
-      await notifier.setPhaseFatPercent(DietPhase.bulking, 150);
-      await notifier.setPhaseProteinPerKg(DietPhase.bulking, -3);
-      await notifier.setPhaseFiberTarget(DietPhase.bulking, -8);
+    test(
+      'fat percent is clamped to 0-100 and others to non-negative',
+      () async {
+        await loadWith({});
+        await notifier.setPhaseFatPercent(DietPhase.bulking, 150);
+        await notifier.setPhaseProteinPerKg(DietPhase.bulking, -3);
+        await notifier.setPhaseFiberTarget(DietPhase.bulking, -8);
 
-      final config = container.read(settingsProvider).phaseConfigs[
-          DietPhase.bulking]!;
-      expect(config.fatPercent, 100);
-      expect(config.proteinPerKg, 0);
-      expect(config.fiberTarget, 0);
-    });
+        final config = container
+            .read(settingsProvider)
+            .phaseConfigs[DietPhase.bulking]!;
+        expect(config.fatPercent, 100);
+        expect(config.proteinPerKg, 0);
+        expect(config.fiberTarget, 0);
+      },
+    );
 
     test('editing one phase leaves the others alone', () async {
       await loadWith({});
@@ -129,8 +140,7 @@ void main() {
 
       final configs = container.read(settingsProvider).phaseConfigs;
       expect(configs[DietPhase.cutting]!.adjustment, -800);
-      expect(configs[DietPhase.bulking]!.adjustment,
-          kDefaultBulkingAdjustment);
+      expect(configs[DietPhase.bulking]!.adjustment, kDefaultBulkingAdjustment);
     });
   });
 
@@ -150,11 +160,16 @@ void main() {
       await notifier.setPhaseAdjustment(DietPhase.bulking, 400);
 
       await notifier.setActivePhase(DietPhase.cutting);
-      expect(container.read(settingsProvider).activePhaseConfig.adjustment,
-          -800);
+      expect(
+        container.read(settingsProvider).activePhaseConfig.adjustment,
+        -800,
+      );
 
       await notifier.setActivePhase(DietPhase.bulking);
-      expect(container.read(settingsProvider).activePhaseConfig.adjustment, 400);
+      expect(
+        container.read(settingsProvider).activePhaseConfig.adjustment,
+        400,
+      );
     });
   });
 }

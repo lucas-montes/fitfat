@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../sync/screens/sync_hub_screen.dart';
 import '../../sync/local_backup.dart';
 import '../../ui/widgets/top_banner.dart';
@@ -60,65 +60,67 @@ final class _HubDestination {
 final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _selectedIndex = 0;
 
-  List<_HubDestination> _destinations(AppLocalizations l10n, ColorScheme scheme) =>
-      [
-        _HubDestination(
-          icon: Icons.person_outline,
-          label: l10n.settingsProfile,
-          subtitle: l10n.settingsProfileSubtitle,
-          build: ({required embed}) => ProfileSettingsScreen(embed: embed),
-        ),
-        _HubDestination(
-          icon: Icons.event_note_outlined,
-          label: l10n.settingsPlanner,
-          subtitle: l10n.settingsPlannerSubtitle,
-          build: ({required embed}) => _PlannerScreen(embed: embed),
-        ),
-        _HubDestination(
-          icon: Icons.restaurant_menu_outlined,
-          label: l10n.settingsNutrition,
-          subtitle: l10n.settingsNutritionSubtitle,
-          build: ({required embed}) => _NutritionScreen(embed: embed),
-        ),
-        _HubDestination(
-          icon: Icons.account_balance_wallet_outlined,
-          label: l10n.settingsCurrencyBudget,
-          subtitle: l10n.settingsBudgetCurrencySubtitle,
-          build: ({required embed}) => _BudgetCurrencyScreen(embed: embed),
-        ),
-        _HubDestination(
-          icon: Icons.notifications_outlined,
-          label: l10n.settingsNotifications,
-          subtitle: l10n.settingsNotificationsSubtitle,
-          build: ({required embed}) => _NotificationsScreen(embed: embed),
-        ),
-        _HubDestination(
-          icon: Icons.palette_outlined,
-          label: l10n.settingsAppearanceLanguage,
-          subtitle: l10n.settingsAppearanceLanguageSubtitle,
-          build: ({required embed}) => _AppearanceLanguageScreen(embed: embed),
-        ),
-        _HubDestination(
-          icon: Icons.sell_outlined,
-          label: l10n.prioritiesTitle,
-          subtitle: l10n.prioritiesManage,
-          build: ({required embed}) => const TagManagerScreen(),
-        ),
-        _HubDestination(
-          icon: Icons.sync_outlined,
-          label: l10n.settingsSync,
-          subtitle: l10n.settingsSyncSubtitle,
-          build: ({required embed}) => const SyncHubScreen(),
-        ),
-        _HubDestination(
-          icon: Icons.delete_forever_outlined,
-          iconColor: scheme.error,
-          titleColor: scheme.error,
-          label: l10n.settingsData,
-          subtitle: l10n.settingsResetDataSubtitle,
-          build: ({required embed}) => _DataScreen(embed: embed),
-        ),
-      ];
+  List<_HubDestination> _destinations(
+    AppLocalizations l10n,
+    ColorScheme scheme,
+  ) => [
+    _HubDestination(
+      icon: Icons.person_outline,
+      label: l10n.settingsProfile,
+      subtitle: l10n.settingsProfileSubtitle,
+      build: ({required embed}) => ProfileSettingsScreen(embed: embed),
+    ),
+    _HubDestination(
+      icon: Icons.event_note_outlined,
+      label: l10n.settingsPlanner,
+      subtitle: l10n.settingsPlannerSubtitle,
+      build: ({required embed}) => _PlannerScreen(embed: embed),
+    ),
+    _HubDestination(
+      icon: Icons.restaurant_menu_outlined,
+      label: l10n.settingsNutrition,
+      subtitle: l10n.settingsNutritionSubtitle,
+      build: ({required embed}) => _NutritionScreen(embed: embed),
+    ),
+    _HubDestination(
+      icon: Icons.account_balance_wallet_outlined,
+      label: l10n.settingsCurrencyBudget,
+      subtitle: l10n.settingsBudgetCurrencySubtitle,
+      build: ({required embed}) => _BudgetCurrencyScreen(embed: embed),
+    ),
+    _HubDestination(
+      icon: Icons.notifications_outlined,
+      label: l10n.settingsNotifications,
+      subtitle: l10n.settingsNotificationsSubtitle,
+      build: ({required embed}) => _NotificationsScreen(embed: embed),
+    ),
+    _HubDestination(
+      icon: Icons.palette_outlined,
+      label: l10n.settingsAppearanceLanguage,
+      subtitle: l10n.settingsAppearanceLanguageSubtitle,
+      build: ({required embed}) => _AppearanceLanguageScreen(embed: embed),
+    ),
+    _HubDestination(
+      icon: Icons.sell_outlined,
+      label: l10n.prioritiesTitle,
+      subtitle: l10n.prioritiesManage,
+      build: ({required embed}) => const TagManagerScreen(),
+    ),
+    _HubDestination(
+      icon: Icons.sync_outlined,
+      label: l10n.settingsSync,
+      subtitle: l10n.settingsSyncSubtitle,
+      build: ({required embed}) => const SyncHubScreen(),
+    ),
+    _HubDestination(
+      icon: Icons.delete_forever_outlined,
+      iconColor: scheme.error,
+      titleColor: scheme.error,
+      label: l10n.settingsData,
+      subtitle: l10n.settingsResetDataSubtitle,
+      build: ({required embed}) => _DataScreen(embed: embed),
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -238,10 +240,12 @@ final class ProfileSettingsScreen extends ConsumerStatefulWidget {
   const ProfileSettingsScreen({this.embed = false});
 
   @override
-  ConsumerState<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
+  ConsumerState<ProfileSettingsScreen> createState() =>
+      _ProfileSettingsScreenState();
 }
 
-final class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
+final class _ProfileSettingsScreenState
+    extends ConsumerState<ProfileSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _ageController;
   late final TextEditingController _bodyFatController;
@@ -340,10 +344,7 @@ final class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScr
                   const SizedBox(height: 16),
 
                   // Gender
-                  Text(
-                    l10n.settingsGender,
-                    style: theme.textTheme.bodyMedium,
-                  ),
+                  Text(l10n.settingsGender, style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 8),
                   SegmentedButton<Gender>(
                     emptySelectionAllowed: true,
@@ -433,7 +434,8 @@ final class _NotificationsScreen extends ConsumerStatefulWidget {
       _NotificationsScreenState();
 }
 
-final class _NotificationsScreenState extends ConsumerState<_NotificationsScreen> {
+final class _NotificationsScreenState
+    extends ConsumerState<_NotificationsScreen> {
   /// App-wide task-reminder toggle: turning off cancels every scheduled
   /// planner reminder; turning back on re-schedules pending future timed tasks.
   Future<void> _setPlannerNotifications(
@@ -612,33 +614,32 @@ Widget _settingsField({
   String? help,
   required String? Function(String?) validator,
   required VoidCallback onSave,
-}) =>
-    Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        textInputAction: TextInputAction.done,
-        decoration: InputDecoration(
-          labelText: label,
-          helperText: help,
-          helperMaxLines: 3,
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.check),
-            tooltip: AppLocalizations.of(context)!.commonSave,
-            onPressed: () {
-              if (validator(controller.text) != null) return;
-              onSave();
-            },
-          ),
-        ),
-        validator: validator,
-        onFieldSubmitted: (_) {
+}) => Padding(
+  padding: const EdgeInsets.only(bottom: 16),
+  child: TextFormField(
+    controller: controller,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    textInputAction: TextInputAction.done,
+    decoration: InputDecoration(
+      labelText: label,
+      helperText: help,
+      helperMaxLines: 3,
+      suffixIcon: IconButton(
+        icon: const Icon(Icons.check),
+        tooltip: AppLocalizations.of(context)!.commonSave,
+        onPressed: () {
           if (validator(controller.text) != null) return;
           onSave();
         },
       ),
-    );
+    ),
+    validator: validator,
+    onFieldSubmitted: (_) {
+      if (validator(controller.text) != null) return;
+      onSave();
+    },
+  ),
+);
 
 String? _validatePositiveInt(BuildContext context, String? value) {
   final text = value?.trim() ?? '';
@@ -730,7 +731,9 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
     await notifier.setUntimedReminderMinutes(int.parse(_untimedCtrl.text));
     if (!ref.read(settingsProvider).plannerNotifications) return;
     try {
-      await ref.read(taskReminderSchedulerProvider).reschedulePending(
+      await ref
+          .read(taskReminderSchedulerProvider)
+          .reschedulePending(
             repository: ref.read(taskRepositoryProvider),
             dueSoonText: l10n.taskReminderDueSoon,
             dueNowText: l10n.taskReminderDueNow,
@@ -801,8 +804,8 @@ final class _PlannerScreenState extends ConsumerState<_PlannerScreen> {
             Text(
               l10n.settingsCascadeDeleteHelp,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 8),
             SegmentedButton<CascadeDeleteBehavior>(
@@ -909,11 +912,11 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
                 }),
                 child: _PhaseKnobs(
                   phase: phase,
-                  config: settings.phaseConfigs[phase] ??
+                  config:
+                      settings.phaseConfigs[phase] ??
                       kDefaultPhaseConfigs[phase]!,
                   controllerFor: (knob, value) => _ctrl(phase, knob, value),
-                  saveAdjustment: (v) =>
-                      notifier.setPhaseAdjustment(phase, v),
+                  saveAdjustment: (v) => notifier.setPhaseAdjustment(phase, v),
                   saveProtein: (v) => notifier.setPhaseProteinPerKg(phase, v),
                   saveFat: (v) => notifier.setPhaseFatPercent(phase, v),
                   saveFiber: (v) => notifier.setPhaseFiberTarget(phase, v),
@@ -941,8 +944,14 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
                 SegmentedButton<WeightUnit>(
                   showSelectedIcon: false,
                   segments: [
-                    ButtonSegment(value: WeightUnit.kg, label: const Text('kg')),
-                    ButtonSegment(value: WeightUnit.lb, label: const Text('lb')),
+                    ButtonSegment(
+                      value: WeightUnit.kg,
+                      label: const Text('kg'),
+                    ),
+                    ButtonSegment(
+                      value: WeightUnit.lb,
+                      label: const Text('lb'),
+                    ),
                   ],
                   selected: {settings.weightUnit},
                   onSelectionChanged: (selection) =>
@@ -980,7 +989,6 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
     return SettingsSubScreenScaffold(title: l10n.settingsNutrition, body: body);
   }
 }
-
 
 /// BMR and TDEE, with the equation named only when it is the lean-mass one.
 ///
@@ -1174,7 +1182,9 @@ final class _PhaseKnobs extends StatelessWidget {
           onSave: () => _saveIfValid(
             controllerFor('fiberTarget', config.fiberTarget),
             () => saveFiber(
-              double.parse(controllerFor('fiberTarget', config.fiberTarget).text),
+              double.parse(
+                controllerFor('fiberTarget', config.fiberTarget).text,
+              ),
             ),
           ),
         ),
@@ -1283,7 +1293,7 @@ final class _BudgetCurrencyScreen extends ConsumerWidget {
         SettingsSection(
           title: l10n.settingsCurrencyBudget,
           subtitle: l10n.settingsBudgetCurrencySubtitle,
-          children: [ const _CurrencySection() ],
+          children: [const _CurrencySection()],
         ),
       ],
     );
@@ -1294,7 +1304,6 @@ final class _BudgetCurrencyScreen extends ConsumerWidget {
     );
   }
 }
-
 
 /// Data: destructive reset-all with its confirm dialog.
 final class _DataScreen extends ConsumerStatefulWidget {
@@ -1397,7 +1406,6 @@ final class _DataScreenState extends ConsumerState<_DataScreen> {
             ),
           ],
         ),
-
       ],
     );
     if (widget.embed) return SettingsBody(child: body);

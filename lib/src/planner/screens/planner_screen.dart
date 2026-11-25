@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -225,45 +225,46 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             child: _planMode == _PlanMode.initiatives
                 ? InitiativesView(onAdd: _showInitiativeSheet)
                 : switch (_viewMode) {
-              _PlannerViewMode.day => _DayFlowView(
-                key: _dayFlowKey,
-                initialDay: _selectedDay,
-                isSameDay: _isSameDay,
-                onSelectedDayChanged: (day) =>
-                    setState(() => _selectedDay = _startOfDay(day)),
-                onAddItem: _addItem,
-                onToggleDone: _toggleDone,
-                onToggleCancelled: _toggleCancelled,
-                onOpenDetail: _openDetail,
-                onEditItem: _editItem,
-                onDeleteItem: _deleteItem,
-                onOpenWorkout: _openWorkout,
-              ),
-              _PlannerViewMode.week => _WeekFlowView(
-                key: _weekFlowKey,
-                initialDay: _selectedDay,
-                isSameDay: _isSameDay,
-                onSelectedDayChanged: (day) =>
-                    setState(() => _selectedDay = _startOfDay(day)),
-                onJumpToDay: _jumpToDay,
-                onToggleDone: _toggleDone,
-                onToggleCancelled: _toggleCancelled,
-                onOpenDetail: _openDetail,
-                onEditItem: _editItem,
-                onDeleteItem: _deleteItem,
-                onOpenWorkout: _openWorkout,
-              ),
-              _PlannerViewMode.month => _MonthOverview(
-                key: _monthKey,
-                selectedDay: _selectedDay,
-                isSameDay: _isSameDay,
-                onDayPicked: _jumpToDay,
-              ),
-            },
+                    _PlannerViewMode.day => _DayFlowView(
+                      key: _dayFlowKey,
+                      initialDay: _selectedDay,
+                      isSameDay: _isSameDay,
+                      onSelectedDayChanged: (day) =>
+                          setState(() => _selectedDay = _startOfDay(day)),
+                      onAddItem: _addItem,
+                      onToggleDone: _toggleDone,
+                      onToggleCancelled: _toggleCancelled,
+                      onOpenDetail: _openDetail,
+                      onEditItem: _editItem,
+                      onDeleteItem: _deleteItem,
+                      onOpenWorkout: _openWorkout,
+                    ),
+                    _PlannerViewMode.week => _WeekFlowView(
+                      key: _weekFlowKey,
+                      initialDay: _selectedDay,
+                      isSameDay: _isSameDay,
+                      onSelectedDayChanged: (day) =>
+                          setState(() => _selectedDay = _startOfDay(day)),
+                      onJumpToDay: _jumpToDay,
+                      onToggleDone: _toggleDone,
+                      onToggleCancelled: _toggleCancelled,
+                      onOpenDetail: _openDetail,
+                      onEditItem: _editItem,
+                      onDeleteItem: _deleteItem,
+                      onOpenWorkout: _openWorkout,
+                    ),
+                    _PlannerViewMode.month => _MonthOverview(
+                      key: _monthKey,
+                      selectedDay: _selectedDay,
+                      isSameDay: _isSameDay,
+                      onDayPicked: _jumpToDay,
+                    ),
+                  },
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(heroTag: null, 
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: _planMode == _PlanMode.initiatives
             ? _showInitiativeSheet
             : _showAddSheet,
@@ -1000,11 +1001,7 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
                   message: null,
                   child: ListView(
                     controller: _scrollController,
-                    children: _buildChildren(
-                      l10n,
-                      material,
-                      visibleTasks,
-                    ),
+                    children: _buildChildren(l10n, material, visibleTasks),
                   ),
                 ),
         ),
@@ -1131,13 +1128,17 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
                                 timeLabel: _timeLabel(material, it),
                                 onToggleDone: () => cbs.onToggleDone(it),
                                 onToggleCancelled: () {
-                                  ref.read(dismissedTaskIdsProvider.notifier).add(it.id);
+                                  ref
+                                      .read(dismissedTaskIdsProvider.notifier)
+                                      .add(it.id);
                                   cbs.onToggleCancelled(it);
                                 },
                                 onOpenDetail: () => cbs.onOpenDetail(it),
                                 onEdit: () => cbs.onEditItem(it),
                                 onDelete: () {
-                                  ref.read(dismissedTaskIdsProvider.notifier).add(it.id);
+                                  ref
+                                      .read(dismissedTaskIdsProvider.notifier)
+                                      .add(it.id);
                                   cbs.onDeleteItem(it);
                                 },
                                 onOpenWorkout: () => cbs.onOpenWorkout(it),
@@ -1581,12 +1582,8 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
       onPageChanged: (focused) =>
           setState(() => _focusedDay = _startOfDay(focused)),
       calendarBuilders: CalendarBuilders(
-        defaultBuilder: (context, day, focusedMonth) => _dayCell(
-          context,
-          day,
-          focusedMonth,
-          taskDays: taskDays,
-        ),
+        defaultBuilder: (context, day, focusedMonth) =>
+            _dayCell(context, day, focusedMonth, taskDays: taskDays),
       ),
     );
   }

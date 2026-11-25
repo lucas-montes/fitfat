@@ -20,11 +20,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1731533236,
-        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "lastModified": 1794427683,
+        "narHash": "sha256-o7ey9gEilsxaifqJWnBDlYSKbNWYQYtKwDyXeZU2kaU=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "rev": "cd489559845d81f673a12885576016c65cbe9363",
         "type": "github"
       },
       "original": {
@@ -69,16 +69,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1778737229,
-        "narHash": "sha256-6xWoytx8jFW4PF1GjRm/i/53trbpKGfz6zjzQGBr4cI=",
+        "lastModified": 1795234589,
+        "narHash": "sha256-f/VVvxf5RsQgWVhUtefoca5ktVg0DA2bnkMOcmSnozo=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "d7a713c0b7e47c908258e71cba7a2d77cc8d71d5",
+        "rev": "2786a2a72088ecf32aea5b3ec52099e6a7cff78f",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-25.11",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -133,15 +133,14 @@
         "flake-utils": "flake-utils_2",
         "flatpak-builder-tools": "flatpak-builder-tools",
         "nixpkgs": "nixpkgs_2",
-        "rust-overlay": "rust-overlay",
-        "turso": "turso"
+        "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1787304025,
-        "narHash": "sha256-2nOBecFy6DQdolpc2NH1luSAObD9KRtdLZFcXPVPW+E=",
+        "lastModified": 1795598477,
+        "narHash": "sha256-q1ko/roRooPblo4WYhq1SqaT2aurhKT6XRDyeBLr/J4=",
         "owner": "crocoder-dev",
         "repo": "shared-context-engineering",
-        "rev": "1f23adf41ecc1fe17da3c8239bd73814df45db58",
+        "rev": "a50b179eec393cfb0942d3a58acb928b5dd15359",
         "type": "github"
       },
       "original": {
@@ -152,11 +151,11 @@
     },
     "systems": {
       "locked": {
-        "lastModified": 1681028828,
-        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "lastModified": 1791244623,
+        "narHash": "sha256-uuanbkFk8a313Zfrxdcz8Us/yQtaxNnKJtX8v0ZPpd8=",
         "owner": "nix-systems",
         "repo": "default",
-        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "rev": "d36eeed142f88b5a636f2e3856a53c61654cf29b",
         "type": "github"
       },
       "original": {
@@ -177,40 +176,6 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
-        "type": "github"
-      }
-    },
-    "turso": {
-      "inputs": {
-        "crane": [
-          "sce",
-          "crane"
-        ],
-        "flake-utils": [
-          "sce",
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "sce",
-          "nixpkgs"
-        ],
-        "rust-overlay": [
-          "sce",
-          "rust-overlay"
-        ]
-      },
-      "locked": {
-        "lastModified": 1783955531,
-        "narHash": "sha256-eRB8IM7cda7UaYfX5dIubIK4K0M6ydrTxyLAUPB9/WM=",
-        "owner": "tursodatabase",
-        "repo": "turso",
-        "rev": "e7cb62a8bd2f3655a661a621ee389365c1a1e43e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "tursodatabase",
-        "repo": "turso",
-        "rev": "e7cb62a8bd2f3655a661a621ee389365c1a1e43e",
         "type": "github"
       }
     }

@@ -1,6 +1,6 @@
 import 'package:fitfat/l10n/app_localizations.dart';
 import 'package:fitfat/src/ui/tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// What the caller wants done with a meal food.
 ///

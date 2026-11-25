@@ -58,11 +58,7 @@ void main() {
         createdAt: DateTime(2026, 8, 10, 8, 0),
       );
       expect(
-        plannerReminderTimes(
-          tomorrow,
-          now: now,
-          untimedDefaultMinutes: null,
-        ),
+        plannerReminderTimes(tomorrow, now: now, untimedDefaultMinutes: null),
         isEmpty,
       );
     });

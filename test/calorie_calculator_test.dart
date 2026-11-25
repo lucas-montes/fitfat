@@ -52,10 +52,7 @@ CalorieInputs profile({
 void main() {
   group('bmr', () {
     test('uses Mifflin-St Jeor by default', () {
-      final result = appCalculator.bmr(
-        profile: measured(),
-        inputs: profile(),
-      );
+      final result = appCalculator.bmr(profile: measured(), inputs: profile());
       expect(result.bmr, closeTo(1780, 1e-9));
       expect(result.formula, BmrFormula.mifflinStJeor);
     });
@@ -69,13 +66,16 @@ void main() {
       expect(result.formula, BmrFormula.katchMcArdle);
     });
 
-    test('stays on Mifflin when tracking is on but the percentage is unset', () {
-      final result = appCalculator.bmr(
-        profile: measured(),
-        inputs: profile(bodyFatPercent: null, trackBodyFat: true),
-      );
-      expect(result.formula, BmrFormula.mifflinStJeor);
-    });
+    test(
+      'stays on Mifflin when tracking is on but the percentage is unset',
+      () {
+        final result = appCalculator.bmr(
+          profile: measured(),
+          inputs: profile(bodyFatPercent: null, trackBodyFat: true),
+        );
+        expect(result.formula, BmrFormula.mifflinStJeor);
+      },
+    );
 
     test('stays on Mifflin when a percentage is set but tracking is off', () {
       final result = appCalculator.bmr(
@@ -119,8 +119,7 @@ void main() {
             inputs: profile(activityLevel: level),
             phase: DietPhase.maintenance,
             config: maintenance,
-          ))
-          .target;
+          )).target;
 
       expect(
         await targetFor(ActivityLevel.veryActive),
@@ -138,77 +137,89 @@ void main() {
       expect(meta.isEstimated, isFalse);
     });
 
-    test('is estimated when any input is missing, using placeholders', () async {
-      final meta = await appCalculator.target(
-        profile: nothingMeasured,
-        inputs: profile(age: null, gender: null, activityLevel: null),
-        phase: DietPhase.maintenance,
-        config: maintenance,
-      );
-      // The shared fallback body: 70 kg, 170 cm, 30y, male.
-      final fallbackBmr = appCalculator.bmr(
-        profile: nothingMeasured,
-        inputs: profile(age: null, gender: null),
-      );
-      expect(meta.bmr, closeTo(fallbackBmr.bmr, 1e-9));
-      // 700 + 1062.5 − 150 + 5, the shared fallback body.
-      expect(meta.bmr, closeTo(1617.5, 1e-9));
-      expect(meta.isEstimated, isTrue);
-      expect(meta.target, closeTo(meta.bmr * ActivityLevel.moderate.multiplier, 1e-9));
-    });
+    test(
+      'is estimated when any input is missing, using placeholders',
+      () async {
+        final meta = await appCalculator.target(
+          profile: nothingMeasured,
+          inputs: profile(age: null, gender: null, activityLevel: null),
+          phase: DietPhase.maintenance,
+          config: maintenance,
+        );
+        // The shared fallback body: 70 kg, 170 cm, 30y, male.
+        final fallbackBmr = appCalculator.bmr(
+          profile: nothingMeasured,
+          inputs: profile(age: null, gender: null),
+        );
+        expect(meta.bmr, closeTo(fallbackBmr.bmr, 1e-9));
+        // 700 + 1062.5 − 150 + 5, the shared fallback body.
+        expect(meta.bmr, closeTo(1617.5, 1e-9));
+        expect(meta.isEstimated, isTrue);
+        expect(
+          meta.target,
+          closeTo(meta.bmr * ActivityLevel.moderate.multiplier, 1e-9),
+        );
+      },
+    );
 
-    test('the target does not depend on the equation once inputs are shared', () async {
-      // Both equations see the same inputs; only the BMR they produce differs,
-      // and the target follows BMR exactly.
-      final viaMifflin = await appCalculator.target(
-        profile: measured(),
-        inputs: profile(),
-        phase: DietPhase.maintenance,
-        config: maintenance,
-      );
-      final viaKatch = await appCalculator.target(
-        profile: measured(),
-        inputs: profile(bodyFatPercent: 20, trackBodyFat: true),
-        phase: DietPhase.maintenance,
-        config: maintenance,
-      );
-      expect(
-        viaKatch.target,
-        closeTo(viaKatch.bmr * ActivityLevel.moderate.multiplier, 1e-9),
-      );
-      expect(viaKatch.formula, BmrFormula.katchMcArdle);
-      expect(viaMifflin.formula, BmrFormula.mifflinStJeor);
-    });
+    test(
+      'the target does not depend on the equation once inputs are shared',
+      () async {
+        // Both equations see the same inputs; only the BMR they produce differs,
+        // and the target follows BMR exactly.
+        final viaMifflin = await appCalculator.target(
+          profile: measured(),
+          inputs: profile(),
+          phase: DietPhase.maintenance,
+          config: maintenance,
+        );
+        final viaKatch = await appCalculator.target(
+          profile: measured(),
+          inputs: profile(bodyFatPercent: 20, trackBodyFat: true),
+          phase: DietPhase.maintenance,
+          config: maintenance,
+        );
+        expect(
+          viaKatch.target,
+          closeTo(viaKatch.bmr * ActivityLevel.moderate.multiplier, 1e-9),
+        );
+        expect(viaKatch.formula, BmrFormula.katchMcArdle);
+        expect(viaMifflin.formula, BmrFormula.mifflinStJeor);
+      },
+    );
 
-    test('swapping the activity source changes the target, nothing else', () async {
-      // This is the seam the deferred exercise-based source will plug into.
-      const measuredActivity = _FixedActivity(600);
-      const calculator = CalorieCalculator(
-        bmrEquation: MifflinStJeorEquation(),
-        activity: measuredActivity,
-      );
+    test(
+      'swapping the activity source changes the target, nothing else',
+      () async {
+        // This is the seam the deferred exercise-based source will plug into.
+        const measuredActivity = _FixedActivity(600);
+        const calculator = CalorieCalculator(
+          bmrEquation: MifflinStJeorEquation(),
+          activity: measuredActivity,
+        );
 
-      final withMeasured = await calculator.target(
-        profile: measured(),
-        inputs: profile(),
-        phase: DietPhase.maintenance,
-        config: maintenance,
-      );
-      final withAverage = await appCalculator.target(
-        profile: measured(),
-        inputs: profile(),
-        phase: DietPhase.maintenance,
-        config: maintenance,
-      );
+        final withMeasured = await calculator.target(
+          profile: measured(),
+          inputs: profile(),
+          phase: DietPhase.maintenance,
+          config: maintenance,
+        );
+        final withAverage = await appCalculator.target(
+          profile: measured(),
+          inputs: profile(),
+          phase: DietPhase.maintenance,
+          config: maintenance,
+        );
 
-      expect(withMeasured.bmr, withAverage.bmr);
-      expect(withMeasured.formula, withAverage.formula);
-      expect(withMeasured.tdee, closeTo(1780 + 600, 1e-9));
-      expect(withAverage.tdee, closeTo(2759, 1e-9));
-      // 600 kcal of measured burn is a smaller factor than a `moderate` PAL
-      // assumes, so the target drops — which is the whole point of measuring.
-      expect(withMeasured.target, lessThan(withAverage.target));
-    });
+        expect(withMeasured.bmr, withAverage.bmr);
+        expect(withMeasured.formula, withAverage.formula);
+        expect(withMeasured.tdee, closeTo(1780 + 600, 1e-9));
+        expect(withAverage.tdee, closeTo(2759, 1e-9));
+        // 600 kcal of measured burn is a smaller factor than a `moderate` PAL
+        // assumes, so the target drops — which is the whole point of measuring.
+        expect(withMeasured.target, lessThan(withAverage.target));
+      },
+    );
   });
 
   group('macros', () {
@@ -294,7 +305,10 @@ void main() {
         closeTo(160, 1e-9),
       );
       expect(
-        appCalculator.proteinGrams(config: maintenance, profile: nothingMeasured),
+        appCalculator.proteinGrams(
+          config: maintenance,
+          profile: nothingMeasured,
+        ),
         closeTo(kFallbackWeightKg * 2.0, 1e-9),
       );
     });
@@ -362,6 +376,5 @@ final class _FixedActivity implements ActivityFactorSource {
   Future<double> factorFor({
     required CalorieInputs inputs,
     required double bmr,
-  }) async =>
-      1 + kcal / bmr;
+  }) async => 1 + kcal / bmr;
 }

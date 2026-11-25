@@ -13,8 +13,9 @@ import 'package:fitfat/src/diet/screens/meal_form.dart';
 import 'package:fitfat/src/models/food.dart';
 import 'package:fitfat/src/models/meal_entry.dart';
 import 'package:fitfat/src/models/meal_food.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'
+    hide GlobalMaterialLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -113,8 +114,10 @@ void main() {
   Finder amountField() => find.widgetWithText(TextFormField, 'Amount');
 
   /// The sheet's Save: applies the change to the form's draft only.
-  Finder sheetSave() =>
-      find.descendant(of: find.byType(BottomSheet), matching: find.text('Save'));
+  Finder sheetSave() => find.descendant(
+    of: find.byType(BottomSheet),
+    matching: find.text('Save'),
+  );
 
   /// The app bar's Save: persists the meal and pops the form.
   Finder appBarSave() =>
@@ -138,20 +141,25 @@ void main() {
     );
   });
 
-  testWidgets('a food row opens the editor with its current amount',
-      (tester) async {
+  testWidgets('a food row opens the editor with its current amount', (
+    tester,
+  ) async {
     await pumpForm(tester);
 
     await tester.tap(find.text('Rolled Oats'));
     await tester.pumpAndSettle();
 
-    expect(find.descendant(of: find.byType(BottomSheet), matching: find.text('100')), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(BottomSheet), matching: find.text('100')),
+      findsOneWidget,
+    );
 
     await closeSheet(tester);
   });
 
-  testWidgets('changing the amount updates the draft and persists on save',
-      (tester) async {
+  testWidgets('changing the amount updates the draft and persists on save', (
+    tester,
+  ) async {
     await pumpForm(tester);
 
     await tester.tap(find.text('Rolled Oats'));
@@ -227,8 +235,9 @@ void main() {
     );
   });
 
-  testWidgets('the meal total sits above the choose-foods button',
-      (tester) async {
+  testWidgets('the meal total sits above the choose-foods button', (
+    tester,
+  ) async {
     await pumpForm(tester);
 
     final totalsY = tester.getTopLeft(find.text('Meal total')).dy;
@@ -243,8 +252,9 @@ void main() {
     );
   });
 
-  testWidgets('save lives in the app bar, not below the food list',
-      (tester) async {
+  testWidgets('save lives in the app bar, not below the food list', (
+    tester,
+  ) async {
     await pumpForm(tester);
 
     final save = find.text('Save');

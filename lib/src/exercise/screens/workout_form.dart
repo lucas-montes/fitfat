@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -314,7 +314,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   buildDefaultDragHandles: false,
-                  onReorder: _reorderExercises,
+                  onReorderItem: _reorderExercises,
                   children: [
                     for (var i = 0; i < ordered.length; i++)
                       _buildSelectedExerciseRow(
@@ -338,7 +338,6 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
   void _reorderExercises(int oldIndex, int newIndex) {
     setState(() {
       final ids = _selected.keys.toList();
-      if (oldIndex < newIndex) newIndex -= 1;
       final moved = ids.removeAt(oldIndex);
       ids.insert(newIndex, moved);
       _selected = {for (final id in ids) id: _selected[id]!};
@@ -349,7 +348,6 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
   void _reorderSets(String exerciseId, int oldIndex, int newIndex) {
     setState(() {
       final sets = _selected[exerciseId]!.sets;
-      if (oldIndex < newIndex) newIndex -= 1;
       final moved = sets.removeAt(oldIndex);
       sets.insert(newIndex, moved);
     });
@@ -421,7 +419,7 @@ final class _WorkoutFormScreenState extends ConsumerState<WorkoutFormScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               buildDefaultDragHandles: false,
-              onReorder: (oldIndex, newIndex) =>
+              onReorderItem: (oldIndex, newIndex) =>
                   _reorderSets(ex.id, oldIndex, newIndex),
               children: [
                 for (var i = 0; i < sets.length; i++)

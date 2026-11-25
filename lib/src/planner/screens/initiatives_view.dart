@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -40,16 +40,14 @@ final class _InitiativesViewState extends ConsumerState<InitiativesView> {
       return const Center(child: CircularProgressIndicator());
     }
     if (goalsAsync.hasError && !goalsAsync.hasValue) {
-      return Center(
-        child: Text(l10n.errorWithMessage('${goalsAsync.error}')),
-      );
+      return Center(child: Text(l10n.errorWithMessage('${goalsAsync.error}')));
     }
 
     final items = [...goals]
       ..sort((a, b) {
-        final r = _statusRank(a.status.storage).compareTo(
-          _statusRank(b.status.storage),
-        );
+        final r = _statusRank(
+          a.status.storage,
+        ).compareTo(_statusRank(b.status.storage));
         if (r != 0) return r;
         final aStart = a.startDate ?? DateTime(0);
         final bStart = b.startDate ?? DateTime(0);
@@ -138,9 +136,9 @@ final class _GoalCard extends ConsumerWidget {
             container.read(dismissedTaskIdsProvider.notifier).remove(goal.id);
             if (cascade) {
               for (final t in links) {
-                container.read(dismissedTaskIdsProvider.notifier).remove(
-                  t.item.id,
-                );
+                container
+                    .read(dismissedTaskIdsProvider.notifier)
+                    .remove(t.item.id);
               }
             }
             if (context.mounted) {
@@ -197,9 +195,9 @@ final class _GoalCard extends ConsumerWidget {
           actionLabel: l10n.commonUndo,
           onAction: () async {
             if (goalSnapshot != null) {
-              await container.read(goalRepositoryProvider).upsertGoal(
-                goalSnapshot,
-              );
+              await container
+                  .read(goalRepositoryProvider)
+                  .upsertGoal(goalSnapshot);
               for (final task in snapshotTasks) {
                 await container.read(taskRepositoryProvider).insert(task);
                 await container

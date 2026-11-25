@@ -16,11 +16,11 @@ final class NoteRepository {
         await (_database.select(_database.notes)
               ..where((t) => t.deletedAt.isNull())
               ..orderBy([
-              (t) => OrderingTerm(
-                expression: t.updatedAt,
-                mode: OrderingMode.desc,
-              ),
-            ]))
+                (t) => OrderingTerm(
+                  expression: t.updatedAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
             .get();
     final notes = rows.map(_toDomain).toList();
     return _attachClipCounts(await _attachTags(notes));
@@ -37,13 +37,16 @@ final class NoteRepository {
 
   /// Ordered voice clips for a note (by [NoteAudioClip.position]).
   Future<List<NoteAudioClip>> getClips(String noteId) async {
-    final rows = await (_database.select(_database.noteAudio)
-          ..where((t) => t.noteId.equals(noteId))
-          ..orderBy([(t) => OrderingTerm(
-            expression: t.position,
-            mode: OrderingMode.asc,
-          )]))
-        .get();
+    final rows =
+        await (_database.select(_database.noteAudio)
+              ..where((t) => t.noteId.equals(noteId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.position,
+                  mode: OrderingMode.asc,
+                ),
+              ]))
+            .get();
     return rows
         .map(
           (r) => NoteAudioClip(
@@ -61,7 +64,9 @@ final class NoteRepository {
   /// Inserts a single clip row. The audio file is assumed to already exist on
   /// disk at [clip.audioPath].
   Future<void> insertClip(NoteAudioClip clip) async {
-    await _database.into(_database.noteAudio).insert(
+    await _database
+        .into(_database.noteAudio)
+        .insert(
           db.NoteAudioCompanion.insert(
             id: clip.id,
             noteId: clip.noteId,
@@ -81,8 +86,7 @@ final class NoteRepository {
     final existing = await getClips(noteId);
     final keepIds = {for (final c in clips) c.id};
     final ordered = [
-      for (var i = 0; i < clips.length; i++)
-        clips[i].copyWith(position: i),
+      for (var i = 0; i < clips.length; i++) clips[i].copyWith(position: i),
     ];
 
     await _database.transaction(() async {
@@ -153,11 +157,8 @@ final class NoteRepository {
       await deleteClipFile(clip.audioPath);
     }
     final now = DateTime.now().millisecondsSinceEpoch;
-    await (_database.update(
-      _database.notes,
-    )..where((t) => t.id.equals(id))).write(
-      db.NotesCompanion(deletedAt: Value(now)),
-    );
+    await (_database.update(_database.notes)..where((t) => t.id.equals(id)))
+        .write(db.NotesCompanion(deletedAt: Value(now)));
     await (_database.delete(
       _database.noteAudio,
     )..where((t) => t.noteId.equals(id))).go();
@@ -188,16 +189,14 @@ final class NoteRepository {
   /// Populates [Note.clipCount] for a batch of notes in one lookup.
   Future<List<Note>> _attachClipCounts(List<Note> items) async {
     if (items.isEmpty) return items;
-    final rows = await (_database.select(_database.noteAudio)
-          ..where((t) => t.noteId.isIn(items.map((n) => n.id).toList())))
-        .get();
+    final rows = await (_database.select(
+      _database.noteAudio,
+    )..where((t) => t.noteId.isIn(items.map((n) => n.id).toList()))).get();
     final counts = <String, int>{};
     for (final r in rows) {
       counts[r.noteId] = (counts[r.noteId] ?? 0) + 1;
     }
-    return [
-      for (final n in items) n.copyWith(clipCount: counts[n.id] ?? 0),
-    ];
+    return [for (final n in items) n.copyWith(clipCount: counts[n.id] ?? 0)];
   }
 
   /// Tag (priority) access for this note table.
@@ -206,12 +205,8 @@ final class NoteRepository {
   /// Populates [Note.tags] for a batch of notes in one lookup.
   Future<List<Note>> _attachTags(List<Note> items) async {
     if (items.isEmpty) return items;
-    final map = await _tags.tagNamesForNotes(
-      items.map((n) => n.id).toList(),
-    );
-    return [
-      for (final n in items) n.copyWith(tags: map[n.id] ?? const []),
-    ];
+    final map = await _tags.tagNamesForNotes(items.map((n) => n.id).toList());
+    return [for (final n in items) n.copyWith(tags: map[n.id] ?? const [])];
   }
 }
 

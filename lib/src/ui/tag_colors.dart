@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Deterministic, readable color pairs (background, foreground) derived from a
 /// tag's text. Free-form planner tags get a stable color without storing any

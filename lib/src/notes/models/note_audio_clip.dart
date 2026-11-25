@@ -45,12 +45,6 @@ final class NoteAudioClip {
           createdAt == other.createdAt;
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    noteId,
-    audioPath,
-    durationMs,
-    position,
-    createdAt,
-  );
+  int get hashCode =>
+      Object.hash(id, noteId, audioPath, durationMs, position, createdAt);
 }

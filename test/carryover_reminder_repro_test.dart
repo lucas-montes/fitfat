@@ -54,18 +54,21 @@ void main() {
       expect(times.last.day, today.day);
     });
 
-    test('rolloverPastTasks moves yesterday pending task to today (DB)', () async {
-      // DB-backed, exercises TaskRepository.rolloverPastTasks (see
-      // test/planner_repository_test.dart 'rollover carries a past task').
-      // Skipped here when sqlite3 is unavailable (this dev container lacks
-      // libsqlite3.so; existing planner_repository_test.dart hits the same
-      // environment error). Documents the post-rollover expectation: a
-      // yesterday pending carryOver task lands on today, so a startup
-      // reschedule that already ran misses it.
-      expect(
-        'yesterday pending carryOver task -> today via rolloverPastTasks',
-        isNotEmpty,
-      );
-    });
+    test(
+      'rolloverPastTasks moves yesterday pending task to today (DB)',
+      () async {
+        // DB-backed, exercises TaskRepository.rolloverPastTasks (see
+        // test/planner_repository_test.dart 'rollover carries a past task').
+        // Skipped here when sqlite3 is unavailable (this dev container lacks
+        // libsqlite3.so; existing planner_repository_test.dart hits the same
+        // environment error). Documents the post-rollover expectation: a
+        // yesterday pending carryOver task lands on today, so a startup
+        // reschedule that already ran misses it.
+        expect(
+          'yesterday pending carryOver task -> today via rolloverPastTasks',
+          isNotEmpty,
+        );
+      },
+    );
   });
 }

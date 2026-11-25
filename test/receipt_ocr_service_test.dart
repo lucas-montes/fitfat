@@ -67,7 +67,9 @@ void main() {
 
     test('falls back to the local id when the response has no id', () async {
       final file = await writeImage('receipt.png');
-      final api = MockApiClient(onRequest: (_, __, ___) async => <String, dynamic>{});
+      final api = MockApiClient(
+        onRequest: (_, __, ___) async => <String, dynamic>{},
+      );
 
       final result = await serviceWith(api).upload('r-local', file.path);
       expect(result.remotePath, 'r-local');

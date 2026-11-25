@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -14,10 +14,12 @@ final class OnboardingWizardScreen extends ConsumerStatefulWidget {
   const OnboardingWizardScreen({super.key});
 
   @override
-  ConsumerState<OnboardingWizardScreen> createState() => _OnboardingWizardScreenState();
+  ConsumerState<OnboardingWizardScreen> createState() =>
+      _OnboardingWizardScreenState();
 }
 
-final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardScreen> {
+final class _OnboardingWizardScreenState
+    extends ConsumerState<OnboardingWizardScreen> {
   final _pageController = PageController();
   int _page = 0;
 
@@ -54,8 +56,12 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
     if (_currency.isNotEmpty) await notifier.setBaseCurrency(_currency);
     final horizon = int.tryParse(_horizonCtrl.text.trim());
     if (horizon != null) await notifier.setPlannerHorizonDays(horizon);
-    final weight = double.tryParse(_weightCtrl.text.trim().replaceAll(',', '.'));
-    final height = double.tryParse(_heightCtrl.text.trim().replaceAll(',', '.'));
+    final weight = double.tryParse(
+      _weightCtrl.text.trim().replaceAll(',', '.'),
+    );
+    final height = double.tryParse(
+      _heightCtrl.text.trim().replaceAll(',', '.'),
+    );
     if (weight != null || height != null) {
       final repo = ref.read(bodyMetricsRepositoryProvider);
       await repo.upsert(DateTime.now(), weightKg: weight, heightCm: height);
@@ -68,7 +74,11 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
   void _next() {
     if (_page < 3) {
       setState(() => _page++);
-      _pageController.animateToPage(_page, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+      _pageController.animateToPage(
+        _page,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
     } else {
       _complete();
     }
@@ -77,7 +87,11 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
   void _back() {
     if (_page > 0) {
       setState(() => _page--);
-      _pageController.animateToPage(_page, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+      _pageController.animateToPage(
+        _page,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
     }
   }
 
@@ -100,35 +114,37 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
             ),
           ],
         ),
-      body: Column(
-        children: [
-          LinearProgressIndicator(value: (_page + 1) / 4, minHeight: 4),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (i) => setState(() => _page = i),
-              children: [
-                _buildProfileStep(l10n, theme),
-                _buildBodyStep(l10n, theme),
-                _buildUnitsStep(l10n, theme),
-                _buildPlannerStep(l10n, theme),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(FitFatTokens.spaceL),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _next,
-                child: Text(_page == 3 ? l10n.wizardDone : l10n.commonContinue),
+        body: Column(
+          children: [
+            LinearProgressIndicator(value: (_page + 1) / 4, minHeight: 4),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (i) => setState(() => _page = i),
+                children: [
+                  _buildProfileStep(l10n, theme),
+                  _buildBodyStep(l10n, theme),
+                  _buildUnitsStep(l10n, theme),
+                  _buildPlannerStep(l10n, theme),
+                ],
               ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(FitFatTokens.spaceL),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _next,
+                  child: Text(
+                    _page == 3 ? l10n.wizardDone : l10n.commonContinue,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -149,8 +165,14 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
         SegmentedButton<Gender>(
           showSelectedIcon: false,
           segments: [
-            ButtonSegment(value: Gender.male, label: Text(l10n.settingsGenderMale)),
-            ButtonSegment(value: Gender.female, label: Text(l10n.settingsGenderFemale)),
+            ButtonSegment(
+              value: Gender.male,
+              label: Text(l10n.settingsGenderMale),
+            ),
+            ButtonSegment(
+              value: Gender.female,
+              label: Text(l10n.settingsGenderFemale),
+            ),
           ],
           selected: _gender == null ? const {} : {_gender!},
           onSelectionChanged: (s) => setState(() => _gender = s.first),
@@ -163,9 +185,18 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
           showSelectedIcon: false,
           emptySelectionAllowed: true,
           segments: [
-            ButtonSegment(value: BodyWeightGoal.lose, label: Text(l10n.settingsGoalLose)),
-            ButtonSegment(value: BodyWeightGoal.maintain, label: Text(l10n.settingsGoalMaintain)),
-            ButtonSegment(value: BodyWeightGoal.gain, label: Text(l10n.settingsGoalGain)),
+            ButtonSegment(
+              value: BodyWeightGoal.lose,
+              label: Text(l10n.settingsGoalLose),
+            ),
+            ButtonSegment(
+              value: BodyWeightGoal.maintain,
+              label: Text(l10n.settingsGoalMaintain),
+            ),
+            ButtonSegment(
+              value: BodyWeightGoal.gain,
+              label: Text(l10n.settingsGoalGain),
+            ),
           ],
           selected: _goal == null ? const {} : {_goal!},
           onSelectionChanged: (s) => setState(() => _goal = s.first),
@@ -183,13 +214,19 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
         TextFormField(
           controller: _weightCtrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: l10n.bodyMetricsWeightLabel, suffixText: 'kg'),
+          decoration: InputDecoration(
+            labelText: l10n.bodyMetricsWeightLabel,
+            suffixText: 'kg',
+          ),
         ),
         const SizedBox(height: FitFatTokens.spaceL),
         TextFormField(
           controller: _heightCtrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: l10n.bodyMetricsHeightLabel, suffixText: 'cm'),
+          decoration: InputDecoration(
+            labelText: l10n.bodyMetricsHeightLabel,
+            suffixText: 'cm',
+          ),
         ),
         const SizedBox(height: FitFatTokens.spaceL),
         Text(l10n.settingsActivityLevel, style: theme.textTheme.titleSmall),
@@ -198,11 +235,26 @@ final class _OnboardingWizardScreenState extends ConsumerState<OnboardingWizardS
           showSelectedIcon: false,
           emptySelectionAllowed: true,
           segments: [
-            ButtonSegment(value: ActivityLevel.sedentary, label: Text(l10n.settingsActivitySedentary)),
-            ButtonSegment(value: ActivityLevel.light, label: Text(l10n.settingsActivityLight)),
-            ButtonSegment(value: ActivityLevel.moderate, label: Text(l10n.settingsActivityModerate)),
-            ButtonSegment(value: ActivityLevel.active, label: Text(l10n.settingsActivityActive)),
-            ButtonSegment(value: ActivityLevel.veryActive, label: Text(l10n.settingsActivityVeryActive)),
+            ButtonSegment(
+              value: ActivityLevel.sedentary,
+              label: Text(l10n.settingsActivitySedentary),
+            ),
+            ButtonSegment(
+              value: ActivityLevel.light,
+              label: Text(l10n.settingsActivityLight),
+            ),
+            ButtonSegment(
+              value: ActivityLevel.moderate,
+              label: Text(l10n.settingsActivityModerate),
+            ),
+            ButtonSegment(
+              value: ActivityLevel.active,
+              label: Text(l10n.settingsActivityActive),
+            ),
+            ButtonSegment(
+              value: ActivityLevel.veryActive,
+              label: Text(l10n.settingsActivityVeryActive),
+            ),
           ],
           selected: _activity == null ? const {} : {_activity!},
           onSelectionChanged: (s) => setState(() => _activity = s.first),

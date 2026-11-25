@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -177,7 +177,10 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(l10n.notesBodyLabel, style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              l10n.notesBodyLabel,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             IconButton(
               key: const ValueKey('notesBodyPreviewToggle'),
               icon: Icon(
@@ -209,9 +212,9 @@ final class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             controller: _bodyCtrl,
             minLines: 6,
             maxLines: null,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontFamily: 'monospace',
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
             decoration: const InputDecoration(alignLabelWithHint: true),
           ),
         ],

@@ -3,22 +3,29 @@
   ...
 }:
 let
-  buildToolsVersion = "36.0.0";
+  # Versions track what Flutter 3.50 expects (compileSdk/targetSdk 36,
+  # NDK 28.2) plus API 37, which newer plugins such as permission_handler 13
+  # compile against. Only versions present in nixpkgs' androidenv repo.json
+  # can be listed here.
+  buildToolsVersion = "36.1.0";
   platformVersion = "36";
-  ndkVersions = [
-    "26.1.10909125"
-    "28.2.13676358"
-  ];
-  cmdLineToolsVersion = "11.0";
+  ndkVersion = "28.2.13676358";
+  ndkVersions = [ ndkVersion ];
+  cmdLineToolsVersion = "23.0";
 
   androidComposition = pkgs.androidenv.composeAndroidPackages {
     cmdLineToolsVersion = cmdLineToolsVersion;
     toolsVersion = "26.1.1";
-    platformToolsVersion = "35.0.2";
-    buildToolsVersions = [ "34.0.0" "35.0.0" buildToolsVersion ];
+    platformToolsVersion = "37.0.3";
+    # 36.0.0 is AGP 9.3's default build-tools; Gradle cannot download it into the
+    # read-only nix store, so it must be listed here.
+    buildToolsVersions = [ "36.0.0" buildToolsVersion "37.0.0" ];
     includeEmulator = true;
-    emulatorVersion = "35.1.4";
-    platformVersions = [ "34" "35" platformVersion ];
+    emulatorVersion = "37.3.9";
+    # 35 and 37 are what individual plugins compile against (foreground_task,
+    # flutter_timezone, jni, pedometer: 35; notifications, health,
+    # permission_handler: 37). Gradle cannot install missing ones itself.
+    platformVersions = [ "35" platformVersion "37.0" ];
     includeSources = false;
     includeSystemImages = true;
     systemImageTypes = [ "google_apis_playstore" ];
@@ -31,12 +38,13 @@ let
     useGoogleAPIs = true;
     useGoogleTVAddOns = false;
     includeExtras = [ ];
-    cmakeVersions = [ "3.22.1" ];
+    # 3.22.1 is AGP's default CMake, used by plugins with native code (jni).
+    cmakeVersions = [ "3.22.1" "3.31.6" ];
   };
 
   androidSdk = androidComposition.androidsdk;
   androidHome = "${androidSdk}/libexec/android-sdk";
-  ndkHome = "${androidHome}/ndk/26.1.10909125";
+  ndkHome = "${androidHome}/ndk/${ndkVersion}";
 in
 {
   inherit

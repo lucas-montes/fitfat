@@ -7,6 +7,7 @@ enum ReceiptStatus {
   uploading,
   uploaded,
   error,
+
   /// The image is on the server and a background OCR job is running. Added for
   /// the server-side parse pipeline; the codes above keep their original values
   /// so existing rows stay valid.

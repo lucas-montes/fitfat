@@ -3,7 +3,8 @@ import 'dart:typed_data';
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
-import 'package:fitfat/src/database/app_database.dart' as db;import 'package:fitfat/src/network/api_client.dart';
+import 'package:fitfat/src/database/app_database.dart' as db;
+import 'package:fitfat/src/network/api_client.dart';
 import 'package:fitfat/src/sync/personal_pull_service.dart';
 import 'package:fitfat/src/sync/sync_models.dart';
 import 'package:fitfat/src/sync/sync_state_store.dart';
@@ -50,7 +51,10 @@ final class _FakeApi implements ApiClient {
   }) async => <String, Object?>{'server_time': 1000};
 
   @override
-  Future<Uint8List> getBytes(String path, {Map<String, String>? headers}) async {
+  Future<Uint8List> getBytes(
+    String path, {
+    Map<String, String>? headers,
+  }) async {
     byteRequests.add(path);
     if (byteFailPaths.contains(path)) {
       throw ApiException(statusCode: 404, body: 'not found');
@@ -112,62 +116,67 @@ void main() {
   Future<int> taskCount() async =>
       (await database.select(database.tasks).get()).length;
 
-  test('pullTasks applies new rows and advances the cursor on success', () async {
-    database;
-    final api = _FakeApi({
-      '/tasks': <String, Object?>{
-        'server_time': 500,
-        'items': [
-          {
-            'id': 't1',
-            'date': 100,
-            'title': 'Buy milk',
-            'done': 0,
-            'taskStatus': 1,
-            'carryOver': false,
-            'sortOrder': 0,
-            'dueDate': null,
-            'dueTimeMinutes': null,
-            'startTimeMinutes': null,
-            'endTimeMinutes': null,
-            'notes': 'spam',
-            'workoutId': null,
-            'workoutTemplateId': null,
-            'recurrence': null,
-            'seriesId': null,
-            'createdAt': 90,
-            'updatedAt': 90,
-          },
-        ],
-        'deleted': <String>[],
-      },
-    });
-    final service = PersonalPullService(api, database, state);
-    final result = await service.pullTasks(apiKey: 'k', endpoint: '/tasks');
-    expect(result.ok, isTrue, reason: result.error);
-    expect(result.updated, 1);
-    expect(await taskCount(), 1);
-    expect(state.getLastSyncedAt(SyncResource.tasks), 500);
-    final task = await (database.select(
-      database.tasks,
-    )..where((t) => t.id.equals('t1'))).getSingle();
-    expect(task.title, 'Buy milk');
-    expect(task.deletedAt, isNull);
-  });
+  test(
+    'pullTasks applies new rows and advances the cursor on success',
+    () async {
+      database;
+      final api = _FakeApi({
+        '/tasks': <String, Object?>{
+          'server_time': 500,
+          'items': [
+            {
+              'id': 't1',
+              'date': 100,
+              'title': 'Buy milk',
+              'done': 0,
+              'taskStatus': 1,
+              'carryOver': false,
+              'sortOrder': 0,
+              'dueDate': null,
+              'dueTimeMinutes': null,
+              'startTimeMinutes': null,
+              'endTimeMinutes': null,
+              'notes': 'spam',
+              'workoutId': null,
+              'workoutTemplateId': null,
+              'recurrence': null,
+              'seriesId': null,
+              'createdAt': 90,
+              'updatedAt': 90,
+            },
+          ],
+          'deleted': <String>[],
+        },
+      });
+      final service = PersonalPullService(api, database, state);
+      final result = await service.pullTasks(apiKey: 'k', endpoint: '/tasks');
+      expect(result.ok, isTrue, reason: result.error);
+      expect(result.updated, 1);
+      expect(await taskCount(), 1);
+      expect(state.getLastSyncedAt(SyncResource.tasks), 500);
+      final task = await (database.select(
+        database.tasks,
+      )..where((t) => t.id.equals('t1'))).getSingle();
+      expect(task.title, 'Buy milk');
+      expect(task.deletedAt, isNull);
+    },
+  );
 
   test('pullTasks overwrites an existing local row (server wins)', () async {
-    await database.into(database.tasks).insert(
-      db.TasksCompanion.insert(
-        id: 't1',
-        date: 100,
-        title: 'Local edit',
-        done: 1,
-        taskStatus: const Value(0),
-        carryOver: const Value(false),
-        sortOrder: 0,
-        createdAt: 50,
-      ),
-    );
+    await database
+        .into(database.tasks)
+        .insert(
+          db.TasksCompanion.insert(
+            id: 't1',
+            date: 100,
+            title: 'Local edit',
+            done: 1,
+            taskStatus: const Value(0),
+            carryOver: const Value(false),
+            sortOrder: 0,
+            createdAt: 50,
+          ),
+        );
     final api = _FakeApi({
       '/tasks': <String, Object?>{
         'server_time': 600,
@@ -197,21 +206,23 @@ void main() {
   });
 
   test('pullTasks deletes tombstoned rows and their links', () async {
-    await database.into(database.tasks).insert(
-      db.TasksCompanion.insert(
-        id: 't1',
-        date: 100,
-        title: 'Doomed',
-        done: 0,
-        taskStatus: const Value(0),
-        carryOver: const Value(false),
-        sortOrder: 0,
-        createdAt: 50,
-      ),
-    );
-    await database.into(database.taskGoals).insert(
-      db.TaskGoalsCompanion.insert(taskId: 't1', goalId: 'g1'),
-    );
+    await database
+        .into(database.tasks)
+        .insert(
+          db.TasksCompanion.insert(
+            id: 't1',
+            date: 100,
+            title: 'Doomed',
+            done: 0,
+            taskStatus: const Value(0),
+            carryOver: const Value(false),
+            sortOrder: 0,
+            createdAt: 50,
+          ),
+        );
+    await database
+        .into(database.taskGoals)
+        .insert(db.TaskGoalsCompanion.insert(taskId: 't1', goalId: 'g1'));
     final api = _FakeApi({
       '/tasks': <String, Object?>{
         'server_time': 700,
@@ -223,20 +234,20 @@ void main() {
     final result = await service.pullTasks(apiKey: 'k', endpoint: '/tasks');
     expect(result.deleted, 1);
     expect(await taskCount(), 0);
-    expect(
-      (await database.select(database.taskGoals).get()).length,
-      0,
-    );
+    expect((await database.select(database.taskGoals).get()).length, 0);
     expect(state.getLastSyncedAt(SyncResource.tasks), 700);
   });
 
-  test('pullTasks leaves the cursor untouched when the request fails', () async {
-    final api = _FakeApi({}, failPaths: {'/tasks'});
-    final service = PersonalPullService(api, database, state);
-    final result = await service.pullTasks(apiKey: 'k', endpoint: '/tasks');
-    expect(result.ok, isFalse);
-    expect(state.getLastSyncedAt(SyncResource.tasks), 0);
-  });
+  test(
+    'pullTasks leaves the cursor untouched when the request fails',
+    () async {
+      final api = _FakeApi({}, failPaths: {'/tasks'});
+      final service = PersonalPullService(api, database, state);
+      final result = await service.pullTasks(apiKey: 'k', endpoint: '/tasks');
+      expect(result.ok, isFalse);
+      expect(state.getLastSyncedAt(SyncResource.tasks), 0);
+    },
+  );
 
   test('pullWorkouts applies the nested exercise/set graph', () async {
     final api = _FakeApi({
@@ -287,14 +298,16 @@ void main() {
   });
 
   test('pullWorkouts still applies children when the workout exists', () async {
-    await database.into(database.workouts).insert(
-      db.WorkoutsCompanion.insert(
-        id: 'w1',
-        name: 'Leg day',
-        date: 100,
-        createdAt: 90,
-      ),
-    );
+    await database
+        .into(database.workouts)
+        .insert(
+          db.WorkoutsCompanion.insert(
+            id: 'w1',
+            name: 'Leg day',
+            date: 100,
+            createdAt: 90,
+          ),
+        );
     final api = _FakeApi({
       '/workouts': <String, Object?>{
         'server_time': 801,
@@ -329,34 +342,43 @@ void main() {
       endpoint: '/workouts',
     );
     expect(result.updated, 3);
-    expect(await database.select(database.workoutExercises).get(), hasLength(1));
+    expect(
+      await database.select(database.workoutExercises).get(),
+      hasLength(1),
+    );
     expect(await database.select(database.exerciseSets).get(), hasLength(1));
   });
 
   test('pullWorkouts applies child tombstones', () async {
-    await database.into(database.workouts).insert(
-      db.WorkoutsCompanion.insert(
-        id: 'w1',
-        name: 'Leg day',
-        date: 100,
-        createdAt: 90,
-      ),
-    );
-    await database.into(database.workoutExercises).insert(
-      db.WorkoutExercisesCompanion.insert(
-        id: 'we1',
-        workoutId: 'w1',
-        exerciseId: 'e1',
-        sortOrder: 0,
-      ),
-    );
-    await database.into(database.exerciseSets).insert(
-      db.ExerciseSetsCompanion.insert(
-        id: 's1',
-        workoutExerciseId: 'we1',
-        setNumber: 1,
-      ),
-    );
+    await database
+        .into(database.workouts)
+        .insert(
+          db.WorkoutsCompanion.insert(
+            id: 'w1',
+            name: 'Leg day',
+            date: 100,
+            createdAt: 90,
+          ),
+        );
+    await database
+        .into(database.workoutExercises)
+        .insert(
+          db.WorkoutExercisesCompanion.insert(
+            id: 'we1',
+            workoutId: 'w1',
+            exerciseId: 'e1',
+            sortOrder: 0,
+          ),
+        );
+    await database
+        .into(database.exerciseSets)
+        .insert(
+          db.ExerciseSetsCompanion.insert(
+            id: 's1',
+            workoutExerciseId: 'we1',
+            setNumber: 1,
+          ),
+        );
     final api = _FakeApi({
       '/workouts': <String, Object?>{
         'server_time': 802,
@@ -372,56 +394,63 @@ void main() {
     expect(await database.select(database.exerciseSets).get(), isEmpty);
   });
 
-  test('pullWorkouts never resurrects a child pending local deletion', () async {
-    await database.into(database.workouts).insert(
-      db.WorkoutsCompanion.insert(
-        id: 'w1',
-        name: 'Leg day',
-        date: 100,
-        createdAt: 90,
-      ),
-    );
-    await database.recordSyncDelete('workoutExercises', 'we1');
-    final api = _FakeApi({
-      '/workouts': <String, Object?>{
-        'server_time': 803,
-        'items': [
-          {
-            'id': 'w1',
-            'name': 'Leg day',
-            'date': 100,
-            'createdAt': 90,
-            'exercises': [
-              {
-                'id': 'we1',
-                'workoutId': 'w1',
-                'exerciseId': 'e1',
-                'sortOrder': 0,
-                'notes': null,
-                'sets': <Object?>[],
-              },
-            ],
-          },
-        ],
-        'deleted': <String>[],
-        'deletedExercises': <String>[],
-        'deletedSets': <String>[],
-      },
-    });
-    final service = PersonalPullService(api, database, state);
-    await service.pullWorkouts(apiKey: 'k', endpoint: '/workouts');
-    expect(await database.select(database.workoutExercises).get(), isEmpty);
-  });
+  test(
+    'pullWorkouts never resurrects a child pending local deletion',
+    () async {
+      await database
+          .into(database.workouts)
+          .insert(
+            db.WorkoutsCompanion.insert(
+              id: 'w1',
+              name: 'Leg day',
+              date: 100,
+              createdAt: 90,
+            ),
+          );
+      await database.recordSyncDelete('workoutExercises', 'we1');
+      final api = _FakeApi({
+        '/workouts': <String, Object?>{
+          'server_time': 803,
+          'items': [
+            {
+              'id': 'w1',
+              'name': 'Leg day',
+              'date': 100,
+              'createdAt': 90,
+              'exercises': [
+                {
+                  'id': 'we1',
+                  'workoutId': 'w1',
+                  'exerciseId': 'e1',
+                  'sortOrder': 0,
+                  'notes': null,
+                  'sets': <Object?>[],
+                },
+              ],
+            },
+          ],
+          'deleted': <String>[],
+          'deletedExercises': <String>[],
+          'deletedSets': <String>[],
+        },
+      });
+      final service = PersonalPullService(api, database, state);
+      await service.pullWorkouts(apiKey: 'k', endpoint: '/workouts');
+      expect(await database.select(database.workoutExercises).get(), isEmpty);
+    },
+  );
 
   test('pullTransactions skips rows whose accounts never landed', () async {
-    await database.into(database.accounts).insert(
-      db.AccountsCompanion.insert(
-        id: 'a1',
-        name: 'Checking',
-        type: 'checking',
-        createdAt: 50,
-      ),
-    );
+    await database
+        .into(database.accounts)
+        .insert(
+          db.AccountsCompanion.insert(
+            id: 'a1',
+            name: 'Checking',
+            type: 'checking',
+            createdAt: 50,
+          ),
+        );
     final api = _FakeApi({
       '/transactions': <String, Object?>{
         'server_time': 900,
@@ -478,12 +507,16 @@ void main() {
   });
 
   test('pullStores upserts server rows and applies tombstones', () async {
-    await database.into(database.stores).insert(
-      db.StoresCompanion.insert(id: 's0', name: 'Local', createdAt: 1),
-    );
-    await database.into(database.stores).insert(
-      db.StoresCompanion.insert(id: 's2', name: 'Gone', createdAt: 2),
-    );
+    await database
+        .into(database.stores)
+        .insert(
+          db.StoresCompanion.insert(id: 's0', name: 'Local', createdAt: 1),
+        );
+    await database
+        .into(database.stores)
+        .insert(
+          db.StoresCompanion.insert(id: 's2', name: 'Gone', createdAt: 2),
+        );
     final api = _FakeApi({
       '/stores': <String, Object?>{
         'server_time': 960,
@@ -501,32 +534,34 @@ void main() {
     expect(result.updated, 2);
     expect(result.deleted, 1);
     final rows = await database.select(database.stores).get();
-    expect({for (final r in rows) r.id: r.name}, {
-      's0': 'Renamed',
-      's1': 'Carrefour',
-    });
+    expect(
+      {for (final r in rows) r.id: r.name},
+      {'s0': 'Renamed', 's1': 'Carrefour'},
+    );
     expect(state.getLastSyncedAt(SyncResource.stores), 960);
   });
 
   test('pullTasks reconciles tag links for returned tasks', () async {
-    await database.into(database.tasks).insert(
-      db.TasksCompanion.insert(
-        id: 't1',
-        date: 100,
-        title: 'Doomed',
-        done: 0,
-        taskStatus: const Value(0),
-        carryOver: const Value(false),
-        sortOrder: 0,
-        createdAt: 50,
-      ),
-    );
-    await database.into(database.taskTags).insert(
-      db.TaskTagsCompanion.insert(tagId: 'tag1', taskId: 't1'),
-    );
-    await database.into(database.taskTags).insert(
-      db.TaskTagsCompanion.insert(tagId: 'tag2', taskId: 't1'),
-    );
+    await database
+        .into(database.tasks)
+        .insert(
+          db.TasksCompanion.insert(
+            id: 't1',
+            date: 100,
+            title: 'Doomed',
+            done: 0,
+            taskStatus: const Value(0),
+            carryOver: const Value(false),
+            sortOrder: 0,
+            createdAt: 50,
+          ),
+        );
+    await database
+        .into(database.taskTags)
+        .insert(db.TaskTagsCompanion.insert(tagId: 'tag1', taskId: 't1'));
+    await database
+        .into(database.taskTags)
+        .insert(db.TaskTagsCompanion.insert(tagId: 'tag2', taskId: 't1'));
     final api = _FakeApi({
       '/tasks': <String, Object?>{
         'server_time': 900,
@@ -555,18 +590,20 @@ void main() {
   });
 
   test('pullNotes upserts the row and mirrors its tag links', () async {
-    await database.into(database.notes).insert(
-      db.NotesCompanion.insert(
-        id: 'n1',
-        title: 'Local',
-        body: const Value('local body'),
-        updatedAt: 10,
-        createdAt: 5,
-      ),
-    );
-    await database.into(database.noteTags).insert(
-      db.NoteTagsCompanion.insert(tagId: 'old', noteId: 'n1'),
-    );
+    await database
+        .into(database.notes)
+        .insert(
+          db.NotesCompanion.insert(
+            id: 'n1',
+            title: 'Local',
+            body: const Value('local body'),
+            updatedAt: 10,
+            createdAt: 5,
+          ),
+        );
+    await database
+        .into(database.noteTags)
+        .insert(db.NoteTagsCompanion.insert(tagId: 'old', noteId: 'n1'));
     final api = _FakeApi({
       '/notes': <String, Object?>{
         'server_time': 910,
@@ -598,14 +635,16 @@ void main() {
   test(
     'pullNotes upserts noteAudio metadata and downloads a missing clip',
     () async {
-      await database.into(database.notes).insert(
-        db.NotesCompanion.insert(
-          id: 'n1',
-          title: 'Note',
-          updatedAt: 10,
-          createdAt: 5,
-        ),
-      );
+      await database
+          .into(database.notes)
+          .insert(
+            db.NotesCompanion.insert(
+              id: 'n1',
+              title: 'Note',
+              updatedAt: 10,
+              createdAt: 5,
+            ),
+          );
       final clipBytes = Uint8List.fromList([1, 2, 3, 4]);
       final api = _FakeApi(
         {
@@ -648,14 +687,16 @@ void main() {
   test(
     'pullNotes does not re-download a clip whose file already has bytes',
     () async {
-      await database.into(database.notes).insert(
-        db.NotesCompanion.insert(
-          id: 'n1',
-          title: 'Note',
-          updatedAt: 10,
-          createdAt: 5,
-        ),
-      );
+      await database
+          .into(database.notes)
+          .insert(
+            db.NotesCompanion.insert(
+              id: 'n1',
+              title: 'Note',
+              updatedAt: 10,
+              createdAt: 5,
+            ),
+          );
       final path = await clipPathFor('clip1');
       await File(path).writeAsBytes([9, 9, 9], flush: true);
       final api = _FakeApi(
@@ -695,14 +736,16 @@ void main() {
   test(
     'pullNotes keeps the metadata row when the clip has no bytes server-side',
     () async {
-      await database.into(database.notes).insert(
-        db.NotesCompanion.insert(
-          id: 'n1',
-          title: 'Note',
-          updatedAt: 10,
-          createdAt: 5,
-        ),
-      );
+      await database
+          .into(database.notes)
+          .insert(
+            db.NotesCompanion.insert(
+              id: 'n1',
+              title: 'Note',
+              updatedAt: 10,
+              createdAt: 5,
+            ),
+          );
       final api = _FakeApi(
         {
           '/notes': <String, Object?>{
@@ -738,36 +781,35 @@ void main() {
   );
 
   test('pullMeals replaces the foods of a meal it returns', () async {
-    await database.into(database.meals).insert(
-      db.MealsCompanion.insert(
-        id: 'm1',
-        name: 'Lunch',
-        eatenAt: 100,
-        createdAt: 50,
-      ),
-    );
-    await database.into(database.mealFoods).insert(
-      db.MealFoodsCompanion.insert(
-        id: 'mf1',
-        mealId: 'm1',
-        foodId: 'f1',
-        amount: 100,
-        calories: 100,
-        protein: 10,
-        carbs: 10,
-        fat: 5,
-      ),
-    );
+    await database
+        .into(database.meals)
+        .insert(
+          db.MealsCompanion.insert(
+            id: 'm1',
+            name: 'Lunch',
+            eatenAt: 100,
+            createdAt: 50,
+          ),
+        );
+    await database
+        .into(database.mealFoods)
+        .insert(
+          db.MealFoodsCompanion.insert(
+            id: 'mf1',
+            mealId: 'm1',
+            foodId: 'f1',
+            amount: 100,
+            calories: 100,
+            protein: 10,
+            carbs: 10,
+            fat: 5,
+          ),
+        );
     final api = _FakeApi({
       '/meals': <String, Object?>{
         'server_time': 920,
         'meals': [
-          {
-            'id': 'm1',
-            'name': 'Lunch',
-            'eatenAt': 100,
-            'createdAt': 50,
-          },
+          {'id': 'm1', 'name': 'Lunch', 'eatenAt': 100, 'createdAt': 50},
         ],
         'mealFoods': [
           {

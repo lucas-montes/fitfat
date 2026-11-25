@@ -1,6 +1,6 @@
 import 'package:fitfat/src/ui/tokens.dart';
 import 'package:fitfat/src/ui/widgets/metric_card.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The compact variant exists because three tiles in a row on a phone overflowed

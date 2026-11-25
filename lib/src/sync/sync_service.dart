@@ -19,8 +19,6 @@ import '../diet/repositories/ingredient_repository.dart';
 import '../exercise/providers/exercises.dart';
 import '../exercise/repositories/exercise_repository.dart';
 import '../network/api_client.dart';
-import '../settings/providers/settings.dart';
-import '../network/api_client.dart';
 import 'catalog_sync_client.dart';
 import 'currency_sync_client.dart';
 import 'ingredient_lookup_client.dart';

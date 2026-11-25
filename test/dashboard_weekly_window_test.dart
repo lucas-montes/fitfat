@@ -18,15 +18,13 @@ void main() {
   late db.AppDatabase database;
   late ProviderContainer container;
 
-  Future<({double totalVolumeKg, int totalMinutes, int daysTrained})> stats()
-      async => container.read(weeklyWorkoutStatsProvider.future);
+  Future<({double totalVolumeKg, int totalMinutes, int daysTrained})>
+  stats() async => container.read(weeklyWorkoutStatsProvider.future);
 
   setUp(() {
     database = db.AppDatabase.forTesting(NativeDatabase.memory());
     container = ProviderContainer(
-      overrides: [
-        databaseProvider.overrideWithValue(database),
-      ],
+      overrides: [databaseProvider.overrideWithValue(database)],
     );
     // The gate is false until real preferences load; the aggregate returns
     // zeroes behind it, which would make every assertion below vacuous. The
@@ -42,25 +40,29 @@ void main() {
 
   /// A completed workout on [day], with no sets.
   Future<void> complete(String id, DateTime day) async {
-    await database.into(database.workouts).insert(
-      db.WorkoutsCompanion.insert(
-        id: id,
-        name: id,
-        date: day.millisecondsSinceEpoch,
-        startedAt: Value(day.millisecondsSinceEpoch),
-        completedAt: Value(
-          day.add(const Duration(minutes: 45)).millisecondsSinceEpoch,
-        ),
-        createdAt: day.millisecondsSinceEpoch,
-      ),
-    );
+    await database
+        .into(database.workouts)
+        .insert(
+          db.WorkoutsCompanion.insert(
+            id: id,
+            name: id,
+            date: day.millisecondsSinceEpoch,
+            startedAt: Value(day.millisecondsSinceEpoch),
+            completedAt: Value(
+              day.add(const Duration(minutes: 45)).millisecondsSinceEpoch,
+            ),
+            createdAt: day.millisecondsSinceEpoch,
+          ),
+        );
   }
 
   /// The window the provider is expected to use, restated independently so the
   /// assertions do not simply echo the implementation back at themselves.
-  DateTime mondayOf(DateTime day) =>
-      DateTime(day.year, day.month, day.day)
-          .subtract(Duration(days: day.weekday - DateTime.monday));
+  DateTime mondayOf(DateTime day) => DateTime(
+    day.year,
+    day.month,
+    day.day,
+  ).subtract(Duration(days: day.weekday - DateTime.monday));
 
   test('counts a session earlier in the current week', () async {
     final monday = mondayOf(DateTime.now());
