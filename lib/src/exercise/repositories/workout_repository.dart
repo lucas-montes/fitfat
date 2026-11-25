@@ -967,8 +967,7 @@ final class WorkoutRepository {
           );
     final rows = await query.get();
     return {
-      for (final row in rows)
-        ?row.read(_database.workoutExercises.exerciseId),
+      for (final row in rows) ?row.read(_database.workoutExercises.exerciseId),
     };
   }
 

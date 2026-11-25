@@ -96,9 +96,7 @@ Set<String> expandEntities(Iterable<String> entities) {
 }
 
 /// Every table the backup can carry, in parents-first import order.
-final _tableOrder = <String>[
-  for (final tables in _ownership.values) ...tables,
-];
+final _tableOrder = <String>[for (final tables in _ownership.values) ...tables];
 
 dynamic _tableFor(AppDatabase d, String name) => switch (name) {
   'tasks' => d.tasks,
@@ -138,9 +136,8 @@ dynamic _tableFor(AppDatabase d, String name) => switch (name) {
   _ => throw StateError('Unknown backup table: $name'),
 };
 
-String _owningEntity(String tableName) => _ownership.entries
-    .firstWhere((e) => e.value.contains(tableName))
-    .key;
+String _owningEntity(String tableName) =>
+    _ownership.entries.firstWhere((e) => e.value.contains(tableName)).key;
 
 /// Thrown for a picked file that is not a backup this app can import. The
 /// message is user-facing.
@@ -246,9 +243,10 @@ Future<int> exportJsonPerEntity(
   final groups = expandEntities(entities);
   final dump = await dumpTables(ref.read(db.databaseProvider), groups);
   final rows = dump.values.fold<int>(0, (sum, list) => sum + list.length);
-  final stamp = DateTime.now()
-      .toIso8601String()
-      .replaceAll(RegExp(r'[:.]'), '-');
+  final stamp = DateTime.now().toIso8601String().replaceAll(
+    RegExp(r'[:.]'),
+    '-',
+  );
   final tmp = await getTemporaryDirectory();
   final path = p.join(tmp.path, 'fitfat-$stamp.json.gz');
   await File(path).writeAsBytes(encodeBackup(dump), flush: true);
