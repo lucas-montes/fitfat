@@ -46,6 +46,27 @@ void main() {
       );
 
   group('composition CRUD', () {
+    test('same-name foods list newest first', () async {
+      final potato = await seedIngredient('Potato', calories: 77);
+      Food batch(String id, DateTime at) =>
+          Food(id: id, name: 'Baked potatoes', createdAt: at);
+      await foods.insert(batch('old', DateTime(2026, 10, 1)), [
+        component(potato, 'Potato', 500),
+      ]);
+      await foods.insert(batch('new', DateTime(2026, 11, 20)), [
+        component(potato, 'Potato', 800),
+      ]);
+      await foods.insert(newFood(name: 'Apple crumble'), [
+        component(potato, 'Potato', 1),
+      ]);
+
+      final ids = [
+        for (final e in await foods.getAllWithNutrition())
+          if (!e.food.isDerived) e.food.id,
+      ];
+      expect(ids.skip(1), ['new', 'old']);
+    });
+
     test('insert stores the food and its composition', () async {
       final oats = await seedIngredient('Oats', calories: 400, protein: 13);
       final honey = await seedIngredient('Honey', calories: 300, carbs: 80);

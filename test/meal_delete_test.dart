@@ -1,13 +1,9 @@
-import 'dart:async';
-
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 import 'package:fitfat/src/app/startup_gate.dart';
 import 'package:fitfat/src/app/theme.dart';
 import 'package:fitfat/src/database/app_database.dart' as db;
 import 'package:fitfat/src/database/database_provider.dart';
-import 'package:fitfat/src/diet/providers/meals.dart';
 import 'package:fitfat/src/diet/repositories/food_repository.dart';
 import 'package:fitfat/src/diet/repositories/ingredient_repository.dart';
 import 'package:fitfat/src/diet/repositories/meal_repository.dart';
@@ -20,16 +16,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Regression cover for a crash that shipped: swiping a meal away threw
-///
-///     A dismissed Dismissible widget is still part of the tree.
-///
-/// `onDismissed` started an async delete, and the Dismissible was only removed
-/// once `mealListProvider` refetched — at least one frame after its animation
-/// had already completed, so the very next rebuild asserted.
-///
-/// The fix hides the row synchronously. The test pins the crash, not the
-/// mechanism: it dismisses a row and asserts nothing was thrown.
+/// Meals are deleted from the edit form, behind a confirmation — never by a
+/// swipe on the list, which kept deleting meals by accident while scrolling.
 void main() {
   late db.AppDatabase database;
   late MealRepository meals;
@@ -88,7 +76,7 @@ void main() {
       overrides: [databaseProvider.overrideWithValue(database)],
     );
     // mealListProvider returns an empty list behind the gate, so without this
-    // the screen renders its empty state and there is no row to swipe.
+    // the screen renders its empty state and there is no row to act on.
     container.read(startupGateProvider.notifier).complete();
 
     await tester.pumpWidget(
@@ -109,63 +97,56 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// Swipes the row titled [title] far enough for Dismissible to complete its
-  /// animation, then pumps the frames the old code needed to assert.
-  Future<void> dismissRow(WidgetTester tester, String title) async {
-    await tester.drag(find.text(title), const Offset(-600, 0));
-    // Enough for the dismiss animation to finish and for the provider to
-    // refetch — the window in which the old code threw.
+  /// Whether [id] is still in the database. Real I/O, so it runs outside the
+  /// test's fake clock.
+  Future<bool> stored(WidgetTester tester, String id) async {
+    final all = await tester.runAsync(meals.getAll);
+    return all!.any((m) => m.id == id);
+  }
+
+  Future<void> openEditForm(WidgetTester tester, String title) async {
+    await tester.longPress(find.text(title));
     await tester.pumpAndSettle();
   }
 
-  testWidgets('swiping a meal away does not throw', (tester) async {
+  testWidgets('swiping a meal does not delete it', (tester) async {
     await pumpList(tester);
+    await tester.drag(find.text('Breakfast'), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+
     expect(find.text('Breakfast'), findsOneWidget);
-
-    await dismissRow(tester, 'Breakfast');
-
-    expect(tester.takeException(), isNull);
+    expect(await stored(tester, 'meal-Breakfast'), isTrue);
   });
 
-  testWidgets('the dismissed meal is gone afterwards', (tester) async {
+  testWidgets('deleting from the edit form asks first, then removes the meal', (
+    tester,
+  ) async {
     await pumpList(tester);
-    await dismissRow(tester, 'Breakfast');
+    await openEditForm(tester, 'Breakfast');
 
+    await tester.tap(find.byTooltip('Delete'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete this meal?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MealListScreen), findsOneWidget);
     expect(find.text('Breakfast'), findsNothing);
     expect(find.text('Lunch'), findsOneWidget);
-    expect(await meals.getAll(), hasLength(1));
+    expect(await stored(tester, 'meal-Breakfast'), isFalse);
   });
 
-  testWidgets('dismissing every meal in a day group does not throw',
-      (tester) async {
-    // Both meals share one day, so emptying the group is the case where the
-    // group element itself has to disappear.
+  testWidgets('cancelling the confirmation keeps the meal', (tester) async {
     await pumpList(tester);
-    await dismissRow(tester, 'Breakfast');
-    expect(tester.takeException(), isNull);
-    await dismissRow(tester, 'Lunch');
+    await openEditForm(tester, 'Breakfast');
 
-    expect(tester.takeException(), isNull);
-    expect(find.text('Lunch'), findsNothing);
-  });
-
-  testWidgets('the row leaves the tree before the delete completes',
-      (tester) async {
-    // Pins the ordering rather than the crash: Dismissible must not survive
-    // its own animation. Pumped one frame at a time so the assertion window
-    // is not closed by settling everything first.
-    await pumpList(tester);
-
-    final gesture = await tester.startGesture(
-      tester.getCenter(find.text('Breakfast')),
-    );
-    await gesture.moveBy(const Offset(-600, 0));
+    await tester.tap(find.byTooltip('Delete'));
     await tester.pumpAndSettle();
-    await gesture.up();
-    await tester.pump();
-
-    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
+
+    expect(find.text('Delete this meal?'), findsNothing);
+    expect(await stored(tester, 'meal-Breakfast'), isTrue);
   });
 }

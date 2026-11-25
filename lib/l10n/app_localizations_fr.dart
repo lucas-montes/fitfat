@@ -951,6 +951,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get emptyMealsCta => 'Enregistrer un repas';
 
   @override
+  String get mealFormDeleteTitle => 'Supprimer ce repas ?';
+
+  @override
+  String get mealFormDeleteBody =>
+      'Il sera retiré de votre journal et de vos totaux quotidiens.';
+
+  @override
   String mealDeleted(String name) {
     return 'Repas « $name » supprimé';
   }
@@ -1037,6 +1044,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String foodListCookedWeight(String grams) {
     return 'Poids cuit $grams g';
+  }
+
+  @override
+  String foodListCreatedOn(String date) {
+    return 'Créée le $date';
   }
 
   @override
@@ -1149,6 +1161,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get foodFormSave => 'Enregistrer la recette';
+
+  @override
+  String get foodFormDuplicate => 'Nouvelle fournée à partir de cette recette';
 
   @override
   String get foodFormSaving => 'Enregistrement…';
@@ -2477,7 +2492,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get budgetViewAll => 'Tout voir';
 
   @override
-  String get commonDelete => 'Common Delete';
+  String get commonDelete => 'Supprimer';
 
   @override
   String get receiptAppBar => 'Reçu';

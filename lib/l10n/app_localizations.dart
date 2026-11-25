@@ -1744,6 +1744,18 @@ abstract class AppLocalizations {
   /// **'Log a meal'**
   String get emptyMealsCta;
 
+  /// No description provided for @mealFormDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this meal?'**
+  String get mealFormDeleteTitle;
+
+  /// No description provided for @mealFormDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It will be removed from your log and your daily totals.'**
+  String get mealFormDeleteBody;
+
   /// No description provided for @mealDeleted.
   ///
   /// In en, this message translates to:
@@ -1857,6 +1869,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cooked weight {grams} g'**
   String foodListCookedWeight(String grams);
+
+  /// No description provided for @foodListCreatedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Created {date}'**
+  String foodListCreatedOn(String date);
 
   /// No description provided for @foodArchived.
   ///
@@ -2043,6 +2061,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save recipe'**
   String get foodFormSave;
+
+  /// No description provided for @foodFormDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'New batch from this recipe'**
+  String get foodFormDuplicate;
 
   /// No description provided for @foodFormSaving.
   ///
@@ -4357,7 +4381,7 @@ abstract class AppLocalizations {
   /// commonDelete
   ///
   /// In en, this message translates to:
-  /// **'Common Delete'**
+  /// **'Delete'**
   String get commonDelete;
 
   /// receiptAppBar

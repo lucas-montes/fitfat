@@ -24,7 +24,13 @@ import '../services/food_nutrition.dart';
 final class FoodFormScreen extends ConsumerStatefulWidget {
   final Food? food;
 
-  const FoodFormScreen({super.key, this.food});
+  /// An existing recipe to start a **new** one from: its name and composition
+  /// are prefilled, and saving inserts a separate food. Used for a new batch
+  /// of the same dish — editing in place would rewrite every meal already
+  /// logged with the original. Ignored when [food] is set.
+  final Food? template;
+
+  const FoodFormScreen({super.key, this.food, this.template});
 
   @override
   ConsumerState<FoodFormScreen> createState() => _FoodFormScreenState();
@@ -62,12 +68,12 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
   @override
   void initState() {
     super.initState();
-    _nameCtrl.text = widget.food?.name ?? '';
+    _nameCtrl.text = (widget.food ?? widget.template)?.name ?? '';
     unawaited(_load());
   }
 
   Future<void> _load() async {
-    final food = widget.food;
+    final food = widget.food ?? widget.template;
     if (food == null) return;
     final components = await ref
         .read(foodRepositoryProvider)
@@ -93,9 +99,11 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
         _amounts[c.ingredientId] = c.amount;
       }
       // A stored weight is authoritative; a legacy null keeps following the raw
-      // total until the user types, exactly like a new recipe.
-      _cookedEdited = food.cookedWeight != null;
-      _cookedCtrl.text = _formatAmount(food.cookedWeight ?? _batchTotal);
+      // total until the user types, exactly like a new recipe. A new batch
+      // from a template never inherits the weight: it is a different cook.
+      final stored = _isEditing ? food.cookedWeight : null;
+      _cookedEdited = stored != null;
+      _cookedCtrl.text = _formatAmount(stored ?? _batchTotal);
     });
     _syncControllers();
   }
@@ -176,6 +184,16 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
       if (!_amounts.containsKey(i.id)) i,
   ];
 
+  /// Opens a new recipe prefilled from this one. Unsaved edits here are
+  /// discarded; when the new batch is saved this screen closes too, so the
+  /// list refreshes once.
+  Future<void> _duplicate() async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => FoodFormScreen(template: widget.food)),
+    );
+    if (saved == true && mounted) Navigator.of(context).pop(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -187,6 +205,14 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
         title: Text(
           _isEditing ? l10n.foodFormEditTitle : l10n.foodFormNewTitle,
         ),
+        actions: [
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.copy_all_outlined),
+              tooltip: l10n.foodFormDuplicate,
+              onPressed: _saving ? null : _duplicate,
+            ),
+        ],
       ),
       body: Form(
         key: _formKey,

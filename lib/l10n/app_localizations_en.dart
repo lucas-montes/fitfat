@@ -948,6 +948,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyMealsCta => 'Log a meal';
 
   @override
+  String get mealFormDeleteTitle => 'Delete this meal?';
+
+  @override
+  String get mealFormDeleteBody =>
+      'It will be removed from your log and your daily totals.';
+
+  @override
   String mealDeleted(String name) {
     return 'Meal \"$name\" deleted';
   }
@@ -1033,6 +1040,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String foodListCookedWeight(String grams) {
     return 'Cooked weight $grams g';
+  }
+
+  @override
+  String foodListCreatedOn(String date) {
+    return 'Created $date';
   }
 
   @override
@@ -1142,6 +1154,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get foodFormSave => 'Save recipe';
+
+  @override
+  String get foodFormDuplicate => 'New batch from this recipe';
 
   @override
   String get foodFormSaving => 'Saving…';
@@ -2455,7 +2470,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get budgetViewAll => 'View all';
 
   @override
-  String get commonDelete => 'Common Delete';
+  String get commonDelete => 'Delete';
 
   @override
   String get receiptAppBar => 'Receipt';

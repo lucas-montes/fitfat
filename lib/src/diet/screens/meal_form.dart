@@ -104,6 +104,40 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
     );
   }
 
+  Future<void> _delete() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.mealFormDeleteTitle),
+        content: Text(l10n.mealFormDeleteBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.commonDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _saving = true);
+    try {
+      await ref.read(mealRepositoryProvider).delete(widget.meal!.id);
+      invalidateDashboard(ref);
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        showTopBanner(context, message: l10n.errorWithMessage('$e'));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -119,6 +153,14 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
         // the bottom button carried: disabled while saving, with the in-flight
         // label.
         actions: [
+          // Deleting lives here, behind a confirmation, rather than as a swipe
+          // on the meal list, where it kept firing by accident.
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: l10n.commonDelete,
+              onPressed: _saving ? null : _delete,
+            ),
           TextButton(
             onPressed: _saving ? null : _save,
             child: Text(_saving ? l10n.mealFormSaving : l10n.mealFormSave),

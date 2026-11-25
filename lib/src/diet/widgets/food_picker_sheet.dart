@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/food.dart';
+import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
 import '../repositories/food_repository.dart';
 
@@ -311,9 +312,14 @@ final class _FoodPickerSheetState extends State<_FoodPickerSheet> {
     // The per-100g figure is per 100 g *cooked* when the recipe has a final
     // weight, so the row must say so — otherwise logging raw grams against a
     // cooked density silently overstates the portion.
-    final caloriesText = food.cookedWeight != null
+    final calories = food.cookedWeight != null
         ? l10n.foodPickerCaloriesCooked(portionCalories, per100gCalories)
         : l10n.mealFormFoodCalories(portionCalories, per100gCalories);
+    // Recipes carry their creation date so two batches of the same dish can be
+    // told apart; derived foods mirror an ingredient and have only one version.
+    final caloriesText = food.isDerived
+        ? calories
+        : '$calories · ${DateFormats.formatShortDate(context, food.createdAt)}';
 
     return ListTile(
       dense: true,

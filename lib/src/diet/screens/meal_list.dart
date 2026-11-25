@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/meal_entry.dart';
 import '../../models/meal_food.dart';
 import '../../ui/date_formats.dart';
-import '../../ui/haptics.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/meals.dart';
@@ -49,33 +47,10 @@ final class MealListScreen extends ConsumerStatefulWidget {
 }
 
 final class _MealListScreenState extends ConsumerState<MealListScreen> {
-  /// Meal ids swiped away but not yet reflected in the provider.
-  ///
-  /// Dismissible asserts if it is still in the tree once its dismiss animation
-  /// finishes, and neither the database delete nor the provider rebuild can
-  /// land in that same frame. Dropping the id from the rendered list
-  /// synchronously is what satisfies the contract; the id is retired once the
-  /// provider stops listing it.
-  ///
-  /// Held here rather than on the row because the row has no key and is
-  /// positional inside its day group: after an undo its element would be reused
-  /// with a stale "removed" flag and the restored meal would render invisible.
-  final Set<String> _pendingRemoval = {};
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final mealsAsync = ref.watch(mealListProvider);
-
-    // Retire ids the provider has caught up on. Guarded so a listener firing
-    // before the first data never calls setState needlessly.
-    ref.listen(mealListProvider, (previous, next) {
-      final ids = next.asData?.value.map((meal) => meal.id).toSet();
-      if (ids == null || _pendingRemoval.isEmpty) return;
-      if (_pendingRemoval.any((id) => !ids.contains(id))) {
-        setState(() => _pendingRemoval.removeWhere((id) => !ids.contains(id)));
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(
@@ -175,15 +150,9 @@ final class _MealListScreenState extends ConsumerState<MealListScreen> {
   }
 
   Widget _buildMealList(List<MealEntry> meals, AppLocalizations l10n) {
-    // A swiped meal is hidden immediately, before the delete lands, so the
-    // Dismissible leaves the tree in the frame its animation completes.
-    final visible = _pendingRemoval.isEmpty
-        ? meals
-        : meals.where((meal) => !_pendingRemoval.contains(meal.id)).toList();
-
     // Group meals by date (day only)
     final grouped = <DateTime, List<MealEntry>>{};
-    for (final meal in visible) {
+    for (final meal in meals) {
       final day = DateTime(
         meal.eatenAt.year,
         meal.eatenAt.month,
@@ -207,7 +176,6 @@ final class _MealListScreenState extends ConsumerState<MealListScreen> {
           meals: dayMeals,
           l10n: l10n,
           onTap: (meal) => _openForm(meal),
-          onDelete: (meal) => _deleteMeal(context, meal),
           onEditItem: (meal, item) => _editMealItem(context, meal, item),
         );
       },
@@ -258,42 +226,6 @@ final class _MealListScreenState extends ConsumerState<MealListScreen> {
     ref.invalidate(mealListProvider);
     invalidateDashboard(ref);
   }
-
-  /// Swipe-to-delete.
-  ///
-  /// The row is hidden synchronously, before the delete is awaited, because
-  /// Dismissible has already finished its animation by the time this runs and
-  /// must not still be in the tree on the next build.
-  Future<void> _deleteMeal(BuildContext context, MealEntry meal) async {
-    unawaited(Haptics.mediumImpact());
-    final l10n = AppLocalizations.of(context)!;
-    setState(() => _pendingRemoval.add(meal.id));
-    try {
-      await ref.read(mealRepositoryProvider).delete(meal.id);
-    } catch (_) {
-      // Nothing was deleted, so the row has to come back rather than vanish
-      // silently while the meal still exists.
-      if (mounted) setState(() => _pendingRemoval.remove(meal.id));
-      return;
-    }
-    ref.invalidate(mealListProvider);
-    invalidateDashboard(ref);
-    if (!context.mounted) return;
-    showTopBanner(
-      context,
-      message: l10n.mealDeleted(_mealTitle(context, meal)),
-      actionLabel: l10n.commonUndo,
-      onAction: () async {
-        await ref.read(mealRepositoryProvider).restore(meal);
-        // Retire the id so the restored row is rendered again; the listener
-        // only clears ids the provider no longer lists, and an undo brings this
-        // one straight back.
-        if (mounted) setState(() => _pendingRemoval.remove(meal.id));
-        ref.invalidate(mealListProvider);
-        invalidateDashboard(ref);
-      },
-    );
-  }
 }
 
 final class _DayGroup extends StatelessWidget {
@@ -301,7 +233,6 @@ final class _DayGroup extends StatelessWidget {
   final List<MealEntry> meals;
   final AppLocalizations l10n;
   final void Function(MealEntry) onTap;
-  final void Function(MealEntry) onDelete;
 
   /// Edits one food inside this group, with the meal it belongs to — the meal
   /// id is what the repository writes against.
@@ -313,15 +244,11 @@ final class _DayGroup extends StatelessWidget {
     required this.meals,
     required this.l10n,
     required this.onTap,
-    required this.onDelete,
     required this.onEditItem,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Every meal in this group may have been swiped away optimistically, in
-    // which case the group itself must not linger as an empty header.
-    if (meals.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final dateStr = DateFormats.formatDate(context, date);
 
@@ -355,7 +282,6 @@ final class _DayGroup extends StatelessWidget {
             meal: meal,
             l10n: l10n,
             onTap: () => onTap(meal),
-            onDelete: () => onDelete(meal),
             onEditItem: (item) => onEditItem(meal, item),
           ),
         const Divider(height: 1),
@@ -365,14 +291,14 @@ final class _DayGroup extends StatelessWidget {
 }
 
 /// One meal row: tapping the tile expands/collapses the ingredient breakdown;
-/// long-pressing opens the meal edit form; swiping (end-to-start) deletes with
-/// undo. The trailing is an animated chevron as the expansion affordance
+/// long-pressing opens the meal edit form, which is also where a meal is
+/// deleted (there is deliberately no swipe-to-delete: it fired by accident
+/// while scrolling). The trailing is an animated chevron as the expansion affordance
 /// (active-workout-flow T02 — the edit affordance moved to long-press).
 final class _MealTile extends StatefulWidget {
   final MealEntry meal;
   final AppLocalizations l10n;
   final VoidCallback onTap;
-  final VoidCallback onDelete;
 
   /// Edits one of this meal's foods.
   final void Function(MealFood) onEditItem;
@@ -382,7 +308,6 @@ final class _MealTile extends StatefulWidget {
     required this.meal,
     required this.l10n,
     required this.onTap,
-    required this.onDelete,
     required this.onEditItem,
   });
 
@@ -398,66 +323,54 @@ final class _MealTileState extends State<_MealTile> {
     final meal = widget.meal;
     final l10n = widget.l10n;
 
-    return Dismissible(
-      key: ValueKey(meal.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: Theme.of(context).colorScheme.error,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
-      ),
-      onDismissed: (_) => widget.onDelete(),
-      child: GestureDetector(
-        // ExpansionTile has no onLongPress in Flutter 3.38.3; the outer
-        // long-press recognizer only wins after the hold deadline, so quick
-        // taps still expand/collapse while a hold opens the edit form.
-        onLongPress: widget.onTap,
-        child: ExpansionTile(
-          title: Text(_mealTitle(context, meal)),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${l10n.mealListFoodCount(meal.items.length)}  ·  '
-                '${l10n.mealListCaloriesValue(meal.totalCalories.toStringAsFixed(0))}',
-              ),
-              // The first line is the scannable summary; this carries the rest of
-              // the meal's totals, so a whole meal's weight and macros are
-              // readable without expanding it.
-              Text(
-                l10n.mealListTotals(
-                  meal.totalAmount.toStringAsFixed(0),
-                  meal.totalProtein.toStringAsFixed(1),
-                  meal.totalCarbs.toStringAsFixed(1),
-                  meal.totalFat.toStringAsFixed(1),
-                  meal.totalFiber.toStringAsFixed(1),
-                ),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          leading: const Icon(Icons.restaurant),
-          trailing: AnimatedRotation(
-            turns: _expanded ? 0.5 : 0,
-            duration: FitFatTokens.motionNormal,
-            curve: Curves.easeOut,
-            child: const Icon(Icons.expand_more),
-          ),
-          onExpansionChanged: (expanded) =>
-              setState(() => _expanded = expanded),
+    return GestureDetector(
+      // ExpansionTile has no onLongPress in Flutter 3.38.3; the outer
+      // long-press recognizer only wins after the hold deadline, so quick
+      // taps still expand/collapse while a hold opens the edit form.
+      onLongPress: widget.onTap,
+      child: ExpansionTile(
+        title: Text(_mealTitle(context, meal)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final item in meal.items)
-              _FoodItemTile(
-                key: ValueKey(item.id),
-                item: item,
-                l10n: l10n,
-                onTap: () => widget.onEditItem(item),
+            Text(
+              '${l10n.mealListFoodCount(meal.items.length)}  ·  '
+              '${l10n.mealListCaloriesValue(meal.totalCalories.toStringAsFixed(0))}',
+            ),
+            // The first line is the scannable summary; this carries the rest of
+            // the meal's totals, so a whole meal's weight and macros are
+            // readable without expanding it.
+            Text(
+              l10n.mealListTotals(
+                meal.totalAmount.toStringAsFixed(0),
+                meal.totalProtein.toStringAsFixed(1),
+                meal.totalCarbs.toStringAsFixed(1),
+                meal.totalFat.toStringAsFixed(1),
+                meal.totalFiber.toStringAsFixed(1),
               ),
-          ].toList(),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
+        leading: const Icon(Icons.restaurant),
+        trailing: AnimatedRotation(
+          turns: _expanded ? 0.5 : 0,
+          duration: FitFatTokens.motionNormal,
+          curve: Curves.easeOut,
+          child: const Icon(Icons.expand_more),
+        ),
+        onExpansionChanged: (expanded) => setState(() => _expanded = expanded),
+        children: [
+          for (final item in meal.items)
+            _FoodItemTile(
+              key: ValueKey(item.id),
+              item: item,
+              l10n: l10n,
+              onTap: () => widget.onEditItem(item),
+            ),
+        ].toList(),
       ),
     );
   }

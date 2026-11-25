@@ -404,6 +404,8 @@
   "emptyMealsTitle": "Aún no hay comidas",
   "emptyMealsBody": "Registra tu primera comida para controlar calorías y macronutrientes.",
   "emptyMealsCta": "Registrar una comida",
+  "mealFormDeleteTitle": "¿Eliminar esta comida?",
+  "mealFormDeleteBody": "Se quitará de tu registro y de tus totales diarios.",
   "mealDeleted": "Comida «{name}» eliminada",
   "@mealDeleted": {
     "placeholders": {
@@ -429,6 +431,7 @@
   "foodListPartCount": "{count, plural, =1{1 ingrediente} other{{count} ingredientes}}",
   "foodListUnresolved": "Faltan ingredientes: no se puede calcular la nutrición",
   "foodListCookedWeight": "Peso cocinado {grams} g",
+  "foodListCreatedOn": "Creada el {date}",
   "foodArchived": "{name} archivada",
   "emptyFoodsTitle": "Aún no hay recetas",
   "emptyFoodsBody": "Combine dos o más ingredientes en un alimento que pueda registrar de una vez. La nutrición se calcula a partir de los ingredientes que añada.",
@@ -460,6 +463,7 @@
   "foodFormBatchCalories": "{calories} kcal en todo el lote",
   "foodFormBatchTotal": "El lote pesa {total}",
   "foodFormSave": "Guardar receta",
+  "foodFormDuplicate": "Nueva tanda a partir de esta receta",
   "foodFormSaving": "Guardando…",
   "mealFormFoods": "Alimentos",
   "mealFormNoFoods": "Aún no hay alimentos. Añada ingredientes primero: cada uno se convierte en un alimento que puede registrar por separado.",
@@ -1225,7 +1229,7 @@
   "@budgetViewAll": {
     "description": "budgetViewAll"
   },
-  "commonDelete": "Common Delete",
+  "commonDelete": "Eliminar",
   "@commonDelete": {
     "description": "commonDelete"
   },

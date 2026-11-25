@@ -6,6 +6,7 @@ import 'package:fitfat/src/diet/repositories/food_repository.dart';
 import 'package:fitfat/src/diet/repositories/ingredient_repository.dart';
 import 'package:fitfat/src/diet/screens/food_form.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
+import 'package:fitfat/src/models/food.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,36 +20,37 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   late db.AppDatabase database;
   late FoodRepository foods;
+  late String oatsId;
 
   setUp(() async {
     database = db.AppDatabase.forTesting(NativeDatabase.memory());
     foods = FoodRepository(database);
     final ingredients = IngredientRepository(database);
-    await ingredients.insert(
-      newIngredient(
-        name: 'Oats',
-        caloriesPer100g: 400,
-        proteinPer100g: 13,
-        carbsPer100g: 60,
-        fatPer100g: 7,
-      ),
+    final oats = newIngredient(
+      name: 'Oats',
+      caloriesPer100g: 400,
+      proteinPer100g: 13,
+      carbsPer100g: 60,
+      fatPer100g: 7,
     );
+    oatsId = oats.id;
+    await ingredients.insert(oats);
   });
 
   tearDown(() => database.close());
 
-  Future<void> pumpForm(WidgetTester tester) async {
+  Future<void> pumpForm(WidgetTester tester, {Food? template}) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(database)],
-        child: const MaterialApp(
-          localizationsDelegates: [
+        child: MaterialApp(
+          localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
           ],
-          supportedLocales: [Locale('en')],
-          home: Scaffold(body: FoodFormScreen()),
+          supportedLocales: const [Locale('en')],
+          home: Scaffold(body: FoodFormScreen(template: template)),
         ),
       ),
     );
@@ -159,5 +161,45 @@ void main() {
     expect(saved.food.cookedWeight, 80);
     expect(saved.nutrition!.totalAmount, 80);
     expect(saved.nutrition!.per100g.calories, closeTo(500, 1e-9));
+  });
+
+  testWidgets('a new batch from a template is saved as a separate recipe', (
+    tester,
+  ) async {
+    final original = newFood(name: 'Baked potatoes', cookedWeight: 70);
+    await foods.insert(original, [
+      newFoodIngredient(
+        ingredientId: oatsId,
+        ingredientName: 'Oats',
+        amount: 100,
+      ),
+    ]);
+
+    await pumpForm(tester, template: original);
+
+    // Name and parts are prefilled; the cooked weight is not inherited and
+    // follows the raw total instead.
+    expect(find.text('Baked potatoes'), findsOneWidget);
+    expect(find.text('Oats'), findsOneWidget);
+    expect(find.text('New recipe'), findsOneWidget);
+    expect(find.text('100'), findsNWidgets(2));
+
+    await tester.drag(find.byType(ListView), const Offset(0, -800));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save recipe'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    final saved = (await foods.getAllWithNutrition())
+        .where((e) => !e.food.isDerived)
+        .map((e) => e.food)
+        .toList();
+    expect(saved, hasLength(2));
+    expect(saved.map((f) => f.name).toSet(), {'Baked potatoes'});
+    final copy = saved.singleWhere((f) => f.id != original.id);
+    expect(copy.components.single.amount, 100);
+    expect(copy.cookedWeight, 100);
+    // The original batch is untouched.
+    expect((await foods.getById(original.id))!.cookedWeight, 70);
   });
 }

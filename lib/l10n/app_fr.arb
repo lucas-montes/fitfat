@@ -410,6 +410,8 @@
   "emptyMealsTitle": "Aucun repas",
   "emptyMealsBody": "Enregistrez votre premier repas pour suivre calories et macronutriments.",
   "emptyMealsCta": "Enregistrer un repas",
+  "mealFormDeleteTitle": "Supprimer ce repas ?",
+  "mealFormDeleteBody": "Il sera retiré de votre journal et de vos totaux quotidiens.",
   "mealDeleted": "Repas « {name} » supprimé",
   "@mealDeleted": {
     "placeholders": {
@@ -435,6 +437,7 @@
   "foodListPartCount": "{count, plural, =1{1 ingrédient} other{{count} ingrédients}}",
   "foodListUnresolved": "Ingrédients manquants — valeurs nutritionnelles impossibles à calculer",
   "foodListCookedWeight": "Poids cuit {grams} g",
+  "foodListCreatedOn": "Créée le {date}",
   "foodArchived": "{name} archivée",
   "emptyFoodsTitle": "Aucune recette pour l’instant",
   "emptyFoodsBody": "Combinez deux ingrédients ou plus en un aliment à enregistrer d’un seul geste. Les valeurs nutritionnelles sont calculées à partir des ingrédients ajoutés.",
@@ -466,6 +469,7 @@
   "foodFormBatchCalories": "{calories} kcal pour tout le lot",
   "foodFormBatchTotal": "Le lot pèse {total}",
   "foodFormSave": "Enregistrer la recette",
+  "foodFormDuplicate": "Nouvelle fournée à partir de cette recette",
   "foodFormSaving": "Enregistrement…",
   "mealFormFoods": "Aliments",
   "mealFormNoFoods": "Aucun aliment pour l’instant. Ajoutez d’abord des ingrédients : chacun devient un aliment que vous pouvez enregistrer seul.",
@@ -1240,7 +1244,7 @@
   "@budgetViewAll": {
     "description": "budgetViewAll"
   },
-  "commonDelete": "Common Delete",
+  "commonDelete": "Supprimer",
   "@commonDelete": {
     "description": "commonDelete"
   },

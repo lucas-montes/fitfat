@@ -457,6 +457,8 @@
   "emptyMealsTitle": "No meals yet",
   "emptyMealsBody": "Log your first meal to track calories and macros.",
   "emptyMealsCta": "Log a meal",
+  "mealFormDeleteTitle": "Delete this meal?",
+  "mealFormDeleteBody": "It will be removed from your log and your daily totals.",
   "mealDeleted": "Meal \"{name}\" deleted",
   "@mealDeleted": {
     "placeholders": {
@@ -504,6 +506,10 @@
   "foodListCookedWeight": "Cooked weight {grams} g",
   "@foodListCookedWeight": {
     "placeholders": { "grams": { "type": "String" } }
+  },
+  "foodListCreatedOn": "Created {date}",
+  "@foodListCreatedOn": {
+    "placeholders": { "date": { "type": "String" } }
   },
   "foodArchived": "{name} archived",
   "@foodArchived": {
@@ -557,6 +563,7 @@
     "placeholders": { "total": { "type": "String" } }
   },
   "foodFormSave": "Save recipe",
+  "foodFormDuplicate": "New batch from this recipe",
   "foodFormSaving": "Saving…",
   "mealFormFoods": "Foods",
   "mealFormNoFoods": "No foods available yet. Add ingredients first — each one becomes a food you can log on its own.",
@@ -1371,7 +1378,7 @@
   "@budgetViewAll": {
   "description": "budgetViewAll"
 },
-  "commonDelete": "Common Delete",
+  "commonDelete": "Delete",
   "@commonDelete": {
   "description": "commonDelete"
 },

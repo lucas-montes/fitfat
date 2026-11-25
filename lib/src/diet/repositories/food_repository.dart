@@ -32,6 +32,9 @@ final class FoodRepository {
 
   /// Every active food, name-ordered, with its live per-100g profile.
   ///
+  /// Foods sharing a name (successive batches of the same dish) are ordered
+  /// newest first, so the latest version is the one on top.
+  ///
   /// Three queries regardless of how many foods exist: the foods, all their
   /// composition rows in one batch, then the ingredients those rows reference.
   /// Kept live on purpose — the browse path is a small bounded list, and a
@@ -46,7 +49,10 @@ final class FoodRepository {
                     ? const Constant(true)
                     : t.archivedAt.isNull(),
               )
-              ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+              ..orderBy([
+                (t) => OrderingTerm.asc(t.name),
+                (t) => OrderingTerm.desc(t.createdAt),
+              ]))
             .get();
     return _resolveAll(foods);
   }
