@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
@@ -104,6 +105,53 @@ final class ExerciseRepository {
     await (_database.delete(
       _database.exercises,
     )..where((t) => t.id.equals(id))).go();
+  }
+
+  /// Ids referenced by any workout or template blueprint. Removing one of
+  /// these would orphan the rows that point at it.
+  Future<Set<String>> referencedIds() async {
+    final rows = await _database.customSelect('''
+      SELECT exercise_id FROM workout_exercises
+      UNION
+      SELECT exercise_id FROM workout_template_exercises
+    ''').get();
+    return {for (final r in rows) r.read<String>('exercise_id')};
+  }
+
+  /// Local exercises with no history: not used by any workout or template.
+  /// Limited to [catalogIds] (the server library) so an exercise created on
+  /// this phone — which may exist nowhere else — is never offered for removal.
+  Future<Set<String>> unusedServerIds(Set<String> catalogIds) async {
+    final inUse = await referencedIds();
+    final rows = await _database.select(_database.exercises).get();
+    return {
+      for (final r in rows)
+        if (!inUse.contains(r.id) && catalogIds.contains(r.id)) r.id,
+    };
+  }
+
+  /// Removes [ids] from this device only: the row and its downloaded media go,
+  /// but no sync tombstone is written, so the exercise stays in the server
+  /// library and can be imported again later. Ids still referenced by a
+  /// workout or template are skipped. Returns the number removed.
+  Future<int> removeFromDevice(Set<String> ids) async {
+    final inUse = await referencedIds();
+    var removed = 0;
+    for (final id in ids) {
+      if (inUse.contains(id)) continue;
+      final existing = await getById(id);
+      if (existing == null) continue;
+      for (final path in [existing.imagePath, existing.videoPath]) {
+        if (path == null) continue;
+        try {
+          final file = File(path);
+          if (await file.exists()) await file.delete();
+        } catch (_) {}
+      }
+      await delete(id, recordDeletion: false);
+      removed++;
+    }
+    return removed;
   }
 
   static const _unset = Object();

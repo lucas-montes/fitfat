@@ -532,6 +532,55 @@ final class SettingsNotifier extends Notifier<SettingsState> {
     );
   }
 
+  /// Applies a rescanned server QR code. A URL already in the list becomes the
+  /// active server with the new key; otherwise the active server is repointed
+  /// at the new URL and key (same id, so it stays the same entry). With no
+  /// servers yet this is a plain [addServer].
+  Future<void> rescanServer(String url, String apiKey) async {
+    final normalized = url.trim().replaceAll(RegExp(r'/+$'), '');
+    final key = apiKey.trim();
+    if (normalized.isEmpty || key.isEmpty) return;
+    final prefs = ref.read(sharedPreferencesProvider);
+    final existing = _loadServers(prefs);
+    final match = existing.where((s) => s.url == normalized).firstOrNull;
+    final current = _active(
+      existing,
+      prefs.getString(SyncKeyStore.activeServerIdPrefKey),
+    );
+    if (match == null && current == null) {
+      await addServer(normalized, key);
+      return;
+    }
+    final ServerProfile target;
+    if (match != null) {
+      target = match;
+    } else {
+      // Keep a label the user typed; refresh one derived from the old URL.
+      final oldHost = Uri.tryParse(current!.url)?.host ?? '';
+      final autoLabel =
+          current.label == current.url || current.label == oldHost;
+      final newHost = Uri.tryParse(normalized)?.host ?? '';
+      target = ServerProfile(
+        id: current.id,
+        url: normalized,
+        label: autoLabel
+            ? (newHost.isEmpty ? normalized : newHost)
+            : current.label,
+      );
+    }
+    final updated = [for (final s in existing) s.id == target.id ? target : s];
+    await SyncKeyStore.write(target.id, key);
+    ref.read(syncApiKeysProvider.notifier).put(target.id, key);
+    await _saveServers(updated);
+    await prefs.setString(SyncKeyStore.activeServerIdPrefKey, target.id);
+    state = state.copyWith(
+      servers: updated,
+      activeServerId: target.id,
+      remoteSyncBaseUrl: normalized,
+      remoteSyncApiKey: key,
+    );
+  }
+
   /// Removes server [id] and its key. The last server cannot be removed.
   Future<void> deleteServer(String id) async {
     final prefs = ref.read(sharedPreferencesProvider);

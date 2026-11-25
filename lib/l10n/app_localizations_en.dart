@@ -1995,6 +1995,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectServerExercises => 'Select server exercises';
 
   @override
+  String get exerciseImportFromServer => 'Import from server…';
+
+  @override
+  String get exerciseRemoveFromPhone => 'Remove from phone…';
+
+  @override
+  String get exerciseRemoveTitle => 'Remove from phone';
+
+  @override
+  String get exerciseRemoveNothing =>
+      'Nothing to remove: every exercise here is used by a workout or template.';
+
+  @override
+  String get exerciseRemoveUnused => 'Remove unused exercises';
+
+  @override
+  String exerciseRemoveUnusedConfirm(int count) {
+    return 'Remove $count exercises you have not used in any workout or template? They stay on the server and can be imported again.';
+  }
+
+  @override
+  String get exerciseUsedInTemplate =>
+      'Used in a workout template. Remove it from the template first.';
+
+  @override
+  String exerciseRemovedCount(int count) {
+    return 'Removed from phone: $count. They stay on the server.';
+  }
+
+  @override
   String get selectServerIngredients => 'Select server ingredients';
 
   @override
@@ -3268,7 +3298,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get syncExerciseUpdates => 'Sync exercise updates';
+  String get syncExerciseUpdates => 'Update exercises on this phone';
 
   @override
   String get syncPushAll => 'Push all';
@@ -3389,6 +3419,104 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncNow => 'Sync now';
+
+  @override
+  String get syncNowHint => 'Sends your changes, then fetches the server’s';
+
+  @override
+  String syncStep(String entity) {
+    return 'Syncing $entity…';
+  }
+
+  @override
+  String get syncYourData => 'Your data';
+
+  @override
+  String syncShowAll(int count) {
+    return 'Show all $count';
+  }
+
+  @override
+  String get syncShowLess => 'Show less';
+
+  @override
+  String get syncLibraryTitle => 'Library on the server';
+
+  @override
+  String get syncLibraryHint =>
+      'Nothing downloads on its own. Pick what you want on this phone.';
+
+  @override
+  String syncOnPhoneCount(int count) {
+    return '$count on this phone';
+  }
+
+  @override
+  String get syncBrowse => 'Browse';
+
+  @override
+  String get syncBackups => 'Backups';
+
+  @override
+  String get syncBackupsSubtitle => 'File export · server copy · restore';
+
+  @override
+  String get syncServerSheetTitle => 'Server';
+
+  @override
+  String syncStatusConnected(String server) {
+    return '$server · connected';
+  }
+
+  @override
+  String syncStatusOffline(String server) {
+    return '$server · not reachable';
+  }
+
+  @override
+  String syncStatusChecking(String server) {
+    return '$server · checking…';
+  }
+
+  @override
+  String get syncNoServerYet => 'No server yet';
+
+  @override
+  String get syncRescanQr => 'Rescan QR code';
+
+  @override
+  String get syncRescanQrHint =>
+      'Use when the computer’s address or key changed. Replaces this server’s URL and key.';
+
+  @override
+  String get syncRescanQrTooltip => 'Rescan server QR code';
+
+  @override
+  String get syncTestConnection => 'Test connection';
+
+  @override
+  String get syncAddServerByHand => 'Add a server by hand';
+
+  @override
+  String get syncServerUpdated => 'Server updated';
+
+  @override
+  String get syncSendToServer => 'Send to server';
+
+  @override
+  String get syncGetFromServer => 'Get from server';
+
+  @override
+  String get syncRescan => 'Rescan';
+
+  @override
+  String syncCantReach(String server) {
+    return 'Can’t reach $server';
+  }
+
+  @override
+  String get syncCantReachHint =>
+      'Your data stays on this phone. Rescan if the computer’s address changed.';
 
   @override
   String get syncBackup => 'Backup';

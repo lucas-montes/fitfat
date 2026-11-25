@@ -3580,6 +3580,54 @@ abstract class AppLocalizations {
   /// **'Select server exercises'**
   String get selectServerExercises;
 
+  /// No description provided for @exerciseImportFromServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from server…'**
+  String get exerciseImportFromServer;
+
+  /// No description provided for @exerciseRemoveFromPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from phone…'**
+  String get exerciseRemoveFromPhone;
+
+  /// No description provided for @exerciseRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from phone'**
+  String get exerciseRemoveTitle;
+
+  /// No description provided for @exerciseRemoveNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to remove: every exercise here is used by a workout or template.'**
+  String get exerciseRemoveNothing;
+
+  /// No description provided for @exerciseRemoveUnused.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove unused exercises'**
+  String get exerciseRemoveUnused;
+
+  /// No description provided for @exerciseRemoveUnusedConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {count} exercises you have not used in any workout or template? They stay on the server and can be imported again.'**
+  String exerciseRemoveUnusedConfirm(int count);
+
+  /// No description provided for @exerciseUsedInTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in a workout template. Remove it from the template first.'**
+  String get exerciseUsedInTemplate;
+
+  /// No description provided for @exerciseRemovedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from phone: {count}. They stay on the server.'**
+  String exerciseRemovedCount(int count);
+
   /// No description provided for @selectServerIngredients.
   ///
   /// In en, this message translates to:
@@ -5821,7 +5869,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncExerciseUpdates.
   ///
   /// In en, this message translates to:
-  /// **'Sync exercise updates'**
+  /// **'Update exercises on this phone'**
   String get syncExerciseUpdates;
 
   /// No description provided for @syncPushAll.
@@ -6039,6 +6087,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync now'**
   String get syncNow;
+
+  /// No description provided for @syncNowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends your changes, then fetches the server’s'**
+  String get syncNowHint;
+
+  /// No description provided for @syncStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing {entity}…'**
+  String syncStep(String entity);
+
+  /// No description provided for @syncYourData.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data'**
+  String get syncYourData;
+
+  /// No description provided for @syncShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all {count}'**
+  String syncShowAll(int count);
+
+  /// No description provided for @syncShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get syncShowLess;
+
+  /// No description provided for @syncLibraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Library on the server'**
+  String get syncLibraryTitle;
+
+  /// No description provided for @syncLibraryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing downloads on its own. Pick what you want on this phone.'**
+  String get syncLibraryHint;
+
+  /// No description provided for @syncOnPhoneCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} on this phone'**
+  String syncOnPhoneCount(int count);
+
+  /// No description provided for @syncBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get syncBrowse;
+
+  /// No description provided for @syncBackups.
+  ///
+  /// In en, this message translates to:
+  /// **'Backups'**
+  String get syncBackups;
+
+  /// No description provided for @syncBackupsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'File export · server copy · restore'**
+  String get syncBackupsSubtitle;
+
+  /// No description provided for @syncServerSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get syncServerSheetTitle;
+
+  /// No description provided for @syncStatusConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} · connected'**
+  String syncStatusConnected(String server);
+
+  /// No description provided for @syncStatusOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} · not reachable'**
+  String syncStatusOffline(String server);
+
+  /// No description provided for @syncStatusChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} · checking…'**
+  String syncStatusChecking(String server);
+
+  /// No description provided for @syncNoServerYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No server yet'**
+  String get syncNoServerYet;
+
+  /// No description provided for @syncRescanQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan QR code'**
+  String get syncRescanQr;
+
+  /// No description provided for @syncRescanQrHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use when the computer’s address or key changed. Replaces this server’s URL and key.'**
+  String get syncRescanQrHint;
+
+  /// No description provided for @syncRescanQrTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan server QR code'**
+  String get syncRescanQrTooltip;
+
+  /// No description provided for @syncTestConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get syncTestConnection;
+
+  /// No description provided for @syncAddServerByHand.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a server by hand'**
+  String get syncAddServerByHand;
+
+  /// No description provided for @syncServerUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Server updated'**
+  String get syncServerUpdated;
+
+  /// No description provided for @syncSendToServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to server'**
+  String get syncSendToServer;
+
+  /// No description provided for @syncGetFromServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Get from server'**
+  String get syncGetFromServer;
+
+  /// No description provided for @syncRescan.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescan'**
+  String get syncRescan;
+
+  /// No description provided for @syncCantReach.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t reach {server}'**
+  String syncCantReach(String server);
+
+  /// No description provided for @syncCantReachHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data stays on this phone. Rescan if the computer’s address changed.'**
+  String get syncCantReachHint;
 
   /// No description provided for @syncBackup.
   ///

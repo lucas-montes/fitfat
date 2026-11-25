@@ -28,6 +28,7 @@ Future<Set<String>?> showSelectSheet(
   String? hint,
   String? refreshTooltip,
   Future<List<DisplayItem>?> Function()? onRefresh,
+  bool allowSelectAll = true,
 }) {
   return showModalBottomSheet<Set<String>>(
     context: context,
@@ -39,6 +40,7 @@ Future<Set<String>?> showSelectSheet(
       hint: hint,
       refreshTooltip: refreshTooltip,
       onRefresh: onRefresh,
+      allowSelectAll: allowSelectAll,
     ),
   );
 }
@@ -50,6 +52,7 @@ final class _SelectSheetContent extends StatefulWidget {
   final String? hint;
   final String? refreshTooltip;
   final Future<List<DisplayItem>?> Function()? onRefresh;
+  final bool allowSelectAll;
   const _SelectSheetContent({
     required this.items,
     required this.initialSelected,
@@ -57,6 +60,7 @@ final class _SelectSheetContent extends StatefulWidget {
     this.hint,
     this.refreshTooltip,
     this.onRefresh,
+    this.allowSelectAll = true,
   });
   @override
   State<_SelectSheetContent> createState() => _SelectSheetContentState();
@@ -210,19 +214,20 @@ final class _SelectSheetContentState extends State<_SelectSheetContent> {
                 children: [
                   Text(l10n.selectSheetCount(filtered.length)),
                   const Spacer(),
-                  TextButton(
-                    onPressed: () => setState(() {
-                      if (_selected.length == filtered.length)
-                        _selected.clear();
-                      else
-                        _selected.addAll(filtered.map((e) => e.id));
-                    }),
-                    child: Text(
-                      _selected.length == filtered.length
-                          ? l10n.exerciseFilterClear
-                          : l10n.selectSheetSelectAll,
+                  if (widget.allowSelectAll)
+                    TextButton(
+                      onPressed: () => setState(() {
+                        if (_selected.length == filtered.length)
+                          _selected.clear();
+                        else
+                          _selected.addAll(filtered.map((e) => e.id));
+                      }),
+                      child: Text(
+                        _selected.length == filtered.length
+                            ? l10n.exerciseFilterClear
+                            : l10n.selectSheetSelectAll,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),

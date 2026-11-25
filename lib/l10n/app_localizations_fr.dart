@@ -2013,6 +2013,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get selectServerExercises => 'Sélectionner des exercices du serveur';
 
   @override
+  String get exerciseImportFromServer => 'Importer depuis le serveur…';
+
+  @override
+  String get exerciseRemoveFromPhone => 'Retirer du téléphone…';
+
+  @override
+  String get exerciseRemoveTitle => 'Retirer du téléphone';
+
+  @override
+  String get exerciseRemoveNothing =>
+      'Rien à retirer : chaque exercice est utilisé par un entraînement ou un modèle.';
+
+  @override
+  String get exerciseRemoveUnused => 'Retirer les exercices inutilisés';
+
+  @override
+  String exerciseRemoveUnusedConfirm(int count) {
+    return 'Retirer $count exercices que vous n’avez utilisés dans aucun entraînement ni modèle ? Ils restent sur le serveur et peuvent être réimportés.';
+  }
+
+  @override
+  String get exerciseUsedInTemplate =>
+      'Utilisé dans un modèle d’entraînement. Retirez-le d’abord du modèle.';
+
+  @override
+  String exerciseRemovedCount(int count) {
+    return 'Retirés du téléphone : $count. Ils restent sur le serveur.';
+  }
+
+  @override
   String get selectServerIngredients =>
       'Sélectionner des ingrédients du serveur';
 
@@ -3298,7 +3328,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncExerciseUpdates =>
-      'Synchroniser les mises à jour d\'exercices';
+      'Mettre à jour les exercices de ce téléphone';
 
   @override
   String get syncPushAll => 'Tout envoyer';
@@ -3419,6 +3449,106 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncNow => 'Synchroniser';
+
+  @override
+  String get syncNowHint =>
+      'Envoie vos modifications, puis récupère celles du serveur';
+
+  @override
+  String syncStep(String entity) {
+    return 'Synchronisation : $entity…';
+  }
+
+  @override
+  String get syncYourData => 'Vos données';
+
+  @override
+  String syncShowAll(int count) {
+    return 'Tout afficher ($count)';
+  }
+
+  @override
+  String get syncShowLess => 'Afficher moins';
+
+  @override
+  String get syncLibraryTitle => 'Bibliothèque du serveur';
+
+  @override
+  String get syncLibraryHint =>
+      'Rien ne se télécharge tout seul. Choisissez ce que vous voulez sur ce téléphone.';
+
+  @override
+  String syncOnPhoneCount(int count) {
+    return '$count sur ce téléphone';
+  }
+
+  @override
+  String get syncBrowse => 'Parcourir';
+
+  @override
+  String get syncBackups => 'Sauvegardes';
+
+  @override
+  String get syncBackupsSubtitle =>
+      'Export de fichier · copie serveur · restauration';
+
+  @override
+  String get syncServerSheetTitle => 'Serveur';
+
+  @override
+  String syncStatusConnected(String server) {
+    return '$server · connecté';
+  }
+
+  @override
+  String syncStatusOffline(String server) {
+    return '$server · injoignable';
+  }
+
+  @override
+  String syncStatusChecking(String server) {
+    return '$server · vérification…';
+  }
+
+  @override
+  String get syncNoServerYet => 'Aucun serveur';
+
+  @override
+  String get syncRescanQr => 'Rescanner le QR code';
+
+  @override
+  String get syncRescanQrHint =>
+      'À utiliser si l’adresse ou la clé de l’ordinateur a changé. Remplace l’URL et la clé de ce serveur.';
+
+  @override
+  String get syncRescanQrTooltip => 'Rescanner le QR code du serveur';
+
+  @override
+  String get syncTestConnection => 'Tester la connexion';
+
+  @override
+  String get syncAddServerByHand => 'Ajouter un serveur manuellement';
+
+  @override
+  String get syncServerUpdated => 'Serveur mis à jour';
+
+  @override
+  String get syncSendToServer => 'Envoyer au serveur';
+
+  @override
+  String get syncGetFromServer => 'Récupérer du serveur';
+
+  @override
+  String get syncRescan => 'Rescanner';
+
+  @override
+  String syncCantReach(String server) {
+    return 'Impossible de joindre $server';
+  }
+
+  @override
+  String get syncCantReachHint =>
+      'Vos données restent sur ce téléphone. Rescannez si l’adresse de l’ordinateur a changé.';
 
   @override
   String get syncBackup => 'Sauvegarder';

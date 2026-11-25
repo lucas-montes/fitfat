@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../database/app_database.dart' as db;
 import '../database/database_provider.dart' as db;
+import '../exercise/providers/exercises.dart';
 import '../network/api_client.dart';
 import '../notes/audio/note_audio_path.dart';
 import '../settings/providers/settings.dart';
@@ -83,32 +84,34 @@ final class PersonalPullService {
         pulledIds.add(id);
         // Server-wins: a pull mirrors the server's row, including edits made
         // on another phone. Pending local deletions are skipped above.
-        await _database.into(_database.tasks).insertOnConflictUpdate(
-          db.TasksCompanion.insert(
-            id: id,
-            date: _int(raw['date']),
-            title: _str(raw['title'], ''),
-            done: _int(raw['done']),
-            taskStatus: Value(_optInt(raw['taskStatus'])),
-            carryOver: Value(
-              raw['carryOver'] is bool
-                  ? raw['carryOver'] as bool
-                  : ((raw['carryOver'] as num?)?.toInt() ?? 0) != 0,
-            ),
-            sortOrder: _int(raw['sortOrder']),
-            dueDate: Value(_optInt(raw['dueDate'])),
-            dueTimeMinutes: Value(_optInt(raw['dueTimeMinutes'])),
-            startTimeMinutes: Value(_optInt(raw['startTimeMinutes'])),
-            endTimeMinutes: Value(_optInt(raw['endTimeMinutes'])),
-            notes: Value(_optStr(raw['notes'])),
-            workoutId: Value(_optStr(raw['workoutId'])),
-            workoutTemplateId: Value(_optStr(raw['workoutTemplateId'])),
-            recurrence: Value(_optStr(raw['recurrence'])),
-            seriesId: Value(_optStr(raw['seriesId'])),
-            createdAt: _int(raw['createdAt']),
-            deletedAt: const Value(null),
-          ),
-        );
+        await _database
+            .into(_database.tasks)
+            .insertOnConflictUpdate(
+              db.TasksCompanion.insert(
+                id: id,
+                date: _int(raw['date']),
+                title: _str(raw['title'], ''),
+                done: _int(raw['done']),
+                taskStatus: Value(_optInt(raw['taskStatus'])),
+                carryOver: Value(
+                  raw['carryOver'] is bool
+                      ? raw['carryOver'] as bool
+                      : ((raw['carryOver'] as num?)?.toInt() ?? 0) != 0,
+                ),
+                sortOrder: _int(raw['sortOrder']),
+                dueDate: Value(_optInt(raw['dueDate'])),
+                dueTimeMinutes: Value(_optInt(raw['dueTimeMinutes'])),
+                startTimeMinutes: Value(_optInt(raw['startTimeMinutes'])),
+                endTimeMinutes: Value(_optInt(raw['endTimeMinutes'])),
+                notes: Value(_optStr(raw['notes'])),
+                workoutId: Value(_optStr(raw['workoutId'])),
+                workoutTemplateId: Value(_optStr(raw['workoutTemplateId'])),
+                recurrence: Value(_optStr(raw['recurrence'])),
+                seriesId: Value(_optStr(raw['seriesId'])),
+                createdAt: _int(raw['createdAt']),
+                deletedAt: const Value(null),
+              ),
+            );
         updated++;
       }
       // Link rows have no tombstone of their own: the server returns every
@@ -153,16 +156,18 @@ final class PersonalPullService {
         final id = raw['id'];
         if (id is! String || pending.contains(id)) continue;
         pulledIds.add(id);
-        await _database.into(_database.notes).insertOnConflictUpdate(
-          db.NotesCompanion.insert(
-            id: id,
-            title: _str(raw['title'], ''),
-            body: Value(_str(raw['body'], '')),
-            updatedAt: _int(raw['updatedAt']),
-            createdAt: _int(raw['createdAt']),
-            deletedAt: const Value(null),
-          ),
-        );
+        await _database
+            .into(_database.notes)
+            .insertOnConflictUpdate(
+              db.NotesCompanion.insert(
+                id: id,
+                title: _str(raw['title'], ''),
+                body: Value(_str(raw['body'], '')),
+                updatedAt: _int(raw['updatedAt']),
+                createdAt: _int(raw['createdAt']),
+                deletedAt: const Value(null),
+              ),
+            );
         updated++;
       }
       if (payload.containsKey('noteTags')) {
@@ -203,16 +208,18 @@ final class PersonalPullService {
       final noteId = raw['noteId'];
       if (id is! String || noteId is! String) continue;
       final path = await _clipPathFor(id);
-      await _database.into(_database.noteAudio).insertOnConflictUpdate(
-        db.NoteAudioCompanion.insert(
-          id: id,
-          noteId: noteId,
-          audioPath: path,
-          durationMs: Value(_int(raw['durationMs'])),
-          position: Value(_int(raw['position'])),
-          createdAt: _int(raw['createdAt']),
-        ),
-      );
+      await _database
+          .into(_database.noteAudio)
+          .insertOnConflictUpdate(
+            db.NoteAudioCompanion.insert(
+              id: id,
+              noteId: noteId,
+              audioPath: path,
+              durationMs: Value(_int(raw['durationMs'])),
+              position: Value(_int(raw['position'])),
+              createdAt: _int(raw['createdAt']),
+            ),
+          );
 
       final file = File(path);
       final hasBytes = await file.exists() && await file.length() > 0;
@@ -250,25 +257,27 @@ final class PersonalPullService {
         final id = raw['id'];
         if (id is! String || pending.contains(id)) continue;
         pulledIds.add(id);
-        await _database.into(_database.goals).insertOnConflictUpdate(
-          db.GoalsCompanion.insert(
-            id: id,
-            title: _str(raw['title'], ''),
-            startDate: _int(raw['startDate']),
-            status: Value(_str(raw['status'], 'planned')),
-            targetType: Value(_str(raw['targetType'], 'none')),
-            reminderTimeMinutes: Value(_int(raw['reminderTimeMinutes'])),
-            description: Value(_optStr(raw['description'])),
-            endDate: Value(_optInt(raw['endDate'])),
-            targetValue: Value(_optDouble(raw['targetValue'])),
-            baselineValue: Value(_optDouble(raw['baselineValue'])),
-            unit: Value(_optStr(raw['unit'])),
-            reminderEnabled: Value(raw['reminderEnabled'] == true),
-            createdAt: _int(raw['createdAt']),
-            updatedAt: _int(raw['updatedAt']),
-            deletedAt: const Value(null),
-          ),
-        );
+        await _database
+            .into(_database.goals)
+            .insertOnConflictUpdate(
+              db.GoalsCompanion.insert(
+                id: id,
+                title: _str(raw['title'], ''),
+                startDate: _int(raw['startDate']),
+                status: Value(_str(raw['status'], 'planned')),
+                targetType: Value(_str(raw['targetType'], 'none')),
+                reminderTimeMinutes: Value(_int(raw['reminderTimeMinutes'])),
+                description: Value(_optStr(raw['description'])),
+                endDate: Value(_optInt(raw['endDate'])),
+                targetValue: Value(_optDouble(raw['targetValue'])),
+                baselineValue: Value(_optDouble(raw['baselineValue'])),
+                unit: Value(_optStr(raw['unit'])),
+                reminderEnabled: Value(raw['reminderEnabled'] == true),
+                createdAt: _int(raw['createdAt']),
+                updatedAt: _int(raw['updatedAt']),
+                deletedAt: const Value(null),
+              ),
+            );
         updated++;
       }
       final goals = await _idSet(_database.goals);
@@ -287,16 +296,18 @@ final class PersonalPullService {
                   t.id.equals(id).not(),
             ))
             .go();
-        await _database.into(_database.goalProgressEntries).insertOnConflictUpdate(
-          db.GoalProgressEntriesCompanion.insert(
-            id: id,
-            goalId: goalId,
-            recordedAt: recordedAt,
-            value: _double(raw['value']),
-            note: Value(_optStr(raw['note'])),
-            createdAt: _int(raw['createdAt']),
-          ),
-        );
+        await _database
+            .into(_database.goalProgressEntries)
+            .insertOnConflictUpdate(
+              db.GoalProgressEntriesCompanion.insert(
+                id: id,
+                goalId: goalId,
+                recordedAt: recordedAt,
+                value: _double(raw['value']),
+                note: Value(_optStr(raw['note'])),
+                createdAt: _int(raw['createdAt']),
+              ),
+            );
       }
       if (payload.containsKey('goalTags')) {
         await _reconcileTagLinks(
@@ -344,20 +355,22 @@ final class PersonalPullService {
         if (pendingWorkouts.contains(id)) continue;
         // Server-wins, and the graph is applied even when the header already
         // exists: an exercise added on another phone must still land.
-        await _database.into(_database.workouts).insertOnConflictUpdate(
-          db.WorkoutsCompanion.insert(
-            id: id,
-            name: _str(raw['name'], ''),
-            date: _int(raw['date']),
-            startedAt: Value(_optInt(raw['startedAt'])),
-            completedAt: Value(_optInt(raw['completedAt'])),
-            notes: Value(_optStr(raw['notes'])),
-            routineId: Value(_optStr(raw['routineId'])),
-            templateId: Value(_optStr(raw['templateId'])),
-            createdAt: _int(raw['createdAt']),
-            deletedAt: const Value(null),
-          ),
-        );
+        await _database
+            .into(_database.workouts)
+            .insertOnConflictUpdate(
+              db.WorkoutsCompanion.insert(
+                id: id,
+                name: _str(raw['name'], ''),
+                date: _int(raw['date']),
+                startedAt: Value(_optInt(raw['startedAt'])),
+                completedAt: Value(_optInt(raw['completedAt'])),
+                notes: Value(_optStr(raw['notes'])),
+                routineId: Value(_optStr(raw['routineId'])),
+                templateId: Value(_optStr(raw['templateId'])),
+                createdAt: _int(raw['createdAt']),
+                deletedAt: const Value(null),
+              ),
+            );
         updated++;
 
         for (final exRaw in _maps(raw['exercises'])) {
@@ -471,20 +484,22 @@ final class PersonalPullService {
         final id = raw['id'];
         if (id is! String) continue;
         if (pendingTemplates.contains(id)) continue;
-        await _database.into(_database.workoutTemplates).insertOnConflictUpdate(
-          db.WorkoutTemplatesCompanion.insert(
-            id: id,
-            name: _str(raw['name'], ''),
-            startDate: _int(raw['startDate']),
-            notes: Value(_optStr(raw['notes'])),
-            recurrence: Value(_optStr(raw['recurrence'])),
-            excludedDates: Value(_optStr(raw['excludedDates'])),
-            sourceRoutineId: Value(_optStr(raw['sourceRoutineId'])),
-            createdAt: _int(raw['createdAt']),
-            updatedAt: _int(raw['updatedAt']),
-            deletedAt: const Value(null),
-          ),
-        );
+        await _database
+            .into(_database.workoutTemplates)
+            .insertOnConflictUpdate(
+              db.WorkoutTemplatesCompanion.insert(
+                id: id,
+                name: _str(raw['name'], ''),
+                startDate: _int(raw['startDate']),
+                notes: Value(_optStr(raw['notes'])),
+                recurrence: Value(_optStr(raw['recurrence'])),
+                excludedDates: Value(_optStr(raw['excludedDates'])),
+                sourceRoutineId: Value(_optStr(raw['sourceRoutineId'])),
+                createdAt: _int(raw['createdAt']),
+                updatedAt: _int(raw['updatedAt']),
+                deletedAt: const Value(null),
+              ),
+            );
         updated++;
 
         for (final exRaw in _maps(raw['exercises'])) {
@@ -577,15 +592,17 @@ final class PersonalPullService {
         final id = raw['id'];
         if (id is! String || pendingMeals.contains(id)) continue;
         landed.add(id);
-        await _database.into(_database.meals).insertOnConflictUpdate(
-          db.MealsCompanion.insert(
-            id: id,
-            name: _str(raw['name'], ''),
-            eatenAt: _int(raw['eatenAt']),
-            createdAt: _int(raw['createdAt']),
-            deletedAt: const Value(null),
-          ),
-        );
+        await _database
+            .into(_database.meals)
+            .insertOnConflictUpdate(
+              db.MealsCompanion.insert(
+                id: id,
+                name: _str(raw['name'], ''),
+                eatenAt: _int(raw['eatenAt']),
+                createdAt: _int(raw['createdAt']),
+                deletedAt: const Value(null),
+              ),
+            );
         updated++;
       }
       // A returned meal carries its complete logged-food set. Clear the local
@@ -604,21 +621,23 @@ final class PersonalPullService {
         // its foods forever.
         if (!landed.contains(mealId)) continue;
         if (pendingFoods.contains(id)) continue;
-        await _database.into(_database.mealFoods).insertOnConflictUpdate(
-          db.MealFoodsCompanion.insert(
-            id: id,
-            mealId: mealId,
-            foodId: _str(raw['foodId'], ''),
-            amount: _double(raw['amount']),
-            calories: _double(raw['calories']),
-            protein: _double(raw['protein']),
-            carbs: _double(raw['carbs']),
-            fat: _double(raw['fat']),
-            sodium: Value(_double(raw['sodium'])),
-            fiber: Value(_double(raw['fiber'])),
-            sugar: Value(_double(raw['sugar'])),
-          ),
-        );
+        await _database
+            .into(_database.mealFoods)
+            .insertOnConflictUpdate(
+              db.MealFoodsCompanion.insert(
+                id: id,
+                mealId: mealId,
+                foodId: _str(raw['foodId'], ''),
+                amount: _double(raw['amount']),
+                calories: _double(raw['calories']),
+                protein: _double(raw['protein']),
+                carbs: _double(raw['carbs']),
+                fat: _double(raw['fat']),
+                sodium: Value(_double(raw['sodium'])),
+                fiber: Value(_double(raw['fiber'])),
+                sugar: Value(_double(raw['sugar'])),
+              ),
+            );
         updated++;
       }
       var deleted = 0;
@@ -667,16 +686,18 @@ final class PersonalPullService {
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
         if (id is! String || pending.contains(id)) continue;
-        await _database.into(_database.bodyMetrics).insertOnConflictUpdate(
-          db.BodyMetricsCompanion.insert(
-            id: id,
-            date: _int(raw['date']),
-            weightKg: Value(_optDouble(raw['weightKg'])),
-            heightCm: Value(_optDouble(raw['heightCm'])),
-            createdAt: _int(raw['createdAt']),
-            deletedAt: const Value(null),
-          ),
-        );
+        await _database
+            .into(_database.bodyMetrics)
+            .insertOnConflictUpdate(
+              db.BodyMetricsCompanion.insert(
+                id: id,
+                date: _int(raw['date']),
+                weightKg: Value(_optDouble(raw['weightKg'])),
+                heightCm: Value(_optDouble(raw['heightCm'])),
+                createdAt: _int(raw['createdAt']),
+                deletedAt: const Value(null),
+              ),
+            );
         updated++;
       }
       var deleted = 0;
@@ -706,17 +727,19 @@ final class PersonalPullService {
       for (final raw in _maps(payload['items'])) {
         final id = raw['id'];
         if (id is! String || pending.contains(id)) continue;
-        await _database.into(_database.accounts).insertOnConflictUpdate(
-          db.AccountsCompanion.insert(
-            id: id,
-            name: _str(raw['name'], ''),
-            type: _str(raw['type'], 'other'),
-            openingBalance: Value(_double(raw['openingBalance'])),
-            note: Value(_optStr(raw['note'])),
-            createdAt: _int(raw['createdAt']),
-            deletedAt: const Value(null),
-          ),
-        );
+        await _database
+            .into(_database.accounts)
+            .insertOnConflictUpdate(
+              db.AccountsCompanion.insert(
+                id: id,
+                name: _str(raw['name'], ''),
+                type: _str(raw['type'], 'other'),
+                openingBalance: Value(_double(raw['openingBalance'])),
+                note: Value(_optStr(raw['note'])),
+                createdAt: _int(raw['createdAt']),
+                deletedAt: const Value(null),
+              ),
+            );
         updated++;
       }
       var deleted = 0;
@@ -757,27 +780,31 @@ final class PersonalPullService {
           skipped++;
           continue;
         }
-        await _database.into(_database.transactions).insertOnConflictUpdate(
-          db.TransactionsCompanion.insert(
-            id: id,
-            type: _str(raw['type'], 'expense'),
-            amount: _double(raw['amount']),
-            currencyCode: _str(raw['currencyCode'], ''),
-            amountBase: _double(raw['amountBase']),
-            rateUsed: _double(raw['rateUsed']),
-            date: _int(raw['date']),
-            accountId: accountId == null ? const Value.absent() : Value(accountId),
-            toAccountId: toAccountId == null
-                ? const Value.absent()
-                : Value(toAccountId),
-            category: Value(_optStr(raw['category'])),
-            note: Value(_optStr(raw['note'])),
-            receiptId: Value(_optStr(raw['receiptId'])),
-            isDraft: Value(raw['isDraft'] == true),
-            createdAt: _int(raw['createdAt']),
-            deletedAt: const Value(null),
-          ),
-        );
+        await _database
+            .into(_database.transactions)
+            .insertOnConflictUpdate(
+              db.TransactionsCompanion.insert(
+                id: id,
+                type: _str(raw['type'], 'expense'),
+                amount: _double(raw['amount']),
+                currencyCode: _str(raw['currencyCode'], ''),
+                amountBase: _double(raw['amountBase']),
+                rateUsed: _double(raw['rateUsed']),
+                date: _int(raw['date']),
+                accountId: accountId == null
+                    ? const Value.absent()
+                    : Value(accountId),
+                toAccountId: toAccountId == null
+                    ? const Value.absent()
+                    : Value(toAccountId),
+                category: Value(_optStr(raw['category'])),
+                note: Value(_optStr(raw['note'])),
+                receiptId: Value(_optStr(raw['receiptId'])),
+                isDraft: Value(raw['isDraft'] == true),
+                createdAt: _int(raw['createdAt']),
+                deletedAt: const Value(null),
+              ),
+            );
         updated++;
       }
       var deleted = 0;
@@ -827,13 +854,15 @@ final class PersonalPullService {
         final id = raw['id'];
         final name = raw['name'];
         if (id is! String || name is! String) continue;
-        await _database.into(_database.stores).insertOnConflictUpdate(
-          db.StoresCompanion.insert(
-            id: id,
-            name: name,
-            createdAt: _int(raw['createdAt']),
-          ),
-        );
+        await _database
+            .into(_database.stores)
+            .insertOnConflictUpdate(
+              db.StoresCompanion.insert(
+                id: id,
+                name: name,
+                createdAt: _int(raw['createdAt']),
+              ),
+            );
         updated++;
       }
       var deleted = 0;
@@ -882,14 +911,12 @@ final class PersonalPullService {
         if (id is! String || name is! String) continue;
         if (name.isEmpty || name == id) continue;
 
-        final byId =
-            await (_database.select(
-              _database.tags,
-            )..where((t) => t.id.equals(id))).get();
-        final byName =
-            await (_database.select(
-              _database.tags,
-            )..where((t) => t.name.equals(name))).get();
+        final byId = await (_database.select(
+          _database.tags,
+        )..where((t) => t.id.equals(id))).get();
+        final byName = await (_database.select(
+          _database.tags,
+        )..where((t) => t.name.equals(name))).get();
         // Another id already owns this name locally: never steal it.
         if (byName.any((t) => t.id != id)) continue;
 
@@ -906,16 +933,18 @@ final class PersonalPullService {
             ),
           );
         } else {
-          await _database.into(_database.tags).insertOnConflictUpdate(
-            db.TagsCompanion.insert(
-              id: id,
-              name: name,
-              color: Value(_optInt(raw['color'])),
-              sortOrder: Value(_int(raw['sortOrder'])),
-              createdAt: _int(raw['createdAt']),
-              updatedAt: _int(raw['updatedAt']),
-            ),
-          );
+          await _database
+              .into(_database.tags)
+              .insertOnConflictUpdate(
+                db.TagsCompanion.insert(
+                  id: id,
+                  name: name,
+                  color: Value(_optInt(raw['color'])),
+                  sortOrder: Value(_int(raw['sortOrder'])),
+                  createdAt: _int(raw['createdAt']),
+                  updatedAt: _int(raw['updatedAt']),
+                ),
+              );
         }
         updated++;
       }
@@ -990,7 +1019,11 @@ final class PersonalPullService {
     return (payload, serverTime);
   }
 
-  Future<void> _advance(SyncResource resource, int serverTime, int since) async {
+  Future<void> _advance(
+    SyncResource resource,
+    int serverTime,
+    int since,
+  ) async {
     if (serverTime > since) {
       await _state.setLastSyncedAt(resource, serverTime);
     }
@@ -1109,10 +1142,9 @@ final class PersonalPullService {
         _database.workouts,
       )..where((t) => t.id.equals(id))).go();
       if (hit > 0) {
-        final ses =
-            await (_database.select(
-              _database.workoutExercises,
-            )..where((t) => t.workoutId.equals(id))).get();
+        final ses = await (_database.select(
+          _database.workoutExercises,
+        )..where((t) => t.workoutId.equals(id))).get();
         for (final se in ses) {
           await (_database.delete(
             _database.exerciseSets,
@@ -1134,10 +1166,9 @@ final class PersonalPullService {
         _database.workoutTemplates,
       )..where((t) => t.id.equals(id))).go();
       if (hit > 0) {
-        final tes =
-            await (_database.select(
-              _database.workoutTemplateExercises,
-            )..where((t) => t.templateId.equals(id))).get();
+        final tes = await (_database.select(
+          _database.workoutTemplateExercises,
+        )..where((t) => t.templateId.equals(id))).get();
         for (final te in tes) {
           await (_database.delete(
             _database.workoutTemplateSets,
@@ -1169,16 +1200,21 @@ Future<SyncResult> pullDataType(WidgetRef ref, String type) async {
   final key = settings.remoteSyncApiKey;
   switch (type) {
     case 'exercises':
-      // Exercises have their own client (media download + catalog handling).
-      // This is the incremental update path; the catalogue is imported
-      // explicitly through the exercise search, and pull-all imports just the
-      // exercises referenced by pulled workouts.
+      // The server library is never pulled in bulk: this only refreshes the
+      // exercises already on the phone. New ones are cherry-picked through
+      // the exercise picker, and pull-all imports just the exercises
+      // referenced by pulled workouts. Ids the server does not know (made on
+      // this device, not pushed yet) 404 and are skipped.
+      final local = await ref.read(exerciseRepositoryProvider).getAll();
+      if (local.isEmpty) return const SyncResult();
       return ref
           .read(syncServiceProvider)
-          .syncExercises(
+          .importSelectedExercises(
             settings.remoteSyncBaseUrl,
             key,
+            {for (final e in local) e.id},
             endpoint: settings.endpointExercises,
+            timeout: Duration(seconds: settings.apiTimeoutSeconds),
           );
     case 'tasks':
       return service.pullTasks(apiKey: key, endpoint: settings.endpointTasks);

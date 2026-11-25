@@ -9,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'dart:developer' as developer;
 
+import '../budget/providers/fx_rates.dart';
 import '../../l10n/app_localizations.dart';
 import '../dashboard/providers/dashboard.dart';
 import '../database/database_provider.dart';
@@ -128,6 +129,21 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
             ingredientsEndpoint: '${settings.endpointIngredients}/catalog',
             timeout: Duration(seconds: settings.apiTimeoutSeconds),
           );
+      // Currency rates are tiny and only used to convert foreign-currency
+      // prices, so they refresh here, silently, instead of on the sync screen.
+      final fx = await ref
+          .read(syncServiceProvider)
+          .syncCurrencies(
+            base,
+            settings.remoteSyncApiKey,
+            settings.baseCurrency,
+            endpoint: settings.endpointCurrencies,
+            timeout: Duration(seconds: settings.apiTimeoutSeconds),
+          );
+      if (fx.ok) {
+        ref.invalidate(fxRatesProvider);
+        ref.invalidate(fxRateEntriesProvider);
+      }
       await prefs?.setInt('selective_catalog_last_refresh', now);
     } catch (_) {
       return; // Background refresh must never surface errors.

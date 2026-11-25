@@ -6,9 +6,9 @@ import '../exercise/repositories/exercise_repository.dart';
 import 'exercise_media_sync.dart';
 import 'sync_models.dart';
 
-/// Pulls exercises from the sync server: `GET /exercises?since=<cursor>` with
-/// a Bearer API key. Each changed row is upserted (server authority); deleted
-/// ids are hard-deleted locally.
+/// Imports individual exercises from the server library. There is no bulk
+/// pull: the phone cherry-picks ids (`CatalogSyncClient.importExercises`) and
+/// each chosen row is upserted here (server authority).
 ///
 /// Media is never part of the row payload: the server only advertises
 /// availability via `hasImage` / `hasVideo`, and [ExerciseMediaDownloader]
@@ -17,83 +17,19 @@ import 'sync_models.dart';
 /// preserved across pulls (a re-pull must not clobber a downloaded file), and
 /// cleared — with the file removed — when the server stops advertising them.
 final class ExerciseSyncClient {
-  ExerciseSyncClient(this._api, this._repo, {ExerciseMediaDownloader? media})
-    : _media = media ?? ExerciseMediaDownloader(_api);
+  ExerciseSyncClient(
+    ApiClient api,
+    this._repo, {
+    ExerciseMediaDownloader? media,
+  }) : _media = media ?? ExerciseMediaDownloader(api);
 
-  final ApiClient _api;
   final ExerciseRepository _repo;
   final ExerciseMediaDownloader _media;
 
-  static const _path = '/exercises';
-
-  Future<SyncResult> sync({
-    required int since,
-    required String apiKey,
-    String endpoint = _path,
-  }) async {
-    try {
-      final payload = await _api.getJson(
-        endpoint,
-        query: {'since': '$since'},
-        headers: ExerciseMediaDownloader.auth(apiKey),
-      );
-      if (payload is! Map) {
-        return const SyncResult(error: 'Unexpected exercises payload');
-      }
-      final serverTime = (payload['server_time'] as num?)?.toInt() ?? since;
-
-      var updated = 0;
-      var deleted = 0;
-      var mediaFailed = false;
-      final items = payload['items'];
-      if (items is List) {
-        for (final raw in items) {
-          if (raw is! Map) continue;
-          final (imported, mediaOk) = await importItem(raw, serverTime, apiKey);
-          if (!imported) continue;
-          updated++;
-          if (!mediaOk) mediaFailed = true;
-        }
-      }
-
-      final deletedRaw = payload['deleted'];
-      if (deletedRaw is List) {
-        for (final id in deletedRaw) {
-          if (id is! String) continue;
-          await _media.remove(id, ExerciseMediaKind.image);
-          await _media.remove(id, ExerciseMediaKind.video);
-          await _repo.delete(id, recordDeletion: false);
-          deleted++;
-        }
-      }
-
-      // A failed media download keeps the last good cursor (no partial
-      // advancement): the next pull re-fetches these rows and retries.
-      if (mediaFailed) {
-        return SyncResult(
-          error: 'Exercise media download failed',
-          updated: updated,
-          deleted: deleted,
-        );
-      }
-
-      return SyncResult(
-        updated: updated,
-        deleted: deleted,
-        serverTime: serverTime,
-      );
-    } on ApiException catch (e) {
-      return SyncResult(error: 'Sync failed (HTTP ${e.statusCode})');
-    } catch (e) {
-      return SyncResult(error: e.toString());
-    }
-  }
-
-  /// Imports one server row (bulk or selective): parses, reconciles
+  /// Imports one server row: parses, reconciles
   /// client-local media state, upserts, and downloads advertised media missing
   /// from disk. Returns `(imported, mediaOk)` — `imported` is false when the
-  /// row is unparseable; `mediaOk` is false when any download failed. Shared
-  /// by the bulk pull and the selective import path.
+  /// row is unparseable; `mediaOk` is false when any download failed.
   Future<(bool, bool)> importItem(
     Map<Object?, Object?> raw,
     int serverTime,

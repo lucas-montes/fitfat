@@ -23,7 +23,6 @@ import '../settings/providers/settings.dart';
 import '../network/api_client.dart';
 import 'catalog_sync_client.dart';
 import 'currency_sync_client.dart';
-import 'exercise_sync_client.dart';
 import 'ingredient_lookup_client.dart';
 import 'ingredient_sync_client.dart';
 import 'repositories/catalog_repository.dart';
@@ -65,53 +64,6 @@ final class SyncService {
     required this.state,
     this.importIngredientsById,
   });
-
-  Future<SyncResult> syncExercises(
-    String baseUrl,
-    String apiKey, {
-    String endpoint = '/exercises',
-    Duration? timeout,
-    bool full = false,
-  }) async {
-    final since = full ? 0 : state.getLastSyncedAt(SyncResource.exercises);
-    final normalizedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
-    final httpClient = http.Client();
-    final client = HttpApiClient(
-      httpClient,
-      baseUrl: normalizedBase,
-      timeout: timeout ?? const Duration(seconds: 15),
-    );
-    try {
-      _log.info(
-        'syncExercises since=$since base=$normalizedBase endpoint=$endpoint timeout=${timeout?.inSeconds ?? 15}s',
-      );
-      final result = await ExerciseSyncClient(
-        client,
-        exercises,
-      ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
-      if (!result.ok)
-        _log.warning(
-          'syncExercises failed: ${result.error} base=$normalizedBase endpoint=$endpoint',
-        );
-      else
-        _log.info(
-          'syncExercises ok updated=${result.updated} deleted=${result.deleted} serverTime=${result.serverTime}',
-        );
-      if (result.ok && result.serverTime > 0) {
-        await state.setLastSyncedAt(SyncResource.exercises, result.serverTime);
-      }
-      return result;
-    } catch (e, st) {
-      _log.severe(
-        'syncExercises exception base=$normalizedBase endpoint=$endpoint',
-        e,
-        st,
-      );
-      rethrow;
-    } finally {
-      httpClient.close();
-    }
-  }
 
   Future<SyncResult> syncIngredients(
     String baseUrl,

@@ -134,29 +134,132 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
       );
       return false;
     }
+    // Template blueprints reference exercises too; removing one would leave
+    // the template pointing at nothing.
+    final inUse = await ref.read(exerciseRepositoryProvider).referencedIds();
+    if (!mounted) return false;
+    if (inUse.contains(exercise.id)) {
+      final l10n = AppLocalizations.of(context)!;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.exerciseUsedTitle),
+          content: Text(l10n.exerciseUsedInTemplate),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.commonOk),
+            ),
+          ],
+        ),
+      );
+      return false;
+    }
     return true;
   }
 
+  /// Ids swiped away but possibly not yet gone from [exerciseListProvider].
+  /// A dismissed Dismissible must leave the tree on the very next frame, so
+  /// the list filters these out synchronously while the delete runs.
+  final Set<String> _dismissed = {};
+
+  /// Swipe-delete. An exercise from the server library is only removed from
+  /// this phone: recording a tombstone would delete it from the server on the
+  /// next push. Exercises created on this device still sync their deletion.
   Future<void> _deleteExercise(WidgetRef ref, Exercise exercise) async {
+    setState(() => _dismissed.add(exercise.id));
     unawaited(Haptics.mediumImpact());
-    await ref.read(exerciseRepositoryProvider).delete(exercise.id);
+    final catalog = await ref.read(exerciseCatalogRepositoryProvider).getAll();
+    final fromServer = catalog.any((e) => e.id == exercise.id);
+    final repo = ref.read(exerciseRepositoryProvider);
+    if (fromServer) {
+      await repo.removeFromDevice({exercise.id});
+    } else {
+      await repo.delete(exercise.id);
+    }
     if (mounted) ref.invalidate(exerciseListProvider);
   }
 
   bool _syncing = false;
 
-  Future<void> _syncAll() async {
-    final s = ref.read(settingsProvider);
+  /// One-tap cleanup: removes every server-library exercise with no history
+  /// (unused by any workout or template) after a confirmation with the count.
+  /// Exercises created on this phone are never included.
+  Future<void> _removeUnused() async {
+    final l10n = AppLocalizations.of(context)!;
+    final catalog = await ref.read(exerciseCatalogRepositoryProvider).getAll();
+    final repo = ref.read(exerciseRepositoryProvider);
+    final ids = await repo.unusedServerIds({for (final e in catalog) e.id});
+    if (!mounted) return;
+    if (ids.isEmpty) {
+      showTopBanner(context, message: l10n.exerciseRemoveNothing);
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.exerciseRemoveUnused),
+        content: Text(l10n.exerciseRemoveUnusedConfirm(ids.length)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.commonRemove),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     setState(() => _syncing = true);
     try {
-      final result = await ref
-          .read(syncServiceProvider)
-          .syncExercises(s.remoteSyncBaseUrl, s.remoteSyncApiKey);
+      final removed = await repo.removeFromDevice(ids);
       if (!mounted) return;
       ref.invalidate(exerciseListProvider);
-      if (!result.ok && result.error != null) {
-        showTopBanner(context, message: result.error!);
-      }
+      showTopBanner(context, message: l10n.exerciseRemovedCount(removed));
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
+  /// Multi-select removal of exercises from this phone. Lists only exercises
+  /// no workout or template uses; the server library is left untouched.
+  Future<void> _removeFromPhone() async {
+    final l10n = AppLocalizations.of(context)!;
+    final repo = ref.read(exerciseRepositoryProvider);
+    final all = await repo.getAll();
+    final inUse = await repo.referencedIds();
+    if (!mounted) return;
+    final removable = [
+      for (final e in all)
+        if (!inUse.contains(e.id))
+          DisplayItem(
+            id: e.id,
+            name: e.name,
+            imagePath: e.imagePath,
+            subtitle: e.bodyPart,
+          ),
+    ];
+    if (removable.isEmpty) {
+      showTopBanner(context, message: l10n.exerciseRemoveNothing);
+      return;
+    }
+    final selected = await showSelectSheet(
+      context,
+      items: removable,
+      initialSelected: const {},
+      title: l10n.exerciseRemoveTitle,
+      hint: l10n.exerciseListSearchHint,
+    );
+    if (!mounted || selected == null || selected.isEmpty) return;
+    setState(() => _syncing = true);
+    try {
+      final removed = await repo.removeFromDevice(selected);
+      if (!mounted) return;
+      ref.invalidate(exerciseListProvider);
+      showTopBanner(context, message: l10n.exerciseRemovedCount(removed));
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
@@ -243,6 +346,7 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
         initialSelected: const {},
         title: l10n.selectServerExercises,
         hint: l10n.exerciseListSearchHint,
+        allowSelectAll: false,
         refreshTooltip: l10n.refreshList,
         onRefresh: _refreshExerciseDisplay,
       );
@@ -288,15 +392,27 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
               tooltip: l10n.syncExercisesTooltip,
               icon: const Icon(Icons.sync),
               onSelected: (v) {
-                if (v == 'all') {
-                  unawaited(_syncAll());
+                if (v == 'unused') {
+                  unawaited(_removeUnused());
+                } else if (v == 'remove') {
+                  unawaited(_removeFromPhone());
                 } else {
                   unawaited(_selectiveSync());
                 }
               },
               itemBuilder: (_) => [
-                PopupMenuItem(value: 'all', child: Text(l10n.syncAll)),
-                PopupMenuItem(value: 'select', child: Text(l10n.syncSelect)),
+                PopupMenuItem(
+                  value: 'select',
+                  child: Text(l10n.exerciseImportFromServer),
+                ),
+                PopupMenuItem(
+                  value: 'unused',
+                  child: Text('${l10n.exerciseRemoveUnused}…'),
+                ),
+                PopupMenuItem(
+                  value: 'remove',
+                  child: Text(l10n.exerciseRemoveFromPhone),
+                ),
               ],
             ),
         ],
@@ -317,7 +433,10 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
           final options = exerciseFilterOptions(exercises);
           // First apply filters, then rank by relevance if there's a query
           final filtered = filterExercises(
-            exercises,
+            [
+              for (final e in exercises)
+                if (!_dismissed.contains(e.id)) e,
+            ],
             query: _query,
             types: _types,
             bodyParts: _bodyParts,

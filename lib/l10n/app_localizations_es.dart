@@ -2013,6 +2013,36 @@ class AppLocalizationsEs extends AppLocalizations {
   String get selectServerExercises => 'Seleccionar ejercicios del servidor';
 
   @override
+  String get exerciseImportFromServer => 'Importar del servidor…';
+
+  @override
+  String get exerciseRemoveFromPhone => 'Quitar del teléfono…';
+
+  @override
+  String get exerciseRemoveTitle => 'Quitar del teléfono';
+
+  @override
+  String get exerciseRemoveNothing =>
+      'Nada que quitar: todos los ejercicios se usan en un entrenamiento o plantilla.';
+
+  @override
+  String get exerciseRemoveUnused => 'Quitar ejercicios sin usar';
+
+  @override
+  String exerciseRemoveUnusedConfirm(int count) {
+    return '¿Quitar $count ejercicios que no has usado en ningún entrenamiento ni plantilla? Siguen en el servidor y puedes volver a importarlos.';
+  }
+
+  @override
+  String get exerciseUsedInTemplate =>
+      'Se usa en una plantilla de entrenamiento. Quítalo primero de la plantilla.';
+
+  @override
+  String exerciseRemovedCount(int count) {
+    return 'Quitados del teléfono: $count. Siguen en el servidor.';
+  }
+
+  @override
   String get selectServerIngredients => 'Seleccionar ingredientes del servidor';
 
   @override
@@ -3290,7 +3320,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get syncExerciseUpdates => 'Sincronizar actualizaciones de ejercicios';
+  String get syncExerciseUpdates =>
+      'Actualizar los ejercicios de este teléfono';
 
   @override
   String get syncPushAll => 'Enviar todo';
@@ -3411,6 +3442,105 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncNow => 'Sincronizar ahora';
+
+  @override
+  String get syncNowHint => 'Envía tus cambios y luego trae los del servidor';
+
+  @override
+  String syncStep(String entity) {
+    return 'Sincronizando $entity…';
+  }
+
+  @override
+  String get syncYourData => 'Tus datos';
+
+  @override
+  String syncShowAll(int count) {
+    return 'Ver los $count';
+  }
+
+  @override
+  String get syncShowLess => 'Ver menos';
+
+  @override
+  String get syncLibraryTitle => 'Biblioteca del servidor';
+
+  @override
+  String get syncLibraryHint =>
+      'Nada se descarga solo. Elige lo que quieras en este teléfono.';
+
+  @override
+  String syncOnPhoneCount(int count) {
+    return '$count en este teléfono';
+  }
+
+  @override
+  String get syncBrowse => 'Explorar';
+
+  @override
+  String get syncBackups => 'Copias de seguridad';
+
+  @override
+  String get syncBackupsSubtitle =>
+      'Exportar archivo · copia en el servidor · restaurar';
+
+  @override
+  String get syncServerSheetTitle => 'Servidor';
+
+  @override
+  String syncStatusConnected(String server) {
+    return '$server · conectado';
+  }
+
+  @override
+  String syncStatusOffline(String server) {
+    return '$server · no disponible';
+  }
+
+  @override
+  String syncStatusChecking(String server) {
+    return '$server · comprobando…';
+  }
+
+  @override
+  String get syncNoServerYet => 'Aún no hay servidor';
+
+  @override
+  String get syncRescanQr => 'Volver a escanear el QR';
+
+  @override
+  String get syncRescanQrHint =>
+      'Úsalo si cambió la dirección o la clave del ordenador. Sustituye la URL y la clave de este servidor.';
+
+  @override
+  String get syncRescanQrTooltip => 'Volver a escanear el QR del servidor';
+
+  @override
+  String get syncTestConnection => 'Probar conexión';
+
+  @override
+  String get syncAddServerByHand => 'Añadir un servidor a mano';
+
+  @override
+  String get syncServerUpdated => 'Servidor actualizado';
+
+  @override
+  String get syncSendToServer => 'Enviar al servidor';
+
+  @override
+  String get syncGetFromServer => 'Traer del servidor';
+
+  @override
+  String get syncRescan => 'Escanear';
+
+  @override
+  String syncCantReach(String server) {
+    return 'No se puede conectar con $server';
+  }
+
+  @override
+  String get syncCantReachHint =>
+      'Tus datos siguen en este teléfono. Vuelve a escanear si cambió la dirección del ordenador.';
 
   @override
   String get syncBackup => 'Copia de seguridad';
