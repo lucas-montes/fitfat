@@ -648,14 +648,15 @@ final class _WeightEvolution extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final points = _points;
     final color = theme.colorScheme.primary;
-    if (points.isEmpty)
+    if (points.isEmpty) {
       return Text(
         l10n.bodyMetricsEmptyWeight,
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
       );
-    if (points.length == 1)
+    }
+    if (points.length == 1) {
       return Text(
         l10n.bodyMetricsValueKg(
           formatWeightValue(entries.first.weightKg!, unit),
@@ -666,6 +667,7 @@ final class _WeightEvolution extends StatelessWidget {
           color: color,
         ),
       );
+    }
     final now = DateTime.now();
     final delta7 = _computeDelta(points, now, 7);
     final delta30 = _computeDelta(points, now, 30);
@@ -794,10 +796,11 @@ final class _WeightLinePainter extends CustomPainter {
     for (var i = 0; i < points.length; i++) {
       final p = points[i];
       final o = project(p.$1.millisecondsSinceEpoch.toDouble(), p.$2);
-      if (i == 0)
+      if (i == 0) {
         path.moveTo(o.dx, o.dy);
-      else
+      } else {
         path.lineTo(o.dx, o.dy);
+      }
     }
     final gridPaint = Paint()
       ..color = gridColor
@@ -828,12 +831,13 @@ final class _WeightLinePainter extends CustomPainter {
     final dotPaint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-    for (final p in points)
+    for (final p in points) {
       canvas.drawCircle(
         project(p.$1.millisecondsSinceEpoch.toDouble(), p.$2),
         3.5,
         dotPaint,
       );
+    }
   }
 
   @override
@@ -1063,7 +1067,7 @@ final class _TodayStrip extends ConsumerWidget {
               ),
               error: (e, _) => Text(l10n.dashboardError('$e')),
               data: (tasks) {
-                if (tasks.isEmpty)
+                if (tasks.isEmpty) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1081,12 +1085,14 @@ final class _TodayStrip extends ConsumerWidget {
                       ),
                     ],
                   );
+                }
                 final sorted = [...tasks]
                   ..sort((a, b) {
                     final aPriority = a.tags?.length ?? 0;
                     final bPriority = b.tags?.length ?? 0;
-                    if (aPriority != bPriority)
+                    if (aPriority != bPriority) {
                       return bPriority.compareTo(aPriority);
+                    }
                     final aTime = a.startTimeMinutes ?? 24 * 60;
                     final bTime = b.startTimeMinutes ?? 24 * 60;
                     return aTime.compareTo(bTime);
@@ -1096,7 +1102,7 @@ final class _TodayStrip extends ConsumerWidget {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: sorted.length.clamp(0, 10),
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const SizedBox(width: FitFatTokens.spaceS),
                     itemBuilder: (context, index) {
                       final task = sorted[index];
@@ -1274,13 +1280,14 @@ final class _GoalsOverviewCard extends ConsumerWidget {
               error: (e, _) => Text(l10n.dashboardError('$e')),
               data: (goals) {
                 final active = goals.where((g) => g.isActive).take(3).toList();
-                if (active.isEmpty)
+                if (active.isEmpty) {
                   return Text(
                     l10n.dashboardGoalsEmpty,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   );
+                }
                 return Column(
                   children: [
                     for (final goal in active) ...[
@@ -1309,7 +1316,7 @@ final class _GoalRow extends ConsumerWidget {
     );
     return progressAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (value) {
         final progress = goal.progressFrom(value);
         return Column(
@@ -1369,7 +1376,7 @@ final class _BudgetMiniCard extends ConsumerWidget {
     final overviewAsync = ref.watch(budgetOverviewProvider);
     return overviewAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (overview) {
         if (overview.accounts.isEmpty) return const SizedBox.shrink();
         return Card(

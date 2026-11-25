@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:drift/drift.dart' hide Column, Table;
 import 'package:material_ui/material_ui.dart';
@@ -854,10 +853,11 @@ final class _LocalBackupSectionState
                 label: Text(syncEntityLabel(l10n, e)),
                 selected: _selected.contains(e),
                 onSelected: (v) => setState(() {
-                  if (v)
+                  if (v) {
                     _selected.add(e);
-                  else
+                  } else {
                     _selected.remove(e);
+                  }
                   _persist();
                 }),
               ),
@@ -900,8 +900,9 @@ final class _LocalBackupSectionState
                                 _selected,
                               );
                             } catch (e) {
-                              if (mounted)
+                              if (context.mounted) {
                                 showTopBanner(context, message: '$e');
+                              }
                             } finally {
                               if (mounted) setState(() => _busyExport = false);
                             }
@@ -937,8 +938,9 @@ final class _LocalBackupSectionState
                                 entities: _selected,
                               );
                             } catch (e) {
-                              if (mounted)
+                              if (context.mounted) {
                                 showTopBanner(context, message: '$e');
+                              }
                             } finally {
                               if (mounted) setState(() => _busyImport = false);
                             }
@@ -1029,7 +1031,7 @@ final class _LocalBackupSectionState
     } catch (e, st) {
       Logger('SyncHub.Backup').severe('server backup failed', e, st);
       await shipPhoneLogs(ref);
-      if (mounted)
+      if (context.mounted) {
         showTopBanner(
           context,
           message: friendlySyncError(
@@ -1038,6 +1040,7 @@ final class _LocalBackupSectionState
             '$e',
           ),
         );
+      }
     } finally {
       if (mounted) setState(() => _busyServerBackup = false);
     }
@@ -1084,7 +1087,7 @@ final class _LocalBackupSectionState
     } catch (e, st) {
       Logger('SyncHub.Backup').severe('server restore failed', e, st);
       await shipPhoneLogs(ref);
-      if (mounted)
+      if (context.mounted) {
         showTopBanner(
           context,
           message: friendlySyncError(
@@ -1093,6 +1096,7 @@ final class _LocalBackupSectionState
             '$e',
           ),
         );
+      }
     } finally {
       if (mounted) setState(() => _busyServerRestore = false);
     }

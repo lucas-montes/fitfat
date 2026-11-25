@@ -1,11 +1,9 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 import 'package:fitfat/src/app/startup_gate.dart';
 import 'package:fitfat/src/app/theme.dart';
 import 'package:fitfat/src/database/app_database.dart' as db;
 import 'package:fitfat/src/database/database_provider.dart';
-import 'package:fitfat/src/diet/providers/meals.dart';
 import 'package:fitfat/src/diet/repositories/food_repository.dart';
 import 'package:fitfat/src/diet/repositories/ingredient_repository.dart';
 import 'package:fitfat/src/diet/repositories/meal_repository.dart';
@@ -35,8 +33,6 @@ void main() {
   late FoodRepository foods;
   late ProviderContainer container;
   late String oatsFoodId;
-
-  const eatenAt = 'eaten';
 
   setUp(() async {
     database = db.AppDatabase.forTesting(NativeDatabase.memory());

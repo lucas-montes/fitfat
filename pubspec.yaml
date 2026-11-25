@@ -35,7 +35,6 @@ dependencies:
 
   cupertino_icons: ^2.0.0
   intl: ^0.20.2
-  pedometer: ^4.0.1
   permission_handler: ^13.0.2
   flutter_riverpod: ^3.3.1
   riverpod_annotation: ^4.0.2

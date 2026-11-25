@@ -178,9 +178,9 @@ void main() {
         protein: at150.protein * backToPer100g,
         carbs: at150.carbs * backToPer100g,
         fat: at150.fat * backToPer100g,
-        sodium: at150.sodium! * backToPer100g,
-        fiber: at150.fiber! * backToPer100g,
-        sugar: at150.sugar! * backToPer100g,
+        sodium: at150.sodium * backToPer100g,
+        fiber: at150.fiber * backToPer100g,
+        sugar: at150.sugar * backToPer100g,
       ), 250);
 
       final direct = scaleToAmount(profile, 250);
@@ -188,7 +188,7 @@ void main() {
       expect(rescaled.protein, closeTo(direct.protein, 1e-9));
       expect(rescaled.carbs, closeTo(direct.carbs, 1e-9));
       expect(rescaled.fat, closeTo(direct.fat, 1e-9));
-      expect(rescaled.sodium, closeTo(direct.sodium!, 1e-9));
+      expect(rescaled.sodium, closeTo(direct.sodium, 1e-9));
     });
   });
 

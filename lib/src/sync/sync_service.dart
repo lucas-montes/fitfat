@@ -85,14 +85,15 @@ final class SyncService {
         client,
         ingredients,
       ).sync(since: since, apiKey: apiKey, endpoint: endpoint);
-      if (!result.ok)
+      if (!result.ok) {
         _log.warning(
           'syncIngredients failed: ${result.error} base=$normalizedBase endpoint=$endpoint',
         );
-      else
+      } else {
         _log.info(
           'syncIngredients ok updated=${result.updated} deleted=${result.deleted} serverTime=${result.serverTime}',
         );
+      }
       if (result.ok && result.serverTime > 0) {
         await state.setLastSyncedAt(
           SyncResource.ingredients,
@@ -255,14 +256,15 @@ final class SyncService {
         date: _today(),
         endpoint: endpoint,
       );
-      if (!result.ok)
+      if (!result.ok) {
         _log.warning(
           'syncCurrencies failed: ${result.error} base=$normalizedBase endpoint=$endpoint',
         );
-      else
+      } else {
         _log.info(
           'syncCurrencies ok updated=${result.updated} serverTime=${result.serverTime}',
         );
+      }
       if (result.ok && result.serverTime > 0) {
         await state.setLastSyncedAt(SyncResource.currencies, result.serverTime);
       }
@@ -620,10 +622,11 @@ final class SyncService {
         prices: prices,
         apiKey: apiKey,
       );
-      if (!res.ok)
+      if (!res.ok) {
         _log.warning('pushIngredient failed: ${res.error}');
-      else
+      } else {
         _log.info('pushIngredient ok');
+      }
       return res;
     } catch (e, st) {
       _log.severe('pushIngredient exception base=$normalizedBase', e, st);

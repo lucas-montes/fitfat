@@ -49,8 +49,8 @@ final class _InitiativesViewState extends ConsumerState<InitiativesView> {
           a.status.storage,
         ).compareTo(_statusRank(b.status.storage));
         if (r != 0) return r;
-        final aStart = a.startDate ?? DateTime(0);
-        final bStart = b.startDate ?? DateTime(0);
+        final aStart = a.startDate;
+        final bStart = b.startDate;
         return aStart.compareTo(bStart);
       });
     final filtered = items.where((it) => !dismissed.contains(it.id)).toList();
@@ -152,13 +152,16 @@ final class _GoalCard extends ConsumerWidget {
         }
 
         final cascade = behavior == CascadeDeleteBehavior.alwaysCascade;
+
+        // Captured before the await so no BuildContext is used across the gap.
+
+        final overlay = Overlay.of(context);
         final goalSnapshot = await container
             .read(goalRepositoryProvider)
             .getGoalById(goal.id);
         final snapshotTasks = cascade
             ? links.map((e) => e.item).toList()
             : <Task>[];
-        final overlay = Overlay.of(context);
         container.read(dismissedTaskIdsProvider.notifier).add(goal.id);
         for (final t in snapshotTasks) {
           container.read(dismissedTaskIdsProvider.notifier).add(t.id);

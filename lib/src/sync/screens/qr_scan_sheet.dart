@@ -52,8 +52,9 @@ final class _QrScanSheetState extends State<_QrScanSheet> {
       final version = data['version'];
       if (url == null || apiKey == null || version != 1) return null;
       final uri = Uri.tryParse(url);
-      if (uri == null || !(uri.isScheme('http') || uri.isScheme('https')))
+      if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
         return null;
+      }
       if (apiKey.isEmpty) return null;
       return (url: url, apiKey: apiKey);
     } catch (_) {

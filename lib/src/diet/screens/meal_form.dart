@@ -32,9 +32,6 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
   late TimeOfDay _eatenTime;
   bool _saving = false;
 
-  /// Current name filter for the food picker (empty = show all).
-  String _filter = '';
-
   /// Maps food id → grams eaten. A value > 0 means selected.
   late Map<String, double> _amounts;
 
@@ -238,8 +235,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
                     if (_amounts.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       for (final entry in _amounts.entries)
-                        if (_profiles[entry.key] case final nutrition?
-                            when nutrition.per100g != null)
+                        if (_profiles[entry.key] case final nutrition?)
                           _DraftFoodRow(
                             key: ValueKey(entry.key),
                             name: _names[entry.key] ?? entry.key,
@@ -436,88 +432,6 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
       // The live profile is all the repository needs; it scales this to
       // [amount] and writes the snapshot itself.
       nutrition: nutrition,
-    );
-  }
-}
-
-final class _FoodRow extends StatelessWidget {
-  final Food food;
-  final double amount;
-  final FoodNutrition? nutrition;
-  final AppLocalizations l10n;
-  final void Function(double) onChanged;
-
-  const _FoodRow({
-    required this.food,
-    required this.amount,
-    required this.nutrition,
-    required this.l10n,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = amount > 0;
-    final per100g = nutrition?.per100g;
-    if (per100g == null) return const SizedBox.shrink();
-    final portionCalories = per100g.calories * amount / 100;
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          children: [
-            Checkbox(
-              value: isSelected,
-              onChanged: (v) => onChanged(v == true ? 100 : 0),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    food.name,
-                    style: TextStyle(
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  if (isSelected)
-                    Text(
-                      l10n.mealFormFoodCalories(
-                        portionCalories.toStringAsFixed(0),
-                        per100g.calories.toStringAsFixed(0),
-                      ),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: 80,
-              child: TextFormField(
-                initialValue: isSelected ? amount.toStringAsFixed(0) : '',
-                decoration: InputDecoration(
-                  labelText: l10n.mealFormGramsLabel,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                enabled: isSelected,
-                onChanged: (v) {
-                  final parsed = double.tryParse(v);
-                  onChanged(parsed ?? 0);
-                },
-              ),
-            ),
-            const SizedBox(width: 4),
-          ],
-        ),
-      ),
     );
   }
 }

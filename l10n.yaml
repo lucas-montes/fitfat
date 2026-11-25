@@ -6,3 +6,6 @@ preferred-supported-locales:
   - en
   - fr
   - es
+# gen-l10n (Flutter 3.50) still emits the deprecated flutter_localizations
+# Global*Localizations delegates; silence that until the generator catches up.
+header: "// ignore_for_file: deprecated_member_use"

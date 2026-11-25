@@ -38,7 +38,7 @@ final class HealthConnectSteps {
       while (!cursor.isAfter(toDay)) {
         final dayEnd = cursor.add(const Duration(days: 1));
         final steps = await _health.getTotalStepsInInterval(cursor, dayEnd);
-        days.add((day: cursor, steps: steps ?? 0));
+        days.add((day: cursor, steps: steps));
         cursor = dayEnd;
       }
       return days;

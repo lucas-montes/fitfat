@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 import 'package:fitfat/src/database/app_database.dart' as db;
@@ -26,7 +25,6 @@ void main() {
   late FoodRepository foods;
   late MealRepository meals;
   late FoodIngredient oats;
-  late FoodIngredient honey;
 
   setUp(() async {
     database = db.AppDatabase.forTesting(NativeDatabase.memory());
@@ -55,7 +53,7 @@ void main() {
     }
 
     oats = await oat();
-    honey = await oat(name: 'Honey', calories: 300);
+    await oat(name: 'Honey', calories: 300);
   });
 
   tearDown(() => database.close());

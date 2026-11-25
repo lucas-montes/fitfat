@@ -237,7 +237,7 @@ final class _HubTile extends StatelessWidget {
 final class ProfileSettingsScreen extends ConsumerStatefulWidget {
   final bool embed;
 
-  const ProfileSettingsScreen({this.embed = false});
+  const ProfileSettingsScreen({super.key, this.embed = false});
 
   @override
   ConsumerState<ProfileSettingsScreen> createState() =>

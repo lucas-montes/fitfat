@@ -12,7 +12,6 @@ import '../../sync/repositories/catalog_repository.dart';
 import '../../sync/sync_service.dart';
 import '../../ui/haptics.dart';
 import '../../ui/widgets/empty_state.dart';
-import '../../ui/widgets/status_badge.dart';
 import '../providers/ingredients.dart';
 import 'ingredient_detail_screen.dart';
 import 'ingredient_form.dart';
@@ -293,17 +292,17 @@ final class _IngredientTile extends StatelessWidget {
   /// (sodium / fiber / sugar), or null when none are set.
   String? _nutrientLine(AppLocalizations l10n) {
     final parts = <String>[
-      if (ingredient.sodiumPer100g != null)
+      if (ingredient.sodiumPer100g > 0)
         l10n.ingredientNutrientSodium(
-          ingredient.sodiumPer100g!.toStringAsFixed(1),
+          ingredient.sodiumPer100g.toStringAsFixed(1),
         ),
-      if (ingredient.fiberPer100g != null)
+      if (ingredient.fiberPer100g > 0)
         l10n.ingredientNutrientFiber(
-          ingredient.fiberPer100g!.toStringAsFixed(1),
+          ingredient.fiberPer100g.toStringAsFixed(1),
         ),
-      if (ingredient.sugarPer100g != null)
+      if (ingredient.sugarPer100g > 0)
         l10n.ingredientNutrientSugar(
-          ingredient.sugarPer100g!.toStringAsFixed(1),
+          ingredient.sugarPer100g.toStringAsFixed(1),
         ),
     ];
     if (parts.isEmpty) return null;

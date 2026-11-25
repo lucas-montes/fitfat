@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 import 'package:fitfat/src/app/theme.dart';
@@ -94,15 +93,15 @@ void main() {
     return completer.future;
   }
 
-  Finder _rowFor(String foodName) =>
+  Finder rowFor(String foodName) =>
       find.ancestor(of: find.text(foodName), matching: find.byType(ListTile));
 
   Finder amountFieldFor(String foodName) =>
-      find.descendant(of: _rowFor(foodName), matching: find.byType(TextField));
+      find.descendant(of: rowFor(foodName), matching: find.byType(TextField));
 
   Future<void> tick(WidgetTester tester, String foodName) async {
     await tester.tap(
-      find.descendant(of: _rowFor(foodName), matching: find.byType(Checkbox)),
+      find.descendant(of: rowFor(foodName), matching: find.byType(Checkbox)),
     );
     await tester.pumpAndSettle();
   }
@@ -126,7 +125,7 @@ void main() {
   Future<void> closeSheet(WidgetTester tester) async {
     for (final name in ['Oats', 'Honey']) {
       final cb = tester.widget<Checkbox>(
-        find.descendant(of: _rowFor(name), matching: find.byType(Checkbox)),
+        find.descendant(of: rowFor(name), matching: find.byType(Checkbox)),
       );
       if (cb.value == true) await tick(tester, name);
     }
@@ -166,7 +165,7 @@ void main() {
         tester
             .widget<Checkbox>(
               find.descendant(
-                of: _rowFor('Oats'),
+                of: rowFor('Oats'),
                 matching: find.byType(Checkbox),
               ),
             )

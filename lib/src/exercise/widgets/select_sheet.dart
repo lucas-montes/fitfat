@@ -121,13 +121,13 @@ final class _SelectSheetContentState extends State<_SelectSheetContent> {
           path,
           headers: item.imageHeaders,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _fallbackIcon(),
+          errorBuilder: (_, _, _) => _fallbackIcon(),
         );
       }
       return Image.file(
         File(path),
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _fallbackIcon(),
+        errorBuilder: (_, _, _) => _fallbackIcon(),
       );
     }
     return _fallbackIcon();
@@ -217,10 +217,11 @@ final class _SelectSheetContentState extends State<_SelectSheetContent> {
                   if (widget.allowSelectAll)
                     TextButton(
                       onPressed: () => setState(() {
-                        if (_selected.length == filtered.length)
+                        if (_selected.length == filtered.length) {
                           _selected.clear();
-                        else
+                        } else {
                           _selected.addAll(filtered.map((e) => e.id));
+                        }
                       }),
                       child: Text(
                         _selected.length == filtered.length
@@ -252,10 +253,11 @@ final class _SelectSheetContentState extends State<_SelectSheetContent> {
                           )
                         : const Icon(Icons.add_circle_outline),
                     onTap: () => setState(() {
-                      if (_selected.contains(it.id))
+                      if (_selected.contains(it.id)) {
                         _selected.remove(it.id);
-                      else
+                      } else {
                         _selected.add(it.id);
+                      }
                     }),
                   );
                 },

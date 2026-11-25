@@ -82,13 +82,13 @@ final class _IngredientFormScreenState
       text: ing?.fatPer100g.toStringAsFixed(1) ?? '',
     );
     _sodiumCtrl = TextEditingController(
-      text: ing?.sodiumPer100g?.toStringAsFixed(1) ?? '',
+      text: ing?.sodiumPer100g.toStringAsFixed(1) ?? '',
     );
     _fiberCtrl = TextEditingController(
-      text: ing?.fiberPer100g?.toStringAsFixed(1) ?? '',
+      text: ing?.fiberPer100g.toStringAsFixed(1) ?? '',
     );
     _sugarCtrl = TextEditingController(
-      text: ing?.sugarPer100g?.toStringAsFixed(1) ?? '',
+      text: ing?.sugarPer100g.toStringAsFixed(1) ?? '',
     );
     _brandCtrl = TextEditingController(text: ing?.brand ?? '');
     _barcodeCtrl = TextEditingController(text: ing?.barcode ?? '');

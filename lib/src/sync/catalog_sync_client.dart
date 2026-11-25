@@ -40,8 +40,9 @@ final class CatalogSyncClient {
     String endpoint = exerciseCatalogPath,
   }) async {
     final payload = await _api.getJson(endpoint, headers: authHeaders(apiKey));
-    if (payload is! Map)
+    if (payload is! Map) {
       throw StateError('Unexpected exercise catalog payload');
+    }
     final entries = <ExerciseCatalogEntry>[];
     final items = payload['items'];
     if (items is List) {

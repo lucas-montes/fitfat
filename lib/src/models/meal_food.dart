@@ -129,6 +129,4 @@ final class MealFood {
     sugar: sugar ?? this.sugar,
     nutrition: nutrition ?? this.nutrition,
   );
-
-  static const _unset = Object();
 }

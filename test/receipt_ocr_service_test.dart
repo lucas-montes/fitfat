@@ -68,7 +68,7 @@ void main() {
     test('falls back to the local id when the response has no id', () async {
       final file = await writeImage('receipt.png');
       final api = MockApiClient(
-        onRequest: (_, __, ___) async => <String, dynamic>{},
+        onRequest: (_, _, _) async => <String, dynamic>{},
       );
 
       final result = await serviceWith(api).upload('r-local', file.path);
@@ -77,7 +77,7 @@ void main() {
 
     test('throws when the image is missing on disk', () async {
       final api = MockApiClient(
-        onRequest: (_, __, ___) async => fail('should not reach the server'),
+        onRequest: (_, _, _) async => fail('should not reach the server'),
       );
 
       await expectLater(

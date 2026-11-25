@@ -391,7 +391,7 @@ final class SettingsNotifier extends Notifier<SettingsState> {
       'settings_calorie_goal_adjustment';
 
   static String _phaseKey(DietPhase phase, String knob) =>
-      'settings_phase_${phase.name}_${knob}';
+      'settings_phase_${phase.name}_$knob';
   static const _defaultRestSecondsKey = 'settings_default_rest_seconds';
   static const _cascadeDeleteKey = 'settings_cascade_delete';
   static const _hasSeenWizardKey = 'settings_has_seen_wizard';

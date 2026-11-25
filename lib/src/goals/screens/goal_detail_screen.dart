@@ -168,13 +168,14 @@ final class GoalDetailScreen extends ConsumerWidget {
             }
           } else {
             final cascade = behavior == CascadeDeleteBehavior.alwaysCascade;
+            // Captured before the await so no BuildContext is used across the gap.
+            final overlay = Overlay.of(context);
             final goalSnapshot = await container
                 .read(goalRepositoryProvider)
                 .getGoalById(goalId);
             final snapshotTasks = cascade
                 ? links.map((e) => e.item).toList()
                 : <Task>[];
-            final overlay = Overlay.of(context);
             container.read(dismissedTaskIdsProvider.notifier).add(goalId);
             for (final t in snapshotTasks) {
               container.read(dismissedTaskIdsProvider.notifier).add(t.id);

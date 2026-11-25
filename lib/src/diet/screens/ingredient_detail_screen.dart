@@ -13,7 +13,6 @@ import '../../models/store.dart';
 import '../../settings/providers/settings.dart';
 import '../../sync/sync_service.dart';
 import '../../ui/date_formats.dart';
-import '../../ui/format.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/top_banner.dart';
 import '../providers/ingredients.dart';
@@ -136,24 +135,24 @@ final class _DetailBody extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    if (ingredient.sodiumPer100g != null ||
-                        ingredient.fiberPer100g != null ||
-                        ingredient.sugarPer100g != null)
+                    if (ingredient.sodiumPer100g > 0 ||
+                        ingredient.fiberPer100g > 0 ||
+                        ingredient.sugarPer100g > 0)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           [
-                            if (ingredient.sodiumPer100g != null)
+                            if (ingredient.sodiumPer100g > 0)
                               l10n.ingredientNutrientSodium(
-                                ingredient.sodiumPer100g!.toStringAsFixed(1),
+                                ingredient.sodiumPer100g.toStringAsFixed(1),
                               ),
-                            if (ingredient.fiberPer100g != null)
+                            if (ingredient.fiberPer100g > 0)
                               l10n.ingredientNutrientFiber(
-                                ingredient.fiberPer100g!.toStringAsFixed(1),
+                                ingredient.fiberPer100g.toStringAsFixed(1),
                               ),
-                            if (ingredient.sugarPer100g != null)
+                            if (ingredient.sugarPer100g > 0)
                               l10n.ingredientNutrientSugar(
-                                ingredient.sugarPer100g!.toStringAsFixed(1),
+                                ingredient.sugarPer100g.toStringAsFixed(1),
                               ),
                           ].join('  ·  '),
                           style: theme.textTheme.bodySmall?.copyWith(

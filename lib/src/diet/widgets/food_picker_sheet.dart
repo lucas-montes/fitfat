@@ -399,7 +399,7 @@ final class _SheetShell extends StatelessWidget {
             ],
           ),
         ),
-        if (searchField != null) searchField!,
+        ?searchField,
         if (error != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),

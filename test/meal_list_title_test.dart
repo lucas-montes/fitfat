@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:fitfat/l10n/app_localizations.dart';
 import 'package:fitfat/src/app/startup_gate.dart';

@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:fitfat/src/database/app_database.dart' as db;
 import 'package:fitfat/src/diet/repositories/food_repository.dart';
@@ -7,7 +6,6 @@ import 'package:fitfat/src/diet/repositories/meal_repository.dart';
 import 'package:fitfat/src/diet/repositories/meal_resnapshot.dart';
 import 'package:fitfat/src/models/food.dart';
 import 'package:fitfat/src/models/ingredient.dart';
-import 'package:fitfat/src/models/meal_entry.dart';
 import 'package:fitfat/src/models/meal_food.dart';
 import 'package:flutter_test/flutter_test.dart';
 
