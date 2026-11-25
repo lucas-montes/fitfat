@@ -117,8 +117,7 @@ final class CalorieCalculator {
   double proteinGrams({
     required PhaseConfig config,
     required BodyProfile profile,
-  }) =>
-      config.proteinPerKg * (profile.weightKg ?? kFallbackWeightKg);
+  }) => config.proteinPerKg * (profile.weightKg ?? kFallbackWeightKg);
 
   /// True when protein and fat alone exceed [targetKcal], leaving carbs at
   /// zero. The configuration is usable, but the user probably did not intend

@@ -37,6 +37,5 @@ final class PalActivityFactor implements ActivityFactorSource {
   Future<double> factorFor({
     required CalorieInputs inputs,
     required double bmr,
-  }) async =>
-      (inputs.activityLevel ?? ActivityLevel.moderate).multiplier;
+  }) async => (inputs.activityLevel ?? ActivityLevel.moderate).multiplier;
 }

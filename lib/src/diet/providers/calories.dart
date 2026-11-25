@@ -78,12 +78,14 @@ final calorieTargetMetaProvider = FutureProvider<CalorieTargetMeta>((
   ref,
 ) async {
   final settings = ref.watch(settingsProvider);
-  return ref.watch(calorieCalculatorProvider).target(
-    profile: await ref.watch(bodyProfileSourceProvider).latest(),
-    inputs: ref.watch(userProfileSourceProvider).current(),
-    phase: settings.activePhase,
-    config: settings.activePhaseConfig,
-  );
+  return ref
+      .watch(calorieCalculatorProvider)
+      .target(
+        profile: await ref.watch(bodyProfileSourceProvider).latest(),
+        inputs: ref.watch(userProfileSourceProvider).current(),
+        phase: settings.activePhase,
+        config: settings.activePhaseConfig,
+      );
 });
 
 /// The calorie target alone, for callers that only need the number.
