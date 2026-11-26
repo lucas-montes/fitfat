@@ -48,13 +48,3 @@ const int kFallbackAge = 30;
 
 /// Sex assumed when the user has not given one.
 const Gender kFallbackGender = Gender.male;
-
-/// The placeholder body used when nothing has been measured.
-///
-/// One constant for every consumer: BMR, the macro targets and the settings
-/// warning must never disagree about the weight they assumed, and duplicating
-/// the 70 kg default across those call sites is how they eventually would.
-const BodyProfile kFallbackBodyProfile = (
-  weightKg: kFallbackWeightKg,
-  heightCm: kFallbackHeightCm,
-);

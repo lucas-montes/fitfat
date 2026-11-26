@@ -13,8 +13,6 @@ sealed class PlannerEntry {
   DateTime get day;
   List<String>? get tags;
 
-  bool get isTask => this is TaskEntry;
-
   Task get task => (this as TaskEntry).task;
 }
 

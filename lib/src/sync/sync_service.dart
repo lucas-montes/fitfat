@@ -163,32 +163,6 @@ final class SyncService {
     }
   }
 
-  /// Ingredients then foods, in the order the chain requires.
-  ///
-  /// The single entry point for a full diet sync: doing it in the wrong order
-  /// would leave recipes referencing ingredients that have not landed yet.
-  Future<SyncResult> syncDiet(
-    String baseUrl,
-    String apiKey, {
-    Duration? timeout,
-  }) async {
-    final settings = this.settings();
-    final ingredientsResult = await syncIngredients(
-      baseUrl,
-      apiKey,
-      endpoint: settings.endpointIngredients,
-      timeout: timeout,
-    );
-    if (!ingredientsResult.ok) return ingredientsResult;
-    final foodsResult = await syncFoods(
-      baseUrl,
-      apiKey,
-      endpoint: settings.endpointFoods,
-      timeout: timeout,
-    );
-    return foodsResult;
-  }
-
   /// Contributes local recipes to the shared catalogue.
   Future<SyncResult> pushFoods(
     String baseUrl,

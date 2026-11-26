@@ -70,14 +70,6 @@ final class FxRepository {
     ];
   }
 
-  /// Latest rate value for a single code/base (max date), or null.
-  Future<double?> getRate(String code, String baseCode) async {
-    final rows = await (_database.select(
-      _database.fxRates,
-    )..where((t) => t.code.equals(code) & t.baseCode.equals(baseCode))).get();
-    return _latestByCode(rows)[code]?.rateToBase;
-  }
-
   /// Upserts a single synced rate for its [FxRateEntry.rateDate]. The server is
   /// the only source of rates, so what it sends always replaces the local copy
   /// (including a hand-edited row left over from when rates were editable).

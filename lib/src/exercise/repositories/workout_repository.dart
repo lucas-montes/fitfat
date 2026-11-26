@@ -1626,21 +1626,6 @@ final class WorkoutRepository {
     createdAt: t.createdAt.millisecondsSinceEpoch,
   );
 
-  /// How many workouts in a replay lineage were completed — the "times done"
-  /// count for a routine. Single grouped COUNT over completed occurrences.
-  Future<int> getRoutineCompletionCount(String routineId) async {
-    final count =
-        await (_database.selectOnly(_database.workouts)
-              ..addColumns([_database.workouts.id.count()])
-              ..where(
-                _database.workouts.routineId.equals(routineId) &
-                    _database.workouts.completedAt.isNotNull() &
-                    _database.workouts.deletedAt.isNull(),
-              ))
-            .getSingle();
-    return count.read(_database.workouts.id.count()) ?? 0;
-  }
-
   /// Strips copy/replay suffixes so every occurrence of a routine shares one
   /// clean base name ("Push A #3", "Push A (Copy)" → "Push A").
   static final RegExp _suffixPattern = RegExp(r'\s+(#\d+|\(Copy\))$');

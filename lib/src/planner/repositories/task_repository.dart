@@ -183,11 +183,6 @@ final class TaskRepository {
     )..where((t) => t.taskId.isIn(ids))).go();
   }
 
-  Future<void> updateSortOrder(String id, int sortOrder) async {
-    await (_database.update(_database.tasks)..where((t) => t.id.equals(id)))
-        .write(db.TasksCompanion(sortOrder: Value(sortOrder)));
-  }
-
   /// Day rollover: past pending single (non-recurring) tasks are either moved
   /// to today (carry-over on) or marked cancelled (carry-over off). Recurring
   /// series are skipped — their anchor already regenerates future days.
@@ -224,19 +219,6 @@ final class TaskRepository {
       await update(moved);
     }
     return rows.length;
-  }
-
-  /// All distinct tags across every task, sorted. Powers the autocomplete
-  /// suggestions in the add/edit dialog.
-  Future<List<String>> distinctTags() async {
-    final result = await _database
-        .customSelect(
-          'SELECT DISTINCT t.name AS name FROM tags t '
-          'INNER JOIN task_tags l ON l.tag_id = t.id '
-          'ORDER BY t.name COLLATE NOCASE',
-        )
-        .get();
-    return result.map((r) => r.read<String>('name')).toList();
   }
 
   /// Recurring "anchor" tasks (those carrying a rule) whose series can still
@@ -616,16 +598,6 @@ final class TaskRepository {
     );
     await insert(task);
     return task;
-  }
-
-  /// The alive task linked to [workoutId] via its `workout_id` column, if any.
-  Future<Task?> getByWorkoutId(String workoutId) async {
-    final rows =
-        await (_database.select(_database.tasks)..where(
-              (t) => t.workoutId.equals(workoutId) & t.deletedAt.isNull(),
-            ))
-            .get();
-    return rows.isEmpty ? null : _toDomain(rows.first);
   }
 
   /// All tasks with `date` within [start, end] (start-of-day bounds,

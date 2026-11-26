@@ -212,12 +212,6 @@ final class SettingsState {
     this.hasSeenWizard = false,
   }) : phaseConfigs = phaseConfigs ?? kDefaultPhaseConfigs;
 
-  bool get isProfileFull =>
-      age != null &&
-      gender != null &&
-      bodyWeightGoal != null &&
-      activityLevel != null;
-
   /// The phase the user is currently in, derived from the body-weight goal.
   DietPhase get activePhase => DietPhase.fromGoal(bodyWeightGoal);
 
@@ -226,9 +220,6 @@ final class SettingsState {
   /// provider.
   PhaseConfig get activePhaseConfig =>
       phaseConfigs[activePhase] ?? kDefaultPhaseConfigs[activePhase]!;
-
-  /// The stored goal this phase corresponds to, for writing back.
-  BodyWeightGoal? get activePhaseGoal => activePhase.goal;
 
   ServerProfile? get activeServer {
     if (servers.isEmpty) return null;
@@ -745,138 +736,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
     state = state.copyWith(lengthUnit: unit);
   }
 
-  /// Only 'actuals' | 'planned' are accepted; anything else keeps the current
-  /// value.
-  Future<void> setReplayPrefill(String value) async {
-    if (value != 'actuals' && value != 'planned') return;
-    await ref
-        .read(sharedPreferencesProvider)
-        .setString(_replayPrefillKey, value);
-    state = state.copyWith(replayPrefill: value);
-  }
-
-  Future<void> _setEndpoint(
-    String key,
-    String? value,
-    SettingsState Function(String v) apply,
-  ) async {
-    final trimmed = (value ?? '').trim();
-    await ref.read(sharedPreferencesProvider).setString(key, trimmed);
-    state = apply(trimmed);
-  }
-
-  Future<void> setEndpointExport(String value) async {
-    await _setEndpoint(
-      _endpointExportKey,
-      value,
-      (v) => state.copyWith(endpointExport: v),
-    );
-  }
-
-  Future<void> setEndpointImport(String value) async {
-    await _setEndpoint(
-      _endpointImportKey,
-      value,
-      (v) => state.copyWith(endpointImport: v),
-    );
-  }
-
-  Future<void> setEndpointExercises(String value) async {
-    await _setEndpoint(
-      _endpointExercisesKey,
-      value,
-      (v) => state.copyWith(endpointExercises: v),
-    );
-  }
-
-  Future<void> setEndpointIngredients(String value) async {
-    await _setEndpoint(
-      _endpointIngredientsKey,
-      value,
-      (v) => state.copyWith(endpointIngredients: v),
-    );
-  }
-
-  Future<void> setEndpointCurrencies(String value) async {
-    await _setEndpoint(
-      _endpointCurrenciesKey,
-      value,
-      (v) => state.copyWith(endpointCurrencies: v),
-    );
-  }
-
-  Future<void> setEndpointWorkouts(String value) async {
-    await _setEndpoint(
-      _endpointWorkoutsKey,
-      value,
-      (v) => state.copyWith(endpointWorkouts: v),
-    );
-  }
-
-  Future<void> setEndpointTemplates(String value) async {
-    await _setEndpoint(
-      _endpointTemplatesKey,
-      value,
-      (v) => state.copyWith(endpointTemplates: v),
-    );
-  }
-
-  Future<void> setEndpointNotes(String value) async {
-    await _setEndpoint(
-      _endpointNotesKey,
-      value,
-      (v) => state.copyWith(endpointNotes: v),
-    );
-  }
-
-  Future<void> setEndpointTasks(String value) async {
-    await _setEndpoint(
-      _endpointTasksKey,
-      value,
-      (v) => state.copyWith(endpointTasks: v),
-    );
-  }
-
-  Future<void> setEndpointGoals(String value) async {
-    await _setEndpoint(
-      _endpointGoalsKey,
-      value,
-      (v) => state.copyWith(endpointGoals: v),
-    );
-  }
-
-  Future<void> setEndpointMeals(String value) async {
-    await _setEndpoint(
-      _endpointMealsKey,
-      value,
-      (v) => state.copyWith(endpointMeals: v),
-    );
-  }
-
-  Future<void> setEndpointTransactions(String value) async {
-    await _setEndpoint(
-      _endpointTransactionsKey,
-      value,
-      (v) => state.copyWith(endpointTransactions: v),
-    );
-  }
-
-  Future<void> setEndpointBudgetAccounts(String value) async {
-    await _setEndpoint(
-      _endpointBudgetAccountsKey,
-      value,
-      (v) => state.copyWith(endpointBudgetAccounts: v),
-    );
-  }
-
-  Future<void> setEndpointReceiptPictures(String value) async {
-    await _setEndpoint(
-      _endpointReceiptPicturesKey,
-      value,
-      (v) => state.copyWith(endpointReceiptPictures: v),
-    );
-  }
-
   Future<void> setPlannerHorizonDays(int days) async {
     final clamped = days < 1 ? 1 : days;
     await ref
@@ -983,14 +842,6 @@ final class SettingsNotifier extends Notifier<SettingsState> {
         .read(sharedPreferencesProvider)
         .setInt(untimedReminderMinutesKey, clamped);
     state = state.copyWith(untimedReminderMinutes: clamped);
-  }
-
-  Future<void> setApiTimeoutSeconds(int seconds) async {
-    final clamped = seconds < 1 ? 1 : seconds;
-    await ref
-        .read(sharedPreferencesProvider)
-        .setInt(_apiTimeoutSecondsKey, clamped);
-    state = state.copyWith(apiTimeoutSeconds: clamped);
   }
 
   Future<void> setCascadeDeleteBehavior(CascadeDeleteBehavior value) async {

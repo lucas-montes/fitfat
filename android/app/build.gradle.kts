@@ -6,8 +6,8 @@ plugins {
 
 android {
     namespace = "com.example.fitfat"
-    // 37, not flutter.compileSdkVersion (36): flutter_local_notifications 23,
-    // health 14 and permission_handler 13 compile against API 37.
+    // 37, not flutter.compileSdkVersion (36): flutter_local_notifications 23
+    // and permission_handler 13 compile against API 37.
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 

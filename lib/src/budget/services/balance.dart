@@ -26,10 +26,3 @@ double accountBalance(Account account, List<Transaction> transactions) {
   }
   return balance;
 }
-
-/// Signed effect of a single transaction on its source account's balance,
-/// in base currency (income +, expense/transfer −).
-double signedEffect(Transaction txn) {
-  if (txn.type == TransactionType.income) return txn.amountBase;
-  return -txn.amountBase;
-}

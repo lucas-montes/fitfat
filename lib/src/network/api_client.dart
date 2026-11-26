@@ -1,11 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
-
-import '../settings/providers/settings.dart';
 
 /// Low-level HTTP abstraction returning decoded JSON. Implementations:
 /// [HttpApiClient] (real `package:http`) and [MockApiClient] (scripted, for
@@ -357,14 +354,3 @@ final class MockApiClient implements ApiClient {
 Map<String, String> authHeaders(String apiKey) => {
   'Authorization': 'Bearer ${apiKey.trim()}',
 };
-
-/// Overridable network client. Tests inject [MockApiClient] via
-/// `apiClientProvider.overrideWithValue(...)`; the default hits [baseUrl]
-/// (compile-time `API_BASE_URL`, empty until a real endpoint is configured).
-final apiClientProvider = Provider<ApiClient>((ref) {
-  const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
-  final timeout = Duration(
-    seconds: ref.watch(settingsProvider).apiTimeoutSeconds,
-  );
-  return HttpApiClient(http.Client(), baseUrl: baseUrl, timeout: timeout);
-});

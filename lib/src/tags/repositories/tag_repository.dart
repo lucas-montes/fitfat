@@ -236,15 +236,6 @@ final class TagRepository {
 
   // --- Per-entity reads (ordered by priority rank, then name) -------------
 
-  Future<List<String>> tagsForTask(String id) =>
-      _namesFor('task_tags', 'task_id', id);
-
-  Future<List<String>> tagsForGoal(String id) =>
-      _namesFor('goal_tags', 'goal_id', id);
-
-  Future<List<String>> tagsForNote(String id) =>
-      _namesFor('note_tags', 'note_id', id);
-
   /// Batched variant: returns id → tag names for a batch of entity ids.
   Future<Map<String, List<String>>> tagNamesForTasks(List<String> ids) =>
       _namesMap('task_tags', 'task_id', ids);
@@ -318,23 +309,6 @@ final class TagRepository {
       out.add(await ensureTag(clean));
     }
     return out;
-  }
-
-  Future<List<String>> _namesFor(
-    String linkTable,
-    String idColumn,
-    String entityId,
-  ) async {
-    final result = await _database
-        .customSelect(
-          'SELECT t.name AS name FROM tags t '
-          'INNER JOIN $linkTable l ON l.tag_id = t.id '
-          'WHERE l.$idColumn = ? '
-          'ORDER BY t.sort_order, t.name COLLATE NOCASE',
-          variables: [Variable<String>(entityId)],
-        )
-        .get();
-    return result.map((r) => r.read<String>('name')).toList();
   }
 
   Future<Map<String, List<String>>> _namesMap(

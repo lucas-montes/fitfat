@@ -20,15 +20,3 @@ abstract class RemoteReceiptOcrService {
   /// [receiptId] is sent so the row id stays identical on both sides.
   Future<ReceiptUploadResult> upload(String receiptId, String localPath);
 }
-
-/// Local mock that simulates the server accepting an upload after a delay.
-final class MockRemoteReceiptOcrService implements RemoteReceiptOcrService {
-  @override
-  Future<ReceiptUploadResult> upload(String receiptId, String localPath) async {
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    final name = localPath.split('/').last;
-    return ReceiptUploadResult(
-      receiptId.isEmpty ? 'remote://ocr/$name' : receiptId,
-    );
-  }
-}

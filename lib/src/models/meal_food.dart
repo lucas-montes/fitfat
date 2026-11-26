@@ -65,41 +65,6 @@ final class MealFood {
     sugar: sugar,
   );
 
-  /// The same portion re-expressed for [newAmount] grams, used when the logged
-  /// amount is edited. Exact, because the derivation is linear in the amount.
-  ///
-  /// Falls back to the current numbers when [amount] is zero — a food with no
-  /// weight cannot be rescaled proportionally.
-  MealFood withAmount(double newAmount) {
-    if (amount <= 0) {
-      return copyWith(amount: newAmount);
-    }
-    final factor = newAmount / amount;
-    return copyWith(
-      amount: newAmount,
-      calories: calories * factor,
-      protein: protein * factor,
-      carbs: carbs * factor,
-      fat: fat * factor,
-      sodium: sodium * factor,
-      fiber: fiber * factor,
-      sugar: sugar * factor,
-    );
-  }
-
-  /// Replaces the snapshot wholesale — used when the food itself changes, which
-  /// requires a fresh resolution rather than a rescale.
-  MealFood withNutrition(Nutrition nutrition, {double? newAmount}) => copyWith(
-    amount: newAmount ?? amount,
-    calories: nutrition.calories,
-    protein: nutrition.protein,
-    carbs: nutrition.carbs,
-    fat: nutrition.fat,
-    sodium: nutrition.sodium,
-    fiber: nutrition.fiber,
-    sugar: nutrition.sugar,
-  );
-
   MealFood copyWith({
     String? id,
     String? mealId,

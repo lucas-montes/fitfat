@@ -95,9 +95,6 @@ final class Food {
   /// A user-created combination of more than one ingredient.
   bool get isCombination => components.length > 1;
 
-  /// A food with no loaded composition cannot be resolved or logged.
-  bool get hasComposition => components.isNotEmpty;
-
   Food copyWith({
     String? name,
     DateTime? createdAt,

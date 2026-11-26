@@ -31,18 +31,6 @@ final class IngredientPrice {
     this.sourceUrl,
   });
 
-  /// Cost per 100g converted to [baseCode] using [ratesToBase] — null when
-  /// the package weight is unknown or zero.
-  double? costPer100gInBase({
-    required String baseCode,
-    required Map<String, double> ratesToBase,
-  }) {
-    final grams = packageGrams;
-    if (grams == null || grams <= 0) return null;
-    final (base, _) = convertToBase(price, currencyCode, baseCode, ratesToBase);
-    return base * 100 / grams;
-  }
-
   /// Cost per kg converted to [baseCode] using [ratesToBase] — null when the
   /// package weight is unknown or zero. Package sizes entered in ml are stored
   /// gram-for-gram (water density), so this reads as cost per litre for them.

@@ -23,7 +23,7 @@ let
     includeEmulator = true;
     emulatorVersion = "37.3.9";
     # 35 and 37 are what individual plugins compile against (foreground_task,
-    # flutter_timezone, jni: 35; notifications, health,
+    # flutter_timezone, jni: 35; notifications,
     # permission_handler: 37). Gradle cannot install missing ones itself.
     platformVersions = [ "35" platformVersion "37.0" ];
     includeSources = false;
