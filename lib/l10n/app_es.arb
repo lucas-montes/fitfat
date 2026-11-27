@@ -2144,5 +2144,8 @@
   "goalSourceTasks": "Auto · tareas vinculadas hechas",
   "goalBy": "para {date}",
   "goalTasksDone": "{done} de {total} tareas hechas",
-  "goalNext": "siguiente: {task}"
+  "goalNext": "siguiente: {task}",
+  "goalOf": "de {target}",
+  "goalRecord": "Anotar",
+  "goalTabTasks": "Tareas · {count}"
 }

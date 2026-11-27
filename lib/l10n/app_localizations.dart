@@ -7641,6 +7641,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'next: {task}'**
   String goalNext(String task);
+
+  /// No description provided for @goalOf.
+  ///
+  /// In en, this message translates to:
+  /// **'of {target}'**
+  String goalOf(String target);
+
+  /// No description provided for @goalRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get goalRecord;
+
+  /// No description provided for @goalTabTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks · {count}'**
+  String goalTabTasks(int count);
 }
 
 class _AppLocalizationsDelegate

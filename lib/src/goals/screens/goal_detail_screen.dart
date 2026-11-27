@@ -1,3 +1,8 @@
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import '../services/goal_tracking.dart';
+import '../widgets/goal_widgets.dart';
+import '../../ui/theme_extensions.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,6 +43,7 @@ final class GoalDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        title: Text(goalAsync.value?.title ?? ''),
         actions: [
           PopupMenuButton<String>(
             onSelected: (action) => _onAction(context, ref, action),
@@ -61,7 +67,7 @@ final class GoalDetailScreen extends ConsumerWidget {
         ],
       ),
       body: goalAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SizedBox.shrink(),
         error: (e, _) => Center(child: Text('$e')),
         data: (goal) {
           if (goal == null) {
@@ -437,250 +443,270 @@ final class _GoalDetailViewState extends ConsumerState<_GoalDetailView> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final goal = widget.goal;
+    final status =
+        ref.watch(goalStatusProvider(goal.id)).value ??
+        const GoalStatusView(
+          points: [],
+          current: null,
+          progress: null,
+          source: null,
+        );
+    final log = ref.watch(goalProgressProvider(goal.id)).value ?? const [];
+    final tasks = ref.watch(tasksByGoalProvider(goal.id)).value ?? const [];
+    final hasTarget = goal.targetType != GoalTargetType.none;
+    final unit = goalUnit(goal);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+    );
 
-    final latestAsync = ref.watch(latestGoalProgressProvider(goal.id));
-    final logAsync = ref.watch(goalProgressProvider(goal.id));
-    final latest = latestAsync.value;
-    final progress = goal.progressFrom(latest);
-
-    return ListView(
-      padding: const EdgeInsets.all(FitFatTokens.spaceL),
-      children: [
-        Text(goal.title, style: theme.textTheme.headlineSmall),
-        if (goal.description != null && goal.description!.isNotEmpty) ...[
-          const SizedBox(height: FitFatTokens.spaceS),
-          Text(goal.description!),
-        ],
-        const SizedBox(height: FitFatTokens.spaceM),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
+    final header = Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(FitFatTokens.spaceL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: FitFatTokens.spaceS,
           children: [
-            _StatusChip(status: goal.status),
-            for (final tag in goal.tags ?? const <String>[]) TagChip(name: tag),
+            if (hasTarget)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: status.current == null
+                                ? '–'
+                                : goal.targetType == GoalTargetType.boolean
+                                ? (status.current! >= 1
+                                      ? l10n.goalsAchieved
+                                      : l10n.goalsNotAchieved)
+                                : '${formatGoalNumber(context, status.current!)}${unit.isEmpty ? '' : ' $unit'}',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (goal.targetValue != null &&
+                              goal.targetType == GoalTargetType.numeric)
+                            TextSpan(
+                              text:
+                                  '  ${l10n.goalOf(formatGoalNumber(context, goal.targetValue!))}',
+                              style: muted,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (goal.isManual && goal.status == GoalStatus.active)
+                    FilledButton.tonalIcon(
+                      onPressed: _recordProgress,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: Text(l10n.goalRecord),
+                    ),
+                ],
+              ),
+            if (hasTarget) GoalProgressBar(goal: goal, status: status),
+            if (hasTarget && status.points.length >= 2)
+              SizedBox(
+                height: 120,
+                child: _GoalChart(goal: goal, points: status.points),
+              ),
+            if (hasTarget) GoalSourceLine(goal: goal, status: status),
+            Text(
+              [
+                goalStatusLabel(goal.status, l10n),
+                '${DateFormat.yMMMd(locale).format(goal.startDate)} → '
+                    '${goal.endDate == null ? l10n.goalsNoEndDate : DateFormat.yMMMd(locale).format(goal.endDate!)}',
+              ].join(' · '),
+              style: muted,
+            ),
+            if (goal.description != null && goal.description!.isNotEmpty)
+              Text(goal.description!),
+            if (goal.tags?.isNotEmpty ?? false)
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [for (final tag in goal.tags!) TagChip(name: tag)],
+              ),
+            Wrap(
+              spacing: FitFatTokens.spaceS,
+              children: [
+                if (goal.status == GoalStatus.planned)
+                  TextButton.icon(
+                    onPressed: () => _setStatus(GoalStatus.active),
+                    icon: const Icon(Icons.play_arrow),
+                    label: Text(l10n.goalsMarkActive),
+                  ),
+                if (goal.status == GoalStatus.active) ...[
+                  TextButton.icon(
+                    onPressed: () => _setStatus(GoalStatus.done),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(l10n.goalsMarkDone),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _setStatus(GoalStatus.aborted),
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: Text(l10n.goalsAbort),
+                  ),
+                ],
+                if (goal.status == GoalStatus.done ||
+                    goal.status == GoalStatus.aborted)
+                  TextButton.icon(
+                    onPressed: () => _setStatus(GoalStatus.active),
+                    icon: const Icon(Icons.replay),
+                    label: Text(l10n.goalsReopen),
+                  ),
+              ],
+            ),
           ],
         ),
-        const SizedBox(height: FitFatTokens.spaceS),
-        Text(
-          '${MaterialLocalizations.of(context).formatMediumDate(goal.startDate)}'
-          ' → ${goal.endDate == null ? l10n.goalsNoEndDate : MaterialLocalizations.of(context).formatMediumDate(goal.endDate!)}',
-          style: theme.textTheme.bodySmall,
-        ),
-        const Divider(height: FitFatTokens.spaceXl),
-        if (goal.targetType != GoalTargetType.none) ...[
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.goalsProgressSection,
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: _recordProgress,
-                icon: const Icon(Icons.add_chart),
-                label: Text(l10n.goalsRecordProgress),
-              ),
-            ],
-          ),
-          const SizedBox(height: FitFatTokens.spaceS),
-          _ProgressSummary(goal: goal, latestValue: latest, progress: progress),
-          const SizedBox(height: FitFatTokens.spaceL),
-        ] else
-          FilledButton.tonalIcon(
-            onPressed: () => _setStatus(
-              goal.status == GoalStatus.done
-                  ? GoalStatus.active
-                  : GoalStatus.done,
+      ),
+    );
+
+    // Progress rows, newest first: manual entries (deletable) or the tracked
+    // series.
+    final points = status.points.reversed.toList();
+    final progressList = points.isEmpty
+        ? [
+            Padding(
+              padding: const EdgeInsets.all(FitFatTokens.spaceL),
+              child: Text(l10n.goalsNoProgressYet, style: muted),
             ),
-            icon: Icon(
-              goal.status == GoalStatus.done
-                  ? Icons.replay
-                  : Icons.check_circle_outline,
-            ),
-            label: Text(
-              goal.status == GoalStatus.done
-                  ? l10n.goalsReopen
-                  : l10n.goalsMarkDone,
-            ),
-          ),
-        if (goal.targetType != GoalTargetType.none) ...[
-          Text(l10n.goalsLogTitle, style: theme.textTheme.titleMedium),
-          logAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(FitFatTokens.spaceL),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (e, _) => Text('$e'),
-            data: (log) {
-              if (log.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: FitFatTokens.spaceL,
-                  ),
-                  child: Text(l10n.goalsNoProgressYet),
-                );
-              }
-              return Column(
+          ]
+        : [
+            Card(
+              margin: EdgeInsets.zero,
+              child: Column(
                 children: [
-                  for (final entry in log)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.flag_outlined),
-                      title: Text(_entryTitle(entry)),
-                      subtitle: entry.note == null ? null : Text(entry.note!),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () async {
+                  for (var i = 0; i < points.length; i++) ...[
+                    if (i > 0)
+                      Divider(
+                        height: 1,
+                        indent: FitFatTokens.spaceL,
+                        endIndent: FitFatTokens.spaceL,
+                        color: scheme.outlineVariant,
+                      ),
+                    () {
+                      final pt = points[i];
+                      final prev = i + 1 < points.length
+                          ? points[i + 1].value
+                          : null;
+                      final delta = prev == null ? null : pt.value - prev;
+                      final entry = goal.isManual
+                          ? log
+                                .where(
+                                  (e) =>
+                                      e.day.year == pt.day.year &&
+                                      e.day.month == pt.day.month &&
+                                      e.day.day == pt.day.day,
+                                )
+                                .firstOrNull
+                          : null;
+                      final row = ListTile(
+                        dense: true,
+                        leading: SizedBox(
+                          width: 64,
+                          child: Text(
+                            DateFormat.MMMd(locale).format(pt.day),
+                            style: muted,
+                          ),
+                        ),
+                        title: Text(
+                          goal.targetType == GoalTargetType.boolean
+                              ? (pt.value >= 1
+                                    ? l10n.goalsAchieved
+                                    : l10n.goalsNotAchieved)
+                              : '${formatGoalNumber(context, pt.value)}${unit.isEmpty ? '' : ' $unit'}',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: entry?.note == null
+                            ? null
+                            : Text(entry!.note!),
+                        trailing: delta == null || delta == 0
+                            ? null
+                            : Text(
+                                '${delta > 0 ? '+' : '−'}${formatGoalNumber(context, delta.abs())}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: delta > 0
+                                      ? (theme
+                                                .extension<FitFatColors>()
+                                                ?.success ??
+                                            scheme.primary)
+                                      : scheme.onSurfaceVariant,
+                                ),
+                              ),
+                      );
+                      if (entry == null) return row;
+                      return Dismissible(
+                        key: ValueKey(entry.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 16),
+                          color: scheme.errorContainer,
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: scheme.error,
+                          ),
+                        ),
+                        onDismissed: (_) async {
                           await ref
                               .read(goalRepositoryProvider)
                               .deleteProgress(entry.id);
                           _refresh();
                         },
-                      ),
-                    ),
+                        child: row,
+                      );
+                    }(),
+                  ],
                 ],
-              );
-            },
+              ),
+            ),
+          ];
+
+    return DefaultTabController(
+      length: 2,
+      child: NestedScrollView(
+        headerSliverBuilder: (_, _) => [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              FitFatTokens.spaceL,
+              FitFatTokens.spaceXs,
+              FitFatTokens.spaceL,
+              FitFatTokens.spaceS,
+            ),
+            sliver: SliverToBoxAdapter(child: header),
+          ),
+          SliverToBoxAdapter(
+            child: TabBar(
+              tabs: [
+                Tab(text: l10n.goalsProgressSection),
+                Tab(text: l10n.goalTabTasks(tasks.length)),
+              ],
+            ),
           ),
         ],
-        const Divider(height: FitFatTokens.spaceXl),
-        _GoalRelatedTasks(goalId: goal.id, onChanged: _refresh),
-        const Divider(height: FitFatTokens.spaceXl),
-        Wrap(
-          spacing: FitFatTokens.spaceS,
-          runSpacing: FitFatTokens.spaceS,
+        body: TabBarView(
           children: [
-            if (goal.status == GoalStatus.planned)
-              OutlinedButton.icon(
-                onPressed: () => _setStatus(GoalStatus.active),
-                icon: const Icon(Icons.play_arrow),
-                label: Text(l10n.goalsMarkActive),
-              ),
-            if (goal.status == GoalStatus.active &&
-                goal.targetType != GoalTargetType.none) ...[
-              OutlinedButton.icon(
-                onPressed: () => _setStatus(GoalStatus.done),
-                icon: const Icon(Icons.check_circle_outline),
-                label: Text(l10n.goalsMarkDone),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _setStatus(GoalStatus.aborted),
-                icon: const Icon(Icons.cancel_outlined),
-                label: Text(l10n.goalsAbort),
-              ),
-            ],
-            if (goal.status == GoalStatus.done ||
-                goal.status == GoalStatus.aborted)
-              OutlinedButton.icon(
-                onPressed: () => _setStatus(GoalStatus.active),
-                icon: const Icon(Icons.replay),
-                label: Text(l10n.goalsReopen),
-              ),
+            ListView(
+              padding: const EdgeInsets.all(FitFatTokens.spaceL),
+              children: progressList,
+            ),
+            ListView(
+              padding: const EdgeInsets.all(FitFatTokens.spaceL),
+              children: [
+                _GoalRelatedTasks(goalId: goal.id, onChanged: _refresh),
+              ],
+            ),
           ],
         ),
-      ],
-    );
-  }
-
-  String _entryTitle(GoalProgress entry) {
-    final l10n = AppLocalizations.of(context)!;
-    final date = MaterialLocalizations.of(context).formatMediumDate(entry.day);
-    final unit = widget.goal.unit;
-    final value = entry.value == entry.value.roundToDouble()
-        ? entry.value.toInt().toString()
-        : entry.value.toString();
-    if (widget.goal.targetType == GoalTargetType.boolean) {
-      return '$date · ${entry.value >= 1 ? l10n.goalsAchieved : l10n.goalsNotAchieved}';
-    }
-    return '$date · $value${unit == null ? '' : ' $unit'}';
-  }
-}
-
-final class _StatusChip extends StatelessWidget {
-  final GoalStatus status;
-
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final scheme = Theme.of(context).colorScheme;
-    final (bg, fg) = switch (status) {
-      GoalStatus.planned => (scheme.surfaceContainerHighest, scheme.onSurface),
-      GoalStatus.active => (scheme.primaryContainer, scheme.onPrimaryContainer),
-      GoalStatus.done => (const Color(0xFFE8F5E9), const Color(0xFF1B5E20)),
-      GoalStatus.aborted => (scheme.errorContainer, scheme.onErrorContainer),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
-        goalStatusLabel(status, l10n),
-        style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-final class _ProgressSummary extends StatelessWidget {
-  final Goal goal;
-  final double? latestValue;
-  final double? progress;
-
-  const _ProgressSummary({
-    required this.goal,
-    required this.latestValue,
-    required this.progress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    if (goal.targetType == GoalTargetType.boolean) {
-      final achieved = (latestValue ?? 0) >= 1;
-      return Row(
-        children: [
-          Icon(
-            achieved ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: achieved ? Colors.green.shade700 : theme.hintColor,
-          ),
-          const SizedBox(width: 8),
-          Text(achieved ? l10n.goalsAchieved : l10n.goalsNotAchieved),
-        ],
-      );
-    }
-
-    String fmt(double v) =>
-        v == v.roundToDouble() ? v.toInt().toString() : v.toString();
-    final currentText = latestValue == null
-        ? '—'
-        : '${fmt(latestValue!)}${goal.unit == null ? '' : ' ${goal.unit}'}';
-    final targetText = goal.targetValue == null
-        ? '—'
-        : '${fmt(goal.targetValue!)}${goal.unit == null ? '' : ' ${goal.unit}'}';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: LinearProgressIndicator(value: progress, minHeight: 10),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '${l10n.goalsCurrentValueLabel}: $currentText · '
-          '${l10n.goalsTargetLabel}: $targetText',
-          style: theme.textTheme.bodySmall,
-        ),
-      ],
     );
   }
 }
@@ -942,6 +968,64 @@ final class _GoalTaskPickerSheetState
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Every recorded value as a line, with the target as a dashed line.
+final class _GoalChart extends StatelessWidget {
+  const _GoalChart({required this.goal, required this.points});
+
+  final Goal goal;
+  final List<GoalPoint> points;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final success =
+        Theme.of(context).extension<FitFatColors>()?.success ?? scheme.primary;
+    final first = points.first.day;
+    final spots = [
+      for (final p in points)
+        FlSpot(p.day.difference(first).inDays.toDouble(), p.value),
+    ];
+    final values = [for (final p in points) p.value, ?goal.targetValue];
+    final lo = values.reduce((a, b) => a < b ? a : b);
+    final hi = values.reduce((a, b) => a > b ? a : b);
+    final pad = (hi - lo).abs() < 1 ? 1.0 : (hi - lo) * 0.12;
+    return LineChart(
+      LineChartData(
+        minY: lo - pad,
+        maxY: hi + pad,
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        titlesData: const FlTitlesData(show: false),
+        lineTouchData: const LineTouchData(enabled: false),
+        extraLinesData: ExtraLinesData(
+          horizontalLines: [
+            if (goal.targetValue != null &&
+                goal.targetType == GoalTargetType.numeric)
+              HorizontalLine(
+                y: goal.targetValue!,
+                color: success,
+                strokeWidth: 1.5,
+                dashArray: [5, 4],
+              ),
+          ],
+        ),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            color: scheme.primary,
+            barWidth: 2.5,
+            dotData: FlDotData(show: spots.length <= 30),
+            belowBarData: BarAreaData(
+              show: true,
+              color: scheme.primary.withValues(alpha: 0.1),
+            ),
+          ),
+        ],
       ),
     );
   }

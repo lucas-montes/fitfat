@@ -4406,4 +4406,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String goalNext(String task) {
     return 'siguiente: $task';
   }
+
+  @override
+  String goalOf(String target) {
+    return 'de $target';
+  }
+
+  @override
+  String get goalRecord => 'Anotar';
+
+  @override
+  String goalTabTasks(int count) {
+    return 'Tareas · $count';
+  }
 }

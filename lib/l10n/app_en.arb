@@ -2532,5 +2532,10 @@
   "goalTasksDone": "{done} of {total} tasks done",
   "@goalTasksDone": {"placeholders":{"done":{"type":"int"},"total":{"type":"int"}}},
   "goalNext": "next: {task}",
-  "@goalNext": {"placeholders":{"task":{"type":"String"}}}
+  "@goalNext": {"placeholders":{"task":{"type":"String"}}},
+  "goalOf": "of {target}",
+  "@goalOf": {"placeholders":{"target":{"type":"String"}}},
+  "goalRecord": "Record",
+  "goalTabTasks": "Tasks · {count}",
+  "@goalTabTasks": {"placeholders":{"count":{"type":"int"}}}
 }

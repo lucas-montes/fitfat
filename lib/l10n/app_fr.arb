@@ -2159,5 +2159,8 @@
   "goalSourceTasks": "Auto · tâches liées faites",
   "goalBy": "d’ici {date}",
   "goalTasksDone": "{done} sur {total} tâches faites",
-  "goalNext": "suivante : {task}"
+  "goalNext": "suivante : {task}",
+  "goalOf": "sur {target}",
+  "goalRecord": "Noter",
+  "goalTabTasks": "Tâches · {count}"
 }
