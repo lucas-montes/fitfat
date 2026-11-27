@@ -1,6 +1,6 @@
 # Plan: Tasks & goals redesign — Today, goals that track themselves (Phase PG)
 
-**Status:** in progress (2026-11-27)
+**Status:** completed (2026-11-27) — T01–T09 shipped on branch ui/design-system. Deviations: quick add has no Workout chip (linking a workout stays in More options); week and month views are unchanged, behind the calendar icon; goal delete stays in the detail ⋮ menu. Server follow-up: store and return the tracking columns.
 
 ## Change Summary
 
@@ -63,15 +63,15 @@ goals keep using `goal_progress_entries`. The columns travel in the goal push
 
 ## Tasks
 
-- [ ] T01 — Schema v42, model, repository, pull/push.
-- [ ] T02 — `goal_tracking.dart`: series per source; `goalStatusProvider`.
-- [ ] T03 — Today view + Tasks / Goals tabs; week/month behind a calendar icon.
-- [ ] T04 — Quick add sheet.
-- [ ] T05 — Goals list cards; step button; long-press exact value.
-- [ ] T06 — Goal detail (header, chart, Progress / Tasks).
-- [ ] T07 — Track picker in the goal form.
-- [ ] T08 — Reminder reply: input action, queued in preferences, recorded on start/resume.
-- [ ] T09 — Tests, l10n, docs.
+- [x] T01 — Schema v42, model, repository, pull/push.
+- [x] T02 — `goal_tracking.dart`: series per source; `goalStatusProvider`.
+- [x] T03 — Today view + Tasks / Goals tabs; week/month behind a calendar icon.
+- [x] T04 — Quick add sheet.
+- [x] T05 — Goals list cards; step button; long-press exact value.
+- [x] T06 — Goal detail (header, chart, Progress / Tasks).
+- [x] T07 — Track picker in the goal form.
+- [x] T08 — Reminder reply: input action, queued in preferences, recorded on start/resume.
+- [x] T09 — Tests, l10n, docs.
 
 ## Acceptance
 

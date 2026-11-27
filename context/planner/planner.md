@@ -78,3 +78,51 @@ Factory: `newPlannerItem({required DateTime day, required String title, int sort
 - Copy carries over only pending items (carry-over behavior) and never touches the source day.
 
 See also: [overview.md](../overview.md), [context-map.md](../context-map.md)
+
+## Today and goals (Phase PG, 2026-11-27)
+
+Plan: `plans/plan-group-redesign.md`. The Plan tab has **Tasks / Goals** tabs
+under a small title; a calendar icon switches Day / Week / Month (week and month
+are unchanged). The day view (`_DayTimelinePage`) is the default:
+
+- ‹ › header (Today / weekday, date, "N of M done"); swipe still pages days.
+- **Timed tasks** in one card, sorted by start, each `_TaskRow` showing start and
+  end on the left, checkbox, title and a meta line (#tags, repeat, linked
+  workout, note). A red **now line** (`_NowLine`) sits before the first task that
+  starts later (today only).
+- **Anytime** tasks in their own card. Done tasks fade with a strike-through.
+  Swipe right cancels, left deletes; tap opens the detail, long-press edits.
+- **Quick add** (`planner/widgets/quick_add_sheet.dart`): + opens a sheet with
+  the title and chips for day, time (start, optional end), repeat (daily /
+  weekly / monthly) and goal. Add inserts and keeps the sheet open; More options
+  opens the full form with the title.
+
+### Goals that track themselves
+
+Schema v42 adds `goals.track_source` / `goals.track_param`
+(`lib/src/goals/services/goal_tracking.dart`). `TrackSource`: `exercise_best`
+(running best set, kg; param = exercise id), `exercise_distance` (longest, km),
+`workouts_count` (finished since the start), `body_weight` (latest weigh-in),
+`account_balance` (param = account id; weekly points), `meals_protein` (7-day
+average), `tasks_done` (linked tasks done). Null = manual (the
+`goal_progress_entries` log). `goalStatusProvider(goalId)` → points, current
+value, progress. The pull keeps the local columns until the server sends them
+(**server follow-up**: store and return `trackSource` / `trackParam`).
+
+- **Goals list** (`initiatives_view.dart`): Active, then Planned, then Done /
+  aborted. Card: title, "by <month>", `GoalProgressBar` (value / target inside,
+  % at the end), `GoalSourceLine` ("Auto · best Bench press set · updated Tue" /
+  "Manual · last Sat"), linked tasks done and the next one. Manual numeric goals
+  get a **+1** button (long-press: exact value and date).
+- **Goal detail**: header card (value of target, Record for manual goals, bar,
+  chart of every point with the target as a dashed line, source, status and
+  dates, status actions), then **Progress** (each point with its change; manual
+  entries swipe to delete) / **Tasks** tabs.
+- **Goal form**: a Track row (numeric targets) opens the source list (Manual
+  last); exercise and account sources then ask which one.
+- **Reminder reply**: a manual numeric goal's daily reminder carries a "Record"
+  input action. `queueGoalReply` (also the background-isolate entry point
+  `goalReplyBackgroundHandler`) stores `goalId|value|epochMs` in
+  SharedPreferences; `drainGoalReplies` records them on start, resume and
+  foreground replies. Android needs the plugin's `ActionBroadcastReceiver` in
+  the manifest.
