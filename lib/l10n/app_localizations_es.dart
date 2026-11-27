@@ -4001,4 +4001,81 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get macroSugar => 'Azúcar';
+
+  @override
+  String foodHistoryFoods(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count alimentos',
+      one: '1 alimento',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get foodHistoryEditMeal => 'Editar comida';
+
+  @override
+  String get foodHistoryLogAgain => 'Registrar de nuevo ahora';
+
+  @override
+  String foodHistoryLoggedAgain(int kcal) {
+    return 'Registrada de nuevo · $kcal kcal';
+  }
+
+  @override
+  String get foodHistorySearch => 'Buscar alimentos';
+
+  @override
+  String get foodHistoryNoMatchTitle => 'No hay comidas';
+
+  @override
+  String get foodHistoryNoMatchBody => 'Prueba otro mes, rango o búsqueda.';
+
+  @override
+  String mealEditBarcodeUnknown(String code) {
+    return 'Ningún ingrediente tiene el código $code';
+  }
+
+  @override
+  String get mealEditItemName => 'Comida';
+
+  @override
+  String get mealEditDelete => 'Eliminar comida';
+
+  @override
+  String mealEditDay(String eaten) {
+    return 'día $eaten kcal';
+  }
+
+  @override
+  String mealEditDayOf(String eaten, String target) {
+    return 'día $eaten / $target';
+  }
+
+  @override
+  String get mealEditSearch => 'Añadir alimento';
+
+  @override
+  String get mealEditScan => 'Escanear código';
+
+  @override
+  String get mealEditNoMatch => 'Ningún alimento coincide';
+
+  @override
+  String get mealEditRecent => 'Recientes';
+
+  @override
+  String get mealEditRecipe => 'Receta';
+
+  @override
+  String mealEditLast(String grams) {
+    return 'último $grams g';
+  }
+
+  @override
+  String mealEditPer100(int kcal) {
+    return '$kcal kcal/100 g';
+  }
 }

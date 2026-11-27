@@ -7006,6 +7006,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sugar'**
   String get macroSugar;
+
+  /// No description provided for @foodHistoryFoods.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 food} other{{count} foods}}'**
+  String foodHistoryFoods(int count);
+
+  /// No description provided for @foodHistoryEditMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit meal'**
+  String get foodHistoryEditMeal;
+
+  /// No description provided for @foodHistoryLogAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Log again now'**
+  String get foodHistoryLogAgain;
+
+  /// No description provided for @foodHistoryLoggedAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged again · {kcal} kcal'**
+  String foodHistoryLoggedAgain(int kcal);
+
+  /// No description provided for @foodHistorySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search foods'**
+  String get foodHistorySearch;
+
+  /// No description provided for @foodHistoryNoMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No meals here'**
+  String get foodHistoryNoMatchTitle;
+
+  /// No description provided for @foodHistoryNoMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another month, range or search.'**
+  String get foodHistoryNoMatchBody;
+
+  /// No description provided for @mealEditBarcodeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'No ingredient has barcode {code}'**
+  String mealEditBarcodeUnknown(String code);
+
+  /// No description provided for @mealEditItemName.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal'**
+  String get mealEditItemName;
+
+  /// No description provided for @mealEditDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete meal'**
+  String get mealEditDelete;
+
+  /// No description provided for @mealEditDay.
+  ///
+  /// In en, this message translates to:
+  /// **'day {eaten} kcal'**
+  String mealEditDay(String eaten);
+
+  /// No description provided for @mealEditDayOf.
+  ///
+  /// In en, this message translates to:
+  /// **'day {eaten} / {target}'**
+  String mealEditDayOf(String eaten, String target);
+
+  /// No description provided for @mealEditSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Add food'**
+  String get mealEditSearch;
+
+  /// No description provided for @mealEditScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan barcode'**
+  String get mealEditScan;
+
+  /// No description provided for @mealEditNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No food matches'**
+  String get mealEditNoMatch;
+
+  /// No description provided for @mealEditRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get mealEditRecent;
+
+  /// No description provided for @mealEditRecipe.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipe'**
+  String get mealEditRecipe;
+
+  /// No description provided for @mealEditLast.
+  ///
+  /// In en, this message translates to:
+  /// **'last {grams} g'**
+  String mealEditLast(String grams);
+
+  /// No description provided for @mealEditPer100.
+  ///
+  /// In en, this message translates to:
+  /// **'{kcal} kcal/100 g'**
+  String mealEditPer100(int kcal);
 }
 
 class _AppLocalizationsDelegate

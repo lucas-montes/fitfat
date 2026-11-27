@@ -1,21 +1,29 @@
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../dashboard/providers/dashboard.dart';
 import '../../models/food.dart';
 import '../../models/meal_entry.dart';
 import '../../models/meal_food.dart';
 import '../../ui/date_formats.dart';
-import '../providers/meals.dart';
-import '../providers/foods.dart';
-import '../repositories/food_repository.dart' show ResolvedFood;
-import '../widgets/food_picker_sheet.dart';
-import '../widgets/meal_item_editor_sheet.dart';
-import '../../dashboard/providers/dashboard.dart';
 import '../../ui/tokens.dart';
+import '../../ui/widgets/confirm_delete.dart';
+import '../../ui/widgets/form_scaffold.dart';
+import '../../ui/widgets/macro_bar.dart';
 import '../../ui/widgets/top_banner.dart';
+import '../providers/calories.dart';
+import '../providers/foods.dart';
+import '../providers/ingredients.dart';
+import '../providers/meals.dart';
+import '../repositories/food_repository.dart' show ResolvedFood;
+import 'barcode_scan_sheet.dart';
 
+/// Creates or edits a meal: the date and time (the title; tap to change),
+/// live totals pinned on top, the foods with their grams, and a search field
+/// at the end of the list that adds foods as you type. Meals have no name.
 final class MealFormScreen extends ConsumerStatefulWidget {
   final MealEntry? meal;
   const MealFormScreen({super.key, this.meal});
@@ -25,22 +33,17 @@ final class MealFormScreen extends ConsumerStatefulWidget {
 }
 
 final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameCtrl;
-  late final TextEditingController _searchCtrl;
+  final _searchCtrl = TextEditingController();
+  final _searchFocus = FocusNode();
   late DateTime _eatenAt;
-  late TimeOfDay _eatenTime;
   bool _saving = false;
+  String _query = '';
 
-  /// Maps food id → grams eaten. A value > 0 means selected.
-  late Map<String, double> _amounts;
+  /// Food id → grams, in the order the foods were added.
+  final Map<String, double> _amounts = {};
+  final Map<String, TextEditingController> _gramCtrls = {};
 
-  /// Live per-100g profile per food id, captured when the picker renders so
-  /// `_buildItem` can hand the repository a real profile to snapshot instead of
-  /// a zeroed placeholder.
-  final Map<String, FoodNutrition?> _profiles = {};
-
-  /// Food name per id, for labelling the current selection.
+  /// Names of the foods already in the meal, so the first frame has them.
   final Map<String, String> _names = {};
 
   bool get _isEditing => widget.meal != null;
@@ -49,81 +52,181 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
   void initState() {
     super.initState();
     final meal = widget.meal;
-    _nameCtrl = TextEditingController(text: meal?.name ?? '');
-    _searchCtrl = TextEditingController();
     _eatenAt = meal?.eatenAt ?? DateTime.now();
-    _eatenTime = TimeOfDay.fromDateTime(_eatenAt);
-    _amounts = {};
-    if (meal != null) {
-      for (final item in meal.items) {
-        _amounts[item.foodId] = item.amount;
-        // Seeded from the stored row so the first frame already has a name.
-        _names[item.foodId] = item.foodName;
-      }
+    for (final item in meal?.items ?? const <MealFood>[]) {
+      _put(item.foodId, item.amount);
+      _names[item.foodId] = item.foodName;
     }
   }
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
     _searchCtrl.dispose();
+    _searchFocus.dispose();
+    for (final c in _gramCtrls.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  /// Totals for what is currently selected, from the same pure resolution the
-  /// repository uses — so the preview cannot disagree with what gets stored.
-  Nutrition get _previewTotals {
-    var calories = 0.0, protein = 0.0, carbs = 0.0, fat = 0.0;
-    var sodium = 0.0, fiber = 0.0, sugar = 0.0;
-    for (final entry in _amounts.entries) {
-      if (entry.value <= 0) continue;
-      final per100g = _profiles[entry.key]?.per100g;
-      // A food whose composition does not resolve contributes nothing here; the
-      // save is refused later with a clearer message than a silent zero.
-      if (per100g == null) continue;
-      final f = entry.value / 100;
-      calories += per100g.calories * f;
-      protein += per100g.protein * f;
-      carbs += per100g.carbs * f;
-      fat += per100g.fat * f;
-      sodium += per100g.sodium * f;
-      fiber += per100g.fiber * f;
-      sugar += per100g.sugar * f;
-    }
-    return (
-      calories: calories,
-      protein: protein,
-      carbs: carbs,
-      fat: fat,
-      sodium: sodium,
-      fiber: fiber,
-      sugar: sugar,
+  static String _fmtGrams(double g) =>
+      g == g.roundToDouble() ? g.toStringAsFixed(0) : g.toStringAsFixed(1);
+
+  void _put(String foodId, double grams) {
+    _amounts[foodId] = grams;
+    _gramCtrls.putIfAbsent(
+      foodId,
+      () => TextEditingController(text: _fmtGrams(grams)),
     );
+  }
+
+  void _remove(String foodId) => setState(() {
+    _amounts.remove(foodId);
+    _gramCtrls.remove(foodId)?.dispose();
+  });
+
+  void _add(String foodId, double grams) {
+    setState(() {
+      if (!_amounts.containsKey(foodId)) _put(foodId, grams);
+      _searchCtrl.clear();
+      _query = '';
+    });
+  }
+
+  /// The grams last logged for each food, from the meal history.
+  Map<String, double> _lastAmounts(List<MealEntry> meals) {
+    final out = <String, double>{};
+    final latest = <String, DateTime>{};
+    for (final m in meals) {
+      if (m.id == widget.meal?.id) continue;
+      for (final i in m.items) {
+        final seen = latest[i.foodId];
+        if (seen == null || m.eatenAt.isAfter(seen)) {
+          latest[i.foodId] = m.eatenAt;
+          out[i.foodId] = i.amount;
+        }
+      }
+    }
+    return out;
+  }
+
+  ({double kcal, double grams, MacroValues macros}) _totals(
+    Map<String, FoodNutrition?> profiles,
+  ) {
+    var kcal = 0.0, grams = 0.0;
+    var macros = MacroValues.zero;
+    for (final e in _amounts.entries) {
+      final p = profiles[e.key]?.per100g;
+      grams += e.value;
+      if (p == null) continue;
+      kcal += p.calories * e.value / 100;
+      macros = macros + MacroValues.of(p).scale(e.value / 100);
+    }
+    return (kcal: kcal, grams: grams, macros: macros);
+  }
+
+  Future<void> _pickDateTime() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _eatenAt,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_eatenAt),
+    );
+    if (time == null || !mounted) return;
+    setState(() {
+      _eatenAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  Future<void> _scan(Map<String, double> last) async {
+    final l10n = AppLocalizations.of(context)!;
+    final code = await showBarcodeScanSheet(context);
+    if (code == null || !mounted) return;
+    final ingredients = await ref.read(ingredientListProvider.future);
+    if (!mounted) return;
+    final match = ingredients.where((i) => i.barcode == code).firstOrNull;
+    if (match == null) {
+      showTopBanner(context, message: l10n.mealEditBarcodeUnknown(code));
+      return;
+    }
+    final id = derivedFoodId(match.id);
+    _names[id] = match.name;
+    _add(id, last[id] ?? 100);
   }
 
   Future<void> _delete() async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.mealFormDeleteTitle),
-        content: Text(l10n.mealFormDeleteBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.commonDelete),
-          ),
-        ],
-      ),
+    final meal = widget.meal!;
+    final repo = ref.read(mealRepositoryProvider);
+    final deleted = await confirmDelete(
+      context,
+      itemName: l10n.mealEditItemName,
+      delete: () => repo.delete(meal.id),
+      undo: () async {
+        await repo.restore(meal);
+        ref.invalidate(mealListProvider);
+        invalidateDashboard(ref);
+      },
     );
-    if (confirmed != true || !mounted) return;
+    if (!deleted || !mounted) return;
+    invalidateDashboard(ref);
+    Navigator.of(context).pop(true);
+  }
+
+  Future<void> _save(Map<String, FoodNutrition?> profiles) async {
+    final l10n = AppLocalizations.of(context)!;
+    final selected = _amounts.entries.where((e) => e.value > 0).toList();
+    if (selected.isEmpty) {
+      showTopBanner(context, message: l10n.mealFormAddFood);
+      return;
+    }
+    // A food that does not resolve would snapshot as zeros: refuse the log.
+    if (selected.any((e) => profiles[e.key] == null)) {
+      showTopBanner(context, message: l10n.mealFormFoodUnresolved);
+      return;
+    }
     setState(() => _saving = true);
     try {
-      await ref.read(mealRepositoryProvider).delete(widget.meal!.id);
+      final repo = ref.read(mealRepositoryProvider);
+      final mealId = widget.meal?.id ?? const Uuid().v7();
+      final meal = MealEntry(
+        id: mealId,
+        name: widget.meal?.name ?? '',
+        eatenAt: _eatenAt,
+        createdAt: widget.meal?.createdAt ?? DateTime.now(),
+        items: [
+          for (final e in selected)
+            MealFood(
+              id: const Uuid().v7(),
+              mealId: mealId,
+              foodId: e.key,
+              foodName: '',
+              amount: e.value,
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0,
+              // The repository scales the live profile and stores it.
+              nutrition: profiles[e.key],
+            ),
+        ],
+      );
+      if (_isEditing) {
+        await repo.update(meal);
+      } else {
+        await repo.insert(meal);
+      }
       invalidateDashboard(ref);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -138,382 +241,353 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final foodsAsync = ref.watch(foodListProvider);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final nf = NumberFormat.decimalPattern(locale);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _isEditing ? l10n.mealFormEditTitle : l10n.mealFormNewTitle,
-        ),
-        // Save is the primary action and the form can be long, so it lives in
-        // the app bar rather than pinned below the food list. Mirrors the state
-        // the bottom button carried: disabled while saving, with the in-flight
-        // label.
-        actions: [
-          // Deleting lives here, behind a confirmation, rather than as a swipe
-          // on the meal list, where it kept firing by accident.
-          if (_isEditing)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: l10n.commonDelete,
-              onPressed: _saving ? null : _delete,
-            ),
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: Text(_saving ? l10n.mealFormSaving : l10n.mealFormSave),
+    final foods = ref.watch(foodListProvider).value ?? const <ResolvedFood>[];
+    final profiles = {for (final f in foods) f.food.id: f.nutrition};
+    for (final f in foods) {
+      _names[f.food.id] = f.food.name;
+    }
+    final meals = ref.watch(mealListProvider).value ?? const <MealEntry>[];
+    final last = _lastAmounts(meals);
+    final target = ref.watch(calorieTargetProvider).value;
+    final t = _totals(profiles);
+
+    // Everything else eaten that day, plus this meal as it stands.
+    final day = DateTime(_eatenAt.year, _eatenAt.month, _eatenAt.day);
+    final dayOthers = meals
+        .where(
+          (m) =>
+              m.id != widget.meal?.id &&
+              DateTime(m.eatenAt.year, m.eatenAt.month, m.eatenAt.day) == day,
+        )
+        .fold(0.0, (a, m) => a + m.totalCalories);
+    final dayTotal = dayOthers + t.kcal;
+
+    final pinned = Container(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceM,
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceM,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: FitFatTokens.spaceS,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            spacing: 6,
+            children: [
+              Text(
+                nf.format(t.kcal.round()),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              Text('kcal', style: theme.textTheme.bodyMedium),
+              Expanded(
+                child: Text(
+                  '${nf.format(t.grams.round())} g · '
+                  '${target == null ? l10n.mealEditDay(nf.format(dayTotal.round())) : l10n.mealEditDayOf(nf.format(dayTotal.round()), nf.format(target.round()))}',
+                  textAlign: TextAlign.right,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ],
           ),
+          MacroBar(t.macros),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Name — optional. Most meals do not need one, and forcing a name
-            // meant inventing filler. A blank name is stored as an empty string
-            // (the column is NOT NULL) and the list falls back to a date label.
-            TextFormField(
-              controller: _nameCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.mealFormNameLabel,
-                hintText: l10n.mealFormNameHint,
-                helperText: l10n.mealFormNameOptionalHint,
+    );
+
+    final q = _query.trim().toLowerCase();
+    final suggestions = <ResolvedFood>[
+      if (q.isNotEmpty)
+        ...foods.where(
+          (f) =>
+              !_amounts.containsKey(f.food.id) &&
+              f.food.name.toLowerCase().contains(q),
+        )
+      else if (_amounts.isEmpty)
+        // Nothing typed yet on an empty meal: the foods logged most recently.
+        ...() {
+          final recent = <String>[];
+          final byTime = [...meals]
+            ..sort((a, b) => b.eatenAt.compareTo(a.eatenAt));
+          for (final m in byTime) {
+            for (final i in m.items) {
+              if (!recent.contains(i.foodId)) recent.add(i.foodId);
+            }
+          }
+          final byId = {for (final f in foods) f.food.id: f};
+          return [for (final id in recent.take(6)) ?byId[id]];
+        }(),
+    ];
+    // Recently logged foods first, then alphabetical.
+    if (q.isNotEmpty) {
+      suggestions.sort((a, b) {
+        final la = last.containsKey(a.food.id) ? 0 : 1;
+        final lb = last.containsKey(b.food.id) ? 0 : 1;
+        return la != lb ? la - lb : a.food.name.compareTo(b.food.name);
+      });
+    }
+
+    final dateLabel =
+        '${DateFormat.MMMd(locale).format(_eatenAt)} · '
+        '${DateFormats.formatTime(context, TimeOfDay.fromDateTime(_eatenAt))}';
+
+    return FormScaffold(
+      title: dateLabel,
+      titleWidget: InkWell(
+        key: const ValueKey('mealEditDate'),
+        onTap: _pickDateTime,
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: FitFatTokens.spaceXs),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  dateLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              textCapitalization: TextCapitalization.sentences,
-            ),
-            const SizedBox(height: 16),
-
-            // Date & time
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.mealFormDateTime),
-              subtitle: Text(
-                '${DateFormats.formatDate(context, _eatenAt)}  '
-                '${DateFormats.formatTime(context, _eatenTime)}',
-              ),
-              trailing: const Icon(Icons.edit_calendar),
-              onTap: _pickDateTime,
-            ),
-            const SizedBox(height: 16),
-
-            // Above the food list, not below it. The running total is what you
-            // are checking while adding and adjusting foods, and scrolling past
-            // them to read it defeats that.
-            _TotalsCard(totals: _previewTotals, l10n: l10n),
-            const SizedBox(height: FitFatTokens.spaceL),
-
-            // Food selection. The list lives in a debounced, virtualized
-            // sheet rather than inline: it holds every food, which is one per
-            // ingredient plus every recipe, and rendering that in the form's own
-            // ListView rebuilt hundreds of rows on every keystroke.
-            Text(
-              l10n.mealFormFoods,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-
-            foodsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) =>
-                  Text(l10n.errorLoadingResource(l10n.mealFormFoods, '$e')),
-              data: (resolved) {
-                // Remember each food's live profile for the snapshot, including
-                // ones already selected, so editing an existing meal keeps the
-                // stored macros in step with the current recipe.
-                for (final entry in resolved) {
-                  _profiles[entry.food.id] = entry.nutrition;
-                  _names[entry.food.id] = entry.food.name;
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () => _pickFoods(context, resolved),
-                      icon: const Icon(Icons.restaurant_menu),
-                      label: Text(l10n.mealFormChooseFoods),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
+        ),
+      ),
+      canSave: _amounts.isNotEmpty,
+      saving: _saving,
+      onSave: () => _save(profiles),
+      pinned: pinned,
+      delete: _isEditing
+          ? FormDeleteAction(label: l10n.mealEditDelete, onDelete: _delete)
+          : null,
+      children: [
+        if (_amounts.isNotEmpty)
+          Card(
+            margin: const EdgeInsets.only(top: FitFatTokens.spaceS),
+            child: Column(
+              children: [
+                for (final id in _amounts.keys.toList())
+                  Dismissible(
+                    key: ValueKey('food-$id'),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(
+                        right: FitFatTokens.spaceL,
+                      ),
+                      color: scheme.errorContainer,
+                      child: Icon(Icons.delete_outline, color: scheme.error),
                     ),
-                    if (_amounts.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      for (final entry in _amounts.entries)
-                        if (_profiles[entry.key] case final nutrition?)
-                          _DraftFoodRow(
-                            key: ValueKey(entry.key),
-                            name: _names[entry.key] ?? entry.key,
-                            grams: entry.value,
-                            calories:
-                                nutrition.per100g.calories * entry.value / 100,
-                            onTap: () => _editDraftFood(
-                              entry.key,
-                              name: _names[entry.key] ?? entry.key,
-                              grams: entry.value,
-                              per100g: nutrition.per100g,
+                    onDismissed: (_) => _remove(id),
+                    child: _FoodRow(
+                      name: _names[id] ?? id,
+                      isRecipe: !isDerivedFoodId(id),
+                      kcal:
+                          (profiles[id]?.per100g.calories ?? 0) *
+                          (_amounts[id] ?? 0) /
+                          100,
+                      unresolved: foods.isNotEmpty && profiles[id] == null,
+                      controller: _gramCtrls[id]!,
+                      onChanged: (v) => setState(
+                        () => _amounts[id] =
+                            double.tryParse(v.replaceAll(',', '.')) ?? 0,
+                      ),
+                      onRemove: () => _remove(id),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        const SizedBox(height: FitFatTokens.spaceM),
+        TextField(
+          key: const ValueKey('mealEditSearch'),
+          controller: _searchCtrl,
+          focusNode: _searchFocus,
+          decoration: InputDecoration(
+            hintText: l10n.mealEditSearch,
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: IconButton(
+              tooltip: l10n.mealEditScan,
+              icon: const Icon(Icons.qr_code_scanner),
+              onPressed: () => _scan(last),
+            ),
+          ),
+          onChanged: (v) => setState(() => _query = v),
+        ),
+        if (q.isNotEmpty && suggestions.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(FitFatTokens.spaceM),
+            child: Text(
+              l10n.mealEditNoMatch,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        if (suggestions.isNotEmpty) ...[
+          if (q.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                FitFatTokens.spaceXs,
+                FitFatTokens.spaceM,
+                0,
+                FitFatTokens.spaceXs,
+              ),
+              child: Text(
+                l10n.mealEditRecent.toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  letterSpacing: 0.9,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          Card(
+            margin: const EdgeInsets.only(top: FitFatTokens.spaceXs),
+            child: Column(
+              children: [
+                for (final f in suggestions.take(8))
+                  ListTile(
+                    key: ValueKey('suggest-${f.food.id}'),
+                    dense: true,
+                    title: Text(f.food.name),
+                    subtitle: Text(
+                      [
+                        if (!f.food.isDerived) l10n.mealEditRecipe,
+                        if (last[f.food.id] case final g?)
+                          l10n.mealEditLast(_fmtGrams(g)),
+                      ].join(' · '),
+                    ),
+                    trailing: f.nutrition == null
+                        ? null
+                        : Text(
+                            l10n.mealEditPer100(
+                              f.nutrition!.per100g.calories.round(),
+                            ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
                             ),
                           ),
-                    ],
-                  ],
-                );
-              },
+                    onTap: () => _add(f.food.id, last[f.food.id] ?? 100),
+                  ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Applies an amount change or a removal to this form's draft.
-  ///
-  /// Keyed by food id, which is also how [_amounts] is keyed: a food can only
-  /// appear once in a meal, so removing by id needs no further disambiguation.
-  ///
-  /// Deliberately does not touch the repository. This form owns an unsaved
-  /// draft and the existing Save persists the whole meal; writing through here
-  /// would change a row even if the user then backed out of the form.
-  Future<void> _editDraftFood(
-    String foodId, {
-    required String name,
-    required double grams,
-    required Nutrition per100g,
-  }) async {
-    final l10n = AppLocalizations.of(context)!;
-    final result = await showMealItemEditorSheet(
-      context,
-      foodName: name,
-      currentGrams: grams,
-      currentSummary: l10n.mealListMacroFormat(
-        grams.toStringAsFixed(0),
-        (per100g.calories * grams / 100).toStringAsFixed(0),
-        (per100g.protein * grams / 100).toStringAsFixed(1),
-        (per100g.carbs * grams / 100).toStringAsFixed(1),
-        (per100g.fat * grams / 100).toStringAsFixed(1),
-      ),
-    );
-    // null = dismissed, keep the draft exactly as it was.
-    if (result == null) return;
-    setState(() {
-      switch (result) {
-        case MealItemAmountChanged(:final grams):
-          _amounts[foodId] = grams;
-        case MealItemRemoved():
-          _amounts.remove(foodId);
-      }
-    });
-  }
-
-  Future<void> _pickDateTime() async {
-    // Pick date
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _eatenAt,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-    if (date == null || !mounted) return;
-
-    // Pick time
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _eatenTime,
-    );
-    if (time == null || !mounted) return;
-
-    setState(() {
-      _eatenAt = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-      _eatenTime = time;
-    });
-  }
-
-  Future<void> _pickFoods(
-    BuildContext context,
-    List<ResolvedFood> resolved,
-  ) async {
-    for (final entry in resolved) {
-      _names[entry.food.id] = entry.food.name;
-    }
-    final chosen = await showFoodPickerSheet(
-      context,
-      foods: resolved,
-      initialAmounts: _amounts,
-    );
-    // null means dismissed — keep whatever was already selected.
-    if (chosen == null || !mounted) return;
-    setState(() {
-      _amounts
-        ..clear()
-        ..addAll(chosen);
-    });
-  }
-
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    final l10n = AppLocalizations.of(context)!;
-
-    final selected = _amounts.entries.where((e) => e.value > 0).toList();
-    if (selected.isEmpty) {
-      showTopBanner(context, message: l10n.mealFormAddFood);
-      return;
-    }
-
-    // A food with an unresolvable composition would snapshot as zeros, so refuse
-    // the whole log rather than record a meal that silently under-reports.
-    final unresolved = selected
-        .where((e) => _profiles[e.key]?.per100g == null)
-        .map((e) => e.key)
-        .toList();
-    if (unresolved.isNotEmpty) {
-      showTopBanner(context, message: l10n.mealFormFoodUnresolved);
-      return;
-    }
-
-    setState(() => _saving = true);
-    try {
-      final repo = ref.read(mealRepositoryProvider);
-      final name = _nameCtrl.text.trim();
-      final mealId = _isEditing ? widget.meal!.id : const Uuid().v7();
-
-      final items = selected
-          .map(
-            (e) => _buildItem(
-              e.key,
-              e.value,
-              nutrition: _profiles[e.key]!,
-              mealId: mealId,
-            ),
-          )
-          .toList();
-
-      final meal = MealEntry(
-        id: mealId,
-        name: name,
-        eatenAt: _eatenAt,
-        createdAt: _isEditing ? widget.meal!.createdAt : DateTime.now(),
-        items: items,
-      );
-      if (_isEditing) {
-        await repo.update(meal);
-      } else {
-        await repo.insert(meal);
-      }
-      invalidateDashboard(ref);
-
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    } catch (e) {
-      if (mounted) {
-        showTopBanner(context, message: l10n.errorWithMessage('$e'));
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  MealFood _buildItem(
-    String foodId,
-    double amount, {
-    required FoodNutrition nutrition,
-    required String mealId,
-  }) {
-    return MealFood(
-      id: const Uuid().v7(),
-      mealId: mealId,
-      foodId: foodId,
-      foodName: '', // filled in after save via getAll
-      amount: amount,
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      // The live profile is all the repository needs; it scales this to
-      // [amount] and writes the snapshot itself.
-      nutrition: nutrition,
+          ),
+        ],
+      ],
     );
   }
 }
 
-/// One food in the form's draft. Tappable, because adjusting a logged portion
-/// used to require finding the picker; the chevron is what makes that visible.
-final class _DraftFoodRow extends StatelessWidget {
-  final String name;
-  final double grams;
-  final double calories;
-  final VoidCallback onTap;
-
-  const _DraftFoodRow({
-    super.key,
+/// One food in the meal: icon, name, its kcal at this amount, and the grams.
+final class _FoodRow extends StatelessWidget {
+  const _FoodRow({
     required this.name,
-    required this.grams,
-    required this.calories,
-    required this.onTap,
+    required this.isRecipe,
+    required this.kcal,
+    required this.unresolved,
+    required this.controller,
+    required this.onChanged,
+    required this.onRemove,
   });
 
+  final String name;
+  final bool isRecipe;
+  final double kcal;
+  final bool unresolved;
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onRemove;
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
-            Text(
-              '${grams.toStringAsFixed(0)} g  ·  ${calories.toStringAsFixed(0)} kcal',
-              style: theme.textTheme.bodySmall,
-            ),
-            Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
+    final scheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceM,
+        FitFatTokens.spaceS,
+        FitFatTokens.spaceXs,
+        FitFatTokens.spaceS,
       ),
-    );
-  }
-}
-
-final class _TotalsCard extends StatelessWidget {
-  final Nutrition totals;
-  final AppLocalizations l10n;
-
-  const _TotalsCard({required this.totals, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.mealFormTotals, style: theme.textTheme.titleSmall),
-            const SizedBox(height: 4),
-            Text(
-              l10n.ingredientMacroRow(
-                totals.calories.toStringAsFixed(0),
-                totals.calories.toStringAsFixed(0),
-                totals.protein.toStringAsFixed(1),
-                totals.carbs.toStringAsFixed(1),
-                totals.fat.toStringAsFixed(1),
-              ),
+      child: Row(
+        spacing: FitFatTokens.spaceM,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: scheme.primaryContainer,
+              borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
             ),
-          ],
-        ),
+            child: Icon(
+              isRecipe ? Icons.menu_book_outlined : Icons.eco_outlined,
+              size: 18,
+              color: scheme.onPrimaryContainer,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(
+                  unresolved ? l10n.foodListUnresolved : '${kcal.round()} kcal',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: unresolved ? scheme.error : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 88,
+            child: TextField(
+              controller: controller,
+              textAlign: TextAlign.right,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                suffixText: 'g',
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: FitFatTokens.spaceS,
+                  vertical: FitFatTokens.spaceS,
+                ),
+              ),
+              onChanged: onChanged,
+            ),
+          ),
+          IconButton(
+            tooltip: l10n.foodFormRemovePart,
+            visualDensity: VisualDensity.compact,
+            icon: Icon(Icons.close, size: 18, color: scheme.onSurfaceVariant),
+            onPressed: onRemove,
+          ),
+        ],
       ),
     );
   }

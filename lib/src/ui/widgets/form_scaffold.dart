@@ -36,6 +36,8 @@ class FormScaffold extends StatelessWidget {
     this.footer,
     this.formKey,
     this.leading,
+    this.titleWidget,
+    this.pinned,
   });
 
   final String title;
@@ -63,6 +65,12 @@ class FormScaffold extends StatelessWidget {
 
   /// Defaults to a close (×) button.
   final Widget? leading;
+
+  /// Replaces the plain [title] text (e.g. a tappable date).
+  final Widget? titleWidget;
+
+  /// Stays on top while the fields scroll (e.g. live totals).
+  final Widget? pinned;
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +108,7 @@ class FormScaffold extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: leading ?? const CloseButton(),
-        title: Text(title),
+        title: titleWidget ?? Text(title),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: FitFatTokens.spaceM),
@@ -128,7 +136,23 @@ class FormScaffold extends StatelessWidget {
           constraints: const BoxConstraints(
             maxWidth: FitFatTokens.kContentMaxWidth,
           ),
-          child: body,
+          child: pinned == null
+              ? body
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        FitFatTokens.spaceL,
+                        FitFatTokens.spaceS,
+                        FitFatTokens.spaceL,
+                        FitFatTokens.spaceXs,
+                      ),
+                      child: pinned,
+                    ),
+                    Expanded(child: body),
+                  ],
+                ),
         ),
       ),
     );
