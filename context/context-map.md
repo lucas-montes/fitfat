@@ -37,7 +37,7 @@ manual check.
 ### In progress
 | Plan | Status | Description |
 |---|---|---|
-| `exercise-group-redesign` | planned, awaiting round 6 picks | Workouts list (week summary card + workout cards) and exercises image grid are decided and can start (T01–T03); tab structure, start flow, grid filters, exercise detail and workout detail wait on the round 6 picks |
+| `exercise-group-redesign` | planned, designs decided | Training home (Recent + Templates rows), weekly history, templates list, workout detail with rest and calories, exercise search with facet dropdowns, exercise detail tabs; T01–T08 ready |
 | `selective-sync-catalog` | code complete, manual QA outstanding | The minimal catalogue tables, the server catalogue endpoints, the background refresh, the bulk-vs-selective menus and the hub de-duplication all shipped. The four acceptance criteria are device-side checks: AC1/AC3/AC4 were verified by inspection only, and AC2's automated test (`test/catalog_selective_sync_test.dart`) compiles but has never executed in this environment |
 | `task-carryover-notifications-fix` | code complete, manual device QA outstanding | The rollover ordering, the reminder rescheduling for rolled tasks, the reminder lifecycle on task mutations, the settings-based default time for untimed tasks and the exact-alarm fallback all shipped. All five acceptance criteria are device checks that have not been run |
 | `settings-additions` | partially implemented | The units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent, and no longer wanted: the server pulls rates itself (2026-11-20) |

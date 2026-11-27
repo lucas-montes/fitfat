@@ -1,36 +1,52 @@
 # Plan: Exercise group redesign — workouts, exercises, detail screens (Phase EG)
 
-**Status:** planned — design round 6 is out for picks; tasks T01–T03 can start now, T04–T08 wait on the open decisions below.
+**Status:** planned — all designs decided (2026-11-27); ready to implement T01–T08.
 
 ## Change Summary
 
-Bring the Exercise tab onto the new design system (`context/ui/design-system.md`:
-Inset style, palettes, `SectionHeader`, `FormScaffold`, `confirmDelete`,
-`showAppSheet`, no loading/error states on local data) and implement the
-layouts chosen in the design rounds
-(proposals page: https://claude.ai/artifact/SjcVZMs4L9oVqCTm9sSTmm, rounds 4 and 6):
+Rebuild the Exercise tab around starting a workout, on the design system in
+`context/ui/design-system.md` (proposals: https://claude.ai/artifact/SjcVZMs4L9oVqCTm9sSTmm,
+rounds 6–10):
 
-1. **Workouts list** (decided, round 4 "W2"): one card per workout — name,
-   status badge, date · template, the first exercises with their top set,
-   the workout note, and a Time / Sets / Volume (or Distance) stat row —
-   grouped by calendar week under a **week summary card** (title, date range,
-   a dot per training day, Workouts / Time / Volume).
-2. **Exercises list** (decided, round 4 "B"): two-column **image grid**
-   (exercise image or video poster, name, one line of metadata).
-3. **Tab structure, starting a workout, grid filters, exercise detail,
-   workout detail**: per the round 6 picks (open decisions below).
+1. **Training home** — unfinished workout on top; a **Recent** row (each named
+   workout once, Start) and a **Templates** row (Start), each with **All**; this
+   week's summary card below.
+2. **Weekly history** (Recent → All) — month chips + range sheet; one card per
+   week with dates, day dots and totals; rows with ↻.
+3. **Templates list** (Templates → All) — cards listing exercises and targets, Start.
+4. **Workout detail** — summary (volume, time, sets, average rest, calories,
+   volume split, PR line) + per-set plan bars with rest.
+5. **Exercises** — search with four facet dropdowns; **exercise detail** with
+   media + History / Details tabs.
 
-## Open decisions (round 6)
+## Direction (user feedback on round 6, 2026-11-27)
 
-| # | Question | Options | Recommended default |
-|---|---|---|---|
-| D1 | Tab structure | A segmented Workouts · Exercises · Templates · B workouts + "Library" cards · C app-bar icons (today) | A |
-| D2 | Starting a workout | A start sheet (empty + templates) · B "Start from" chips · C "Up next" from the planner | A (C can be added on top later) |
-| D3 | Exercise grid filters / tile text | A body-part chips + filter button, tiles show body part · equipment · B filter button + applied chips, tiles show last set | B |
-| D4 | Exercise detail | A media + History/Details tabs (restyled) · B one scroll, progress first, "How to" collapsed · C compact header, history-first | B |
-| D5 | Workout detail (finished) | A stat tiles + exercise cards with the planned/actual/Δ grid · B compact rows with set chips | A |
+- The user moves between **workouts and templates**; the exercise library is
+  rarely opened. The tab must make **starting a workout** the fastest path.
+- Workouts are usually started by **repeating a past workout** (by name, e.g.
+  "Skate", "Bench day"), or from a **new template created after a PR**.
+- Exercises: a search field with filter options, better than the round 6
+  proposals.
 
-Record the answers here (and in the decisions memory) before starting T04.
+## Decisions
+
+| # | Question | Status |
+|---|---|---|
+| D1+D2 | Training home | **direction decided (2026-11-27):** an unfinished workout pinned on top, then two horizontal rows — **Recent** (each named workout once, most recent first, Start on each card) and **Templates** (Start on each card) — each with an **All** link to a full list. Below the rows: **this week's summary card** (round 8 A, decided) |
+| D1a | `All` recent workouts list | **decided: round 10 A** — one card per week: tinted header with the date range only, seven day dots on the right, totals underneath (time · volume · distance); workouts as rows inside the card with ↻; no week labels, no workout count, no active workout; **month chips + Range** filter (Range opens the calendar sheet with quick ranges) |
+| D1b | `All` templates list | **decided: A** — a card per template listing its exercises with target sets, last done, New badge for PR templates, Start; edit/delete in the card ⋮ |
+| D3 | Exercise search + filters | **decided: A** — search field with four facet dropdown chips (Body part, Equipment, Muscle, Type); each opens a small multi-select sheet with a live result count; applied values show inside the chip. Search results render as rows with the last set; browsing keeps the image grid |
+| D4 | Exercise detail | **decided: A** — media + History / Details tabs, restyled (stat tiles, chart with Weight/Reps/Volume switch, sessions; Details as grouped rows + numbered instructions) |
+| D5 | Workout detail | **decided: B, revised** — summary card (volume + change vs last time, time, sets, **average rest**, **calories burned**, volume split per exercise, one PR line); per exercise: sets · volume · **average rest**, then one bar per set (fill = reps done / planned, label weight × reps, Δ vs plan, PR in green) with the **rest after that set** on the right. No Do again button (↻ icon in the top bar), no set index numbers, **no Save-as-template card** (Save as template is in ⋮). Delete = danger row at the bottom |
+
+## New capabilities implied
+
+- **Repeat a past workout by name**: group completed workouts by name
+  (case-insensitive), expose count + last date + last summary, and start a
+  new workout prefilled from the most recent one (reuse the replay path in
+  `workout-replay.md`).
+- **Save as template from a workout**, offered when the workout contains a PR
+  (PR = best weight for the reps, or best volume, per exercise history).
 
 ## Success Criteria
 
@@ -67,110 +83,127 @@ Record the answers here (and in the decisions memory) before starting T04.
 
 | UI | Source today | Plan |
 |---|---|---|
-| Workout card: sets, volume/distance, first 2–3 exercises with top set | per-workout `workoutDetailProvider` | new `WorkoutRepository.getCardSummaries()` — one grouped query over workouts ⋈ workout_exercises ⋈ sets returning `{workoutId, setCount, volumeKg, distanceKm, minutes, topExercises: [(name, topSet)]}`; provider `workoutCardSummariesProvider` (keep-alive, warmed at startup like the lists) |
-| Week summary: workouts, time, volume, training days | `getVolumeAndMinutesBetween` (current week only) | `getWeekSummaries()` — group by Monday-of-week over all weeks (or derive from the card summaries in Dart, which is cheaper for < a few hundred workouts) |
-| Grid tile last set (D3=B) | `getExerciseHistory` per exercise | new `getLastSetPerExercise()` — one query, latest completed set per exercise id |
-| Exercise detail stats: best set, last session, session count | computed in `_HistoryMetrics` from history | unchanged; reuse `_HistoryMetrics` |
+| Recent row: one card per named workout (most recent first) with last summary, count, last date | `workoutListProvider` (all workouts) | group completed workouts by `routineId` (replays share it), falling back to the case-insensitive name; one bulk aggregate per workout (below) supplies the summary line. Provider `recentRoutinesProvider` |
+| Workout rows / week totals: duration, set count, volume or distance, PR flag | per-workout `workoutDetailProvider` | new `WorkoutRepository.getRowSummaries()` — one grouped query: `{workoutId, minutes, setCount, volumeKg, distanceKm, hasPr}`; `hasPr` = a completed set beating every earlier set of that exercise (weight for its reps, or volume) |
+| Week cards: dates, training-day dots, time / volume / distance | — | derived in Dart from row summaries, grouped by `startOfCalendarWeek`; month filter = weeks overlapping the month, range filter = workouts inside the span |
+| Templates: exercises + target sets, last done, New | `workoutTemplateDetailsProvider` per template | `WorkoutTemplateRepository.getAllWithExercises()` (one query) + last done = max `workouts.date` per `templateId`; **New** = never started and created in the last 14 days |
+| Workout detail: rest per set, average rest, calories | `ExerciseSet.actualRestSeconds` / `restSeconds`; energy already computed on the summary screen | reuse; average rest = mean of completed sets' actual rest (fallback planned), excluding the last set of each exercise |
+| Exercise search rows: last set per exercise | `getExerciseHistory` per exercise | new `getLastSetPerExercise()` — one query, latest completed set per exercise id |
+
+Existing actions reused, not rewritten: `replayWorkout` (start again, routine-aware prefill),
+`saveAsTemplate` (workout → template), template start via the existing template path.
 
 ## Task Stack
 
-- [ ] T01: `Workout card + week summary aggregates` (status:todo)
+- [ ] T01: `Read aggregates for the training screens` (status:todo)
   - Task ID: T01
-  - Goal: Read everything the workouts list needs in two queries.
+  - Goal: Everything the home, the history and the templates list need in a handful of queries.
   - Boundaries (in/out of scope):
-    - In: `lib/src/exercise/repositories/workout_repository.dart`
-      (`getCardSummaries`, week grouping), `lib/src/exercise/providers/workouts.dart`
-      (`workoutCardSummariesProvider`, `workoutWeekSummariesProvider`), startup
-      warm-up list in `lib/src/app/app.dart`; invalidation alongside
-      `workoutListProvider`.
+    - In: `workout_repository.dart` (`getRowSummaries`, `getLastSetPerExercise`),
+      `workout_template_repository.dart` (`getAllWithExercises`, last done per template),
+      providers `workoutRowSummariesProvider`, `recentRoutinesProvider`,
+      `templateCardsProvider`, `lastSetPerExerciseProvider` (keep-alive, warmed at
+      startup in `app.dart`, invalidated with `workoutListProvider` /
+      `workoutTemplateListProvider`).
     - Out: UI.
-  - Done when: unit tests on an in-memory DB cover a lift, a cardio-only and an
-    active workout (volume vs distance, active excluded from totals).
-  - Verification notes: `flutter test test/workout_card_summaries_test.dart`.
+  - Done when: in-memory DB tests cover lift vs cardio, a PR set, replays grouped
+    into one routine, template last-done and New.
+  - Verification notes: `flutter test test/training_aggregates_test.dart`.
 
-- [ ] T02: `Workouts list — week summary card + workout cards` (status:todo)
+- [ ] T02: `Training home` (status:todo)
   - Task ID: T02
-  - Goal: Rebuild `WorkoutListScreen` as the decided "W2" layout.
+  - Goal: Replace `WorkoutListScreen` as the Exercise tab root with the training home.
   - Boundaries (in/out of scope):
-    - In: `lib/src/exercise/screens/workout_list.dart` → large-title
-      `CustomScrollView`; `_WeekSummaryCard` (title, range, day dots, stats) per
-      week; `WorkoutCard` (name, `StatusBadge`, date · template, top exercises,
-      note, stat row); active workout pinned first with Continue; tap →
-      `/workout-summary/:id`; swipe/long-press actions removed in favour of the
-      detail screen's ⋮ / danger row. Empty state keeps `EmptyState` with its CTA.
-    - Out: tab switcher (T04), start flow (T05).
-  - Done when: widget test renders two weeks of seeded workouts, active first.
-  - Verification notes: screenshot check in Dracula + Alucard (golden-capture
-    script used for the dashboard, `test/zz_screenshots_test.dart` pattern, not
-    committed).
+    - In: new `lib/src/exercise/screens/training_screen.dart`, `exercise_tab.dart`.
+      Large title "Training"; app bar: search (workouts) + dumbbell icon → exercises.
+      Unfinished workout strip with Continue (only here). `SectionHeader`
+      "Recent" + **All** → T03; horizontal row of routine cards (icon, name,
+      summary, last date · count, **Start** → `replayWorkout`). `SectionHeader`
+      "Templates" + **All** → T04; horizontal row of template cards (Start).
+      Below: this week's summary card (dates, day dots, time / volume /
+      distance). FAB → empty workout. Empty states: no workouts → one-line
+      explanation + "Start a workout"; no templates → hint that a template can
+      be saved from any workout.
+    - Out: the active workout screen.
+  - Done when: widget test with seeded data shows both rows, Start replays the
+    routine, the active strip appears only with an active workout.
 
-- [ ] T03: `Exercises grid (decided layout)` (status:todo)
+- [ ] T03: `Weekly history (All recent)` (status:todo)
   - Task ID: T03
-  - Goal: Replace the exercise `ListTile` list with a two-column image grid.
+  - Goal: Round 10 A.
   - Boundaries (in/out of scope):
-    - In: `lib/src/exercise/screens/exercise_list.dart` — `SliverGrid`
-      (2 columns, 4:3 media, name, meta line), image fallback tile with the
-      exercise initial, existing search + filters kept functional (restyled in
-      T06), sync menu unchanged.
-    - Out: filter UI change (T06), last-set text (T06 if D3=B).
-  - Done when: widget test finds tiles for seeded exercises; 200-item list
-    scrolls without jank in profile mode (manual).
+    - In: new `workout_history_screen.dart` (replaces the old list screen; delete
+      `workout_list.dart` once unreferenced). Month chips (All, then months
+      that have workouts, newest first) + **Range** chip opening a calendar sheet
+      (quick ranges 7 days / 30 days / 3 months / this year + start–end picking,
+      workout days dotted, "Show N workouts"). One card per week: tinted header
+      with the date range, seven day dots on the right, totals underneath
+      (time · volume · distance when any); rows: type icon, name, PR badge,
+      date · duration · volume-or-distance, ↻ (`replayWorkout`). Active workout
+      excluded. Search field in the app bar filters by name.
+    - Out: per-workout swipe actions (delete lives in the detail screen).
+  - Done when: widget tests for month filtering, range filtering and ↻.
 
-- [ ] T04: `Tab structure (D1)` (status:blocked on D1)
+- [ ] T04: `Templates list` (status:todo)
   - Task ID: T04
-  - Goal: Implement the picked navigation between workouts, exercises and
-    templates.
-  - Boundaries: `lib/src/app/tabs/exercise_tab.dart`, `workout_list.dart`
-    app bar, `workout_templates_screen.dart` (restyle list only). For D1=A a
-    `SegmentedButton` under the large title with the selected section kept in a
-    provider (survives tab switches); each section keeps its own search and FAB.
-  - Done when: switching sections keeps scroll positions; deep links
-    (`/exercise`) land on Workouts.
+  - Goal: Round 8 A — template cards with their exercise list.
+  - Boundaries (in/out of scope):
+    - In: `workout_templates_screen.dart` list part: card per template (name,
+      New badge, ⋮ Edit / Delete via `confirmDelete`), "N ex · M sets · last X",
+      exercises with target sets, **Start**. Search in the app bar, + to create.
+      Template editing screen only adopts `FormScaffold`.
+    - Out: recurrence/scheduling UI changes.
+  - Done when: widget test shows exercises and Start for a seeded template.
 
-- [ ] T05: `Starting a workout (D2)` (status:blocked on D2)
+- [ ] T05: `Workout detail` (status:todo)
   - Task ID: T05
-  - Goal: One consistent way to start a workout.
-  - Boundaries: FAB on the workouts section; D2=A uses `showAppSheet` with
-    "Empty workout" + templates (search, "last done" from the card summaries);
-    starts through the existing replay/template code path
-    (`workout-replay.md`), no new start logic.
-  - Done when: starting from a template and empty both land on
-    `/active-workout`; widget test for the sheet.
+  - Goal: D5 — summary + plan bars with rest and calories.
+  - Boundaries (in/out of scope):
+    - In: `workout_summary_screen.dart`. App bar: ↻ (replay) + ⋮ (Edit, Save as
+      template). Summary card: date/time range + Completed, volume + change vs
+      the previous workout of the same routine, Time / Sets / Avg rest / Burned,
+      volume split bar per exercise, one PR line. Per exercise card: thumbnail,
+      name, "N sets · volume · avg rest", one bar per set (fill = actual reps ÷
+      planned, label "weight × reps", Δ vs plan, PR in success color) with the
+      rest after it on the right (none after the last set); cardio sets show
+      duration/distance instead. Bottom: `DangerRow` "Delete workout" with
+      cascade counts (sets, voice notes) via `confirmDelete`; footer "From
+      template X". No set index numbers, no big button, no save card.
+      Fold `workout_detail.dart` in if it is still reachable.
+    - Out: editing sets from this screen.
+  - Done when: widget tests for a lifting workout with a short set and a PR,
+    a cardio workout, and the delete cascade.
 
-- [ ] T06: `Exercise grid filters + tile text (D3)` (status:blocked on D3)
+- [ ] T06: `Exercises: search + facet dropdowns` (status:todo)
   - Task ID: T06
-  - Goal: The picked filter presentation.
-  - Boundaries: `exercise_list.dart` filter bar; D3=B adds
-    `getLastSetPerExercise()` + provider and an applied-filter chip row with
-    clear actions; filter sheet = `showAppSheet` with the four facets.
-  - Done when: applying/removing filters updates the count line; test covers
-    chip removal.
+  - Goal: D3 A, reached from the dumbbell icon.
+  - Boundaries (in/out of scope):
+    - In: `exercise_list.dart`. Search field; four dropdown chips (Body part,
+      Equipment, Muscle, Type) each opening a multi-select sheet with a live
+      "Show N exercises" button; applied values shown inside the chip; clear by
+      long-press or the sheet's Clear. Browsing (no query, no filter) = two-column
+      image grid; with a query or filter = rows with thumbnail, name, body part ·
+      equipment and the last set on the right. Sync menu unchanged.
+    - Out: favourites (not requested).
+  - Done when: tests cover a facet selection, chip label and grid/rows switch.
 
-- [ ] T07: `Exercise detail (D4)` (status:blocked on D4)
+- [ ] T07: `Exercise detail` (status:todo)
   - Task ID: T07
-  - Goal: Restructure `ExerciseDetailScreen` per D4.
-  - Boundaries: `lib/src/exercise/screens/exercise_detail_screen.dart`
-    (1,700 lines — split into `exercise_detail/` parts: media header, stats,
-    chart, sessions, how-to). Reuse `_HistoryMetrics`, `_HistoryChart`, the
-    per-workout set grid. Edit in ⋮; Delete as `DangerRow` → `confirmDelete`
-    (cascade: workouts that use it). Remove `CircularProgressIndicator` loading
-    scaffolds (local data).
-  - Done when: widget tests for an exercise with history and one without (empty
-    history shows a start action, not a blank chart).
+  - Goal: D4 A — media + History / Details tabs, restyled.
+  - Boundaries (in/out of scope):
+    - In: split `exercise_detail_screen.dart` (1,700 lines) into
+      `exercise_detail/` parts. History: three stat tiles (Best, Last,
+      Sessions), chart with a Weight / Reps / Volume segmented switch, sessions
+      list (PR badge, volume, Δ vs previous) keeping the per-workout set grid on
+      tap. Details: grouped rows (type, body part, equipment, muscles), numbered
+      instructions, tips, FAQs. Edit in ⋮; Delete as `DangerRow` → `confirmDelete`.
+      No loading scaffolds.
+    - Out: media player behaviour.
+  - Done when: tests for an exercise with history and one without (History shows
+    a one-line empty state).
 
-- [ ] T08: `Workout detail (D5)` (status:blocked on D5)
+- [ ] T08: `Context docs + cleanup` (status:todo, last)
   - Task ID: T08
-  - Goal: Restyle `WorkoutSummaryScreen` (finished workouts) per D5.
-  - Boundaries: `workout_summary_screen.dart` (+ `workout_detail.dart` if it is
-    still reachable; otherwise fold it in and delete). Stat tiles, Do again as
-    the primary button, exercise cards with the set grid, Edit in ⋮, Delete as
-    `DangerRow` with cascade counts (sets, voice notes) via `confirmDelete`.
-  - Done when: widget test covers a workout with a PR set and the delete
-    cascade sheet.
-
-- [ ] T09: `Context docs` (status:todo, last)
-  - Task ID: T09
-  - Goal: Update `context/exercise/workout-crud.md`,
-    `context/exercise/exercise-crud.md` and `context/ui/design-system.md`
-    (screen standards: list cards, grid, detail screens); move this plan's row
-    in `context/context-map.md`.
+  - Goal: Update `context/exercise/workout-crud.md`, `context/exercise/exercise-crud.md`,
+    `context/ui/design-system.md` (training screen standards); remove dead
+    screens/strings; move this plan's row in `context/context-map.md`.
