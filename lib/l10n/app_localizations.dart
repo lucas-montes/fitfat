@@ -7551,6 +7551,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get quickAddAdd;
+
+  /// No description provided for @goalSourceManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get goalSourceManual;
+
+  /// No description provided for @goalLast.
+  ///
+  /// In en, this message translates to:
+  /// **'last {when}'**
+  String goalLast(String when);
+
+  /// No description provided for @goalUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'updated {when}'**
+  String goalUpdated(String when);
+
+  /// No description provided for @goalToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get goalToday;
+
+  /// No description provided for @goalYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'yesterday'**
+  String get goalYesterday;
+
+  /// No description provided for @goalSourceExerciseBest.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto · best {exercise} set'**
+  String goalSourceExerciseBest(String exercise);
+
+  /// No description provided for @goalSourceExerciseDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto · longest {exercise}'**
+  String goalSourceExerciseDistance(String exercise);
+
+  /// No description provided for @goalSourceWorkouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto · workouts done'**
+  String get goalSourceWorkouts;
+
+  /// No description provided for @goalSourceBodyWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto · body weight'**
+  String get goalSourceBodyWeight;
+
+  /// No description provided for @goalSourceAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto · {account} balance'**
+  String goalSourceAccount(String account);
+
+  /// No description provided for @goalSourceProtein.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto · protein, 7-day average'**
+  String get goalSourceProtein;
+
+  /// No description provided for @goalSourceTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto · linked tasks done'**
+  String get goalSourceTasks;
+
+  /// No description provided for @goalBy.
+  ///
+  /// In en, this message translates to:
+  /// **'by {date}'**
+  String goalBy(String date);
+
+  /// No description provided for @goalTasksDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} tasks done'**
+  String goalTasksDone(int done, int total);
+
+  /// No description provided for @goalNext.
+  ///
+  /// In en, this message translates to:
+  /// **'next: {task}'**
+  String goalNext(String task);
 }
 
 class _AppLocalizationsDelegate

@@ -4318,4 +4318,65 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quickAddAdd => 'Add';
+
+  @override
+  String get goalSourceManual => 'Manual';
+
+  @override
+  String goalLast(String when) {
+    return 'last $when';
+  }
+
+  @override
+  String goalUpdated(String when) {
+    return 'updated $when';
+  }
+
+  @override
+  String get goalToday => 'today';
+
+  @override
+  String get goalYesterday => 'yesterday';
+
+  @override
+  String goalSourceExerciseBest(String exercise) {
+    return 'Auto · best $exercise set';
+  }
+
+  @override
+  String goalSourceExerciseDistance(String exercise) {
+    return 'Auto · longest $exercise';
+  }
+
+  @override
+  String get goalSourceWorkouts => 'Auto · workouts done';
+
+  @override
+  String get goalSourceBodyWeight => 'Auto · body weight';
+
+  @override
+  String goalSourceAccount(String account) {
+    return 'Auto · $account balance';
+  }
+
+  @override
+  String get goalSourceProtein => 'Auto · protein, 7-day average';
+
+  @override
+  String get goalSourceTasks => 'Auto · linked tasks done';
+
+  @override
+  String goalBy(String date) {
+    return 'by $date';
+  }
+
+  @override
+  String goalTasksDone(int done, int total) {
+    return '$done of $total tasks done';
+  }
+
+  @override
+  String goalNext(String task) {
+    return 'next: $task';
+  }
 }

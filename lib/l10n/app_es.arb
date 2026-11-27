@@ -2129,5 +2129,20 @@
   "quickAddHint": "Nueva tarea",
   "quickAddAnother": "{count, plural, =1{Añadida · siguiente tarea} other{{count} añadidas · siguiente tarea}}",
   "quickAddMore": "Más opciones",
-  "quickAddAdd": "Añadir"
+  "quickAddAdd": "Añadir",
+  "goalSourceManual": "Manual",
+  "goalLast": "último {when}",
+  "goalUpdated": "actualizado {when}",
+  "goalToday": "hoy",
+  "goalYesterday": "ayer",
+  "goalSourceExerciseBest": "Auto · mejor serie de {exercise}",
+  "goalSourceExerciseDistance": "Auto · {exercise} más largo",
+  "goalSourceWorkouts": "Auto · entrenamientos hechos",
+  "goalSourceBodyWeight": "Auto · peso corporal",
+  "goalSourceAccount": "Auto · saldo de {account}",
+  "goalSourceProtein": "Auto · proteína, media de 7 días",
+  "goalSourceTasks": "Auto · tareas vinculadas hechas",
+  "goalBy": "para {date}",
+  "goalTasksDone": "{done} de {total} tareas hechas",
+  "goalNext": "siguiente: {task}"
 }
