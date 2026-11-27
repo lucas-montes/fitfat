@@ -51,6 +51,7 @@ manual check.
 ### Completed
 | Plan | Description |
 |---|---|
+| `money-group-redesign` | **in progress** — the Money tab with grouped account cards, the transaction history with one Filters button and split transfers, the statement with a balance chart, the transaction sheet |
 | `food-group-redesign` | The Food tab as day cards with the macro bar and log-again, the meal editor without names, recipe cards with eaten grams, the recipe table form, ingredient cards and the tabbed ingredient detail (2026-11-27) |
 | `exercise-group-redesign` | The training home (Recent + Templates rows), weekly history, template cards, workout detail with rest and calories, exercise search with facet dropdowns and the restyled exercise detail (2026-11-27) |
 | `barebone-crud-app` | The original CRUD implementation, since heavily superseded (six tabs, 40 tables) |
