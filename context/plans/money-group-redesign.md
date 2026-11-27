@@ -1,6 +1,6 @@
 # Plan: Money group redesign — Money tab, history, statement (Phase MG)
 
-**Status:** in progress (2026-11-27)
+**Status:** completed (2026-11-27) — T01–T06 shipped on branch ui/design-system. Deviation: in one account's statement a transfer counts in the day net (it changes that account's balance); only the all-accounts history leaves transfers out.
 
 ## Change Summary
 
@@ -38,14 +38,14 @@ excluded everywhere. A transaction's title is its note, else its category
 
 ## Tasks
 
-- [ ] T01 — `money_data.dart`: history entries (transfers split into two signed
+- [x] T01 — `money_data.dart`: history entries (transfers split into two signed
       entries), day grouping with net (transfers excluded), filters, account
       groups, daily balance series.
-- [ ] T02 — Money tab (`budget_overview_screen.dart`).
-- [ ] T03 — History with the filter sheet (`transaction_list_screen.dart`).
-- [ ] T04 — Transaction sheet.
-- [ ] T05 — Statement (`account_detail_screen.dart`).
-- [ ] T06 — Tests, l10n, docs.
+- [x] T02 — Money tab (`budget_overview_screen.dart`).
+- [x] T03 — History with the filter sheet (`transaction_list_screen.dart`).
+- [x] T04 — Transaction sheet.
+- [x] T05 — Statement (`account_detail_screen.dart`).
+- [x] T06 — Tests, l10n, docs.
 
 ## Acceptance
 

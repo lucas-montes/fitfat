@@ -102,6 +102,7 @@ skeleton or error screen. The main list providers are loaded in the background a
 - **DateFilterChips** (`ui/widgets/date_filter_chips.dart`) — All · month chips · Range (quick
   ranges + date-range picker); `DateFilter.window` / `contains`. Used by the workout and meal
   histories.
+- **Money rows** (`budget/widgets/money_widgets.dart`) — `MoneyRow` / `MoneyDayCard` / `showTransactionSheet`: the compact transaction line, the day card with its net, and the read-only details sheet; see `context/budget/money-screens.md`.
 - **confirmDelete** (`ui/widgets/confirm_delete.dart`) — the single delete flow. No other data
   affected → delete at once + Undo banner. Cascade (`cascade: [(label:, count:)]`, zero counts
   ignored) → sheet listing what else goes, delete only on confirm.

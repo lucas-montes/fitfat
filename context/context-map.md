@@ -17,6 +17,7 @@
 | Diet | [diet/meal-crud.md](diet/meal-crud.md) | Meal CRUD: repository, providers, screens |
 | Exercise | [exercise/exercise-crud.md](exercise/exercise-crud.md) | Exercise definition CRUD + catalog: repository, providers, screens, search + filters, the server-synced catalogue, tabbed detail screen |
 | Exercise | [exercise/workout-crud.md](exercise/workout-crud.md) | Workout CRUD: repository, providers, screens, workflow, active workout, summary |
+| Budget | [budget/money-screens.md](budget/money-screens.md) | Money tab, transaction history (filters, split transfers), account statement, transaction sheet; read-only accounts and transactions |
 | Dashboard | [dashboard/dashboard.md](dashboard/dashboard.md) | Dashboard: today strip, nutrition hero, weight trend, workout hero, goals overview, budget mini, welcome hub |
 | Body | [body/body-metrics.md](body/body-metrics.md) | Body metrics: weight/height table, model, repository, providers, dashboard card |
 | Settings | [settings/settings.md](settings/settings.md) | App settings: theme mode, language, calorie profile (age/gender/activity/body-fat), body-weight goal, task-reminder toggle; shared_preferences storage |
@@ -51,7 +52,7 @@ manual check.
 ### Completed
 | Plan | Description |
 |---|---|
-| `money-group-redesign` | **in progress** — the Money tab with grouped account cards, the transaction history with one Filters button and split transfers, the statement with a balance chart, the transaction sheet |
+| `money-group-redesign` | the Money tab with grouped account cards, the transaction history with one Filters button and split transfers, the statement with a balance chart, the transaction sheet (2026-11-27) |
 | `food-group-redesign` | The Food tab as day cards with the macro bar and log-again, the meal editor without names, recipe cards with eaten grams, the recipe table form, ingredient cards and the tabbed ingredient detail (2026-11-27) |
 | `exercise-group-redesign` | The training home (Recent + Templates rows), weekly history, template cards, workout detail with rest and calories, exercise search with facet dropdowns and the restyled exercise detail (2026-11-27) |
 | `barebone-crud-app` | The original CRUD implementation, since heavily superseded (six tabs, 40 tables) |
