@@ -2165,5 +2165,8 @@
   "goalTrackProtein": "Proteína",
   "goalTrackProteinHint": "Proteína diaria media en 7 días",
   "goalTrackTasks": "Tareas vinculadas",
-  "goalTrackTasksHint": "Cuántas tareas vinculadas están hechas"
+  "goalTrackTasksHint": "Cuántas tareas vinculadas están hechas",
+  "goalReminderReplyBody": "¿Cuánto llevas? Responde con el nuevo valor.",
+  "goalReminderReplyAction": "Anotar",
+  "goalReminderReplyHint": "Nuevo valor"
 }

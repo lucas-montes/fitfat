@@ -4485,4 +4485,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalTrackTasksHint => 'Combien de tâches liées sont faites';
+
+  @override
+  String get goalReminderReplyBody =>
+      'Où en êtes-vous ? Répondez avec la nouvelle valeur.';
+
+  @override
+  String get goalReminderReplyAction => 'Noter';
+
+  @override
+  String get goalReminderReplyHint => 'Nouvelle valeur';
 }

@@ -28,6 +28,7 @@ import '../notifications/notification_plugin.dart';
 import '../notifications/rest_alarm.dart';
 import '../goals/notifications/goal_reminder.dart';
 import '../goals/providers/goals.dart';
+import '../goals/services/goal_tracking.dart';
 import '../notifications/task_reminders.dart';
 import '../planner/providers/planner.dart';
 import '../settings/providers/appearance.dart';
@@ -237,8 +238,10 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
         plugin: ref.read(flutterLocalNotificationsProvider),
         onTapPlan: () => appRouter.go('/plan'),
         onTapActiveWorkout: () => appRouter.go('/active-workout'),
+        onGoalReply: () => unawaited(_drainGoalReplies()),
       ),
     ]);
+    await _drainGoalReplies();
 
     // Recover an ongoing workout session after a process kill / reboot
     // (autoRunOnBoot is false, so the service is gone but prefs persist).
@@ -284,7 +287,11 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
           .scheduleForGoal(
             goal,
             title: goal.title,
-            body: l10n.goalsReminderSubtitle,
+            body: goal.isManual
+                ? l10n.goalReminderReplyBody
+                : l10n.goalsReminderSubtitle,
+            replyAction: l10n.goalReminderReplyAction,
+            replyHint: l10n.goalReminderReplyHint,
           );
     }
 
@@ -320,6 +327,22 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
       unawaited(_rollover().then((_) => _resyncTaskRemindersAfterRollover()));
       unawaited(_refreshSelectiveCatalogs());
       unawaited(pullPersonalFinance(ref));
+      unawaited(_drainGoalReplies());
+    }
+  }
+
+  /// Records values typed into goal reminders (queued while the app was
+  /// closed or in the background) and refreshes the goal screens.
+  Future<void> _drainGoalReplies() async {
+    try {
+      final n = await drainGoalReplies(ref.read(goalRepositoryProvider));
+      if (n == 0 || !mounted) return;
+      ref.invalidate(goalListProvider);
+      ref.invalidate(goalProgressProvider);
+      ref.invalidate(latestGoalProgressProvider);
+      ref.invalidate(goalStatusProvider);
+    } catch (_) {
+      return; // A bad queued line must never break startup.
     }
   }
 

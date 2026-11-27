@@ -194,7 +194,11 @@ final class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
           .scheduleForGoal(
             goal,
             title: goal.title,
-            body: l10n.goalsReminderSubtitle,
+            body: goal.isManual
+                ? l10n.goalReminderReplyBody
+                : l10n.goalsReminderSubtitle,
+            replyAction: l10n.goalReminderReplyAction,
+            replyHint: l10n.goalReminderReplyHint,
           );
       if (!mounted) return;
       if (!_isEditing) {

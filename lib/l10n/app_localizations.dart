@@ -7767,6 +7767,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'How many linked tasks are done'**
   String get goalTrackTasksHint;
+
+  /// No description provided for @goalReminderReplyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'How much so far? Reply with the new value.'**
+  String get goalReminderReplyBody;
+
+  /// No description provided for @goalReminderReplyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get goalReminderReplyAction;
+
+  /// No description provided for @goalReminderReplyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New value'**
+  String get goalReminderReplyHint;
 }
 
 class _AppLocalizationsDelegate

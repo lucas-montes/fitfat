@@ -2180,5 +2180,8 @@
   "goalTrackProtein": "Protéines",
   "goalTrackProteinHint": "Protéines par jour, moyenne sur 7 jours",
   "goalTrackTasks": "Tâches liées",
-  "goalTrackTasksHint": "Combien de tâches liées sont faites"
+  "goalTrackTasksHint": "Combien de tâches liées sont faites",
+  "goalReminderReplyBody": "Où en êtes-vous ? Répondez avec la nouvelle valeur.",
+  "goalReminderReplyAction": "Noter",
+  "goalReminderReplyHint": "Nouvelle valeur"
 }

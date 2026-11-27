@@ -21,32 +21,44 @@ Future<void> initializeNotifications({
   required FlutterLocalNotificationsPlugin plugin,
   required void Function() onTapPlan,
   required void Function() onTapActiveWorkout,
+  required void Function() onGoalReply,
 }) async {
   await plugin.initialize(
     settings: const InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(),
     ),
-    onDidReceiveNotificationResponse: (response) {
-      switch (response.payload) {
+    onDidReceiveNotificationResponse: (response) async {
+      if (response.actionId == goalReplyActionId) {
+        if (await queueGoalReply(response)) onGoalReply();
+        return;
+      }
+      final payload = response.payload ?? '';
+      if (payload.startsWith(goalReminderPayload)) {
+        onTapPlan();
+        return;
+      }
+      switch (payload) {
         case plannerReminderPayload:
           onTapPlan();
         case restAlarmPayload:
           onTapActiveWorkout();
-        case goalReminderPayload:
-          onTapPlan();
       }
     },
+    onDidReceiveBackgroundNotificationResponse: goalReplyBackgroundHandler,
   );
   final launch = await plugin.getNotificationAppLaunchDetails();
   if (launch?.didNotificationLaunchApp ?? false) {
-    switch (launch?.notificationResponse?.payload) {
-      case plannerReminderPayload:
-        onTapPlan();
-      case restAlarmPayload:
-        onTapActiveWorkout();
-      case goalReminderPayload:
-        onTapPlan();
+    final payload = launch?.notificationResponse?.payload ?? '';
+    if (payload.startsWith(goalReminderPayload)) {
+      onTapPlan();
+    } else {
+      switch (payload) {
+        case plannerReminderPayload:
+          onTapPlan();
+        case restAlarmPayload:
+          onTapActiveWorkout();
+      }
     }
   }
 }

@@ -333,7 +333,11 @@ final class _GoalDetailViewState extends ConsumerState<_GoalDetailView> {
       await scheduler.scheduleForGoal(
         widget.goal.copyWith(status: status),
         title: widget.goal.title,
-        body: l10n.goalsReminderSubtitle,
+        body: widget.goal.isManual
+            ? l10n.goalReminderReplyBody
+            : l10n.goalsReminderSubtitle,
+        replyAction: l10n.goalReminderReplyAction,
+        replyHint: l10n.goalReminderReplyHint,
       );
     } else {
       await scheduler.cancelForGoal(widget.goal.id);

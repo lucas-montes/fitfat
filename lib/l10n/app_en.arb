@@ -2555,5 +2555,8 @@
   "goalTrackProtein": "Protein",
   "goalTrackProteinHint": "Average daily protein over 7 days",
   "goalTrackTasks": "Linked tasks",
-  "goalTrackTasksHint": "How many linked tasks are done"
+  "goalTrackTasksHint": "How many linked tasks are done",
+  "goalReminderReplyBody": "How much so far? Reply with the new value.",
+  "goalReminderReplyAction": "Record",
+  "goalReminderReplyHint": "New value"
 }
