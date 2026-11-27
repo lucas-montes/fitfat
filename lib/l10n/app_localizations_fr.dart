@@ -3992,4 +3992,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get exerciseDetailDelete => 'Supprimer l’exercice';
+
+  @override
+  String get macroProtein => 'Protéines';
+
+  @override
+  String get macroCarbs => 'Glucides';
+
+  @override
+  String get macroFat => 'Lipides';
+
+  @override
+  String get macroFiber => 'Fibres';
+
+  @override
+  String get macroSodium => 'Sodium';
+
+  @override
+  String get macroSugar => 'Sucres';
 }

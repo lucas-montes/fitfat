@@ -6970,6 +6970,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete exercise'**
   String get exerciseDetailDelete;
+
+  /// No description provided for @macroProtein.
+  ///
+  /// In en, this message translates to:
+  /// **'Protein'**
+  String get macroProtein;
+
+  /// No description provided for @macroCarbs.
+  ///
+  /// In en, this message translates to:
+  /// **'Carbs'**
+  String get macroCarbs;
+
+  /// No description provided for @macroFat.
+  ///
+  /// In en, this message translates to:
+  /// **'Fat'**
+  String get macroFat;
+
+  /// No description provided for @macroFiber.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiber'**
+  String get macroFiber;
+
+  /// No description provided for @macroSodium.
+  ///
+  /// In en, this message translates to:
+  /// **'Sodium'**
+  String get macroSodium;
+
+  /// No description provided for @macroSugar.
+  ///
+  /// In en, this message translates to:
+  /// **'Sugar'**
+  String get macroSugar;
 }
 
 class _AppLocalizationsDelegate

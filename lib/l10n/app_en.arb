@@ -2389,5 +2389,11 @@
   "exerciseDetailSince": "since {date}",
   "@exerciseDetailSince": {"placeholders":{"date":{"type":"String"}}},
   "exerciseDetailMuscles": "Muscles",
-  "exerciseDetailDelete": "Delete exercise"
+  "exerciseDetailDelete": "Delete exercise",
+  "macroProtein": "Protein",
+  "macroCarbs": "Carbs",
+  "macroFat": "Fat",
+  "macroFiber": "Fiber",
+  "macroSodium": "Sodium",
+  "macroSugar": "Sugar"
 }

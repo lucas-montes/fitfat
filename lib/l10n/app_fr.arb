@@ -2048,5 +2048,11 @@
   "exerciseDetailSessionCount": "Séances",
   "exerciseDetailSince": "depuis {date}",
   "exerciseDetailMuscles": "Muscles",
-  "exerciseDetailDelete": "Supprimer l’exercice"
+  "exerciseDetailDelete": "Supprimer l’exercice",
+  "macroProtein": "Protéines",
+  "macroCarbs": "Glucides",
+  "macroFat": "Lipides",
+  "macroFiber": "Fibres",
+  "macroSodium": "Sodium",
+  "macroSugar": "Sucres"
 }

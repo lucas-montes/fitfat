@@ -3983,4 +3983,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get exerciseDetailDelete => 'Eliminar ejercicio';
+
+  @override
+  String get macroProtein => 'Proteína';
+
+  @override
+  String get macroCarbs => 'Carbohidratos';
+
+  @override
+  String get macroFat => 'Grasa';
+
+  @override
+  String get macroFiber => 'Fibra';
+
+  @override
+  String get macroSodium => 'Sodio';
+
+  @override
+  String get macroSugar => 'Azúcar';
 }
