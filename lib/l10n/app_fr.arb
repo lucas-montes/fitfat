@@ -2036,5 +2036,6 @@
   "workoutDetailSetsDone": "{count} séries",
   "workoutDetailAvgRestShort": "repos moyen {rest}",
   "workoutDetailNotDone": "Non faite",
-  "trainingCascadeSetsDone": "Séries enregistrées"
+  "trainingCascadeSetsDone": "Séries enregistrées",
+  "exerciseFilterShow": "{count, plural, =1{Voir 1 exercice} other{Voir {count} exercices}}"
 }

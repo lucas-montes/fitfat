@@ -2021,5 +2021,6 @@
   "workoutDetailSetsDone": "{count} series",
   "workoutDetailAvgRestShort": "descanso medio {rest}",
   "workoutDetailNotDone": "No hecha",
-  "trainingCascadeSetsDone": "Series registradas"
+  "trainingCascadeSetsDone": "Series registradas",
+  "exerciseFilterShow": "{count, plural, =1{Ver 1 ejercicio} other{Ver {count} ejercicios}}"
 }

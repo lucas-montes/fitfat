@@ -15,6 +15,8 @@ import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/top_banner.dart';
 import '../exercise_filter.dart';
 import '../providers/exercises.dart';
+import '../providers/training.dart';
+import '../repositories/training_summaries.dart';
 import '../../settings/providers/settings.dart';
 import '../widgets/select_sheet.dart';
 import 'exercise_detail_screen.dart';
@@ -63,6 +65,7 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
     required String title,
     required List<String> options,
     required Set<String> selection,
+    required int Function(Set<String>) count,
     String Function(String)? display,
   }) async {
     final result = await showModalBottomSheet<Set<String>>(
@@ -74,6 +77,7 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
         options: options,
         selected: selection,
         display: display,
+        count: count,
       ),
     );
     if (result != null && mounted) {
@@ -373,6 +377,9 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final exercisesAsync = ref.watch(exerciseListProvider);
+    final lastSets =
+        ref.watch(lastSetPerExerciseProvider).value ??
+        const <String, LastSet>{};
 
     return Scaffold(
       appBar: AppBar(
@@ -479,60 +486,65 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      _buildFilterChip(
-                        label: _chipLabel(
-                          l10n.exerciseFilterType,
-                          _types.length,
+                      for (final (label, opts, sel, display) in [
+                        (
+                          l10n.exerciseFilterBodyPart,
+                          options.bodyParts,
+                          _bodyParts,
+                          null,
                         ),
-                        active: _types.isNotEmpty,
-                        onTap: () => _pickOptions(
-                          title: l10n.exerciseFilterType,
-                          options: options.types,
-                          selection: _types,
-                          display: (v) => v == 'cardio'
+                        (
+                          l10n.exerciseFilterEquipment,
+                          options.equipments,
+                          _equipments,
+                          null,
+                        ),
+                        (
+                          l10n.exerciseFilterMuscle,
+                          options.muscles,
+                          _muscles,
+                          null,
+                        ),
+                        (
+                          l10n.exerciseFilterType,
+                          options.types,
+                          _types,
+                          (String v) => v == 'cardio'
                               ? l10n.exerciseTypeCardio
                               : l10n.exerciseTypeWeightlifting,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(
-                        label: _chipLabel(
-                          l10n.exerciseFilterBodyPart,
-                          _bodyParts.length,
+                      ])
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _FacetChip(
+                            label: label,
+                            values: [
+                              for (final v in sel) display?.call(v) ?? v,
+                            ],
+                            onTap: () => _pickOptions(
+                              title: label,
+                              options: opts,
+                              selection: sel,
+                              display: display,
+                              count: (candidate) => filterExercises(
+                                exercises,
+                                query: _query,
+                                types: identical(sel, _types)
+                                    ? candidate
+                                    : _types,
+                                bodyParts: identical(sel, _bodyParts)
+                                    ? candidate
+                                    : _bodyParts,
+                                equipments: identical(sel, _equipments)
+                                    ? candidate
+                                    : _equipments,
+                                muscles: identical(sel, _muscles)
+                                    ? candidate
+                                    : _muscles,
+                              ).length,
+                            ),
+                          ),
                         ),
-                        active: _bodyParts.isNotEmpty,
-                        onTap: () => _pickOptions(
-                          title: l10n.exerciseFilterBodyPart,
-                          options: options.bodyParts,
-                          selection: _bodyParts,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(
-                        label: _chipLabel(
-                          l10n.exerciseFilterEquipment,
-                          _equipments.length,
-                        ),
-                        active: _equipments.isNotEmpty,
-                        onTap: () => _pickOptions(
-                          title: l10n.exerciseFilterEquipment,
-                          options: options.equipments,
-                          selection: _equipments,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(
-                        label: _chipLabel(
-                          l10n.exerciseFilterMuscle,
-                          _muscles.length,
-                        ),
-                        active: _muscles.isNotEmpty,
-                        onTap: () => _pickOptions(
-                          title: l10n.exerciseFilterMuscle,
-                          options: options.muscles,
-                          selection: _muscles,
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -559,10 +571,28 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
               Expanded(
                 child: visible.isEmpty
                     ? _FilteredEmptyState(onClear: _clearFilters, l10n: l10n)
+                    : !_hasFilters
+                    ? GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 220,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 0.92,
+                            ),
+                        itemCount: visible.length,
+                        itemBuilder: (_, i) => _ExerciseGridTile(
+                          exercise: visible[i],
+                          onTap: () => _openDetail(visible[i]),
+                          onLongPress: () => _openEdit(context, visible[i]),
+                        ),
+                      )
                     : ListView.builder(
                         itemCount: visible.length,
                         itemBuilder: (_, i) => _ExerciseTile(
                           exercise: visible[i],
+                          lastSet: lastSets[visible[i].id],
                           l10n: l10n,
                           onTap: () => _openDetail(visible[i]),
                           onLongPress: () => _openEdit(context, visible[i]),
@@ -579,24 +609,6 @@ final class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
         heroTag: null,
         onPressed: () => _openForm(context, null, null),
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  String _chipLabel(String label, int count) =>
-      count > 0 ? '$label ($count)' : label;
-
-  Widget _buildFilterChip({
-    required String label,
-    required bool active,
-    required VoidCallback onTap,
-  }) {
-    return Center(
-      child: FilterChip(
-        label: Text(label),
-        selected: active,
-        showCheckmark: active,
-        onSelected: (_) => onTap(),
       ),
     );
   }
@@ -638,7 +650,11 @@ final class _FilterOptionsSheet extends StatefulWidget {
     required this.options,
     required this.selected,
     this.display,
+    required this.count,
   });
+
+  /// How many exercises the current selection would show.
+  final int Function(Set<String>) count;
 
   @override
   State<_FilterOptionsSheet> createState() => _FilterOptionsSheetState();
@@ -713,10 +729,15 @@ final class _FilterOptionsSheetState extends State<_FilterOptionsSheet> {
                       onPressed: () => setState(_selected.clear),
                       child: Text(l10n.exerciseFilterClear),
                     ),
-                    const Spacer(),
-                    FilledButton(
-                      onPressed: () => Navigator.of(context).pop(_selected),
-                      child: Text(l10n.exerciseFilterApply),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.of(context).pop(_selected),
+                        child: Text(
+                          l10n.exerciseFilterShow(widget.count(_selected)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -731,6 +752,7 @@ final class _FilterOptionsSheetState extends State<_FilterOptionsSheet> {
 
 final class _ExerciseTile extends StatelessWidget {
   final Exercise exercise;
+  final LastSet? lastSet;
   final AppLocalizations l10n;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
@@ -739,6 +761,7 @@ final class _ExerciseTile extends StatelessWidget {
 
   const _ExerciseTile({
     required this.exercise,
+    required this.lastSet,
     required this.l10n,
     required this.onTap,
     required this.onLongPress,
@@ -763,11 +786,19 @@ final class _ExerciseTile extends StatelessWidget {
         leading: _ExerciseThumbnail(exercise: exercise),
         title: Text(exercise.name),
         subtitle: Text(
-          exercise.isWeightlifting
-              ? l10n.exerciseTypeWeightlifting
-              : l10n.exerciseTypeCardio,
+          _metaLine(exercise, l10n),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: lastSet == null
+            ? null
+            : Text(
+                _lastSetLabel(lastSet!),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
         onTap: onTap,
         onLongPress: onLongPress,
       ),
@@ -807,6 +838,135 @@ final class _ExerciseThumbnail extends StatelessWidget {
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => Center(child: fallback),
         ),
+      ),
+    );
+  }
+}
+
+/// "Chest · Barbell", falling back to the exercise type.
+String _metaLine(Exercise e, AppLocalizations l10n) {
+  final parts = [?e.bodyPart, ?e.equipment];
+  if (parts.isNotEmpty) return parts.join(' · ');
+  return e.isWeightlifting
+      ? l10n.exerciseTypeWeightlifting
+      : l10n.exerciseTypeCardio;
+}
+
+/// "80 kg × 8", "BW × 9", "42 min · 11.2 km".
+String _lastSetLabel(LastSet s) {
+  if (s.reps != null) {
+    final kg = s.weightKg ?? 0;
+    final w = kg > 0
+        ? '${kg == kg.roundToDouble() ? kg.toStringAsFixed(0) : kg.toStringAsFixed(1)} kg'
+        : 'BW';
+    return '$w × ${s.reps}';
+  }
+  return [
+    if (s.durationMinutes != null) '${s.durationMinutes} min',
+    if (s.distanceMeters != null)
+      '${(s.distanceMeters! / 1000).toStringAsFixed(1)} km',
+  ].join(' · ');
+}
+
+/// Dropdown-style facet: "Body part ▾", or "Body part: Chest" / "Chest +1"
+/// once values are picked.
+final class _FacetChip extends StatelessWidget {
+  const _FacetChip({
+    required this.label,
+    required this.values,
+    required this.onTap,
+  });
+
+  final String label;
+  final List<String> values;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = values.isEmpty
+        ? label
+        : values.length == 1
+        ? '$label: ${values.first}'
+        : '${values.first} +${values.length - 1}';
+    return Center(
+      child: FilterChip(
+        selected: values.isNotEmpty,
+        showCheckmark: false,
+        onSelected: (_) => onTap(),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 2,
+          children: [Text(text), const Icon(Icons.arrow_drop_down, size: 18)],
+        ),
+      ),
+    );
+  }
+}
+
+/// Browse tile: the exercise image first (4:3), name, body part · equipment.
+final class _ExerciseGridTile extends StatelessWidget {
+  const _ExerciseGridTile({
+    required this.exercise,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final Exercise exercise;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final fallback = Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: Icon(
+        exercise.isWeightlifting ? Icons.fitness_center : Icons.directions_run,
+        color: theme.colorScheme.onSurfaceVariant,
+        size: 32,
+      ),
+    );
+    return InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AspectRatio(
+            aspectRatio: 4 / 3,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
+              child: exercise.imagePath == null
+                  ? fallback
+                  : Image.file(
+                      File(exercise.imagePath!),
+                      fit: BoxFit.cover,
+                      cacheWidth: 400,
+                      errorBuilder: (_, _, _) => fallback,
+                    ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            exercise.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            _metaLine(exercise, l10n),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

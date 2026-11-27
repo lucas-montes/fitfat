@@ -3912,4 +3912,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trainingCascadeSetsDone => 'Logged sets';
+
+  @override
+  String exerciseFilterShow(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count exercises',
+      one: 'Show 1 exercise',
+    );
+    return '$_temp0';
+  }
 }

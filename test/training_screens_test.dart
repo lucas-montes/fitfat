@@ -9,6 +9,7 @@ import 'package:fitfat/src/exercise/screens/training_screen.dart';
 import 'package:fitfat/src/exercise/screens/workout_history_screen.dart';
 import 'package:fitfat/src/exercise/screens/workout_templates_screen.dart';
 import 'package:fitfat/src/exercise/screens/workout_summary_screen.dart';
+import 'package:fitfat/src/exercise/screens/exercise_list.dart';
 import 'package:fitfat/src/settings/providers/settings.dart';
 import 'package:fitfat/src/settings/providers/sync_api_keys.dart';
 import 'package:material_ui/material_ui.dart';
@@ -291,4 +292,49 @@ void main() {
     await tester.scrollUntilVisible(find.text('Delete workout'), 200);
     expect(find.text('Also removes 3 logged sets'), findsOneWidget);
   });
+
+  testWidgets(
+    'exercises: grid when browsing, facet dropdown with live count, rows with last set',
+    (tester) async {
+      await tester.runAsync(() async {
+        await workout('a', 'Bench day', DateTime(2026, 11, 24, 19));
+        await (database.update(
+          database.exercises,
+        )..where((e) => e.id.equals('bench'))).write(
+          const db.ExercisesCompanion(
+            bodyPart: Value('Chest'),
+            equipment: Value('Barbell'),
+          ),
+        );
+        await database
+            .into(database.exercises)
+            .insert(
+              db.ExercisesCompanion.insert(
+                id: 'squat',
+                name: 'Squat',
+                exerciseType: 'weightlifting',
+                createdAt: 0,
+                bodyPart: const Value('Legs'),
+              ),
+            );
+      });
+      await pump(tester, const ExerciseListScreen());
+      expect(tester.takeException(), isNull);
+      expect(find.text('Chest · Barbell'), findsOneWidget);
+      expect(find.byType(GridView), findsOneWidget);
+
+      await tester.tap(find.text('Body part'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Chest'));
+      await tester.pumpAndSettle();
+      expect(find.text('Show 1 exercise'), findsOneWidget);
+      await tester.tap(find.text('Show 1 exercise'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Body part: Chest'), findsOneWidget);
+      expect(find.byType(GridView), findsNothing);
+      expect(find.text('Squat'), findsNothing);
+      expect(find.text('80 kg × 8'), findsOneWidget);
+    },
+  );
 }

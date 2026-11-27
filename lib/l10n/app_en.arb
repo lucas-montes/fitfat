@@ -2375,5 +2375,7 @@
   "workoutDetailAvgRestShort": "avg rest {rest}",
   "@workoutDetailAvgRestShort": {"placeholders":{"rest":{"type":"String"}}},
   "workoutDetailNotDone": "Not done",
-  "trainingCascadeSetsDone": "Logged sets"
+  "trainingCascadeSetsDone": "Logged sets",
+  "exerciseFilterShow": "{count, plural, =1{Show 1 exercise} other{Show {count} exercises}}",
+  "@exerciseFilterShow": {"placeholders":{"count":{"type":"int"}}}
 }

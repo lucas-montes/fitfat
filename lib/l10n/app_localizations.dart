@@ -6898,6 +6898,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logged sets'**
   String get trainingCascadeSetsDone;
+
+  /// No description provided for @exerciseFilterShow.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show 1 exercise} other{Show {count} exercises}}'**
+  String exerciseFilterShow(int count);
 }
 
 class _AppLocalizationsDelegate

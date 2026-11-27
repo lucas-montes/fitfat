@@ -3946,4 +3946,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get trainingCascadeSetsDone => 'Séries enregistrées';
+
+  @override
+  String exerciseFilterShow(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Voir $count exercices',
+      one: 'Voir 1 exercice',
+    );
+    return '$_temp0';
+  }
 }

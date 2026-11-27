@@ -79,6 +79,10 @@ void main() {
 
   testWidgets('swiping an exercise away does not throw', (tester) async {
     await pumpList(tester);
+    // Browsing shows the image grid; swipe-to-delete lives on the search
+    // result rows, so search first.
+    await tester.enterText(find.byType(TextField), 'squa');
+    await tester.pumpAndSettle();
     expect(find.text('Squat'), findsOneWidget);
     slowRefetch = true;
 
@@ -94,6 +98,8 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Squat'), findsNothing);
+    await tester.enterText(find.byType(TextField), '');
+    await tester.pumpAndSettle();
     expect(find.text('Bench'), findsOneWidget);
     expect((await repo.getAll()).map((e) => e.id), ['Bench']);
   });
