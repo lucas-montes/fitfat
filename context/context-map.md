@@ -37,7 +37,6 @@ manual check.
 ### In progress
 | Plan | Status | Description |
 |---|---|---|
-| `food-group-redesign` | in progress | Meal history as day cards with the macro bar, the meal editor without names, recipe cards with eaten grams, the recipe table form, ingredient cards and the tabbed ingredient detail |
 | `selective-sync-catalog` | code complete, manual QA outstanding | The minimal catalogue tables, the server catalogue endpoints, the background refresh, the bulk-vs-selective menus and the hub de-duplication all shipped. The four acceptance criteria are device-side checks: AC1/AC3/AC4 were verified by inspection only, and AC2's automated test (`test/catalog_selective_sync_test.dart`) compiles but has never executed in this environment |
 | `task-carryover-notifications-fix` | code complete, manual device QA outstanding | The rollover ordering, the reminder rescheduling for rolled tasks, the reminder lifecycle on task mutations, the settings-based default time for untimed tasks and the exact-alarm fallback all shipped. All five acceptance criteria are device checks that have not been run |
 | `settings-additions` | partially implemented | The units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent, and no longer wanted: the server pulls rates itself (2026-11-20) |
@@ -52,6 +51,7 @@ manual check.
 ### Completed
 | Plan | Description |
 |---|---|
+| `food-group-redesign` | The Food tab as day cards with the macro bar and log-again, the meal editor without names, recipe cards with eaten grams, the recipe table form, ingredient cards and the tabbed ingredient detail (2026-11-27) |
 | `exercise-group-redesign` | The training home (Recent + Templates rows), weekly history, template cards, workout detail with rest and calories, exercise search with facet dropdowns and the restyled exercise detail (2026-11-27) |
 | `barebone-crud-app` | The original CRUD implementation, since heavily superseded (six tabs, 40 tables) |
 | `app-improvements` | The app-wide batch: nutriments, meal-form search, due dates, body metrics, the profile, theme and language, the foreground notification, the rest timer |

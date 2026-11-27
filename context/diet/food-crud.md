@@ -12,8 +12,8 @@ only. See [meal-crud.md](meal-crud.md) and [ingredient-crud.md](ingredient-crud.
 | `lib/src/diet/services/food_nutrition.dart` | Pure `resolveFoodPer100g` / `scaleToAmount` — the whole derivation, free of Drift |
 | `lib/src/diet/repositories/food_repository.dart` | Drift DAO over `foods` + `food_ingredients` |
 | `lib/src/diet/providers/foods.dart` | `foodRepositoryProvider`, `foodListProvider`, `foodCombinationProvider`, `invalidateFoods` |
-| `lib/src/diet/screens/food_list.dart` | Recipes list: live per-100g, part count, swipe/restore |
-| `lib/src/diet/screens/food_form.dart` | Composition editor with a live nutrition preview |
+| `lib/src/diet/screens/food_list.dart` | Recipe cards: kcal/100 g, date · ingredients · cooked weight, `MacroBar` (per 100 g), `EatenBar` (grams eaten vs left, from `foodEatenGramsProvider` → `FoodRepository.eatenGrams()`, deleted meals excluded); tap opens the ingredient list + Edit; sort Newest / Name / kcal (`sortRecipes`); search. No detail screen |
+| `lib/src/diet/screens/food_form.dart` | Recipe form as an editable table (ingredient · g · kcal · P · C · F), inline "type an ingredient" row, raw total, cooked-weight row (follows the raw total until edited; yield %), per-100 g row + `MacroBar`; Duplicate in ⋮; Delete = danger row (archives, Undo) |
 | `lib/src/sync/food_sync_client.dart` | Push/pull of foods with composition nested per food |
 
 ## The central design decision: foods carry no nutrition

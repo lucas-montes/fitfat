@@ -1,6 +1,6 @@
 # Plan: Food group redesign — meal history, meal editor, recipes, ingredients (Phase FG)
 
-**Status:** in progress (2026-11-27)
+**Status:** completed (2026-11-27) — T01–T07 shipped on branch ui/design-system. Deviations: the meal editor rows have a ✕ remove button besides swipe; the barcode button only finds ingredients already on the phone (no server lookup from the editor).
 
 ## Change Summary
 
@@ -52,48 +52,48 @@ that are not deleted.
 ## Tasks
 
 ### T01 — Shared: macro bar, date filter
-- [ ] `lib/src/ui/widgets/macro_bar.dart`: `MacroValues` (P, C, F, fiber,
+- [x] `lib/src/ui/widgets/macro_bar.dart`: `MacroValues` (P, C, F, fiber,
       sodium) from `Nutrition`; `MacroBar` (numbers inside, segment width by
       calories with a minimum, fixed order); `MacroColors.of(context)`
       (P primary, C blue, F warning, fiber success, sodium muted, blended over
       the surface).
-- [ ] `lib/src/ui/widgets/date_filter_chips.dart`: month chips + Range sheet,
+- [x] `lib/src/ui/widgets/date_filter_chips.dart`: month chips + Range sheet,
       extracted from `WorkoutHistoryScreen` and reused there.
 
 ### T02 — Meal history (Food tab)
-- [ ] `meal_list.dart` rewritten: small title "Food" with Recipes and
+- [x] `meal_list.dart` rewritten: small title "Food" with Recipes and
       Ingredients actions and search (food names); filter chips; `_DayCard` +
       `_MealRow` (expand / collapse, ↻, Edit inside the opened meal).
-- [ ] ↻ logs the same foods and grams now (live profiles), with Undo.
-- [ ] Meal names no longer shown anywhere in the list.
+- [x] ↻ logs the same foods and grams now (live profiles), with Undo.
+- [x] Meal names no longer shown anywhere in the list.
 
 ### T03 — Meal editor
-- [ ] `meal_form.dart` rewritten on `FormScaffold`: date·time title, totals
+- [x] `meal_form.dart` rewritten on `FormScaffold`: date·time title, totals
       strip, food rows with gram fields (swipe to remove), inline search with
       the last amount per food, barcode lookup, danger-row delete with Undo.
-- [ ] `food_picker_sheet.dart` and `meal_item_editor_sheet.dart` removed when
+- [x] `food_picker_sheet.dart` and `meal_item_editor_sheet.dart` removed when
       unused.
 
 ### T04 — Recipe list
-- [ ] `food_list.dart` rewritten: small title, search, sort chips, recipe
+- [x] `food_list.dart` rewritten: small title, search, sort chips, recipe
       cards with the macro bar and eaten bar, tap to open the ingredients,
       Edit opens the form.
-- [ ] `FoodRepository.eatenGrams()` → grams logged per food.
+- [x] `FoodRepository.eatenGrams()` → grams logged per food.
 
 ### T05 — Recipe form
-- [ ] `food_form.dart` rewritten as the table; Duplicate in ⋮; Archive as the
+- [x] `food_form.dart` rewritten as the table; Duplicate in ⋮; Archive as the
       danger row.
 
 ### T06 — Ingredient list + detail
-- [ ] `ingredient_list.dart`: cards with six columns, first photo, search with
+- [x] `ingredient_list.dart`: cards with six columns, first photo, search with
       barcode, sync menu.
-- [ ] `ingredient_detail_screen.dart`: photo header + Nutrition / Prices tabs;
+- [x] `ingredient_detail_screen.dart`: photo header + Nutrition / Prices tabs;
       Edit and push in ⋮; archive as the danger row.
 
 ### T07 — Tests, l10n, docs
-- [ ] Update the meal/food tests; add tests for the day grouping, ↻, eaten
+- [x] Update the meal/food tests; add tests for the day grouping, ↻, eaten
       grams, the editor's inline add.
-- [ ] en/es/fr strings; `context/diet/*.md`, `context/ui/design-system.md`.
+- [x] en/es/fr strings; `context/diet/*.md`, `context/ui/design-system.md`.
 
 ## Acceptance
 

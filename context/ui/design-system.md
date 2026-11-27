@@ -92,6 +92,16 @@ skeleton or error screen. The main list providers are loaded in the background a
   small filled **Save** top right (disabled until `canSave`, spinner while `saving`), fields in a
   600dp column, and in edit mode a **DangerRow** at the bottom (`FormDeleteAction(label,
   consequence, onDelete)`) saying what else is removed.
+  Optional `titleWidget` (e.g. a tappable date), `pinned` (stays above the scrolling fields,
+  e.g. live totals) and `actions` (before Save, e.g. a ⋮ menu).
+- **MacroBar** (`ui/widgets/macro_bar.dart`) — the one way to show nutrients: a bar with the
+  numbers inside, always **protein · carbs · fat · fiber · sodium** (`MacroValues`), segments
+  sized by the calories each brings with a minimum width (`segmentWidths`), no per-number labels.
+  Colors from `MacroColors.of(context)` (primary, blue, warning, success, muted, blended over the
+  surface). `MacroColumns` names them once in a header (dot + label over each value).
+- **DateFilterChips** (`ui/widgets/date_filter_chips.dart`) — All · month chips · Range (quick
+  ranges + date-range picker); `DateFilter.window` / `contains`. Used by the workout and meal
+  histories.
 - **confirmDelete** (`ui/widgets/confirm_delete.dart`) — the single delete flow. No other data
   affected → delete at once + Undo banner. Cascade (`cascade: [(label:, count:)]`, zero counts
   ignored) → sheet listing what else goes, delete only on confirm.

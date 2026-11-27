@@ -36,16 +36,24 @@ Feature: create, read, update, and delete meals (collections of **foods** with a
   This is deliberately *not* a re-snapshot: a portion tweak must not silently pick up a food
   that changed since it was logged. Use `update` when the foods themselves were edited.
 - **Providers** (`meals.dart`): `mealRepositoryProvider`, `mealListProvider` (FutureProvider).
-- **List screen**: Groups meals by date (day-level). Each meal is an `ExpansionTile` showing
-  the logged foods. AppBar actions open `IngredientListScreen` and `FoodListScreen`.
-  Swipe-to-delete → hard `delete` + `mealDeleted(name)` top banner with Undo;
-  `Haptics.mediumImpact` on delete.
-- **Form screen**: Name field, date/time picker, then a **food** picker with checkbox
-  selection, amount input and a name-filter search. Foods whose composition does not resolve
-  are excluded from the picker, and the save is refused outright if any selected food is
-  unresolved — better no log than a silently wrong one. A totals card previews the meal
-  using the same pure resolver the repository snapshots from, so the preview cannot disagree
-  with what gets stored.
+- **List screen** (the Food tab, `meal_list.dart`, Phase FG): every meal, one card per
+  day (`MealDayCard`): a tinted header with the date, kcal, grams and the five macros
+  (protein · carbs · fat · fiber · sodium) in labeled columns, then one `MealRow` per meal in
+  time order: time · kcal · grams · N foods · ⌄ · ↻, and the `MacroBar` underneath. Meal
+  names are never shown (users never fill them). Tapping a row opens it: each food with name,
+  grams, kcal and a thinner bar, plus **Edit meal**. **↻ logs the same foods and grams again
+  now**, re-resolved from the foods' live profiles like any new log, with Undo (refused when a
+  food no longer resolves). Filter with `DateFilterChips` (month chips + Range) and search by
+  food name (`groupMealDays`). App-bar actions open Recipes and Ingredients; + opens a new meal.
+- **Form screen** (`meal_form.dart`): no name field (the column is written as an empty string,
+  or the existing name when editing). The title is the date · time; tapping it opens the date
+  and time pickers. Pinned on top: kcal, grams, the day's total against the calorie target, and
+  the `MacroBar`. Foods are rows with a grams field (✕ or swipe to remove). A search field at
+  the end suggests foods as you type (recipes and single ingredients; foods logged before come
+  first, each with "last N g"); an empty meal shows the most recently logged foods. A food is
+  added at the grams used last time (else 100 g). The barcode button looks the code up among
+  local ingredients. Save is refused when a food does not resolve. Delete is the danger row
+  (`confirmDelete`, Undo via `restore`).
 
 ## Wiring
 
