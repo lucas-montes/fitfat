@@ -19,6 +19,18 @@ abstract final class DateFormats {
   static String formatTime(BuildContext context, TimeOfDay time) =>
       MaterialLocalizations.of(context).formatTimeOfDay(time);
 
+  /// One-letter weekday names Monday → Sunday in the active locale
+  /// ("M T W T F S S" / "L M M J V S D").
+  static List<String> narrowWeekdays(BuildContext context) {
+    final names = MaterialLocalizations.of(context).narrowWeekdays;
+    // MaterialLocalizations lists Sunday first.
+    return [...names.skip(1), names.first];
+  }
+
+  /// Full locale-aware date with weekday, e.g. "Thursday, November 26".
+  static String formatFullDate(BuildContext context, DateTime date) =>
+      MaterialLocalizations.of(context).formatFullDate(date);
+
   /// Two-digit zero padding for locale-independent values (e.g. the `mm:ss`
   /// rest duration, which the background task isolate renders without a
   /// [BuildContext]).

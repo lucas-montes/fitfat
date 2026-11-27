@@ -2867,6 +2867,24 @@ abstract class AppLocalizations {
   /// **'Dark'**
   String get settingsThemeDark;
 
+  /// No description provided for @settingsDarkPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark palette'**
+  String get settingsDarkPalette;
+
+  /// No description provided for @settingsLightPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Light palette'**
+  String get settingsLightPalette;
+
+  /// No description provided for @settingsPaletteDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get settingsPaletteDefault;
+
   /// No description provided for @settingsLanguage.
   ///
   /// In en, this message translates to:
@@ -3304,6 +3322,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get commonCancel;
+
+  /// No description provided for @commonAlsoDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Also deleted'**
+  String get commonAlsoDeleted;
+
+  /// No description provided for @commonDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {item}?'**
+  String commonDeleteTitle(String item);
+
+  /// No description provided for @commonDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{item} deleted'**
+  String commonDeleted(String item);
 
   /// No description provided for @commonContinue.
   ///
@@ -6412,6 +6448,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Point camera at QR with {payload}'**
   String syncQrHint(String payload);
+
+  /// No description provided for @dashboardNutrition.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition'**
+  String get dashboardNutrition;
+
+  /// No description provided for @dashboardTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get dashboardTasks;
+
+  /// No description provided for @dashboardTraining.
+  ///
+  /// In en, this message translates to:
+  /// **'Training'**
+  String get dashboardTraining;
+
+  /// No description provided for @dashboardWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get dashboardWeight;
+
+  /// No description provided for @dashboardMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get dashboardMoney;
+
+  /// No description provided for @dashboardKcalLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} left'**
+  String dashboardKcalLeft(int count);
+
+  /// No description provided for @dashboardKcalOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} over'**
+  String dashboardKcalOver(int count);
+
+  /// No description provided for @dashboardNoMealsToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing logged yet today.'**
+  String get dashboardNoMealsToday;
+
+  /// No description provided for @dashboardLogMeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Log meal'**
+  String get dashboardLogMeal;
+
+  /// No description provided for @dashboardTasksDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String dashboardTasksDone(int done, int total);
+
+  /// No description provided for @dashboardTasksMore.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String dashboardTasksMore(int count);
+
+  /// No description provided for @dashboardNoTasksToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing planned for today.'**
+  String get dashboardNoTasksToday;
+
+  /// No description provided for @dashboardThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get dashboardThisWeek;
+
+  /// No description provided for @dashboardStartedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Started {time}'**
+  String dashboardStartedAt(String time);
+
+  /// No description provided for @dashboardContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get dashboardContinue;
+
+  /// No description provided for @dashboardGoalsActive.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active'**
+  String dashboardGoalsActive(int count);
+
+  /// No description provided for @dashboardGoalsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No goals yet. Track a lift, a saving target or a distance.'**
+  String get dashboardGoalsEmptyHint;
+
+  /// No description provided for @dashboardSetGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a goal'**
+  String get dashboardSetGoal;
+
+  /// No description provided for @dashboardNoAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'No accounts yet. They arrive from the server when you sync.'**
+  String get dashboardNoAccounts;
+
+  /// No description provided for @dashboardSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'spent'**
+  String get dashboardSpent;
+
+  /// No description provided for @dashboardIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Income {amount}'**
+  String dashboardIncome(String amount);
+
+  /// No description provided for @syncSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending {entity}…'**
+  String syncSending(String entity);
+
+  /// No description provided for @syncFetching.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching {entity}…'**
+  String syncFetching(String entity);
+
+  /// No description provided for @syncOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Sync'**
+  String get syncOpen;
+
+  /// No description provided for @settingsDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get settingsDashboard;
+
+  /// No description provided for @settingsDashboardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards and their order'**
+  String get settingsDashboardSubtitle;
+
+  /// No description provided for @settingsDashboardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder. Switched-off cards are hidden.'**
+  String get settingsDashboardHint;
+
+  /// No description provided for @settingsResetOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get settingsResetOrder;
+
+  /// No description provided for @settingsSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search settings'**
+  String get settingsSearch;
+
+  /// No description provided for @settingsNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No settings match “{query}”'**
+  String settingsNoResults(String query);
+
+  /// No description provided for @settingsMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get settingsMore;
+
+  /// No description provided for @settingsPalettes.
+  ///
+  /// In en, this message translates to:
+  /// **'Palettes'**
+  String get settingsPalettes;
+
+  /// No description provided for @settingsGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get settingsGeneral;
 }
 
 class _AppLocalizationsDelegate

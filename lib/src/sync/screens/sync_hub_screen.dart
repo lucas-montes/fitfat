@@ -22,7 +22,10 @@ import '../sync_refresh.dart';
 import '../sync_service.dart';
 import '../sync_state_store.dart';
 import '../phone_log_shipper.dart';
+import '../../ui/widgets/section_header.dart';
+import '../sync_run.dart';
 import '../widgets/server_sheet.dart';
+import '../widgets/sync_chip.dart';
 import '../../ui/widgets/top_banner.dart';
 import '../entity_labels.dart';
 
@@ -85,8 +88,6 @@ final class SyncHubScreen extends ConsumerStatefulWidget {
 }
 
 final class _SyncHubScreenState extends ConsumerState<SyncHubScreen> {
-  bool _syncing = false;
-  String? _step;
   bool? _reachable;
   bool _checking = false;
   bool _showAll = false;
@@ -136,62 +137,6 @@ final class _SyncHubScreenState extends ConsumerState<SyncHubScreen> {
   }
 
   void _refreshCounts() => setState(() => _counts = _loadCounts());
-
-  Future<void> _syncNow() async {
-    if (_syncing) return;
-    if (ref.read(settingsProvider).remoteSyncBaseUrl.isEmpty) {
-      await showServerSheet(context);
-      return;
-    }
-    setState(() {
-      _syncing = true;
-      _step = null;
-    });
-    try {
-      final outcome = await syncEverything(
-        ref,
-        onStep: (e) {
-          if (mounted) setState(() => _step = e);
-        },
-      );
-      await shipPhoneLogs(ref);
-      if (!mounted) return;
-      invalidateAllData(ref);
-      final base = ref.read(settingsProvider).remoteSyncBaseUrl;
-      if (outcome.pushFailedEntity != null) {
-        final reason = friendlySyncError(l10n, base, outcome.pushError!);
-        showTopBanner(
-          context,
-          message: l10n.syncCouldNotPush(
-            syncEntityLabel(l10n, outcome.pushFailedEntity!),
-            reason,
-          ),
-        );
-        if (isUnreachableSyncError(outcome.pushError!)) {
-          setState(() => _reachable = false);
-        }
-      } else if (outcome.pullFailures.isNotEmpty) {
-        showTopBanner(
-          context,
-          message: l10n.syncPulledWithErrors(
-            outcome.pullFailures
-                .map((e) => syncEntityLabel(l10n, e))
-                .join(', '),
-          ),
-        );
-      } else {
-        setState(() => _reachable = true);
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _syncing = false;
-          _step = null;
-        });
-        _refreshCounts();
-      }
-    }
-  }
 
   /// Pushes or pulls one entity from its row sheet.
   Future<void> _runOne(String entity, {required bool push}) async {
@@ -414,35 +359,20 @@ final class _SyncHubScreenState extends ConsumerState<SyncHubScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final settings = ref.watch(settingsProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
     final state = PrefsSyncStateStore(prefs);
-    final active = settings.activeServer;
-    final lastFull = prefs.getInt(lastFullSyncPrefKey) ?? 0;
-
-    final String serverText;
-    final Color dot;
-    if (active == null) {
-      serverText = l10n.syncNoServerYet;
-      dot = scheme.outline;
-    } else if (_checking || _reachable == null) {
-      serverText = l10n.syncStatusChecking(active.label);
-      dot = scheme.outline;
-    } else if (_reachable!) {
-      serverText = l10n.syncStatusConnected(active.label);
-      dot = scheme.primary;
-    } else {
-      serverText = l10n.syncStatusOffline(active.label);
-      dot = scheme.error;
-    }
-
-    Widget sectionTitle(String text) => Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: FitFatTokens.spaceS),
-      child: Text(
-        text,
-        style: theme.textTheme.titleSmall?.copyWith(color: scheme.primary),
-      ),
+    Widget sectionTitle(String text) => SectionHeader(
+      text,
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, FitFatTokens.spaceS),
     );
+
+    ref.listen(syncRunProvider, (prev, next) {
+      if (prev?.running == true && !next.running) {
+        _refreshCounts();
+        if (next.phase == SyncRunPhase.ok) setState(() => _reachable = true);
+        if (next.unreachable) setState(() => _reachable = false);
+      }
+    });
 
     final rows = _showAll ? _rows : _rows.take(_collapsedCount);
 
@@ -457,100 +387,19 @@ final class _SyncHubScreenState extends ConsumerState<SyncHubScreen> {
       body: ListView(
         padding: const EdgeInsets.all(FitFatTokens.spaceL),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(FitFatTokens.spaceL),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Material(
-                          color: scheme.surfaceContainerHigh,
-                          shape: const StadiumBorder(),
-                          child: InkWell(
-                            customBorder: const StadiumBorder(),
-                            onTap: () async {
-                              await showServerSheet(context);
-                              if (mounted) await _checkServer();
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: dot,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      serverText,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                  const Icon(Icons.expand_more, size: 18),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: FitFatTokens.spaceS),
-                      IconButton.outlined(
-                        tooltip: l10n.syncRescanQrTooltip,
-                        icon: const Icon(Icons.qr_code_scanner),
-                        onPressed: () async {
-                          await rescanServerQr(context, ref);
-                          if (mounted) await _checkServer();
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: FitFatTokens.spaceL),
-                  Text(
-                    l10n.syncLastSync(lastSyncedLabel(l10n, lastFull)),
-                    style: theme.textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: FitFatTokens.spaceL),
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(0, 52),
-                    ),
-                    onPressed: _syncing ? null : _syncNow,
-                    icon: _syncing
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.sync),
-                    label: Text(
-                      _syncing && _step != null
-                          ? l10n.syncStep(syncEntityLabel(l10n, _step!))
-                          : l10n.syncNow,
-                    ),
-                  ),
-                  const SizedBox(height: FitFatTokens.spaceS),
-                  Text(
-                    l10n.syncNowHint,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
+          SyncStatusPanel(
+            reachable: _reachable,
+            checking: _checking,
+            onServerChanged: () {
+              if (mounted) _checkServer();
+            },
+          ),
+          const SizedBox(height: FitFatTokens.spaceS),
+          Text(
+            l10n.syncNowHint,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: FitFatTokens.spaceXl),
@@ -612,7 +461,8 @@ final class _SyncHubScreenState extends ConsumerState<SyncHubScreen> {
                                         tooltip: l10n.syncPushEntity(
                                           syncEntityLabel(l10n, name),
                                         ),
-                                        onPressed: _syncing
+                                        onPressed:
+                                            ref.watch(syncRunProvider).running
                                             ? null
                                             : () => _runOne(name, push: true),
                                       ),
@@ -628,7 +478,8 @@ final class _SyncHubScreenState extends ConsumerState<SyncHubScreen> {
                                             : l10n.syncPullEntity(
                                                 syncEntityLabel(l10n, name),
                                               ),
-                                        onPressed: _syncing
+                                        onPressed:
+                                            ref.watch(syncRunProvider).running
                                             ? null
                                             : () => _runOne(name, push: false),
                                       ),

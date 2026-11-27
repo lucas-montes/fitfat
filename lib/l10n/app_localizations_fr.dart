@@ -1613,6 +1613,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsThemeDark => 'Sombre';
 
   @override
+  String get settingsDarkPalette => 'Palette sombre';
+
+  @override
+  String get settingsLightPalette => 'Palette claire';
+
+  @override
+  String get settingsPaletteDefault => 'Par défaut';
+
+  @override
   String get settingsLanguage => 'Langue';
 
   @override
@@ -1852,6 +1861,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get commonCancel => 'Annuler';
+
+  @override
+  String get commonAlsoDeleted => 'Également supprimé';
+
+  @override
+  String commonDeleteTitle(String item) {
+    return 'Supprimer $item ?';
+  }
+
+  @override
+  String commonDeleted(String item) {
+    return '$item supprimé';
+  }
 
   @override
   String get commonContinue => 'Continuer';
@@ -3649,4 +3671,126 @@ class AppLocalizationsFr extends AppLocalizations {
   String syncQrHint(String payload) {
     return 'Pointez l\'appareil photo vers un QR $payload';
   }
+
+  @override
+  String get dashboardNutrition => 'Nutrition';
+
+  @override
+  String get dashboardTasks => 'Tâches';
+
+  @override
+  String get dashboardTraining => 'Entraînement';
+
+  @override
+  String get dashboardWeight => 'Poids';
+
+  @override
+  String get dashboardMoney => 'Argent';
+
+  @override
+  String dashboardKcalLeft(int count) {
+    return '$count restantes';
+  }
+
+  @override
+  String dashboardKcalOver(int count) {
+    return '$count en trop';
+  }
+
+  @override
+  String get dashboardNoMealsToday => 'Rien d’enregistré aujourd’hui.';
+
+  @override
+  String get dashboardLogMeal => 'Ajouter un repas';
+
+  @override
+  String dashboardTasksDone(int done, int total) {
+    return '$done sur $total faites';
+  }
+
+  @override
+  String dashboardTasksMore(int count) {
+    return '+$count de plus';
+  }
+
+  @override
+  String get dashboardNoTasksToday => 'Rien de prévu aujourd’hui.';
+
+  @override
+  String get dashboardThisWeek => 'Cette semaine';
+
+  @override
+  String dashboardStartedAt(String time) {
+    return 'Commencé à $time';
+  }
+
+  @override
+  String get dashboardContinue => 'Continuer';
+
+  @override
+  String dashboardGoalsActive(int count) {
+    return '$count actifs';
+  }
+
+  @override
+  String get dashboardGoalsEmptyHint =>
+      'Aucun objectif. Suivez une charge, une épargne ou une distance.';
+
+  @override
+  String get dashboardSetGoal => 'Créer un objectif';
+
+  @override
+  String get dashboardNoAccounts =>
+      'Aucun compte. Ils arrivent du serveur à la synchronisation.';
+
+  @override
+  String get dashboardSpent => 'dépensé';
+
+  @override
+  String dashboardIncome(String amount) {
+    return 'Revenus $amount';
+  }
+
+  @override
+  String syncSending(String entity) {
+    return 'Envoi : $entity…';
+  }
+
+  @override
+  String syncFetching(String entity) {
+    return 'Réception : $entity…';
+  }
+
+  @override
+  String get syncOpen => 'Ouvrir la synchro';
+
+  @override
+  String get settingsDashboard => 'Tableau de bord';
+
+  @override
+  String get settingsDashboardSubtitle => 'Cartes et leur ordre';
+
+  @override
+  String get settingsDashboardHint =>
+      'Glissez pour réordonner. Les cartes désactivées sont masquées.';
+
+  @override
+  String get settingsResetOrder => 'Réinitialiser';
+
+  @override
+  String get settingsSearch => 'Rechercher un réglage';
+
+  @override
+  String settingsNoResults(String query) {
+    return 'Aucun réglage ne correspond à « $query »';
+  }
+
+  @override
+  String get settingsMore => 'Plus';
+
+  @override
+  String get settingsPalettes => 'Palettes';
+
+  @override
+  String get settingsGeneral => 'Général';
 }

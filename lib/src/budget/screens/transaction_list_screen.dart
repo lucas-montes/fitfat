@@ -23,7 +23,8 @@ final class TransactionListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.transactionListAppBar)),
       body: txnsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        // Local data: never a spinner; the first frame is blank for a few ms.
+        loading: () => const SizedBox.shrink(),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
         data: (txns) {
           if (txns.isEmpty) {

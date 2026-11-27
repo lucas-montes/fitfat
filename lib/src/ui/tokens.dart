@@ -25,8 +25,11 @@ abstract final class FitFatTokens {
   /// Medium corner radius (cards, buttons, text fields, dialogs).
   static const double radiusM = 12;
 
-  /// Large corner radius (hero cards, bottom sheets).
-  static const double radiusL = 16;
+  /// Large corner radius (hero cards, bottom sheets, dialogs).
+  static const double radiusL = 14;
+
+  /// Standard list row height (Inset style).
+  static const double rowHeight = 50;
 
   /// Fully rounded (pills, dots).
   static const double radiusFull = 999;

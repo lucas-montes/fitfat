@@ -11,6 +11,14 @@ import 'package:timezone/timezone.dart' as tz;
 import 'dart:developer' as developer;
 
 import '../budget/providers/fx_rates.dart';
+import '../budget/providers/receipts.dart';
+import '../budget/providers/transactions.dart';
+import '../diet/providers/foods.dart';
+import '../diet/providers/ingredients.dart';
+import '../diet/providers/meals.dart';
+import '../exercise/providers/exercises.dart';
+import '../exercise/providers/workouts.dart';
+import '../notes/providers/notes.dart';
 import '../../l10n/app_localizations.dart';
 import '../dashboard/providers/dashboard.dart';
 import '../database/database_provider.dart';
@@ -21,12 +29,12 @@ import '../goals/notifications/goal_reminder.dart';
 import '../goals/providers/goals.dart';
 import '../notifications/task_reminders.dart';
 import '../planner/providers/planner.dart';
+import '../settings/providers/appearance.dart';
 import '../settings/providers/settings.dart';
 import '../sync/personal_pull_service.dart';
 import '../sync/sync_service.dart';
 import 'router.dart';
 import 'startup_gate.dart';
-import 'theme.dart';
 
 final class FitFatApp extends ConsumerStatefulWidget {
   const FitFatApp({super.key});
@@ -48,11 +56,12 @@ final class _FitFatAppState extends ConsumerState<FitFatApp> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    final appearance = ref.watch(appearanceProvider);
     return MaterialApp.router(
       title: 'FitFat',
       debugShowCheckedModeBanner: false,
-      theme: FitFatTheme.light,
-      darkTheme: FitFatTheme.dark,
+      theme: appearance.lightTheme,
+      darkTheme: appearance.darkTheme,
       themeMode: settings.themeMode,
       locale: settings.locale,
       routerConfig: appRouter,
@@ -192,6 +201,25 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
           await ref.read(databaseProvider).customStatement('SELECT 1');
           developer.Timeline.instantSync('startup.db.warmup.done');
         } catch (_) {}
+        // Local-first: load the main lists once, in the background, so every
+        // list screen opens with its data instead of a loading state. These
+        // providers are kept alive, and edits refresh them in place.
+        for (final load in <Future<Object?> Function()>[
+          () => ref.read(mealListProvider.future),
+          () => ref.read(workoutListProvider.future),
+          () => ref.read(exerciseListProvider.future),
+          () => ref.read(ingredientListProvider.future),
+          () => ref.read(transactionListProvider.future),
+          () => ref.read(noteListProvider.future),
+          () => ref.read(foodCombinationProvider.future),
+          () => ref.read(receiptListProvider.future),
+        ]) {
+          if (!mounted) return;
+          try {
+            await load();
+          } catch (_) {}
+        }
+        developer.Timeline.instantSync('startup.lists.warm');
       }),
     );
 

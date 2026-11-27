@@ -1,11 +1,12 @@
 import 'package:material_ui/material_ui.dart';
 
-/// Hand-picked status colors for FitFat, exposed as a `ThemeExtension`.
+import 'palettes.dart';
+
+/// Success and warning status colors, exposed as a `ThemeExtension`.
 ///
-/// Everything else in the app is M3-derived from the teal seed; these are the
-/// only bespoke colors (see `context/plans/ui-ux-improvements.md` T01). Each
-/// brightness has its own set so the status colors meet ≥ 4.5:1 contrast
-/// against the app's light and teal-tinted dark surfaces.
+/// The app theme builds this from the active [ThemePalette]
+/// ([FitFatColors.fromPalette]); danger lives in `ColorScheme.error`. The
+/// [light]/[dark] constants are the legacy teal values, kept for tests.
 @immutable
 final class FitFatColors extends ThemeExtension<FitFatColors> {
   const FitFatColors({
@@ -32,6 +33,19 @@ final class FitFatColors extends ThemeExtension<FitFatColors> {
     warning: Color(0xFFFFB74D),
     onWarning: Color(0xFF3D2500),
   );
+
+  /// Status colors taken from the active [ThemePalette]. Dark palettes use
+  /// bright status colors, so their on-colors are the canvas; light palettes
+  /// use deep status colors with white on top.
+  factory FitFatColors.fromPalette(ThemePalette p) {
+    final on = p.brightness == Brightness.dark ? p.bg : const Color(0xFFFFFFFF);
+    return FitFatColors(
+      success: p.success,
+      onSuccess: on,
+      warning: p.warning,
+      onWarning: on,
+    );
+  }
 
   /// Status color for completed / saved states (e.g. "Completed" pill).
   final Color success;

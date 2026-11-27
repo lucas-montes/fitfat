@@ -60,7 +60,7 @@ final class _WorkoutListScreenState extends ConsumerState<WorkoutListScreen> {
       ),
       body: workoutsAsync.when(
         loading: () => _workouts == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const SizedBox.shrink()
             : _buildList(l10n, _workouts!),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
         data: (workouts) {

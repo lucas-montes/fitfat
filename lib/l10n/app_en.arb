@@ -788,6 +788,9 @@
   "settingsThemeSystem": "System",
   "settingsThemeLight": "Light",
   "settingsThemeDark": "Dark",
+  "settingsDarkPalette": "Dark palette",
+  "settingsLightPalette": "Light palette",
+  "settingsPaletteDefault": "Default",
   "settingsLanguage": "Language",
   "settingsLangEn": "English",
   "settingsLangFr": "Français",
@@ -861,6 +864,23 @@
   "exerciseTypeWeightlifting": "Weightlifting",
   "exerciseTypeCardio": "Cardio",
   "commonCancel": "Cancel",
+  "commonAlsoDeleted": "Also deleted",
+  "commonDeleteTitle": "Delete {item}?",
+  "@commonDeleteTitle": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "commonDeleted": "{item} deleted",
+  "@commonDeleted": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
   "commonContinue": "Continue",
   "commonSave": "Save",
   "commonEdit": "Edit",
@@ -2258,5 +2278,48 @@
         "type": "String"
       }
     }
-  }
+  },
+  "dashboardNutrition": "Nutrition",
+  "dashboardTasks": "Tasks",
+  "dashboardTraining": "Training",
+  "dashboardWeight": "Weight",
+  "dashboardMoney": "Money",
+  "dashboardKcalLeft": "{count} left",
+  "@dashboardKcalLeft": {"placeholders":{"count":{"type":"int"}}},
+  "dashboardKcalOver": "{count} over",
+  "@dashboardKcalOver": {"placeholders":{"count":{"type":"int"}}},
+  "dashboardNoMealsToday": "Nothing logged yet today.",
+  "dashboardLogMeal": "Log meal",
+  "dashboardTasksDone": "{done} of {total} done",
+  "@dashboardTasksDone": {"placeholders":{"done":{"type":"int"},"total":{"type":"int"}}},
+  "dashboardTasksMore": "+{count} more",
+  "@dashboardTasksMore": {"placeholders":{"count":{"type":"int"}}},
+  "dashboardNoTasksToday": "Nothing planned for today.",
+  "dashboardThisWeek": "This week",
+  "dashboardStartedAt": "Started {time}",
+  "@dashboardStartedAt": {"placeholders":{"time":{"type":"String"}}},
+  "dashboardContinue": "Continue",
+  "dashboardGoalsActive": "{count} active",
+  "@dashboardGoalsActive": {"placeholders":{"count":{"type":"int"}}},
+  "dashboardGoalsEmptyHint": "No goals yet. Track a lift, a saving target or a distance.",
+  "dashboardSetGoal": "Set a goal",
+  "dashboardNoAccounts": "No accounts yet. They arrive from the server when you sync.",
+  "dashboardSpent": "spent",
+  "dashboardIncome": "Income {amount}",
+  "@dashboardIncome": {"placeholders":{"amount":{"type":"String"}}},
+  "syncSending": "Sending {entity}…",
+  "@syncSending": {"placeholders":{"entity":{"type":"String"}}},
+  "syncFetching": "Fetching {entity}…",
+  "@syncFetching": {"placeholders":{"entity":{"type":"String"}}},
+  "syncOpen": "Open Sync",
+  "settingsDashboard": "Dashboard",
+  "settingsDashboardSubtitle": "Cards and their order",
+  "settingsDashboardHint": "Drag to reorder. Switched-off cards are hidden.",
+  "settingsResetOrder": "Reset to default",
+  "settingsSearch": "Search settings",
+  "settingsNoResults": "No settings match “{query}”",
+  "@settingsNoResults": {"placeholders":{"query":{"type":"String"}}},
+  "settingsMore": "More",
+  "settingsPalettes": "Palettes",
+  "settingsGeneral": "General"
 }

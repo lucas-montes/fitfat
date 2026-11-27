@@ -184,3 +184,44 @@ final upcomingTasksProvider = FutureProvider<List<Task>>((ref) async {
   final today = DateTime.now();
   return ref.watch(_taskRepositoryProvider).getUpcoming(today);
 });
+
+// ---------------------------------------------------------------------------
+// Today's tasks (any status except cancelled), for the dashboard tasks card
+// ---------------------------------------------------------------------------
+
+final todayTasksProvider = FutureProvider<List<Task>>((ref) async {
+  ref.watch(dashboardRefreshProvider);
+  if (!ref.watch(startupGateProvider)) return const [];
+  final tasks = await ref
+      .watch(_taskRepositoryProvider)
+      .getByDay(DateTime.now());
+  return [
+    for (final t in tasks)
+      if (t.taskStatus != TaskStatus.cancelled) t,
+  ]..sort((a, b) {
+    // Open tasks first, then by start time (untimed last).
+    if (a.done != b.done) return a.done ? 1 : -1;
+    return (a.startTimeMinutes ?? 24 * 60).compareTo(
+      b.startTimeMinutes ?? 24 * 60,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Days of the current calendar week with a workout (0 = Monday)
+// ---------------------------------------------------------------------------
+
+final weekTrainingDaysProvider = FutureProvider<Set<int>>((ref) async {
+  ref.watch(dashboardRefreshProvider);
+  if (!ref.watch(startupGateProvider)) return const {};
+  final weekStart = startOfCalendarWeek(DateTime.now());
+  final weekEnd = weekStart.add(const Duration(days: 7));
+  final workouts = await ref.watch(_workoutRepositoryProvider).getAll();
+  return {
+    for (final w in workouts)
+      if (!w.isPending &&
+          !w.date.isBefore(weekStart) &&
+          w.date.isBefore(weekEnd))
+        w.date.weekday - DateTime.monday,
+  };
+});

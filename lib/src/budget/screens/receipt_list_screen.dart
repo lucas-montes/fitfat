@@ -104,7 +104,8 @@ final class _ReceiptListScreenState extends ConsumerState<ReceiptListScreen> {
             _NoServerBanner(onOpenSync: () => context.push('/sync')),
           Expanded(
             child: receiptsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              // Local data: never a spinner; the first frame is blank for a few ms.
+              loading: () => const SizedBox.shrink(),
               error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
               data: (items) {
                 if (items.isEmpty) {

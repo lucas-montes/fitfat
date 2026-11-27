@@ -33,50 +33,71 @@ lib/src/ui/
 ## FitFatTokens (`lib/src/ui/tokens.dart`)
 
 - **Spacing**: `spaceXs` 4, `spaceS` 8, `spaceM` 12, `spaceL` 16, `spaceXl` 24, `spaceXxl` 32.
-- **Radii**: `radiusS` 8, `radiusM` 12, `radiusL` 16, `radiusFull` 999.
+- **Radii**: `radiusS` 8, `radiusM` 12, `radiusL` 14, `radiusFull` 999.
+- **Rows**: `rowHeight` 50 (ListTile `minTileHeight`).
 - **Motion**: `motionFast` 150 ms, `motionNormal` 250 ms, `motionSlow` 350 ms.
 - **Layout**: `kContentMaxWidth` 600 (dashboard max-width wrapper, T09).
 
-## Themes (`lib/src/app/theme.dart`)
+## Palettes and themes
 
-`FitFatTheme.light` / `FitFatTheme.dark` are built from `ColorScheme.fromSeed(Colors.teal)`. The
-dark scheme layers a **teal-tinted surface family** on top of the standard M3 dark scheme (from
-`app-improvements` T07):
+Color and style are separate. **Color** comes from a `ThemePalette` (`lib/src/ui/palettes.dart`):
+13 roles — `bg`, `surface`, `surface2`, `raise`, `fg`, `muted`, `line`, `accent`, `onAccent`,
+`success`, `warning`, `danger`, `onDanger`. The user picks one dark and one light palette in
+Settings › Appearance (preview tiles, `settings/widgets/palette_picker.dart`); they are stored as
+`settings_dark_palette` / `settings_light_palette` by `appearanceProvider`
+(`settings/providers/appearance.dart`) and apply instantly. Defaults: **Dracula** (dark) and
+**Alucard** (light). Also available: Catppuccin Mocha/Latte, Nord/Nord Light, Gruvbox Dark/Light,
+Solarized Dark/Light, Tokyo Night/Day, FitFat Teal. `test/theme_palette_test.dart` checks every
+palette for ≥ 4.5:1 text contrast.
 
-| Role | Dark hex |
-|------|----------|
-| `surface` | `0xFF101415` |
-| `surfaceContainerLowest` | `0xFF0B0F10` |
-| `surfaceContainerLow` (cards) | `0xFF181D1E` |
-| `surfaceContainer` | `0xFF1D2324` |
-| `surfaceContainerHigh` | `0xFF282F30` |
-| `surfaceContainerHighest` | `0xFF333B3C` |
+**Style** is "Inset", fixed in code (`FitFatTheme.fromPalette`, `lib/src/app/theme.dart`): grouped
+sections on the `bg` canvas, flat cards on `surface`, fields on a solid `surface` fill with no
+border (accent focus ring), 50dp rows, sheets/dialogs on `raise`. Palette → `ColorScheme`:
 
-Component themes registered in both brightnesses: Card (flat, elevation 0, `surfaceContainerLow`),
-FilledButton / OutlinedButton / TextButton (radius `radiusM`), InputDecoration (filled + rounded,
-primary focus border), NavigationBar, AppBar (flat, transparent surface tint, per-brightness
-`systemOverlayStyle` — dark icons in light theme / light icons in dark theme), Dialog,
-ExpansionTile (borderless), ListTile (icon color), FloatingActionButton.
-App-level feedback uses the shared **`TopBanner`** overlay (`lib/src/ui/widgets/top_banner.dart`,
-replacing snackbars app-wide: deletion-undo + error messages only); no SnackBar theme is registered.
+| Scheme role | Palette role |
+|-------------|--------------|
+| `surface`, `surfaceContainerLowest` | `bg` |
+| `surfaceContainerLow`, `surfaceContainer` (cards, fields) | `surface` |
+| `surfaceContainerHigh` (dialogs, sheets) | `raise` |
+| `surfaceContainerHighest` | `surface2` |
+| `onSurface` / `onSurfaceVariant` | `fg` / `muted` |
+| `outlineVariant` (dividers) | `line` |
+| `primary`, `secondary` / `onPrimary` | `accent` / `onAccent` |
+| `error` / `onError` | `danger` / `onDanger` |
+| `tertiary` | `warning` |
+
+Never hard-code colors in widgets; read the scheme or `FitFatColors`. `FitFatTheme.light` /
+`.dark` return the default palettes (used by tests).
 
 ## FitFatColors (`lib/src/ui/theme_extensions.dart`)
 
-The only hand-picked colors; everything else is M3-derived from teal. Both themes register the
-extension; read it with `Theme.of(context).extension<FitFatColors>()`.
+`success` / `warning` (+ on-colors), built from the active palette with
+`FitFatColors.fromPalette`. Danger is `colorScheme.error`. Read with
+`Theme.of(context).extension<FitFatColors>()`. "Pending"/neutral statuses use
+`colorScheme.outline`.
 
-| Token | Light | Dark |
-|-------|-------|------|
-| `success` | `0xFF2E7D32` | `0xFF81C784` |
-| `onSuccess` | `0xFFFFFFFF` | `0xFF10341B` |
-| `warning` | `0xFF8A4F00` | `0xFFFFB74D` |
-| `onWarning` | `0xFFFFFFFF` | `0xFF3D2500` |
+## Local-first: no loading or error screens
 
-Light values hold ≈5.1:1 (success) / ≈6.6:1 (warning) on white; dark values ≈8.4:1 / ≈9.8:1 on the
-tuned dark surfaces — both ≥ 4.5:1. "Pending"/neutral statuses use M3 `colorScheme.outline`
-(no extra hand-picked color).
+Lists, dashboard, detail and form screens read the local database and must never show a spinner,
+skeleton or error screen. The main list providers are loaded in the background at startup
+(`_BackgroundStartup` in `app.dart`) and stay cached; `loading:` branches on local data render
+`SizedBox.shrink()`. Only sync (push/pull, receipt upload) may show progress or failures.
 
 ## Shared widgets
+
+- **SectionHeader** (`ui/widgets/section_header.dart`) — `SectionHeader(label, {trailing})`: the
+  one group label: small caps, muted, with an optional right-aligned total (day net, week totals).
+  Used by `SettingsSection` titles; use it for every grouped list.
+- **FormScaffold** (`ui/widgets/form_scaffold.dart`) — the standard form: close (×) on the left,
+  small filled **Save** top right (disabled until `canSave`, spinner while `saving`), fields in a
+  600dp column, and in edit mode a **DangerRow** at the bottom (`FormDeleteAction(label,
+  consequence, onDelete)`) saying what else is removed.
+- **confirmDelete** (`ui/widgets/confirm_delete.dart`) — the single delete flow. No other data
+  affected → delete at once + Undo banner. Cascade (`cascade: [(label:, count:)]`, zero counts
+  ignored) → sheet listing what else goes, delete only on confirm.
+- **showAppSheet** (`ui/widgets/app_sheet.dart`) — search-first picker sheet at 92% height:
+  search field (+ optional filter chips) pinned on top, results from
+  `builder(context, query, scrollController)` below.
 
 - **StatusBadge** — `StatusBadge(label, color)`: pill text on a 15% alpha tint of the status color,
   `AnimatedContainer` color flip over `motionFast`. Used by `workout_list.dart` and
@@ -180,3 +201,21 @@ platform does not support haptics (T04).
 
 See also: [architecture.md](../architecture.md), [overview.md](../overview.md),
 [context-map.md](../context-map.md).
+
+## Screen standards: dashboard, settings, sync
+
+- **Dashboard** (`dashboard/screens/dashboard.dart`): a "today stack" — large title, one column of
+  `_DashCard`s (small-caps label + value, tap opens the full screen). Order and visibility come from
+  `dashboardLayoutProvider` (`settings_dashboard_order` / `settings_dashboard_hidden`), edited in
+  Settings › Dashboard; default order is nutrition, tasks, training, weight, goals, money. An empty
+  card shows one line plus a start action (`_EmptyStart`), never a blank card. No spinners: cards
+  render from cached provider values.
+- **Sync status**: `SyncChip` in the dashboard top bar (last sync age / spinner / red on failure)
+  opens a sheet with `SyncStatusPanel` (server, last sync, Sync now, live progress, failure with
+  Retry and Rescan). The Sync screen opens with the same panel. Progress and failures are shared
+  through `syncRunProvider`; start a full sync with `runFullSync(context, ref)`.
+- **Settings hub**: search field on top (filters every entry), simple settings inline (theme,
+  language sheet, units, notification switches), bigger pages as `SettingsRow`s in
+  `SettingsGroup`s showing their current value. Settings save instantly; no Save buttons.
+  Settings pages use `SettingsGroup` + `SettingsRow` + `showSettingsChoiceSheet` ("grouped rows
+  + sheets").

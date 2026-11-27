@@ -32,7 +32,8 @@ class BudgetScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.budgetAppBar)),
       body: overviewAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        // Local data: never a spinner; the first frame is blank for a few ms.
+        loading: () => const SizedBox.shrink(),
         error: (e, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

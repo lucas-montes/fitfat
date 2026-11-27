@@ -160,7 +160,8 @@ final class _IngredientListScreenState
         ],
       ),
       body: ingredientsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        // Local data: never a spinner; the first frame is blank for a few ms.
+        loading: () => const SizedBox.shrink(),
         error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
         data: (ingredients) => ingredients.isEmpty
             ? EmptyState(

@@ -27,11 +27,19 @@ import '../../ui/format.dart';
 import '../../ui/tokens.dart';
 import '../providers/settings.dart';
 import '../services/data_reset.dart';
+import '../widgets/palette_picker.dart';
+import '../../models/body_weight_goal.dart';
+import '../../sync/entity_labels.dart';
+import '../../sync/sync_all.dart';
+import '../providers/appearance.dart';
+import 'dashboard_settings_screen.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_scaffold.dart';
 
-/// Settings hub: a list of category tiles that push dedicated sub-screens
-/// (Profile / Notifications / Appearance & Language / Budget & Currency / Data).
+/// Settings hub. Simple settings (theme, language, units, notification
+/// switches) change right here; bigger pages (Nutrition, Sync, …) open as
+/// rows that show their current value. A search box on top filters every
+/// entry by name. Everything saves instantly.
 final class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -39,194 +47,433 @@ final class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-final class _HubDestination {
-  final IconData icon;
-  final Color? iconColor;
-  final Color? titleColor;
-  final String label;
-  final String subtitle;
-  final Widget Function({required bool embed}) build;
+/// One searchable hub entry: its group, the text the search matches, and the
+/// row itself.
+typedef _Entry = ({String group, String text, Widget row});
 
-  const _HubDestination({
-    required this.icon,
-    this.iconColor,
-    this.titleColor,
-    required this.label,
-    required this.subtitle,
-    required this.build,
-  });
+/// A full page reachable from the hub (and from the tablet rail).
+final class _Page {
+  const _Page(this.icon, this.label, this.build, {this.danger = false});
+
+  final IconData icon;
+  final String label;
+  final Widget Function({required bool embed}) build;
+  final bool danger;
 }
 
 final class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  int _selectedIndex = 0;
+  String _query = '';
+  int _railIndex = 0;
 
-  List<_HubDestination> _destinations(
-    AppLocalizations l10n,
-    ColorScheme scheme,
-  ) => [
-    _HubDestination(
-      icon: Icons.person_outline,
-      label: l10n.settingsProfile,
-      subtitle: l10n.settingsProfileSubtitle,
-      build: ({required embed}) => ProfileSettingsScreen(embed: embed),
+  void _push(Widget screen) => Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => screen));
+
+  List<_Page> _pages(AppLocalizations l10n) => [
+    _Page(
+      Icons.person_outline,
+      l10n.settingsProfile,
+      ({required embed}) => ProfileSettingsScreen(embed: embed),
     ),
-    _HubDestination(
-      icon: Icons.event_note_outlined,
-      label: l10n.settingsPlanner,
-      subtitle: l10n.settingsPlannerSubtitle,
-      build: ({required embed}) => _PlannerScreen(embed: embed),
+    _Page(
+      Icons.dashboard_outlined,
+      l10n.settingsDashboard,
+      ({required embed}) => DashboardSettingsScreen(embed: embed),
     ),
-    _HubDestination(
-      icon: Icons.restaurant_menu_outlined,
-      label: l10n.settingsNutrition,
-      subtitle: l10n.settingsNutritionSubtitle,
-      build: ({required embed}) => _NutritionScreen(embed: embed),
+    _Page(
+      Icons.restaurant_menu_outlined,
+      l10n.settingsNutrition,
+      ({required embed}) => _NutritionScreen(embed: embed),
     ),
-    _HubDestination(
-      icon: Icons.account_balance_wallet_outlined,
-      label: l10n.settingsCurrencyBudget,
-      subtitle: l10n.settingsBudgetCurrencySubtitle,
-      build: ({required embed}) => _BudgetCurrencyScreen(embed: embed),
+    _Page(
+      Icons.event_note_outlined,
+      l10n.settingsPlanner,
+      ({required embed}) => _PlannerScreen(embed: embed),
     ),
-    _HubDestination(
-      icon: Icons.notifications_outlined,
-      label: l10n.settingsNotifications,
-      subtitle: l10n.settingsNotificationsSubtitle,
-      build: ({required embed}) => _NotificationsScreen(embed: embed),
+    _Page(
+      Icons.account_balance_wallet_outlined,
+      l10n.settingsCurrencyBudget,
+      ({required embed}) => _BudgetCurrencyScreen(embed: embed),
     ),
-    _HubDestination(
-      icon: Icons.palette_outlined,
-      label: l10n.settingsAppearanceLanguage,
-      subtitle: l10n.settingsAppearanceLanguageSubtitle,
-      build: ({required embed}) => _AppearanceLanguageScreen(embed: embed),
+    _Page(
+      Icons.palette_outlined,
+      l10n.settingsPalettes,
+      ({required embed}) => _AppearanceLanguageScreen(embed: embed),
     ),
-    _HubDestination(
-      icon: Icons.sell_outlined,
-      label: l10n.prioritiesTitle,
-      subtitle: l10n.prioritiesManage,
-      build: ({required embed}) => const TagManagerScreen(),
+    _Page(
+      Icons.sell_outlined,
+      l10n.prioritiesTitle,
+      ({required embed}) => const TagManagerScreen(),
     ),
-    _HubDestination(
-      icon: Icons.sync_outlined,
-      label: l10n.settingsSync,
-      subtitle: l10n.settingsSyncSubtitle,
-      build: ({required embed}) => const SyncHubScreen(),
+    _Page(
+      Icons.sync_outlined,
+      l10n.settingsSync,
+      ({required embed}) => const SyncHubScreen(),
     ),
-    _HubDestination(
-      icon: Icons.delete_forever_outlined,
-      iconColor: scheme.error,
-      titleColor: scheme.error,
-      label: l10n.settingsData,
-      subtitle: l10n.settingsResetDataSubtitle,
-      build: ({required embed}) => _DataScreen(embed: embed),
+    _Page(
+      Icons.delete_forever_outlined,
+      l10n.settingsData,
+      ({required embed}) => _DataScreen(embed: embed),
+      danger: true,
     ),
   ];
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final scheme = Theme.of(context).colorScheme;
-    final destinations = _destinations(l10n, scheme);
-    final isWide =
-        MediaQuery.of(context).size.width >= FitFatTokens.kRailBreakpoint;
+  List<_Entry> _entries(AppLocalizations l10n) {
+    final settings = ref.watch(settingsProvider);
+    final notifier = ref.read(settingsProvider.notifier);
+    final appearance = ref.watch(appearanceProvider);
+    final target = ref.watch(calorieTargetMetaProvider).value?.target;
+    final lastSync =
+        ref.watch(sharedPreferencesProvider).getInt(lastFullSyncPrefKey) ?? 0;
+    final pages = _pages(l10n);
+    final langLabel = switch (settings.locale?.languageCode) {
+      'en' => l10n.settingsLangEn,
+      'fr' => l10n.settingsLangFr,
+      'es' => l10n.settingsLangEs,
+      _ => l10n.settingsLangSystem,
+    };
+    final profileBits = [
+      if (settings.age != null) '${settings.age}',
+      if (settings.bodyWeightGoal != null)
+        switch (settings.bodyWeightGoal!) {
+          BodyWeightGoal.lose => l10n.settingsGoalLose,
+          BodyWeightGoal.maintain => l10n.settingsGoalMaintain,
+          BodyWeightGoal.gain => l10n.settingsGoalGain,
+        },
+    ];
 
-    void push(Widget screen) {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute<void>(builder: (_) => screen));
-    }
-
-    if (!isWide) {
-      return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: () => context.go('/dashboard'),
-          ),
-          title: Text(l10n.settingsAppBar),
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(FitFatTokens.spaceL),
-          children: [
-            for (var i = 0; i < destinations.length; i++)
-              _HubTile(
-                icon: destinations[i].icon,
-                iconColor: destinations[i].iconColor,
-                titleColor: destinations[i].titleColor,
-                title: destinations[i].label,
-                subtitle: destinations[i].subtitle,
-                onTap: () => push(destinations[i].build(embed: false)),
-              ),
+    Widget seg<T>(List<(T, String)> options, T selected, void Function(T) on) =>
+        SegmentedButton<T>(
+          showSelectedIcon: false,
+          style: const ButtonStyle(visualDensity: VisualDensity.compact),
+          segments: [
+            for (final (v, l) in options)
+              ButtonSegment(value: v, label: Text(l)),
           ],
+          selected: {selected},
+          onSelectionChanged: (s) => on(s.first),
+        );
+
+    _Entry page(int i, {String? value, String extra = ''}) {
+      final p = pages[i];
+      return (
+        group: l10n.settingsMore,
+        text: '${p.label} $extra',
+        row: SettingsRow(
+          icon: p.icon,
+          title: p.label,
+          value: value,
+          danger: p.danger,
+          onTap: () => _push(p.build(embed: false)),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: () => context.go('/dashboard'),
+    return [
+      (
+        group: l10n.settingsProfile,
+        text: '${l10n.settingsProfile} ${l10n.settingsProfileSubtitle}',
+        row: SettingsRow(
+          icon: Icons.person_outline,
+          title: l10n.settingsProfile,
+          subtitle: profileBits.isEmpty
+              ? l10n.settingsProfileSubtitle
+              : profileBits.join(' · '),
+          onTap: () => _push(const ProfileSettingsScreen()),
         ),
-        title: Text(l10n.settingsAppBar),
       ),
+      (
+        group: l10n.settingsAppearance,
+        text: '${l10n.settingsAppearance} theme dark light',
+        row: Padding(
+          padding: const EdgeInsets.all(FitFatTokens.spaceM),
+          child: SizedBox(
+            width: double.infinity,
+            child: seg(
+              [
+                (ThemeMode.system, l10n.settingsThemeSystem),
+                (ThemeMode.light, l10n.settingsThemeLight),
+                (ThemeMode.dark, l10n.settingsThemeDark),
+              ],
+              settings.themeMode,
+              notifier.setThemeMode,
+            ),
+          ),
+        ),
+      ),
+      (
+        group: l10n.settingsAppearance,
+        text:
+            '${l10n.settingsDarkPalette} ${l10n.settingsLightPalette} palette colors',
+        row: SettingsRow(
+          icon: Icons.palette_outlined,
+          title: l10n.settingsPalettes,
+          value: '${appearance.dark.name} · ${appearance.light.name}',
+          onTap: () => _push(const _AppearanceLanguageScreen()),
+        ),
+      ),
+      (
+        group: l10n.settingsAppearance,
+        text: l10n.settingsLanguage,
+        row: SettingsRow(
+          icon: Icons.language,
+          title: l10n.settingsLanguage,
+          value: langLabel,
+          onTap: () async {
+            final code = await showSettingsChoiceSheet<String>(
+              context,
+              title: l10n.settingsLanguage,
+              selected: settings.locale?.languageCode ?? 'system',
+              options: [
+                ('system', l10n.settingsLangSystem),
+                ('en', l10n.settingsLangEn),
+                ('fr', l10n.settingsLangFr),
+                ('es', l10n.settingsLangEs),
+              ],
+            );
+            if (code == null) return;
+            code == 'system'
+                ? notifier.setLocaleToSystem()
+                : notifier.setLocale(Locale(code));
+          },
+        ),
+      ),
+      (
+        group: l10n.settingsUnits,
+        text: '${l10n.settingsUnits} ${l10n.settingsWeightUnitLabel} kg lb',
+        row: SettingsRow(
+          icon: Icons.monitor_weight_outlined,
+          title: l10n.settingsWeightUnitLabel,
+          control: seg(
+            [(WeightUnit.kg, 'kg'), (WeightUnit.lb, 'lb')],
+            settings.weightUnit,
+            notifier.setWeightUnit,
+          ),
+        ),
+      ),
+      (
+        group: l10n.settingsUnits,
+        text: '${l10n.settingsUnits} ${l10n.settingsLengthUnitLabel} cm in',
+        row: SettingsRow(
+          icon: Icons.straighten,
+          title: l10n.settingsLengthUnitLabel,
+          control: seg(
+            [(LengthUnit.cm, 'cm'), (LengthUnit.inch, 'in')],
+            settings.lengthUnit,
+            notifier.setLengthUnit,
+          ),
+        ),
+      ),
+      (
+        group: l10n.settingsNotifications,
+        text:
+            '${l10n.settingsNotifications} ${l10n.settingsPlannerNotifications}',
+        row: SettingsRow(
+          icon: Icons.notifications_outlined,
+          title: l10n.settingsPlannerNotifications,
+          control: Switch(
+            value: settings.plannerNotifications,
+            onChanged: (v) => setTaskReminders(context, ref, v),
+          ),
+        ),
+      ),
+      (
+        group: l10n.settingsNotifications,
+        text: '${l10n.settingsNotifications} ${l10n.settingsRestAlarmSound}',
+        row: SettingsRow(
+          icon: Icons.timer_outlined,
+          title: l10n.settingsRestAlarmSound,
+          control: Switch(
+            value: settings.restAlarmSound,
+            onChanged: notifier.setRestAlarmSound,
+          ),
+        ),
+      ),
+      (
+        group: l10n.settingsNotifications,
+        text:
+            '${l10n.settingsNotifications} ${l10n.settingsRestAlarmVibration}',
+        row: SettingsRow(
+          icon: Icons.vibration,
+          title: l10n.settingsRestAlarmVibration,
+          control: Switch(
+            value: settings.restAlarmVibration,
+            onChanged: notifier.setRestAlarmVibration,
+          ),
+        ),
+      ),
+      page(1, extra: l10n.settingsDashboardSubtitle),
+      page(
+        2,
+        value: target == null ? null : '${target.round()} kcal',
+        extra: '${l10n.settingsNutritionSubtitle} calories macros protein',
+      ),
+      page(3, extra: l10n.settingsPlannerSubtitle),
+      page(
+        4,
+        value: settings.baseCurrency,
+        extra: l10n.settingsBudgetCurrencySubtitle,
+      ),
+      page(6, extra: l10n.prioritiesManage),
+      page(
+        7,
+        value: lastSyncedLabel(l10n, lastSync),
+        extra: '${l10n.settingsSyncSubtitle} server backup',
+      ),
+      page(8, extra: l10n.settingsResetDataSubtitle),
+    ];
+  }
+
+  Widget _hubList(AppLocalizations l10n, {required bool embed}) {
+    final theme = Theme.of(context);
+    final entries = _entries(l10n);
+    final q = _query.toLowerCase();
+    final shown = q.isEmpty
+        ? entries
+        : entries.where((e) => e.text.toLowerCase().contains(q)).toList();
+
+    final groups = <String, List<Widget>>{};
+    for (final e in shown) {
+      (groups[e.group] ??= []).add(e.row);
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceS,
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceXxl,
+      ),
+      children: [
+        TextField(
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search),
+            hintText: l10n.settingsSearch,
+          ),
+          onChanged: (v) => setState(() => _query = v.trim()),
+        ),
+        const SizedBox(height: FitFatTokens.spaceM),
+        if (shown.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(FitFatTokens.spaceXl),
+            child: Text(
+              l10n.settingsNoResults(_query),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        for (final MapEntry(key: title, value: rows) in groups.entries)
+          SettingsGroup(
+            // The profile group is a single card with no header.
+            title: title == l10n.settingsProfile ? null : title,
+            children: rows,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isWide =
+        MediaQuery.of(context).size.width >= FitFatTokens.kRailBreakpoint;
+    final back = IconButton(
+      icon: const Icon(Icons.arrow_back),
+      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+      onPressed: () => context.go('/dashboard'),
+    );
+
+    if (!isWide) {
+      return Scaffold(
+        body: NestedScrollView(
+          headerSliverBuilder: (_, _) => [
+            SliverAppBar.large(leading: back, title: Text(l10n.settingsAppBar)),
+          ],
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: FitFatTokens.kContentMaxWidth,
+              ),
+              child: _hubList(l10n, embed: false),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Tablet: the hub (with its inline controls) is the first rail entry,
+    // followed by every full page.
+    final pages = _pages(l10n);
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(leading: back, title: Text(l10n.settingsAppBar)),
       body: Row(
         children: [
           NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+            selectedIndex: _railIndex,
+            onDestinationSelected: (i) => setState(() => _railIndex = i),
             labelType: NavigationRailLabelType.all,
             destinations: [
-              for (final d in destinations)
+              NavigationRailDestination(
+                icon: const Icon(Icons.tune),
+                label: Text(l10n.settingsGeneral),
+              ),
+              for (final p in pages)
                 NavigationRailDestination(
-                  icon: Icon(d.icon, color: d.iconColor),
-                  selectedIcon: d.iconColor == null
-                      ? Icon(d.icon)
-                      : Icon(d.icon, color: d.iconColor),
-                  label: Text(d.label),
+                  icon: Icon(p.icon, color: p.danger ? scheme.error : null),
+                  label: Text(p.label),
                 ),
             ],
           ),
           const VerticalDivider(width: 1),
-          Expanded(child: destinations[_selectedIndex].build(embed: true)),
+          Expanded(
+            child: _railIndex == 0
+                ? SettingsBody(child: _hubList(l10n, embed: true))
+                : pages[_railIndex - 1].build(embed: true),
+          ),
         ],
       ),
     );
   }
 }
 
-/// Consistent settings hub tile with a trailing chevron.
-final class _HubTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final Color? iconColor;
-  final Color? titleColor;
-
-  const _HubTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.iconColor,
-    this.titleColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: iconColor ?? colorScheme.primary),
-      title: Text(title, style: TextStyle(color: titleColor)),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
-    );
+/// App-wide task-reminder switch: turning it off cancels every scheduled
+/// planner reminder; turning it back on re-schedules pending future timed
+/// tasks.
+Future<void> setTaskReminders(
+  BuildContext context,
+  WidgetRef ref,
+  bool enabled,
+) async {
+  final notifier = ref.read(settingsProvider.notifier);
+  if (!enabled) {
+    await ref.read(taskReminderSchedulerProvider).cancelAll();
+  } else {
+    final l10n = AppLocalizations.of(context)!;
+    // Timezone must be ready before any zonedSchedule (startup skips init
+    // when the toggle was off, so toggle-on is the first schedule).
+    try {
+      tzdata.initializeTimeZones();
+      try {
+        tz.setLocalLocation(
+          tz.getLocation((await FlutterTimezone.getLocalTimezone()).identifier),
+        );
+      } catch (_) {
+        tz.setLocalLocation(tz.getLocation('UTC'));
+      }
+    } catch (_) {}
+    await ref
+        .read(taskReminderSchedulerProvider)
+        .reschedulePending(
+          repository: ref.read(taskRepositoryProvider),
+          dueSoonText: l10n.taskReminderDueSoon,
+          dueNowText: l10n.taskReminderDueNow,
+        );
   }
+  await notifier.setPlannerNotifications(enabled);
 }
 
 /// Profile: age, gender, activity source/level, body fat, body weight goal.
@@ -423,99 +670,6 @@ final class _ProfileSettingsScreenState
   }
 }
 
-/// Notifications: planner task reminders + rest alarm sound/vibration.
-final class _NotificationsScreen extends ConsumerStatefulWidget {
-  final bool embed;
-
-  const _NotificationsScreen({this.embed = false});
-
-  @override
-  ConsumerState<_NotificationsScreen> createState() =>
-      _NotificationsScreenState();
-}
-
-final class _NotificationsScreenState
-    extends ConsumerState<_NotificationsScreen> {
-  /// App-wide task-reminder toggle: turning off cancels every scheduled
-  /// planner reminder; turning back on re-schedules pending future timed tasks.
-  Future<void> _setPlannerNotifications(
-    BuildContext context,
-    WidgetRef ref,
-    bool enabled,
-  ) async {
-    final notifier = ref.read(settingsProvider.notifier);
-    if (!enabled) {
-      await ref.read(taskReminderSchedulerProvider).cancelAll();
-    } else {
-      final l10n = AppLocalizations.of(context)!;
-      // Timezone must be ready before any zonedSchedule (startup skips init
-      // when the toggle was off, so toggle-on is the first schedule).
-      try {
-        tzdata.initializeTimeZones();
-        try {
-          tz.setLocalLocation(
-            tz.getLocation(
-              (await FlutterTimezone.getLocalTimezone()).identifier,
-            ),
-          );
-        } catch (_) {
-          tz.setLocalLocation(tz.getLocation('UTC'));
-        }
-      } catch (_) {}
-      await ref
-          .read(taskReminderSchedulerProvider)
-          .reschedulePending(
-            repository: ref.read(taskRepositoryProvider),
-            dueSoonText: l10n.taskReminderDueSoon,
-            dueNowText: l10n.taskReminderDueNow,
-          );
-    }
-    await notifier.setPlannerNotifications(enabled);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final settings = ref.watch(settingsProvider);
-    final notifier = ref.read(settingsProvider.notifier);
-
-    final body = ListView(
-      padding: const EdgeInsets.all(FitFatTokens.spaceL),
-      children: [
-        SettingsSection(
-          children: [
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.settingsPlannerNotifications),
-              subtitle: Text(l10n.settingsPlannerNotificationsSubtitle),
-              value: settings.plannerNotifications,
-              onChanged: (enabled) =>
-                  _setPlannerNotifications(context, ref, enabled),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.settingsRestAlarmSound),
-              value: settings.restAlarmSound,
-              onChanged: notifier.setRestAlarmSound,
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.settingsRestAlarmVibration),
-              value: settings.restAlarmVibration,
-              onChanged: notifier.setRestAlarmVibration,
-            ),
-          ],
-        ),
-      ],
-    );
-    if (widget.embed) return SettingsBody(child: body);
-    return SettingsSubScreenScaffold(
-      title: l10n.settingsNotifications,
-      body: body,
-    );
-  }
-}
-
 /// Appearance & Language: theme mode + app language (System default).
 final class _AppearanceLanguageScreen extends ConsumerStatefulWidget {
   final bool embed;
@@ -532,76 +686,19 @@ final class _AppearanceLanguageScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final settings = ref.watch(settingsProvider);
-    final notifier = ref.read(settingsProvider.notifier);
-
+    // Theme mode and language are changed inline on the hub; this page is
+    // the palette picker.
     final body = ListView(
       padding: const EdgeInsets.all(FitFatTokens.spaceL),
       children: [
         SettingsSection(
-          title: l10n.settingsAppearance,
-          children: [
-            SegmentedButton<ThemeMode>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  label: Text(l10n.settingsThemeSystem),
-                  icon: const Icon(Icons.brightness_auto_outlined),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  label: Text(l10n.settingsThemeLight),
-                  icon: const Icon(Icons.light_mode_outlined),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  label: Text(l10n.settingsThemeDark),
-                  icon: const Icon(Icons.dark_mode_outlined),
-                ),
-              ],
-              selected: {settings.themeMode},
-              onSelectionChanged: (selection) =>
-                  notifier.setThemeMode(selection.first),
-            ),
-          ],
-        ),
-        const SizedBox(height: FitFatTokens.spaceL),
-        SettingsSection(
-          title: l10n.settingsLanguage,
-          children: [
-            SegmentedButton<String>(
-              // System is always the default; a stored locale overrides it.
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: 'system',
-                  label: Text(l10n.settingsLangSystem),
-                  icon: const Icon(Icons.language),
-                ),
-                ButtonSegment(value: 'en', label: Text(l10n.settingsLangEn)),
-                ButtonSegment(value: 'fr', label: Text(l10n.settingsLangFr)),
-                ButtonSegment(value: 'es', label: Text(l10n.settingsLangEs)),
-              ],
-              selected: {settings.locale?.languageCode ?? 'system'},
-              onSelectionChanged: (selection) {
-                final value = selection.first;
-                if (value == 'system') {
-                  notifier.setLocaleToSystem();
-                } else {
-                  notifier.setLocale(Locale(value));
-                }
-              },
-            ),
-          ],
+          title: l10n.settingsPalettes,
+          children: const [PalettePicker()],
         ),
       ],
     );
     if (widget.embed) return SettingsBody(child: body);
-    return SettingsSubScreenScaffold(
-      title: l10n.settingsAppearanceLanguage,
-      body: body,
-    );
+    return SettingsSubScreenScaffold(title: l10n.settingsPalettes, body: body);
   }
 }
 
@@ -880,7 +977,6 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final body = ListView(
@@ -927,60 +1023,6 @@ final class _NutritionScreenState extends ConsumerState<_NutritionScreen> {
               if (phase != DietPhase.values.last)
                 const SizedBox(height: FitFatTokens.spaceS),
             ],
-          ],
-        ),
-        const SizedBox(height: FitFatTokens.spaceL),
-        SettingsSection(
-          title: l10n.settingsUnits,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.settingsWeightUnitLabel,
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                SegmentedButton<WeightUnit>(
-                  showSelectedIcon: false,
-                  segments: [
-                    ButtonSegment(
-                      value: WeightUnit.kg,
-                      label: const Text('kg'),
-                    ),
-                    ButtonSegment(
-                      value: WeightUnit.lb,
-                      label: const Text('lb'),
-                    ),
-                  ],
-                  selected: {settings.weightUnit},
-                  onSelectionChanged: (selection) =>
-                      notifier.setWeightUnit(selection.first),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.settingsLengthUnitLabel,
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                SegmentedButton<LengthUnit>(
-                  showSelectedIcon: false,
-                  segments: [
-                    ButtonSegment(
-                      value: LengthUnit.cm,
-                      label: const Text('cm'),
-                    ),
-                    ButtonSegment(
-                      value: LengthUnit.inch,
-                      label: const Text('in'),
-                    ),
-                  ],
-                  selected: {settings.lengthUnit},
-                  onSelectionChanged: (selection) =>
-                      notifier.setLengthUnit(selection.first),
-                ),
-              ],
-            ),
           ],
         ),
       ],
