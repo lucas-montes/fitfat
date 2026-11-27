@@ -1,6 +1,6 @@
 # Plan: Exercise group redesign — workouts, exercises, detail screens (Phase EG)
 
-**Status:** planned — all designs decided (2026-11-27); ready to implement T01–T08.
+**Status:** completed (2026-11-27) — T01–T08 shipped on branch ui/design-system. Deviation: the Range filter uses quick ranges plus the standard date-range picker instead of a custom calendar with workout dots.
 
 ## Change Summary
 
@@ -95,7 +95,7 @@ Existing actions reused, not rewritten: `replayWorkout` (start again, routine-aw
 
 ## Task Stack
 
-- [ ] T01: `Read aggregates for the training screens` (status:todo)
+- [x] T01: `Read aggregates for the training screens` (status:done)
   - Task ID: T01
   - Goal: Everything the home, the history and the templates list need in a handful of queries.
   - Boundaries (in/out of scope):
@@ -110,7 +110,7 @@ Existing actions reused, not rewritten: `replayWorkout` (start again, routine-aw
     into one routine, template last-done and New.
   - Verification notes: `flutter test test/training_aggregates_test.dart`.
 
-- [ ] T02: `Training home` (status:todo)
+- [x] T02: `Training home` (status:done)
   - Task ID: T02
   - Goal: Replace `WorkoutListScreen` as the Exercise tab root with the training home.
   - Boundaries (in/out of scope):
@@ -128,7 +128,7 @@ Existing actions reused, not rewritten: `replayWorkout` (start again, routine-aw
   - Done when: widget test with seeded data shows both rows, Start replays the
     routine, the active strip appears only with an active workout.
 
-- [ ] T03: `Weekly history (All recent)` (status:todo)
+- [x] T03: `Weekly history (All recent)` (status:done)
   - Task ID: T03
   - Goal: Round 10 A.
   - Boundaries (in/out of scope):
@@ -144,7 +144,7 @@ Existing actions reused, not rewritten: `replayWorkout` (start again, routine-aw
     - Out: per-workout swipe actions (delete lives in the detail screen).
   - Done when: widget tests for month filtering, range filtering and ↻.
 
-- [ ] T04: `Templates list` (status:todo)
+- [x] T04: `Templates list` (status:done)
   - Task ID: T04
   - Goal: Round 8 A — template cards with their exercise list.
   - Boundaries (in/out of scope):
@@ -155,7 +155,7 @@ Existing actions reused, not rewritten: `replayWorkout` (start again, routine-aw
     - Out: recurrence/scheduling UI changes.
   - Done when: widget test shows exercises and Start for a seeded template.
 
-- [ ] T05: `Workout detail` (status:todo)
+- [x] T05: `Workout detail` (status:done)
   - Task ID: T05
   - Goal: D5 — summary + plan bars with rest and calories.
   - Boundaries (in/out of scope):
@@ -174,7 +174,7 @@ Existing actions reused, not rewritten: `replayWorkout` (start again, routine-aw
   - Done when: widget tests for a lifting workout with a short set and a PR,
     a cardio workout, and the delete cascade.
 
-- [ ] T06: `Exercises: search + facet dropdowns` (status:todo)
+- [x] T06: `Exercises: search + facet dropdowns` (status:done)
   - Task ID: T06
   - Goal: D3 A, reached from the dumbbell icon.
   - Boundaries (in/out of scope):
@@ -187,7 +187,7 @@ Existing actions reused, not rewritten: `replayWorkout` (start again, routine-aw
     - Out: favourites (not requested).
   - Done when: tests cover a facet selection, chip label and grid/rows switch.
 
-- [ ] T07: `Exercise detail` (status:todo)
+- [x] T07: `Exercise detail` (status:done)
   - Task ID: T07
   - Goal: D4 A — media + History / Details tabs, restyled.
   - Boundaries (in/out of scope):
@@ -202,7 +202,7 @@ Existing actions reused, not rewritten: `replayWorkout` (start again, routine-aw
   - Done when: tests for an exercise with history and one without (History shows
     a one-line empty state).
 
-- [ ] T08: `Context docs + cleanup` (status:todo, last)
+- [x] T08: `Context docs + cleanup` (status:done)
   - Task ID: T08
   - Goal: Update `context/exercise/workout-crud.md`, `context/exercise/exercise-crud.md`,
     `context/ui/design-system.md` (training screen standards); remove dead

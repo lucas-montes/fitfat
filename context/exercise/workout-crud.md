@@ -43,3 +43,35 @@ Pending (startedAt=null) → Start → Active (startedAt=set) → Complete → C
 The Exercise tab (`lib/src/app/tabs/exercise_tab.dart`) renders `WorkoutListScreen`. Exercise definitions are accessible via the AppBar action (`fitness_center` icon) which pushes `ExerciseListScreen`.
 
 See also: [overview.md](../overview.md), [architecture.md](../architecture.md), [database/schema.md](../database/schema.md), [exercise-crud.md](exercise-crud.md)
+
+## Training screens (Phase EG, 2026-11-27)
+
+The Exercise tab root is `TrainingScreen` (`screens/training_screen.dart`), built around starting a
+workout:
+
+- **Unfinished workout** strip with Continue (only on this screen).
+- **Recent** row: one card per routine — completed workouts grouped by `routineId`, else by
+  case-insensitive name (`groupRoutines` in `providers/training.dart`) — with Start. **All** opens
+  `WorkoutHistoryScreen`.
+- **Templates** row (`templateCardsProvider`) with Start and a New badge (never started, created in
+  the last 14 days). **All** opens `WorkoutTemplatesScreen` (cards listing exercises and targets).
+- This week's `WeekCard`. FAB → `WorkoutFormScreen` (plan a workout).
+- **Weekly history** (`workout_history_screen.dart`): one `WeekCard` per calendar week (date range,
+  seven day dots, time · volume · distance) holding `WorkoutRow`s with ↻; month chips + Range
+  (quick ranges or the date-range picker); app-bar search by name. Active workout excluded.
+- **Starting**: `start_workout.dart` — `startRoutine` (replay with the prefill setting, then start),
+  `startTemplate` (instantiate, then start); both open the running workout instead when one exists.
+- **Workout detail** (`workout_summary_screen.dart`, finished workouts): summary card (date and time
+  range, volume and change vs the previous session of the routine, time, sets, average actual rest,
+  calories from `estimateWorkoutEnergy`, volume split, one PR line); per exercise, a bar per set
+  (fill = actual ÷ planned reps, Δ, PR in success color) with the rest after it; tap a set to edit
+  its actuals. ↻ in the app bar; ⋮ Edit / Save as template / Duplicate; `DangerRow` delete through
+  `confirmDelete` with undo (`deleteWithSnapshot` / `restore`). `workout_detail.dart` remains for
+  planned workouts opened from the planner.
+- **Aggregates** (`repositories/training_summaries.dart`, no per-workout detail queries):
+  `rowSummaries` (minutes, sets, volume, distance, `hasPr`), `prSetIds(workoutId)`,
+  `lastSetPerExercise`, `templateCards`. A set counts once it has any actual value (same rule as
+  `ExerciseSet.isCompleted`). PR = a completed set heavier than every earlier set of its exercise,
+  or the same weight for more reps; an exercise's first session has no PR. The providers watch
+  `workoutListProvider`, so existing invalidations refresh them; `recentRoutinesProvider` and
+  `templateCardsProvider` are warmed at startup.

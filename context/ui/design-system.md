@@ -219,3 +219,8 @@ See also: [architecture.md](../architecture.md), [overview.md](../overview.md),
   `SettingsGroup`s showing their current value. Settings save instantly; no Save buttons.
   Settings pages use `SettingsGroup` + `SettingsRow` + `showSettingsChoiceSheet` ("grouped rows
   + sheets").
+- **Training** (`exercise/widgets/training_widgets.dart`): `StartCard` (fixed-width card in a
+  horizontal row with a Start button), `WeekCard` (tinted header: date range, `WeekDots`, totals;
+  rows inside with inset dividers), `WorkoutRow` (type icon, name, PR badge, day · metrics, ↻),
+  `TrainingIcon`, `PrBadge`. Week ranges via `formatWeekRange` ("Nov 16–22" / "16–22 nov").
+- **confirmDelete(alwaysConfirm: true)** for irreversible deletes with nothing else affected.

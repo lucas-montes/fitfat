@@ -33,3 +33,17 @@ Feature: create, read, update, and delete exercise definitions (name + type: wei
 The Exercise tab (`lib/src/app/tabs/exercise_tab.dart`) renders `ExerciseListScreen` directly. Exercise definitions are also reachable from the workout-form search picker. The catalog refresh is wired in `lib/src/app/app.dart` (`_refreshSelectiveCatalogs`), and the selective import runs from the exercise list's AppBar sync menu.
 
 See also: [overview.md](../overview.md), [architecture.md](../architecture.md), [database/schema.md](../database/schema.md), [workout-crud.md](workout-crud.md)
+
+## Search, grid and detail (Phase EG, 2026-11-27)
+
+- Reached from the dumbbell icon on the training home. Browsing (no query, no filter) shows a
+  two-column image grid; a query or any facet switches to rows with body part · equipment and the
+  last logged set (`lastSetPerExerciseProvider`). Swipe-to-delete stays on the rows.
+- Facets are dropdown chips — Body part, Equipment, Muscle, Type — that show the picked values; the
+  sheet's button counts results live ("Show N exercises").
+- Detail: media + History / Details tabs. History = Best / Last / Sessions tiles, one chart with a
+  Weight / Reps / Volume switch (Duration / Reps for cardio), then the per-workout session cards
+  (set grid, Δ, PR; the first-ever session is never a PR). Details = grouped rows (type, body part,
+  equipment, muscles), instructions, tips, FAQs, and a `DangerRow` delete that refuses (with the
+  reason) while a workout or template uses the exercise, and otherwise confirms first
+  (`confirmDelete(alwaysConfirm: true)`). Edit is in ⋮.
