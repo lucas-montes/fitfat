@@ -275,9 +275,10 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   /// sheet open; More options continues in the full form.
   Future<void> _quickAdd() async {
     final goals = [
-      for (final g in ref.read(goalListProvider).value ?? const <Goal>[])
+      for (final g in await ref.read(goalListProvider.future))
         if (g.status == GoalStatus.active || g.status == GoalStatus.planned) g,
     ];
+    if (!mounted) return;
     final more = await showQuickAddSheet(
       context,
       day: _selectedDay,

@@ -71,10 +71,11 @@ class GoalProgressBar extends StatelessWidget {
         height: height,
         child: LayoutBuilder(
           builder: (context, box) {
-            final w = (box.maxWidth * p).clamp(
-              box.maxWidth * 0.18,
-              box.maxWidth,
-            );
+            // A small minimum keeps the value readable once there is any
+            // progress; nothing recorded yet leaves the bar empty.
+            final w = status.current == null && !done
+                ? 0.0
+                : (box.maxWidth * p).clamp(box.maxWidth * 0.18, box.maxWidth);
             return Stack(
               children: [
                 Positioned.fill(
