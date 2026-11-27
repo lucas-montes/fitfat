@@ -3855,4 +3855,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trainingSearchTemplates => 'Search templates';
+
+  @override
+  String workoutDetailPrLine(int count, String detail) {
+    return '$count PR · $detail';
+  }
+
+  @override
+  String workoutDetailVsLast(String change) {
+    return '$change vs last time';
+  }
+
+  @override
+  String get workoutDetailTime => 'Time';
+
+  @override
+  String get workoutDetailSets => 'Sets';
+
+  @override
+  String get workoutDetailAvgRest => 'Avg rest';
+
+  @override
+  String get workoutDetailBurned => 'Burned';
+
+  @override
+  String get workoutDetailSaveTemplate => 'Save as template';
+
+  @override
+  String get workoutDetailOther => 'Other';
+
+  @override
+  String get workoutDetailDelete => 'Delete workout';
+
+  @override
+  String workoutDetailDeleteConsequence(int count) {
+    return 'Also removes $count logged sets';
+  }
+
+  @override
+  String workoutDetailFromTemplate(String name) {
+    return 'From template $name';
+  }
+
+  @override
+  String workoutDetailSetsDone(int count) {
+    return '$count sets';
+  }
+
+  @override
+  String workoutDetailAvgRestShort(String rest) {
+    return 'avg rest $rest';
+  }
+
+  @override
+  String get workoutDetailNotDone => 'Not done';
+
+  @override
+  String get trainingCascadeSetsDone => 'Logged sets';
 }

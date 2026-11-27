@@ -2021,5 +2021,20 @@
   "trainingNoMatchBody": "Essayez un autre mois ou une autre période.",
   "trainingCascadeExercises": "Exercices",
   "trainingCascadeSets": "Séries prévues",
-  "trainingSearchTemplates": "Rechercher un modèle"
+  "trainingSearchTemplates": "Rechercher un modèle",
+  "workoutDetailPrLine": "{count} record · {detail}",
+  "workoutDetailVsLast": "{change} vs la dernière fois",
+  "workoutDetailTime": "Durée",
+  "workoutDetailSets": "Séries",
+  "workoutDetailAvgRest": "Repos moyen",
+  "workoutDetailBurned": "Brûlées",
+  "workoutDetailSaveTemplate": "Enregistrer comme modèle",
+  "workoutDetailOther": "Autres",
+  "workoutDetailDelete": "Supprimer l’entraînement",
+  "workoutDetailDeleteConsequence": "Supprime aussi {count} séries enregistrées",
+  "workoutDetailFromTemplate": "Du modèle {name}",
+  "workoutDetailSetsDone": "{count} séries",
+  "workoutDetailAvgRestShort": "repos moyen {rest}",
+  "workoutDetailNotDone": "Non faite",
+  "trainingCascadeSetsDone": "Séries enregistrées"
 }

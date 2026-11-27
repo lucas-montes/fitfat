@@ -217,6 +217,55 @@ final class TrainingSummaries {
     return out;
   }
 
+  /// Ids of the sets in [workoutId] that beat every earlier set of their
+  /// exercise (heavier, or same weight for more reps). An exercise's first
+  /// session has no PRs.
+  Future<Set<String>> prSetIds(String workoutId) async {
+    final w = await (_db.select(
+      _db.workouts,
+    )..where((t) => t.id.equals(workoutId))).getSingleOrNull();
+    if (w == null) return const {};
+    final rows =
+        await (_db.select(_db.exerciseSets).join([
+              innerJoin(
+                _db.workoutExercises,
+                _db.workoutExercises.id.equalsExp(
+                  _db.exerciseSets.workoutExerciseId,
+                ),
+              ),
+              innerJoin(
+                _db.workouts,
+                _db.workouts.id.equalsExp(_db.workoutExercises.workoutId),
+              ),
+            ])..where(
+              _db.workouts.deletedAt.isNull() &
+                  _db.workouts.date.isSmallerOrEqualValue(w.date) &
+                  _done,
+            ))
+            .get();
+    final prior = <String, (double, int)>{};
+    final mine = <(String, String, double, int)>[];
+    for (final row in rows) {
+      final s = row.readTable(_db.exerciseSets);
+      final we = row.readTable(_db.workoutExercises);
+      final kg = s.actualWeightKg ?? 0, reps = s.actualReps ?? 0;
+      if (kg <= 0 || reps <= 0) continue;
+      if (we.workoutId == workoutId) {
+        mine.add((s.id, we.exerciseId, kg, reps));
+      } else {
+        final b = prior[we.exerciseId];
+        if (b == null || kg > b.$1 || (kg == b.$1 && reps > b.$2)) {
+          prior[we.exerciseId] = (kg, reps);
+        }
+      }
+    }
+    return {
+      for (final (id, ex, kg, reps) in mine)
+        if (prior[ex] case final b?)
+          if (kg > b.$1 || (kg == b.$1 && reps > b.$2)) id,
+    };
+  }
+
   /// Every template with its exercises (in order) and when it was last used.
   Future<List<TemplateCard>> templateCards() async {
     final templates =

@@ -7,7 +7,6 @@ import '../../body/providers/body_metrics.dart';
 import '../../models/exercise_set.dart';
 import '../../notifications/rest_timer.dart';
 import '../../settings/providers/settings.dart';
-import '../../ui/format.dart';
 import '../../ui/theme_extensions.dart';
 import '../../ui/units.dart';
 import '../../ui/widgets/empty_state.dart';
@@ -20,6 +19,15 @@ import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
 import '../services/workout_energy.dart';
 import '../widgets/set_actuals_dialog.dart';
+import '../../dashboard/screens/dashboard.dart' show formatWeeklyDuration;
+import '../../models/workout.dart';
+import '../../ui/date_formats.dart';
+import '../../ui/tokens.dart';
+import '../../ui/widgets/confirm_delete.dart';
+import '../../ui/widgets/form_scaffold.dart';
+import '../providers/training.dart';
+import '../start_workout.dart';
+import '../widgets/training_widgets.dart';
 import 'workout_form.dart';
 
 /// Read-only summary of a completed workout (active-workout-flow T07). Lives
@@ -42,7 +50,7 @@ final class WorkoutSummaryScreen extends ConsumerWidget {
       loading: () => _statusScaffold(
         context: context,
         l10n: l10n,
-        body: const Center(child: CircularProgressIndicator()),
+        body: const SizedBox.shrink(),
       ),
       error: (e, _) => _statusScaffold(
         context: context,
@@ -102,9 +110,7 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
 
   const _WorkoutSummaryContent({required this.detail, required this.l10n});
 
-  /// Saves this session's current plan as a reusable template.
   Future<void> _saveAsTemplate(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
     try {
       final templateId = await ref
           .read(workoutRepositoryProvider)
@@ -117,32 +123,11 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
     }
   }
 
-  /// Creates the next replay occurrence (prefill per the replay-prefill
-  /// setting) and opens it in the editable workout form.
-  Future<void> _replay(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
-    try {
-      final prefill = ref.read(settingsProvider).replayPrefill;
-      final created = await ref
-          .read(workoutRepositoryProvider)
-          .replayWorkout(sourceWorkoutId: detail.workout.id, prefill: prefill);
-      ref.invalidate(workoutListProvider);
-      if (!context.mounted) return;
-      final newDetail = await ref.read(
-        workoutDetailProvider(created.id).future,
-      );
-      if (newDetail == null || !context.mounted) return;
-      await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => WorkoutFormScreen(initial: newDetail),
-        ),
-      );
-      if (context.mounted) ref.invalidate(workoutListProvider);
-    } catch (e) {
-      if (context.mounted) {
-        showTopBanner(context, message: l10n.errorWithMessage('$e'));
-      }
-    }
+  Future<void> _duplicate(WidgetRef ref) async {
+    await ref
+        .read(workoutRepositoryProvider)
+        .copyWorkout(sourceWorkoutId: detail.workout.id);
+    ref.invalidate(workoutListProvider);
   }
 
   /// Opens the completed workout in the form, which edits its **actuals** while
@@ -158,129 +143,455 @@ final class _WorkoutSummaryContent extends ConsumerWidget {
     }
   }
 
+  Future<void> _delete(BuildContext context, WidgetRef ref, int sets) async {
+    final w = detail.workout;
+    final router = GoRouter.of(context);
+    WorkoutSnapshot? snapshot;
+    final deleted = await confirmDelete(
+      context,
+      itemName: w.name,
+      cascade: [(label: l10n.trainingCascadeSetsDone, count: sets)],
+      delete: () async {
+        snapshot = await ref
+            .read(workoutRepositoryProvider)
+            .deleteWithSnapshot(w.id);
+        ref.invalidate(workoutListProvider);
+        invalidateDashboard(ref);
+      },
+      undo: () async {
+        if (snapshot == null) return;
+        await ref.read(workoutRepositoryProvider).restore(snapshot!);
+        ref.invalidate(workoutListProvider);
+        invalidateDashboard(ref);
+      },
+    );
+    if (deleted) router.go('/exercise');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final w = detail.workout;
     final theme = Theme.of(context);
-    final statusColors = theme.extension<FitFatColors>()!;
+    final scheme = theme.colorScheme;
+    final colors = theme.extension<FitFatColors>()!;
+    final muted = scheme.onSurfaceVariant;
+    final unit = ref.watch(settingsProvider).weightUnit;
     final energy = estimateWorkoutEnergy(
       detail: detail,
       exerciseById: (id) => ref.watch(exerciseByIdProvider(id)).value,
       weightKg: ref.watch(latestBodyMetricsProvider).value?.weightKg,
     );
+    final prSets =
+        ref.watch(workoutPrSetsProvider(w.id)).value ?? const <String>{};
+    final template = w.templateId == null
+        ? null
+        : ref.watch(workoutTemplateDetailsProvider(w.templateId!)).value;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.workoutSummaryAppBar),
-        actions: [
-          IconButton(
-            tooltip: l10n.workoutSummaryEdit,
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => _edit(context, ref),
+    // Totals across exercises.
+    final metrics = [
+      for (final b in detail.exercises) _ExerciseMetrics.fromBlock(b),
+    ];
+    final volume = metrics.fold(0.0, (a, m) => a + m.totalVolume);
+    final distanceKm =
+        metrics.fold(0.0, (a, m) => a + m.totalDistanceMeters) / 1000;
+    final setsDone = detail.exercises.fold(
+      0,
+      (a, b) => a + b.sets.where((s) => s.isCompleted).length,
+    );
+    final rests = [
+      for (final b in detail.exercises)
+        for (final s in b.sets)
+          if (s.actualRestSeconds != null) s.actualRestSeconds!,
+    ];
+    final avgRest = rests.isEmpty
+        ? null
+        : Duration(
+            seconds: (rests.reduce((a, b) => a + b) / rests.length).round(),
+          );
+
+    // Change vs the previous workout of the same routine (or name).
+    final workouts = ref.watch(workoutListProvider).value ?? const <Workout>[];
+    final summaries = ref.watch(workoutRowSummariesProvider).value;
+    Workout? previous;
+    for (final o in workouts) {
+      final same = w.routineId != null
+          ? o.routineId == w.routineId
+          : o.name.trim().toLowerCase() == w.name.trim().toLowerCase();
+      if (o.id == w.id || !o.isCompleted || !same || !o.date.isBefore(w.date)) {
+        continue;
+      }
+      if (previous == null || o.date.isAfter(previous.date)) previous = o;
+    }
+    final prevVolume = previous == null
+        ? null
+        : summaries?[previous.id]?.volumeKg;
+    final change = prevVolume == null || prevVolume <= 0 || volume <= 0
+        ? null
+        : (volume - prevVolume) / prevVolume;
+
+    // PR line: the best PR set of the workout.
+    String? prLine;
+    if (prSets.isNotEmpty) {
+      ExerciseSet? best;
+      String? bestName;
+      for (final b in detail.exercises) {
+        for (final s in b.sets) {
+          if (!prSets.contains(s.id)) continue;
+          if (best == null || s.effectiveWeightKg > best.effectiveWeightKg) {
+            best = s;
+            bestName = b.exercise.exerciseName;
+          }
+        }
+      }
+      prLine = l10n.workoutDetailPrLine(
+        prSets.length,
+        '$bestName ${formatWeightValue(best!.effectiveWeightKg, unit)} '
+        '${weightUnitLabel(unit)} × ${best.effectiveReps}',
+      );
+    }
+
+    final time = TimeOfDay.fromDateTime;
+    final range = w.startedAt != null && w.completedAt != null
+        ? '${DateFormats.formatTime(context, time(w.startedAt!))}–'
+              '${DateFormats.formatTime(context, time(w.completedAt!))}'
+        : null;
+
+    Widget stat(String label, String value) => Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 2,
+        children: [
+          Text(
+            label.toUpperCase(),
+            maxLines: 1,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: muted,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.4,
+            ),
           ),
-          IconButton(
-            tooltip: l10n.workoutSummaryDoAgain,
-            icon: const Icon(Icons.replay),
-            onPressed: () => _replay(context, ref),
-          ),
-          IconButton(
-            tooltip: l10n.templatesTitle,
-            icon: const Icon(Icons.bookmark_add_outlined),
-            onPressed: () => _saveAsTemplate(context, ref),
-          ),
-          TextButton(
-            onPressed: () => context.go('/exercise'),
-            child: Text(l10n.workoutSummaryDone),
+          Text(
+            value,
+            maxLines: 1,
+            style: theme.textTheme.titleSmall?.copyWith(fontFeatures: _tab),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Header: workout name, completed badge, total duration.
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(w.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+        leading: BackButton(
+          onPressed: () {
+            final navigator = Navigator.of(context);
+            navigator.canPop() ? navigator.pop() : context.go('/exercise');
+          },
+        ),
+        actions: [
+          IconButton(
+            tooltip: l10n.trainingStartAgain,
+            icon: const Icon(Icons.repeat),
+            onPressed: () => startRoutine(context, ref, sourceWorkoutId: w.id),
+          ),
+          PopupMenuButton<VoidCallback>(
+            onSelected: (f) => f(),
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: () => _edit(context, ref),
+                child: Text(l10n.commonEdit),
+              ),
+              PopupMenuItem(
+                value: () => _saveAsTemplate(context, ref),
+                child: Text(l10n.workoutDetailSaveTemplate),
+              ),
+              PopupMenuItem(
+                value: () => _duplicate(ref),
+                child: Text(l10n.workoutActionDuplicate),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: FitFatTokens.kContentMaxWidth,
+          ),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              FitFatTokens.spaceL,
+              FitFatTokens.spaceS,
+              FitFatTokens.spaceL,
+              FitFatTokens.spaceXxl,
+            ),
+            children: [
+              // Summary of the whole workout.
+              Card(
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.all(FitFatTokens.spaceL),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: FitFatTokens.spaceM,
                     children: [
-                      Expanded(
-                        child: Text(
-                          w.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              [
+                                DateFormats.formatDate(context, w.date),
+                                ?range,
+                              ].join(' · '),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: muted,
+                              ),
+                            ),
+                          ),
+                          StatusBadge(
+                            label: l10n.statusCompleted,
+                            color: colors.success,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        spacing: FitFatTokens.spaceS,
+                        children: [
+                          Text(
+                            volume > 0
+                                ? formatVolume(volume, unit)
+                                : '${distanceKm.toStringAsFixed(1)} km',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontFeatures: _tab,
+                            ),
+                          ),
+                          if (change != null)
+                            Flexible(
+                              child: Text(
+                                l10n.workoutDetailVsLast(
+                                  '${change >= 0 ? '+' : '−'}'
+                                  '${(change.abs() * 100).round()}%',
+                                ),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: change >= 0
+                                      ? colors.success
+                                      : colors.warning,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          stat(
+                            l10n.workoutDetailTime,
+                            formatWeeklyDuration(l10n, w.duration.inMinutes),
+                          ),
+                          stat(l10n.workoutDetailSets, '$setsDone'),
+                          stat(
+                            l10n.workoutDetailAvgRest,
+                            avgRest == null ? '–' : formatRestDuration(avgRest),
+                          ),
+                          stat(
+                            l10n.workoutDetailBurned,
+                            energy == null
+                                ? '–'
+                                : l10n.workoutSummaryEnergyValue(
+                                    energy.kcal.round(),
+                                  ),
+                          ),
+                        ],
+                      ),
+                      if (energy != null && energy.notCounted.isNotEmpty)
+                        Text(
+                          l10n.workoutSummaryEnergyNotCounted(
+                            energy.notCounted.join(', '),
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: muted,
                           ),
                         ),
-                      ),
-                      StatusBadge(
-                        label: l10n.statusCompleted,
-                        color: statusColors.success,
-                      ),
+                      if (volume > 0 && detail.exercises.length > 1)
+                        _VolumeSplit(
+                          parts: [
+                            for (var i = 0; i < detail.exercises.length; i++)
+                              (
+                                detail.exercises[i].exercise.exerciseName,
+                                metrics[i].totalVolume,
+                              ),
+                          ],
+                        ),
+                      if (prLine != null) ...[
+                        const Divider(height: 1),
+                        Row(
+                          spacing: FitFatTokens.spaceS,
+                          children: [
+                            Icon(
+                              Icons.emoji_events_outlined,
+                              size: 18,
+                              color: colors.success,
+                            ),
+                            Expanded(
+                              child: Text(
+                                prLine,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _MetricRow(
-                    label: l10n.workoutSummaryDurationLabel,
-                    value: formatRestDuration(w.duration),
-                  ),
-                  if (energy != null) ...[
-                    _MetricRow(
-                      label: l10n.workoutSummaryEnergyLabel,
-                      value: l10n.workoutSummaryEnergyValue(
-                        energy.kcal.round(),
-                      ),
-                    ),
-                    if (energy.notCounted.isNotEmpty)
-                      Text(
-                        l10n.workoutSummaryEnergyNotCounted(
-                          energy.notCounted.join(', '),
-                        ),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                  ],
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: FitFatTokens.spaceM),
+              if (detail.exercises.isEmpty)
+                EmptyState(
+                  icon: Icons.fitness_center,
+                  title: l10n.emptyWorkoutDetailTitle,
+                  description: l10n.emptyWorkoutDetailBody,
+                )
+              else
+                for (var i = 0; i < detail.exercises.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: FitFatTokens.spaceM),
+                    child: _ExerciseCard(
+                      block: detail.exercises[i],
+                      metrics: metrics[i],
+                      prSets: prSets,
+                      l10n: l10n,
+                    ),
+                  ),
+              const SizedBox(height: FitFatTokens.spaceM),
+              DangerRow(
+                action: FormDeleteAction(
+                  label: l10n.workoutDetailDelete,
+                  consequence: setsDone == 0
+                      ? null
+                      : l10n.workoutDetailDeleteConsequence(setsDone),
+                  onDelete: () => _delete(context, ref, setsDone),
+                ),
+              ),
+              if (template != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: FitFatTokens.spaceM),
+                  child: Text(
+                    l10n.workoutDetailFromTemplate(template.template.name),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(l10n.workoutDetailExercises, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          if (detail.exercises.isEmpty)
-            EmptyState(
-              icon: Icons.fitness_center,
-              title: l10n.emptyWorkoutDetailTitle,
-              description: l10n.emptyWorkoutDetailBody,
-            )
-          else
-            for (final block in detail.exercises)
-              _ExerciseSummaryCard(block: block, l10n: l10n),
-        ],
+        ),
       ),
     );
   }
 }
 
-final class _ExerciseSummaryCard extends ConsumerWidget {
-  final ExerciseBlock block;
-  final AppLocalizations l10n;
+const _tab = [FontFeature.tabularFigures()];
 
-  const _ExerciseSummaryCard({required this.block, required this.l10n});
+/// Where the volume went: one segment per exercise (top three + the rest).
+final class _VolumeSplit extends StatelessWidget {
+  const _VolumeSplit({required this.parts});
+
+  final List<(String, double)> parts;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final colors = theme.extension<FitFatColors>()!;
+    final sorted = [...parts.where((p) => p.$2 > 0)]
+      ..sort((a, b) => b.$2.compareTo(a.$2));
+    final total = sorted.fold(0.0, (a, p) => a + p.$2);
+    final top = sorted.take(3).toList();
+    final rest = sorted.skip(3).fold(0.0, (a, p) => a + p.$2);
+    final palette = [
+      scheme.primary,
+      Color.lerp(scheme.primary, scheme.surface, 0.45)!,
+      colors.warning,
+      scheme.surfaceContainerHighest,
+    ];
+    final segments = [
+      for (var i = 0; i < top.length; i++) (top[i].$1, top[i].$2, palette[i]),
+      if (rest > 0)
+        (AppLocalizations.of(context)!.workoutDetailOther, rest, palette[3]),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: FitFatTokens.spaceS,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(FitFatTokens.radiusFull),
+          child: SizedBox(
+            height: 8,
+            child: Row(
+              spacing: 2,
+              children: [
+                for (final (_, v, c) in segments)
+                  Expanded(
+                    flex: (v / total * 1000).round().clamp(1, 1000),
+                    child: ColoredBox(color: c),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        Wrap(
+          spacing: FitFatTokens.spaceM,
+          runSpacing: 2,
+          children: [
+            for (final (name, v, c) in segments)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 4,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: c,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Text(
+                    '$name ${(v / total * 100).round()}%',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// One exercise: name, "N sets · volume · avg rest", then a bar per set
+/// (filled by reps done against planned) with the rest after it.
+final class _ExerciseCard extends ConsumerWidget {
+  const _ExerciseCard({
+    required this.block,
+    required this.metrics,
+    required this.prSets,
+    required this.l10n,
+  });
+
+  final ExerciseBlock block;
+  final _ExerciseMetrics metrics;
+  final Set<String> prSets;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final metrics = _ExerciseMetrics.fromBlock(block);
     final unit = ref.watch(settingsProvider).weightUnit;
-    final unitLabel = weightUnitLabel(unit);
-    // Field layout follows the exercise type, falling back to the values when
-    // the catalog row is unavailable. Cardio vs weightlifting decides which
-    // pair of actuals a set shows and which editor fields it offers.
     final exercise = ref
         .watch(exerciseByIdProvider(block.exercise.exerciseId))
         .value;
@@ -294,78 +605,64 @@ final class _ExerciseSummaryCard extends ConsumerWidget {
               s.actualDistanceMeters != null,
         );
     final isWeightlifting = exercise?.isWeightlifting ?? !isCardio;
+    final done = block.sets.where((s) => s.isCompleted).length;
+    final summary = [
+      l10n.workoutDetailSetsDone(done),
+      if (isCardio) ...[
+        if (metrics.totalDurationMinutes > 0)
+          '${metrics.totalDurationMinutes} min',
+        if (metrics.totalDistanceMeters > 0)
+          '${(metrics.totalDistanceMeters / 1000).toStringAsFixed(1)} km',
+      ] else if (metrics.totalVolume > 0)
+        formatVolume(metrics.totalVolume, unit),
+      if (metrics.averageRestSeconds != null)
+        l10n.workoutDetailAvgRestShort(
+          formatRestDuration(Duration(seconds: metrics.averageRestSeconds!)),
+        ),
+    ].join(' · ');
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(FitFatTokens.spaceL),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: FitFatTokens.spaceS,
           children: [
-            Text(
-              block.exercise.exerciseName,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Hidden entirely when no set logged rest — a planned-only value
-            // would suggest work that never happened.
-            if (metrics.averageRestSeconds != null)
-              _MetricRow(
-                label: l10n.workoutSummaryAvgRest,
-                value: formatRestDuration(
-                  Duration(seconds: metrics.averageRestSeconds!),
-                ),
-              ),
-            if (isCardio) ...[
-              _MetricRow(
-                label: l10n.workoutSummaryTotalDuration,
-                value: formatRestDuration(
-                  Duration(minutes: metrics.totalDurationMinutes),
-                ),
-              ),
-              if (metrics.totalDistanceMeters > 0)
-                _MetricRow(
-                  label: l10n.workoutSummaryTotalDistance,
-                  value: l10n.workoutSummaryDistanceValue(
-                    formatDecimal(metrics.totalDistanceMeters),
+            Row(
+              spacing: FitFatTokens.spaceM,
+              children: [
+                TrainingIcon(cardio: isCardio),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        block.exercise.exerciseName,
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      Text(
+                        summary,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontFeatures: _tab,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-            ] else ...[
-              _MetricRow(
-                label: l10n.workoutSummaryVolume,
-                value: l10n.workoutSummaryValueKg(
-                  formatWeightValue(metrics.totalVolume, unit),
-                  unitLabel,
-                ),
+              ],
+            ),
+            for (var i = 0; i < block.sets.length; i++)
+              _SetBar(
+                block: block,
+                set: block.sets[i],
+                isLast: i == block.sets.length - 1,
+                isPr: prSets.contains(block.sets[i].id),
+                isWeightlifting: isWeightlifting,
+                isCardio: isCardio,
+                l10n: l10n,
               ),
-              _MetricRow(
-                label: l10n.workoutSummaryMaxWeight,
-                value: l10n.workoutSummaryValueKg(
-                  formatWeightValue(metrics.maxWeightKg, unit),
-                  unitLabel,
-                ),
-              ),
-              _MetricRow(
-                label: l10n.workoutSummaryTotalReps,
-                value: '${metrics.totalReps}',
-              ),
-            ],
-            // Every set is listed, including the ones that were never done.
-            // Those render as zeroes and stay muted; tapping any row reopens
-            // the same actuals editor the active workout uses.
-            if (block.sets.isNotEmpty) ...[
-              const Divider(height: 24),
-              for (final set in block.sets)
-                _SummarySetRow(
-                  block: block,
-                  set: set,
-                  l10n: l10n,
-                  isWeightlifting: isWeightlifting,
-                  isCardio: isCardio,
-                ),
-            ],
           ],
         ),
       ),
@@ -373,21 +670,27 @@ final class _ExerciseSummaryCard extends ConsumerWidget {
   }
 }
 
-/// One set in the completed summary: actuals when logged, zeroes when not.
-final class _SummarySetRow extends ConsumerWidget {
-  final ExerciseBlock block;
-  final ExerciseSet set;
-  final AppLocalizations l10n;
-  final bool isWeightlifting;
-  final bool isCardio;
-
-  const _SummarySetRow({
+/// A set as a bar filled by reps done ÷ planned, labelled "80 kg × 7", the
+/// difference from plan at the end, and the rest taken after it on the
+/// right. Tap to edit the logged values.
+final class _SetBar extends ConsumerWidget {
+  const _SetBar({
     required this.block,
     required this.set,
-    required this.l10n,
+    required this.isLast,
+    required this.isPr,
     required this.isWeightlifting,
     required this.isCardio,
+    required this.l10n,
   });
+
+  final ExerciseBlock block;
+  final ExerciseSet set;
+  final bool isLast;
+  final bool isPr;
+  final bool isWeightlifting;
+  final bool isCardio;
+  final AppLocalizations l10n;
 
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
     final unit = ref.read(settingsProvider).weightUnit;
@@ -423,112 +726,132 @@ final class _SummarySetRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final colors = theme.extension<FitFatColors>()!;
     final unit = ref.watch(settingsProvider).weightUnit;
-    final unitLabel = weightUnitLabel(unit);
     final done = set.isCompleted;
 
-    // Not-done sets show the same fields with zeroes, so the row still lines
-    // up with the ones that were performed. Null in storage is what keeps them
-    // out of the counts and averages.
-    final String value;
+    final String label;
+    double fill;
+    int? delta;
     if (isWeightlifting) {
-      value = l10n.workoutDetailActualSetReps(
-        '${set.actualReps ?? 0}',
-        formatWeightValue(set.actualWeightKg ?? 0, unit),
-        unitLabel,
-      );
+      final reps = set.actualReps ?? 0;
+      label =
+          '${formatWeightValue(set.actualWeightKg ?? set.weightKg ?? 0, unit)} '
+          '${weightUnitLabel(unit)} × $reps';
+      final planned = set.reps;
+      fill = !done
+          ? 0
+          : planned == null || planned == 0
+          ? 1
+          : (reps / planned).clamp(0.0, 1.0);
+      if (done && planned != null && reps != planned) delta = reps - planned;
     } else {
-      value = [
-        l10n.workoutDetailActualSetDuration(
-          '${set.actualDurationMinutes ?? 0}',
-        ),
-        l10n.workoutDetailActualSetDistance(
-          formatDecimal(set.actualDistanceMeters ?? 0),
-        ),
+      label = [
+        if (set.actualDurationMinutes != null)
+          '${set.actualDurationMinutes} min',
+        if (set.actualDistanceMeters != null)
+          '${(set.actualDistanceMeters! / 1000).toStringAsFixed(1)} km',
       ].join(' · ');
+      final planned = set.durationMinutes;
+      fill = !done
+          ? 0
+          : planned == null || planned == 0
+          ? 1
+          : ((set.actualDurationMinutes ?? 0) / planned).clamp(0.0, 1.0);
     }
-    final rest = l10n.workoutSummarySetRest(
-      formatRestDuration(Duration(seconds: set.actualRestSeconds ?? 0)),
-    );
+
+    final barColor = isPr
+        ? colors.success
+        : (delta ?? 0) < 0
+        ? Color.lerp(colors.warning, scheme.surface, 0.3)!
+        : Color.lerp(scheme.primary, scheme.surface, 0.35)!;
+    final onBar = isPr ? scheme.surface : scheme.onSurface;
+    final rest = set.actualRestSeconds;
 
     return InkWell(
       onTap: () => _edit(context, ref),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 56,
-              child: Text(
-                l10n.workoutSummarySetLabel(set.setNumber),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Text(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: done
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurfaceVariant,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-            Text(
-              rest,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: done
-                    ? theme.colorScheme.onSurfaceVariant
-                    : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right,
-              size: 16,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Label/value row used for every summary metric (label on the left, value
-/// right-aligned with tabular figures so numbers stay aligned).
-final class _MetricRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MetricRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
       child: Row(
+        spacing: FitFatTokens.spaceS,
         children: [
           Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            child: SizedBox(
+              height: 28,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ColoredBox(color: scheme.surfaceContainerHighest),
+                    FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: fill,
+                      child: ColoredBox(color: barColor),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: FitFatTokens.spaceS,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              done
+                                  ? (isPr ? '$label · PR' : label)
+                                  : l10n.workoutDetailNotDone,
+                              maxLines: 1,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: done && fill > 0.5
+                                    ? onBar
+                                    : scheme.onSurfaceVariant,
+                                fontFeatures: _tab,
+                              ),
+                            ),
+                          ),
+                          if (delta != null)
+                            Text(
+                              '${delta > 0 ? '+' : '−'}${delta.abs()}',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: scheme.onSurface,
+                                fontFeatures: _tab,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+          SizedBox(
+            width: 64,
+            child: isLast || rest == null
+                ? null
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: 3,
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 14,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        Text(
+                          formatRestDuration(Duration(seconds: rest)),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontFeatures: _tab,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),

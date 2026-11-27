@@ -3889,4 +3889,61 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get trainingSearchTemplates => 'Rechercher un modèle';
+
+  @override
+  String workoutDetailPrLine(int count, String detail) {
+    return '$count record · $detail';
+  }
+
+  @override
+  String workoutDetailVsLast(String change) {
+    return '$change vs la dernière fois';
+  }
+
+  @override
+  String get workoutDetailTime => 'Durée';
+
+  @override
+  String get workoutDetailSets => 'Séries';
+
+  @override
+  String get workoutDetailAvgRest => 'Repos moyen';
+
+  @override
+  String get workoutDetailBurned => 'Brûlées';
+
+  @override
+  String get workoutDetailSaveTemplate => 'Enregistrer comme modèle';
+
+  @override
+  String get workoutDetailOther => 'Autres';
+
+  @override
+  String get workoutDetailDelete => 'Supprimer l’entraînement';
+
+  @override
+  String workoutDetailDeleteConsequence(int count) {
+    return 'Supprime aussi $count séries enregistrées';
+  }
+
+  @override
+  String workoutDetailFromTemplate(String name) {
+    return 'Du modèle $name';
+  }
+
+  @override
+  String workoutDetailSetsDone(int count) {
+    return '$count séries';
+  }
+
+  @override
+  String workoutDetailAvgRestShort(String rest) {
+    return 'repos moyen $rest';
+  }
+
+  @override
+  String get workoutDetailNotDone => 'Non faite';
+
+  @override
+  String get trainingCascadeSetsDone => 'Séries enregistrées';
 }

@@ -6808,6 +6808,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search templates'**
   String get trainingSearchTemplates;
+
+  /// No description provided for @workoutDetailPrLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} PR · {detail}'**
+  String workoutDetailPrLine(int count, String detail);
+
+  /// No description provided for @workoutDetailVsLast.
+  ///
+  /// In en, this message translates to:
+  /// **'{change} vs last time'**
+  String workoutDetailVsLast(String change);
+
+  /// No description provided for @workoutDetailTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get workoutDetailTime;
+
+  /// No description provided for @workoutDetailSets.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets'**
+  String get workoutDetailSets;
+
+  /// No description provided for @workoutDetailAvgRest.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg rest'**
+  String get workoutDetailAvgRest;
+
+  /// No description provided for @workoutDetailBurned.
+  ///
+  /// In en, this message translates to:
+  /// **'Burned'**
+  String get workoutDetailBurned;
+
+  /// No description provided for @workoutDetailSaveTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as template'**
+  String get workoutDetailSaveTemplate;
+
+  /// No description provided for @workoutDetailOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get workoutDetailOther;
+
+  /// No description provided for @workoutDetailDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete workout'**
+  String get workoutDetailDelete;
+
+  /// No description provided for @workoutDetailDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Also removes {count} logged sets'**
+  String workoutDetailDeleteConsequence(int count);
+
+  /// No description provided for @workoutDetailFromTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'From template {name}'**
+  String workoutDetailFromTemplate(String name);
+
+  /// No description provided for @workoutDetailSetsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sets'**
+  String workoutDetailSetsDone(int count);
+
+  /// No description provided for @workoutDetailAvgRestShort.
+  ///
+  /// In en, this message translates to:
+  /// **'avg rest {rest}'**
+  String workoutDetailAvgRestShort(String rest);
+
+  /// No description provided for @workoutDetailNotDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Not done'**
+  String get workoutDetailNotDone;
+
+  /// No description provided for @trainingCascadeSetsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged sets'**
+  String get trainingCascadeSetsDone;
 }
 
 class _AppLocalizationsDelegate

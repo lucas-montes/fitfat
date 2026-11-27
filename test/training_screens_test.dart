@@ -8,6 +8,7 @@ import 'package:fitfat/src/database/database_provider.dart';
 import 'package:fitfat/src/exercise/screens/training_screen.dart';
 import 'package:fitfat/src/exercise/screens/workout_history_screen.dart';
 import 'package:fitfat/src/exercise/screens/workout_templates_screen.dart';
+import 'package:fitfat/src/exercise/screens/workout_summary_screen.dart';
 import 'package:fitfat/src/settings/providers/settings.dart';
 import 'package:fitfat/src/settings/providers/sync_api_keys.dart';
 import 'package:material_ui/material_ui.dart';
@@ -220,5 +221,74 @@ void main() {
     expect(find.text('Bench press'), findsOneWidget);
     expect(find.text('4 × 5 · 85.0 kg'), findsOneWidget);
     expect(find.text('Start'), findsOneWidget);
+  });
+
+  testWidgets('workout detail: summary, set bars with rest, PR, danger row', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      // Earlier session: 80 x 8 (sets the bar to beat).
+      await workout('old', 'Bench day', DateTime(2026, 11, 12, 19));
+      final day = DateTime(2026, 11, 24, 19);
+      await database
+          .into(database.workouts)
+          .insert(
+            db.WorkoutsCompanion.insert(
+              id: 'w',
+              name: 'Bench day',
+              date: day.millisecondsSinceEpoch,
+              startedAt: Value(
+                day
+                    .subtract(const Duration(minutes: 54))
+                    .millisecondsSinceEpoch,
+              ),
+              completedAt: Value(day.millisecondsSinceEpoch),
+              createdAt: day.millisecondsSinceEpoch,
+            ),
+          );
+      await database
+          .into(database.workoutExercises)
+          .insert(
+            db.WorkoutExercisesCompanion.insert(
+              id: 'we-w',
+              workoutId: 'w',
+              exerciseId: 'bench',
+              sortOrder: 0,
+            ),
+          );
+      for (final (i, reps, actual, kg, rest) in [
+        (1, 8, 8, 80.0, 130),
+        (2, 8, 7, 80.0, 165),
+        (3, 5, 5, 85.0, null),
+      ]) {
+        await database
+            .into(database.exerciseSets)
+            .insert(
+              db.ExerciseSetsCompanion.insert(
+                id: 'w-s$i',
+                workoutExerciseId: 'we-w',
+                setNumber: i,
+                reps: Value(reps),
+                weightKg: Value(kg),
+                actualReps: Value(actual),
+                actualWeightKg: Value(kg),
+                actualRestSeconds: Value(rest),
+              ),
+            );
+      }
+    });
+    await pump(tester, const WorkoutSummaryScreen(workoutId: 'w'));
+    expect(tester.takeException(), isNull);
+    expect(find.text('80.0 kg × 7'), findsOneWidget);
+    expect(find.text('−1'), findsOneWidget);
+    expect(find.text('85.0 kg × 5 · PR'), findsOneWidget);
+    expect(find.text('02:10'), findsOneWidget);
+    expect(find.text('02:28'), findsOneWidget); // average rest
+    expect(
+      find.textContaining('1 PR · Bench press 85.0 kg × 5'),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(find.text('Delete workout'), 200);
+    expect(find.text('Also removes 3 logged sets'), findsOneWidget);
   });
 }

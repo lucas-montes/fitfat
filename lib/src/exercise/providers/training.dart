@@ -28,6 +28,15 @@ final lastSetPerExerciseProvider = FutureProvider<Map<String, LastSet>>((
   return ref.watch(trainingSummariesProvider).lastSetPerExercise();
 });
 
+/// PR set ids of one workout.
+final workoutPrSetsProvider = FutureProvider.family<Set<String>, String>((
+  ref,
+  workoutId,
+) async {
+  await ref.watch(workoutListProvider.future);
+  return ref.watch(trainingSummariesProvider).prSetIds(workoutId);
+});
+
 /// Template cards with exercises and last-done dates.
 final templateCardsProvider = FutureProvider<List<TemplateCard>>((ref) async {
   await ref.watch(workoutListProvider.future);

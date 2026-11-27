@@ -2006,5 +2006,20 @@
   "trainingNoMatchBody": "Prueba otro mes o rango.",
   "trainingCascadeExercises": "Ejercicios",
   "trainingCascadeSets": "Series planificadas",
-  "trainingSearchTemplates": "Buscar plantillas"
+  "trainingSearchTemplates": "Buscar plantillas",
+  "workoutDetailPrLine": "{count} récord · {detail}",
+  "workoutDetailVsLast": "{change} vs la última vez",
+  "workoutDetailTime": "Tiempo",
+  "workoutDetailSets": "Series",
+  "workoutDetailAvgRest": "Descanso medio",
+  "workoutDetailBurned": "Quemadas",
+  "workoutDetailSaveTemplate": "Guardar como plantilla",
+  "workoutDetailOther": "Otros",
+  "workoutDetailDelete": "Eliminar entrenamiento",
+  "workoutDetailDeleteConsequence": "También elimina {count} series registradas",
+  "workoutDetailFromTemplate": "De la plantilla {name}",
+  "workoutDetailSetsDone": "{count} series",
+  "workoutDetailAvgRestShort": "descanso medio {rest}",
+  "workoutDetailNotDone": "No hecha",
+  "trainingCascadeSetsDone": "Series registradas"
 }
