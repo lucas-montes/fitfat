@@ -7449,6 +7449,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Out {amount}'**
   String moneyOut(String amount);
+
+  /// No description provided for @plannerViewsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Day, week or month'**
+  String get plannerViewsTooltip;
+
+  /// No description provided for @plannerTabTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get plannerTabTasks;
+
+  /// No description provided for @plannerTabGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get plannerTabGoals;
+
+  /// No description provided for @plannerDoneOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String plannerDoneOf(int done, int total);
+
+  /// No description provided for @quickAddEndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'End time (optional)'**
+  String get quickAddEndTime;
+
+  /// No description provided for @quickAddRepeatNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t repeat'**
+  String get quickAddRepeatNone;
+
+  /// No description provided for @quickAddRepeatDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get quickAddRepeatDaily;
+
+  /// No description provided for @quickAddRepeatWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every week'**
+  String get quickAddRepeatWeekly;
+
+  /// No description provided for @quickAddRepeatMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every month'**
+  String get quickAddRepeatMonthly;
+
+  /// No description provided for @quickAddRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get quickAddRepeat;
+
+  /// No description provided for @quickAddNoGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'No goal'**
+  String get quickAddNoGoal;
+
+  /// No description provided for @quickAddGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get quickAddGoal;
+
+  /// No description provided for @quickAddTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get quickAddTime;
+
+  /// No description provided for @quickAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New task'**
+  String get quickAddHint;
+
+  /// No description provided for @quickAddAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added · next task} other{{count} added · next task}}'**
+  String quickAddAnother(int count);
+
+  /// No description provided for @quickAddMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get quickAddMore;
+
+  /// No description provided for @quickAddAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get quickAddAdd;
 }
 
 class _AppLocalizationsDelegate

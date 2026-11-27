@@ -4294,4 +4294,65 @@ class AppLocalizationsFr extends AppLocalizations {
   String moneyOut(String amount) {
     return 'Sorties $amount';
   }
+
+  @override
+  String get plannerViewsTooltip => 'Jour, semaine ou mois';
+
+  @override
+  String get plannerTabTasks => 'Tâches';
+
+  @override
+  String get plannerTabGoals => 'Objectifs';
+
+  @override
+  String plannerDoneOf(int done, int total) {
+    return '$done sur $total faites';
+  }
+
+  @override
+  String get quickAddEndTime => 'Heure de fin (facultatif)';
+
+  @override
+  String get quickAddRepeatNone => 'Ne se répète pas';
+
+  @override
+  String get quickAddRepeatDaily => 'Tous les jours';
+
+  @override
+  String get quickAddRepeatWeekly => 'Chaque semaine';
+
+  @override
+  String get quickAddRepeatMonthly => 'Chaque mois';
+
+  @override
+  String get quickAddRepeat => 'Répéter';
+
+  @override
+  String get quickAddNoGoal => 'Aucun objectif';
+
+  @override
+  String get quickAddGoal => 'Objectif';
+
+  @override
+  String get quickAddTime => 'Heure';
+
+  @override
+  String get quickAddHint => 'Nouvelle tâche';
+
+  @override
+  String quickAddAnother(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ajoutées · tâche suivante',
+      one: 'Ajoutée · tâche suivante',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get quickAddMore => 'Plus d’options';
+
+  @override
+  String get quickAddAdd => 'Ajouter';
 }

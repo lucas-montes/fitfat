@@ -2127,5 +2127,22 @@
   "moneyType": "Type",
   "moneyShowCount": "{count, plural, =0{Aucune transaction} =1{Afficher 1 transaction} other{Afficher {count} transactions}}",
   "moneyIn": "Entrées {amount}",
-  "moneyOut": "Sorties {amount}"
+  "moneyOut": "Sorties {amount}",
+  "plannerViewsTooltip": "Jour, semaine ou mois",
+  "plannerTabTasks": "Tâches",
+  "plannerTabGoals": "Objectifs",
+  "plannerDoneOf": "{done} sur {total} faites",
+  "quickAddEndTime": "Heure de fin (facultatif)",
+  "quickAddRepeatNone": "Ne se répète pas",
+  "quickAddRepeatDaily": "Tous les jours",
+  "quickAddRepeatWeekly": "Chaque semaine",
+  "quickAddRepeatMonthly": "Chaque mois",
+  "quickAddRepeat": "Répéter",
+  "quickAddNoGoal": "Aucun objectif",
+  "quickAddGoal": "Objectif",
+  "quickAddTime": "Heure",
+  "quickAddHint": "Nouvelle tâche",
+  "quickAddAnother": "{count, plural, =1{Ajoutée · tâche suivante} other{{count} ajoutées · tâche suivante}}",
+  "quickAddMore": "Plus d’options",
+  "quickAddAdd": "Ajouter"
 }

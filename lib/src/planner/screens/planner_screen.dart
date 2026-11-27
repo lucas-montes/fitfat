@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../ui/widgets/top_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -19,8 +20,11 @@ import '../../notifications/task_reminders.dart';
 import '../../tags/providers/tags.dart';
 import '../../settings/providers/settings.dart';
 import 'initiatives_view.dart';
+import '../widgets/quick_add_sheet.dart';
+import '../../goals/providers/goals.dart';
+import '../../models/goal.dart';
 import '../../ui/haptics.dart';
-import '../../ui/tag_colors.dart';
+import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../providers/planner.dart';
 import '../repositories/task_repository.dart';
@@ -30,8 +34,6 @@ import 'planner_item_form.dart';
 enum _PlannerViewMode { day, week, month }
 
 enum _PlanMode { timeline, initiatives }
-
-enum _AddChoice { task, goal }
 
 /// Anchors for the infinite PageViews' page indices (one day / week page).
 /// Index math happens in UTC — local days vary in length across DST
@@ -68,9 +70,6 @@ DateTime _weekStartFromIndex(int index) {
   final u = _kWeekEpochUtc.add(Duration(days: index * 7));
   return DateTime(u.year, u.month, u.day);
 }
-
-/// Min height of an empty hour slot in the day timeline.
-const double _kHourRowMinHeight = 44;
 
 void _invalidatePlannerForDay(WidgetRef ref, DateTime day) {
   final d = DateTime(day.year, day.month, day.day);
@@ -144,86 +143,80 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isToday = _isSameDay(_selectedDay, _startOfDay(DateTime.now()));
+    final tasksMode = _planMode == _PlanMode.timeline;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.plannerAppBar),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: SegmentedButton<_PlanMode>(
-              showSelectedIcon: false,
-              style: const ButtonStyle(
-                visualDensity: VisualDensity.compact,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              segments: [
-                ButtonSegment(
-                  value: _PlanMode.timeline,
-                  icon: const Icon(Icons.view_agenda_outlined),
-                  label: Text(l10n.plannerModeTimeline),
+          if (tasksMode && (!isToday || _viewMode != _PlannerViewMode.day))
+            IconButton(
+              tooltip: l10n.plannerGoToday,
+              icon: const Icon(Icons.today_outlined),
+              onPressed: () {
+                _goToToday();
+                setState(() => _viewMode = _PlannerViewMode.day);
+              },
+            ),
+          if (tasksMode)
+            PopupMenuButton<_PlannerViewMode>(
+              tooltip: l10n.plannerViewsTooltip,
+              icon: Icon(switch (_viewMode) {
+                _PlannerViewMode.day => Icons.calendar_today_outlined,
+                _PlannerViewMode.week => Icons.view_week_outlined,
+                _PlannerViewMode.month => Icons.calendar_month_outlined,
+              }),
+              initialValue: _viewMode,
+              onSelected: (m) => setState(() => _viewMode = m),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: _PlannerViewMode.day,
+                  child: Text(l10n.plannerViewDay),
                 ),
-                ButtonSegment(
-                  value: _PlanMode.initiatives,
-                  icon: const Icon(Icons.explore_outlined),
-                  label: Text(l10n.plannerModeInitiatives),
+                PopupMenuItem(
+                  value: _PlannerViewMode.week,
+                  child: Text(l10n.plannerViewWeek),
+                ),
+                PopupMenuItem(
+                  value: _PlannerViewMode.month,
+                  child: Text(l10n.plannerViewMonth),
                 ),
               ],
-              selected: {_planMode},
-              onSelectionChanged: (selection) =>
-                  setState(() => _planMode = selection.first),
             ),
-          ),
         ],
       ),
       body: Column(
         children: [
-          if (_planMode == _PlanMode.timeline)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-              child: Row(
-                children: [
-                  if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
-                    IconButton(
-                      tooltip: l10n.plannerGoToday,
-                      icon: const Icon(Icons.today_outlined),
-                      onPressed: _goToToday,
-                    ),
-                  if (!_isSameDay(_selectedDay, _startOfDay(DateTime.now())))
-                    const SizedBox(width: 8),
-                  SegmentedButton<_PlannerViewMode>(
-                    showSelectedIcon: false,
-                    style: const ButtonStyle(
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    segments: [
-                      ButtonSegment(
-                        value: _PlannerViewMode.day,
-                        icon: const Icon(Icons.view_day_outlined),
-                        tooltip: l10n.plannerViewDay,
-                      ),
-                      ButtonSegment(
-                        value: _PlannerViewMode.week,
-                        icon: const Icon(Icons.view_week_outlined),
-                        tooltip: l10n.plannerViewWeek,
-                      ),
-                      ButtonSegment(
-                        value: _PlannerViewMode.month,
-                        icon: const Icon(Icons.calendar_month_outlined),
-                        tooltip: l10n.plannerViewMonth,
-                      ),
-                    ],
-                    selected: {_viewMode},
-                    onSelectionChanged: (selection) =>
-                        setState(() => _viewMode = selection.first),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<_PlanMode>(
+                showSelectedIcon: false,
+                style: const ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                segments: [
+                  ButtonSegment(
+                    value: _PlanMode.timeline,
+                    label: Text(l10n.plannerTabTasks),
+                  ),
+                  ButtonSegment(
+                    value: _PlanMode.initiatives,
+                    label: Text(l10n.plannerTabGoals),
                   ),
                 ],
+                selected: {_planMode},
+                onSelectionChanged: (selection) =>
+                    setState(() => _planMode = selection.first),
               ),
             ),
+          ),
           Expanded(
             child: _planMode == _PlanMode.initiatives
-                ? InitiativesView(onAdd: _showInitiativeSheet)
+                ? InitiativesView(onAdd: _newGoal)
                 : switch (_viewMode) {
                     _PlannerViewMode.day => _DayFlowView(
                       key: _dayFlowKey,
@@ -231,7 +224,7 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                       isSameDay: _isSameDay,
                       onSelectedDayChanged: (day) =>
                           setState(() => _selectedDay = _startOfDay(day)),
-                      onAddItem: _addItem,
+                      onAddItem: _quickAdd,
                       onToggleDone: _toggleDone,
                       onToggleCancelled: _toggleCancelled,
                       onOpenDetail: _openDetail,
@@ -265,78 +258,70 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: null,
-        onPressed: _planMode == _PlanMode.initiatives
-            ? _showInitiativeSheet
-            : _showAddSheet,
+        tooltip: tasksMode ? l10n.plannerAddTask : l10n.goalsNew,
+        onPressed: tasksMode ? _quickAdd : _newGoal,
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  /// FAB opens a chooser instead of assuming what to create: tasks and goals
-  /// are both reachable from every view.
-  Future<void> _showAddSheet() async {
-    final l10n = AppLocalizations.of(context)!;
-    final choice = await showModalBottomSheet<_AddChoice>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.check_circle_outline),
-              title: Text(l10n.plannerAddTask),
-              onTap: () => Navigator.of(ctx).pop(_AddChoice.task),
-            ),
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: Text(l10n.goalsNew),
-              onTap: () => Navigator.of(ctx).pop(_AddChoice.goal),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (!mounted) return;
-    switch (choice) {
-      case _AddChoice.task:
-        await _addItem();
-      case _AddChoice.goal:
-        await Navigator.of(
-          context,
-        ).push<bool>(MaterialPageRoute(builder: (_) => const GoalFormScreen()));
-      case null:
-        break;
-    }
+  Future<void> _newGoal() async {
+    await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const GoalFormScreen()));
   }
 
-  /// Initiatives-mode FAB: goals only (no day-bound task).
-  Future<void> _showInitiativeSheet() async {
-    final l10n = AppLocalizations.of(context)!;
-    final choice = await showModalBottomSheet<_AddChoice>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: Text(l10n.goalsNew),
-              onTap: () => Navigator.of(ctx).pop(_AddChoice.goal),
-            ),
-          ],
-        ),
-      ),
+  /// + on Today: the quick-add sheet. Each Add inserts a task and keeps the
+  /// sheet open; More options continues in the full form.
+  Future<void> _quickAdd() async {
+    final goals = [
+      for (final g in ref.read(goalListProvider).value ?? const <Goal>[])
+        if (g.status == GoalStatus.active || g.status == GoalStatus.planned) g,
+    ];
+    final more = await showQuickAddSheet(
+      context,
+      day: _selectedDay,
+      goals: goals,
+      onAdd: _insertQuick,
     );
-    if (!mounted) return;
-    switch (choice) {
-      case _AddChoice.goal:
-        await Navigator.of(
-          context,
-        ).push<bool>(MaterialPageRoute(builder: (_) => const GoalFormScreen()));
-      case _AddChoice.task:
-      case null:
-        break;
+    if (more != null && mounted) await _addItem(initialTitle: more.title);
+  }
+
+  Future<void> _insertQuick(QuickTask t) async {
+    final repo = ref.read(taskRepositoryProvider);
+    final day = _startOfDay(t.day);
+    final existing = [
+      for (final entry
+          in ref.read(dayEntriesProvider(day)).value ?? const <PlannerEntry>[])
+        if (entry is TaskEntry) entry.task,
+    ];
+    var next = 0;
+    for (final it in existing) {
+      if (it.sortOrder >= next) next = it.sortOrder + 1;
+    }
+    final item = newTask(
+      day: day,
+      title: t.title,
+      sortOrder: next,
+      startTimeMinutes: t.startMinutes,
+      endTimeMinutes: t.endMinutes,
+      recurrence: t.recurrence,
+    );
+    await repo.insert(item);
+    if (t.recurrence != null) {
+      await repo.update(item.copyWith(seriesId: item.id));
+    }
+    if (t.goalId != null) {
+      await ref.read(linksRepositoryProvider).linkTaskGoal(item.id, t.goalId!);
+      ref.invalidate(tasksByGoalProvider(t.goalId!));
+    }
+    if (mounted) await _syncReminder(item);
+    ref.invalidate(dayEntriesProvider(day));
+    invalidateDashboard(ref);
+    if (t.recurrence != null) {
+      unawaited(
+        repo.materializeUpTo(item.day.add(_plannerHorizon)).catchError((_) {}),
+      );
     }
   }
 
@@ -371,11 +356,12 @@ final class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     invalidateDashboard(ref);
   }
 
-  Future<void> _addItem() async {
+  Future<void> _addItem({String? initialTitle}) async {
     final l10n = AppLocalizations.of(context)!;
     final result = await showPlannerItemDialog(
       context,
       dialogTitle: l10n.plannerAddTask,
+      initialTitle: initialTitle,
       initialDueDate: _selectedDay,
     );
     if (result == null || !mounted) return;
@@ -950,45 +936,129 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final material = MaterialLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final entriesAsync = ref.watch(dayEntriesProvider(widget.day));
     final dismissed = ref.watch(dismissedTaskIdsProvider);
     final cbs = widget.callbacks;
 
-    // The union provider already merges tasks for this day.
-    final allTasks = [
+    final tasks = [
       for (final entry in entriesAsync.value ?? const <PlannerEntry>[])
-        if (entry is TaskEntry) entry.task,
+        if (entry is TaskEntry &&
+            !entry.task.isCancelled &&
+            !dismissed.contains(entry.task.id))
+          entry.task,
     ];
-    final visibleTasks = [
-      for (final t in allTasks)
-        if (!t.isCancelled && !dismissed.contains(t.id)) t,
+    final timed = [
+      for (final t in tasks)
+        if (t.startTimeMinutes != null) t,
+    ]..sort((a, b) => a.startTimeMinutes!.compareTo(b.startTimeMinutes!));
+    final anytime = [
+      for (final t in tasks)
+        if (t.startTimeMinutes == null) t,
     ];
+    final done = tasks.where((t) => t.done).length;
+    final now = DateTime.now();
+    final isToday = cbs.isSameDay(widget.day, now);
+    final nowMinutes = now.hour * 60 + now.minute;
+
+    void step(int delta) => context
+        .findAncestorStateOfType<_DayFlowViewState>()
+        ?.animateToDate(_dayPageIndex(widget.day) + delta);
+
+    Widget row(Task t) => _TaskRow(
+      key: ValueKey(t.id),
+      item: t,
+      onToggleDone: () => cbs.onToggleDone(t),
+      onToggleCancelled: () {
+        ref.read(dismissedTaskIdsProvider.notifier).add(t.id);
+        cbs.onToggleCancelled(t);
+      },
+      onOpenDetail: () => cbs.onOpenDetail(t),
+      onEdit: () => cbs.onEditItem(t),
+      onDelete: () {
+        ref.read(dismissedTaskIdsProvider.notifier).add(t.id);
+        cbs.onDeleteItem(t);
+      },
+      onOpenWorkout: () => cbs.onOpenWorkout(t),
+    );
+
+    Widget card(List<Widget> rows) => Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0 && rows[i] is! _NowLine && rows[i - 1] is! _NowLine)
+              Divider(
+                height: 1,
+                indent: FitFatTokens.spaceL,
+                endIndent: FitFatTokens.spaceL,
+                color: scheme.outlineVariant,
+              ),
+            rows[i],
+          ],
+        ],
+      ),
+    );
+
+    // The now line goes before the first task that starts after now.
+    final timedRows = <Widget>[];
+    var nowPlaced = !isToday;
+    for (final t in timed) {
+      if (!nowPlaced && t.startTimeMinutes! > nowMinutes) {
+        timedRows.add(const _NowLine());
+        nowPlaced = true;
+      }
+      timedRows.add(row(t));
+    }
+    if (!nowPlaced && timed.isNotEmpty) timedRows.add(const _NowLine());
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
           child: Row(
             children: [
+              IconButton(
+                tooltip: MaterialLocalizations.of(context).previousPageTooltip,
+                icon: const Icon(Icons.chevron_left),
+                onPressed: () => step(-1),
+              ),
               Expanded(
-                child: Text(
-                  material.formatMediumDate(widget.day),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Column(
+                  children: [
+                    Text(
+                      isToday
+                          ? l10n.plannerToday
+                          : DateFormat.EEEE(locale).format(widget.day),
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    Text(
+                      [
+                        DateFormat.MMMd(locale).format(widget.day),
+                        if (tasks.isNotEmpty)
+                          l10n.plannerDoneOf(done, tasks.length),
+                      ].join(' · '),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              IconButton(
+                tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+                icon: const Icon(Icons.chevron_right),
+                onPressed: () => step(1),
               ),
             ],
           ),
         ),
-        const Divider(height: 1),
         Expanded(
-          child: entriesAsync.hasError && !entriesAsync.hasValue
-              ? Center(child: Text(entriesAsync.error.toString()))
-              : entriesAsync.isLoading && !entriesAsync.hasValue
-              ? const Center(child: CircularProgressIndicator())
-              : visibleTasks.isEmpty
+          child: tasks.isEmpty
               ? EmptyState(
                   icon: Icons.event_note,
                   title: l10n.emptyPlannerTitle,
@@ -996,201 +1066,75 @@ final class _DayTimelinePageState extends ConsumerState<_DayTimelinePage> {
                   ctaLabel: l10n.emptyPlannerCta,
                   onCtaPressed: cbs.onAddItem,
                 )
-              : _ErrorGuard(
-                  hasError: false,
-                  message: null,
-                  child: ListView(
-                    controller: _scrollController,
-                    children: _buildChildren(l10n, material, visibleTasks),
+              : ListView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(
+                    FitFatTokens.spaceL,
+                    FitFatTokens.spaceXs,
+                    FitFatTokens.spaceL,
+                    96,
                   ),
+                  children: [
+                    if (timedRows.isNotEmpty) card(timedRows),
+                    if (anytime.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 16, 4, 6),
+                        child: Text(
+                          l10n.plannerAnytime.toUpperCase(),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            letterSpacing: 0.9,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      card([for (final t in anytime) row(t)]),
+                    ],
+                  ],
                 ),
         ),
       ],
     );
   }
-
-  List<Widget> _buildChildren(
-    AppLocalizations l10n,
-    MaterialLocalizations material,
-    List<Task> tasks,
-  ) {
-    final theme = Theme.of(context);
-    final cbs = widget.callbacks;
-    final children = <Widget>[];
-
-    // Untimed tasks pin to the top "Anytime" group; timed ones flow down the
-    // hour grid below.
-    final untimed = [
-      for (final it in tasks)
-        if (it.startTimeMinutes == null) it,
-    ];
-    final timed = [
-      for (final it in tasks)
-        if (it.startTimeMinutes != null) it,
-    ];
-    timed.sort((a, b) => a.startTimeMinutes!.compareTo(b.startTimeMinutes!));
-
-    if (untimed.isNotEmpty) {
-      children.add(
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Text(
-            l10n.plannerAnytime,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-      for (final it in untimed) {
-        children.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: _TimelineItemCard(
-              key: ValueKey(it.id),
-              item: it,
-              l10n: l10n,
-              onToggleDone: () => cbs.onToggleDone(it),
-              onToggleCancelled: () {
-                ref.read(dismissedTaskIdsProvider.notifier).add(it.id);
-                cbs.onToggleCancelled(it);
-              },
-              onOpenDetail: () => cbs.onOpenDetail(it),
-              onEdit: () => cbs.onEditItem(it),
-              onDelete: () {
-                ref.read(dismissedTaskIdsProvider.notifier).add(it.id);
-                cbs.onDeleteItem(it);
-              },
-              onOpenWorkout: () => cbs.onOpenWorkout(it),
-            ),
-          ),
-        );
-      }
-      children.add(const SizedBox(height: 8));
-    }
-
-    // Hour grid: one row per hour; tasks sit under their start hour.
-    final byHour = <int, List<Task>>{};
-    for (final it in timed) {
-      byHour.putIfAbsent(it.startTimeMinutes! ~/ 60, () => []).add(it);
-    }
-    for (var hour = 0; hour < 24; hour++) {
-      final slot = byHour[hour];
-      final fmt = material.formatHour(
-        TimeOfDay(hour: hour, minute: 0),
-        alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
-      );
-      children.add(
-        Container(
-          constraints: slot == null
-              ? const BoxConstraints(minHeight: _kHourRowMinHeight)
-              : null,
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-                width: 0.5,
-              ),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 56,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 6, right: 4),
-                  child: Text(
-                    fmt,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: slot == null
-                    ? const SizedBox()
-                    : Column(
-                        children: [
-                          for (final it in slot)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              child: _TimelineItemCard(
-                                key: ValueKey(it.id),
-                                item: it,
-                                l10n: l10n,
-                                timeLabel: _timeLabel(material, it),
-                                onToggleDone: () => cbs.onToggleDone(it),
-                                onToggleCancelled: () {
-                                  ref
-                                      .read(dismissedTaskIdsProvider.notifier)
-                                      .add(it.id);
-                                  cbs.onToggleCancelled(it);
-                                },
-                                onOpenDetail: () => cbs.onOpenDetail(it),
-                                onEdit: () => cbs.onEditItem(it),
-                                onDelete: () {
-                                  ref
-                                      .read(dismissedTaskIdsProvider.notifier)
-                                      .add(it.id);
-                                  cbs.onDeleteItem(it);
-                                },
-                                onOpenWorkout: () => cbs.onOpenWorkout(it),
-                              ),
-                            ),
-                        ],
-                      ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    children.add(const SizedBox(height: 16));
-    return children;
-  }
-
-  String _timeLabel(MaterialLocalizations material, Task item) {
-    final startText = material.formatTimeOfDay(
-      TimeOfDay(
-        hour: item.startTimeMinutes! ~/ 60,
-        minute: item.startTimeMinutes! % 60,
-      ),
-    );
-    final end = item.endTimeMinutes;
-    if (end == null) return startText;
-    return '$startText – ${material.formatTimeOfDay(TimeOfDay(hour: end ~/ 60, minute: end % 60))}';
-  }
 }
 
-/// Renders the load-error branch without losing the surrounding layout.
-final class _ErrorGuard extends StatelessWidget {
-  final bool hasError;
-  final String? message;
-  final Widget child;
-
-  const _ErrorGuard({
-    required this.hasError,
-    this.message,
-    required this.child,
-  });
+/// The red current-time line in today's list.
+final class _NowLine extends StatelessWidget {
+  const _NowLine();
 
   @override
   Widget build(BuildContext context) {
-    if (!hasError) return child;
-    final l10n = AppLocalizations.of(context)!;
-    return Center(child: Text(l10n.errorWithMessage(message ?? '')));
+    final color = Theme.of(context).colorScheme.error;
+    final now = TimeOfDay.now();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL),
+      child: Row(
+        spacing: 6,
+        children: [
+          SizedBox(
+            width: 44,
+            child: Text(
+              MaterialLocalizations.of(
+                context,
+              ).formatTimeOfDay(now, alwaysUse24HourFormat: true),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          Expanded(child: Container(height: 1.5, color: color)),
+        ],
+      ),
+    );
   }
 }
 
-/// The week flow: an infinite horizontal `PageView` whose pages are seven-day
-/// overviews. Each column shows that day's timed tasks by start time, then
 /// untimed ones. Tapping a column header jumps to that day.
 final class _WeekFlowView extends StatefulWidget {
   final DateTime initialDay;
@@ -1660,19 +1604,12 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
   }
 }
 
-/// A planner task card used for both the Anytime group and the hourly slots.
-/// Layout is identical for both: the done `Checkbox` is on the left, the
-/// title beside it, and the time pill (scheduled only) plus the linked-workout
-/// icon sit in a small meta row underneath the title.
-///
-/// Gestures: tap opens the full detail view; long-press edits in place.
-/// Swipe left deletes; swipe right cancels (reopens a cancelled task). The
-/// done checkbox is inert while cancelled — use swipe-right or the detail
-/// actions to bring the task back.
-final class _TimelineItemCard extends StatelessWidget {
+/// One task in the day list: start / end on the left (timed tasks), the
+/// checkbox, the title and a meta line (tags, repeat, linked workout, note).
+/// Swipe right cancels (or reopens), swipe left deletes; tap opens the detail,
+/// long-press edits.
+final class _TaskRow extends StatelessWidget {
   final Task item;
-  final AppLocalizations l10n;
-  final String? timeLabel;
   final VoidCallback onToggleDone;
   final VoidCallback onToggleCancelled;
   final VoidCallback onOpenDetail;
@@ -1680,11 +1617,9 @@ final class _TimelineItemCard extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onOpenWorkout;
 
-  const _TimelineItemCard({
+  const _TaskRow({
     super.key,
     required this.item,
-    required this.l10n,
-    this.timeLabel,
     required this.onToggleDone,
     required this.onToggleCancelled,
     required this.onOpenDetail,
@@ -1693,123 +1628,63 @@ final class _TimelineItemCard extends StatelessWidget {
     required this.onOpenWorkout,
   });
 
+  String _hm(int m) =>
+      '${(m ~/ 60).toString().padLeft(2, '0')}:${(m % 60).toString().padLeft(2, '0')}';
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final notes = item.notes;
-    final hasNotes = notes != null && notes.isNotEmpty;
-    final hasWorkout = item.workoutId != null;
+    final scheme = theme.colorScheme;
+    final muted = scheme.onSurfaceVariant;
     final cancelled = item.isCancelled;
-
-    final timePill = timeLabel != null
-        ? Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.schedule,
-                  size: 12,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  timeLabel!,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: 11,
-                    color: theme.colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          )
-        : null;
-
-    // Meta row shown under the title: cancelled chip, time pill (scheduled) +
-    // linked-workout icon + tag chips. All intentionally small; wraps on
-    // narrow screens.
-    final metaChildren = <Widget>[
-      if (cancelled)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.errorContainer,
-            borderRadius: BorderRadius.circular(6),
+    final faded = item.done || cancelled;
+    final note = item.notes?.trim();
+    final metaStyle = theme.textTheme.bodySmall?.copyWith(color: muted);
+    final meta = <Widget>[
+      for (final tag in item.tags ?? const <String>[])
+        Text('#$tag', style: metaStyle),
+      if (item.recurrence != null || item.seriesId != null)
+        Icon(Icons.repeat, size: 14, color: muted),
+      if (item.workoutId != null)
+        InkWell(
+          onTap: onOpenWorkout,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 2,
+            children: [
+              Icon(Icons.fitness_center, size: 14, color: muted),
+              Text(l10n.plannerLinkedWorkout, style: metaStyle),
+            ],
           ),
+        ),
+      if (note != null && note.isNotEmpty)
+        Flexible(
           child: Text(
-            l10n.plannerTaskCancelled,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontSize: 11,
-              color: theme.colorScheme.onErrorContainer,
-              fontWeight: FontWeight.bold,
-            ),
+            note,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: metaStyle,
           ),
         ),
     ];
-    if (timePill != null) metaChildren.add(timePill);
-    if (hasWorkout) {
-      metaChildren.add(
-        IconButton(
-          icon: const Icon(Icons.fitness_center, size: 16),
-          tooltip: l10n.plannerLinkedWorkout,
-          onPressed: onOpenWorkout,
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(maxWidth: 24, maxHeight: 24),
-        ),
-      );
-    }
-    if (item.recurrence != null || item.seriesId != null) {
-      metaChildren.add(
-        Icon(Icons.repeat, size: 14, color: theme.colorScheme.onSurfaceVariant),
-      );
-    }
-    if (item.tags != null) {
-      for (final tag in item.tags!) {
-        final (bg, fg) = TagColors.forTag(tag);
-        metaChildren.add(
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              tag,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontSize: 11,
-                color: fg,
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
     return Dismissible(
       key: ValueKey(item.id),
       direction: DismissDirection.horizontal,
-      // Swipe right = cancel (reopen when already cancelled); swipe left =
-      // delete.
       background: Container(
-        color: theme.colorScheme.tertiary,
+        color: scheme.tertiary,
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 16),
         child: Icon(
           cancelled ? Icons.undo : Icons.cancel_outlined,
-          color: theme.colorScheme.onTertiary,
+          color: scheme.onTertiary,
         ),
       ),
       secondaryBackground: Container(
-        color: theme.colorScheme.error,
+        color: scheme.error,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
-        child: Icon(Icons.delete, color: theme.colorScheme.onError),
+        child: Icon(Icons.delete, color: scheme.onError),
       ),
       onDismissed: (direction) {
         if (direction == DismissDirection.startToEnd) {
@@ -1818,62 +1693,75 @@ final class _TimelineItemCard extends StatelessWidget {
           onDelete();
         }
       },
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Inert while cancelled: bring the task back first (swipe
-              // right or the detail actions) before marking it done.
-              Checkbox(
-                value: item.done,
-                onChanged: cancelled ? null : (_) => onToggleDone(),
-              ),
-              Expanded(
-                child: InkWell(
-                  // Tap opens the full detail screen; long-press edits in
-                  // place.
-                  onTap: onOpenDetail,
-                  onLongPress: onEdit,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.title,
-                        style: item.done || cancelled
-                            ? TextStyle(
-                                decoration: TextDecoration.lineThrough,
-                                color: theme.colorScheme.outline,
-                              )
-                            : null,
-                      ),
-                      if (hasNotes)
+      child: InkWell(
+        onTap: onOpenDetail,
+        onLongPress: onEdit,
+        child: Opacity(
+          opacity: faded ? 0.55 : 1,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              FitFatTokens.spaceL,
+              FitFatTokens.spaceXs,
+              FitFatTokens.spaceS,
+              FitFatTokens.spaceXs,
+            ),
+            child: Row(
+              children: [
+                if (item.startTimeMinutes != null)
+                  SizedBox(
+                    width: 44,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          notes,
+                          _hm(item.startTimeMinutes!),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        if (item.endTimeMinutes != null)
+                          Text(
+                            _hm(item.endTimeMinutes!),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: muted,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                Checkbox(
+                  value: item.done,
+                  visualDensity: VisualDensity.compact,
+                  onChanged: cancelled ? null : (_) => onToggleDone(),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            decoration: faded
+                                ? TextDecoration.lineThrough
+                                : null,
                           ),
                         ),
-                      if (metaChildren.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: metaChildren,
-                          ),
-                        ),
-                    ],
+                        if (cancelled)
+                          Text(l10n.plannerTaskCancelled, style: metaStyle),
+                        if (meta.isNotEmpty) Row(spacing: 6, children: meta),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
