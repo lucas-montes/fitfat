@@ -4088,4 +4088,72 @@ class AppLocalizationsFr extends AppLocalizations {
   String mealEditPer100(int kcal) {
     return '$kcal kcal/100 g';
   }
+
+  @override
+  String get recipeSearch => 'Rechercher une recette';
+
+  @override
+  String get recipeSortNewest => 'Récentes';
+
+  @override
+  String get recipeSortName => 'Nom';
+
+  @override
+  String get recipeSortKcal => 'kcal';
+
+  @override
+  String recipeCooked(String grams) {
+    return '$grams g cuit';
+  }
+
+  @override
+  String recipeEaten(String grams) {
+    return '$grams g mangés';
+  }
+
+  @override
+  String recipeLeft(String grams) {
+    return 'reste $grams g';
+  }
+
+  @override
+  String recipeNoneEaten(String grams) {
+    return '$grams g · rien de mangé';
+  }
+
+  @override
+  String get recipeAllEaten => 'Tout mangé';
+
+  @override
+  String get recipeEdit => 'Modifier la recette';
+
+  @override
+  String get recipeMissingIngredient => 'Ingrédient manquant';
+
+  @override
+  String get recipeColIngredient => 'Ingrédient';
+
+  @override
+  String get recipeTypeIngredient => 'Tapez un ingrédient…';
+
+  @override
+  String get recipeRaw => 'Cru';
+
+  @override
+  String get recipePer100 => '/100 g';
+
+  @override
+  String recipeYield(int percent) {
+    return 'rendement $percent%';
+  }
+
+  @override
+  String get recipeDelete => 'Supprimer la recette';
+
+  @override
+  String get recipeDeleteConsequence =>
+      'Les repas déjà enregistrés la conservent';
+
+  @override
+  String get recipeCookedWeight => 'Poids cuit';
 }

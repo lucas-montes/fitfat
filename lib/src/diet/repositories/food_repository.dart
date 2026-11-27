@@ -57,6 +57,22 @@ final class FoodRepository {
     return _resolveAll(foods);
   }
 
+  /// Grams logged per food id across all meals that are not deleted: how
+  /// much of a recipe's batch has been eaten.
+  Future<Map<String, double>> eatenGrams() async {
+    final rows = await _database
+        .customSelect(
+          'SELECT mf.food_id AS food_id, SUM(mf.amount) AS grams '
+          'FROM meal_foods mf JOIN meals m ON m.id = mf.meal_id '
+          'WHERE m.deleted_at IS NULL GROUP BY mf.food_id',
+          readsFrom: {_database.mealFoods, _database.meals},
+        )
+        .get();
+    return {
+      for (final r in rows) r.read<String>('food_id'): r.read<double>('grams'),
+    };
+  }
+
   /// One food with its composition loaded, or null when it does not exist.
   Future<Food?> getById(String id) async {
     final row = await (_database.select(

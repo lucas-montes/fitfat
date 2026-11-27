@@ -68,8 +68,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Tap the "+" next to the only ingredient offered.
-    await tester.tap(find.byIcon(Icons.add));
+    // Tap the only ingredient offered.
+    await tester.tap(find.byKey(ValueKey('candidate-$oatsId')));
     await tester.pumpAndSettle();
 
     // The crash surfaced as a framework exception rather than a failed
@@ -77,7 +77,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Oats'), findsOneWidget);
     // Its default amount is on screen, and the cooked weight followed it.
-    expect(find.text('100'), findsNWidgets(2));
+    expect(find.widgetWithText(TextField, '100'), findsNWidgets(2));
   });
 
   testWidgets('saving with no parts is refused rather than throwing', (
@@ -85,9 +85,7 @@ void main() {
   ) async {
     await pumpForm(tester);
 
-    await tester.ensureVisible(find.text('Save recipe'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Save recipe'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -112,12 +110,10 @@ void main() {
       'Oats',
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byKey(ValueKey('candidate-$oatsId')));
     await tester.pumpAndSettle();
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(ListView), const Offset(0, -800));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Save recipe'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -139,7 +135,7 @@ void main() {
       'Oats',
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byKey(ValueKey('candidate-$oatsId')));
     await tester.pumpAndSettle();
 
     // 100 g raw at 400 kcal/100g cooked down to 80 g keeps 400 kcal, so the
@@ -149,9 +145,7 @@ void main() {
       '80',
     );
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(ListView), const Offset(0, -800));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Save recipe'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -182,11 +176,9 @@ void main() {
     expect(find.text('Baked potatoes'), findsOneWidget);
     expect(find.text('Oats'), findsOneWidget);
     expect(find.text('New recipe'), findsOneWidget);
-    expect(find.text('100'), findsNWidgets(2));
+    expect(find.widgetWithText(TextField, '100'), findsNWidgets(2));
 
-    await tester.drag(find.byType(ListView), const Offset(0, -800));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Save recipe'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

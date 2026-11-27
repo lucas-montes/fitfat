@@ -4,6 +4,7 @@ import '../../database/database_provider.dart';
 import '../../models/food.dart';
 import '../repositories/food_repository.dart';
 import 'ingredients.dart';
+import 'meals.dart';
 
 // ---------------------------------------------------------------------------
 // Repository providers
@@ -36,6 +37,13 @@ final foodCombinationProvider = FutureProvider<List<ResolvedFood>>((ref) async {
     for (final entry in all)
       if (!entry.food.isDerived) entry,
   ];
+});
+
+/// Grams eaten per food id (from the meal history); recomputed whenever the
+/// meal list changes.
+final foodEatenGramsProvider = FutureProvider<Map<String, double>>((ref) async {
+  await ref.watch(mealListProvider.future);
+  return ref.watch(foodRepositoryProvider).eatenGrams();
 });
 
 // ---------------------------------------------------------------------------

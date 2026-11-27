@@ -7120,6 +7120,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{kcal} kcal/100 g'**
   String mealEditPer100(int kcal);
+
+  /// No description provided for @recipeSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search recipes'**
+  String get recipeSearch;
+
+  /// No description provided for @recipeSortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest'**
+  String get recipeSortNewest;
+
+  /// No description provided for @recipeSortName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get recipeSortName;
+
+  /// No description provided for @recipeSortKcal.
+  ///
+  /// In en, this message translates to:
+  /// **'kcal'**
+  String get recipeSortKcal;
+
+  /// No description provided for @recipeCooked.
+  ///
+  /// In en, this message translates to:
+  /// **'{grams} g cooked'**
+  String recipeCooked(String grams);
+
+  /// No description provided for @recipeEaten.
+  ///
+  /// In en, this message translates to:
+  /// **'{grams} g eaten'**
+  String recipeEaten(String grams);
+
+  /// No description provided for @recipeLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{grams} g left'**
+  String recipeLeft(String grams);
+
+  /// No description provided for @recipeNoneEaten.
+  ///
+  /// In en, this message translates to:
+  /// **'{grams} g · none eaten yet'**
+  String recipeNoneEaten(String grams);
+
+  /// No description provided for @recipeAllEaten.
+  ///
+  /// In en, this message translates to:
+  /// **'All eaten'**
+  String get recipeAllEaten;
+
+  /// No description provided for @recipeEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit recipe'**
+  String get recipeEdit;
+
+  /// No description provided for @recipeMissingIngredient.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing ingredient'**
+  String get recipeMissingIngredient;
+
+  /// No description provided for @recipeColIngredient.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredient'**
+  String get recipeColIngredient;
+
+  /// No description provided for @recipeTypeIngredient.
+  ///
+  /// In en, this message translates to:
+  /// **'Type an ingredient…'**
+  String get recipeTypeIngredient;
+
+  /// No description provided for @recipeRaw.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw'**
+  String get recipeRaw;
+
+  /// No description provided for @recipePer100.
+  ///
+  /// In en, this message translates to:
+  /// **'/100 g'**
+  String get recipePer100;
+
+  /// No description provided for @recipeYield.
+  ///
+  /// In en, this message translates to:
+  /// **'yield {percent}%'**
+  String recipeYield(int percent);
+
+  /// No description provided for @recipeDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete recipe'**
+  String get recipeDelete;
+
+  /// No description provided for @recipeDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Meals already logged keep it'**
+  String get recipeDeleteConsequence;
+
+  /// No description provided for @recipeCookedWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooked weight'**
+  String get recipeCookedWeight;
 }
 
 class _AppLocalizationsDelegate

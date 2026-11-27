@@ -38,6 +38,7 @@ class FormScaffold extends StatelessWidget {
     this.leading,
     this.titleWidget,
     this.pinned,
+    this.actions = const [],
   });
 
   final String title;
@@ -71,6 +72,9 @@ class FormScaffold extends StatelessWidget {
 
   /// Stays on top while the fields scroll (e.g. live totals).
   final Widget? pinned;
+
+  /// Extra app-bar actions before Save (e.g. a ⋮ menu).
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +114,7 @@ class FormScaffold extends StatelessWidget {
         leading: leading ?? const CloseButton(),
         title: titleWidget ?? Text(title),
         actions: [
+          ...actions,
           Padding(
             padding: const EdgeInsets.only(right: FitFatTokens.spaceM),
             child: FilledButton(

@@ -4053,4 +4053,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String mealEditPer100(int kcal) {
     return '$kcal kcal/100 g';
   }
+
+  @override
+  String get recipeSearch => 'Search recipes';
+
+  @override
+  String get recipeSortNewest => 'Newest';
+
+  @override
+  String get recipeSortName => 'Name';
+
+  @override
+  String get recipeSortKcal => 'kcal';
+
+  @override
+  String recipeCooked(String grams) {
+    return '$grams g cooked';
+  }
+
+  @override
+  String recipeEaten(String grams) {
+    return '$grams g eaten';
+  }
+
+  @override
+  String recipeLeft(String grams) {
+    return '$grams g left';
+  }
+
+  @override
+  String recipeNoneEaten(String grams) {
+    return '$grams g · none eaten yet';
+  }
+
+  @override
+  String get recipeAllEaten => 'All eaten';
+
+  @override
+  String get recipeEdit => 'Edit recipe';
+
+  @override
+  String get recipeMissingIngredient => 'Missing ingredient';
+
+  @override
+  String get recipeColIngredient => 'Ingredient';
+
+  @override
+  String get recipeTypeIngredient => 'Type an ingredient…';
+
+  @override
+  String get recipeRaw => 'Raw';
+
+  @override
+  String get recipePer100 => '/100 g';
+
+  @override
+  String recipeYield(int percent) {
+    return 'yield $percent%';
+  }
+
+  @override
+  String get recipeDelete => 'Delete recipe';
+
+  @override
+  String get recipeDeleteConsequence => 'Meals already logged keep it';
+
+  @override
+  String get recipeCookedWeight => 'Cooked weight';
 }

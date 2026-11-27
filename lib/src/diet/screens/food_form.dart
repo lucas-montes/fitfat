@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,27 +8,29 @@ import '../../../l10n/app_localizations.dart';
 import '../../models/food.dart';
 import '../../models/ingredient.dart';
 import '../../ui/format.dart';
+import '../../ui/theme_extensions.dart';
+import '../../ui/tokens.dart';
+import '../../ui/widgets/confirm_delete.dart';
+import '../../ui/widgets/form_scaffold.dart';
+import '../../ui/widgets/macro_bar.dart';
 import '../../ui/widgets/top_banner.dart';
 import '../providers/foods.dart';
 import '../providers/ingredients.dart';
 import '../repositories/food_repository.dart';
 import '../services/food_nutrition.dart';
 
-/// Creates or edits a food's **composition**: which ingredients go in it and
-/// how much of each.
+/// Creates or edits a recipe as a table: one row per ingredient (raw grams,
+/// kcal, protein, carbs, fat), an inline row to add one, the raw total, the
+/// cooked weight (weighed after cooking) and the per-100 g row it produces.
 ///
-/// The food itself stores no nutrition — the preview below is resolved live
-/// from the rows via the same pure function the repository and the meal snapshot
-/// use, so what the user sees here is exactly what a meal will record. Amounts
-/// are absolute amounts in the batch (the denominator is their sum), not
-/// percentages.
+/// The food stores no nutrition: every number is resolved live with the same
+/// pure function the repository and the meal snapshot use.
 final class FoodFormScreen extends ConsumerStatefulWidget {
   final Food? food;
 
-  /// An existing recipe to start a **new** one from: its name and composition
-  /// are prefilled, and saving inserts a separate food. Used for a new batch
-  /// of the same dish — editing in place would rewrite every meal already
-  /// logged with the original. Ignored when [food] is set.
+  /// An existing recipe to start a **new** one from (a new batch of the same
+  /// dish): name and composition are prefilled and saving inserts a separate
+  /// food. Ignored when [food] is set.
   final Food? template;
 
   const FoodFormScreen({super.key, this.food, this.template});
@@ -42,25 +45,18 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
   final _searchCtrl = TextEditingController();
   final _cookedCtrl = TextEditingController();
 
-  /// Ingredient id → amount in the batch.
+  /// Ingredient id → amount in the batch (raw grams), in insertion order.
   final Map<String, double> _amounts = {};
 
-  /// Ingredient id → its own row, so a part that is archived (and therefore
-  /// missing from the picker) still renders instead of vanishing on save.
+  /// Ingredient id → its row, so an archived part still renders.
   final Map<String, Ingredient> _parts = {};
-
   final Map<String, TextEditingController> _amountCtrls = {};
-  final Map<String, ValueNotifier<String?>> _amountErrors = {};
 
   String _filter = '';
   bool _saving = false;
 
-  /// Whether the user has taken over the cooked-weight field.
-  ///
-  /// A new recipe starts with the field following the raw batch total, so
-  /// adding ingredients keeps the default meaningful. The moment the user types
-  /// in it (or an existing recipe with a stored weight is loaded) that link is
-  /// broken and amount edits leave the value alone.
+  /// Whether the user has typed their own cooked weight; until then it
+  /// follows the raw total.
   bool _cookedEdited = false;
 
   bool get _isEditing => widget.food != null;
@@ -78,9 +74,8 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
     final components = await ref
         .read(foodRepositoryProvider)
         .getComponents(food.id);
-    // `ingredientListProvider` hides archived rows, so anything it does not
-    // return is fetched directly — otherwise archiving a part and then editing
-    // the recipe would silently drop it on save.
+    // The list provider hides archived rows; fetch those directly so they are
+    // not dropped on save.
     final byId = <String, Ingredient>{
       for (final i in await ref.read(ingredientListProvider.future)) i.id: i,
     };
@@ -97,31 +92,16 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
         if (part == null) continue;
         _parts[c.ingredientId] = part;
         _amounts[c.ingredientId] = c.amount;
+        _amountCtrls[c.ingredientId] = TextEditingController(
+          text: _formatAmount(c.amount),
+        );
       }
-      // A stored weight is authoritative; a legacy null keeps following the raw
-      // total until the user types, exactly like a new recipe. A new batch
-      // from a template never inherits the weight: it is a different cook.
+      // A stored weight is authoritative; a new batch from a template never
+      // inherits it (it is a different cook).
       final stored = _isEditing ? food.cookedWeight : null;
       _cookedEdited = stored != null;
       _cookedCtrl.text = _formatAmount(stored ?? _batchTotal);
     });
-    _syncControllers();
-  }
-
-  void _syncControllers() {
-    for (final id in _amounts.keys) {
-      _amountCtrls.putIfAbsent(
-        id,
-        () => TextEditingController(text: _formatAmount(_amounts[id]!)),
-      );
-      _amountErrors.putIfAbsent(id, () => ValueNotifier<String?>(null));
-    }
-    final live = _amounts.keys.toSet();
-    for (final id in _amountCtrls.keys.toList()) {
-      if (live.contains(id)) continue;
-      _amountCtrls.remove(id)?.dispose();
-      _amountErrors.remove(id)?.dispose();
-    }
   }
 
   String _formatAmount(double v) =>
@@ -135,58 +115,57 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
     for (final c in _amountCtrls.values) {
       c.dispose();
     }
-    for (final e in _amountErrors.values) {
-      e.dispose();
-    }
     super.dispose();
   }
 
-  /// The cooked weight the user typed, or null when the field is empty or not
-  /// a positive number. The resolver falls back to the raw total in that case,
-  /// which keeps the live preview useful while the user is still typing.
   double? get _parsedCooked {
-    final parsed = double.tryParse(_cookedCtrl.text.trim());
+    final parsed = double.tryParse(
+      _cookedCtrl.text.trim().replaceAll(',', '.'),
+    );
     return parsed != null && parsed > 0 ? parsed : null;
   }
 
-  /// Keeps the cooked-weight field in step with the raw total while the user
-  /// has not typed a value of their own.
   void _followRawTotal() {
     if (_cookedEdited) return;
     _cookedCtrl.text = _batchTotal > 0 ? _formatAmount(_batchTotal) : '';
   }
 
-  /// Live per-100g profile of the current draft, or null when nothing is added
-  /// yet. Uses the same resolution the repository snapshots from.
   FoodNutrition? get _preview => _amounts.isEmpty
       ? null
       : resolveFoodPer100g([
-          for (final entry in _amounts.entries)
+          for (final e in _amounts.entries)
             (
-              caloriesPer100g: _parts[entry.key]!.caloriesPer100g,
-              proteinPer100g: _parts[entry.key]!.proteinPer100g,
-              carbsPer100g: _parts[entry.key]!.carbsPer100g,
-              fatPer100g: _parts[entry.key]!.fatPer100g,
-              sodiumPer100g: _parts[entry.key]!.sodiumPer100g,
-              fiberPer100g: _parts[entry.key]!.fiberPer100g,
-              sugarPer100g: _parts[entry.key]!.sugarPer100g,
-              amount: entry.value,
+              caloriesPer100g: _parts[e.key]!.caloriesPer100g,
+              proteinPer100g: _parts[e.key]!.proteinPer100g,
+              carbsPer100g: _parts[e.key]!.carbsPer100g,
+              fatPer100g: _parts[e.key]!.fatPer100g,
+              sodiumPer100g: _parts[e.key]!.sodiumPer100g,
+              fiberPer100g: _parts[e.key]!.fiberPer100g,
+              sugarPer100g: _parts[e.key]!.sugarPer100g,
+              amount: e.value,
             ),
         ], cookedWeight: _parsedCooked);
 
-  /// Total batch weight, which is the denominator of the per-100g figures.
-  double get _batchTotal =>
-      _amounts.values.fold(0.0, (sum, amount) => sum + amount);
+  double get _batchTotal => _amounts.values.fold(0.0, (a, b) => a + b);
 
-  /// Ingredients not yet used in this recipe.
-  List<Ingredient> _candidates(List<Ingredient> all) => [
-    for (final i in all)
-      if (!_amounts.containsKey(i.id)) i,
-  ];
+  void _addPart(Ingredient i) {
+    setState(() {
+      _parts[i.id] = i;
+      _amounts[i.id] = 100;
+      _amountCtrls[i.id] = TextEditingController(text: '100');
+      _followRawTotal();
+      _searchCtrl.clear();
+      _filter = '';
+    });
+  }
 
-  /// Opens a new recipe prefilled from this one. Unsaved edits here are
-  /// discarded; when the new batch is saved this screen closes too, so the
-  /// list refreshes once.
+  void _removePart(String id) => setState(() {
+    _amounts.remove(id);
+    _parts.remove(id);
+    _amountCtrls.remove(id)?.dispose();
+    _followRawTotal();
+  });
+
   Future<void> _duplicate() async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => FoodFormScreen(template: widget.food)),
@@ -194,238 +173,323 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
     if (saved == true && mounted) Navigator.of(context).pop(true);
   }
 
+  Future<void> _delete() async {
+    final l10n = AppLocalizations.of(context)!;
+    final food = widget.food!;
+    final repo = ref.read(foodRepositoryProvider);
+    final done = await confirmDelete(
+      context,
+      itemName: food.name,
+      delete: () async {
+        await repo.archive(food.id);
+        invalidateFoods(ref);
+      },
+      undo: () async {
+        await repo.restore(food.id);
+        invalidateFoods(ref);
+      },
+      confirmLabel: l10n.commonDelete,
+    );
+    if (done && mounted) Navigator.of(context).pop(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final ingredientsAsync = ref.watch(ingredientListProvider);
+    final scheme = theme.colorScheme;
+    final nf = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    final all = ref.watch(ingredientListProvider).value ?? const <Ingredient>[];
+    final query = _filter.trim().toLowerCase();
+    final candidates = query.isEmpty
+        ? const <Ingredient>[]
+        : [
+            for (final i in all)
+              if (!_amounts.containsKey(i.id) &&
+                  i.name.toLowerCase().contains(query))
+                i,
+          ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _isEditing ? l10n.foodFormEditTitle : l10n.foodFormNewTitle,
+    // Raw totals over the parts.
+    var kcal = 0.0, p = 0.0, c = 0.0, f = 0.0;
+    for (final e in _amounts.entries) {
+      final i = _parts[e.key]!;
+      kcal += i.caloriesPer100g * e.value / 100;
+      p += i.proteinPer100g * e.value / 100;
+      c += i.carbsPer100g * e.value / 100;
+      f += i.fatPer100g * e.value / 100;
+    }
+    final per100 = _preview?.per100g;
+    final success = theme.extension<FitFatColors>()?.success ?? scheme.primary;
+
+    String n(double v) => nf.format(v.round());
+
+    return FormScaffold(
+      title: _isEditing ? l10n.foodFormEditTitle : l10n.foodFormNewTitle,
+      formKey: _formKey,
+      saving: _saving,
+      onSave: _save,
+      actions: [
+        if (_isEditing)
+          PopupMenuButton<VoidCallback>(
+            onSelected: (fn) => fn(),
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: _duplicate,
+                child: Text(l10n.foodFormDuplicate),
+              ),
+            ],
+          ),
+      ],
+      delete: _isEditing
+          ? FormDeleteAction(
+              label: l10n.recipeDelete,
+              consequence: l10n.recipeDeleteConsequence,
+              onDelete: _delete,
+            )
+          : null,
+      children: [
+        TextFormField(
+          controller: _nameCtrl,
+          decoration: InputDecoration(
+            labelText: l10n.foodFormNameLabel,
+            hintText: l10n.foodFormNameHint,
+          ),
+          validator: (v) => (v == null || v.trim().isEmpty)
+              ? l10n.foodFormNameRequired
+              : null,
+          textCapitalization: TextCapitalization.sentences,
         ),
-        actions: [
-          if (_isEditing)
-            IconButton(
-              icon: const Icon(Icons.copy_all_outlined),
-              tooltip: l10n.foodFormDuplicate,
-              onPressed: _saving ? null : _duplicate,
+        const SizedBox(height: FitFatTokens.spaceM),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              FitFatTokens.spaceM,
+              FitFatTokens.spaceS,
+              FitFatTokens.spaceM,
+              FitFatTokens.spaceS,
             ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _nameCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.foodFormNameLabel,
-                hintText: l10n.foodFormNameHint,
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? l10n.foodFormNameRequired
-                  : null,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-            const SizedBox(height: 20),
-
-            Text(l10n.foodFormComposition, style: theme.textTheme.titleSmall),
-            const SizedBox(height: 4),
-            Text(
-              l10n.foodFormCompositionHint,
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
-
-            // Parts already in the recipe
-            if (_amounts.isNotEmpty) ...[
-              Card(
-                child: Column(
-                  children: [
-                    for (final id in _amounts.keys.toList())
-                      _PartRow(
-                        ingredient: _parts[id]!,
-                        amount: _amounts[id]!,
-                        controller: _amountCtrls[id]!,
-                        error: _amountErrors[id]!,
-                        l10n: l10n,
-                        onAmountChanged: (v) => setState(() {
-                          _amounts[id] = v;
-                          _followRawTotal();
-                        }),
-                        onRemoved: () => setState(() {
-                          _amounts.remove(id);
-                          _parts.remove(id);
-                          _followRawTotal();
-                        }),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _TableRow(
+                  header: true,
+                  name: Text(l10n.recipeColIngredient.toUpperCase()),
+                  grams: const Text('G'),
+                  cells: const ['KCAL', 'P', 'C', 'F'],
+                ),
+                for (final id in _amounts.keys.toList())
+                  Dismissible(
+                    key: ValueKey('part-$id'),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(
+                        right: FitFatTokens.spaceM,
                       ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // Final weight after cooking — the per-100g denominator. Required
-            // for a recipe: it defaults to the raw total, and the user only has
-            // to change it when cooking moved water in or out of the batch.
-            TextFormField(
-              key: const ValueKey('foodFormCookedWeight'),
-              controller: _cookedCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.foodFormCookedWeightLabel,
-                helperText: l10n.foodFormCookedWeightHint(
-                  formatDecimal(_batchTotal),
-                ),
-                helperMaxLines: 2,
-                suffixText: 'g',
-              ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              validator: (v) {
-                final parsed = double.tryParse(v?.trim() ?? '');
-                if (parsed == null || parsed <= 0) {
-                  return l10n.foodFormCookedWeightRequired;
-                }
-                return null;
-              },
-              onChanged: (_) => setState(() => _cookedEdited = true),
-            ),
-            if (_parsedCooked != null && _batchTotal > 0) ...[
-              const SizedBox(height: 4),
-              Text(
-                l10n.foodFormCookedYield(
-                  formatDecimal(_parsedCooked! / _batchTotal * 100),
-                ),
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
-            if (_amounts.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _PreviewCard(
-                preview: _preview,
-                rawTotal: _batchTotal,
-                cookedWeight: _parsedCooked,
-                l10n: l10n,
-              ),
-            ],
-            const SizedBox(height: 20),
-
-            // Add a part
-            Text(l10n.foodFormAddPart, style: theme.textTheme.titleSmall),
-            const SizedBox(height: 8),
-            TextField(
-              key: const ValueKey('foodFormSearch'),
-              controller: _searchCtrl,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: l10n.ingredientListSearchHint,
-                isDense: true,
-              ),
-              onChanged: (v) => setState(() => _filter = v),
-            ),
-            const SizedBox(height: 8),
-            ingredientsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text(l10n.errorWithMessage('$e')),
-              data: (all) {
-                final query = _filter.trim().toLowerCase();
-                // The catalogue is far too long to browse here; the search box
-                // is the only way in. An empty query shows nothing rather than
-                // every ingredient in the database.
-                if (query.isEmpty) {
-                  return Text(
-                    l10n.foodFormSearchPrompt,
-                    style: theme.textTheme.bodySmall,
-                  );
-                }
-                final candidates = _candidates(
-                  all,
-                ).where((i) => i.name.toLowerCase().contains(query)).toList();
-                if (candidates.isEmpty) {
-                  return Text(
-                    l10n.foodFormNoMatches,
-                    style: theme.textTheme.bodySmall,
-                  );
-                }
-                return Column(
-                  children: [
-                    for (final i in candidates)
-                      ListTile(
-                        dense: true,
-                        title: Text(i.name),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.add),
-                          tooltip: l10n.foodFormAddPart,
-                          onPressed: () {
-                            setState(() {
-                              _parts[i.id] = i;
-                              _amounts[i.id] = 100;
-                              _followRawTotal();
-                            });
-                            // The row reads its field controller and error
-                            // notifier from these maps, so a part added from
-                            // here needs them before the next build.
-                            _syncControllers();
-                          },
+                      color: scheme.errorContainer,
+                      child: Icon(Icons.delete_outline, color: scheme.error),
+                    ),
+                    onDismissed: (_) => _removePart(id),
+                    child: _TableRow(
+                      divider: true,
+                      name: Text(
+                        _parts[id]!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      grams: TextField(
+                        key: ValueKey('grams-$id'),
+                        controller: _amountCtrls[id],
+                        textAlign: TextAlign.right,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
                         ),
+                        style: TextStyle(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 6,
+                          ),
+                        ),
+                        onChanged: (v) => setState(() {
+                          _amounts[id] =
+                              double.tryParse(v.replaceAll(',', '.')) ?? 0;
+                          _followRawTotal();
+                        }),
+                      ),
+                      cells: [
+                        for (final per in [
+                          _parts[id]!.caloriesPer100g,
+                          _parts[id]!.proteinPer100g,
+                          _parts[id]!.carbsPer100g,
+                          _parts[id]!.fatPer100g,
+                        ])
+                          n(per * _amounts[id]! / 100),
+                      ],
+                    ),
+                  ),
+                _TableRow(
+                  divider: true,
+                  name: TextField(
+                    key: const ValueKey('foodFormSearch'),
+                    controller: _searchCtrl,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      filled: false,
+                      border: InputBorder.none,
+                      hintText: l10n.recipeTypeIngredient,
+                      prefixIcon: const Icon(Icons.add, size: 18),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 24),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    onChanged: (v) => setState(() => _filter = v),
+                  ),
+                  span: true,
+                ),
+                _TableRow(
+                  divider: true,
+                  strong: true,
+                  name: Text(l10n.recipeRaw),
+                  grams: Text(n(_batchTotal), textAlign: TextAlign.right),
+                  cells: [n(kcal), n(p), n(c), n(f)],
+                ),
+                _TableRow(
+                  divider: true,
+                  name: Text(l10n.recipeCookedWeight),
+                  grams: TextFormField(
+                    key: const ValueKey('foodFormCookedWeight'),
+                    controller: _cookedCtrl,
+                    textAlign: TextAlign.right,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    style: TextStyle(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 6,
+                      ),
+                    ),
+                    validator: (v) {
+                      final parsed = double.tryParse(
+                        (v ?? '').trim().replaceAll(',', '.'),
+                      );
+                      return parsed == null || parsed <= 0
+                          ? l10n.foodFormCookedWeightRequired
+                          : null;
+                    },
+                    onChanged: (_) => setState(() => _cookedEdited = true),
+                  ),
+                  cells: [
+                    if (_parsedCooked != null && _batchTotal > 0)
+                      l10n.recipeYield(
+                        (_parsedCooked! / _batchTotal * 100).round(),
                       ),
                   ],
-                );
-              },
+                  cellsSpan: true,
+                ),
+                DefaultTextStyle.merge(
+                  style: TextStyle(color: success, fontWeight: FontWeight.w600),
+                  child: _TableRow(
+                    divider: true,
+                    name: Text(l10n.recipePer100),
+                    cells: per100 == null
+                        ? const ['–', '–', '–', '–']
+                        : [
+                            n(per100.calories),
+                            n(per100.protein),
+                            n(per100.carbs),
+                            n(per100.fat),
+                          ],
+                  ),
+                ),
+                if (per100 != null)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: FitFatTokens.spaceXs,
+                      bottom: FitFatTokens.spaceXs,
+                    ),
+                    child: MacroBar(MacroValues.of(per100)),
+                  ),
+              ],
             ),
-
-            const SizedBox(height: 28),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: Text(_saving ? l10n.foodFormSaving : l10n.foodFormSave),
-            ),
-          ],
+          ),
         ),
-      ),
+        if (query.isNotEmpty)
+          Card(
+            margin: const EdgeInsets.only(top: FitFatTokens.spaceS),
+            child: candidates.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(FitFatTokens.spaceM),
+                    child: Text(
+                      l10n.foodFormNoMatches,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (final i in candidates.take(8))
+                        ListTile(
+                          key: ValueKey('candidate-${i.id}'),
+                          dense: true,
+                          title: Text(i.name),
+                          subtitle: i.brand == null ? null : Text(i.brand!),
+                          trailing: Text(
+                            '${i.caloriesPer100g.round()} kcal/100 g',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                          onTap: () => _addPart(i),
+                        ),
+                    ],
+                  ),
+          ),
+      ],
     );
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
-
     if (_amounts.isEmpty) {
       showTopBanner(context, message: l10n.foodFormNeedsParts);
       return;
     }
-    // A zero or negative amount would make the whole batch unresolvable, since
-    // it is the denominator — so reject rather than store a food that logs as
-    // zero calories.
-    final bad = _amounts.entries.where((e) => e.value <= 0).toList();
-    if (bad.isNotEmpty) {
-      for (final e in bad) {
-        _amountErrors[e.key]?.value = l10n.foodFormAmountPositive;
-      }
+    // Amounts are the denominator: a zero or negative one makes the batch
+    // unresolvable, so refuse rather than store a zero-calorie food.
+    if (_amounts.values.any((v) => v <= 0)) {
       showTopBanner(context, message: l10n.foodFormAmountPositive);
       return;
     }
-
     setState(() => _saving = true);
     try {
       final repo = ref.read(foodRepositoryProvider);
-      final cookedWeight = double.parse(_cookedCtrl.text.trim());
+      final cookedWeight = _parsedCooked!;
       final food =
           widget.food?.copyWith(cookedWeight: cookedWeight) ??
           newFood(name: _nameCtrl.text.trim(), cookedWeight: cookedWeight);
       final components = [
-        for (final entry in _amounts.entries)
+        for (final e in _amounts.entries)
           FoodIngredient(
             foodId: food.id,
-            ingredientId: entry.key,
-            ingredientName: _parts[entry.key]!.name,
-            amount: entry.value,
+            ingredientId: e.key,
+            ingredientName: _parts[e.key]!.name,
+            amount: e.value,
           ),
       ];
-
       if (_isEditing) {
         await repo.update(
           food.copyWith(name: _nameCtrl.text.trim()),
@@ -446,133 +510,95 @@ final class _FoodFormScreenState extends ConsumerState<FoodFormScreen> {
   }
 }
 
-final class _PartRow extends StatelessWidget {
-  final Ingredient ingredient;
-  final double amount;
-  final TextEditingController controller;
-  final ValueNotifier<String?> error;
-  final AppLocalizations l10n;
-  final void Function(double) onAmountChanged;
-  final VoidCallback onRemoved;
-
-  const _PartRow({
-    required this.ingredient,
-    required this.amount,
-    required this.controller,
-    required this.error,
-    required this.l10n,
-    required this.onAmountChanged,
-    required this.onRemoved,
+/// One table row: name (flexible), grams (field or text) and four number
+/// cells (kcal, P, C, F).
+final class _TableRow extends StatelessWidget {
+  const _TableRow({
+    required this.name,
+    this.grams,
+    this.cells = const [],
+    this.header = false,
+    this.strong = false,
+    this.divider = false,
+    this.span = false,
+    this.cellsSpan = false,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              ingredient.name,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          SizedBox(
-            width: 96,
-            child: ValueListenableBuilder<String?>(
-              valueListenable: error,
-              builder: (context, err, _) => TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  labelText: l10n.foodFormAmountLabel,
-                  isDense: true,
-                  errorText: err,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (v) {
-                  final parsed = double.tryParse(v);
-                  onAmountChanged(parsed ?? 0);
-                },
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            tooltip: l10n.foodFormRemovePart,
-            onPressed: onRemoved,
-          ),
-        ],
-      ),
-    );
-  }
-}
+  final Widget name;
+  final Widget? grams;
+  final List<String> cells;
+  final bool header;
+  final bool strong;
+  final bool divider;
 
-/// Live composition math, so the user sees the consequence of the amounts
-/// before anything is stored. Foods hold no nutrition — this is derived.
-final class _PreviewCard extends StatelessWidget {
-  final FoodNutrition? preview;
-  final double rawTotal;
-  final double? cookedWeight;
-  final AppLocalizations l10n;
+  /// [name] takes the whole row.
+  final bool span;
 
-  const _PreviewCard({
-    required this.preview,
-    required this.rawTotal,
-    required this.cookedWeight,
-    required this.l10n,
-  });
+  /// The single cell takes the space of all four.
+  final bool cellsSpan;
+
+  static const _gramsW = 72.0;
+  static const _kcalW = 44.0;
+  static const _macroW = 30.0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final per100g = preview?.per100g;
-    final denominator = preview?.totalAmount ?? rawTotal;
-    return Card(
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final scheme = theme.colorScheme;
+    final base = header
+        ? theme.textTheme.labelSmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+            letterSpacing: 0.6,
+            fontWeight: FontWeight.w600,
+          )
+        : theme.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurface,
+            fontWeight: strong ? FontWeight.w700 : null,
+          );
+    final style = base?.copyWith(
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    Widget cell(String text, double w) => SizedBox(
+      width: w,
+      child: Text(text, textAlign: TextAlign.right, maxLines: 1),
+    );
+    return Container(
+      decoration: BoxDecoration(
+        border: divider
+            ? Border(
+                top: BorderSide(
+                  color: strong ? scheme.onSurface : scheme.outlineVariant,
+                  width: strong ? 1.2 : 1,
+                ),
+              )
+            : null,
+      ),
+      constraints: const BoxConstraints(minHeight: 38),
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: DefaultTextStyle.merge(
+        style: style,
+        child: Row(
+          spacing: 6,
           children: [
-            Text(
-              cookedWeight == null
-                  ? l10n.foodFormPreview
-                  : l10n.foodFormPreviewCooked,
-              style: theme.textTheme.titleSmall,
-            ),
-            const SizedBox(height: 6),
-            if (per100g == null)
-              Text(l10n.foodFormPreviewEmpty)
-            else ...[
-              Text(
-                l10n.ingredientMacroRow(
-                  '100',
-                  per100g.calories.toStringAsFixed(0),
-                  per100g.protein.toStringAsFixed(1),
-                  per100g.carbs.toStringAsFixed(1),
-                  per100g.fat.toStringAsFixed(1),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.foodFormRawToCooked(
-                  formatDecimal(rawTotal),
-                  formatDecimal(denominator),
-                ),
-                style: theme.textTheme.bodySmall,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                l10n.foodFormBatchCalories(
-                  (per100g.calories * denominator / 100).toStringAsFixed(0),
-                ),
-                style: theme.textTheme.bodySmall,
-              ),
+            Expanded(child: name),
+            if (!span) ...[
+              SizedBox(width: _gramsW, child: grams ?? const SizedBox()),
+              if (cellsSpan)
+                SizedBox(
+                  width: _kcalW + _macroW * 3 + 18,
+                  child: Text(
+                    cells.isEmpty ? '' : cells.first,
+                    textAlign: TextAlign.right,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              else ...[
+                cell(cells.isNotEmpty ? cells[0] : '', _kcalW),
+                for (var i = 1; i < 4; i++)
+                  cell(cells.length > i ? cells[i] : '', _macroW),
+              ],
             ],
           ],
         ),
