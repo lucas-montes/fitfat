@@ -4429,4 +4429,60 @@ class AppLocalizationsFr extends AppLocalizations {
   String goalTabTasks(int count) {
     return 'Tâches · $count';
   }
+
+  @override
+  String get goalTrackTitle => 'Suivre la progression avec';
+
+  @override
+  String get goalTrackLabel => 'Suivre la progression';
+
+  @override
+  String get goalTrackManualHint => 'Vous notez chaque valeur';
+
+  @override
+  String get goalTrackPickExercise => 'Quel exercice ?';
+
+  @override
+  String get goalTrackExerciseBest => 'Meilleure série';
+
+  @override
+  String get goalTrackExerciseBestHint =>
+      'Le poids le plus lourd sur un exercice';
+
+  @override
+  String get goalTrackExerciseDistance => 'Plus longue distance';
+
+  @override
+  String get goalTrackExerciseDistanceHint =>
+      'La plus longue course, sortie ou nage';
+
+  @override
+  String get goalTrackWorkouts => 'Entraînements faits';
+
+  @override
+  String get goalTrackWorkoutsHint => 'Entraînements terminés depuis le début';
+
+  @override
+  String get goalTrackBodyWeight => 'Poids';
+
+  @override
+  String get goalTrackBodyWeightHint => 'Votre dernière pesée';
+
+  @override
+  String get goalTrackAccount => 'Solde d’un compte';
+
+  @override
+  String get goalTrackAccountHint => 'Le solde d’un de vos comptes';
+
+  @override
+  String get goalTrackProtein => 'Protéines';
+
+  @override
+  String get goalTrackProteinHint => 'Protéines par jour, moyenne sur 7 jours';
+
+  @override
+  String get goalTrackTasks => 'Tâches liées';
+
+  @override
+  String get goalTrackTasksHint => 'Combien de tâches liées sont faites';
 }

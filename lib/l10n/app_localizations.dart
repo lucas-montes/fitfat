@@ -7659,6 +7659,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tasks · {count}'**
   String goalTabTasks(int count);
+
+  /// No description provided for @goalTrackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track progress from'**
+  String get goalTrackTitle;
+
+  /// No description provided for @goalTrackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Track progress'**
+  String get goalTrackLabel;
+
+  /// No description provided for @goalTrackManualHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You record each value'**
+  String get goalTrackManualHint;
+
+  /// No description provided for @goalTrackPickExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Which exercise?'**
+  String get goalTrackPickExercise;
+
+  /// No description provided for @goalTrackExerciseBest.
+  ///
+  /// In en, this message translates to:
+  /// **'Best set'**
+  String get goalTrackExerciseBest;
+
+  /// No description provided for @goalTrackExerciseBestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Heaviest weight lifted in an exercise'**
+  String get goalTrackExerciseBestHint;
+
+  /// No description provided for @goalTrackExerciseDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest distance'**
+  String get goalTrackExerciseDistance;
+
+  /// No description provided for @goalTrackExerciseDistanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest run, ride or swim of an exercise'**
+  String get goalTrackExerciseDistanceHint;
+
+  /// No description provided for @goalTrackWorkouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts done'**
+  String get goalTrackWorkouts;
+
+  /// No description provided for @goalTrackWorkoutsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished workouts since the goal started'**
+  String get goalTrackWorkoutsHint;
+
+  /// No description provided for @goalTrackBodyWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Body weight'**
+  String get goalTrackBodyWeight;
+
+  /// No description provided for @goalTrackBodyWeightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your latest weigh-in'**
+  String get goalTrackBodyWeightHint;
+
+  /// No description provided for @goalTrackAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account balance'**
+  String get goalTrackAccount;
+
+  /// No description provided for @goalTrackAccountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance of one of your accounts'**
+  String get goalTrackAccountHint;
+
+  /// No description provided for @goalTrackProtein.
+  ///
+  /// In en, this message translates to:
+  /// **'Protein'**
+  String get goalTrackProtein;
+
+  /// No description provided for @goalTrackProteinHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Average daily protein over 7 days'**
+  String get goalTrackProteinHint;
+
+  /// No description provided for @goalTrackTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked tasks'**
+  String get goalTrackTasks;
+
+  /// No description provided for @goalTrackTasksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'How many linked tasks are done'**
+  String get goalTrackTasksHint;
 }
 
 class _AppLocalizationsDelegate

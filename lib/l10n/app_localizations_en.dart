@@ -4392,4 +4392,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String goalTabTasks(int count) {
     return 'Tasks · $count';
   }
+
+  @override
+  String get goalTrackTitle => 'Track progress from';
+
+  @override
+  String get goalTrackLabel => 'Track progress';
+
+  @override
+  String get goalTrackManualHint => 'You record each value';
+
+  @override
+  String get goalTrackPickExercise => 'Which exercise?';
+
+  @override
+  String get goalTrackExerciseBest => 'Best set';
+
+  @override
+  String get goalTrackExerciseBestHint =>
+      'Heaviest weight lifted in an exercise';
+
+  @override
+  String get goalTrackExerciseDistance => 'Longest distance';
+
+  @override
+  String get goalTrackExerciseDistanceHint =>
+      'Longest run, ride or swim of an exercise';
+
+  @override
+  String get goalTrackWorkouts => 'Workouts done';
+
+  @override
+  String get goalTrackWorkoutsHint =>
+      'Finished workouts since the goal started';
+
+  @override
+  String get goalTrackBodyWeight => 'Body weight';
+
+  @override
+  String get goalTrackBodyWeightHint => 'Your latest weigh-in';
+
+  @override
+  String get goalTrackAccount => 'Account balance';
+
+  @override
+  String get goalTrackAccountHint => 'Balance of one of your accounts';
+
+  @override
+  String get goalTrackProtein => 'Protein';
+
+  @override
+  String get goalTrackProteinHint => 'Average daily protein over 7 days';
+
+  @override
+  String get goalTrackTasks => 'Linked tasks';
+
+  @override
+  String get goalTrackTasksHint => 'How many linked tasks are done';
 }

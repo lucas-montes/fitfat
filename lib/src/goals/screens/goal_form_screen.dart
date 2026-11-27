@@ -1,3 +1,8 @@
+import '../../budget/providers/accounts.dart';
+import '../../budget/widgets/account_type_meta.dart';
+import '../../exercise/providers/exercises.dart';
+import '../services/goal_tracking.dart';
+import '../widgets/goal_widgets.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -43,6 +48,8 @@ final class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
   DateTime? _endDate;
   GoalTargetType _targetType = GoalTargetType.none;
   List<String> _tags = [];
+  String? _trackSource;
+  String? _trackParam;
   bool _reminderEnabled = false;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 20, minute: 0);
   bool _saving = false;
@@ -88,6 +95,8 @@ final class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
         _baselineCtrl.text = _formatNumber(goal.baselineValue!);
       }
       _unitCtrl.text = goal.unit ?? '';
+      _trackSource = goal.trackSource;
+      _trackParam = goal.trackParam;
       _tags = List<String>.from(goal.tags ?? const []);
       _reminderEnabled = goal.reminderEnabled;
       _reminderTime = TimeOfDay(
@@ -170,6 +179,10 @@ final class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
             : null,
         reminderEnabled: _reminderEnabled,
         reminderTimeMinutes: _reminderTime.hour * 60 + _reminderTime.minute,
+        trackSource: _targetType == GoalTargetType.numeric
+            ? _trackSource
+            : null,
+        trackParam: _targetType == GoalTargetType.numeric ? _trackParam : null,
         createdAt: _createdAt,
         updatedAt: now,
       );
@@ -227,6 +240,151 @@ final class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.errorWithMessage('$e'))));
     }
+  }
+
+  /// The Track row: pick where progress comes from; sources that read one
+  /// exercise or account ask for it next. Manual is the last choice.
+  Future<void> _pickTrack() async {
+    final l10n = AppLocalizations.of(context)!;
+    const manual = 'manual';
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n.goalTrackTitle,
+                    style: Theme.of(ctx).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              for (final s in TrackSource.values)
+                ListTile(
+                  leading: Icon(trackSourceIcon(s)),
+                  title: Text(trackSourceName(l10n, s)),
+                  subtitle: Text(trackSourceHint(l10n, s)),
+                  trailing: _trackSource == s.id
+                      ? const Icon(Icons.check)
+                      : null,
+                  onTap: () => Navigator.of(ctx).pop(s.id),
+                ),
+              ListTile(
+                leading: const Icon(Icons.back_hand_outlined),
+                title: Text(l10n.goalSourceManual),
+                subtitle: Text(l10n.goalTrackManualHint),
+                trailing: _trackSource == null ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.of(ctx).pop(manual),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    if (picked == manual) {
+      setState(() {
+        _trackSource = null;
+        _trackParam = null;
+      });
+      return;
+    }
+    final source = TrackSource.parse(picked)!;
+    String? param;
+    if (source.needsExercise) {
+      param = await _pickExercise();
+      if (param == null) return;
+    } else if (source.needsAccount) {
+      param = await _pickAccount();
+      if (param == null) return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _trackSource = source.id;
+      _trackParam = param;
+      if (_unitCtrl.text.trim().isEmpty && source.unit.isNotEmpty) {
+        _unitCtrl.text = source.unit;
+      }
+    });
+  }
+
+  Future<String?> _pickExercise() async {
+    final l10n = AppLocalizations.of(context)!;
+    final all = await ref.read(exerciseListProvider.future);
+    if (!mounted) return null;
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) {
+        var q = '';
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            final shown = [
+              for (final e in all)
+                if (q.isEmpty || e.name.toLowerCase().contains(q)) e,
+            ];
+            return SizedBox(
+              height: MediaQuery.sizeOf(ctx).height * 0.8,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: TextField(
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: l10n.goalTrackPickExercise,
+                      ),
+                      onChanged: (v) =>
+                          setSheet(() => q = v.trim().toLowerCase()),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: shown.length,
+                      itemBuilder: (_, i) => ListTile(
+                        title: Text(shown[i].name),
+                        onTap: () => Navigator.of(ctx).pop(shown[i].id),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<String?> _pickAccount() async {
+    final accounts = await ref.read(accountListProvider.future);
+    if (!mounted) return null;
+    return showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final a in accounts)
+              ListTile(
+                leading: Icon(accountTypeIcon(a.type)),
+                title: Text(a.name),
+                onTap: () => Navigator.of(ctx).pop(a.id),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -383,6 +541,14 @@ final class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ],
+                  if (isNumeric) ...[
+                    const SizedBox(height: FitFatTokens.spaceS),
+                    _TrackRow(
+                      source: _trackSource,
+                      param: _trackParam,
+                      onTap: _pickTrack,
                     ),
                   ],
                   const SizedBox(height: FitFatTokens.spaceL),
@@ -816,6 +982,50 @@ final class _PendingTasksSection extends ConsumerWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// "Track progress · Auto · best Bench press set" row in the form.
+final class _TrackRow extends ConsumerWidget {
+  const _TrackRow({
+    required this.source,
+    required this.param,
+    required this.onTap,
+  });
+
+  final String? source;
+  final String? param;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final s = TrackSource.parse(source);
+    String? what;
+    if (s != null && s.needsExercise && param != null) {
+      what = ref.watch(exerciseByIdProvider(param!)).value?.name;
+    }
+    if (s != null && s.needsAccount && param != null) {
+      what = ref
+          .watch(accountListProvider)
+          .value
+          ?.where((a) => a.id == param)
+          .firstOrNull
+          ?.name;
+    }
+    return Card(
+      margin: EdgeInsets.zero,
+      child: ListTile(
+        key: const ValueKey('goalTrackRow'),
+        leading: Icon(s == null ? Icons.back_hand_outlined : Icons.bolt),
+        title: Text(l10n.goalTrackLabel),
+        subtitle: Text(
+          s == null ? l10n.goalSourceManual : trackSourceLabel(l10n, s, what),
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
     );
   }
 }

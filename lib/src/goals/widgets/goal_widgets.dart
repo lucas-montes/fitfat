@@ -307,3 +307,33 @@ Future<void> showRecordValueSheet(
     await recordGoalValue(ref, g.id, v, day: day);
   }
 }
+
+IconData trackSourceIcon(TrackSource s) => switch (s) {
+  TrackSource.exerciseBest => Icons.fitness_center,
+  TrackSource.exerciseDistance => Icons.directions_run,
+  TrackSource.workoutsCount => Icons.event_repeat,
+  TrackSource.bodyWeight => Icons.monitor_weight_outlined,
+  TrackSource.accountBalance => Icons.savings_outlined,
+  TrackSource.mealsProtein => Icons.restaurant_outlined,
+  TrackSource.tasksDone => Icons.task_alt,
+};
+
+String trackSourceName(AppLocalizations l10n, TrackSource s) => switch (s) {
+  TrackSource.exerciseBest => l10n.goalTrackExerciseBest,
+  TrackSource.exerciseDistance => l10n.goalTrackExerciseDistance,
+  TrackSource.workoutsCount => l10n.goalTrackWorkouts,
+  TrackSource.bodyWeight => l10n.goalTrackBodyWeight,
+  TrackSource.accountBalance => l10n.goalTrackAccount,
+  TrackSource.mealsProtein => l10n.goalTrackProtein,
+  TrackSource.tasksDone => l10n.goalTrackTasks,
+};
+
+String trackSourceHint(AppLocalizations l10n, TrackSource s) => switch (s) {
+  TrackSource.exerciseBest => l10n.goalTrackExerciseBestHint,
+  TrackSource.exerciseDistance => l10n.goalTrackExerciseDistanceHint,
+  TrackSource.workoutsCount => l10n.goalTrackWorkoutsHint,
+  TrackSource.bodyWeight => l10n.goalTrackBodyWeightHint,
+  TrackSource.accountBalance => l10n.goalTrackAccountHint,
+  TrackSource.mealsProtein => l10n.goalTrackProteinHint,
+  TrackSource.tasksDone => l10n.goalTrackTasksHint,
+};
