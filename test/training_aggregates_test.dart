@@ -212,4 +212,37 @@ void main() {
     expect(cards['t-new']!.exercises.single.sets, 4);
     expect(cards['t-new']!.setCount, 4);
   });
+
+  test('same-day workouts sort by time of day, newest first', () async {
+    final day = DateTime(2026, 11, 20);
+    Future<void> at(String id, int hour) => database
+        .into(database.workouts)
+        .insert(
+          db.WorkoutsCompanion.insert(
+            id: id,
+            name: id,
+            // `date` is stored as the day only.
+            date: day.millisecondsSinceEpoch,
+            startedAt: Value(
+              day.add(Duration(hours: hour)).millisecondsSinceEpoch,
+            ),
+            completedAt: Value(
+              day
+                  .add(Duration(hours: hour, minutes: 45))
+                  .millisecondsSinceEpoch,
+            ),
+            createdAt: day.millisecondsSinceEpoch,
+          ),
+        );
+    // Inserted out of order: the evening session first.
+    await at('evening', 19);
+    await at('morning', 7);
+    await at('noon', 12);
+    await workout('yesterday', DateTime(2026, 11, 19, 21));
+
+    final all = await WorkoutRepository(database).getAll();
+    expect(all.map((w) => w.id), ['evening', 'noon', 'morning', 'yesterday']);
+    final routines = groupRoutines(all, const {});
+    expect(routines.first.latest.id, 'evening');
+  });
 }

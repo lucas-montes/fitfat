@@ -73,7 +73,7 @@ List<RecentRoutine> groupRoutines(
   final routines = [
     for (final list in byKey.values)
       () {
-        list.sort((a, b) => b.date.compareTo(a.date));
+        list.sort(Workout.newestFirst);
         return RecentRoutine(
           latest: list.first,
           count: list.length,
@@ -83,7 +83,7 @@ List<RecentRoutine> groupRoutines(
   ];
   // Two routines can share a name (a replay chain and an older one-off);
   // keep only the most recent per display name.
-  routines.sort((a, b) => b.latest.date.compareTo(a.latest.date));
+  routines.sort((a, b) => Workout.newestFirst(a.latest, b.latest));
   final seen = <String>{};
   return [
     for (final r in routines)
@@ -144,7 +144,7 @@ List<WeekGroup> groupWeeks(
     for (final MapEntry(key: start, value: list) in byWeek.entries)
       WeekGroup(
         start: start,
-        workouts: list..sort((a, b) => b.$1.date.compareTo(a.$1.date)),
+        workouts: list..sort((a, b) => Workout.newestFirst(a.$1, b.$1)),
       ),
   ]..sort((a, b) => b.start.compareTo(a.start));
   return weeks;

@@ -26,6 +26,25 @@ final class Workout {
     required this.createdAt,
   });
 
+  /// When the session happened, for ordering: `date` holds only the day, so
+  /// the start (else completion, else creation) time breaks same-day ties.
+  DateTime get sortTime {
+    final t = startedAt ?? completedAt ?? createdAt;
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      t.hour,
+      t.minute,
+      t.second,
+      t.millisecond,
+    );
+  }
+
+  /// Newest first: by [sortTime], descending.
+  static int newestFirst(Workout a, Workout b) =>
+      b.sortTime.compareTo(a.sortTime);
+
   Workout copyWith({
     String? id,
     String? name,

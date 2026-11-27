@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
-import '../../dashboard/providers/dashboard.dart' show startOfCalendarWeek;
 import '../../models/workout.dart';
 import '../../settings/providers/settings.dart';
 import '../../ui/theme_extensions.dart';
@@ -22,7 +21,7 @@ import 'workout_templates_screen.dart';
 
 /// The Exercise tab root, built around starting a workout: the unfinished
 /// workout on top, then a Recent row (each named workout once) and a
-/// Templates row, each with "All", and this week's summary below.
+/// Templates row, each with "All".
 final class TrainingScreen extends ConsumerWidget {
   const TrainingScreen({super.key});
 
@@ -39,12 +38,6 @@ final class TrainingScreen extends ConsumerWidget {
         ref.watch(recentRoutinesProvider).value ?? const <RecentRoutine>[];
     final templates =
         ref.watch(templateCardsProvider).value ?? const <TemplateCard>[];
-    final workouts = ref.watch(workoutListProvider).value ?? const <Workout>[];
-    final summaries =
-        ref.watch(workoutRowSummariesProvider).value ??
-        const <String, WorkoutRowSummary>{};
-    final weekStart = startOfCalendarWeek(DateTime.now());
-    final thisWeek = groupWeeks(workouts, summaries, from: weekStart);
     final now = DateTime.now();
 
     Widget rowHeader(String label, VoidCallback onAll) => SectionHeader(
@@ -179,13 +172,6 @@ final class TrainingScreen extends ConsumerWidget {
                             startTemplate(context, ref, templateId: t.id),
                       ),
                   ]),
-                const SizedBox(height: FitFatTokens.spaceL),
-                WeekCard(
-                  week: thisWeek.isEmpty
-                      ? WeekGroup(start: weekStart, workouts: const [])
-                      : thisWeek.first,
-                  unit: unit,
-                ),
               ],
             ),
           ),

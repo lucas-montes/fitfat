@@ -90,7 +90,8 @@ final class WorkoutRepository {
                     OrderingTerm(expression: t.date, mode: OrderingMode.desc),
               ]))
             .get();
-    return rows.map(_toDomain).toList();
+    // `date` is only the day; order same-day sessions by their time too.
+    return rows.map(_toDomain).toList()..sort(Workout.newestFirst);
   }
 
   Future<WorkoutWithDetails?> getWithDetails(String id) async {
@@ -849,7 +850,7 @@ final class WorkoutRepository {
       if (sets.isEmpty) continue;
       entries.add(ExerciseHistoryEntry(workout: workout, sets: sets));
     }
-    entries.sort((a, b) => b.workout.date.compareTo(a.workout.date));
+    entries.sort((a, b) => Workout.newestFirst(a.workout, b.workout));
     return entries;
   }
 

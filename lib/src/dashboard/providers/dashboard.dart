@@ -119,10 +119,9 @@ final latestWorkoutProvider = FutureProvider<Workout?>((ref) async {
   ref.watch(dashboardRefreshProvider);
   if (!ref.watch(startupGateProvider)) return null;
   final workouts = await ref.watch(_workoutRepositoryProvider).getAll();
-  final completed = workouts.where((w) => w.isCompleted).toList();
-  if (completed.isEmpty) return null;
-  // Workouts are already ordered by date desc, so first is latest
-  return completed.first;
+  // getAll() is newest first (day, then time of day).
+  final completed = workouts.where((w) => w.isCompleted);
+  return completed.isEmpty ? null : completed.first;
 });
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../models/exercise.dart';
+import '../../models/workout.dart';
 import '../../models/exercise_set.dart';
 import '../../models/units.dart';
 import '../../notifications/rest_timer.dart';
@@ -74,31 +75,66 @@ final class ExerciseDetailScreen extends ConsumerWidget {
 // Layout
 // ---------------------------------------------------------------------------
 
-final class _DetailView extends ConsumerWidget {
+final class _DetailView extends ConsumerStatefulWidget {
   final Exercise exercise;
   final List<ExerciseHistoryEntry> history;
 
   const _DetailView({required this.exercise, required this.history});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DetailView> createState() => _DetailViewState();
+}
+
+final class _DetailViewState extends ConsumerState<_DetailView> {
+  static const _expandedHeight = 300.0;
+
+  // With media the name sits under the image, so the app bar title only
+  // shows once the header has collapsed.
+  final _scroll = ScrollController();
+  bool _collapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(() {
+      final collapsed =
+          _scroll.offset > _expandedHeight - kToolbarHeight - 48 - 8;
+      if (collapsed != _collapsed) setState(() => _collapsed = collapsed);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final exercise = widget.exercise;
+    final history = widget.history;
     final l10n = AppLocalizations.of(context)!;
     final metrics = _HistoryMetrics.fromHistory(history);
     final unit = ref.watch(settingsProvider).weightUnit;
     final hasMedia = exercise.imagePath != null || exercise.videoPath != null;
     // Media (220) + name block; a smaller height when the exercise has no
     // media so the collapsed header leaves no gap.
-    final expandedHeight = hasMedia ? 300.0 : null;
+    final expandedHeight = hasMedia ? _expandedHeight : null;
 
     return Scaffold(
       body: DefaultTabController(
         length: 2,
         child: NestedScrollView(
+          controller: _scroll,
           headerSliverBuilder: (_, _) => [
             SliverAppBar(
               pinned: true,
               expandedHeight: expandedHeight,
-              title: Text(exercise.name),
+              title: AnimatedOpacity(
+                opacity: !hasMedia || _collapsed ? 1 : 0,
+                duration: const Duration(milliseconds: 150),
+                child: Text(exercise.name),
+              ),
               actions: [
                 PopupMenuButton<VoidCallback>(
                   onSelected: (f) => f(),
@@ -795,7 +831,7 @@ final class _HistoryMetrics {
     var usesWeight = false;
 
     final byDate = [...history]
-      ..sort((a, b) => a.workout.date.compareTo(b.workout.date));
+      ..sort((a, b) => Workout.newestFirst(b.workout, a.workout));
 
     for (final entry in history) {
       totalSets += entry.sets.length;
