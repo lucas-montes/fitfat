@@ -4143,4 +4143,118 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ingredientDeleteConsequence => 'Recipes and past meals keep it';
+
+  @override
+  String moneyTransferTo(String account) {
+    return 'Transfer to $account';
+  }
+
+  @override
+  String moneyTransferFrom(String account) {
+    return 'Transfer from $account';
+  }
+
+  @override
+  String moneyOriginalAt(
+    String amount,
+    String rate,
+    String base,
+    String currency,
+  ) {
+    return '$amount at 1 $currency = $rate $base';
+  }
+
+  @override
+  String get moneyFieldAccounts => 'Accounts';
+
+  @override
+  String get moneyFieldAccount => 'Account';
+
+  @override
+  String get moneyFieldCategory => 'Category';
+
+  @override
+  String get moneyFieldDate => 'Date';
+
+  @override
+  String get moneyFieldNote => 'Note';
+
+  @override
+  String moneyOpenStatement(String account) {
+    return 'Open $account';
+  }
+
+  @override
+  String moneyThisMonth(String amount) {
+    return '$amount this month';
+  }
+
+  @override
+  String get moneyGroupEveryday => 'Everyday';
+
+  @override
+  String get moneyGroupSavings => 'Savings & investment';
+
+  @override
+  String get moneyGroupOther => 'Other';
+
+  @override
+  String get moneyRecent => 'Recent';
+
+  @override
+  String get moneySearch => 'Search notes and categories';
+
+  @override
+  String get moneyNoMatchTitle => 'No transactions here';
+
+  @override
+  String get moneyNoMatchBody => 'Try other filters.';
+
+  @override
+  String get moneyKindIn => 'In';
+
+  @override
+  String get moneyKindOut => 'Out';
+
+  @override
+  String get moneyKindTransfers => 'Transfers';
+
+  @override
+  String get moneyFilters => 'Filters';
+
+  @override
+  String moneyFiltersCount(int count) {
+    return 'Filters · $count';
+  }
+
+  @override
+  String get moneyClearFilters => 'Clear';
+
+  @override
+  String get moneyWhen => 'When';
+
+  @override
+  String get moneyType => 'Type';
+
+  @override
+  String moneyShowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count transactions',
+      one: 'Show 1 transaction',
+      zero: 'No transactions',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String moneyIn(String amount) {
+    return 'In $amount';
+  }
+
+  @override
+  String moneyOut(String amount) {
+    return 'Out $amount';
+  }
 }

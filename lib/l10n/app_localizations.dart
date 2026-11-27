@@ -7276,6 +7276,179 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recipes and past meals keep it'**
   String get ingredientDeleteConsequence;
+
+  /// No description provided for @moneyTransferTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer to {account}'**
+  String moneyTransferTo(String account);
+
+  /// No description provided for @moneyTransferFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer from {account}'**
+  String moneyTransferFrom(String account);
+
+  /// No description provided for @moneyOriginalAt.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} at 1 {currency} = {rate} {base}'**
+  String moneyOriginalAt(
+    String amount,
+    String rate,
+    String base,
+    String currency,
+  );
+
+  /// No description provided for @moneyFieldAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get moneyFieldAccounts;
+
+  /// No description provided for @moneyFieldAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get moneyFieldAccount;
+
+  /// No description provided for @moneyFieldCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get moneyFieldCategory;
+
+  /// No description provided for @moneyFieldDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get moneyFieldDate;
+
+  /// No description provided for @moneyFieldNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get moneyFieldNote;
+
+  /// No description provided for @moneyOpenStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {account}'**
+  String moneyOpenStatement(String account);
+
+  /// No description provided for @moneyThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} this month'**
+  String moneyThisMonth(String amount);
+
+  /// No description provided for @moneyGroupEveryday.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyday'**
+  String get moneyGroupEveryday;
+
+  /// No description provided for @moneyGroupSavings.
+  ///
+  /// In en, this message translates to:
+  /// **'Savings & investment'**
+  String get moneyGroupSavings;
+
+  /// No description provided for @moneyGroupOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get moneyGroupOther;
+
+  /// No description provided for @moneyRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get moneyRecent;
+
+  /// No description provided for @moneySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search notes and categories'**
+  String get moneySearch;
+
+  /// No description provided for @moneyNoMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions here'**
+  String get moneyNoMatchTitle;
+
+  /// No description provided for @moneyNoMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try other filters.'**
+  String get moneyNoMatchBody;
+
+  /// No description provided for @moneyKindIn.
+  ///
+  /// In en, this message translates to:
+  /// **'In'**
+  String get moneyKindIn;
+
+  /// No description provided for @moneyKindOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Out'**
+  String get moneyKindOut;
+
+  /// No description provided for @moneyKindTransfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfers'**
+  String get moneyKindTransfers;
+
+  /// No description provided for @moneyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get moneyFilters;
+
+  /// No description provided for @moneyFiltersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters · {count}'**
+  String moneyFiltersCount(int count);
+
+  /// No description provided for @moneyClearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get moneyClearFilters;
+
+  /// No description provided for @moneyWhen.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get moneyWhen;
+
+  /// No description provided for @moneyType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get moneyType;
+
+  /// No description provided for @moneyShowCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No transactions} =1{Show 1 transaction} other{Show {count} transactions}}'**
+  String moneyShowCount(int count);
+
+  /// No description provided for @moneyIn.
+  ///
+  /// In en, this message translates to:
+  /// **'In {amount}'**
+  String moneyIn(String amount);
+
+  /// No description provided for @moneyOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Out {amount}'**
+  String moneyOut(String amount);
 }
 
 class _AppLocalizationsDelegate

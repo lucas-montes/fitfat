@@ -22,3 +22,13 @@ final transactionByAccountProvider =
     FutureProvider.family<List<Transaction>, String>((ref, accountId) async {
       return ref.watch(transactionRepositoryProvider).getByAccount(accountId);
     });
+
+/// Final transactions only (drafts never reach the phone's screens), derived
+/// from [transactionListProvider] so a sync refresh reaches it.
+final liveTransactionsProvider = FutureProvider<List<Transaction>>((ref) async {
+  final all = await ref.watch(transactionListProvider.future);
+  return [
+    for (final t in all)
+      if (!t.isDraft) t,
+  ];
+});
