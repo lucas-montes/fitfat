@@ -37,6 +37,7 @@ manual check.
 ### In progress
 | Plan | Status | Description |
 |---|---|---|
+| `food-group-redesign` | in progress | Meal history as day cards with the macro bar, the meal editor without names, recipe cards with eaten grams, the recipe table form, ingredient cards and the tabbed ingredient detail |
 | `selective-sync-catalog` | code complete, manual QA outstanding | The minimal catalogue tables, the server catalogue endpoints, the background refresh, the bulk-vs-selective menus and the hub de-duplication all shipped. The four acceptance criteria are device-side checks: AC1/AC3/AC4 were verified by inspection only, and AC2's automated test (`test/catalog_selective_sync_test.dart`) compiles but has never executed in this environment |
 | `task-carryover-notifications-fix` | code complete, manual device QA outstanding | The rollover ordering, the reminder rescheduling for rolled tasks, the reminder lifecycle on task mutations, the settings-based default time for untimed tasks and the exact-alarm fallback all shipped. All five acceptance criteria are device checks that have not been run |
 | `settings-additions` | partially implemented | The units, the backup/export and the body-weight goal shipped; the FX auto-refresh toggle and its interval are absent, and no longer wanted: the server pulls rates itself (2026-11-20) |
