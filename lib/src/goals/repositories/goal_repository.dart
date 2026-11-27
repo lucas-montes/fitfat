@@ -53,6 +53,8 @@ final class GoalRepository {
       unit: Value(goal.unit),
       reminderEnabled: Value(goal.reminderEnabled),
       reminderTimeMinutes: Value(goal.reminderTimeMinutes),
+      trackSource: Value(goal.trackSource),
+      trackParam: Value(goal.trackParam),
       createdAt: goal.createdAt.millisecondsSinceEpoch,
       updatedAt: goal.updatedAt.millisecondsSinceEpoch,
       deletedAt: const Value(null),
@@ -213,6 +215,8 @@ final class GoalRepository {
     unit: row.unit,
     reminderEnabled: row.reminderEnabled,
     reminderTimeMinutes: row.reminderTimeMinutes,
+    trackSource: row.trackSource,
+    trackParam: row.trackParam,
     createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt),
     updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt),
   );

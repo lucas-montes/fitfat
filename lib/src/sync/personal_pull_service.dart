@@ -273,6 +273,14 @@ final class PersonalPullService {
                 baselineValue: Value(_optDouble(raw['baselineValue'])),
                 unit: Value(_optStr(raw['unit'])),
                 reminderEnabled: Value(raw['reminderEnabled'] == true),
+                // Until the server stores the tracking columns its payload
+                // omits them; absent keys keep the local value.
+                trackSource: raw.containsKey('trackSource')
+                    ? Value(_optStr(raw['trackSource']))
+                    : const Value.absent(),
+                trackParam: raw.containsKey('trackParam')
+                    ? Value(_optStr(raw['trackParam']))
+                    : const Value.absent(),
                 createdAt: _int(raw['createdAt']),
                 updatedAt: _int(raw['updatedAt']),
                 deletedAt: const Value(null),

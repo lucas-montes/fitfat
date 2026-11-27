@@ -491,6 +491,11 @@ class Goals extends Table {
       boolean().withDefault(const Constant(false))();
   IntColumn get reminderTimeMinutes =>
       integer().withDefault(const Constant(1200))();
+  // Where progress comes from (v42): null = recorded by hand; otherwise a
+  // source id ('exercise_best', 'body_weight', …) read from the app's own
+  // data, with [trackParam] naming what it reads (an exercise or account id).
+  TextColumn? get trackSource => text().nullable()();
+  TextColumn? get trackParam => text().nullable()();
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
   // Soft-delete marker (v36): tombstoned goals are hidden, not erased.

@@ -12839,6 +12839,28 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
     requiredDuringInsert: false,
     defaultValue: const Constant(1200),
   );
+  static const VerificationMeta _trackSourceMeta = const VerificationMeta(
+    'trackSource',
+  );
+  @override
+  late final GeneratedColumn<String> trackSource = GeneratedColumn<String>(
+    'track_source',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _trackParamMeta = const VerificationMeta(
+    'trackParam',
+  );
+  @override
+  late final GeneratedColumn<String> trackParam = GeneratedColumn<String>(
+    'track_param',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -12886,6 +12908,8 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
     unit,
     reminderEnabled,
     reminderTimeMinutes,
+    trackSource,
+    trackParam,
     createdAt,
     updatedAt,
     deletedAt,
@@ -12992,6 +13016,21 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
         ),
       );
     }
+    if (data.containsKey('track_source')) {
+      context.handle(
+        _trackSourceMeta,
+        trackSource.isAcceptableOrUnknown(
+          data['track_source']!,
+          _trackSourceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('track_param')) {
+      context.handle(
+        _trackParamMeta,
+        trackParam.isAcceptableOrUnknown(data['track_param']!, _trackParamMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -13071,6 +13110,14 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, Goal> {
         DriftSqlType.int,
         data['${effectivePrefix}reminder_time_minutes'],
       )!,
+      trackSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}track_source'],
+      ),
+      trackParam: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}track_param'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -13114,6 +13161,8 @@ class Goal extends DataClass implements Insertable<Goal> {
   final String? unit;
   final bool reminderEnabled;
   final int reminderTimeMinutes;
+  final String? trackSource;
+  final String? trackParam;
   final int createdAt;
   final int updatedAt;
   final int? deletedAt;
@@ -13130,6 +13179,8 @@ class Goal extends DataClass implements Insertable<Goal> {
     this.unit,
     required this.reminderEnabled,
     required this.reminderTimeMinutes,
+    this.trackSource,
+    this.trackParam,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -13159,6 +13210,12 @@ class Goal extends DataClass implements Insertable<Goal> {
     }
     map['reminder_enabled'] = Variable<bool>(reminderEnabled);
     map['reminder_time_minutes'] = Variable<int>(reminderTimeMinutes);
+    if (!nullToAbsent || trackSource != null) {
+      map['track_source'] = Variable<String>(trackSource);
+    }
+    if (!nullToAbsent || trackParam != null) {
+      map['track_param'] = Variable<String>(trackParam);
+    }
     map['created_at'] = Variable<int>(createdAt);
     map['updated_at'] = Variable<int>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -13189,6 +13246,12 @@ class Goal extends DataClass implements Insertable<Goal> {
       unit: unit == null && nullToAbsent ? const Value.absent() : Value(unit),
       reminderEnabled: Value(reminderEnabled),
       reminderTimeMinutes: Value(reminderTimeMinutes),
+      trackSource: trackSource == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trackSource),
+      trackParam: trackParam == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trackParam),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -13217,6 +13280,8 @@ class Goal extends DataClass implements Insertable<Goal> {
       reminderTimeMinutes: serializer.fromJson<int>(
         json['reminderTimeMinutes'],
       ),
+      trackSource: serializer.fromJson<String?>(json['trackSource']),
+      trackParam: serializer.fromJson<String?>(json['trackParam']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
@@ -13238,6 +13303,8 @@ class Goal extends DataClass implements Insertable<Goal> {
       'unit': serializer.toJson<String?>(unit),
       'reminderEnabled': serializer.toJson<bool>(reminderEnabled),
       'reminderTimeMinutes': serializer.toJson<int>(reminderTimeMinutes),
+      'trackSource': serializer.toJson<String?>(trackSource),
+      'trackParam': serializer.toJson<String?>(trackParam),
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
@@ -13257,6 +13324,8 @@ class Goal extends DataClass implements Insertable<Goal> {
     Value<String?> unit = const Value.absent(),
     bool? reminderEnabled,
     int? reminderTimeMinutes,
+    Value<String?> trackSource = const Value.absent(),
+    Value<String?> trackParam = const Value.absent(),
     int? createdAt,
     int? updatedAt,
     Value<int?> deletedAt = const Value.absent(),
@@ -13275,6 +13344,8 @@ class Goal extends DataClass implements Insertable<Goal> {
     unit: unit.present ? unit.value : this.unit,
     reminderEnabled: reminderEnabled ?? this.reminderEnabled,
     reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
+    trackSource: trackSource.present ? trackSource.value : this.trackSource,
+    trackParam: trackParam.present ? trackParam.value : this.trackParam,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -13305,6 +13376,12 @@ class Goal extends DataClass implements Insertable<Goal> {
       reminderTimeMinutes: data.reminderTimeMinutes.present
           ? data.reminderTimeMinutes.value
           : this.reminderTimeMinutes,
+      trackSource: data.trackSource.present
+          ? data.trackSource.value
+          : this.trackSource,
+      trackParam: data.trackParam.present
+          ? data.trackParam.value
+          : this.trackParam,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -13326,6 +13403,8 @@ class Goal extends DataClass implements Insertable<Goal> {
           ..write('unit: $unit, ')
           ..write('reminderEnabled: $reminderEnabled, ')
           ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
+          ..write('trackSource: $trackSource, ')
+          ..write('trackParam: $trackParam, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt')
@@ -13347,6 +13426,8 @@ class Goal extends DataClass implements Insertable<Goal> {
     unit,
     reminderEnabled,
     reminderTimeMinutes,
+    trackSource,
+    trackParam,
     createdAt,
     updatedAt,
     deletedAt,
@@ -13367,6 +13448,8 @@ class Goal extends DataClass implements Insertable<Goal> {
           other.unit == this.unit &&
           other.reminderEnabled == this.reminderEnabled &&
           other.reminderTimeMinutes == this.reminderTimeMinutes &&
+          other.trackSource == this.trackSource &&
+          other.trackParam == this.trackParam &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt);
@@ -13385,6 +13468,8 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
   final Value<String?> unit;
   final Value<bool> reminderEnabled;
   final Value<int> reminderTimeMinutes;
+  final Value<String?> trackSource;
+  final Value<String?> trackParam;
   final Value<int> createdAt;
   final Value<int> updatedAt;
   final Value<int?> deletedAt;
@@ -13402,6 +13487,8 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     this.unit = const Value.absent(),
     this.reminderEnabled = const Value.absent(),
     this.reminderTimeMinutes = const Value.absent(),
+    this.trackSource = const Value.absent(),
+    this.trackParam = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -13420,6 +13507,8 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     this.unit = const Value.absent(),
     this.reminderEnabled = const Value.absent(),
     this.reminderTimeMinutes = const Value.absent(),
+    this.trackSource = const Value.absent(),
+    this.trackParam = const Value.absent(),
     required int createdAt,
     required int updatedAt,
     this.deletedAt = const Value.absent(),
@@ -13442,6 +13531,8 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     Expression<String>? unit,
     Expression<bool>? reminderEnabled,
     Expression<int>? reminderTimeMinutes,
+    Expression<String>? trackSource,
+    Expression<String>? trackParam,
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
     Expression<int>? deletedAt,
@@ -13461,6 +13552,8 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
       if (reminderEnabled != null) 'reminder_enabled': reminderEnabled,
       if (reminderTimeMinutes != null)
         'reminder_time_minutes': reminderTimeMinutes,
+      if (trackSource != null) 'track_source': trackSource,
+      if (trackParam != null) 'track_param': trackParam,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -13481,6 +13574,8 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     Value<String?>? unit,
     Value<bool>? reminderEnabled,
     Value<int>? reminderTimeMinutes,
+    Value<String?>? trackSource,
+    Value<String?>? trackParam,
     Value<int>? createdAt,
     Value<int>? updatedAt,
     Value<int?>? deletedAt,
@@ -13499,6 +13594,8 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
       unit: unit ?? this.unit,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
+      trackSource: trackSource ?? this.trackSource,
+      trackParam: trackParam ?? this.trackParam,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -13545,6 +13642,12 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
     if (reminderTimeMinutes.present) {
       map['reminder_time_minutes'] = Variable<int>(reminderTimeMinutes.value);
     }
+    if (trackSource.present) {
+      map['track_source'] = Variable<String>(trackSource.value);
+    }
+    if (trackParam.present) {
+      map['track_param'] = Variable<String>(trackParam.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -13575,6 +13678,8 @@ class GoalsCompanion extends UpdateCompanion<Goal> {
           ..write('unit: $unit, ')
           ..write('reminderEnabled: $reminderEnabled, ')
           ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
+          ..write('trackSource: $trackSource, ')
+          ..write('trackParam: $trackParam, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -28338,6 +28443,8 @@ typedef $$GoalsTableCreateCompanionBuilder =
       Value<String?> unit,
       Value<bool> reminderEnabled,
       Value<int> reminderTimeMinutes,
+      Value<String?> trackSource,
+      Value<String?> trackParam,
       required int createdAt,
       required int updatedAt,
       Value<int?> deletedAt,
@@ -28357,6 +28464,8 @@ typedef $$GoalsTableUpdateCompanionBuilder =
       Value<String?> unit,
       Value<bool> reminderEnabled,
       Value<int> reminderTimeMinutes,
+      Value<String?> trackSource,
+      Value<String?> trackParam,
       Value<int> createdAt,
       Value<int> updatedAt,
       Value<int?> deletedAt,
@@ -28506,6 +28615,16 @@ class $$GoalsTableFilterComposer extends Composer<_$AppDatabase, $GoalsTable> {
 
   ColumnFilters<int> get reminderTimeMinutes => $composableBuilder(
     column: $table.reminderTimeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get trackSource => $composableBuilder(
+    column: $table.trackSource,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get trackParam => $composableBuilder(
+    column: $table.trackParam,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -28694,6 +28813,16 @@ class $$GoalsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get trackSource => $composableBuilder(
+    column: $table.trackSource,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get trackParam => $composableBuilder(
+    column: $table.trackParam,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -28764,6 +28893,16 @@ class $$GoalsTableAnnotationComposer
 
   GeneratedColumn<int> get reminderTimeMinutes => $composableBuilder(
     column: $table.reminderTimeMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get trackSource => $composableBuilder(
+    column: $table.trackSource,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get trackParam => $composableBuilder(
+    column: $table.trackParam,
     builder: (column) => column,
   );
 
@@ -28922,6 +29061,8 @@ class $$GoalsTableTableManager
                 Value<String?> unit = const Value.absent(),
                 Value<bool> reminderEnabled = const Value.absent(),
                 Value<int> reminderTimeMinutes = const Value.absent(),
+                Value<String?> trackSource = const Value.absent(),
+                Value<String?> trackParam = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
@@ -28939,6 +29080,8 @@ class $$GoalsTableTableManager
                 unit: unit,
                 reminderEnabled: reminderEnabled,
                 reminderTimeMinutes: reminderTimeMinutes,
+                trackSource: trackSource,
+                trackParam: trackParam,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -28958,6 +29101,8 @@ class $$GoalsTableTableManager
                 Value<String?> unit = const Value.absent(),
                 Value<bool> reminderEnabled = const Value.absent(),
                 Value<int> reminderTimeMinutes = const Value.absent(),
+                Value<String?> trackSource = const Value.absent(),
+                Value<String?> trackParam = const Value.absent(),
                 required int createdAt,
                 required int updatedAt,
                 Value<int?> deletedAt = const Value.absent(),
@@ -28975,6 +29120,8 @@ class $$GoalsTableTableManager
                 unit: unit,
                 reminderEnabled: reminderEnabled,
                 reminderTimeMinutes: reminderTimeMinutes,
+                trackSource: trackSource,
+                trackParam: trackParam,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,

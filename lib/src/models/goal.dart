@@ -72,6 +72,13 @@ final class Goal {
   // Daily goal reminder (v27); scheduled while the goal is active.
   final bool reminderEnabled;
   final int reminderTimeMinutes; // minutes from midnight
+
+  /// Where progress comes from (v42); null = recorded by hand. See
+  /// `goal_tracking.dart` for the sources.
+  final String? trackSource;
+
+  /// What the source reads (an exercise or account id), when it needs one.
+  final String? trackParam;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -89,11 +96,16 @@ final class Goal {
     this.unit,
     this.reminderEnabled = false,
     this.reminderTimeMinutes = 20 * 60,
+    this.trackSource,
+    this.trackParam,
     required this.createdAt,
     required this.updatedAt,
   });
 
   bool get isActive => status == GoalStatus.active;
+
+  /// Progress is recorded by hand.
+  bool get isManual => trackSource == null;
 
   /// 0..1 progress derived from the latest recorded value, or null when the
   /// goal has no measurable target or no entries yet. Numeric progress runs
@@ -125,6 +137,8 @@ final class Goal {
     Object? unit = _unset,
     bool? reminderEnabled,
     int? reminderTimeMinutes,
+    Object? trackSource = _unset,
+    Object? trackParam = _unset,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Goal(
@@ -147,6 +161,12 @@ final class Goal {
     unit: identical(unit, _unset) ? this.unit : unit as String?,
     reminderEnabled: reminderEnabled ?? this.reminderEnabled,
     reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
+    trackSource: identical(trackSource, _unset)
+        ? this.trackSource
+        : trackSource as String?,
+    trackParam: identical(trackParam, _unset)
+        ? this.trackParam
+        : trackParam as String?,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );

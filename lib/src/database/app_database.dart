@@ -58,7 +58,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 41;
+  int get schemaVersion => 42;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -913,6 +913,11 @@ final class AppDatabase extends _$AppDatabase {
         // v41: per-exercise MET. Filled by the next exercise pull (the
         // server bumps every catalogue row it rates), never computed here.
         await m.addColumn(exercises, exercises.met);
+      }
+      if (from < 42) {
+        // v42: goals read their progress from a source (null = manual).
+        await m.addColumn(goals, goals.trackSource);
+        await m.addColumn(goals, goals.trackParam);
       }
     },
   );
