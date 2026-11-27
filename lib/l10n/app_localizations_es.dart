@@ -3871,4 +3871,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get trainingNoMatchBody => 'Prueba otro mes o rango.';
+
+  @override
+  String get trainingCascadeExercises => 'Ejercicios';
+
+  @override
+  String get trainingCascadeSets => 'Series planificadas';
+
+  @override
+  String get trainingSearchTemplates => 'Buscar plantillas';
 }

@@ -3880,4 +3880,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get trainingNoMatchBody =>
       'Essayez un autre mois ou une autre période.';
+
+  @override
+  String get trainingCascadeExercises => 'Exercices';
+
+  @override
+  String get trainingCascadeSets => 'Séries prévues';
+
+  @override
+  String get trainingSearchTemplates => 'Rechercher un modèle';
 }

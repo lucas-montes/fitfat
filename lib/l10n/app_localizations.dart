@@ -6790,6 +6790,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try another month or range.'**
   String get trainingNoMatchBody;
+
+  /// No description provided for @trainingCascadeExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercises'**
+  String get trainingCascadeExercises;
+
+  /// No description provided for @trainingCascadeSets.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned sets'**
+  String get trainingCascadeSets;
+
+  /// No description provided for @trainingSearchTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'Search templates'**
+  String get trainingSearchTemplates;
 }
 
 class _AppLocalizationsDelegate

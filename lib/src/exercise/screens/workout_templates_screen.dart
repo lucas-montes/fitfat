@@ -6,193 +6,291 @@ import 'package:uuid/uuid.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../models/planner_recurrence.dart';
 import '../../models/workout_template.dart';
-import '../../dashboard/providers/dashboard.dart';
 import '../providers/exercises.dart';
 import '../providers/workout_templates.dart';
 import '../providers/workouts.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../widgets/cardio_fields.dart';
+import '../../models/units.dart';
+import '../../settings/providers/settings.dart';
+import '../../ui/tokens.dart';
+import '../../ui/units.dart';
+import '../../ui/widgets/confirm_delete.dart';
+import '../providers/training.dart';
+import '../repositories/training_summaries.dart';
+import '../start_workout.dart';
+import '../widgets/training_widgets.dart';
 import 'exercise_picker_sheet.dart';
-import 'workout_detail.dart';
 
 /// Workout templates: the reusable blueprints behind scheduled and repeated
 /// sessions. Tap a tile to edit its blueprint; the tile menu starts a session
 /// today or deletes it. Scheduled templates materialize planner tasks via
 /// TaskRepository.materializeScheduledWorkouts.
-final class WorkoutTemplatesScreen extends ConsumerWidget {
+/// Workout templates as cards: name (New for recent, never-started ones),
+/// size and last done, the exercises with their target sets, and Start.
+/// Edit, duplicate and delete live in the card's ⋮.
+final class WorkoutTemplatesScreen extends ConsumerStatefulWidget {
   const WorkoutTemplatesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final templatesAsync = ref.watch(workoutTemplateListProvider);
+  ConsumerState<WorkoutTemplatesScreen> createState() =>
+      _WorkoutTemplatesScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.templatesTitle)),
-      body: templatesAsync.when(
-        // Local data: never a spinner; the first frame is blank for a few ms.
-        loading: () => const SizedBox.shrink(),
-        error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
-        data: (templates) => templates.isEmpty
-            ? EmptyState(
-                icon: Icons.bookmarks_outlined,
-                title: l10n.templatesEmptyTitle,
-                description: l10n.templatesEmptyBody,
-              )
-            : ListView(
-                children: [
-                  for (final template in templates)
-                    _TemplateTile(template: template),
-                ],
-              ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: null,
-        tooltip: l10n.templatesNew,
-        onPressed: () => _openEditor(context),
-        child: const Icon(Icons.add),
-      ),
+final class _WorkoutTemplatesScreenState
+    extends ConsumerState<WorkoutTemplatesScreen> {
+  bool _searching = false;
+  String _query = '';
+
+  Future<void> _openEditor({String? id}) => Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => WorkoutTemplateFormScreen(initialId: id)),
+  );
+
+  Future<void> _delete(TemplateCard t) async {
+    final l10n = AppLocalizations.of(context)!;
+    await confirmDelete(
+      context,
+      itemName: t.name,
+      cascade: [
+        (label: l10n.trainingCascadeExercises, count: t.exercises.length),
+        (label: l10n.trainingCascadeSets, count: t.setCount),
+      ],
+      delete: () async {
+        await ref.read(workoutTemplateRepositoryProvider).delete(t.id);
+        ref.invalidate(workoutTemplateListProvider);
+      },
     );
   }
 
-  Future<void> _openEditor(BuildContext context) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const WorkoutTemplateFormScreen()),
+  Future<void> _duplicate(TemplateCard t) async {
+    await ref.read(workoutTemplateRepositoryProvider).duplicate(t.id);
+    ref.invalidate(workoutTemplateListProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final all =
+        ref.watch(templateCardsProvider).value ?? const <TemplateCard>[];
+    final now = DateTime.now();
+    final q = _query.trim().toLowerCase();
+    // New (PR) templates first, then the most recently used.
+    final cards =
+        [
+          for (final t in all)
+            if (q.isEmpty || t.name.toLowerCase().contains(q)) t,
+        ]..sort((a, b) {
+          final na = a.isNew(now), nb = b.isNew(now);
+          if (na != nb) return na ? -1 : 1;
+          final la = a.lastDone, lb = b.lastDone;
+          if (la == null && lb == null) return a.name.compareTo(b.name);
+          if (la == null) return 1;
+          if (lb == null) return -1;
+          return lb.compareTo(la);
+        });
+
+    return Scaffold(
+      appBar: AppBar(
+        title: _searching
+            ? TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: l10n.trainingSearchTemplates,
+                  border: InputBorder.none,
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (v) => setState(() => _query = v),
+              )
+            : Text(l10n.templatesTitle),
+        actions: [
+          IconButton(
+            tooltip: l10n.commonSearch,
+            icon: Icon(_searching ? Icons.close : Icons.search),
+            onPressed: () => setState(() {
+              _searching = !_searching;
+              if (!_searching) _query = '';
+            }),
+          ),
+          IconButton(
+            tooltip: l10n.templatesNew,
+            icon: const Icon(Icons.add),
+            onPressed: _openEditor,
+          ),
+        ],
+      ),
+      body: all.isEmpty
+          ? EmptyState(
+              icon: Icons.bookmarks_outlined,
+              title: l10n.templatesEmptyTitle,
+              description: l10n.templatesEmptyBody,
+            )
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: FitFatTokens.kContentMaxWidth,
+                ),
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(FitFatTokens.spaceL),
+                  itemCount: cards.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: FitFatTokens.spaceM),
+                  itemBuilder: (_, i) => _TemplateCardView(
+                    card: cards[i],
+                    isNew: cards[i].isNew(now),
+                    onOpen: () => _openEditor(id: cards[i].id),
+                    onStart: () =>
+                        startTemplate(context, ref, templateId: cards[i].id),
+                    onDuplicate: () => _duplicate(cards[i]),
+                    onDelete: () => _delete(cards[i]),
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }
 
-final class _TemplateTile extends ConsumerWidget {
-  final WorkoutTemplate template;
+final class _TemplateCardView extends ConsumerWidget {
+  const _TemplateCardView({
+    required this.card,
+    required this.isNew,
+    required this.onOpen,
+    required this.onStart,
+    required this.onDuplicate,
+    required this.onDelete,
+  });
 
-  const _TemplateTile({required this.template});
+  final TemplateCard card;
+  final bool isNew;
+  final VoidCallback onOpen;
+  final VoidCallback onStart;
+  final VoidCallback onDuplicate;
+  final VoidCallback onDelete;
+
+  String _target(TemplateExerciseLine e, WeightUnit unit) {
+    final parts = <String>[
+      if (e.reps != null) '${e.sets} × ${e.reps}' else '${e.sets}×',
+      if (e.weightKg != null && e.weightKg! > 0)
+        '${formatWeightValue(e.weightKg!, unit)} ${weightUnitLabel(unit)}',
+      if (e.durationMinutes != null) '${e.durationMinutes} min',
+      if (e.distanceMeters != null)
+        '${(e.distanceMeters! / 1000).toStringAsFixed(1)} km',
+    ];
+    return parts.join(' · ');
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final detailsAsync = ref.watch(workoutTemplateDetailsProvider(template.id));
-
-    return ListTile(
-      leading: Icon(
-        template.isScheduled ? Icons.event_repeat : Icons.bookmarks_outlined,
-        color: theme.colorScheme.primary,
-      ),
-      title: Text(template.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: detailsAsync.when(
-        loading: () => null,
-        error: (_, _) => null,
-        data: (details) => Text(
-          '${_scheduleLabel(l10n, template)} · '
-          '${l10n.templatesExercisesCount(details?.blocks.length ?? 0)}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final unit = ref.watch(settingsProvider).weightUnit;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FitFatTokens.spaceL,
+            FitFatTokens.spaceXs,
+            FitFatTokens.spaceXs,
+            FitFatTokens.spaceL,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                spacing: FitFatTokens.spaceS,
+                children: [
+                  Flexible(
+                    child: Text(
+                      card.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                  if (isNew) PrBadge(label: l10n.trainingNew),
+                  const Spacer(),
+                  PopupMenuButton<VoidCallback>(
+                    onSelected: (f) => f(),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: onOpen,
+                        child: Text(l10n.commonEdit),
+                      ),
+                      PopupMenuItem(
+                        value: onDuplicate,
+                        child: Text(l10n.templatesDuplicate),
+                      ),
+                      PopupMenuItem(
+                        value: onDelete,
+                        child: Text(
+                          l10n.commonDelete,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Text(
+                [
+                  l10n.trainingTemplateSize(
+                    card.exercises.length,
+                    card.setCount,
+                  ),
+                  card.lastDone == null
+                      ? l10n.trainingNeverDone
+                      : l10n.trainingLast(
+                          formatShortDay(context, card.lastDone!),
+                        ),
+                ].join(' · '),
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              ),
+              const SizedBox(height: FitFatTokens.spaceS),
+              Padding(
+                padding: const EdgeInsets.only(right: FitFatTokens.spaceM),
+                child: Column(
+                  spacing: 2,
+                  children: [
+                    for (final e in card.exercises)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              e.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                          Text(
+                            _target(e, unit),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: muted,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: FitFatTokens.spaceM),
+              FilledButton.icon(
+                onPressed: onStart,
+                icon: const Icon(Icons.play_arrow, size: 18),
+                label: Text(l10n.trainingStart),
+              ),
+            ],
+          ),
         ),
       ),
-      trailing: PopupMenuButton<void Function()>(
-        onSelected: (action) => action(),
-        itemBuilder: (ctx) => [
-          PopupMenuItem(
-            value: () => _startToday(context, ref),
-            child: Row(
-              children: [
-                const Icon(Icons.play_arrow, size: 18),
-                const SizedBox(width: 8),
-                Text(l10n.templatesStartToday),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: () => _duplicate(context, ref),
-            child: Row(
-              children: [
-                const Icon(Icons.content_copy_outlined, size: 18),
-                const SizedBox(width: 8),
-                Text(l10n.templatesDuplicate),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: () => _delete(context, ref),
-            child: Row(
-              children: [
-                const Icon(Icons.delete_outline, size: 18),
-                const SizedBox(width: 8),
-                Text(l10n.commonDelete),
-              ],
-            ),
-          ),
-        ],
-      ),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => WorkoutTemplateFormScreen(initialId: template.id),
-        ),
-      ),
     );
-  }
-
-  static String _scheduleLabel(AppLocalizations l10n, WorkoutTemplate t) {
-    final rule = t.recurrence;
-    if (rule == null || !rule.isValid) return l10n.templatesScheduleOff;
-    return switch (rule.type) {
-      PlannerRecurrenceType.daily => l10n.templatesScheduleDaily,
-      PlannerRecurrenceType.weekly => l10n.templatesScheduleWeekly(
-        (rule.weekdays ?? const {}).map((w) => w.toString()).join(', '),
-      ),
-      PlannerRecurrenceType.interval => l10n.templatesScheduleInterval(
-        rule.intervalDays ?? 1,
-      ),
-      PlannerRecurrenceType.monthly => l10n.templatesScheduleInterval(
-        30,
-      ), // rare case; approximate label
-    };
-  }
-
-  Future<void> _startToday(BuildContext context, WidgetRef ref) async {
-    final details = await ref.read(
-      workoutTemplateDetailsProvider(template.id).future,
-    );
-    if (details == null || !context.mounted) return;
-    final workout = await ref
-        .read(workoutRepositoryProvider)
-        .instantiateTemplate(details, day: DateTime.now());
-    invalidateDashboard(ref);
-    if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => WorkoutDetailScreen(workoutId: workout.id),
-      ),
-    );
-  }
-
-  Future<void> _duplicate(BuildContext context, WidgetRef ref) async {
-    await ref.read(workoutTemplateRepositoryProvider).duplicate(template.id);
-    ref.invalidate(workoutTemplateListProvider);
-  }
-
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.templatesDeleteConfirmTitle),
-        content: Text(l10n.templatesDeleteConfirmBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.commonDelete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await ref.read(workoutTemplateRepositoryProvider).delete(template.id);
-    ref.invalidate(workoutTemplateListProvider);
   }
 }
 

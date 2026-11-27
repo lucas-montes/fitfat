@@ -7,6 +7,7 @@ import 'package:fitfat/src/database/app_database.dart' as db;
 import 'package:fitfat/src/database/database_provider.dart';
 import 'package:fitfat/src/exercise/screens/training_screen.dart';
 import 'package:fitfat/src/exercise/screens/workout_history_screen.dart';
+import 'package:fitfat/src/exercise/screens/workout_templates_screen.dart';
 import 'package:fitfat/src/settings/providers/settings.dart';
 import 'package:fitfat/src/settings/providers/sync_api_keys.dart';
 import 'package:material_ui/material_ui.dart';
@@ -169,5 +170,55 @@ void main() {
     expect(find.text('Bench day'), findsNothing);
     expect(find.text('Skate'), findsOneWidget);
     expect(find.byIcon(Icons.repeat), findsNWidgets(2));
+  });
+
+  testWidgets('templates: card lists exercises with targets and Start', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await workout('a', 'Bench day', DateTime(2026, 10, 14, 19));
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await database
+          .into(database.workoutTemplates)
+          .insert(
+            db.WorkoutTemplatesCompanion.insert(
+              id: 't',
+              name: 'Bench 85 block',
+              startDate: now,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await database
+          .into(database.workoutTemplateExercises)
+          .insert(
+            db.WorkoutTemplateExercisesCompanion.insert(
+              id: 'te',
+              templateId: 't',
+              exerciseId: 'bench',
+              sortOrder: 0,
+            ),
+          );
+      for (var i = 1; i <= 4; i++) {
+        await database
+            .into(database.workoutTemplateSets)
+            .insert(
+              db.WorkoutTemplateSetsCompanion.insert(
+                id: 'ts$i',
+                templateExerciseId: 'te',
+                setNumber: i,
+                reps: const Value(5),
+                weightKg: const Value(85),
+              ),
+            );
+      }
+    });
+    await pump(tester, const WorkoutTemplatesScreen());
+    expect(tester.takeException(), isNull);
+    expect(find.text('Bench 85 block'), findsOneWidget);
+    expect(find.text('New'), findsOneWidget);
+    expect(find.text('Bench press'), findsOneWidget);
+    expect(find.text('4 × 5 · 85.0 kg'), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
   });
 }

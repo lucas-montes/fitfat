@@ -2003,5 +2003,8 @@
   "trainingThisYear": "Este año",
   "trainingPickDates": "Elegir fechas",
   "trainingNoMatchTitle": "No hay entrenamientos",
-  "trainingNoMatchBody": "Prueba otro mes o rango."
+  "trainingNoMatchBody": "Prueba otro mes o rango.",
+  "trainingCascadeExercises": "Ejercicios",
+  "trainingCascadeSets": "Series planificadas",
+  "trainingSearchTemplates": "Buscar plantillas"
 }

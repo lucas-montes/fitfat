@@ -2351,5 +2351,8 @@
   "trainingThisYear": "This year",
   "trainingPickDates": "Pick dates",
   "trainingNoMatchTitle": "No workouts here",
-  "trainingNoMatchBody": "Try another month or range."
+  "trainingNoMatchBody": "Try another month or range.",
+  "trainingCascadeExercises": "Exercises",
+  "trainingCascadeSets": "Planned sets",
+  "trainingSearchTemplates": "Search templates"
 }
