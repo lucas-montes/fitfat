@@ -2377,5 +2377,17 @@
   "workoutDetailNotDone": "Not done",
   "trainingCascadeSetsDone": "Logged sets",
   "exerciseFilterShow": "{count, plural, =1{Show 1 exercise} other{Show {count} exercises}}",
-  "@exerciseFilterShow": {"placeholders":{"count":{"type":"int"}}}
+  "@exerciseFilterShow": {"placeholders":{"count":{"type":"int"}}},
+  "exerciseDetailChartWeight": "Weight",
+  "exerciseDetailChartReps": "Reps",
+  "exerciseDetailChartVolume": "Volume",
+  "exerciseDetailChartDuration": "Duration",
+  "exerciseDetailSessions": "Sessions",
+  "exerciseDetailBest": "Best",
+  "exerciseDetailLast": "Last",
+  "exerciseDetailSessionCount": "Sessions",
+  "exerciseDetailSince": "since {date}",
+  "@exerciseDetailSince": {"placeholders":{"date":{"type":"String"}}},
+  "exerciseDetailMuscles": "Muscles",
+  "exerciseDetailDelete": "Delete exercise"
 }

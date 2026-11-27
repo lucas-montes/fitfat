@@ -10,6 +10,7 @@ import 'package:fitfat/src/exercise/screens/workout_history_screen.dart';
 import 'package:fitfat/src/exercise/screens/workout_templates_screen.dart';
 import 'package:fitfat/src/exercise/screens/workout_summary_screen.dart';
 import 'package:fitfat/src/exercise/screens/exercise_list.dart';
+import 'package:fitfat/src/exercise/screens/exercise_detail_screen.dart';
 import 'package:fitfat/src/settings/providers/settings.dart';
 import 'package:fitfat/src/settings/providers/sync_api_keys.dart';
 import 'package:material_ui/material_ui.dart';
@@ -337,4 +338,63 @@ void main() {
       expect(find.text('80 kg × 8'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'exercise detail: stat tiles, chart switch, details rows, blocked delete',
+    (tester) async {
+      await tester.runAsync(() async {
+        await workout('a', 'Bench day', DateTime(2026, 11, 12, 19));
+        await workout('b', 'Bench day', DateTime(2026, 11, 24, 19));
+        await (database.update(
+          database.exercises,
+        )..where((e) => e.id.equals('bench'))).write(
+          const db.ExercisesCompanion(
+            bodyPart: Value('Chest'),
+            equipment: Value('Barbell'),
+          ),
+        );
+      });
+      await pump(tester, const ExerciseDetailScreen(exerciseId: 'bench'));
+      expect(tester.takeException(), isNull);
+      expect(find.text('Best'), findsOneWidget);
+      expect(find.text('Last'), findsOneWidget);
+      expect(find.text('2'), findsWidgets); // sessions
+      expect(find.text('Reps'), findsOneWidget);
+      await tester.tap(find.text('Reps'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+      expect(find.text('Chest'), findsOneWidget);
+      await tester.ensureVisible(find.text('Delete exercise'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete exercise'));
+      await tester.pump(const Duration(milliseconds: 300));
+      // Used by two workouts: explained, not deleted.
+      expect(find.textContaining('2'), findsWidgets);
+      expect(find.text('Delete Bench press?'), findsNothing);
+      await tester.pump(const Duration(seconds: 3));
+    },
+  );
+
+  testWidgets('exercise detail without history shows a one-line empty state', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await database
+          .into(database.exercises)
+          .insert(
+            db.ExercisesCompanion.insert(
+              id: 'row',
+              name: 'Barbell row',
+              exerciseType: 'weightlifting',
+              createdAt: 0,
+            ),
+          );
+    });
+    await pump(tester, const ExerciseDetailScreen(exerciseId: 'row'));
+    expect(tester.takeException(), isNull);
+    expect(find.text('Best'), findsNothing);
+  });
 }

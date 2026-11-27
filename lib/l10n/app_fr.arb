@@ -2037,5 +2037,16 @@
   "workoutDetailAvgRestShort": "repos moyen {rest}",
   "workoutDetailNotDone": "Non faite",
   "trainingCascadeSetsDone": "Séries enregistrées",
-  "exerciseFilterShow": "{count, plural, =1{Voir 1 exercice} other{Voir {count} exercices}}"
+  "exerciseFilterShow": "{count, plural, =1{Voir 1 exercice} other{Voir {count} exercices}}",
+  "exerciseDetailChartWeight": "Poids",
+  "exerciseDetailChartReps": "Reps",
+  "exerciseDetailChartVolume": "Volume",
+  "exerciseDetailChartDuration": "Durée",
+  "exerciseDetailSessions": "Séances",
+  "exerciseDetailBest": "Record",
+  "exerciseDetailLast": "Dernière",
+  "exerciseDetailSessionCount": "Séances",
+  "exerciseDetailSince": "depuis {date}",
+  "exerciseDetailMuscles": "Muscles",
+  "exerciseDetailDelete": "Supprimer l’exercice"
 }

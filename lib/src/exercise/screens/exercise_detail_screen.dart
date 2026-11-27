@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
@@ -22,6 +23,13 @@ import '../exercise_filter.dart';
 import '../providers/exercises.dart';
 import '../providers/workouts.dart';
 import '../repositories/workout_repository.dart';
+import '../../settings/widgets/settings_section.dart';
+import '../../sync/repositories/catalog_repository.dart';
+import '../../ui/widgets/confirm_delete.dart';
+import '../../ui/widgets/form_scaffold.dart';
+import '../../ui/widgets/section_header.dart';
+import '../../ui/widgets/top_banner.dart';
+import 'exercise_form.dart';
 
 /// Exercise detail + full history (T09): media + metadata + instructions +
 /// tips/faqs/keywords, then history (best set/PR, volume-over-time chart,
@@ -42,8 +50,7 @@ final class ExerciseDetailScreen extends ConsumerWidget {
     );
 
     return exerciseAsync.when(
-      loading: () =>
-          statusScaffold(const Center(child: CircularProgressIndicator())),
+      loading: () => statusScaffold(const SizedBox.shrink()),
       error: (e, _) =>
           statusScaffold(Center(child: Text(l10n.errorWithMessage('$e')))),
       data: (exercise) {
@@ -53,8 +60,7 @@ final class ExerciseDetailScreen extends ConsumerWidget {
           );
         }
         return historyAsync.when(
-          loading: () =>
-              statusScaffold(const Center(child: CircularProgressIndicator())),
+          loading: () => statusScaffold(const SizedBox.shrink()),
           error: (e, _) =>
               statusScaffold(Center(child: Text(l10n.errorWithMessage('$e')))),
           data: (history) => _DetailView(exercise: exercise, history: history),
@@ -82,7 +88,7 @@ final class _DetailView extends ConsumerWidget {
     final hasMedia = exercise.imagePath != null || exercise.videoPath != null;
     // Media (220) + name block; a smaller height when the exercise has no
     // media so the collapsed header leaves no gap.
-    final expandedHeight = hasMedia ? 300.0 : 80.0;
+    final expandedHeight = hasMedia ? 300.0 : null;
 
     return Scaffold(
       body: DefaultTabController(
@@ -93,10 +99,34 @@ final class _DetailView extends ConsumerWidget {
               pinned: true,
               expandedHeight: expandedHeight,
               title: Text(exercise.name),
-              flexibleSpace: FlexibleSpaceBar(
-                collapseMode: CollapseMode.parallax,
-                background: _Header(exercise: exercise),
-              ),
+              actions: [
+                PopupMenuButton<VoidCallback>(
+                  onSelected: (f) => f(),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: () async {
+                        final saved = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ExerciseFormScreen(exercise: exercise),
+                          ),
+                        );
+                        if (saved == true) {
+                          ref.invalidate(exerciseByIdProvider(exercise.id));
+                          ref.invalidate(exerciseListProvider);
+                        }
+                      },
+                      child: Text(l10n.commonEdit),
+                    ),
+                  ],
+                ),
+              ],
+              flexibleSpace: hasMedia
+                  ? FlexibleSpaceBar(
+                      collapseMode: CollapseMode.parallax,
+                      background: _Header(exercise: exercise),
+                    )
+                  : null,
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(48),
                 child: TabBar(
@@ -161,68 +191,6 @@ final class _Header extends StatelessWidget {
   }
 }
 
-/// Type + body-part + equipment chips, each under its own label (Details
-/// tab), matching the layout of [_MusclesSection] below it.
-final class _FactChips extends StatelessWidget {
-  final Exercise exercise;
-  const _FactChips({required this.exercise});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final typeLabel = exercise.isWeightlifting
-        ? l10n.exerciseTypeWeightlifting
-        : l10n.exerciseTypeCardio;
-    final bodyParts = splitTags(exercise.bodyPart);
-    final equipments = splitTags(
-      exercise.equipment,
-    ).map(canonicalEquipmentTag).toList();
-
-    Widget tagRow(String label, List<String> tags) => Padding(
-      padding: const EdgeInsets.only(bottom: FitFatTokens.spaceM),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: FitFatTokens.spaceS),
-          Wrap(
-            spacing: FitFatTokens.spaceS,
-            runSpacing: FitFatTokens.spaceS,
-            children: [for (final tag in tags) Chip(label: Text(tag))],
-          ),
-        ],
-      ),
-    );
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        FitFatTokens.spaceL,
-        FitFatTokens.spaceL,
-        FitFatTokens.spaceL,
-        0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          tagRow(l10n.exerciseDetailType, [typeLabel]),
-          if (bodyParts.isNotEmpty)
-            tagRow(l10n.exerciseDetailBodyPart, bodyParts),
-          if (equipments.isNotEmpty)
-            tagRow(l10n.exerciseDetailEquipment, equipments),
-        ],
-      ),
-    );
-  }
-}
-
-/// History tab (default): PR summary + volume/duration-over-time chart +
-/// per-workout cards.
 final class _HistoryTab extends StatelessWidget {
   final List<ExerciseHistoryEntry> history;
   final _HistoryMetrics metrics;
@@ -261,27 +229,36 @@ final class _HistoryTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: FitFatTokens.spaceXxl),
       children: [
-        _HistorySummary(metrics: metrics, unit: unit),
-        if (metrics.chartSpots.isNotEmpty && metrics.chartSpots.length >= 2)
-          _HistoryChart(
-            title: metrics.usesWeight
-                ? l10n.exerciseDetailVolumeOverTime
-                : l10n.exerciseDetailDurationOverTime,
-            spots: metrics.usesWeight
-                ? _converted(metrics.chartSpots)
-                : metrics.chartSpots,
-            color: theme.colorScheme.primary,
+        _StatTiles(history: history, metrics: metrics, unit: unit),
+        if (metrics.chartSpots.length >= 2)
+          _TrendSwitcher(
+            options: metrics.usesWeight
+                ? [
+                    (
+                      l10n.exerciseDetailChartWeight,
+                      _converted(metrics.trendSpots),
+                    ),
+                    (l10n.exerciseDetailChartReps, metrics.repsSpots),
+                    (
+                      l10n.exerciseDetailChartVolume,
+                      _converted(metrics.chartSpots),
+                    ),
+                  ]
+                : [
+                    (l10n.exerciseDetailChartDuration, metrics.chartSpots),
+                    (l10n.exerciseDetailChartReps, metrics.trendSpots),
+                  ],
           ),
-        if (metrics.trendSpots.isNotEmpty && metrics.trendSpots.length >= 2)
-          _HistoryChart(
-            title: metrics.usesWeight
-                ? l10n.exerciseDetailWeightTrend
-                : l10n.exerciseDetailRepsTrend,
-            spots: metrics.usesWeight
-                ? _converted(metrics.trendSpots)
-                : metrics.trendSpots,
-            color: theme.colorScheme.tertiary,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL),
+          child: SectionHeader(
+            l10n.exerciseDetailSessions,
+            padding: const EdgeInsets.only(
+              top: FitFatTokens.spaceL,
+              bottom: FitFatTokens.spaceXs,
+            ),
           ),
+        ),
         ..._buildWorkoutCards(context),
       ],
     );
@@ -304,7 +281,8 @@ final class _HistoryTab extends StatelessWidget {
     final isPr = List<bool>.filled(n, false);
     var bestOlder = 0.0;
     for (var i = n - 1; i >= 0; i--) {
-      isPr[i] = volumes[i] > bestOlder;
+      // The first-ever session has nothing to beat, so it is never a PR.
+      isPr[i] = i < n - 1 && volumes[i] > bestOlder;
       if (volumes[i] > bestOlder) bestOlder = volumes[i];
     }
 
@@ -331,10 +309,56 @@ final class _DetailsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final bodyParts = splitTags(exercise.bodyPart);
+    final equipments = splitTags(
+      exercise.equipment,
+    ).map(canonicalEquipmentTag).toList();
+    final muscles = [
+      ...splitTags(exercise.primaryMuscle),
+      ...splitTags(exercise.secondaryMuscle),
+    ];
     return ListView(
       padding: const EdgeInsets.only(bottom: FitFatTokens.spaceXxl),
       children: [
-        _FactChips(exercise: exercise),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FitFatTokens.spaceL,
+            FitFatTokens.spaceS,
+            FitFatTokens.spaceL,
+            0,
+          ),
+          child: SettingsGroup(
+            children: [
+              SettingsRow(
+                icon: exercise.isWeightlifting
+                    ? Icons.fitness_center
+                    : Icons.directions_run,
+                title: l10n.exerciseDetailType,
+                value: exercise.isWeightlifting
+                    ? l10n.exerciseTypeWeightlifting
+                    : l10n.exerciseTypeCardio,
+              ),
+              if (bodyParts.isNotEmpty)
+                SettingsRow(
+                  icon: Icons.accessibility_new,
+                  title: l10n.exerciseDetailBodyPart,
+                  value: bodyParts.join(', '),
+                ),
+              if (equipments.isNotEmpty)
+                SettingsRow(
+                  icon: Icons.handyman_outlined,
+                  title: l10n.exerciseDetailEquipment,
+                  value: equipments.join(', '),
+                ),
+              if (muscles.isNotEmpty)
+                SettingsRow(
+                  icon: Icons.flag_outlined,
+                  title: l10n.exerciseDetailMuscles,
+                  value: muscles.join(', '),
+                ),
+            ],
+          ),
+        ),
         if (exercise.instructions != null && exercise.instructions!.isNotEmpty)
           _InstructionSection(
             title: l10n.exerciseDetailInstructions,
@@ -349,7 +373,15 @@ final class _DetailsTab extends StatelessWidget {
           ),
         if (exercise.faqs != null && exercise.faqs!.trim().isNotEmpty)
           _FaqSection(title: l10n.exerciseDetailFaqs, text: exercise.faqs!),
-        _MusclesSection(exercise: exercise),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FitFatTokens.spaceL,
+            FitFatTokens.spaceXl,
+            FitFatTokens.spaceL,
+            0,
+          ),
+          child: _DeleteExerciseRow(exercise: exercise),
+        ),
       ],
     );
   }
@@ -377,69 +409,6 @@ final class _RichText extends StatelessWidget {
           if (segments[i].isNotEmpty)
             TextSpan(text: segments[i], style: i.isOdd ? boldStyle : null),
       ],
-    );
-  }
-}
-
-/// Primary/secondary muscle chips (Details tab).
-final class _MusclesSection extends StatelessWidget {
-  final Exercise exercise;
-  const _MusclesSection({required this.exercise});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final primary = splitTags(exercise.primaryMuscle);
-    final secondary = splitTags(exercise.secondaryMuscle);
-    if (primary.isEmpty && secondary.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        FitFatTokens.spaceL,
-        FitFatTokens.spaceL,
-        FitFatTokens.spaceL,
-        0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (primary.isNotEmpty) ...[
-            Text(
-              l10n.exerciseDetailPrimaryMuscle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: FitFatTokens.spaceS),
-            Wrap(
-              spacing: FitFatTokens.spaceS,
-              runSpacing: FitFatTokens.spaceS,
-              children: [
-                for (final muscle in primary) Chip(label: Text(muscle)),
-              ],
-            ),
-          ],
-          if (secondary.isNotEmpty) ...[
-            const SizedBox(height: FitFatTokens.spaceM),
-            Text(
-              l10n.exerciseDetailSecondaryMuscle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: FitFatTokens.spaceS),
-            Wrap(
-              spacing: FitFatTokens.spaceS,
-              runSpacing: FitFatTokens.spaceS,
-              children: [
-                for (final muscle in secondary) Chip(label: Text(muscle)),
-              ],
-            ),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -804,6 +773,7 @@ final class _HistoryMetrics {
   final List<(DateTime, double)> chartSpots; // chronological
   final List<(DateTime, double)>
   trendSpots; // chronological (best weight OR reps)
+  final List<(DateTime, double)> repsSpots; // chronological total reps
 
   const _HistoryMetrics({
     required this.bestWeightKg,
@@ -814,6 +784,7 @@ final class _HistoryMetrics {
     required this.usesWeight,
     required this.chartSpots,
     required this.trendSpots,
+    required this.repsSpots,
   });
 
   factory _HistoryMetrics.fromHistory(List<ExerciseHistoryEntry> history) {
@@ -847,6 +818,7 @@ final class _HistoryMetrics {
     final unitIsWeight = usesWeight;
     final ordered = <(DateTime, double)>[];
     final trend = <(DateTime, double)>[];
+    final reps = <(DateTime, double)>[];
     for (final entry in byDate) {
       var volume = 0.0;
       var duration = 0;
@@ -868,6 +840,7 @@ final class _HistoryMetrics {
         entry.workout.date,
         unitIsWeight ? bestCellWeight : effectiveReps.toDouble(),
       ));
+      reps.add((entry.workout.date, effectiveReps.toDouble()));
     }
 
     return _HistoryMetrics(
@@ -879,92 +852,7 @@ final class _HistoryMetrics {
       usesWeight: usesWeight,
       chartSpots: ordered,
       trendSpots: trend,
-    );
-  }
-}
-
-final class _HistorySummary extends StatelessWidget {
-  final _HistoryMetrics metrics;
-  final WeightUnit unit;
-
-  const _HistorySummary({required this.metrics, required this.unit});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    final bestLabel = metrics.usesWeight
-        ? l10n.exerciseDetailBestWeight
-        : l10n.exerciseDetailBestDuration;
-    final bestValue = metrics.usesWeight
-        ? l10n.workoutSummaryValueKg(
-            formatWeightValue(metrics.bestWeightKg, unit),
-            weightUnitLabel(unit),
-          )
-        : l10n.workoutDetailPlannedSetDuration(
-            '${metrics.bestDurationMinutes}',
-          );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: FitFatTokens.spaceL),
-      child: Row(
-        children: [
-          Expanded(
-            child: _StatTile(label: bestLabel, value: bestValue, theme: theme),
-          ),
-          Expanded(
-            child: _StatTile(
-              label: l10n.exerciseDetailTotalWorkouts,
-              value: '${metrics.totalWorkouts}',
-              theme: theme,
-            ),
-          ),
-          Expanded(
-            child: _StatTile(
-              label: l10n.exerciseDetailTotalSets,
-              value: '${metrics.totalSets}',
-              theme: theme,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-final class _StatTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final ThemeData theme;
-
-  const _StatTile({
-    required this.label,
-    required this.value,
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: FitFatTokens.spaceS),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+      repsSpots: reps,
     );
   }
 }
@@ -1058,7 +946,9 @@ final class _HistoryChart extends StatelessWidget {
                           return Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              DateFormats.formatShortDate(context, date),
+                              DateFormat.MMMd(
+                                Localizations.localeOf(context).toLanguageTag(),
+                              ).format(date),
                               style: const TextStyle(fontSize: 10),
                             ),
                           );
@@ -1697,4 +1587,223 @@ final class _SetRow extends StatelessWidget {
   String _signed(num value) => value > 0
       ? '+${formatDecimal(value.toDouble())}'
       : formatDecimal(value.toDouble());
+}
+
+/// Best, Last and Sessions, as three small cards.
+final class _StatTiles extends StatelessWidget {
+  const _StatTiles({
+    required this.history,
+    required this.metrics,
+    required this.unit,
+  });
+
+  final List<ExerciseHistoryEntry> history;
+  final _HistoryMetrics metrics;
+  final WeightUnit unit;
+
+  String _set(ExerciseSet s) => s.effectiveReps > 0
+      ? '${formatWeightValue(s.effectiveWeightKg, unit)} × ${s.effectiveReps}'
+      : '${s.effectiveDurationMinutes} min';
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+
+    // Best: heaviest set (then most reps); cardio: longest.
+    ExerciseSet? best;
+    DateTime? bestDate;
+    for (final e in history) {
+      for (final s in e.sets.where((s) => s.isCompleted)) {
+        final better =
+            best == null ||
+            (metrics.usesWeight
+                ? s.effectiveWeightKg > best.effectiveWeightKg ||
+                      (s.effectiveWeightKg == best.effectiveWeightKg &&
+                          s.effectiveReps > best.effectiveReps)
+                : s.effectiveDurationMinutes > best.effectiveDurationMinutes);
+        if (better) {
+          best = s;
+          bestDate = e.workout.date;
+        }
+      }
+    }
+    // Last: the top set of the newest session.
+    final last = history.first;
+    ExerciseSet? lastTop;
+    for (final s in last.sets.where((s) => s.isCompleted)) {
+      if (lastTop == null ||
+          s.effectiveWeightKg > lastTop.effectiveWeightKg ||
+          s.effectiveDurationMinutes > lastTop.effectiveDurationMinutes) {
+        lastTop = s;
+      }
+    }
+    final first = history.last.workout.date;
+
+    Widget tile(String label, String value, String sub) => Expanded(
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(FitFatTokens.spaceM),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 2,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              ),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              Text(
+                sub,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(color: muted),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceM,
+        FitFatTokens.spaceL,
+        0,
+      ),
+      child: Row(
+        spacing: FitFatTokens.spaceS,
+        children: [
+          tile(
+            l10n.exerciseDetailBest,
+            best == null ? '–' : _set(best),
+            bestDate == null
+                ? ''
+                : DateFormats.formatShortDate(context, bestDate),
+          ),
+          tile(
+            l10n.exerciseDetailLast,
+            lastTop == null ? '–' : _set(lastTop),
+            DateFormats.formatShortDate(context, last.workout.date),
+          ),
+          tile(
+            l10n.exerciseDetailSessionCount,
+            '${history.length}',
+            l10n.exerciseDetailSince(
+              DateFormats.formatShortDate(context, first),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One chart with a segmented switch between metrics.
+final class _TrendSwitcher extends StatefulWidget {
+  const _TrendSwitcher({required this.options});
+
+  final List<(String, List<(DateTime, double)>)> options;
+
+  @override
+  State<_TrendSwitcher> createState() => _TrendSwitcherState();
+}
+
+final class _TrendSwitcherState extends State<_TrendSwitcher> {
+  int _index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, spots) = widget.options[_index];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FitFatTokens.spaceL,
+            FitFatTokens.spaceL,
+            FitFatTokens.spaceL,
+            0,
+          ),
+          child: SegmentedButton<int>(
+            showSelectedIcon: false,
+            segments: [
+              for (var i = 0; i < widget.options.length; i++)
+                ButtonSegment(value: i, label: Text(widget.options[i].$1)),
+            ],
+            selected: {_index},
+            onSelectionChanged: (s) => setState(() => _index = s.first),
+          ),
+        ),
+        if (spots.length >= 2)
+          _HistoryChart(
+            title: label,
+            spots: spots,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+      ],
+    );
+  }
+}
+
+/// Bottom danger row. An exercise used by a workout or template cannot be
+/// deleted (it explains why); a server-library exercise is only removed from
+/// this phone.
+final class _DeleteExerciseRow extends ConsumerWidget {
+  const _DeleteExerciseRow({required this.exercise});
+
+  final Exercise exercise;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return DangerRow(
+      action: FormDeleteAction(
+        label: l10n.exerciseDetailDelete,
+        onDelete: () async {
+          final repo = ref.read(exerciseRepositoryProvider);
+          final used = await repo.usageCount(exercise.id);
+          final inTemplate = (await repo.referencedIds()).contains(exercise.id);
+          if (!context.mounted) return;
+          if (used > 0 || inTemplate) {
+            showTopBanner(
+              context,
+              message: used > 0
+                  ? l10n.exerciseUsedBody(used)
+                  : l10n.exerciseUsedInTemplate,
+            );
+            return;
+          }
+          final navigator = Navigator.of(context);
+          final deleted = await confirmDelete(
+            context,
+            itemName: exercise.name,
+            alwaysConfirm: true,
+            delete: () async {
+              final catalog = await ref
+                  .read(exerciseCatalogRepositoryProvider)
+                  .getAll();
+              if (catalog.any((e) => e.id == exercise.id)) {
+                await repo.removeFromDevice({exercise.id});
+              } else {
+                await repo.delete(exercise.id);
+              }
+              ref.invalidate(exerciseListProvider);
+            },
+          );
+          if (deleted && navigator.canPop()) navigator.pop();
+        },
+      ),
+    );
+  }
 }

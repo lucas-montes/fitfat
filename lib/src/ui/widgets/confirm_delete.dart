@@ -14,6 +14,9 @@ typedef CascadeCount = ({String label, int count});
 /// * Other data goes too: shows a sheet listing what else is deleted, and
 ///   deletes only after the user confirms.
 ///
+/// * [alwaysConfirm]: show the sheet even when nothing else goes (for deletes
+///   that cannot be undone).
+///
 /// Returns true when the item was deleted.
 Future<bool> confirmDelete(
   BuildContext context, {
@@ -22,12 +25,14 @@ Future<bool> confirmDelete(
   List<CascadeCount> cascade = const [],
   Future<void> Function()? undo,
   String? confirmLabel,
+  bool alwaysConfirm = false,
 }) async {
   final l10n = AppLocalizations.of(context)!;
   final overlay = Overlay.of(context);
   final affected = cascade.where((c) => c.count > 0).toList();
 
-  if (affected.isNotEmpty) {
+  // Irreversible deletes with nothing else affected still ask first.
+  if (affected.isNotEmpty || alwaysConfirm) {
     final ok = await showModalBottomSheet<bool>(
       context: context,
       builder: (ctx) => _CascadeSheet(
@@ -97,38 +102,39 @@ class _CascadeSheet extends StatelessWidget {
                 ),
               ],
             ),
-            Card(
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: const EdgeInsets.all(FitFatTokens.spaceM),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: FitFatTokens.spaceS,
-                  children: [
-                    Text(
-                      alsoDeleted.toUpperCase(),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.9,
+            if (items.isNotEmpty)
+              Card(
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.all(FitFatTokens.spaceM),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: FitFatTokens.spaceS,
+                    children: [
+                      Text(
+                        alsoDeleted.toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.9,
+                        ),
                       ),
-                    ),
-                    for (final c in items)
-                      Row(
-                        children: [
-                          Expanded(child: Text(c.label)),
-                          Text(
-                            '${c.count}',
-                            style: const TextStyle(
-                              fontFeatures: [FontFeature.tabularFigures()],
+                      for (final c in items)
+                        Row(
+                          children: [
+                            Expanded(child: Text(c.label)),
+                            Text(
+                              '${c.count}',
+                              style: const TextStyle(
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                  ],
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: scheme.error,

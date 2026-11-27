@@ -3948,4 +3948,39 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get exerciseDetailChartWeight => 'Peso';
+
+  @override
+  String get exerciseDetailChartReps => 'Reps';
+
+  @override
+  String get exerciseDetailChartVolume => 'Volumen';
+
+  @override
+  String get exerciseDetailChartDuration => 'Duración';
+
+  @override
+  String get exerciseDetailSessions => 'Sesiones';
+
+  @override
+  String get exerciseDetailBest => 'Mejor';
+
+  @override
+  String get exerciseDetailLast => 'Última';
+
+  @override
+  String get exerciseDetailSessionCount => 'Sesiones';
+
+  @override
+  String exerciseDetailSince(String date) {
+    return 'desde $date';
+  }
+
+  @override
+  String get exerciseDetailMuscles => 'Músculos';
+
+  @override
+  String get exerciseDetailDelete => 'Eliminar ejercicio';
 }

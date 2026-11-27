@@ -2022,5 +2022,16 @@
   "workoutDetailAvgRestShort": "descanso medio {rest}",
   "workoutDetailNotDone": "No hecha",
   "trainingCascadeSetsDone": "Series registradas",
-  "exerciseFilterShow": "{count, plural, =1{Ver 1 ejercicio} other{Ver {count} ejercicios}}"
+  "exerciseFilterShow": "{count, plural, =1{Ver 1 ejercicio} other{Ver {count} ejercicios}}",
+  "exerciseDetailChartWeight": "Peso",
+  "exerciseDetailChartReps": "Reps",
+  "exerciseDetailChartVolume": "Volumen",
+  "exerciseDetailChartDuration": "Duración",
+  "exerciseDetailSessions": "Sesiones",
+  "exerciseDetailBest": "Mejor",
+  "exerciseDetailLast": "Última",
+  "exerciseDetailSessionCount": "Sesiones",
+  "exerciseDetailSince": "desde {date}",
+  "exerciseDetailMuscles": "Músculos",
+  "exerciseDetailDelete": "Eliminar ejercicio"
 }

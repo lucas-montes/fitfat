@@ -6904,6 +6904,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{Show 1 exercise} other{Show {count} exercises}}'**
   String exerciseFilterShow(int count);
+
+  /// No description provided for @exerciseDetailChartWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get exerciseDetailChartWeight;
+
+  /// No description provided for @exerciseDetailChartReps.
+  ///
+  /// In en, this message translates to:
+  /// **'Reps'**
+  String get exerciseDetailChartReps;
+
+  /// No description provided for @exerciseDetailChartVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get exerciseDetailChartVolume;
+
+  /// No description provided for @exerciseDetailChartDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get exerciseDetailChartDuration;
+
+  /// No description provided for @exerciseDetailSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get exerciseDetailSessions;
+
+  /// No description provided for @exerciseDetailBest.
+  ///
+  /// In en, this message translates to:
+  /// **'Best'**
+  String get exerciseDetailBest;
+
+  /// No description provided for @exerciseDetailLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Last'**
+  String get exerciseDetailLast;
+
+  /// No description provided for @exerciseDetailSessionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get exerciseDetailSessionCount;
+
+  /// No description provided for @exerciseDetailSince.
+  ///
+  /// In en, this message translates to:
+  /// **'since {date}'**
+  String exerciseDetailSince(String date);
+
+  /// No description provided for @exerciseDetailMuscles.
+  ///
+  /// In en, this message translates to:
+  /// **'Muscles'**
+  String get exerciseDetailMuscles;
+
+  /// No description provided for @exerciseDetailDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete exercise'**
+  String get exerciseDetailDelete;
 }
 
 class _AppLocalizationsDelegate
