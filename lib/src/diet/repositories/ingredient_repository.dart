@@ -270,6 +270,22 @@ final class IngredientRepository {
   // Pictures (v20)
   // ---------------------------------------------------------------------------
 
+  /// The first picture (gallery order) of every ingredient that has one:
+  /// ingredient id → image path. One query, for list thumbnails.
+  Future<Map<String, String>> firstPicturePaths() async {
+    final rows =
+        await (_database.select(_database.ingredientPictures)..orderBy([
+              (t) => OrderingTerm.asc(t.sortOrder),
+              (t) => OrderingTerm.asc(t.createdAt),
+            ]))
+            .get();
+    final out = <String, String>{};
+    for (final r in rows) {
+      out.putIfAbsent(r.ingredientId, () => r.imagePath);
+    }
+    return out;
+  }
+
   Future<List<IngredientPicture>> getPictures(String ingredientId) async {
     final rows =
         await (_database.select(_database.ingredientPictures)

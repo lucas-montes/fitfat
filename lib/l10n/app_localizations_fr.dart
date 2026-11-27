@@ -4156,4 +4156,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get recipeCookedWeight => 'Poids cuit';
+
+  @override
+  String ingredientSearchCount(int count) {
+    return 'Rechercher $count ingrédients';
+  }
+
+  @override
+  String get ingredientTabNutrition => 'Nutrition';
+
+  @override
+  String get ingredientPer100 => 'pour 100 g';
+
+  @override
+  String get ingredientCalories => 'Calories';
+
+  @override
+  String get ingredientOfWhichSugar => 'dont sucres';
+
+  @override
+  String get ingredientDelete => 'Supprimer l’ingrédient';
+
+  @override
+  String get ingredientDeleteConsequence =>
+      'Les recettes et repas passés le conservent';
 }

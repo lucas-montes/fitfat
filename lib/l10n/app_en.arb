@@ -2445,5 +2445,13 @@
   "@recipeYield": {"placeholders":{"percent":{"type":"int"}}},
   "recipeDelete": "Delete recipe",
   "recipeDeleteConsequence": "Meals already logged keep it",
-  "recipeCookedWeight": "Cooked weight"
+  "recipeCookedWeight": "Cooked weight",
+  "ingredientSearchCount": "Search {count} ingredients",
+  "@ingredientSearchCount": {"placeholders":{"count":{"type":"int"}}},
+  "ingredientTabNutrition": "Nutrition",
+  "ingredientPer100": "per 100 g",
+  "ingredientCalories": "Calories",
+  "ingredientOfWhichSugar": "of which sugar",
+  "ingredientDelete": "Delete ingredient",
+  "ingredientDeleteConsequence": "Recipes and past meals keep it"
 }

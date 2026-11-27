@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:material_ui/material_ui.dart';
 import '../../ui/widgets/top_banner.dart';
@@ -11,7 +12,10 @@ import '../../settings/providers/settings.dart';
 import '../../sync/repositories/catalog_repository.dart';
 import '../../sync/sync_service.dart';
 import '../../ui/haptics.dart';
+import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
+import '../../ui/widgets/macro_bar.dart';
+import 'barcode_scan_sheet.dart';
 import '../providers/ingredients.dart';
 import 'ingredient_detail_screen.dart';
 import 'ingredient_form.dart';
@@ -123,10 +127,33 @@ final class _IngredientListScreenState
     }
   }
 
+  String _query = '';
+
+  Future<void> _scan(List<Ingredient> all) async {
+    final l10n = AppLocalizations.of(context)!;
+    final code = await showBarcodeScanSheet(context);
+    if (code == null || !mounted) return;
+    final match = all.where((i) => i.barcode == code).firstOrNull;
+    if (match == null) {
+      showTopBanner(context, message: l10n.mealEditBarcodeUnknown(code));
+      return;
+    }
+    await _openDetail(context, ref, match);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final ingredientsAsync = ref.watch(ingredientListProvider);
+    final all = ref.watch(ingredientListProvider).value ?? const <Ingredient>[];
+    final thumbs = ref.watch(ingredientThumbnailsProvider).value ?? const {};
+    final q = _query.trim().toLowerCase();
+    final shown = [
+      for (final i in all)
+        if (q.isEmpty ||
+            i.name.toLowerCase().contains(q) ||
+            (i.brand?.toLowerCase().contains(q) ?? false))
+          i,
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -144,7 +171,7 @@ final class _IngredientListScreenState
           else
             PopupMenuButton<String>(
               tooltip: l10n.syncIngredientsTooltip,
-              icon: const Icon(Icons.sync),
+              icon: const Icon(Icons.cloud_sync_outlined),
               onSelected: (v) {
                 if (v == 'all') {
                   unawaited(_syncAll());
@@ -159,31 +186,70 @@ final class _IngredientListScreenState
             ),
         ],
       ),
-      body: ingredientsAsync.when(
-        // Local data: never a spinner; the first frame is blank for a few ms.
-        loading: () => const SizedBox.shrink(),
-        error: (e, _) => Center(child: Text(l10n.errorWithMessage('$e'))),
-        data: (ingredients) => ingredients.isEmpty
-            ? EmptyState(
-                icon: Icons.soup_kitchen_outlined,
-                title: l10n.emptyIngredientsTitle,
-                description: l10n.emptyIngredientsBody,
-                ctaLabel: l10n.emptyIngredientsCta,
-                onCtaPressed: () => _openForm(context, ref, null),
-              )
-            : ListView.builder(
-                itemCount: ingredients.length,
-                itemBuilder: (_, i) => _IngredientTile(
-                  ingredient: ingredients[i],
-                  l10n: l10n,
-                  onTap: () => _openDetail(context, ref, ingredients[i]),
-                  onDismissed: () =>
-                      _archiveIngredient(context, ref, ingredients[i]),
+      body: all.isEmpty
+          ? EmptyState(
+              icon: Icons.soup_kitchen_outlined,
+              title: l10n.emptyIngredientsTitle,
+              description: l10n.emptyIngredientsBody,
+              ctaLabel: l10n.emptyIngredientsCta,
+              onCtaPressed: () => _openForm(context, ref, null),
+            )
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: FitFatTokens.kContentMaxWidth,
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        FitFatTokens.spaceL,
+                        FitFatTokens.spaceXs,
+                        FitFatTokens.spaceL,
+                        FitFatTokens.spaceS,
+                      ),
+                      child: TextField(
+                        key: const ValueKey('ingredientSearch'),
+                        decoration: InputDecoration(
+                          hintText: l10n.ingredientSearchCount(all.length),
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: IconButton(
+                            tooltip: l10n.mealEditScan,
+                            icon: const Icon(Icons.qr_code_scanner),
+                            onPressed: () => _scan(all),
+                          ),
+                        ),
+                        onChanged: (v) => setState(() => _query = v),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                          FitFatTokens.spaceL,
+                          0,
+                          FitFatTokens.spaceL,
+                          88,
+                        ),
+                        itemCount: shown.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: FitFatTokens.spaceS),
+                        itemBuilder: (_, i) => _IngredientTile(
+                          key: ValueKey(shown[i].id),
+                          ingredient: shown[i],
+                          thumbnail: thumbs[shown[i].id],
+                          onTap: () => _openDetail(context, ref, shown[i]),
+                          onDismissed: () =>
+                              _archiveIngredient(context, ref, shown[i]),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-      ),
+            ),
       floatingActionButton: FloatingActionButton(
         heroTag: null,
+        tooltip: l10n.dietAddIngredient,
         onPressed: () => _openForm(context, ref, null),
         child: const Icon(Icons.add),
       ),
@@ -241,72 +307,174 @@ final class _IngredientListScreenState
   }
 }
 
+/// Photo, name, brand and kcal, then protein, carbs, fat, fiber, sodium and
+/// sugar per 100 g in six columns.
 final class _IngredientTile extends StatelessWidget {
   final Ingredient ingredient;
-  final AppLocalizations l10n;
+  final String? thumbnail;
   final VoidCallback onTap;
   final VoidCallback onDismissed;
 
   const _IngredientTile({
+    super.key,
     required this.ingredient,
-    required this.l10n,
+    required this.thumbnail,
     required this.onTap,
     required this.onDismissed,
   });
 
+  static String _v(double v) {
+    if (v == 0) return '0';
+    if (v < 1) {
+      return v.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
+    }
+    if (v < 10) return v.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+    return v.round().toString();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final i = ingredient;
     return Dismissible(
-      key: ValueKey(ingredient.id),
+      key: ValueKey('dismiss-${i.id}'),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: Theme.of(context).colorScheme.error,
+        decoration: BoxDecoration(
+          color: scheme.errorContainer,
+          borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
+        ),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
+        padding: const EdgeInsets.only(right: FitFatTokens.spaceL),
+        child: Icon(Icons.archive_outlined, color: scheme.error),
       ),
       onDismissed: (_) => onDismissed(),
-      child: ListTile(
-        title: Text(ingredient.name, overflow: TextOverflow.ellipsis),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.ingredientMacroRow(
-                ingredient.caloriesPer100g.toStringAsFixed(0),
-                ingredient.caloriesPer100g.toStringAsFixed(0),
-                ingredient.proteinPer100g.toStringAsFixed(1),
-                ingredient.carbsPer100g.toStringAsFixed(1),
-                ingredient.fatPer100g.toStringAsFixed(1),
-              ),
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              FitFatTokens.spaceM,
+              FitFatTokens.spaceM,
+              FitFatTokens.spaceM,
+              FitFatTokens.spaceS,
             ),
-            if (_nutrientLine(l10n) case final line?) Text(line),
-          ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: FitFatTokens.spaceS,
+              children: [
+                Row(
+                  spacing: FitFatTokens.spaceM,
+                  children: [
+                    _Thumb(path: thumbnail, name: i.name),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            i.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                          if (i.brand != null)
+                            Text(
+                              i.brand!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${i.caloriesPer100g.round()}',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' kcal',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                MacroColumns(
+                  labels: [...macroLabels(l10n), l10n.macroSugar],
+                  values: [
+                    for (final v in [
+                      i.proteinPer100g,
+                      i.carbsPer100g,
+                      i.fatPer100g,
+                      i.fiberPer100g,
+                      i.sodiumPer100g,
+                      i.sugarPer100g,
+                    ])
+                      _v(v),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
     );
   }
+}
 
-  /// Optional second subtitle line listing the set extra nutriments
-  /// (sodium / fiber / sugar), or null when none are set.
-  String? _nutrientLine(AppLocalizations l10n) {
-    final parts = <String>[
-      if (ingredient.sodiumPer100g > 0)
-        l10n.ingredientNutrientSodium(
-          ingredient.sodiumPer100g.toStringAsFixed(1),
+/// A 40 dp photo, or the name's first letter when there is none.
+final class _Thumb extends StatelessWidget {
+  const _Thumb({required this.path, required this.name});
+
+  final String? path;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final letter = Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
+      ),
+      child: Text(
+        name.isEmpty ? '?' : name.characters.first.toUpperCase(),
+        style: TextStyle(
+          color: scheme.onPrimaryContainer,
+          fontWeight: FontWeight.w600,
         ),
-      if (ingredient.fiberPer100g > 0)
-        l10n.ingredientNutrientFiber(
-          ingredient.fiberPer100g.toStringAsFixed(1),
-        ),
-      if (ingredient.sugarPer100g > 0)
-        l10n.ingredientNutrientSugar(
-          ingredient.sugarPer100g.toStringAsFixed(1),
-        ),
-    ];
-    if (parts.isEmpty) return null;
-    return parts.join('  ·  ');
+      ),
+    );
+    if (path == null) return letter;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
+      child: Image.file(
+        File(path!),
+        width: 40,
+        height: 40,
+        fit: BoxFit.cover,
+        cacheWidth: 120,
+        errorBuilder: (_, _, _) => letter,
+      ),
+    );
   }
 }

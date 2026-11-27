@@ -14,6 +14,9 @@ import '../../settings/providers/settings.dart';
 import '../../sync/sync_service.dart';
 import '../../ui/date_formats.dart';
 import '../../ui/tokens.dart';
+import '../../ui/widgets/confirm_delete.dart';
+import '../../ui/widgets/form_scaffold.dart';
+import '../../ui/widgets/macro_bar.dart';
 import '../../ui/widgets/top_banner.dart';
 import '../providers/ingredients.dart';
 import '../repositories/ingredient_repository.dart';
@@ -30,8 +33,7 @@ final class IngredientDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ingredientAsync = ref.watch(ingredientByIdProvider(ingredientId));
     return ingredientAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(body: SizedBox.shrink()),
       error: (e, _) => Scaffold(
         body: Center(
           child: Text(AppLocalizations.of(context)!.errorWithMessage('$e')),
@@ -60,150 +62,81 @@ final class _DetailBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
     final picturesAsync = ref.watch(ingredientPicturesProvider(ingredient.id));
     final pictures = picturesAsync.value ?? [];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(ingredient.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_upload_outlined),
-            tooltip: l10n.syncPushIngredientTooltip,
-            onPressed: () => _pushToServer(context, ref),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: l10n.commonEdit,
-            onPressed: () => _edit(context, ref),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 32),
-        children: [
-          if (ingredient.brand != null || ingredient.barcode != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(ingredient.name),
+          actions: [
+            PopupMenuButton<VoidCallback>(
+              onSelected: (fn) => fn(),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: () => _edit(context, ref),
+                  child: Text(l10n.commonEdit),
+                ),
+                PopupMenuItem(
+                  value: () => _pushToServer(context, ref),
+                  child: Text(l10n.syncPushIngredientTooltip),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (pictures.isNotEmpty)
+              _PhotoHeader(
+                paths: [for (final p in pictures) p.imagePath],
+                onTap: (i) => _openViewer(context, [
+                  for (final p in pictures) p.imagePath,
+                ], i),
+              ),
+            TabBar(
+              tabs: [
+                Tab(text: l10n.ingredientTabNutrition),
+                Tab(text: l10n.ingredientDetailPricesTitle),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
                 children: [
-                  if (ingredient.brand != null)
-                    Chip(
-                      avatar: const Icon(Icons.storefront_outlined, size: 18),
-                      label: Text(ingredient.brand!),
-                    ),
-                  if (ingredient.barcode != null)
-                    Chip(
-                      avatar: const Icon(Icons.qr_code_2, size: 18),
-                      label: Text(ingredient.barcode!),
-                    ),
+                  _NutritionTab(
+                    ingredient: ingredient,
+                    onDelete: () => _archive(context, ref),
+                  ),
+                  ListView(
+                    padding: const EdgeInsets.only(bottom: 32),
+                    children: [_PricesSection(ingredientId: ingredient.id)],
+                  ),
                 ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        _MacroCell(
-                          theme: theme,
-                          value: ingredient.caloriesPer100g.toStringAsFixed(0),
-                          unit: 'kcal',
-                        ),
-                        _MacroCell(
-                          theme: theme,
-                          value:
-                              'P ${ingredient.proteinPer100g.toStringAsFixed(1)}g',
-                        ),
-                        _MacroCell(
-                          theme: theme,
-                          value:
-                              'C ${ingredient.carbsPer100g.toStringAsFixed(1)}g',
-                        ),
-                        _MacroCell(
-                          theme: theme,
-                          value:
-                              'F ${ingredient.fatPer100g.toStringAsFixed(1)}g',
-                        ),
-                      ],
-                    ),
-                    if (ingredient.sodiumPer100g > 0 ||
-                        ingredient.fiberPer100g > 0 ||
-                        ingredient.sugarPer100g > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          [
-                            if (ingredient.sodiumPer100g > 0)
-                              l10n.ingredientNutrientSodium(
-                                ingredient.sodiumPer100g.toStringAsFixed(1),
-                              ),
-                            if (ingredient.fiberPer100g > 0)
-                              l10n.ingredientNutrientFiber(
-                                ingredient.fiberPer100g.toStringAsFixed(1),
-                              ),
-                            if (ingredient.sugarPer100g > 0)
-                              l10n.ingredientNutrientSugar(
-                                ingredient.sugarPer100g.toStringAsFixed(1),
-                              ),
-                          ].join('  ·  '),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (pictures.isNotEmpty)
-            SizedBox(
-              height: 104,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: pictures.length,
-                itemBuilder: (_, i) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () => _openViewer(
-                      context,
-                      pictures.map((pict) => pict.imagePath).toList(),
-                      i,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.file(
-                        File(pictures[i].imagePath),
-                        width: 96,
-                        height: 96,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          width: 96,
-                          height: 96,
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          child: const Icon(Icons.broken_image_outlined),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          const _OwnFoodNote(),
-          _PricesSection(ingredientId: ingredient.id),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _archive(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(ingredientRepositoryProvider);
+    final done = await confirmDelete(
+      context,
+      itemName: ingredient.name,
+      delete: () async {
+        await repo.archive(ingredient.id);
+        ref.invalidate(ingredientListProvider);
+      },
+      undo: () async {
+        await repo.restore(ingredient.id);
+        ref.invalidate(ingredientListProvider);
+      },
+    );
+    if (done && context.mounted) Navigator.of(context).pop();
   }
 
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
@@ -308,26 +241,203 @@ final class _PictureViewerScreenState extends State<_PictureViewerScreen> {
   }
 }
 
-final class _MacroCell extends StatelessWidget {
-  final ThemeData theme;
-  final String value;
-  final String? unit;
+/// Swipeable photos on top of the detail; tap opens the full-screen viewer.
+final class _PhotoHeader extends StatefulWidget {
+  const _PhotoHeader({required this.paths, required this.onTap});
 
-  const _MacroCell({required this.theme, required this.value, this.unit});
+  final List<String> paths;
+  final ValueChanged<int> onTap;
+
+  @override
+  State<_PhotoHeader> createState() => _PhotoHeaderState();
+}
+
+final class _PhotoHeaderState extends State<_PhotoHeader> {
+  int _page = 0;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      height: 180,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Text(
-            unit == null ? value : '$value $unit',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+          PageView.builder(
+            itemCount: widget.paths.length,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) => GestureDetector(
+              onTap: () => widget.onTap(i),
+              child: Image.file(
+                File(widget.paths[i]),
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => ColoredBox(
+                  color: scheme.surfaceContainerHighest,
+                  child: const Icon(Icons.broken_image_outlined),
+                ),
+              ),
             ),
           ),
+          if (widget.paths.length > 1)
+            Positioned(
+              right: FitFatTokens.spaceM,
+              bottom: FitFatTokens.spaceM,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(FitFatTokens.radiusFull),
+                ),
+                child: Text(
+                  '${_page + 1}/${widget.paths.length}',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+/// Brand and barcode, a nutrition label per 100 g, the macro bar, the
+/// own-food note and the delete row.
+final class _NutritionTab extends StatelessWidget {
+  const _NutritionTab({required this.ingredient, required this.onDelete});
+
+  final Ingredient ingredient;
+  final VoidCallback onDelete;
+
+  static String _g(double v) {
+    if (v > 0 && v < 1) {
+      return v.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
+    }
+    final r = (v * 10).round() / 10;
+    return r == r.roundToDouble() ? r.toStringAsFixed(0) : r.toStringAsFixed(1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final i = ingredient;
+    final meta = [?i.brand, ?i.barcode].join(' · ');
+    final rows = <(String, String, bool, bool)>[
+      (
+        l10n.ingredientCalories,
+        '${i.caloriesPer100g.round()} kcal',
+        true,
+        false,
+      ),
+      (l10n.macroProtein, '${_g(i.proteinPer100g)} g', false, false),
+      (l10n.macroCarbs, '${_g(i.carbsPer100g)} g', false, false),
+      (l10n.ingredientOfWhichSugar, '${_g(i.sugarPer100g)} g', false, true),
+      (l10n.macroFat, '${_g(i.fatPer100g)} g', false, false),
+      (l10n.macroFiber, '${_g(i.fiberPer100g)} g', false, false),
+      (l10n.macroSodium, '${_g(i.sodiumPer100g)} g', false, false),
+    ];
+    final capStyle = theme.textTheme.labelSmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+      letterSpacing: 0.9,
+      fontWeight: FontWeight.w600,
+    );
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceM,
+        FitFatTokens.spaceL,
+        FitFatTokens.spaceXxl,
+      ),
+      children: [
+        if (meta.isNotEmpty) ...[
+          Text(
+            meta,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: FitFatTokens.spaceS),
+        ],
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(FitFatTokens.spaceM),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.ingredientTabNutrition.toUpperCase(),
+                        style: capStyle,
+                      ),
+                    ),
+                    Text(l10n.ingredientPer100.toUpperCase(), style: capStyle),
+                  ],
+                ),
+                const SizedBox(height: FitFatTokens.spaceXs),
+                for (var k = 0; k < rows.length; k++)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      border: k == rows.length - 1
+                          ? null
+                          : Border(
+                              bottom: BorderSide(color: scheme.outlineVariant),
+                            ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(left: rows[k].$4 ? 12 : 0),
+                            child: Text(
+                              rows[k].$1,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: rows[k].$3 ? FontWeight.w600 : null,
+                                color: rows[k].$4
+                                    ? scheme.onSurfaceVariant
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          rows[k].$2,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: rows[k].$3 ? FontWeight.w600 : null,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: FitFatTokens.spaceS),
+                MacroBar(
+                  MacroValues(
+                    protein: i.proteinPer100g,
+                    carbs: i.carbsPer100g,
+                    fat: i.fatPer100g,
+                    fiber: i.fiberPer100g,
+                    sodium: i.sodiumPer100g,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const _OwnFoodNote(),
+        const SizedBox(height: FitFatTokens.spaceXl),
+        DangerRow(
+          action: FormDeleteAction(
+            label: l10n.ingredientDelete,
+            consequence: l10n.ingredientDeleteConsequence,
+            onDelete: onDelete,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -424,7 +534,7 @@ final class _PricesSection extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           pricesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const SizedBox.shrink(),
             error: (e, _) => Text(l10n.errorWithMessage('$e')),
             data: (entries) {
               if (entries.isEmpty) {

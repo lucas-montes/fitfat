@@ -7234,6 +7234,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cooked weight'**
   String get recipeCookedWeight;
+
+  /// No description provided for @ingredientSearchCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Search {count} ingredients'**
+  String ingredientSearchCount(int count);
+
+  /// No description provided for @ingredientTabNutrition.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition'**
+  String get ingredientTabNutrition;
+
+  /// No description provided for @ingredientPer100.
+  ///
+  /// In en, this message translates to:
+  /// **'per 100 g'**
+  String get ingredientPer100;
+
+  /// No description provided for @ingredientCalories.
+  ///
+  /// In en, this message translates to:
+  /// **'Calories'**
+  String get ingredientCalories;
+
+  /// No description provided for @ingredientOfWhichSugar.
+  ///
+  /// In en, this message translates to:
+  /// **'of which sugar'**
+  String get ingredientOfWhichSugar;
+
+  /// No description provided for @ingredientDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ingredient'**
+  String get ingredientDelete;
+
+  /// No description provided for @ingredientDeleteConsequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes and past meals keep it'**
+  String get ingredientDeleteConsequence;
 }
 
 class _AppLocalizationsDelegate

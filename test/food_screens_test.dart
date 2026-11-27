@@ -7,6 +7,9 @@ import 'package:fitfat/src/database/database_provider.dart';
 import 'package:fitfat/src/diet/repositories/food_repository.dart';
 import 'package:fitfat/src/diet/repositories/ingredient_repository.dart';
 import 'package:fitfat/src/diet/repositories/meal_repository.dart';
+import 'package:fitfat/src/diet/screens/food_list.dart';
+import 'package:fitfat/src/diet/screens/ingredient_detail_screen.dart';
+import 'package:fitfat/src/diet/screens/ingredient_list.dart';
 import 'package:fitfat/src/diet/screens/meal_form.dart';
 import 'package:fitfat/src/diet/screens/meal_list.dart';
 import 'package:fitfat/src/models/food.dart';
@@ -317,6 +320,127 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect((await tester.runAsync(meals.getAll))!, isEmpty);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('recipes', () {
+    Future<Food> bowl({DateTime? at}) async {
+      final o = (await ingredients.getAll()).firstWhere(
+        (i) => i.name == 'Rolled oats',
+      );
+      final food = newFood(
+        name: 'Porridge',
+        cookedWeight: 400,
+      ).copyWith(createdAt: at ?? DateTime(2026, 11, 20));
+      await foods.insert(food, [
+        FoodIngredient(
+          foodId: food.id,
+          ingredientId: o.id,
+          ingredientName: o.name,
+          amount: 100,
+        ),
+      ]);
+      return food;
+    }
+
+    test('grams eaten skip deleted meals', () async {
+      final food = await bowl();
+      await meals.insert(
+        entry('a', DateTime(2026, 11, 21), [await item('a', food.id, 150)]),
+      );
+      await meals.insert(
+        entry('b', DateTime(2026, 11, 22), [await item('b', food.id, 100)]),
+      );
+      await meals.delete('b');
+      expect((await foods.eatenGrams())[food.id], 150);
+    });
+
+    test('sort: newest, name, kcal', () async {
+      await bowl(at: DateTime(2026, 11, 1));
+      final b = newFood(
+        name: 'Apple mix',
+        cookedWeight: 100,
+      ).copyWith(createdAt: DateTime(2026, 11, 5));
+      final ban = (await ingredients.getAll()).firstWhere(
+        (i) => i.name == 'Banana',
+      );
+      await foods.insert(b, [
+        FoodIngredient(
+          foodId: b.id,
+          ingredientId: ban.id,
+          ingredientName: ban.name,
+          amount: 100,
+        ),
+      ]);
+      final all = (await foods.getAllWithNutrition())
+          .where((r) => !r.food.isDerived)
+          .toList();
+      expect(sortRecipes(all, RecipeSort.newest).map((r) => r.food.name), [
+        'Apple mix',
+        'Porridge',
+      ]);
+      expect(sortRecipes(all, RecipeSort.name).first.food.name, 'Apple mix');
+      expect(sortRecipes(all, RecipeSort.kcal).first.food.name, 'Porridge');
+    });
+
+    testWidgets('a card shows kcal/100 g, cooked weight, eaten; opens', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        final food = await bowl();
+        await meals.insert(
+          entry('a', DateTime(2026, 11, 21), [await item('a', food.id, 150)]),
+        );
+      });
+      await pump(tester, const FoodListScreen());
+      // 100 g oats (400 kcal) cooked to 400 g → 100 kcal / 100 g.
+      expect(find.text('100 kcal /100 g', findRichText: true), findsOneWidget);
+      expect(find.textContaining('400 g cooked'), findsOneWidget);
+      expect(find.text('150 g eaten'), findsOneWidget);
+      expect(find.text('250 g left'), findsOneWidget);
+      expect(find.text('Rolled oats'), findsNothing);
+      await tester.tap(find.byType(RecipeCard));
+      await tester.pumpAndSettle();
+      expect(find.text('Rolled oats'), findsOneWidget);
+      expect(find.text('Edit recipe'), findsOneWidget);
+    });
+  });
+
+  group('ingredients', () {
+    testWidgets('cards show six nutrient columns; search narrows', (
+      tester,
+    ) async {
+      await pump(tester, const IngredientListScreen());
+      expect(find.text('Rolled oats'), findsOneWidget);
+      expect(find.text('Banana'), findsOneWidget);
+      expect(find.text('Sugar'), findsNWidgets(2));
+      await tester.enterText(
+        find.byKey(const ValueKey('ingredientSearch')),
+        'ban',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Rolled oats'), findsNothing);
+      expect(find.text('Banana'), findsOneWidget);
+    });
+
+    testWidgets('detail has Nutrition and Prices tabs; delete archives', (
+      tester,
+    ) async {
+      final id = (await tester.runAsync(
+        ingredients.getAll,
+      ))!.firstWhere((i) => i.name == 'Banana').id;
+      await pump(tester, IngredientDetailScreen(ingredientId: id));
+      expect(find.text('Nutrition'), findsOneWidget);
+      expect(find.text('Prices'), findsOneWidget);
+      expect(find.text('90 kcal'), findsOneWidget);
+      await tester.tap(find.text('Delete ingredient'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+      final left = (await tester.runAsync(ingredients.getAll))!;
+      expect(left.map((i) => i.name), isNot(contains('Banana')));
       await tester.pump(const Duration(seconds: 5));
     });
   });

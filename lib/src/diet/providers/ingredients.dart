@@ -39,6 +39,15 @@ final storesProvider = FutureProvider<List<Store>>((ref) async {
   return ref.watch(ingredientRepositoryProvider).getStores();
 });
 
+/// Ingredient id → its first picture's path, for list thumbnails. Refreshes
+/// with the ingredient list (pictures are edited in the ingredient form).
+final ingredientThumbnailsProvider = FutureProvider<Map<String, String>>((
+  ref,
+) async {
+  await ref.watch(ingredientListProvider.future);
+  return ref.watch(ingredientRepositoryProvider).firstPicturePaths();
+});
+
 final ingredientPicturesProvider = FutureProvider.autoDispose
     .family<List<IngredientPicture>, String>((ref, ingredientId) async {
       return ref.watch(ingredientRepositoryProvider).getPictures(ingredientId);

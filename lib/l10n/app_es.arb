@@ -2077,5 +2077,12 @@
   "recipeYield": "rendimiento {percent}%",
   "recipeDelete": "Eliminar receta",
   "recipeDeleteConsequence": "Las comidas ya registradas la conservan",
-  "recipeCookedWeight": "Peso cocinado"
+  "recipeCookedWeight": "Peso cocinado",
+  "ingredientSearchCount": "Buscar {count} ingredientes",
+  "ingredientTabNutrition": "Nutrición",
+  "ingredientPer100": "por 100 g",
+  "ingredientCalories": "Calorías",
+  "ingredientOfWhichSugar": "de los cuales azúcar",
+  "ingredientDelete": "Eliminar ingrediente",
+  "ingredientDeleteConsequence": "Las recetas y comidas pasadas lo conservan"
 }
