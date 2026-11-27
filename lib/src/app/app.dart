@@ -17,6 +17,7 @@ import '../diet/providers/foods.dart';
 import '../diet/providers/ingredients.dart';
 import '../diet/providers/meals.dart';
 import '../exercise/providers/exercises.dart';
+import '../exercise/providers/training.dart';
 import '../exercise/providers/workouts.dart';
 import '../notes/providers/notes.dart';
 import '../../l10n/app_localizations.dart';
@@ -213,6 +214,8 @@ final class _BackgroundStartupState extends ConsumerState<_BackgroundStartup>
           () => ref.read(noteListProvider.future),
           () => ref.read(foodCombinationProvider.future),
           () => ref.read(receiptListProvider.future),
+          () => ref.read(recentRoutinesProvider.future),
+          () => ref.read(templateCardsProvider.future),
         ]) {
           if (!mounted) return;
           try {

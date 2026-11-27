@@ -6646,6 +6646,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'General'**
   String get settingsGeneral;
+
+  /// No description provided for @trainingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Training'**
+  String get trainingTitle;
+
+  /// No description provided for @trainingRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get trainingRecent;
+
+  /// No description provided for @trainingAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get trainingAll;
+
+  /// No description provided for @trainingStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get trainingStart;
+
+  /// No description provided for @trainingStartAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Start again'**
+  String get trainingStartAgain;
+
+  /// No description provided for @trainingNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get trainingNew;
+
+  /// No description provided for @trainingNewWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'New workout'**
+  String get trainingNewWorkout;
+
+  /// No description provided for @trainingNoWorkouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Your workouts will show here once you finish one. Start one with +.'**
+  String get trainingNoWorkouts;
+
+  /// No description provided for @trainingNoTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'Save any workout as a template from its ⋮ menu.'**
+  String get trainingNoTemplates;
+
+  /// No description provided for @trainingLastDone.
+  ///
+  /// In en, this message translates to:
+  /// **'last {day} · ×{count}'**
+  String trainingLastDone(String day, int count);
+
+  /// No description provided for @trainingLast.
+  ///
+  /// In en, this message translates to:
+  /// **'last {day}'**
+  String trainingLast(String day);
+
+  /// No description provided for @trainingNeverDone.
+  ///
+  /// In en, this message translates to:
+  /// **'not done yet'**
+  String get trainingNeverDone;
+
+  /// No description provided for @trainingTemplateSize.
+  ///
+  /// In en, this message translates to:
+  /// **'{exercises} ex · {sets} sets'**
+  String trainingTemplateSize(int exercises, int sets);
+
+  /// No description provided for @trainingRunningFor.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min so far'**
+  String trainingRunningFor(int minutes);
+
+  /// No description provided for @trainingWorkouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts'**
+  String get trainingWorkouts;
+
+  /// No description provided for @trainingSearchWorkouts.
+  ///
+  /// In en, this message translates to:
+  /// **'Search workouts'**
+  String get trainingSearchWorkouts;
+
+  /// No description provided for @trainingAllTime.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get trainingAllTime;
+
+  /// No description provided for @trainingRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Range'**
+  String get trainingRange;
+
+  /// No description provided for @trainingLastDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Last {count} days'**
+  String trainingLastDays(int count);
+
+  /// No description provided for @trainingLastMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'Last {count} months'**
+  String trainingLastMonths(int count);
+
+  /// No description provided for @trainingThisYear.
+  ///
+  /// In en, this message translates to:
+  /// **'This year'**
+  String get trainingThisYear;
+
+  /// No description provided for @trainingPickDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick dates'**
+  String get trainingPickDates;
+
+  /// No description provided for @trainingNoMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No workouts here'**
+  String get trainingNoMatchTitle;
+
+  /// No description provided for @trainingNoMatchBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another month or range.'**
+  String get trainingNoMatchBody;
 }
 
 class _AppLocalizationsDelegate

@@ -3785,4 +3785,90 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsGeneral => 'General';
+
+  @override
+  String get trainingTitle => 'Entrenamiento';
+
+  @override
+  String get trainingRecent => 'Recientes';
+
+  @override
+  String get trainingAll => 'Todo';
+
+  @override
+  String get trainingStart => 'Empezar';
+
+  @override
+  String get trainingStartAgain => 'Repetir';
+
+  @override
+  String get trainingNew => 'Nuevo';
+
+  @override
+  String get trainingNewWorkout => 'Nuevo entrenamiento';
+
+  @override
+  String get trainingNoWorkouts =>
+      'Tus entrenamientos aparecerán aquí al terminar uno. Empieza con +.';
+
+  @override
+  String get trainingNoTemplates =>
+      'Guarda cualquier entrenamiento como plantilla desde su menú ⋮.';
+
+  @override
+  String trainingLastDone(String day, int count) {
+    return 'último $day · ×$count';
+  }
+
+  @override
+  String trainingLast(String day) {
+    return 'último $day';
+  }
+
+  @override
+  String get trainingNeverDone => 'aún sin hacer';
+
+  @override
+  String trainingTemplateSize(int exercises, int sets) {
+    return '$exercises ej · $sets series';
+  }
+
+  @override
+  String trainingRunningFor(int minutes) {
+    return '$minutes min hasta ahora';
+  }
+
+  @override
+  String get trainingWorkouts => 'Entrenamientos';
+
+  @override
+  String get trainingSearchWorkouts => 'Buscar entrenamientos';
+
+  @override
+  String get trainingAllTime => 'Todo';
+
+  @override
+  String get trainingRange => 'Rango';
+
+  @override
+  String trainingLastDays(int count) {
+    return 'Últimos $count días';
+  }
+
+  @override
+  String trainingLastMonths(int count) {
+    return 'Últimos $count meses';
+  }
+
+  @override
+  String get trainingThisYear => 'Este año';
+
+  @override
+  String get trainingPickDates => 'Elegir fechas';
+
+  @override
+  String get trainingNoMatchTitle => 'No hay entrenamientos';
+
+  @override
+  String get trainingNoMatchBody => 'Prueba otro mes o rango.';
 }

@@ -3793,4 +3793,91 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsGeneral => 'Général';
+
+  @override
+  String get trainingTitle => 'Entraînement';
+
+  @override
+  String get trainingRecent => 'Récents';
+
+  @override
+  String get trainingAll => 'Tout';
+
+  @override
+  String get trainingStart => 'Démarrer';
+
+  @override
+  String get trainingStartAgain => 'Recommencer';
+
+  @override
+  String get trainingNew => 'Nouveau';
+
+  @override
+  String get trainingNewWorkout => 'Nouvel entraînement';
+
+  @override
+  String get trainingNoWorkouts =>
+      'Vos entraînements apparaîtront ici. Commencez-en un avec +.';
+
+  @override
+  String get trainingNoTemplates =>
+      'Enregistrez un entraînement comme modèle depuis son menu ⋮.';
+
+  @override
+  String trainingLastDone(String day, int count) {
+    return 'dernier $day · ×$count';
+  }
+
+  @override
+  String trainingLast(String day) {
+    return 'dernier $day';
+  }
+
+  @override
+  String get trainingNeverDone => 'pas encore fait';
+
+  @override
+  String trainingTemplateSize(int exercises, int sets) {
+    return '$exercises ex · $sets séries';
+  }
+
+  @override
+  String trainingRunningFor(int minutes) {
+    return '$minutes min jusqu’ici';
+  }
+
+  @override
+  String get trainingWorkouts => 'Entraînements';
+
+  @override
+  String get trainingSearchWorkouts => 'Rechercher';
+
+  @override
+  String get trainingAllTime => 'Tout';
+
+  @override
+  String get trainingRange => 'Période';
+
+  @override
+  String trainingLastDays(int count) {
+    return '$count derniers jours';
+  }
+
+  @override
+  String trainingLastMonths(int count) {
+    return '$count derniers mois';
+  }
+
+  @override
+  String get trainingThisYear => 'Cette année';
+
+  @override
+  String get trainingPickDates => 'Choisir les dates';
+
+  @override
+  String get trainingNoMatchTitle => 'Aucun entraînement';
+
+  @override
+  String get trainingNoMatchBody =>
+      'Essayez un autre mois ou une autre période.';
 }
