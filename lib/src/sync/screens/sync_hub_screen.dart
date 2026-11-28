@@ -136,7 +136,9 @@ final class _SyncHubScreenState extends ConsumerState<SyncHubScreen> {
     });
   }
 
-  void _refreshCounts() => setState(() => _counts = _loadCounts());
+  void _refreshCounts() => setState(() {
+        _counts = _loadCounts();
+      });
 
   /// Pushes or pulls one entity from its row sheet.
   Future<void> _runOne(String entity, {required bool push}) async {
