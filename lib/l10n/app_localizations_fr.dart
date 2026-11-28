@@ -4561,4 +4561,86 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsPaletteCustom => 'Personnalisée';
+
+  @override
+  String get settingsPaletteEditCustom => 'Modifier la palette personnalisée';
+
+  @override
+  String get customPaletteTitleDark => 'Palette sombre personnalisée';
+
+  @override
+  String get customPaletteTitleLight => 'Palette claire personnalisée';
+
+  @override
+  String get customPaletteHint =>
+      'Couleurs base16. Chacune indique ce qu\'elle colore ; saisissez une valeur hexadécimale pour la modifier.';
+
+  @override
+  String get customPaletteInUse => 'Utilisée';
+
+  @override
+  String get customPaletteUse => 'Utiliser cette palette';
+
+  @override
+  String get customPalettePaste => 'Coller des couleurs base16';
+
+  @override
+  String get customPaletteReset => 'Rétablir les valeurs par défaut';
+
+  @override
+  String customPalettePasted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count couleurs collées',
+      one: '1 couleur collée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get customPalettePasteNone =>
+      'Aucune couleur base16 dans le presse-papiers';
+
+  @override
+  String get paletteRoleBackground => 'fond';
+
+  @override
+  String get paletteRoleCards => 'cartes';
+
+  @override
+  String get paletteRoleChips => 'puces et barres';
+
+  @override
+  String get paletteRoleSheets => 'feuilles et menus';
+
+  @override
+  String get paletteRoleText => 'texte';
+
+  @override
+  String get paletteRoleSecondaryText => 'texte secondaire';
+
+  @override
+  String get paletteRoleLines => 'lignes';
+
+  @override
+  String get paletteRoleAccent => 'accent';
+
+  @override
+  String get paletteRoleTextOnColor => 'texte sur les boutons colorés';
+
+  @override
+  String get paletteRoleSuccess => 'succès';
+
+  @override
+  String get paletteRoleWarning => 'avertissement';
+
+  @override
+  String get paletteRoleDanger => 'danger';
+
+  @override
+  String get paletteRoleUnused => 'Pas encore utilisée';
 }

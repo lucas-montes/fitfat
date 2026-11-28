@@ -5,6 +5,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../ui/palettes.dart';
 import '../../ui/tokens.dart';
 import '../providers/appearance.dart';
+import '../screens/custom_palette_screen.dart';
 
 /// Settings › Appearance palette picker: a toggle between the dark and light
 /// palette lists, then a grid of tiny screens drawn in each palette. Tapping
@@ -27,6 +28,7 @@ class _PalettePickerState extends ConsumerState<PalettePicker> {
     final editing = _editing ?? Theme.of(context).brightness;
     final palettes = editing == Brightness.dark ? darkPalettes : lightPalettes;
     final selected = appearance.forBrightness(editing);
+    final custom = appearance.customPalette(editing);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,7 +66,23 @@ class _PalettePickerState extends ConsumerState<PalettePicker> {
                 onTap: () =>
                     ref.read(appearanceProvider.notifier).setPalette(p),
               ),
+            PaletteTile(
+              palette: custom,
+              name: l10n.settingsPaletteCustom,
+              selected: selected.id == customPaletteId,
+              onTap: () =>
+                  ref.read(appearanceProvider.notifier).setPalette(custom),
+            ),
           ],
+        ),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => CustomPaletteScreen(brightness: editing),
+            ),
+          ),
+          icon: const Icon(Icons.tune, size: 18),
+          label: Text(l10n.settingsPaletteEditCustom),
         ),
       ],
     );
@@ -81,7 +99,11 @@ class PaletteTile extends StatelessWidget {
     required this.onTap,
     this.isDefault = false,
     this.defaultLabel = 'Default',
+    this.name,
   });
+
+  /// Shown instead of the palette's own name (e.g. a translated "Custom").
+  final String? name;
 
   final ThemePalette palette;
   final bool selected;
@@ -105,7 +127,7 @@ class PaletteTile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: p.name,
+      label: name ?? p.name,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
@@ -168,7 +190,7 @@ class PaletteTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    p.name,
+                    name ?? p.name,
                     style: theme.textTheme.labelLarge,
                     overflow: TextOverflow.ellipsis,
                   ),

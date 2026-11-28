@@ -4552,4 +4552,86 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsPaletteCustom => 'Personalizada';
+
+  @override
+  String get settingsPaletteEditCustom => 'Editar paleta personalizada';
+
+  @override
+  String get customPaletteTitleDark => 'Paleta oscura personalizada';
+
+  @override
+  String get customPaletteTitleLight => 'Paleta clara personalizada';
+
+  @override
+  String get customPaletteHint =>
+      'Colores base16. Cada uno indica qué colorea; escribe un valor hexadecimal para cambiarlo.';
+
+  @override
+  String get customPaletteInUse => 'En uso';
+
+  @override
+  String get customPaletteUse => 'Usar esta paleta';
+
+  @override
+  String get customPalettePaste => 'Pegar colores base16';
+
+  @override
+  String get customPaletteReset => 'Restablecer valores';
+
+  @override
+  String customPalettePasted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count colores pegados',
+      one: '1 color pegado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get customPalettePasteNone =>
+      'No hay colores base16 en el portapapeles';
+
+  @override
+  String get paletteRoleBackground => 'fondo';
+
+  @override
+  String get paletteRoleCards => 'tarjetas';
+
+  @override
+  String get paletteRoleChips => 'chips y barras';
+
+  @override
+  String get paletteRoleSheets => 'hojas y menús';
+
+  @override
+  String get paletteRoleText => 'texto';
+
+  @override
+  String get paletteRoleSecondaryText => 'texto secundario';
+
+  @override
+  String get paletteRoleLines => 'líneas';
+
+  @override
+  String get paletteRoleAccent => 'acento';
+
+  @override
+  String get paletteRoleTextOnColor => 'texto sobre botones de color';
+
+  @override
+  String get paletteRoleSuccess => 'éxito';
+
+  @override
+  String get paletteRoleWarning => 'aviso';
+
+  @override
+  String get paletteRoleDanger => 'peligro';
+
+  @override
+  String get paletteRoleUnused => 'Aún sin uso';
 }

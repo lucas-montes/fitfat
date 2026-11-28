@@ -190,104 +190,114 @@ final class _TemplateCardView extends ConsumerWidget {
       margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onOpen,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            FitFatTokens.spaceL,
-            FitFatTokens.spaceXs,
-            FitFatTokens.spaceXs,
-            FitFatTokens.spaceL,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                spacing: FitFatTokens.spaceS,
+        // The ⋮ menu is pinned to the card's top-right corner so it sits in
+        // the same place on every card, whatever the title holds.
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                FitFatTokens.spaceL,
+                FitFatTokens.spaceM,
+                FitFatTokens.spaceL,
+                FitFatTokens.spaceL,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Flexible(
-                    child: Text(
-                      card.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium,
+                  Padding(
+                    // Keeps the title clear of the corner menu.
+                    padding: const EdgeInsets.only(right: 32),
+                    child: Row(
+                      spacing: FitFatTokens.spaceS,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            card.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                        if (isNew) PrBadge(label: l10n.trainingNew),
+                      ],
                     ),
                   ),
-                  if (isNew) PrBadge(label: l10n.trainingNew),
-                  const Spacer(),
-                  PopupMenuButton<VoidCallback>(
-                    onSelected: (f) => f(),
-                    itemBuilder: (_) => [
-                      PopupMenuItem(
-                        value: onOpen,
-                        child: Text(l10n.commonEdit),
+                  Text(
+                    [
+                      l10n.trainingTemplateSize(
+                        card.exercises.length,
+                        card.setCount,
                       ),
-                      PopupMenuItem(
-                        value: onDuplicate,
-                        child: Text(l10n.templatesDuplicate),
-                      ),
-                      PopupMenuItem(
-                        value: onDelete,
-                        child: Text(
-                          l10n.commonDelete,
-                          style: TextStyle(color: theme.colorScheme.error),
-                        ),
-                      ),
-                    ],
+                      card.lastDone == null
+                          ? l10n.trainingNeverDone
+                          : l10n.trainingLast(
+                              formatShortDay(context, card.lastDone!),
+                            ),
+                    ].join(' · '),
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  ),
+                  const SizedBox(height: FitFatTokens.spaceS),
+                  Padding(
+                    padding: const EdgeInsets.only(right: FitFatTokens.spaceM),
+                    child: Column(
+                      spacing: 2,
+                      children: [
+                        for (final e in card.exercises)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  e.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ),
+                              Text(
+                                _target(e, unit),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: muted,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: FitFatTokens.spaceM),
+                  FilledButton.icon(
+                    onPressed: onStart,
+                    icon: const Icon(Icons.play_arrow, size: 18),
+                    label: Text(l10n.trainingStart),
                   ),
                 ],
               ),
-              Text(
-                [
-                  l10n.trainingTemplateSize(
-                    card.exercises.length,
-                    card.setCount,
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: PopupMenuButton<VoidCallback>(
+                onSelected: (f) => f(),
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: onOpen, child: Text(l10n.commonEdit)),
+                  PopupMenuItem(
+                    value: onDuplicate,
+                    child: Text(l10n.templatesDuplicate),
                   ),
-                  card.lastDone == null
-                      ? l10n.trainingNeverDone
-                      : l10n.trainingLast(
-                          formatShortDay(context, card.lastDone!),
-                        ),
-                ].join(' · '),
-                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  PopupMenuItem(
+                    value: onDelete,
+                    child: Text(
+                      l10n.commonDelete,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: FitFatTokens.spaceS),
-              Padding(
-                padding: const EdgeInsets.only(right: FitFatTokens.spaceM),
-                child: Column(
-                  spacing: 2,
-                  children: [
-                    for (final e in card.exercises)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              e.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ),
-                          Text(
-                            _target(e, unit),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: muted,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: FitFatTokens.spaceM),
-              FilledButton.icon(
-                onPressed: onStart,
-                icon: const Icon(Icons.play_arrow, size: 18),
-                label: Text(l10n.trainingStart),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

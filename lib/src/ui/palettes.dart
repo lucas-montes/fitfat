@@ -334,3 +334,140 @@ ThemePalette paletteById(String? id, Brightness brightness) {
   final list = brightness == Brightness.dark ? darkPalettes : lightPalettes;
   return list.firstWhere((p) => p.id == id, orElse: () => list.first);
 }
+
+// ---------------------------------------------------------------------------
+// Custom palette (base16)
+// ---------------------------------------------------------------------------
+
+/// Id of the user's own palette, one per brightness.
+const customPaletteId = 'custom';
+
+/// The custom palette's starting colors, base00 → base0F.
+const List<Color> defaultBase16 = [
+  Color(0xFF000000), // base00 background
+  Color(0xFF333547), // base01 background secondary
+  Color(0xFF44475A), // base02 background tertiary
+  Color(0xFF6272A4), // base03 light grey
+  Color(0xFF62D6E8), // base04 light foreground (blue)
+  Color(0xFFF8F8F2), // base05 foreground (white)
+  Color(0xFFF1F2F8), // base06 light background
+  Color(0xFFF3F981), // base07 yellow
+  Color(0xFFEA51B2), // base08 pinker
+  Color(0xFFD95BFF), // base09 purple
+  Color(0xFF3FF0A9), // base0A green-blue
+  Color(0xFFEBFF87), // base0B yellow
+  Color(0xFFA1EFE4), // base0C cyan
+  Color(0xFF51D6F4), // base0D blue
+  Color(0xFFFF2FB3), // base0E pink
+  Color(0xFF00F769), // base0F green
+];
+
+/// The roles each base16 slot drives, per brightness, so the editor can say
+/// what changing a color affects. Slots with no role are unused for now.
+enum PaletteRole {
+  background,
+  cards,
+  chips,
+  sheets,
+  text,
+  secondaryText,
+  lines,
+  accent,
+  textOnColor,
+  success,
+  warning,
+  danger,
+}
+
+Map<int, List<PaletteRole>> base16Roles(Brightness b) => b == Brightness.dark
+    ? const {
+        0: [PaletteRole.background, PaletteRole.textOnColor],
+        1: [PaletteRole.cards, PaletteRole.sheets],
+        2: [PaletteRole.chips, PaletteRole.sheets],
+        3: [PaletteRole.lines],
+        4: [PaletteRole.secondaryText],
+        5: [PaletteRole.text],
+        8: [PaletteRole.danger],
+        9: [PaletteRole.accent],
+        11: [PaletteRole.warning],
+        15: [PaletteRole.success],
+      }
+    : const {
+        0: [PaletteRole.text, PaletteRole.textOnColor],
+        3: [PaletteRole.secondaryText, PaletteRole.lines, PaletteRole.chips],
+        5: [PaletteRole.cards, PaletteRole.sheets],
+        6: [PaletteRole.background, PaletteRole.chips, PaletteRole.lines],
+        8: [PaletteRole.danger],
+        9: [PaletteRole.accent],
+        11: [PaletteRole.warning],
+        15: [PaletteRole.success],
+      };
+
+/// Builds the 13-role palette from 16 base16 colors. Dark mode reads the
+/// scheme as written (base00 darkest); light mode turns it around (base06
+/// canvas, base05 cards, base00 text). The accent colors are shared.
+ThemePalette paletteFromBase16(List<Color> c, Brightness brightness) {
+  assert(c.length == 16);
+  if (brightness == Brightness.dark) {
+    return ThemePalette(
+      id: customPaletteId,
+      name: 'Custom',
+      brightness: brightness,
+      bg: c[0x0],
+      surface: c[0x1],
+      surface2: c[0x2],
+      raise: Color.lerp(c[0x1], c[0x2], 0.5)!,
+      fg: c[0x5],
+      muted: c[0x4],
+      line: c[0x3],
+      accent: c[0x9],
+      onAccent: c[0x0],
+      success: c[0xF],
+      warning: c[0xB],
+      danger: c[0x8],
+      onDanger: c[0x0],
+    );
+  }
+  return ThemePalette(
+    id: customPaletteId,
+    name: 'Custom',
+    brightness: brightness,
+    bg: c[0x6],
+    surface: c[0x5],
+    surface2: Color.lerp(c[0x6], c[0x3], 0.2)!,
+    raise: c[0x5],
+    fg: c[0x0],
+    muted: c[0x3],
+    line: Color.lerp(c[0x6], c[0x3], 0.35)!,
+    accent: c[0x9],
+    onAccent: c[0x0],
+    success: c[0xF],
+    warning: c[0xB],
+    danger: c[0x8],
+    onDanger: c[0x0],
+  );
+}
+
+/// "RRGGBB" for [c] (alpha dropped).
+String colorToHex(Color c) =>
+    (c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase();
+
+/// Parses "RRGGBB" or "#RRGGBB"; null when it isn't six hex digits.
+Color? colorFromHex(String s) {
+  final t = s.trim().replaceFirst('#', '');
+  if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(t)) return null;
+  return Color(0xFF000000 | int.parse(t, radix: 16));
+}
+
+/// Reads `baseXX = "rrggbb"` lines (Nix, YAML or plain) into slot → color.
+Map<int, Color> parseBase16(String text) {
+  final out = <int, Color>{};
+  final re = RegExp(
+    r'base0([0-9a-fA-F])\s*[:=]\s*"?#?([0-9a-fA-F]{6})',
+    caseSensitive: false,
+  );
+  for (final m in re.allMatches(text)) {
+    out[int.parse(m.group(1)!, radix: 16)] = colorFromHex(m.group(2)!)!;
+  }
+  return out;
+}

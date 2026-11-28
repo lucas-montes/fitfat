@@ -7869,6 +7869,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 day left} other{{count} days left}}'**
   String dashboardDaysLeftInMonth(int count);
+
+  /// No description provided for @settingsPaletteCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get settingsPaletteCustom;
+
+  /// No description provided for @settingsPaletteEditCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit custom palette'**
+  String get settingsPaletteEditCustom;
+
+  /// No description provided for @customPaletteTitleDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom dark palette'**
+  String get customPaletteTitleDark;
+
+  /// No description provided for @customPaletteTitleLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom light palette'**
+  String get customPaletteTitleLight;
+
+  /// No description provided for @customPaletteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Base16 colors. Each one says what it colors; type a hex value to change it.'**
+  String get customPaletteHint;
+
+  /// No description provided for @customPaletteInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'In use'**
+  String get customPaletteInUse;
+
+  /// No description provided for @customPaletteUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this palette'**
+  String get customPaletteUse;
+
+  /// No description provided for @customPalettePaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste base16 colors'**
+  String get customPalettePaste;
+
+  /// No description provided for @customPaletteReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to defaults'**
+  String get customPaletteReset;
+
+  /// No description provided for @customPalettePasted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 color pasted} other{{count} colors pasted}}'**
+  String customPalettePasted(int count);
+
+  /// No description provided for @customPalettePasteNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No base16 colors in the clipboard'**
+  String get customPalettePasteNone;
+
+  /// No description provided for @paletteRoleBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'background'**
+  String get paletteRoleBackground;
+
+  /// No description provided for @paletteRoleCards.
+  ///
+  /// In en, this message translates to:
+  /// **'cards'**
+  String get paletteRoleCards;
+
+  /// No description provided for @paletteRoleChips.
+  ///
+  /// In en, this message translates to:
+  /// **'chips and tracks'**
+  String get paletteRoleChips;
+
+  /// No description provided for @paletteRoleSheets.
+  ///
+  /// In en, this message translates to:
+  /// **'sheets and menus'**
+  String get paletteRoleSheets;
+
+  /// No description provided for @paletteRoleText.
+  ///
+  /// In en, this message translates to:
+  /// **'text'**
+  String get paletteRoleText;
+
+  /// No description provided for @paletteRoleSecondaryText.
+  ///
+  /// In en, this message translates to:
+  /// **'secondary text'**
+  String get paletteRoleSecondaryText;
+
+  /// No description provided for @paletteRoleLines.
+  ///
+  /// In en, this message translates to:
+  /// **'lines'**
+  String get paletteRoleLines;
+
+  /// No description provided for @paletteRoleAccent.
+  ///
+  /// In en, this message translates to:
+  /// **'accent'**
+  String get paletteRoleAccent;
+
+  /// No description provided for @paletteRoleTextOnColor.
+  ///
+  /// In en, this message translates to:
+  /// **'text on colored buttons'**
+  String get paletteRoleTextOnColor;
+
+  /// No description provided for @paletteRoleSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'success'**
+  String get paletteRoleSuccess;
+
+  /// No description provided for @paletteRoleWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'warning'**
+  String get paletteRoleWarning;
+
+  /// No description provided for @paletteRoleDanger.
+  ///
+  /// In en, this message translates to:
+  /// **'danger'**
+  String get paletteRoleDanger;
+
+  /// No description provided for @paletteRoleUnused.
+  ///
+  /// In en, this message translates to:
+  /// **'Not used yet'**
+  String get paletteRoleUnused;
 }
 
 class _AppLocalizationsDelegate

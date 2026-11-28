@@ -4525,4 +4525,85 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsPaletteCustom => 'Custom';
+
+  @override
+  String get settingsPaletteEditCustom => 'Edit custom palette';
+
+  @override
+  String get customPaletteTitleDark => 'Custom dark palette';
+
+  @override
+  String get customPaletteTitleLight => 'Custom light palette';
+
+  @override
+  String get customPaletteHint =>
+      'Base16 colors. Each one says what it colors; type a hex value to change it.';
+
+  @override
+  String get customPaletteInUse => 'In use';
+
+  @override
+  String get customPaletteUse => 'Use this palette';
+
+  @override
+  String get customPalettePaste => 'Paste base16 colors';
+
+  @override
+  String get customPaletteReset => 'Reset to defaults';
+
+  @override
+  String customPalettePasted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count colors pasted',
+      one: '1 color pasted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get customPalettePasteNone => 'No base16 colors in the clipboard';
+
+  @override
+  String get paletteRoleBackground => 'background';
+
+  @override
+  String get paletteRoleCards => 'cards';
+
+  @override
+  String get paletteRoleChips => 'chips and tracks';
+
+  @override
+  String get paletteRoleSheets => 'sheets and menus';
+
+  @override
+  String get paletteRoleText => 'text';
+
+  @override
+  String get paletteRoleSecondaryText => 'secondary text';
+
+  @override
+  String get paletteRoleLines => 'lines';
+
+  @override
+  String get paletteRoleAccent => 'accent';
+
+  @override
+  String get paletteRoleTextOnColor => 'text on colored buttons';
+
+  @override
+  String get paletteRoleSuccess => 'success';
+
+  @override
+  String get paletteRoleWarning => 'warning';
+
+  @override
+  String get paletteRoleDanger => 'danger';
+
+  @override
+  String get paletteRoleUnused => 'Not used yet';
 }
