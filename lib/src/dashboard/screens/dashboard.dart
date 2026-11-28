@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,17 +10,23 @@ import '../../body/providers/body_metrics.dart';
 import '../../body/screens/body_metric_dialog.dart';
 import '../../budget/format.dart';
 import '../../budget/providers/budget_overview.dart';
+import '../../budget/widgets/money_widgets.dart';
 import '../../diet/providers/calories.dart';
 import '../../diet/providers/meals.dart';
 import '../../diet/screens/ingredient_form.dart';
 import '../../diet/screens/meal_form.dart';
 import '../../exercise/providers/workouts.dart';
 import '../../exercise/screens/workout_form.dart';
+import '../../exercise/start_workout.dart';
 import '../../goals/providers/goals.dart';
+import '../../goals/services/goal_tracking.dart';
+import '../../goals/widgets/goal_widgets.dart';
 import '../../models/body_metrics_entry.dart';
 import '../../models/body_weight_goal.dart';
+import '../../models/goal.dart';
 import '../../models/task.dart';
 import '../../models/units.dart';
+import '../../models/workout.dart';
 import '../../planner/providers/planner.dart';
 import '../../planner/screens/planner_item_detail.dart';
 import '../../settings/providers/settings.dart';
@@ -28,8 +35,7 @@ import '../../ui/date_formats.dart';
 import '../../ui/theme_extensions.dart';
 import '../../ui/tokens.dart';
 import '../../ui/units.dart';
-import '../../ui/widgets/section_header.dart';
-import '../../ui/widgets/status_badge.dart';
+import '../../ui/widgets/macro_bar.dart';
 import '../providers/dashboard.dart';
 import '../providers/dashboard_layout.dart';
 import 'wizard.dart';
@@ -54,13 +60,31 @@ final class DashboardScreen extends ConsumerWidget {
       return const OnboardingWizardScreen();
     }
     final cards = ref.watch(dashboardLayoutProvider).visible;
-    final today = DateFormats.formatFullDate(context, DateTime.now());
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final today = DateFormat('EEE d MMM', locale).format(DateTime.now());
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
-            title: Text(l10n.dashboardToday),
+          // "Today" and the date sit on the same line as the sync chip and
+          // the settings button.
+          SliverAppBar(
+            pinned: true,
+            title: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: l10n.dashboardToday),
+                  TextSpan(
+                    text: '  $today',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             actions: [
               const SyncChip(),
               IconButton(
@@ -79,7 +103,7 @@ final class DashboardScreen extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
                     FitFatTokens.spaceL,
-                    0,
+                    FitFatTokens.spaceXs,
                     FitFatTokens.spaceL,
                     FitFatTokens.spaceXxl,
                   ),
@@ -87,12 +111,6 @@ final class DashboardScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     spacing: FitFatTokens.spaceM,
                     children: [
-                      Text(
-                        today,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
                       for (final card in cards)
                         switch (card) {
                           DashboardCard.nutrition => const _NutritionCard(),
@@ -118,16 +136,18 @@ final class DashboardScreen extends ConsumerWidget {
 // Card shell
 // ---------------------------------------------------------------------------
 
-/// The common card: small-caps label with an optional value on the right,
-/// then the body. Tapping the card opens its full screen.
+/// The common card: a tinted icon, the title, an optional value and a ›
+/// when the card opens a screen, then the body.
 final class _DashCard extends StatelessWidget {
   const _DashCard({
+    required this.icon,
     required this.label,
     required this.child,
     this.trailing,
     this.onTap,
   });
 
+  final IconData icon;
   final String label;
   final String? trailing;
   final Widget child;
@@ -135,27 +155,74 @@ final class _DashCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-            FitFatTokens.spaceL,
-            FitFatTokens.spaceXs,
-            FitFatTokens.spaceL,
-            FitFatTokens.spaceL,
+            14,
+            FitFatTokens.spaceM,
+            FitFatTokens.spaceM,
+            14,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: FitFatTokens.spaceM,
             children: [
-              SectionHeader(label, trailing: trailing),
-              const SizedBox(height: FitFatTokens.spaceXs),
+              Row(
+                spacing: 10,
+                children: [
+                  _IconBox(icon),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (trailing != null)
+                    Text(
+                      trailing!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: muted,
+                        fontFeatures: _tabular,
+                      ),
+                    ),
+                  if (onTap != null)
+                    Icon(Icons.chevron_right, size: 20, color: muted),
+                ],
+              ),
               child,
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+final class _IconBox extends StatelessWidget {
+  const _IconBox(this.icon);
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme.primary;
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
+      ),
+      child: Icon(icon, size: 18, color: c),
     );
   }
 }
@@ -227,13 +294,21 @@ const _tabular = [FontFeature.tabularFigures()];
 Future<bool?> _push(BuildContext context, Widget screen) =>
     Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => screen));
 
+String _whole(BuildContext context, num v) => NumberFormat.decimalPattern(
+  Localizations.localeOf(context).toLanguageTag(),
+).format(v.round());
+
 // ---------------------------------------------------------------------------
 // Nutrition
 // ---------------------------------------------------------------------------
 
-/// Calories against the target, then protein, carbs and fat as three columns
-/// with their own bars. Calories are the one value you can meaningfully
-/// overshoot, so only that bar turns to the error color.
+/// No sodium target is stored, so the card uses the common 2.3 g daily limit.
+const _sodiumLimitG = 2.3;
+
+/// A ring with the calories left (or over), then the five nutrients in the
+/// fixed order, each with grams of target and its own bar. BMR and TDEE sit
+/// under them. Carbs, fat and sodium turn to the error color when over;
+/// protein and fiber are minimums, so going over is fine.
 final class _NutritionCard extends ConsumerWidget {
   const _NutritionCard();
 
@@ -241,8 +316,7 @@ final class _NutritionCard extends ConsumerWidget {
     final saved = await _push(context, const MealFormScreen());
     if (saved == true) {
       ref.invalidate(mealListProvider);
-      ref.invalidate(todayCaloriesProvider);
-      ref.invalidate(todayMacrosProvider);
+      invalidateDashboard(ref);
     }
   }
 
@@ -250,94 +324,76 @@ final class _NutritionCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final colors = theme.extension<FitFatColors>()!;
+    final muted = theme.colorScheme.onSurfaceVariant;
     final meta = ref.watch(calorieTargetMetaProvider).value;
-    final consumed = ref.watch(todayCaloriesProvider).value ?? 0;
-    final macros = ref.watch(todayMacrosProvider).value;
+    final today = ref.watch(todayNutritionProvider).value;
     final targets = ref.watch(macroTargetsProvider).value;
+    final consumed = today?.calories ?? 0;
     final target = meta?.target ?? 0;
-    final kcal = macroRowState(consumed: consumed, target: target);
-    final left = (target - consumed).round();
+    final colors = MacroColors.of(context);
+    final labels = macroLabels(l10n);
+    final values = today == null ? MacroValues.zero : MacroValues.of(today);
+    final goals = [
+      targets?.protein,
+      targets?.carbs,
+      targets?.fat,
+      targets?.fiber,
+      _sodiumLimitG,
+    ];
 
     return _DashCard(
+      icon: Icons.restaurant_outlined,
       label: l10n.dashboardNutrition,
-      trailing: meta == null
-          ? null
-          : '${l10n.settingsBmrLabel} ${meta.bmr.round()} · '
-                '${l10n.settingsTdeeLabel} ${meta.tdee.round()}',
+      trailing: target > 0
+          ? '${_whole(context, consumed)} / ${_whole(context, target)} kcal'
+          : null,
       onTap: () => context.go('/diet'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: FitFatTokens.spaceS,
+        spacing: FitFatTokens.spaceM,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            spacing: FitFatTokens.spaceXs,
+            spacing: 14,
             children: [
-              Text(
-                consumed.round().toString(),
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: _tabular,
+              _CalorieRing(consumed: consumed, target: target),
+              Expanded(
+                child: Column(
+                  spacing: 7,
+                  children: [
+                    for (var i = 0; i < 5; i++)
+                      _MacroRow(
+                        index: i,
+                        label: labels[i],
+                        color: colors.base[i],
+                        consumed: values.values[i],
+                        target: goals[i],
+                        overIsBad: i == 1 || i == 2 || i == 4,
+                      ),
+                  ],
                 ),
               ),
-              Text(
-                '/ ${target.round()} kcal',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontFeatures: _tabular,
-                ),
-              ),
-              const Spacer(),
-              if (target > 0)
-                Text(
-                  left >= 0
-                      ? l10n.dashboardKcalLeft(left)
-                      : l10n.dashboardKcalOver(-left),
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: left >= 0 ? colors.success : scheme.error,
-                    fontFeatures: _tabular,
-                  ),
-                ),
             ],
           ),
-          _Bar(kcal.ratio, color: kcal.over ? scheme.error : null),
-          if (macros != null && targets != null) ...[
-            const SizedBox(height: FitFatTokens.spaceXs),
-            Row(
-              spacing: FitFatTokens.spaceM,
-              children: [
-                _MacroColumn(
-                  label: l10n.dashboardMacroProtein,
-                  color: scheme.primary,
-                  consumed: macros.protein,
-                  target: targets.protein,
+          if (meta != null)
+            Container(
+              padding: const EdgeInsets.only(top: FitFatTokens.spaceS),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: theme.colorScheme.outlineVariant),
                 ),
-                _MacroColumn(
-                  label: l10n.dashboardMacroCarbs,
-                  color: Color.lerp(scheme.primary, scheme.surface, 0.45)!,
-                  consumed: macros.carbs,
-                  target: targets.carbs,
+              ),
+              child: Text(
+                [
+                  '${l10n.settingsBmrLabel} ${_whole(context, meta.bmr)}',
+                  '${l10n.settingsTdeeLabel} ${_whole(context, meta.tdee)}',
+                  if (meta.isEstimated) l10n.settingsEstimatedSuffix,
+                ].join(' · '),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: muted,
+                  fontFeatures: _tabular,
                 ),
-                _MacroColumn(
-                  label: l10n.dashboardMacroFat,
-                  color: colors.warning,
-                  consumed: macros.fat,
-                  target: targets.fat,
-                ),
-              ],
-            ),
-            Text(
-              '${l10n.dashboardMacroFiber} '
-              '${l10n.dashboardMacroProgress(macros.fiber.toStringAsFixed(0), targets.fiber.toStringAsFixed(0))}'
-              '${meta?.isEstimated == true ? ' · ${l10n.settingsEstimatedSuffix}' : ''}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
               ),
             ),
-          ],
           if (consumed == 0)
             _EmptyStart(
               message: l10n.dashboardNoMealsToday,
@@ -350,68 +406,167 @@ final class _NutritionCard extends ConsumerWidget {
   }
 }
 
-final class _MacroColumn extends StatelessWidget {
-  const _MacroColumn({
-    required this.label,
-    required this.color,
-    required this.consumed,
-    required this.target,
-  });
+final class _CalorieRing extends StatelessWidget {
+  const _CalorieRing({required this.consumed, required this.target});
 
-  final String label;
-  final Color color;
   final double consumed;
   final double target;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final state = macroRowState(consumed: consumed, target: target);
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 3,
-        children: [
-          Row(
-            spacing: 5,
+    final scheme = theme.colorScheme;
+    final kcal = macroRowState(consumed: consumed, target: target);
+    final color = kcal.over ? scheme.error : scheme.primary;
+    return SizedBox.square(
+      dimension: 88,
+      child: CustomPaint(
+        painter: _RingPainter(
+          value: kcal.ratio,
+          color: color,
+          track: scheme.surfaceContainerHighest,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(2),
+              Text(
+                _whole(context, (target - consumed).abs()),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: kcal.over ? scheme.error : null,
+                  fontFeatures: _tabular,
+                  height: 1.1,
                 ),
               ),
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(color: muted),
+              Text(
+                kcal.over
+                    ? l10n.dashboardKcalOverShort
+                    : l10n.dashboardKcalLeftShort,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ],
           ),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: consumed.toStringAsFixed(0),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                TextSpan(
-                  text: '/${target.toStringAsFixed(0)} g',
-                  style: TextStyle(color: muted),
-                ),
-              ],
-            ),
-            maxLines: 1,
-            style: theme.textTheme.bodySmall?.copyWith(fontFeatures: _tabular),
-          ),
-          _Bar(state.ratio, color: color, height: 4),
-        ],
+        ),
       ),
+    );
+  }
+}
+
+final class _RingPainter extends CustomPainter {
+  const _RingPainter({
+    required this.value,
+    required this.color,
+    required this.track,
+  });
+
+  final double value;
+  final Color color;
+  final Color track;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 9.0;
+    final rect = Offset.zero & size;
+    final arc = rect.deflate(stroke / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(arc, 0, 2 * math.pi, false, paint..color = track);
+    if (value > 0) {
+      canvas.drawArc(
+        arc,
+        -math.pi / 2,
+        2 * math.pi * value,
+        false,
+        paint..color = color,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) =>
+      old.value != value || old.color != color || old.track != track;
+}
+
+/// One nutrient: color dot, name, "104/160 g" and a thin bar.
+final class _MacroRow extends StatelessWidget {
+  const _MacroRow({
+    required this.index,
+    required this.label,
+    required this.color,
+    required this.consumed,
+    required this.target,
+    required this.overIsBad,
+  });
+
+  final int index;
+  final String label;
+  final Color color;
+  final double consumed;
+  final double? target;
+  final bool overIsBad;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final t = target ?? 0;
+    final state = macroRowState(consumed: consumed, target: t);
+    final bad = overIsBad && state.over;
+    final error = theme.colorScheme.error;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 3,
+      children: [
+        Row(
+          spacing: 5,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(color: muted),
+              ),
+            ),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: formatMacro(index, consumed),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: bad ? error : null,
+                    ),
+                  ),
+                  TextSpan(
+                    text: target == null ? ' g' : '/${formatMacro(index, t)} g',
+                    style: TextStyle(color: muted),
+                  ),
+                ],
+              ),
+              maxLines: 1,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontFeatures: _tabular,
+              ),
+            ),
+          ],
+        ),
+        _Bar(state.ratio, color: bad ? error : color, height: 4),
+      ],
     );
   }
 }
@@ -420,11 +575,27 @@ final class _MacroColumn extends StatelessWidget {
 // Tasks
 // ---------------------------------------------------------------------------
 
-/// Today's tasks as a checklist: open ones first, by time.
+Future<void> _setDone(WidgetRef ref, Task task, bool done) async {
+  await ref
+      .read(taskRepositoryProvider)
+      .update(
+        task.copyWith(
+          done: done,
+          taskStatus: done ? TaskStatus.done : TaskStatus.pending,
+        ),
+      );
+  invalidateDashboard(ref);
+}
+
+String _minutes(BuildContext context, int m) =>
+    DateFormats.formatTime(context, TimeOfDay(hour: m ~/ 60, minute: m % 60));
+
+/// "Now and next": a segment per task for the day's progress, a tinted strip
+/// for the task on now (else the next one), then the rest of the day.
 final class _TasksCard extends ConsumerWidget {
   const _TasksCard();
 
-  static const _maxRows = 5;
+  static const _maxRows = 4;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -432,7 +603,35 @@ final class _TasksCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final tasks = ref.watch(todayTasksProvider).value ?? const <Task>[];
     final done = tasks.where((t) => t.done).length;
+    final open = tasks.where((t) => !t.done).toList();
+    final now = TimeOfDay.now();
+    final nowMin = now.hour * 60 + now.minute;
+    // On now: started and not yet ended. Else the next timed one, else the
+    // first open task.
+    final current = open
+        .where(
+          (t) =>
+              t.startTimeMinutes != null &&
+              t.endTimeMinutes != null &&
+              t.startTimeMinutes! <= nowMin &&
+              nowMin < t.endTimeMinutes!,
+        )
+        .firstOrNull;
+    final next =
+        current ??
+        open
+            .where(
+              (t) => t.startTimeMinutes != null && t.startTimeMinutes! > nowMin,
+            )
+            .firstOrNull ??
+        open.firstOrNull;
+    final rest = [
+      for (final t in open)
+        if (t.id != next?.id) t,
+    ];
+
     return _DashCard(
+      icon: Icons.task_alt,
       label: l10n.dashboardTasks,
       trailing: tasks.isEmpty
           ? null
@@ -446,16 +645,49 @@ final class _TasksCard extends ConsumerWidget {
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: FitFatTokens.spaceS,
               children: [
-                for (final task in tasks.take(_maxRows)) _TaskRow(task: task),
-                if (tasks.length > _maxRows)
-                  Padding(
-                    padding: const EdgeInsets.only(top: FitFatTokens.spaceXs),
-                    child: Text(
-                      l10n.dashboardTasksMore(tasks.length - _maxRows),
-                      style: theme.textTheme.bodySmall?.copyWith(
+                _Segments(done: done, total: tasks.length),
+                if (next == null)
+                  Row(
+                    spacing: 10,
+                    children: [
+                      Icon(
+                        Icons.check_circle,
                         color: theme.colorScheme.primary,
                       ),
+                      Text(
+                        l10n.dashboardAllDoneToday,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  _NowStrip(
+                    task: next,
+                    label: next == current
+                        ? l10n.dashboardNowUntil(
+                            _minutes(context, next.endTimeMinutes!),
+                          )
+                        : next.startTimeMinutes != null
+                        ? l10n.dashboardNextAt(
+                            _minutes(context, next.startTimeMinutes!),
+                          )
+                        : l10n.dashboardNextUp,
+                  ),
+                if (rest.isNotEmpty)
+                  Column(
+                    children: [
+                      for (final t in rest.take(_maxRows)) _TaskLine(task: t),
+                    ],
+                  ),
+                if (rest.length > _maxRows)
+                  Text(
+                    l10n.dashboardTasksMore(rest.length - _maxRows),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
                     ),
                   ),
               ],
@@ -464,69 +696,134 @@ final class _TasksCard extends ConsumerWidget {
   }
 }
 
-final class _TaskRow extends ConsumerWidget {
-  const _TaskRow({required this.task});
+/// One segment per task, filled for the done ones; a plain bar past twelve.
+final class _Segments extends StatelessWidget {
+  const _Segments({required this.done, required this.total});
+
+  final int done;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    if (total > 12) return _Bar(done / total, height: 5);
+    return Row(
+      spacing: 3,
+      children: [
+        for (var i = 0; i < total; i++)
+          Expanded(
+            child: Container(
+              height: 5,
+              decoration: BoxDecoration(
+                color: i < done
+                    ? scheme.primary
+                    : scheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+final class _NowStrip extends ConsumerWidget {
+  const _NowStrip({required this.task, required this.label});
 
   final Task task;
+  final String label;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Material(
+      color: Color.lerp(scheme.surface, scheme.primary, 0.13),
+      borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _push(context, PlannerItemDetailScreen(itemId: task.id)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 1,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontFeatures: _tabular,
+                      ),
+                    ),
+                    Text(
+                      task.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Checkbox(
+                value: task.done,
+                onChanged: (v) => _setDone(ref, task, v ?? false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A later task on one line: its start time (or "Anytime") and title.
+final class _TaskLine extends StatelessWidget {
+  const _TaskLine({required this.task});
+
+  final Task task;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final time = task.startTimeMinutes;
+    final start = task.startTimeMinutes;
     return InkWell(
       borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
       onTap: () => _push(context, PlannerItemDetailScreen(itemId: task.id)),
-      child: SizedBox(
-        height: 40,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
         child: Row(
+          spacing: FitFatTokens.spaceS,
           children: [
-            Checkbox(
-              value: task.done,
-              visualDensity: VisualDensity.compact,
-              onChanged: (v) async {
-                final repo = ref.read(taskRepositoryProvider);
-                await repo.update(
-                  task.copyWith(
-                    done: v ?? false,
-                    taskStatus: (v ?? false)
-                        ? TaskStatus.done
-                        : TaskStatus.pending,
-                  ),
-                );
-                invalidateDashboard(ref);
-              },
+            SizedBox(
+              width: 56,
+              child: Text(
+                start == null ? l10n.plannerAnytime : _minutes(context, start),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: muted,
+                  fontFeatures: _tabular,
+                ),
+              ),
             ),
             Expanded(
               child: Text(
                 task.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: task.done ? muted : null,
-                  decoration: task.done ? TextDecoration.lineThrough : null,
-                ),
+                style: theme.textTheme.bodyMedium,
               ),
             ),
             if (task.workoutId != null)
-              Padding(
-                padding: const EdgeInsets.only(left: FitFatTokens.spaceS),
-                child: Icon(Icons.fitness_center, size: 14, color: muted),
-              ),
-            if (time != null)
-              Padding(
-                padding: const EdgeInsets.only(left: FitFatTokens.spaceS),
-                child: Text(
-                  DateFormats.formatTime(
-                    context,
-                    TimeOfDay(hour: time ~/ 60, minute: time % 60),
-                  ),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: muted,
-                    fontFeatures: _tabular,
-                  ),
-                ),
-              ),
+              Icon(Icons.fitness_center, size: 14, color: muted),
           ],
         ),
       ),
@@ -538,8 +835,9 @@ final class _TaskRow extends ConsumerWidget {
 // Training
 // ---------------------------------------------------------------------------
 
-/// The workout in progress (with Continue) or the latest one, a dot per
-/// training day this week, and the week's totals.
+/// The next planned workout (with Start) or, when none, the latest finished
+/// one (with ↻ to do it again); then a dot per training day this week and
+/// the week's totals. A workout in progress is not shown here.
 final class _TrainingCard extends ConsumerWidget {
   const _TrainingCard();
 
@@ -547,14 +845,13 @@ final class _TrainingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final colors = theme.extension<FitFatColors>()!;
     final muted = theme.colorScheme.onSurfaceVariant;
-    final active = ref.watch(activeWorkoutProvider);
+    final pending = ref.watch(nextPendingWorkoutProvider).value;
     final latest = ref.watch(latestWorkoutProvider).value;
     final stats = ref.watch(weeklyWorkoutStatsProvider).value;
     final days = ref.watch(weekTrainingDaysProvider).value ?? const <int>{};
     final weightUnit = ref.watch(settingsProvider).weightUnit;
-    final workout = active ?? latest;
+    final workout = pending ?? latest;
 
     Future<void> addWorkout() async {
       final saved = await _push(context, const WorkoutFormScreen());
@@ -566,6 +863,7 @@ final class _TrainingCard extends ConsumerWidget {
 
     if (workout == null && (stats?.daysTrained ?? 0) == 0) {
       return _DashCard(
+        icon: Icons.fitness_center,
         label: l10n.dashboardTraining,
         trailing: l10n.dashboardThisWeek,
         onTap: () => context.go('/exercise'),
@@ -580,6 +878,7 @@ final class _TrainingCard extends ConsumerWidget {
     final todayIndex = DateTime.now().weekday - DateTime.monday;
     final weekdayLetters = DateFormats.narrowWeekdays(context);
     return _DashCard(
+      icon: Icons.fitness_center,
       label: l10n.dashboardTraining,
       trailing: l10n.dashboardThisWeek,
       onTap: () => context.go('/exercise'),
@@ -587,70 +886,7 @@ final class _TrainingCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: FitFatTokens.spaceM,
         children: [
-          if (workout != null)
-            Row(
-              spacing: FitFatTokens.spaceM,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 2,
-                    children: [
-                      Row(
-                        spacing: FitFatTokens.spaceS,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              workout.name,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall,
-                            ),
-                          ),
-                          StatusBadge(
-                            label: workout.isActive
-                                ? l10n.statusActive
-                                : l10n.statusCompleted,
-                            color: workout.isActive
-                                ? colors.warning
-                                : colors.success,
-                          ),
-                        ],
-                      ),
-                      Text(
-                        workout.isActive
-                            ? l10n.dashboardStartedAt(
-                                DateFormats.formatTime(
-                                  context,
-                                  TimeOfDay.fromDateTime(workout.startedAt!),
-                                ),
-                              )
-                            : [
-                                DateFormats.formatDate(context, workout.date),
-                                if (workout.duration > Duration.zero)
-                                  l10n.dashboardDurationMin(
-                                    workout.duration.inMinutes,
-                                  ),
-                              ].join(' · '),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (workout.isActive)
-                  FilledButton(
-                    onPressed: () => context.go('/active-workout'),
-                    child: Text(l10n.dashboardContinue),
-                  )
-                else
-                  OutlinedButton(
-                    onPressed: () =>
-                        context.go('/workout-summary/${workout.id}'),
-                    child: Text(l10n.commonOpen),
-                  ),
-              ],
-            ),
+          if (workout != null) _WorkoutRow(workout: workout),
           Row(
             children: [
               for (var i = 0; i < 7; i++)
@@ -715,6 +951,80 @@ final class _TrainingCard extends ConsumerWidget {
   }
 }
 
+final class _WorkoutRow extends ConsumerWidget {
+  const _WorkoutRow({required this.workout});
+
+  final Workout workout;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final planned = workout.isPending;
+    final date = DateFormats.formatDate(context, workout.date);
+    return InkWell(
+      borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
+      onTap: planned
+          ? null
+          : () => context.go('/workout-summary/${workout.id}'),
+      child: Row(
+        spacing: 10,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                Text(
+                  workout.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  planned
+                      ? l10n.dashboardPlannedOn(date)
+                      : [
+                          date,
+                          if (workout.duration > Duration.zero)
+                            l10n.dashboardDurationMin(
+                              workout.duration.inMinutes,
+                            ),
+                        ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                ),
+              ],
+            ),
+          ),
+          if (planned)
+            FilledButton.tonal(
+              onPressed: () => startWorkoutNow(
+                context,
+                ref,
+                workoutId: workout.id,
+                name: workout.name,
+              ),
+              child: Text(l10n.trainingStart),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.replay),
+              color: theme.colorScheme.primary,
+              tooltip: l10n.trainingStartAgain,
+              onPressed: () =>
+                  startRoutine(context, ref, sourceWorkoutId: workout.id),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 final class _Stat extends StatelessWidget {
   const _Stat(this.label, this.value);
 
@@ -751,33 +1061,22 @@ final class _Stat extends StatelessWidget {
 // Weight
 // ---------------------------------------------------------------------------
 
+/// Latest weight with its change as a pill, Add weight next to it, then the
+/// last 30 days as a line. Height is set in Settings › Profile.
 final class _WeightCard extends ConsumerWidget {
   const _WeightCard();
 
-  Future<void> _add(
-    BuildContext context,
-    WidgetRef ref, {
-    bool height = false,
-  }) async {
+  Future<void> _add(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
     final result = await showBodyMetricDialog(
       context,
-      dialogTitle: height
-          ? l10n.bodyMetricsDialogHeightTitle
-          : l10n.bodyMetricsDialogWeightTitle,
-      valueLabel: height
-          ? l10n.bodyMetricsHeightLabel
-          : l10n.bodyMetricsWeightLabel,
-      valueSuffix: height ? 'cm' : 'kg',
+      dialogTitle: l10n.bodyMetricsDialogWeightTitle,
+      valueLabel: l10n.bodyMetricsWeightLabel,
+      valueSuffix: 'kg',
     );
     if (result == null || !context.mounted) return;
     final (day, value) = result;
-    final repo = ref.read(bodyMetricsRepositoryProvider);
-    if (height) {
-      await repo.upsert(day, heightCm: value);
-    } else {
-      await repo.upsert(day, weightKg: value);
-    }
+    await ref.read(bodyMetricsRepositoryProvider).upsert(day, weightKg: value);
     ref.invalidate(bodyMetricsProvider);
     ref.invalidate(latestBodyMetricsProvider);
   }
@@ -791,6 +1090,7 @@ final class _WeightCard extends ConsumerWidget {
     final goal = settings.bodyWeightGoal;
     final hasWeight = entries.any((e) => e.weightKg != null);
     return _DashCard(
+      icon: Icons.monitor_weight_outlined,
       label: l10n.dashboardWeight,
       trailing: goal == null
           ? null
@@ -805,40 +1105,27 @@ final class _WeightCard extends ConsumerWidget {
               actionLabel: l10n.bodyMetricsAddWeight,
               onAction: () => _add(context, ref),
             )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _WeightSummary(
-                  entries: entries,
-                  unit: settings.weightUnit,
-                  goal: goal,
-                ),
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => _add(context, ref),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: Text(l10n.bodyMetricsAddWeight),
-                    ),
-                    TextButton.icon(
-                      onPressed: () => _add(context, ref, height: true),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: Text(l10n.bodyMetricsAddHeight),
-                    ),
-                  ],
-                ),
-              ],
+          : _WeightSummary(
+              entries: entries,
+              unit: settings.weightUnit,
+              goal: goal,
+              onAdd: () => _add(context, ref),
             ),
     );
   }
 }
 
-/// Latest weight, the 30-day change and the trend line.
 final class _WeightSummary extends StatelessWidget {
   final List<BodyMetricsEntry> entries;
   final WeightUnit unit;
   final BodyWeightGoal? goal;
-  const _WeightSummary({required this.entries, required this.unit, this.goal});
+  final VoidCallback onAdd;
+  const _WeightSummary({
+    required this.entries,
+    required this.unit,
+    required this.onAdd,
+    this.goal,
+  });
 
   List<(DateTime, double)> get _points => [
     for (final entry in entries)
@@ -857,6 +1144,7 @@ final class _WeightSummary extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final colors = theme.extension<FitFatColors>()!;
+    final muted = theme.colorScheme.onSurfaceVariant;
     final points = _points;
     final now = DateTime.now();
     final delta7 = _computeDelta(points, now, 7);
@@ -866,67 +1154,107 @@ final class _WeightSummary extends StatelessWidget {
       BodyWeightGoal.gain => (double d) => d > 0,
       _ => (double d) => d < 0,
     };
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      spacing: FitFatTokens.spaceM,
+    // The chart shows the last 30 days, or everything when that is too few.
+    final cutoff = now.subtract(const Duration(days: 30));
+    final recent = points.where((p) => p.$1.isAfter(cutoff)).toList();
+    final shown = recent.length > 1 ? recent : points;
+    final delta = delta30 ?? delta7;
+    final deltaLabel = delta30 != null
+        ? l10n.dashboardDelta30d(_deltaText(delta30, unit))
+        : delta7 != null
+        ? l10n.dashboardDelta7d(_deltaText(delta7, unit))
+        : null;
+    final pillColor = delta == null
+        ? muted
+        : good(delta)
+        ? colors.success
+        : colors.warning;
+    final small = theme.textTheme.bodySmall?.copyWith(
+      color: muted,
+      fontFeatures: _tabular,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: FitFatTokens.spaceS,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 2,
+        Row(
+          spacing: FitFatTokens.spaceM,
           children: [
-            Text.rich(
-              TextSpan(
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 4,
                 children: [
-                  TextSpan(
-                    text: formatWeightValue(
-                      entries.lastWhere((e) => e.weightKg != null).weightKg!,
-                      unit,
-                    ),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: _tabular,
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: formatWeightValue(
+                            entries
+                                .lastWhere((e) => e.weightKg != null)
+                                .weightKg!,
+                            unit,
+                          ),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: _tabular,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' ${weightUnitLabel(unit)}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: muted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  TextSpan(
-                    text: ' ${weightUnitLabel(unit)}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  if (deltaLabel != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: pillColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(
+                          FitFatTokens.radiusFull,
+                        ),
+                      ),
+                      child: Text(
+                        deltaLabel,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: pillColor,
+                          fontWeight: FontWeight.w600,
+                          fontFeatures: _tabular,
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
-            if (delta30 != null)
-              Text(
-                l10n.dashboardDelta30d(_deltaText(delta30, unit)),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: good(delta30) ? colors.success : colors.warning,
-                  fontFeatures: _tabular,
-                ),
-              )
-            else if (delta7 != null)
-              Text(
-                l10n.dashboardDelta7d(_deltaText(delta7, unit)),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: good(delta7) ? colors.success : colors.warning,
-                ),
-              ),
-            if (projection != null)
-              Text(
-                projection,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+            FilledButton.tonalIcon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.bodyMetricsAddWeight),
+            ),
           ],
         ),
-        if (points.length > 1)
-          Expanded(
-            child: SizedBox(
-              height: 56,
-              child: _WeightLineChart(points: points),
-            ),
+        if (shown.length > 1) ...[
+          SizedBox(height: 58, child: _WeightLineChart(points: shown)),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${DateFormats.formatDate(context, shown.first.$1)} · '
+                  '${shown.first.$2.toStringAsFixed(1)}',
+                  style: small,
+                ),
+              ),
+              if (projection != null) Text(projection, style: small),
+            ],
           ),
+        ],
       ],
     );
   }
@@ -1038,28 +1366,24 @@ final class _WeightLinePainter extends CustomPainter {
     canvas.drawPath(
       fill,
       Paint()
-        ..color = color.withValues(alpha: 0.08)
+        ..color = color.withValues(alpha: 0.12)
         ..style = PaintingStyle.fill,
     );
     canvas.drawPath(
       path,
       Paint()
         ..color = color
-        ..strokeWidth = 3
+        ..strokeWidth = 2
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
     );
-    final dotPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    for (final p in points) {
-      canvas.drawCircle(
-        project(p.$1.millisecondsSinceEpoch.toDouble(), p.$2),
-        3.5,
-        dotPaint,
-      );
-    }
+    final last = points.last;
+    canvas.drawCircle(
+      project(last.$1.millisecondsSinceEpoch.toDouble(), last.$2),
+      3.5,
+      Paint()..color = color,
+    );
   }
 
   @override
@@ -1074,21 +1398,58 @@ final class _WeightLinePainter extends CustomPainter {
 // Goals
 // ---------------------------------------------------------------------------
 
+/// How far [g] is behind a straight line from its start to its end date
+/// (0..1, negative when ahead); null without an end date or progress.
+double? goalPaceGap(Goal g, double? progress, DateTime now) {
+  final end = g.endDate;
+  if (end == null || progress == null) return null;
+  final span = end.difference(g.startDate).inMinutes;
+  if (span <= 0) return null;
+  final expected = (now.difference(g.startDate).inMinutes / span).clamp(
+    0.0,
+    1.0,
+  );
+  return expected - progress;
+}
+
+/// The goal most behind its pace, with what it takes to catch up, then the
+/// other active goals as one-line rows.
 final class _GoalsCard extends ConsumerWidget {
   const _GoalsCard();
+
+  static const _maxRows = 3;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final goals = ref.watch(goalListProvider).value ?? const [];
+    final goals = ref.watch(goalListProvider).value ?? const <Goal>[];
     final active = goals.where((g) => g.isActive).toList();
+    final now = DateTime.now();
+    final statuses = {
+      for (final g in active) g.id: ref.watch(goalStatusProvider(g.id)).value,
+    };
+    Goal? featured;
+    var worst = double.negativeInfinity;
+    for (final g in active) {
+      final gap = goalPaceGap(g, statuses[g.id]?.progress, now);
+      if (gap != null && gap > worst) {
+        worst = gap;
+        featured = g;
+      }
+    }
+    featured ??= active.firstOrNull;
+    final others = [
+      for (final g in active)
+        if (g.id != featured?.id) g,
+    ];
     return _DashCard(
+      icon: Icons.flag_outlined,
       label: l10n.dashboardGoalsTitle,
       trailing: active.isEmpty
           ? null
           : l10n.dashboardGoalsActive(active.length),
       onTap: () => context.go('/plan'),
-      child: active.isEmpty
+      child: featured == null
           ? _EmptyStart(
               message: l10n.dashboardGoalsEmptyHint,
               actionLabel: l10n.dashboardSetGoal,
@@ -1097,64 +1458,163 @@ final class _GoalsCard extends ConsumerWidget {
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: FitFatTokens.spaceM,
+              spacing: FitFatTokens.spaceS,
               children: [
-                for (final goal in active.take(3)) _GoalRow(goal: goal),
+                _FeaturedGoal(goal: featured, status: statuses[featured.id]),
+                for (final g in others.take(_maxRows))
+                  _GoalLine(goal: g, status: statuses[g.id]),
+                if (others.length > _maxRows)
+                  Text(
+                    l10n.dashboardTasksMore(others.length - _maxRows),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
               ],
             ),
     );
   }
 }
 
-final class _GoalRow extends ConsumerWidget {
-  final dynamic goal;
-  const _GoalRow({required this.goal});
+final class _FeaturedGoal extends StatelessWidget {
+  const _FeaturedGoal({required this.goal, required this.status});
+
+  final Goal goal;
+  final GoalStatusView? status;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final value = ref
-        .watch(latestGoalProgressProvider(goal.id as String))
-        .value;
-    final double? progress = goal.progressFrom(value) as double?;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: FitFatTokens.spaceXs,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                goal.title as String,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium,
-              ),
+    final scheme = theme.colorScheme;
+    final colors = theme.extension<FitFatColors>()!;
+    final s = status;
+    final end = goal.endDate;
+    final gap = goalPaceGap(goal, s?.progress, DateTime.now());
+    Widget? pace;
+    if (gap != null && s != null) {
+      final behind = gap > 0.05;
+      String text = l10n.dashboardGoalOnPace;
+      if (behind) {
+        final weeks = end!.difference(DateTime.now()).inDays / 7;
+        final left = (goal.targetValue ?? 0) - (s.current ?? 0);
+        final unit = goalUnit(goal);
+        final perWeek = weeks >= 1 ? left / weeks : left;
+        final amount =
+            '${perWeek >= 0 ? '+' : ''}${formatGoalNumber(context, perWeek)}'
+            '${unit.isEmpty ? '' : ' $unit'}';
+        text = l10n.dashboardGoalBehind(amount);
+      }
+      final color = behind ? colors.warning : colors.success;
+      pace = Row(
+        spacing: 4,
+        children: [
+          Icon(
+            behind ? Icons.error_outline : Icons.check_circle_outline,
+            size: 14,
+            color: color,
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(color: color),
             ),
-            if (goal.targetValue != null)
-              Text(
-                '${value?.toStringAsFixed(1) ?? '–'} / ${goal.targetValue} ${goal.unit ?? ''}'
-                    .trim(),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: muted,
-                  fontFeatures: _tabular,
-                ),
-              ),
-            if (progress != null)
-              Padding(
-                padding: const EdgeInsets.only(left: FitFatTokens.spaceS),
+          ),
+        ],
+      );
+    } else if (s != null) {
+      pace = GoalSourceLine(goal: goal, status: s);
+    }
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 6,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            spacing: FitFatTokens.spaceS,
+            children: [
+              Expanded(
                 child: Text(
-                  '${(progress * 100).toStringAsFixed(0)}%',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontFeatures: _tabular,
+                  goal.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-          ],
+              if (end != null)
+                Text(
+                  l10n.dashboardGoalBy(
+                    MaterialLocalizations.of(context).formatMonthYear(end),
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+          if (s != null) GoalProgressBar(goal: goal, status: s),
+          ?pace,
+        ],
+      ),
+    );
+  }
+}
+
+final class _GoalLine extends StatelessWidget {
+  const _GoalLine({required this.goal, required this.status});
+
+  final Goal goal;
+  final GoalStatusView? status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final s = status;
+    final p = s?.progress;
+    return Row(
+      spacing: FitFatTokens.spaceS,
+      children: [
+        Expanded(
+          child: Text(
+            goal.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium,
+          ),
         ),
-        if (progress != null) _Bar(progress, height: 4),
+        if (s != null)
+          Flexible(
+            child: Text(
+              goalValueText(context, goal, s),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: muted,
+                fontFeatures: _tabular,
+              ),
+            ),
+          ),
+        SizedBox(
+          width: 38,
+          child: Text(
+            p == null ? '–' : '${(p * 100).round()}%',
+            textAlign: TextAlign.right,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontFeatures: _tabular,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1164,8 +1624,10 @@ final class _GoalRow extends ConsumerWidget {
 // Money
 // ---------------------------------------------------------------------------
 
-/// This month's spending against this month's income, plus net worth.
-/// Accounts come from the server, so the empty state offers a sync.
+/// This month's spending against income: the filled part of the bar is split
+/// by category (the Money tab's colors), the top three are named, then net
+/// worth and the days left in the month. Accounts come from the server, so
+/// the empty state offers a sync.
 final class _MoneyCard extends ConsumerWidget {
   const _MoneyCard();
 
@@ -1173,16 +1635,16 @@ final class _MoneyCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    final colors = theme.extension<FitFatColors>()!;
+    final scheme = theme.colorScheme;
+    final muted = scheme.onSurfaceVariant;
     final overview = ref.watch(budgetOverviewProvider).value;
     final currency = ref.watch(settingsProvider).baseCurrency;
-    final month = MaterialLocalizations.of(
-      context,
-    ).formatMonthYear(DateTime.now());
+    final now = DateTime.now();
+    final month = MaterialLocalizations.of(context).formatMonthYear(now);
 
     if (overview == null || overview.accounts.isEmpty) {
       return _DashCard(
+        icon: Icons.account_balance_wallet_outlined,
         label: l10n.dashboardMoney,
         trailing: month,
         child: _EmptyStart(
@@ -1195,7 +1657,15 @@ final class _MoneyCard extends ConsumerWidget {
     }
     final income = overview.monthIncome;
     final spent = overview.monthExpense;
+    final cats = overview.monthExpenseByCategory;
+    final daysLeft = DateTime(now.year, now.month + 1, 0).day - now.day;
+    final small = theme.textTheme.bodySmall?.copyWith(
+      color: muted,
+      fontFeatures: _tabular,
+    );
+    String catName(String c) => c.isEmpty ? l10n.dashboardSpent : c;
     return _DashCard(
+      icon: Icons.account_balance_wallet_outlined,
       label: l10n.dashboardMoney,
       trailing: month,
       onTap: () => context.go('/budget'),
@@ -1219,24 +1689,159 @@ final class _MoneyCard extends ConsumerWidget {
                 l10n.dashboardSpent,
                 style: theme.textTheme.bodyMedium?.copyWith(color: muted),
               ),
+              const Spacer(),
+              if (income > 0)
+                Flexible(
+                  child: Text(
+                    l10n.dashboardOfIncome(formatMoney(income, currency)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: small,
+                  ),
+                ),
             ],
           ),
-          if (income > 0)
-            _Bar(
-              spent / income,
-              color: spent > income ? theme.colorScheme.error : colors.warning,
+          if (spent > 0 || income > 0)
+            _SpendBar(
+              spent: spent,
+              income: income,
+              categories: cats,
+              label: income <= 0
+                  ? null
+                  : spent > income
+                  ? l10n.dashboardAmountOver(
+                      formatMoney(spent - income, currency),
+                    )
+                  : l10n.dashboardAmountLeft(
+                      formatMoney(income - spent, currency),
+                    ),
             ),
-          Text(
-            [
-              l10n.dashboardIncome(formatMoney(income, currency)),
-              '${l10n.budgetNetWorth} ${formatMoney(overview.netWorth, currency)}',
-            ].join(' · '),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: muted,
-              fontFeatures: _tabular,
+          if (cats.isNotEmpty)
+            Wrap(
+              spacing: 10,
+              runSpacing: 2,
+              children: [
+                for (final (c, v) in cats.take(3))
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 4,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: categoryColor(context, c),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Text('${catName(c)} ${_whole(context, v)}', style: small),
+                    ],
+                  ),
+                if (cats.length > 3)
+                  Text(l10n.dashboardTasksMore(cats.length - 3), style: small),
+              ],
+            ),
+          Container(
+            padding: const EdgeInsets.only(top: FitFatTokens.spaceS),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: scheme.outlineVariant)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${l10n.budgetNetWorth} '
+                    '${formatMoney(overview.netWorth, currency)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: small,
+                  ),
+                ),
+                Text(l10n.dashboardDaysLeftInMonth(daysLeft), style: small),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Spending as a share of income, the filled part split by category; with
+/// no income the categories fill the bar.
+final class _SpendBar extends StatelessWidget {
+  const _SpendBar({
+    required this.spent,
+    required this.income,
+    required this.categories,
+    this.label,
+  });
+
+  final double spent;
+  final double income;
+  final List<(String, double)> categories;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final share = income > 0 ? (spent / income).clamp(0.0, 1.0) : 1.0;
+    final over = income > 0 && spent > income;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(5),
+      child: SizedBox(
+        height: 18,
+        child: LayoutBuilder(
+          builder: (context, box) => Stack(
+            children: [
+              Positioned.fill(
+                child: ColoredBox(color: scheme.surfaceContainerHighest),
+              ),
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: box.maxWidth * share,
+                child: Row(
+                  spacing: 1,
+                  children: [
+                    for (final (c, v) in categories)
+                      if (v > 0)
+                        Expanded(
+                          flex: math.max(1, v.round()),
+                          child: ColoredBox(
+                            color: Color.lerp(
+                              scheme.surface,
+                              categoryColor(context, c),
+                              0.65,
+                            )!,
+                          ),
+                        ),
+                  ],
+                ),
+              ),
+              if (label != null)
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 7),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        label!,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: over ? scheme.error : scheme.onSurfaceVariant,
+                          fontWeight: over ? FontWeight.w600 : null,
+                          fontFeatures: _tabular,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -2183,5 +2183,19 @@
   "goalTrackTasksHint": "Combien de tâches liées sont faites",
   "goalReminderReplyBody": "Où en êtes-vous ? Répondez avec la nouvelle valeur.",
   "goalReminderReplyAction": "Noter",
-  "goalReminderReplyHint": "Nouvelle valeur"
+  "goalReminderReplyHint": "Nouvelle valeur",
+  "dashboardKcalLeftShort": "kcal restantes",
+  "dashboardKcalOverShort": "kcal en trop",
+  "dashboardPlannedOn": "Prévu · {date}",
+  "dashboardNowUntil": "En cours · jusqu'à {time}",
+  "dashboardNextAt": "Ensuite · {time}",
+  "dashboardNextUp": "Ensuite",
+  "dashboardAllDoneToday": "Tout est fait pour aujourd'hui",
+  "dashboardGoalBehind": "En retard : il faut {amount} par semaine",
+  "dashboardGoalOnPace": "Dans les temps",
+  "dashboardGoalBy": "d'ici {date}",
+  "dashboardOfIncome": "sur {amount} reçus",
+  "dashboardAmountLeft": "reste {amount}",
+  "dashboardAmountOver": "{amount} de trop",
+  "dashboardDaysLeftInMonth": "{count, plural, =1{1 jour restant} other{{count} jours restants}}"
 }

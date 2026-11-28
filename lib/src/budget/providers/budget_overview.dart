@@ -11,6 +11,10 @@ final class BudgetOverview {
   final double netWorth;
   final double monthIncome;
   final double monthExpense;
+
+  /// This month's spending per category ('' when uncategorised), largest
+  /// first.
+  final List<(String, double)> monthExpenseByCategory;
   final List<Transaction> recent;
 
   const BudgetOverview({
@@ -18,6 +22,7 @@ final class BudgetOverview {
     required this.netWorth,
     required this.monthIncome,
     required this.monthExpense,
+    this.monthExpenseByCategory = const [],
     required this.recent,
   });
 }
@@ -45,12 +50,15 @@ final budgetOverviewProvider = FutureProvider<BudgetOverview>((ref) async {
   final startOfMonth = DateTime(now.year, now.month, 1);
   var monthIncome = 0.0;
   var monthExpense = 0.0;
+  final byCategory = <String, double>{};
   for (final txn in transactions) {
     if (txn.date.isBefore(startOfMonth)) continue;
     if (txn.type == TransactionType.income) {
       monthIncome += txn.amountBase;
     } else if (txn.type == TransactionType.expense) {
       monthExpense += txn.amountBase;
+      final c = txn.category ?? '';
+      byCategory[c] = (byCategory[c] ?? 0) + txn.amountBase;
     }
   }
 
@@ -69,6 +77,9 @@ final budgetOverviewProvider = FutureProvider<BudgetOverview>((ref) async {
     netWorth: computeNetWorth(accounts, transactions),
     monthIncome: monthIncome,
     monthExpense: monthExpense,
+    monthExpenseByCategory: [
+      for (final e in byCategory.entries) (e.key, e.value),
+    ]..sort((a, b) => b.$2.compareTo(a.$2)),
     recent: recent,
   );
 });

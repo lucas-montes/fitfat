@@ -126,8 +126,8 @@ void main() {
       await pump(tester, const DashboardScreen());
       expect(tester.takeException(), isNull);
 
-      final nutrition = tester.getTopLeft(find.text('NUTRITION')).dy;
-      final tasks = tester.getTopLeft(find.text('TASKS')).dy;
+      final nutrition = tester.getTopLeft(find.text('Nutrition')).dy;
+      final tasks = tester.getTopLeft(find.text('Tasks')).dy;
       expect(nutrition, lessThan(tasks));
       expect(find.text('Log meal'), findsOneWidget);
       expect(find.text('Add task'), findsOneWidget);
@@ -137,7 +137,7 @@ void main() {
           .read(dashboardLayoutProvider.notifier)
           .setVisible(DashboardCard.tasks, false);
       await tester.pumpAndSettle();
-      expect(find.text('TASKS'), findsNothing);
+      expect(find.text('Tasks'), findsNothing);
     });
 
     testWidgets('settings hub: inline controls and search', (tester) async {

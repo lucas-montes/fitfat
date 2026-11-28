@@ -7785,6 +7785,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New value'**
   String get goalReminderReplyHint;
+
+  /// No description provided for @dashboardKcalLeftShort.
+  ///
+  /// In en, this message translates to:
+  /// **'kcal left'**
+  String get dashboardKcalLeftShort;
+
+  /// No description provided for @dashboardKcalOverShort.
+  ///
+  /// In en, this message translates to:
+  /// **'kcal over'**
+  String get dashboardKcalOverShort;
+
+  /// No description provided for @dashboardPlannedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned · {date}'**
+  String dashboardPlannedOn(String date);
+
+  /// No description provided for @dashboardNowUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Now · until {time}'**
+  String dashboardNowUntil(String time);
+
+  /// No description provided for @dashboardNextAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Next · {time}'**
+  String dashboardNextAt(String time);
+
+  /// No description provided for @dashboardNextUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get dashboardNextUp;
+
+  /// No description provided for @dashboardAllDoneToday.
+  ///
+  /// In en, this message translates to:
+  /// **'All done for today'**
+  String get dashboardAllDoneToday;
+
+  /// No description provided for @dashboardGoalBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'Behind pace: needs {amount} a week'**
+  String dashboardGoalBehind(String amount);
+
+  /// No description provided for @dashboardGoalOnPace.
+  ///
+  /// In en, this message translates to:
+  /// **'On pace'**
+  String get dashboardGoalOnPace;
+
+  /// No description provided for @dashboardGoalBy.
+  ///
+  /// In en, this message translates to:
+  /// **'by {date}'**
+  String dashboardGoalBy(String date);
+
+  /// No description provided for @dashboardOfIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'of {amount} in'**
+  String dashboardOfIncome(String amount);
+
+  /// No description provided for @dashboardAmountLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} left'**
+  String dashboardAmountLeft(String amount);
+
+  /// No description provided for @dashboardAmountOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} over'**
+  String dashboardAmountOver(String amount);
+
+  /// No description provided for @dashboardDaysLeftInMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day left} other{{count} days left}}'**
+  String dashboardDaysLeftInMonth(int count);
 }
 
 class _AppLocalizationsDelegate

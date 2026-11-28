@@ -224,3 +224,22 @@ final weekTrainingDaysProvider = FutureProvider<Set<int>>((ref) async {
         w.date.weekday - DateTime.monday,
   };
 });
+
+// ---------------------------------------------------------------------------
+// Next pending workout (planned, not started, today or later)
+// ---------------------------------------------------------------------------
+
+/// The soonest workout that is planned but not started, dated today or
+/// later. Older pending ones are stale plans and are left out.
+final nextPendingWorkoutProvider = FutureProvider<Workout?>((ref) async {
+  ref.watch(dashboardRefreshProvider);
+  if (!ref.watch(startupGateProvider)) return null;
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final workouts = await ref.watch(_workoutRepositoryProvider).getAll();
+  final pending = [
+    for (final w in workouts)
+      if (w.isPending && !w.date.isBefore(today)) w,
+  ]..sort((a, b) => a.sortTime.compareTo(b.sortTime));
+  return pending.firstOrNull;
+});

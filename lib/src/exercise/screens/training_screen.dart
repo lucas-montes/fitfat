@@ -79,7 +79,8 @@ final class TrainingScreen extends ConsumerWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
+          SliverAppBar(
+            pinned: true,
             title: Text(l10n.trainingTitle),
             actions: [
               IconButton(

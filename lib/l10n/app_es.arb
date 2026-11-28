@@ -2168,5 +2168,19 @@
   "goalTrackTasksHint": "Cuántas tareas vinculadas están hechas",
   "goalReminderReplyBody": "¿Cuánto llevas? Responde con el nuevo valor.",
   "goalReminderReplyAction": "Anotar",
-  "goalReminderReplyHint": "Nuevo valor"
+  "goalReminderReplyHint": "Nuevo valor",
+  "dashboardKcalLeftShort": "kcal restantes",
+  "dashboardKcalOverShort": "kcal de más",
+  "dashboardPlannedOn": "Planificado · {date}",
+  "dashboardNowUntil": "Ahora · hasta las {time}",
+  "dashboardNextAt": "Siguiente · {time}",
+  "dashboardNextUp": "Siguiente",
+  "dashboardAllDoneToday": "Todo hecho por hoy",
+  "dashboardGoalBehind": "Por detrás del ritmo: faltan {amount} por semana",
+  "dashboardGoalOnPace": "Al ritmo previsto",
+  "dashboardGoalBy": "para {date}",
+  "dashboardOfIncome": "de {amount} ingresados",
+  "dashboardAmountLeft": "quedan {amount}",
+  "dashboardAmountOver": "{amount} de más",
+  "dashboardDaysLeftInMonth": "{count, plural, =1{queda 1 día} other{quedan {count} días}}"
 }

@@ -4486,4 +4486,70 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalReminderReplyHint => 'Nuevo valor';
+
+  @override
+  String get dashboardKcalLeftShort => 'kcal restantes';
+
+  @override
+  String get dashboardKcalOverShort => 'kcal de más';
+
+  @override
+  String dashboardPlannedOn(String date) {
+    return 'Planificado · $date';
+  }
+
+  @override
+  String dashboardNowUntil(String time) {
+    return 'Ahora · hasta las $time';
+  }
+
+  @override
+  String dashboardNextAt(String time) {
+    return 'Siguiente · $time';
+  }
+
+  @override
+  String get dashboardNextUp => 'Siguiente';
+
+  @override
+  String get dashboardAllDoneToday => 'Todo hecho por hoy';
+
+  @override
+  String dashboardGoalBehind(String amount) {
+    return 'Por detrás del ritmo: faltan $amount por semana';
+  }
+
+  @override
+  String get dashboardGoalOnPace => 'Al ritmo previsto';
+
+  @override
+  String dashboardGoalBy(String date) {
+    return 'para $date';
+  }
+
+  @override
+  String dashboardOfIncome(String amount) {
+    return 'de $amount ingresados';
+  }
+
+  @override
+  String dashboardAmountLeft(String amount) {
+    return 'quedan $amount';
+  }
+
+  @override
+  String dashboardAmountOver(String amount) {
+    return '$amount de más';
+  }
+
+  @override
+  String dashboardDaysLeftInMonth(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'quedan $count días',
+      one: 'queda 1 día',
+    );
+    return '$_temp0';
+  }
 }
