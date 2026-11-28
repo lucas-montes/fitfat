@@ -72,6 +72,10 @@ final class Food {
   /// the raw component sum is used instead.
   final double? cookedWeight;
 
+  /// When the user marked this batch as finished by hand; null when not
+  /// marked. See [isFinished] for the full rule.
+  final DateTime? finishedAt;
+
   /// Composition, alphabetical by ingredient name when loaded from the
   /// repository. Empty for a food whose composition has not been loaded.
   final List<FoodIngredient> components;
@@ -82,10 +86,22 @@ final class Food {
     required this.createdAt,
     this.archivedAt,
     this.cookedWeight,
+    this.finishedAt,
     this.components = const [],
   });
 
   bool get isArchived => archivedAt != null;
+
+  /// Weight of the whole batch: the cooked weight, or the raw component sum
+  /// for legacy rows. What the eaten bar measures against.
+  double get batchWeight =>
+      cookedWeight ?? components.fold<double>(0, (a, c) => a + c.amount);
+
+  /// Whether the batch is finished: marked by hand, or [eatenGrams] (the grams
+  /// logged across meals) has reached the whole batch. Finished is only a tag —
+  /// the recipe stays in the list and leaves the meal picker.
+  bool isFinished(double eatenGrams) =>
+      finishedAt != null || (batchWeight > 0 && eatenGrams >= batchWeight);
 
   /// Auto-created 1:1 wrapper around a single ingredient. Derived foods are
   /// read-only: their `name` and `archivedAt` mirror the ingredient row and are
@@ -100,6 +116,7 @@ final class Food {
     DateTime? createdAt,
     Object? archivedAt = _unset,
     Object? cookedWeight = _unset,
+    Object? finishedAt = _unset,
     List<FoodIngredient>? components,
   }) => Food(
     id: id,
@@ -111,6 +128,9 @@ final class Food {
     cookedWeight: identical(cookedWeight, _unset)
         ? this.cookedWeight
         : (cookedWeight as num?)?.toDouble(),
+    finishedAt: identical(finishedAt, _unset)
+        ? this.finishedAt
+        : finishedAt as DateTime?,
     components: components ?? this.components,
   );
 

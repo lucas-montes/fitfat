@@ -4,6 +4,7 @@ import 'package:fitfat/src/app/startup_gate.dart';
 import 'package:fitfat/src/app/theme.dart';
 import 'package:fitfat/src/database/app_database.dart' as db;
 import 'package:fitfat/src/database/database_provider.dart';
+import 'package:fitfat/src/diet/providers/foods.dart';
 import 'package:fitfat/src/diet/repositories/food_repository.dart';
 import 'package:fitfat/src/diet/repositories/ingredient_repository.dart';
 import 'package:fitfat/src/diet/repositories/meal_repository.dart';
@@ -404,6 +405,156 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Rolled oats'), findsOneWidget);
       expect(find.text('Edit recipe'), findsOneWidget);
+    });
+
+    test('finished: marked by hand, or everything cooked was eaten', () async {
+      final food = (await bowl()).copyWith(
+        components: [
+          const FoodIngredient(
+            foodId: 'f',
+            ingredientId: 'i',
+            ingredientName: '',
+            amount: 100,
+          ),
+        ],
+      );
+      expect(food.batchWeight, 400);
+      expect(food.isFinished(399), isFalse);
+      expect(food.isFinished(400), isTrue);
+      expect(food.copyWith(finishedAt: DateTime(2026)).isFinished(0), isTrue);
+
+      await foods.setFinished(food.id, finished: true);
+      expect((await foods.getById(food.id))!.finishedAt, isNotNull);
+      await foods.setFinished(food.id, finished: false);
+      expect((await foods.getById(food.id))!.finishedAt, isNull);
+    });
+
+    testWidgets('Active hides finished batches; Finished shows them, tagged '
+        'and with the eaten bar', (tester) async {
+      await tester.runAsync(() async {
+        final food = await bowl();
+        await meals.insert(
+          entry('a', DateTime(2026, 11, 21), [await item('a', food.id, 150)]),
+        );
+        await foods.setFinished(food.id, finished: true);
+      });
+      await pump(tester, const FoodListScreen());
+      expect(find.byType(RecipeCard), findsNothing);
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Finished'));
+      await tester.pumpAndSettle();
+      expect(find.byType(RecipeCard), findsOneWidget);
+      expect(find.byType(FinishedTag), findsOneWidget);
+      expect(find.text('150 g eaten'), findsOneWidget);
+      expect(find.text('250 g left'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ChoiceChip, 'All'));
+      await tester.pumpAndSettle();
+      expect(find.byType(RecipeCard), findsOneWidget);
+    });
+
+    testWidgets('a fully eaten batch is finished with no mark to clear', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        final food = await bowl();
+        await meals.insert(
+          entry('a', DateTime(2026, 11, 21), [await item('a', food.id, 400)]),
+        );
+      });
+      await pump(tester, const FoodListScreen());
+      expect(find.byType(RecipeCard), findsNothing);
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Finished'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(RecipeCard));
+      await tester.pumpAndSettle();
+      expect(find.text('Mark as finished'), findsNothing);
+      expect(find.text('Not finished'), findsNothing);
+      expect(find.byType(Dismissible), findsNothing);
+    });
+
+    testWidgets('Mark as finished from the opened card, with Undo', (
+      tester,
+    ) async {
+      late Food food;
+      await tester.runAsync(() async => food = await bowl());
+      await pump(tester, const FoodListScreen());
+      await tester.tap(find.byType(RecipeCard));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mark as finished'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(RecipeCard), findsNothing); // Active filter
+      expect(
+        (await tester.runAsync(() => foods.getById(food.id)))!.finishedAt,
+        isNotNull,
+      );
+
+      await tester.tap(find.text('Undo'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        (await tester.runAsync(() => foods.getById(food.id)))!.finishedAt,
+        isNull,
+      );
+      expect(find.byType(RecipeCard), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('swiping a card toggles the mark and the card snaps back', (
+      tester,
+    ) async {
+      late Food food;
+      await tester.runAsync(() async => food = await bowl());
+      await pump(tester, const FoodListScreen());
+      await tester.tap(find.widgetWithText(ChoiceChip, 'All'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(RecipeCard), const Offset(-600, 0));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        (await tester.runAsync(() => foods.getById(food.id)))!.finishedAt,
+        isNotNull,
+      );
+      expect(find.byType(FinishedTag), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('the meal picker shows date and left, and hides finished '
+        'batches', (tester) async {
+      late Food old;
+      late Food fresh;
+      await tester.runAsync(() async {
+        old = await bowl(at: DateTime(2026, 11, 2));
+        fresh = await bowl(at: DateTime(2026, 11, 20));
+        await meals.insert(
+          entry('a', DateTime(2026, 11, 21), [await item('a', fresh.id, 150)]),
+        );
+      });
+      await pump(tester, const MealFormScreen());
+      await tester.enterText(
+        find.byKey(const ValueKey('mealEditSearch')),
+        'porr',
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey('suggest-${old.id}')), findsOneWidget);
+      expect(find.textContaining('Nov 2 · 400 g left'), findsOneWidget);
+      expect(find.textContaining('Nov 20 · 250 g left'), findsOneWidget);
+
+      await tester.runAsync(() => foods.setFinished(old.id, finished: true));
+      container!.invalidate(foodListProvider);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey('suggest-${old.id}')), findsNothing);
+      expect(find.byKey(ValueKey('suggest-${fresh.id}')), findsOneWidget);
     });
   });
 

@@ -143,6 +143,7 @@ final class FoodSyncClient {
           'createdAt': foods[i].createdAt.millisecondsSinceEpoch,
           'archivedAt': foods[i].archivedAt?.millisecondsSinceEpoch,
           'cookedWeight': foods[i].cookedWeight,
+          'finishedAt': foods[i].finishedAt?.millisecondsSinceEpoch,
           'components': [
             for (final c in componentsByFoodId[i])
               {'ingredientId': c.ingredientId, 'amount': c.amount},
@@ -181,6 +182,7 @@ final class FoodSyncClient {
               createdAt: food.createdAt.millisecondsSinceEpoch,
               archivedAt: Value(food.archivedAt?.millisecondsSinceEpoch),
               cookedWeight: Value(food.cookedWeight),
+              finishedAt: Value(food.finishedAt?.millisecondsSinceEpoch),
             ),
             mode: InsertMode.insertOrReplace,
           );
@@ -253,6 +255,10 @@ final class FoodSyncClient {
           // Non-positive values are treated as absent, matching the resolver's
           // fallback to the raw batch weight.
           final num grams when grams > 0 => grams.toDouble(),
+          _ => null,
+        },
+        finishedAt: switch (raw['finishedAt']) {
+          final num ms => DateTime.fromMillisecondsSinceEpoch(ms.toInt()),
           _ => null,
         },
         components: components,

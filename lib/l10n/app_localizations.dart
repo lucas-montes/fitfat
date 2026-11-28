@@ -7175,6 +7175,48 @@ abstract class AppLocalizations {
   /// **'All eaten'**
   String get recipeAllEaten;
 
+  /// No description provided for @recipeFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished'**
+  String get recipeFinished;
+
+  /// No description provided for @recipeMarkFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as finished'**
+  String get recipeMarkFinished;
+
+  /// No description provided for @recipeMarkUnfinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Not finished'**
+  String get recipeMarkUnfinished;
+
+  /// No description provided for @recipeMarkedFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" marked as finished'**
+  String recipeMarkedFinished(String name);
+
+  /// No description provided for @recipeMarkedUnfinished.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" is no longer finished'**
+  String recipeMarkedUnfinished(String name);
+
+  /// No description provided for @recipeFilterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get recipeFilterActive;
+
+  /// No description provided for @recipeFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get recipeFilterAll;
+
   /// No description provided for @recipeEdit.
   ///
   /// In en, this message translates to:

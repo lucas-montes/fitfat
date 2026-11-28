@@ -146,6 +146,19 @@ void main() {
       }, 0)!;
       expect(archived.food.archivedAt, isNotNull);
     });
+
+    test('reads finishedAt as a nullable timestamp', () {
+      expect(
+        FoodSyncClient.parseFood({'id': 'f', 'name': 'x'}, 0)!.food.finishedAt,
+        isNull,
+      );
+      final finished = FoodSyncClient.parseFood({
+        'id': 'f',
+        'name': 'x',
+        'finishedAt': 5000,
+      }, 0)!;
+      expect(finished.food.finishedAt!.millisecondsSinceEpoch, 5000);
+    });
   });
 
   group('shareable', () {

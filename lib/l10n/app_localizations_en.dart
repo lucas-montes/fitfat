@@ -4090,6 +4090,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recipeAllEaten => 'All eaten';
 
   @override
+  String get recipeFinished => 'Finished';
+
+  @override
+  String get recipeMarkFinished => 'Mark as finished';
+
+  @override
+  String get recipeMarkUnfinished => 'Not finished';
+
+  @override
+  String recipeMarkedFinished(String name) {
+    return '\"$name\" marked as finished';
+  }
+
+  @override
+  String recipeMarkedUnfinished(String name) {
+    return '\"$name\" is no longer finished';
+  }
+
+  @override
+  String get recipeFilterActive => 'Active';
+
+  @override
+  String get recipeFilterAll => 'All';
+
+  @override
   String get recipeEdit => 'Edit recipe';
 
   @override

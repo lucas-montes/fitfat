@@ -140,6 +140,13 @@ class Foods extends Table {
   /// The form requires a positive value for every recipe it writes.
   RealColumn? get cookedWeight => real().nullable()();
 
+  /// When the user marked this batch as finished (eaten, or the leftovers
+  /// thrown out). Not archive: a finished recipe stays in the recipes list
+  /// with its eaten bar and only leaves the meal picker. A batch is also
+  /// finished, without this mark, once the grams logged reach its cooked
+  /// weight — see `Food.isFinished`.
+  IntColumn? get finishedAt => integer().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

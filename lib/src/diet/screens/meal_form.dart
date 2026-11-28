@@ -253,6 +253,13 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
     }
     final meals = ref.watch(mealListProvider).value ?? const <MealEntry>[];
     final last = _lastAmounts(meals);
+    final eaten = ref.watch(foodEatenGramsProvider).value ?? const {};
+    // What the picker may offer: finished recipe batches are hidden entirely
+    // (search included). Foods already in this meal keep their profile above.
+    final pickable = [
+      for (final f in foods)
+        if (f.food.isDerived || !f.food.isFinished(eaten[f.food.id] ?? 0)) f,
+    ];
     final target = ref.watch(calorieTargetProvider).value;
     final t = _totals(profiles);
 
@@ -318,7 +325,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
     final q = _query.trim().toLowerCase();
     final suggestions = <ResolvedFood>[
       if (q.isNotEmpty)
-        ...foods.where(
+        ...pickable.where(
           (f) =>
               !_amounts.containsKey(f.food.id) &&
               f.food.name.toLowerCase().contains(q),
@@ -334,7 +341,7 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
               if (!recent.contains(i.foodId)) recent.add(i.foodId);
             }
           }
-          final byId = {for (final f in foods) f.food.id: f};
+          final byId = {for (final f in pickable) f.food.id: f};
           return [for (final id in recent.take(6)) ?byId[id]];
         }(),
     ];
@@ -474,7 +481,22 @@ final class _MealFormScreenState extends ConsumerState<MealFormScreen> {
                     title: Text(f.food.name),
                     subtitle: Text(
                       [
-                        if (!f.food.isDerived) l10n.mealEditRecipe,
+                        if (!f.food.isDerived) ...[
+                          // Batches of one dish share a name: the cook date and
+                          // what is left tell them apart.
+                          (f.food.createdAt.year == DateTime.now().year
+                                  ? DateFormat.MMMd(locale)
+                                  : DateFormat.yMMMd(locale))
+                              .format(f.food.createdAt),
+                          if (f.food.batchWeight > 0)
+                            l10n.recipeLeft(
+                              nf.format(
+                                (f.food.batchWeight - (eaten[f.food.id] ?? 0))
+                                    .clamp(0, double.infinity)
+                                    .round(),
+                              ),
+                            ),
+                        ],
                         if (last[f.food.id] case final g?)
                           l10n.mealEditLast(_fmtGrams(g)),
                       ].join(' · '),

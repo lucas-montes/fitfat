@@ -176,6 +176,7 @@ final class FoodRepository {
               createdAt: food.createdAt.millisecondsSinceEpoch,
               archivedAt: Value(food.archivedAt?.millisecondsSinceEpoch),
               cookedWeight: Value(food.cookedWeight),
+              finishedAt: Value(food.finishedAt?.millisecondsSinceEpoch),
             ),
           );
       await _replaceComponents(food.id, components);
@@ -212,6 +213,7 @@ final class FoodRepository {
           name: Value(food.name),
           archivedAt: Value(food.archivedAt?.millisecondsSinceEpoch),
           cookedWeight: Value(food.cookedWeight),
+          finishedAt: Value(food.finishedAt?.millisecondsSinceEpoch),
         ),
       );
       await _replaceComponents(food.id, components);
@@ -243,6 +245,21 @@ final class FoodRepository {
         .write(const db.FoodsCompanion(archivedAt: Value(null)));
   }
 
+  /// Sets or clears the manual "finished" mark. Only a tag: the recipe stays
+  /// listed, keeps its eaten bar, and leaves the meal picker.
+  Future<void> setFinished(String id, {required bool finished}) async {
+    _rejectDerived(id);
+    await (_database.update(
+      _database.foods,
+    )..where((t) => t.id.equals(id))).write(
+      db.FoodsCompanion(
+        finishedAt: Value(
+          finished ? DateTime.now().millisecondsSinceEpoch : null,
+        ),
+      ),
+    );
+  }
+
   /// Applies a food received from the server.
   ///
   /// Composition rows referencing ingredients we do not have are skipped rather
@@ -264,6 +281,7 @@ final class FoodRepository {
               createdAt: food.createdAt.millisecondsSinceEpoch,
               archivedAt: Value(food.archivedAt?.millisecondsSinceEpoch),
               cookedWeight: Value(food.cookedWeight),
+              finishedAt: Value(food.finishedAt?.millisecondsSinceEpoch),
             ),
             mode: InsertMode.insertOrReplace,
           );
@@ -417,6 +435,9 @@ final class FoodRepository {
         ? null
         : DateTime.fromMillisecondsSinceEpoch(row.archivedAt!),
     cookedWeight: row.cookedWeight,
+    finishedAt: row.finishedAt == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(row.finishedAt!),
     components: components,
   );
 

@@ -58,7 +58,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 42;
+  int get schemaVersion => 43;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -918,6 +918,10 @@ final class AppDatabase extends _$AppDatabase {
         // v42: goals read their progress from a source (null = manual).
         await m.addColumn(goals, goals.trackSource);
         await m.addColumn(goals, goals.trackParam);
+      }
+      if (from < 43) {
+        // v43: the manual "finished" mark on a recipe batch.
+        await m.addColumn(foods, foods.finishedAt);
       }
     },
   );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,15 +7,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../models/ingredient.dart';
 import '../../ui/theme_extensions.dart';
+import '../../ui/haptics.dart';
 import '../../ui/tokens.dart';
 import '../../ui/widgets/empty_state.dart';
 import '../../ui/widgets/macro_bar.dart';
+import '../../ui/widgets/top_banner.dart';
 import '../providers/foods.dart';
 import '../providers/ingredients.dart';
 import '../repositories/food_repository.dart' show ResolvedFood;
 import 'food_form.dart';
 
 enum RecipeSort { newest, name, kcal }
+
+/// Which recipes the list shows. A recipe is finished when marked by hand or
+/// when everything cooked has been logged (`Food.isFinished`).
+enum RecipeFilter { active, finished, all }
 
 /// Sorts recipes: newest first (default), by name, or by kcal per 100 g
 /// (highest first; unresolved last).
@@ -49,6 +57,7 @@ final class FoodListScreen extends ConsumerStatefulWidget {
 
 final class _FoodListScreenState extends ConsumerState<FoodListScreen> {
   RecipeSort _sort = RecipeSort.newest;
+  RecipeFilter _filter = RecipeFilter.active;
   bool _searching = false;
   String _query = '';
   final Set<String> _open = {};
@@ -58,6 +67,27 @@ final class _FoodListScreenState extends ConsumerState<FoodListScreen> {
       MaterialPageRoute(builder: (_) => FoodFormScreen(food: entry?.food)),
     );
     if (saved == true) invalidateFoods(ref);
+  }
+
+  /// Sets or clears the manual finished mark, with an undo banner.
+  Future<void> _setFinished(ResolvedFood r, {required bool finished}) async {
+    unawaited(Haptics.mediumImpact());
+    final l10n = AppLocalizations.of(context)!;
+    final repo = ref.read(foodRepositoryProvider);
+    await repo.setFinished(r.food.id, finished: finished);
+    invalidateFoods(ref);
+    if (!mounted) return;
+    showTopBanner(
+      context,
+      message: finished
+          ? l10n.recipeMarkedFinished(r.food.name)
+          : l10n.recipeMarkedUnfinished(r.food.name),
+      actionLabel: l10n.commonUndo,
+      onAction: () async {
+        await repo.setFinished(r.food.id, finished: !finished);
+        invalidateFoods(ref);
+      },
+    );
   }
 
   @override
@@ -73,7 +103,13 @@ final class _FoodListScreenState extends ConsumerState<FoodListScreen> {
     final q = _query.trim().toLowerCase();
     final recipes = sortRecipes([
       for (final r in all)
-        if (q.isEmpty || r.food.name.toLowerCase().contains(q)) r,
+        if ((q.isEmpty || r.food.name.toLowerCase().contains(q)) &&
+            switch (_filter) {
+              RecipeFilter.active => !r.food.isFinished(eaten[r.food.id] ?? 0),
+              RecipeFilter.finished => r.food.isFinished(eaten[r.food.id] ?? 0),
+              RecipeFilter.all => true,
+            })
+          r,
     ], _sort);
 
     return Scaffold(
@@ -125,6 +161,21 @@ final class _FoodListScreenState extends ConsumerState<FoodListScreen> {
                     Wrap(
                       spacing: FitFatTokens.spaceS,
                       children: [
+                        for (final (f, label) in [
+                          (RecipeFilter.active, l10n.recipeFilterActive),
+                          (RecipeFilter.finished, l10n.recipeFinished),
+                          (RecipeFilter.all, l10n.recipeFilterAll),
+                        ])
+                          ChoiceChip(
+                            label: Text(label),
+                            selected: _filter == f,
+                            onSelected: (_) => setState(() => _filter = f),
+                          ),
+                      ],
+                    ),
+                    Wrap(
+                      spacing: FitFatTokens.spaceS,
+                      children: [
                         for (final (s, label) in [
                           (RecipeSort.newest, l10n.recipeSortNewest),
                           (RecipeSort.name, l10n.recipeSortName),
@@ -149,6 +200,8 @@ final class _FoodListScreenState extends ConsumerState<FoodListScreen> {
                           if (!_open.remove(r.food.id)) _open.add(r.food.id);
                         }),
                         onEdit: () => _openForm(r),
+                        onSetFinished: (finished) =>
+                            _setFinished(r, finished: finished),
                       ),
                       const SizedBox(height: FitFatTokens.spaceS),
                     ],
@@ -177,6 +230,7 @@ class RecipeCard extends StatelessWidget {
     required this.open,
     required this.onToggle,
     required this.onEdit,
+    this.onSetFinished,
   });
 
   final ResolvedFood recipe;
@@ -185,6 +239,11 @@ class RecipeCard extends StatelessWidget {
   final bool open;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
+
+  /// Sets (true) or clears (false) the manual finished mark. Offered by
+  /// swiping the card or from its opened view, except on a batch that is
+  /// finished because everything was eaten: there is no mark to clear.
+  final ValueChanged<bool>? onSetFinished;
 
   @override
   Widget build(BuildContext context) {
@@ -196,14 +255,15 @@ class RecipeCard extends StatelessWidget {
     const tabular = [FontFeature.tabularFigures()];
     final food = recipe.food;
     final per100 = recipe.nutrition?.per100g;
-    final cooked =
-        food.cookedWeight ??
-        food.components.fold<double>(0, (a, c) => a + c.amount);
+    final cooked = food.batchWeight;
+    final marked = food.finishedAt != null;
+    final finished = food.isFinished(eatenGrams);
+    final canToggle = onSetFinished != null && (marked || !finished);
     final muted = theme.textTheme.bodySmall?.copyWith(
       color: scheme.onSurfaceVariant,
       fontFeatures: tabular,
     );
-    return Card(
+    final card = Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -230,6 +290,7 @@ class RecipeCard extends StatelessWidget {
                       style: theme.textTheme.titleSmall,
                     ),
                   ),
+                  if (finished) FinishedTag(label: l10n.recipeFinished),
                   if (per100 != null)
                     Text.rich(
                       TextSpan(
@@ -331,17 +392,84 @@ class RecipeCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: Text(l10n.recipeEdit),
-                  ),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  children: [
+                    if (canToggle)
+                      TextButton.icon(
+                        key: ValueKey('finish-${food.id}'),
+                        onPressed: () => onSetFinished!(!marked),
+                        icon: Icon(
+                          marked ? Icons.replay : Icons.check_circle_outline,
+                          size: 18,
+                        ),
+                        label: Text(
+                          marked
+                              ? l10n.recipeMarkUnfinished
+                              : l10n.recipeMarkFinished,
+                        ),
+                      ),
+                    TextButton.icon(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: Text(l10n.recipeEdit),
+                    ),
+                  ],
                 ),
               ],
             ],
           ),
+        ),
+      ),
+    );
+    if (!canToggle) return card;
+    // Swiping only toggles the tag: the card snaps back, and the filter decides
+    // whether it stays on screen.
+    return Dismissible(
+      key: ValueKey('swipe-${food.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        decoration: BoxDecoration(
+          color: scheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(FitFatTokens.radiusM),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: FitFatTokens.spaceL),
+        child: Icon(
+          marked ? Icons.replay : Icons.check_circle_outline,
+          color: scheme.onSecondaryContainer,
+        ),
+      ),
+      confirmDismiss: (_) async {
+        onSetFinished!(!marked);
+        return false;
+      },
+      child: card,
+    );
+  }
+}
+
+/// The small "Finished" pill shown next to a recipe's name.
+class FinishedTag extends StatelessWidget {
+  const FinishedTag({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(FitFatTokens.radiusS),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: scheme.onSecondaryContainer,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
