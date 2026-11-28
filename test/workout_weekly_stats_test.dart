@@ -121,6 +121,7 @@ void main() {
         1,
         reason: 'a second session the same day is not another day trained',
       );
+      expect(stats.workouts, 2, reason: 'but it is another workout');
       // Both still contribute their duration.
       expect(stats.minutes, 90);
     });

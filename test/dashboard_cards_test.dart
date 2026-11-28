@@ -60,6 +60,7 @@ void main() {
       database = db.AppDatabase.forTesting(NativeDatabase.memory());
       SharedPreferences.setMockInitialValues({
         'settings_has_seen_wizard': true,
+        'settings_base_currency': 'EUR',
       });
       FlutterSecureStorage.setMockInitialValues({});
       final now = DateTime.now();
@@ -217,6 +218,8 @@ void main() {
       expect(find.text('Running now'), findsNothing);
       expect(find.text('Bench day'), findsNothing);
       expect(find.text('Start'), findsOneWidget);
+      expect(find.text('WORKOUTS'), findsOneWidget);
+      expect(find.text('DAYS'), findsNothing);
 
       // Goals: the one with a date is featured with its pace.
       expect(find.textContaining('Behind pace'), findsOneWidget);
@@ -224,6 +227,9 @@ void main() {
       // Money: categories named under the bar.
       expect(find.textContaining('Groceries'), findsOneWidget);
       expect(find.textContaining('+1 more'), findsOneWidget);
+      // Amounts use the currency symbol, not the code.
+      expect(find.textContaining('€'), findsWidgets);
+      expect(find.textContaining('EUR'), findsNothing);
     });
   });
 }

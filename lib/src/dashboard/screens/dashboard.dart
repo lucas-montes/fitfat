@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../body/providers/body_metrics.dart';
 import '../../body/screens/body_metric_dialog.dart';
-import '../../budget/format.dart';
 import '../../budget/providers/budget_overview.dart';
 import '../../budget/widgets/money_widgets.dart';
 import '../../diet/providers/calories.dart';
@@ -930,10 +929,7 @@ final class _TrainingCard extends ConsumerWidget {
             const Divider(height: 1),
             Row(
               children: [
-                _Stat(
-                  l10n.dashboardDaysTrained,
-                  l10n.dashboardDaysTrainedValue(stats.daysTrained),
-                ),
+                _Stat(l10n.trainingWorkouts, '${stats.workouts}'),
                 _Stat(
                   l10n.dashboardHoursTrained,
                   formatWeeklyDuration(l10n, stats.totalMinutes),
@@ -1679,7 +1675,7 @@ final class _MoneyCard extends ConsumerWidget {
             spacing: FitFatTokens.spaceXs,
             children: [
               Text(
-                formatMoney(spent, currency),
+                formatMoneyIn(context, spent, currency),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   fontFeatures: _tabular,
@@ -1693,7 +1689,9 @@ final class _MoneyCard extends ConsumerWidget {
               if (income > 0)
                 Flexible(
                   child: Text(
-                    l10n.dashboardOfIncome(formatMoney(income, currency)),
+                    l10n.dashboardOfIncome(
+                      formatMoneyIn(context, income, currency),
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: small,
@@ -1710,10 +1708,10 @@ final class _MoneyCard extends ConsumerWidget {
                   ? null
                   : spent > income
                   ? l10n.dashboardAmountOver(
-                      formatMoney(spent - income, currency),
+                      formatMoneyIn(context, spent - income, currency),
                     )
                   : l10n.dashboardAmountLeft(
-                      formatMoney(income - spent, currency),
+                      formatMoneyIn(context, income - spent, currency),
                     ),
             ),
           if (cats.isNotEmpty)
@@ -1751,7 +1749,7 @@ final class _MoneyCard extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     '${l10n.budgetNetWorth} '
-                    '${formatMoney(overview.netWorth, currency)}',
+                    '${formatMoneyIn(context, overview.netWorth, currency)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: small,

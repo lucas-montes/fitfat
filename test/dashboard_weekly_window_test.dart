@@ -18,7 +18,9 @@ void main() {
   late db.AppDatabase database;
   late ProviderContainer container;
 
-  Future<({double totalVolumeKg, int totalMinutes, int daysTrained})>
+  Future<
+    ({double totalVolumeKg, int totalMinutes, int daysTrained, int workouts})
+  >
   stats() async => container.read(weeklyWorkoutStatsProvider.future);
 
   setUp(() {

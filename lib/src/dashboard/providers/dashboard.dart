@@ -132,6 +132,7 @@ typedef WeeklyWorkoutStats = ({
   double totalVolumeKg,
   int totalMinutes,
   int daysTrained,
+  int workouts,
 });
 
 /// Monday 00:00 local of the week containing [now].
@@ -154,7 +155,7 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
 ) async {
   ref.watch(dashboardRefreshProvider);
   if (!ref.watch(startupGateProvider)) {
-    return (totalVolumeKg: 0.0, totalMinutes: 0, daysTrained: 0);
+    return (totalVolumeKg: 0.0, totalMinutes: 0, daysTrained: 0, workouts: 0);
   }
   final weekStart = startOfCalendarWeek(DateTime.now());
 
@@ -170,6 +171,7 @@ final weeklyWorkoutStatsProvider = FutureProvider<WeeklyWorkoutStats>((
     totalVolumeKg: stats.volumeKg,
     totalMinutes: stats.minutes,
     daysTrained: stats.daysTrained,
+    workouts: stats.workouts,
   );
 });
 

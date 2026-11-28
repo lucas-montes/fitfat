@@ -867,7 +867,7 @@ final class WorkoutRepository {
   /// [untilDay] is not optional. A window anchored to a calendar week has to
   /// exclude the next one explicitly, because a `completedAt` written by
   /// another device with a skewed clock can otherwise land in it.
-  Future<({double volumeKg, int minutes, int daysTrained})>
+  Future<({double volumeKg, int minutes, int daysTrained, int workouts})>
   getVolumeAndMinutesBetween(DateTime fromDay, DateTime untilDay) async {
     final fromMillis = fromDay.millisecondsSinceEpoch;
     final untilMillis = untilDay.millisecondsSinceEpoch;
@@ -936,6 +936,8 @@ final class WorkoutRepository {
       volumeKg: volumeKg,
       minutes: minutes,
       daysTrained: trainedDays.length,
+      // Completed sessions, two on one day counting twice.
+      workouts: workoutRows.length,
     );
   }
 
