@@ -42,6 +42,9 @@ enum _PlanMode { timeline, initiatives }
 final DateTime _kDayEpochUtc = DateTime.utc(2020);
 final DateTime _kWeekEpochUtc = DateTime.utc(2019, 12, 30); // a Monday
 
+/// Lower bound of the month calendar.
+final DateTime _kFirstDay = DateTime(2020);
+
 /// Upper bound for generated pages (matches the calendar's lastDay).
 final DateTime _kLastDay = DateTime(2035, 12, 31);
 
@@ -883,18 +886,20 @@ final class _DayFlowViewState extends State<_DayFlowView> {
   @override
   Widget build(BuildContext context) {
     final pageCount = _dayPageIndex(_kLastDay) + 1;
-    return PageView.builder(
-      controller: _controller,
-      itemCount: pageCount,
-      onPageChanged: (index) =>
-          widget.onSelectedDayChanged(_dayFromIndex(index)),
-      itemBuilder: (context, index) {
-        return _DayTimelinePage(
-          key: ValueKey(index),
-          day: _dayFromIndex(index),
-          callbacks: widget,
-        );
-      },
+    return _WholePixelWidth(
+      child: PageView.builder(
+        controller: _controller,
+        itemCount: pageCount,
+        onPageChanged: (index) =>
+            widget.onSelectedDayChanged(_dayFromIndex(index)),
+        itemBuilder: (context, index) {
+          return _DayTimelinePage(
+            key: ValueKey(index),
+            day: _dayFromIndex(index),
+            callbacks: widget,
+          );
+        },
+      ),
     );
   }
 }
@@ -1195,18 +1200,20 @@ final class _WeekFlowViewState extends State<_WeekFlowView> {
   @override
   Widget build(BuildContext context) {
     final pageCount = _weekPageIndex(_kLastDay) + 1;
-    return PageView.builder(
-      controller: _controller,
-      itemCount: pageCount,
-      onPageChanged: (index) =>
-          widget.onSelectedDayChanged(_weekStartFromIndex(index)),
-      itemBuilder: (context, index) {
-        return _WeekPage(
-          key: ValueKey(index),
-          weekStart: _weekStartFromIndex(index),
-          callbacks: widget,
-        );
-      },
+    return _WholePixelWidth(
+      child: PageView.builder(
+        controller: _controller,
+        itemCount: pageCount,
+        onPageChanged: (index) =>
+            widget.onSelectedDayChanged(_weekStartFromIndex(index)),
+        itemBuilder: (context, index) {
+          return _WeekPage(
+            key: ValueKey(index),
+            weekStart: _weekStartFromIndex(index),
+            callbacks: widget,
+          );
+        },
+      ),
     );
   }
 }
@@ -1506,32 +1513,83 @@ final class _MonthOverviewState extends ConsumerState<_MonthOverview> {
       }
     }
 
-    return TableCalendar(
-      firstDay: DateTime(2020),
-      lastDay: _kLastDay,
-      focusedDay: _focusedDay,
-      calendarFormat: CalendarFormat.month,
-      availableGestures: AvailableGestures.horizontalSwipe,
-      // The label is only shown by the (hidden) format toggle button;
-      // the map must contain the fixed calendarFormat above.
-      availableCalendarFormats: const {CalendarFormat.month: 'Month'},
-      headerStyle: const HeaderStyle(
-        formatButtonVisible: false,
-        titleCentered: true,
-      ),
-      selectedDayPredicate: (day) => widget.isSameDay(day, widget.selectedDay),
-      onDaySelected: (selected, focused) {
-        setState(() => _focusedDay = _startOfDay(focused));
-        widget.onDayPicked(_startOfDay(selected));
-      },
-      onPageChanged: (focused) =>
-          setState(() => _focusedDay = _startOfDay(focused)),
-      calendarBuilders: CalendarBuilders(
-        defaultBuilder: (context, day, focusedMonth) =>
-            _dayCell(context, day, focusedMonth, taskDays: taskDays),
+    final material = MaterialLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final canGoBack = monthStart.isAfter(_kFirstDay);
+    final canGoForward = DateTime(
+      monthStart.year,
+      monthStart.month + 1,
+    ).isBefore(_kLastDay);
+
+    // TableCalendar's own header is built from `package:flutter/material`
+    // widgets, which can't see this app's `material_ui` Material ancestor
+    // ("No Material widget found", then a runaway RenderFlex overflow), so
+    // it's hidden and the header is drawn here instead.
+    final header = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: material.previousPageTooltip,
+            icon: const Icon(Icons.chevron_left),
+            onPressed: canGoBack ? () => _stepMonth(-1) : null,
+          ),
+          Expanded(
+            child: Text(
+              DateFormat.yMMMM(locale).format(monthStart),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          IconButton(
+            tooltip: material.nextPageTooltip,
+            icon: const Icon(Icons.chevron_right),
+            onPressed: canGoForward ? () => _stepMonth(1) : null,
+          ),
+        ],
       ),
     );
+
+    return Column(
+      children: [
+        header,
+        TableCalendar(
+          firstDay: _kFirstDay,
+          lastDay: _kLastDay,
+          focusedDay: _focusedDay,
+          calendarFormat: CalendarFormat.month,
+          availableGestures: AvailableGestures.horizontalSwipe,
+          // The label is only shown by the (hidden) format toggle button;
+          // the map must contain the fixed calendarFormat above.
+          availableCalendarFormats: const {CalendarFormat.month: 'Month'},
+          headerVisible: false,
+          selectedDayPredicate: (day) =>
+              widget.isSameDay(day, widget.selectedDay),
+          onDaySelected: (selected, focused) {
+            setState(() => _focusedDay = _startOfDay(focused));
+            widget.onDayPicked(_startOfDay(selected));
+          },
+          onPageChanged: (focused) =>
+              setState(() => _focusedDay = _startOfDay(focused)),
+          calendarBuilders: CalendarBuilders(
+            defaultBuilder: (context, day, focusedMonth) =>
+                _dayCell(context, day, focusedMonth, taskDays: taskDays),
+          ),
+        ),
+      ],
+    );
   }
+
+  /// Header chevrons: moves the grid one month back / forward (the calendar
+  /// animates to the new focused day).
+  void _stepMonth(int delta) => setState(() {
+    final target = DateTime(_focusedDay.year, _focusedDay.month + delta, 1);
+    _focusedDay = target.isBefore(_kFirstDay)
+        ? _kFirstDay
+        : target.isAfter(_kLastDay)
+        ? _kLastDay
+        : target;
+  });
 
   /// Custom cell for days worth marking: a task dot, the selected-day fill,
   /// and today's outline. Plain days return null so the stock rendering
@@ -1768,4 +1826,30 @@ final class _TaskRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Snaps its child's width down to a whole logical pixel.
+///
+/// The day/week pagers start thousands of pages in (one page per day since
+/// 2020). With a fractional page width (e.g. 1280px / 3.25 = 393.846…dp)
+/// the sliver's extrapolated scroll extent drifts off an exact multiple of
+/// the page width and trips Flutter's `computeMaxScrollOffset() … not an
+/// even multiple of its itemExtent` assertion on every layout. Whole-pixel
+/// pages keep `index * width` exact; the < 1dp leftover is invisible.
+final class _WholePixelWidth extends StatelessWidget {
+  final Widget child;
+
+  const _WholePixelWidth({required this.child});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => Align(
+      alignment: Alignment.topCenter,
+      child: SizedBox(
+        width: constraints.maxWidth.floorToDouble(),
+        height: constraints.maxHeight,
+        child: child,
+      ),
+    ),
+  );
 }
